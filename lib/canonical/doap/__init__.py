@@ -15,7 +15,6 @@ from zope.app.container.interfaces import IContained
 from canonical.launchpad.interfaces import IDOAPApplication
 from canonical.publication import rootObject
 
-
 #
 # This is the core DOAP application, it's what handles /doap/
 # URLs and gives us an anchor for further URL traversal and

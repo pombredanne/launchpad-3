@@ -6,4 +6,6 @@
 
   <permission id="launchpad.Admin" title="Administer something" />
 
+  <permission id="launchpad.WEGSND" title="What even god should not do" />
+
 </configure>

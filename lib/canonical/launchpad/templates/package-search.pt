@@ -23,9 +23,9 @@
     </form>
 
     <div tal:condition="view/searchrequested"
-         tal:define="binpkgs view/searchresults"
          tal:omit-tag>
 
+      <div tal:define="binpkgs view/searchresults">
         <span tal:repeat="package binpkgs" tal:omit-tag>
             
             <h2 tal:content="package/name" />
@@ -62,6 +62,7 @@
 
 
         </span>
+      </div>
 
     </div>
 

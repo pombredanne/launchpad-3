@@ -12,10 +12,10 @@ class IPerson(Interface):
             title=_('ID'), required=True, readonly=True,
             )
     name = TextLine(
-            title=_('Unique Launchpad Name'), required=False, readonly=False,
+            title=_('Unique Launchpad Name'), required=True, readonly=False,
             )
     displayname = TextLine(
-            title=_('Display Name'), required=False, readonly=False,
+            title=_('Display Name'), required=True, readonly=False,
             )
     givenname = TextLine(
             title=_('Given Name'), required=False, readonly=False,
@@ -24,12 +24,12 @@ class IPerson(Interface):
             title=_('Family Name'), required=False, readonly=False,
             )
     password = Password(
-            title=_('Password'), required=False, readonly=False,
+            title=_('Password'), required=True, readonly=False,
             )
     teamowner = Int(
             title=_('Team Owner'), required=False, readonly=False,
             )
-    teamdescription = TextLine(
+    teamdescription = Text(
             title=_('Team Description'), required=False, readonly=False,
             )
     # TODO: This should be required in the DB, defaulting to something
@@ -41,6 +41,31 @@ class IPerson(Interface):
             title=_('Karma Timestamp'), required=False, readonly=True,
             )
     languages = Attribute(_('List of know languages by this person'))
+    sshkeys = Attribute(_('List of SSH keys'))
+
+    # XXX: These fields are used only to generate the form to create a
+    # new person.
+    email = TextLine(title=_('Email'), required=True)
+    password2 = Password(title=_('Retype Password'), required=True)
+
+    # Properties of the Person object.
+    gpg = Attribute("GPG")
+    irc = Attribute("IRC")    
+    bugs = Attribute("Bug")
+    wiki = Attribute("Wiki")
+    teams = Attribute("Team which I'm a member")
+    emails = Attribute("Email")
+    jabber = Attribute("Jabber")
+    roleset = Attribute("Possible Roles")
+    members = Attribute("Members of a Team")
+    archuser = Attribute("Arch user")    
+    subteams = Attribute("Sub Teams")
+    packages = Attribute("A Selection of SourcePackageReleases")
+    statusset = Attribute("Possible Status")
+    activities = Attribute("Karma")
+    distroroles = Attribute("Distribution Roles")
+    translations = Attribute("Translations")
+    distroreleaseroles = Attribute("Distrorelase Roles")
 
     def browsername():
         """Return a textual name suitable for display in a browser."""
@@ -53,6 +78,28 @@ class IPerson(Interface):
 
     def inTeam(team_name):
         """Return true if this person is in the named team."""
+
+
+class ITeam(Interface):
+    id = Int(
+            title=_('ID'), required=True, readonly=True,
+            )
+    name = TextLine(
+            title=_('Unique Launchpad Name'), required=True, readonly=False,
+            )
+    displayname = TextLine(
+            title=_('Display Name'), required=True, readonly=False,
+            )
+    teamowner = Int(
+            title=_('Team Owner'), required=False, readonly=False,
+            )
+    teamdescription = Text(
+            title=_('Team Description'), required=False, readonly=False,
+            )
+    # XXX: salgado: As soon as we manage a way to generate a nickname
+    # without an email address, this shouldn't be required anymore.
+    email = TextLine(title=_('Email'), required=True)
+
 
 class IPersonSet(Interface):
     """The set of Persons."""
@@ -75,8 +122,17 @@ class IPersonSet(Interface):
         Returns the default value if there is no such person.
         """
     
+    def getByName(name):
+        """Returns the person with the given name.
+        """
+    
     def getAll():
         """Returns all People in a database"""
+
+    def getContributorsForPOFile(pofile):
+        """Returns the list of persons that have an active contribution for a
+        concrete POFile."""
+
 
 class IEmailAddress(Interface):
     """The object that stores the IPerson's emails."""
@@ -97,43 +153,4 @@ class IEmailAddress(Interface):
         title=_('Person'), required=True,
         )
     statusname = Attribute("StatusName")
-
-
-#
-# Person related Applications Interfaces
-#
-
-class IPeopleApp(Interface):
-    """A People Tag """
-    p_entries = Attribute("Number of person entries")
-    t_entries = Attribute("Number of teams entries")
-
-    def __getitem__(release):
-        """retrieve personal by name"""
-
-    def __iter__():
-        """retrieve an iterator"""
-
-
-class IPersonApp(Interface):
-    """A Person Tag """
-    person = Attribute("Person entry")
-    id = Attribute("Person entry")
-    email = Attribute("Email")
-    wiki = Attribute("Wiki")
-    jabber = Attribute("Jabber")
-    irc = Attribute("IRC")    
-    archuser = Attribute("Arch user")    
-    gpg = Attribute("GPG")
-
-    members = Attribute("Members of a Team")
-    teams = Attribute("Team which I'm a member")
-    subteams = Attribute("Sub Teams")
-    distroroles = Attribute("Distribution Roles")
-    distroreleaseroles = Attribute("Distrorelase Roles")
-
-    packages = Attribute("A Selection of SourcePackageReleases")
-
-    roleset = Attribute("Possible Roles")
-    statusset = Attribute("Possible Status")
 

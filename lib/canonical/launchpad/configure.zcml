@@ -3,6 +3,7 @@
   <include package="canonical.launchpad.webapp" />
   <include package="canonical.launchpad.vocabularies" />
   <include package="canonical.launchpad.zcml" />
+  <include file="security.zcml" />
   <include file="robots.zcml" />
 
 </configure>

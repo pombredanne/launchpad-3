@@ -7,8 +7,9 @@ from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 from canonical.launchpad.fields import Title, Summary, Description
+from canonical.launchpad.interfaces.launchpad import IHasOwner
 
-class IProduct(Interface):
+class IProduct(IHasOwner):
     """A DOAP Product. DOAP describes the open source world as Projects
     and Products. Each Project may be responsible for several Products.
     For example, the Mozilla Project has Firefox, Thunderbird and The
@@ -19,7 +20,8 @@ class IProduct(Interface):
     # in SQLObject soon. 12/10/04
     id = Int(title=_('The Product ID'))
     
-    project = Int(title=_('Project ID.'), required=False)
+    project = Choice(title=_('Project'), required=False,
+        vocabulary='Project')
     
     owner = Int(title=_('Owner'))
 
@@ -57,6 +59,9 @@ class IProduct(Interface):
 
     freshmeatproject = TextLine(title=_('Freshmeat Project'),
         required=False)
+
+    autoupdate = Bool(title=_('Automatic update'), description=_("""Whether or not
+        this product's attributes are updated automatically."""))
 
     manifest = Attribute(_('Manifest'))
 

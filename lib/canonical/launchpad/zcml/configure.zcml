@@ -8,6 +8,16 @@
     <include file="soyuz.zcml" />
 
     <!-- Content class configuration -->
+    <include file="archuserid.zcml" />
+    <include file="emailaddress.zcml" />
+    <include file="teamparticipation.zcml" />
+    <include file="gpgkey.zcml" />
+    <include file="sshkey.zcml" />
+    <include file="ircid.zcml" />
+    <include file="jabberid.zcml" />
+    <include file="membership.zcml" />
+    <include file="person.zcml" />
+    <include file="wikiname.zcml" />
     <include file="branch.zcml" />
     <include file="country.zcml" />
     <include file="project.zcml" />
@@ -54,6 +64,7 @@
     <!-- Event configuration -->
     <include file="bug-events.zcml" />
     <include file="bugactivity-subscriptions.zcml" />
+    <include file="product-events.zcml" />
 
     <!-- Special Utilities -->
     <include file="geoip.zcml" />

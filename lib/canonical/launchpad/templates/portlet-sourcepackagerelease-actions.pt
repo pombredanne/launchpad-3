@@ -1,0 +1,12 @@
+<div class="portlet">
+    <h4>Actions:</h4>
+
+    <div class="portletBody">
+        <div class="portletContent even">
+
+        <img src="/++resource++edit.gif">
+	<a tal:attributes="href string:">File a Bug</a> <br />
+
+        </div>
+    </div>
+</div>

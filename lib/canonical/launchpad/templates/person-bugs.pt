@@ -1,0 +1,91 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+  <title metal:fill-slot="title">Bugs Reported By
+      <span tal:replace="context/displayname">Name</span></title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Soyuz style sheet -->
+    <style type="text/css" media="screen">@import url(soyuz.css);</style>
+</head>
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+<div tal:replace="structure view/leftMenu" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+<div id="content" class="documentEditable">
+
+    <ul class="contentViews">
+      <li id="contentview-view" class="plain">
+        <a href=".">Profile</a>
+      </li>
+
+      <!--
+      <li tal:condition="context/packages" id="contentview-packages"
+      -->
+      <li id="contentview-packages"
+          class="plain">
+        <a href="+packages">Packages</a>
+      </li>
+
+      <!--
+      <li tal:condition="context/bugs" id="contentview-bugs" class="plain">
+      -->
+      <li id="contentview-bugs" class="selected">
+        <a href="+bugs">Bugs</a>
+      </li>
+
+      <!--
+      <li tal:condition="context/translations" id="contentview-translations"
+      -->
+      <li id="contentview-translations"
+          class="plain">
+        <a href="+translations">Translations</a>
+      </li>
+
+      <!--
+      <li tal:condition="context/activities" id="contentview-karma"
+      -->
+      <li id="contentview-karma"
+          class="plain">
+        <a href="+karma">Karma</a>
+      </li>
+    </ul>
+    <div class="documentContent" id="region-content">
+
+    <h1>Bugs for <span tal:content="context/displayname">context</span></h1>
+
+    <!-- XXX: salgado: Must show all bugs, not only bugs reported by
+      this person.  -->
+    <div tal:define="bugs context/bugs"
+         tal:condition="bugs">
+      <h4>Bugs reported by <span tal:replace="context/displayname"></span></h4>
+      <table id="ass_listing" class="listing rowNavigation">
+        <tr>
+          <th>Bug #</th>
+          <th>Bug Title</th>
+        </tr>
+        <tr tal:repeat="bug bugs">
+          <td><a tal:attributes="href string:/malone/bugs/${bug/id}">
+            <span tal:content="bug/id"></span></a>
+          </td>
+          <td><a tal:attributes="href string:/malone/bugs/${bug/id}">
+            <span tal:content="bug/title"></span></a>
+          </td>
+        </tr>
+      </table>
+    </div>
+    </div>
+
+</div>
+</div>
+
+</body>
+</html>

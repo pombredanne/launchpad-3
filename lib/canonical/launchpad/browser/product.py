@@ -88,6 +88,7 @@ class ProductView:
         self.context.shortdesc = self.form['shortdesc']
         self.context.description = self.form['description']
         self.context.homepageurl = self.form['homepageurl']
+        notify(ObjectModifiedEvent(self.context))
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
 

@@ -14,7 +14,8 @@ __all__ = ('ILaunchpadApplication', 'IMaloneApplication',
            'IDOAPApplication', 'IFOAFApplication',
            'IPasswordEncryptor', 'IReadZODBAnnotation',
            'IWriteZODBAnnotation', 'IZODBAnnotation',
-           'IAuthorization', 'IOpenLaunchBag', 'ILaunchBag')
+           'IAuthorization', 'IObjectAuthorization',
+           'IHasOwner', 'IOpenLaunchBag', 'ILaunchBag')
 
 class ILaunchpadApplication(Interface):
     """Marker interface for a launchpad application.
@@ -98,18 +99,40 @@ class IZODBAnnotation(IReadZODBAnnotation, IWriteZODBAnnotation):
     pass
 
 
-class IAuthorization(Interface):
+class IObjectAuthorization(Interface):
     """Authorization policy for a particular object."""
 
-    def checkPermission(principal, permission):
-        """Returns True if the principal has that permission on the adapted
-        object.
+    def checkPermission(person, permission):
+        """Returns True if the person has that permission on the adapted
+        object.  Otherwise returns False.
 
-        Otherwise returns False or returns None; these are equivalent.
-
-        The easiest way to return None is to allow the flow control to
-        'fall off the end' of the method.
+        The argument person is the person who is authenticated, or None if
+        the principal is not adaptable to a Person.  So, person is None when
+        no-one is logged in.
         """
+
+
+class IAuthorization(Interface):
+    """Authorization policy for a particular object and permission."""
+
+    def checkUnauthenticated():
+        """Returns True if an unauthenticated user has that permission
+        on the adapted object.  Otherwise returns False.
+        """
+
+    def checkPermission(person):
+        """Returns True if the person has that permission on the adapted
+        object.  Otherwise returns False.
+
+        The argument `person` is the person who is authenticated.
+        """
+
+
+class IHasOwner(Interface):
+    """An object that has an owner."""
+
+    owner = Attribute("The object's owner, which is an IPerson.")
+
 
 class ILaunchBag(Interface):
     site = Attribute('The application object, or None')
@@ -117,10 +140,13 @@ class ILaunchBag(Interface):
     project = Attribute('Project, or None')
     product = Attribute('Product, or None')
     distribution = Attribute('Distribution, or None')
+    distrorelease = Attribute('DistroRelease, or None')
     sourcepackage = Attribute('Sourcepackage, or None')
+    sourcepackagereleasepublishing = Attribute('SourcepackageReleasePublishing, or None')
     bug = Attribute('Bug, or None')
 
     user = Attribute('Currently authenticated person, or None')
+
 
 class IOpenLaunchBag(ILaunchBag):
     def add(ob):
@@ -128,4 +154,4 @@ class IOpenLaunchBag(ILaunchBag):
         or ignored, or whatever'''
     def clear():
         '''Empty the bag'''
-    
+

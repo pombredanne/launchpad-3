@@ -16,7 +16,7 @@ from sets import Set
 from canonical.launchpad.interfaces import IPOTemplate, IPOTMsgSet, \
     IEditPOTemplate, IEditPOTMsgSet, IPOMsgID, IPOMsgIDSighting, IPOFile, \
     IEditPOFile, IPOMsgSet, IEditPOMsgSet, IPOTranslation, \
-    IPOTranslationSighting
+    IPOTranslationSighting, IPersonSet
 from canonical.launchpad.interfaces import ILanguageSet
 from canonical.launchpad.database.language import Language
 from canonical.lp.dbschema import RosettaTranslationOrigin
@@ -76,20 +76,21 @@ class POTemplate(SQLBase):
     _table = 'POTemplate'
 
     product = ForeignKey(foreignKey='Product', dbName='product', notNull=True)
-    priority = IntCol(dbName='priority', notNull=True)
-    branch = ForeignKey(foreignKey='Branch', dbName='branch', notNull=True)
+    priority = IntCol(dbName='priority', notNull=False, default=None)
+    branch = ForeignKey(foreignKey='Branch', dbName='branch', notNull=False,
+        default=None)
     changeset = ForeignKey(foreignKey='Changeset', dbName='changeset',
         notNull=False, default=None)
     name = StringCol(dbName='name', notNull=True)
     title = StringCol(dbName='title', notNull=True)
-    description = StringCol(dbName='description', notNull=True)
-    copyright = StringCol(dbName='copyright', notNull=True)
+    description = StringCol(dbName='description', notNull=False, default=None)
+    copyright = StringCol(dbName='copyright', notNull=False, default=None)
 #   license = ForeignKey(foreignKey='License', dbName='license', notNull=True)
-    license = IntCol(dbName='license', notNull=True)
+    license = IntCol(dbName='license', notNull=False, default=None)
     datecreated = DateTimeCol(dbName='datecreated', default=DEFAULT)
-    path = StringCol(dbName='path', notNull=True)
+    path = StringCol(dbName='path', notNull=False, default=None)
     iscurrent = BoolCol(dbName='iscurrent', notNull=True)
-    messagecount = IntCol(dbName='messagecount', notNull=True)
+    messagecount = IntCol(dbName='messagecount', notNull=True, default=0)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=False,
         default=None)
     rawfile = StringCol(dbName='rawfile', notNull=False, default=None)
@@ -169,12 +170,6 @@ class POTemplate(SQLBase):
         slice:
             The range of results to be selected, or None, for all results.
         '''
-        # XXX: Carlos Perello Marin 11/12/2004 Commented the code because it's
-        # not working and it's not needed.
-        #if __DEBUG__:
-        #    for l in languages:
-        #        assert l.__class__ == Language
-        #        assert ILanguage.providedBy(l)
 
         if current is not None:
             if current:
@@ -187,14 +182,13 @@ class POTemplate(SQLBase):
         # Assuming that for each language being checked, each POT mesage set
         # has a corresponding PO message set for that language:
         #
-        # A POT set is translated if all its PO message sets have
-        #   iscomplete = TRUE.
-        #  -- in other words, none of its PO message sets have
-        #   iscomplete = FALSE.
+        # A POT set is translated if all its PO message sets have iscomplete =
+        # TRUE. In other words, none of its PO message sets have iscomplete =
+        # FALSE.
+        #
         # A POT set is untranslated if any of its PO message set has
-        #   iscomplete = FALSE.
-        #  -- in other words, not all of its PO message sets have
-        #   iscomplete = TRUE.
+        # iscomplete = FALSE. In other words, not all of its PO message sets
+        # have iscomplete = TRUE.
         #
         # The possible non-existance of corresponding PO message sets
         # complicates matters a bit:
@@ -208,19 +202,30 @@ class POTemplate(SQLBase):
         # So, we get around this problem by checking the number of PO message
         # sets against the number of languages.
 
+        language_codes = ', '.join([ "'%s'" % str(l.code) for l in languages ])
+
         if translated is not None:
+            # Search for PO message sets which aren't complete for this POT
+            # set.
             subquery1 = '''
-                SELECT 1 FROM POMsgSet poset, POFile pofile WHERE
+                SELECT poset.id FROM POMsgSet poset, POFile pofile,
+                        Language language WHERE
                     poset.potmsgset = POTMsgSet.id AND
                     poset.pofile = pofile.id AND
-                    pofile.language IN (%s) AND
+                    pofile.language = language.id AND
+                    language.code IN (%s) AND
                     iscomplete = FALSE
-                ''' % (', '.join([ str(l.id) for l in languages ]))
+                ''' % language_codes
 
+            # Count PO message sets for this POT set.
             subquery2 = '''
-                SELECT COUNT(id) FROM POMsgSet WHERE
-                    POMsgSet.potmsgset = POTMsgSet.id
-                '''
+                SELECT COUNT(poset.id) FROM POMsgSet poset, POFile pofile,
+                        Language language WHERE
+                    poset.potmsgset = POTMsgSet.id AND
+                    poset.pofile = pofile.id AND
+                    pofile.language = language.id AND
+                    language.code IN (%s)
+                ''' % language_codes
 
             if translated:
                 translated_condition = ('NOT EXISTS (%s) AND (%s) = %d' %
@@ -232,9 +237,9 @@ class POTemplate(SQLBase):
             translated_condition = 'TRUE'
 
         results = POTMsgSet.select(
-            'POTMsgSet.potemplate = %d AND %s AND %s '
-            'ORDER BY POTMsgSet.sequence' %
-                (self.id, translated_condition, current_condition))
+            'POTMsgSet.potemplate = %d AND (%s) AND (%s) '
+                % (self.id, translated_condition, current_condition),
+                orderBy = 'POTMsgSet.sequence')
 
         if slice is not None:
             return results[slice]
@@ -256,7 +261,7 @@ class POTemplate(SQLBase):
             ''' % self.id, clauseTables=('POFile', 'Language')))
 
     def poFilesToImport(self):
-        for pofile in iter(self._poFilesJoin):
+        for pofile in iter(self.poFiles):
             if pofile.rawimportstatus == RosettaImportStatus.PENDING:
                 yield pofile
 
@@ -452,7 +457,7 @@ class POTemplate(SQLBase):
         # file has because a number of msgsets could have change.
         # XXX: Carlos Perello Marin 09/12/2004 We should handle this case
         # better. The pofile don't get updated the currentcount updated...
-        for pofile in self.poFiles():
+        for pofile in self.poFiles:
             pofile.updateStatistics()
 
 
@@ -852,6 +857,10 @@ class POFile(SQLBase):
 
     def rosettaCount(self):
         return self.rosettacount
+
+    def getContributors(self):
+        return getUtility(IPersonSet).getContributorsForPOFile(self)
+
 
     # IEditPOFile
 

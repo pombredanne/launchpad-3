@@ -9,7 +9,7 @@ from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.interfaces import IBounty, IBountySet, \
                                            IAddFormCustomization, \
-                                           IAuthorization
+                                           IObjectAuthorization
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC, DEFAULT
@@ -25,7 +25,7 @@ from sets import Set
 class Bounty(SQLBase):
     """A bounty."""
 
-    implements(IBounty, IAuthorization)
+    implements(IBounty, IObjectAuthorization)
 
     # default to listing newest first
     _defaultOrder = '-id'

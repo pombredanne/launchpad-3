@@ -15,6 +15,7 @@ from canonical.launchpad.database.sourcepackage import SourcePackage, \
 from canonical.launchpad.database.binarypackage import BinaryPackage, \
                                             BinaryPackageName
 from canonical.launchpad.database.product import Product
+from canonical.launchpad.database.project import Project
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bugtracker import BugTracker
 from canonical.database.sqlbase import SQLBase, quote_like, quote
@@ -198,6 +199,38 @@ class ProductVocabulary(SQLObjectVocabularyBase):
 
     def search(self, query):
         '''Returns products where the product name, displayname, title,
+        shortdesc, or description contain the given query. Returns an empty list
+        if query is None or an empty string.
+
+        Note that this cannot use an index - if it is too slow we need
+        full text searching.
+
+        '''
+        if query:
+            query = query.lower()
+            like_query = quote('%%%s%%' % quote_like(query)[1:-1])
+            fti_query = quote(query)
+            sql = "fti @@ ftq(%s)" % fti_query
+            return [self._toTerm(r) for r in self._table.select(sql)]
+
+        return []
+
+class ProjectVocabulary(SQLObjectVocabularyBase):
+    implements(IHugeVocabulary)
+    _table = Project
+    _orderBy = 'displayname'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.title)
+
+    def getTermByToken(self, token):
+        objs = self._table.select(self._table.q.name == token)
+        if len(objs) != 1:
+            raise LookupError, token
+        return self._toTerm(objs[0])
+
+    def search(self, query):
+        '''Returns projects where the project name, displayname, title,
         shortdesc, or description contain the given query. Returns an empty list
         if query is None or an empty string.
 

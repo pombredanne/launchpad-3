@@ -19,8 +19,7 @@ from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.pofile import POTemplate
 
-from canonical.launchpad.interfaces import IProduct, IProductSet, \
-    IAuthorization
+from canonical.launchpad.interfaces import IProduct, IProductSet
 
 from sets import Set
 from datetime import datetime
@@ -28,7 +27,7 @@ from datetime import datetime
 class Product(SQLBase):
     """A Product."""
 
-    implements(IProduct, IAuthorization)
+    implements(IProduct)
 
     _table = 'Product'
 
@@ -73,6 +72,8 @@ class Product(SQLBase):
 
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
 
+    autoupdate = BoolCol(dbName='autoupdate', notNull=True, default=False)
+
     freshmeatproject = StringCol(notNull=False, default=None)
 
     sourceforgeproject = StringCol(notNull=False, default=None)
@@ -96,15 +97,6 @@ class Product(SQLBase):
 
     releases = MultipleJoin('ProductRelease', joinColumn='product',
                              orderBy='-datereleased')
-
-    def checkPermission(self, principal, permission):
-        if permission == 'launchpad.Edit':
-            if self.id == principal.id:
-                return True
-            else:
-                return False
-        else:
-            return False
 
     def newseries(self, form):
         # Extract the details from the form

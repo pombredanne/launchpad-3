@@ -19,7 +19,7 @@
         />
 
     <browser:defaultView
-        for="canonical.soyuz.SoyuzApplication"
+        for="canonical.launchpad.interfaces.ISoyuzApplication"
         name="+index" />
 
     <browser:suburl

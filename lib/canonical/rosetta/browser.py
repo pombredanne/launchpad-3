@@ -5,7 +5,6 @@ __metaclass__ = type
 
 import re, os, popen2, base64
 from math import ceil
-import smtplib
 import sys
 from xml.sax.saxutils import escape as xml_escape
 from StringIO import StringIO
@@ -45,8 +44,10 @@ def count_lines(text):
 
 def canonicalise_code(code):
     '''Convert a language code to a standard xx_YY form.'''
+
     if '-' in code:
         language, country = code.split('-', 1)
+
         return "%s_%s" % (language, country.upper())
     else:
         return code
@@ -83,7 +84,6 @@ def request_languages(request):
         if lang not in languages:
             languages.append(lang)
     return languages
-    
 
 def parse_cformat_string(s):
     '''Parse a printf()-style format string into a sequence of interpolations
@@ -120,6 +120,66 @@ def parse_cformat_string(s):
     # Give up.
 
     raise ValueError(s)
+
+def parse_translation_form(form):
+    # Extract msgids from the form.
+
+    sets = {}
+
+    for key in form:
+        match = re.match('set_(\d+)_msgid$', key)
+
+        if match:
+            id = int(match.group(1))
+            sets[id] = {}
+            sets[id]['msgid'] = form[key].replace('\r', '')
+            sets[id]['translations'] = {}
+            sets[id]['fuzzy'] = {}
+
+    # Extract non-plural translations from the form.
+
+    for key in form:
+        match = re.match(r'set_(\d+)_translation_([a-z]+)$', key)
+
+        if match:
+            id = int(match.group(1))
+            code = match.group(2)
+
+            if not id in sets:
+                raise AssertionError("Orphaned translation in form.")
+
+            sets[id]['translations'][code] = {}
+            sets[id]['translations'][code][0] = form[key].replace('\r', '')
+
+    # Extract plural translations from the form.
+
+    for key in form:
+        match = re.match(r'set_(\d+)_translation_([a-z]+)_(\d+)$', key)
+
+        if match:
+            id = int(match.group(1))
+            code = match.group(2)
+            pluralform = int(match.group(3))
+
+            if not id in sets:
+                raise AssertionError("Orphaned translation in form.")
+
+            if not code in sets[id]['translations']:
+                sets[id]['translations'][code] = {}
+
+            sets[id]['translations'][code][pluralform] = form[key]
+
+    # Extract fuzzy statuses from the form.
+
+    for key in form:
+        match = re.match(r'set_(\d+)_fuzzy_([a-z]+)$', key)
+
+        if match:
+            id = int(match.group(1))
+            code = match.group(2)
+            sets[id]['fuzzy'][code] = True
+
+    return sets
 
 
 def escape_msgid(s):
@@ -180,32 +240,19 @@ class ProductView:
         # Extract the details from the form
         name = self.form['name']
         title = self.form['title']
-        description = self.form['description']
-        copyright = self.form['copyright']
-        path = self.form['path']
 
         # XXX Carlos Perello Marin 27/11/04 this check is not yet being done.
         # check to see if there is an existing product with
         # this name.
         # get the launchpad person who is creating this product
-        # XXX: Carlos Perello Marin 27/11/04 We should force this page to be
-        # used under authenticated users.
         owner = IPerson(self.request.principal)
 
         # Now create a new product in the db
         potemplate = POTemplate(
             product=self.context.id,
-            priority=1,
-            branch=1,
             name=name,
             title=title,
-            description=description,
-            copyright=copyright,
-            license=1,
-            datecreated=UTC_NOW,
-            path=path,
             iscurrent=False,
-            messagecount=0,
             owner=owner)
 
         self._templates.append(potemplate)
@@ -368,7 +415,7 @@ class ViewPOTemplate:
         languages = translated_languages + prefered_languages
         languages = list(Set(languages))
         languages.sort(lambda a, b: cmp(a.englishname, b.englishname))
-        
+
         languages_info = TemplateLanguages(self.context, languages)
 
         return languages_info.languages()
@@ -390,10 +437,6 @@ class ViewPOTemplate:
         # Extract details from the form and update the POTemplate
         self.context.name = self.form['name']
         self.context.title = self.form['title']
-        self.context.description = self.form['description']
-        self.context.copyright = self.form['copyright']
-        self.context.path = self.form['path']
-        self.context.priority = self.form['priority']
         
         # now redirect to view the potemplate. This lets us follow the
         # template in case the user changed the name
@@ -910,79 +953,19 @@ class TranslatePOTemplate:
         if not "SUBMIT" in self.request.form:
             return None
 
-        sets = {}
-
-        # Extract msgids from form.
-
-        for key in self.request.form:
-            match = re.match('set_(\d+)_msgid$', key)
-
-            if match:
-                id = int(match.group(1))
-                sets[id] = {}
-                sets[id]['msgid'] = self.request.form[key].replace('\r', '')
-                sets[id]['translations'] = {}
-                sets[id]['fuzzy'] = {}
-
-        # Extract translations from form.
-
-        for key in self.request.form:
-            match = re.match(r'set_(\d+)_translation_([a-z]+)$', key)
-
-            if match:
-                id = int(match.group(1))
-                code = match.group(2)
-
-                if not id in sets:
-                    raise AssertionError("Orphaned translation in form.")
-
-                sets[id]['translations'][code] = {}
-                sets[id]['translations'][code][0] = (
-                    self.request.form[key].replace('\r', ''))
-
-                continue
-
-            match = re.match(r'set_(\d+)_translation_([a-z]+)_(\d+)$', key)
-
-            if match:
-                id = int(match.group(1))
-                code = match.group(2)
-                pluralform = int(match.group(3))
-
-                if not id in sets:
-                    raise AssertionError("Orphaned translation in form.")
-
-                if not code in sets[id]['translations']:
-                    sets[id]['translations'][code] = {}
-
-                sets[id]['translations'][code][pluralform] = self.request.form[key]
-
-            # We check if the msgset is fuzzy or not for this language.
-            match = re.match(r'set_(\d+)_fuzzy_([a-z]+)$', key)
-
-            if match:
-                id = int(match.group(1))
-                code = match.group(2)
-                sets[id]['fuzzy'][code] = True
+        sets = parse_translation_form(self.request.form)
 
         # Get/create a PO file for each language.
-        # XXX: This should probably be done more lazily.
 
         pofiles = {}
 
         for language in self.languages:
-            try:
-                pofiles[language.code] = self.context.getPOFileByLang(language.code)
-            except KeyError:
-                pofiles[language.code] = self.context.newPOFile(
-                    language.code, owner=self.person)
+            pofiles[language.code] = self.context.getOrCreatePOFile(
+                language.code, None, owner=self.person)
 
         # Put the translations in the database.
 
         for set in sets.values():
-            # XXX: Handle the case where the set is not already in the PO
-            # file.
-
             msgid_text = unescape_msgid(set['msgid'])
 
             for code in set['translations'].keys():
@@ -1005,15 +988,14 @@ class TranslatePOTemplate:
 
                 # Get hold of an appropriate message set in the PO file,
                 # creating it if necessary.
-                # XXX: Message set creation should probably be lazier also.
 
                 try:
                     po_set = pofiles[code][msgid_text]
                 except KeyError:
                     po_set = pofiles[code].createMessageSetFromText(msgid_text)
-                
+
                 fuzzy = code in set['fuzzy']
-                
+
                 po_set.updateTranslation(
                     person=self.person,
                     new_translations=new_translations,
@@ -1022,15 +1004,12 @@ class TranslatePOTemplate:
 
         self.submitted = True
 
-        # XXX: Should return the number of new translations or something
-        # useful like that.
-
 
 class ViewImportQueue:
     def imports(self):
 
         queue = []
-        
+
         id = 0
         for product in getUtility(IProductSet):
             if product.project is not None:
@@ -1078,16 +1057,14 @@ class ViewImportQueue:
                     potemplate.doRawImport()
 
                 match = re.match('po_(\d+)$', key)
-                    
+
                 if match:
                     id = int(match.group(1))
 
                     pofile = POFile.get(id)
-                    
+
                     pofile.doRawImport()
 
-
-# XXX: Implement class ViewTranslationEfforts: to create new Efforts
 
 class ViewTranslationEffort:
     def thereAreTranslationEffortCategories(self):
@@ -1173,7 +1150,7 @@ class ViewTranslationEffortCategory:
 class TemplateUpload:
     def languages(self):
         return getUtility(ILanguageSet)
-        
+
     def processUpload(self):
         if not (('SUBMIT' in self.request.form) and
                 (self.request.method == 'POST')):
@@ -1191,12 +1168,13 @@ class TemplateUpload:
         filename = file.filename
 
         if filename.endswith('.pot'):
-            # XXX: Carlos Perello Marin 30/11/2004 Improve the error handlingTODO: Try parsing the file before putting it in the DB.
+            # XXX: Carlos Perello Marin 30/11/2004 Improve the error handling
+            # TODO: Try parsing the file before putting it in the DB.
 
             potfile = file.read()
 
             from canonical.rosetta.pofile import POParser
-            
+
             parser = POParser()
 
             parser.write(potfile)
@@ -1216,28 +1194,11 @@ class TemplateUpload:
                 # should get language's code
                 for language in self.languages():
                     if language.englishname == language_name:
-                        if language in self.context.languages():
-                            pofile = self.context.getPOFileByLang(language.code)
-                            pofile.rawfile = base64.encodestring(file.read())
-                            pofile.daterawimport = UTC_NOW
-                            pofile.rawimporter = IPerson(self.request.principal, None)
-                            pofile.rawimportstatus = RosettaImportStatus.PENDING.value
-                        else:
-                            base64_file = base64.encodestring(file.read())
-                            importer = IPerson(self.request.principal, None)
-
-                            pofile = POFile(
-                                potemplateID=self.context.id,
-                                language=language,
-                                fuzzyheader=True,
-                                currentcount=0,
-                                updatescount=0,
-                                rosettacount=0,
-                                pluralforms=1,
-                                rawfile=base64_file,
-                                daterawimport=UTC_NOW,
-                                rawimporter = importer,
-                                rawimportstatus = RosettaImportStatus.PENDING.value)
+                        pofile = self.context.getOrCreatePOFile(language.code)
+                        pofile.rawfile = base64.encodestring(file.read())
+                        pofile.daterawimport = UTC_NOW
+                        pofile.rawimporter = IPerson(self.request.principal, None)
+                        pofile.rawimportstatus = RosettaImportStatus.PENDING.value
                         return "Looks like a PO file."
             else:
                 return 'You should select a language with a po file!'
@@ -1247,6 +1208,4 @@ class TemplateUpload:
             return "Uploads of Zip archives are not supported yet."
         else:
             return "Dunno what this file is."
-
-        # FIXME: File bug(s) about zip and tar support.
 

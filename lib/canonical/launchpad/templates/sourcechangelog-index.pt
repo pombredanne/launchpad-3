@@ -12,60 +12,14 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-
-<tal:block tal:define="distro context/distrorelease/distribution">
- <div class="portlet">
-  <h4><span tal:content="distro/title">DISTRO</span> Links</h4>
-
-   <div class="portletBody">
-
-     <div class="portletContent even">
-     <ul>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}">
-      Home Page</a></li>
-
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/releases">
-      Releases</a></li>
-
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/src">
-      Source Packages</a></li>
-
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/bin">
-      Binary Packages</a></li>
-
-     </ul>
-     </div>
-   </div>  
- </div>
-
- <div class="portlet">
-  <h4>Local Links</h4>
-   <div class="portletBody">
-     <div class="portletContent even">
-     <ul>
-     <li><a href="../"><span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">TITLE</span>
-     </a></li>
-     <li><a href="./"><span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">TITLE</span>
-     <span tal:content="context/sourcepackagerelease/version">Version</span>
-     </a></li>
-     </ul>
-     </div>
-   </div>  
- </div>
-</tal:block>
-
-</metal:leftportlets>
-
-
 <div metal:fill-slot="main">
  <div id="content" class="documentEditable">
   <div class="documentContent" id="region-content">
 
-    <h1> <span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc" /> ChangeLog </h1>
+    <h1> <span tal:content="context/shortdesc" /> ChangeLog </h1>
     
     <pre>
-      <span tal:replace="structure context/sourcepackagerelease/linkified_changelog" />
+      <span tal:replace="structure view/linkified_changelog" />
     </pre>
 
   </div>

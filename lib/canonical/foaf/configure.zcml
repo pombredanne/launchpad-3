@@ -9,6 +9,7 @@
   <browser:suburl
       for="canonical.publication.RootObject"
       class="canonical.foaf.FOAFApplication"
+      newlayer="canonical.launchpad.layers.FOAFLayer"
       name="foaf" />
 
   <browser:defaultView
@@ -24,21 +25,34 @@
   <!-- This view registers 'people' as a suburl of RootObject/foaf/. -->
   <browser:suburl
       for="canonical.foaf.FOAFApplication"
-      class="canonical.foaf.personapp.PeopleApp"
+      utility="canonical.launchpad.interfaces.IPersonSet"
       permission="zope.Public"
       name="people" />
 
-  <content class="canonical.launchpad.database.PersonSet">
-      <allow interface="canonical.launchpad.interfaces.IPersonSet" />
-  </content>
+  <!-- pages for the foaf application -->
+  <browser:pages 
+      for="canonical.launchpad.interfaces.IFOAFApplication"
+      permission="zope.Public"
+      class="canonical.foaf.browser.FOAFApplicationView"
+      lp:url="foaf">
+      <browser:page 
+          name="+index"
+          template="../launchpad/templates/foaf-index.pt"
+          lp:url="foaf/+index" />
+      <browser:page 
+          name="+about"
+          template="../launchpad/templates/foaf-about.pt"
+          lp:url="foaf/+about" />
+      <browser:page 
+          name="+dashboard"
+          template="../launchpad/templates/foaf-dashboard.pt"
+          lp:url="foaf/+dashboard" />
+      <browser:page 
+          name="+todo"
+          template="../launchpad/templates/foaf-to-do.pt"
+          lp:url="foaf/+to-do" />
+  </browser:pages>
 
-  <utility provides="canonical.launchpad.interfaces.IPersonSet"
-           factory="canonical.launchpad.database.PersonSet"
-           permission="zope.Public" />
-
-  <include file="pages.zcml" />
-  <include file="forms.zcml" />
   <include file="resources.zcml" />
-  <include file="personapp.zcml" />
 
 </configure>

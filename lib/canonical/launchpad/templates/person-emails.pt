@@ -1,0 +1,94 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+    <title metal:fill-slot="title">Edit
+      <span tal:replace="context/displayname">Name</span>
+      Information</title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Soyuz style sheet -->
+    <style type="text/css" media="screen">@import url(soyuz.css);</style>
+</head>
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+<div tal:replace="structure view/leftMenu" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+<div id="content" class="documentEditable">
+<div class="documentContent" id="region-content">
+
+ <div>
+   <h1>Email Engine</h1>
+
+
+  <tal:dummy tal:condition="view/email_action"/>
+
+   <form name="email" action="" method="POST">
+
+   <div class="field">
+      <label>Select an Email</label>
+      <div class="formHelp">
+      Select an Email to perform the Action
+      </div>
+      <select class="listing" name="email">
+	 <option tal:repeat="email context/emails"
+	         tal:content="email/email"
+	         tal:attributes="value email/email">EMAIL</option>
+      </select>
+   </div>
+
+
+   <div class="field">
+      <label>Add New Email</label>
+      <div class="formHelp">
+        Enter a New Email or a Replacement for one
+      </div>
+      <input class="listing" type="text" name="new_email" size="20"/>
+   </div>
+
+
+   <div class="field">
+      <label>Select an Action</label>
+      <div class="formHelp">
+	Select an Action to be performed
+      </div>
+
+      <select class="listing" name="operation">
+	 <option value="add">Add</option>
+	 <option value="delete">Delete</option>
+   <option value="replace">Replace</option>
+      </select>
+   </div>
+
+   <div class="FormControl" align="right">
+      <input class="listing" type="submit" value="Apply"/>
+   </div>   
+
+   </form>
+   
+
+  <div class="field">
+     <h4><span tal:content="context/displayname">
+               PERSON</span> Emails</h4>
+
+     <ul>
+       <li tal:repeat="email context/emails"
+           tal:content="email/email"> XXXXX </li>
+     </ul>
+  </div>
+
+ </div>
+
+</div>
+</div>
+</div>
+
+</body>
+</html>

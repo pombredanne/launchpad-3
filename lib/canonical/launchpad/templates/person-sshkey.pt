@@ -1,0 +1,72 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+  <title metal:fill-slot="title">
+    <span tal:replace="context/person/displayname">Name</span>
+    SSH Keys</title>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+  <!-- Soyuz style sheet -->
+  <style type="text/css" media="screen">@import url(soyuz.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1 tal:content="context/person/displayname">PERSON</h1> 
+
+    <p>You need to register a SSH key with Launchpad to be able to push content
+    to our Arch supermirror.</p>
+
+    <div tal:define="msg view/form_action" tal:condition="msg">
+      <p class="portalMessage" tal:content="msg">Something happened.</p>
+    </div>
+  
+    
+    <div tal:repeat="sshkey context/sshkeys"> 
+    <form name="remove" action="" method="POST">
+    <input type="hidden" name="action" value="remove" />
+    <input type="hidden" name="key" tal:attributes="value sshkey/id" />
+    <fieldset> 
+    <legend>SSH Key Information </legend>
+    <dl>
+    <dt>Key type</dt>
+        <dd tal:content="sshkey/keytype/lp:SSHKeyType">DSA</dd>
+    <dt>Key text</dt>
+        <dd style="overflow: auto;" tal:content="sshkey/keytext">aaaaAAAA...</dd>
+    <dt>Comment</dt>
+        <dd tal:content="sshkey/comment">foo@bar</dd>
+    </dl>
+    <input type="submit" value="Remove" />
+    </fieldset>
+    </form>
+    </div>
+
+    <div tal:condition="view/permission">
+    <form name="add" action="" method="POST">
+    <input type="hidden" name="action" value="add" />
+    <fieldset>
+    <legend>Add SSH Key</legend>
+    <div>
+        <label>Public key line</label>
+        <div class="formHelp">
+            Insert the contents of <tt>~/.ssh/id_dsa.pub</tt> or
+            <tt>~/.ssh/id_rsa.pub</tt>.  Only SSH v2 keys are supported.
+        </div>
+        <input type="text" name="sshkey" size="65" />
+        <input type="submit" value="Import public key">
+    </fieldset>
+    </form>
+    </div>
+    
+    <h3>Back to 
+    <a href="./" tal:content="context/person/displayname">PERSON</a>
+    </h3>
+
+</div>
+</body>
+</html>

@@ -5,6 +5,7 @@ __metaclass__ = type
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
+from zope.component import getUtility
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
 
@@ -13,7 +14,8 @@ from canonical.launchpad.database import PublishedPackage
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-from canonical.launchpad.interfaces import IPublishedPackage
+from canonical.launchpad.interfaces import IPublishedPackage, \
+        ILaunchBag
 
 class PkgBuild:
 
@@ -65,8 +67,21 @@ class PublishedPackageSetView:
     def searchresults(self):
         if self.searchresultset is not None:
             return self.searchresultset
+        if not self.searchtext:
+            return []
+        launchbag = getUtility(ILaunchBag)
+        if launchbag.distribution:
+            distribution = launchbag.distribution.id
+        else:
+            distribution = None
+        if launchbag.distrorelease:
+            distrorelease = launchbag.distrorelease.id
+        else:
+            distrorelease = None
         pkgset = self.context
-        resultset = list(pkgset.query(name=self.searchtext))
+        resultset = list(pkgset.query(text=self.searchtext,
+                                      distribution=distribution,
+                                      distrorelease=distrorelease))
         binpkgs = {}
         for package in resultset:
             binpkg = binpkgs.get(package.binarypackagename,

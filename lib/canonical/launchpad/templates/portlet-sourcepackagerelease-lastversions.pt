@@ -1,0 +1,20 @@
+<div class="portlet">
+    <h4>Latest Versions:</h4>
+
+    <div class="portletBody">
+        <div class="portletContent even">
+	
+	 <ul tal:define="lastversions view/lastversions">
+	   <li tal:condition="not:lastversions">
+	     <i>No Latest Versions.</i>	   
+	   </li>
+
+	   <li tal:repeat="spackage lastversions">
+	     <a tal:content="spackage/version"
+	        tal:attributes="href spackage/version" />
+	   </li>
+	 </ul>
+
+        </div>
+    </div>
+</div>

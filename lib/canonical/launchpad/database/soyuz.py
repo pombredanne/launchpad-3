@@ -13,24 +13,21 @@ from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
 from sqlobject.sqlbuilder import func
 
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.launchpad.database import Product, Project
-from canonical.launchpad.database import SourcePackageBugAssignment
 from canonical.lp import dbschema
 
 # interfaces and database 
 from canonical.launchpad.interfaces import IDistributionRole
 from canonical.launchpad.interfaces import IDistroReleaseRole
 from canonical.launchpad.interfaces import IDistroArchRelease
-from canonical.launchpad.interfaces import IDistribution
-from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.interfaces import IDistroTools
 
-from canonical.launchpad.database import Archive, Branch, ArchNamespace
-from canonical.launchpad.database import Distribution
+from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.sourcepackage import SourcePackageInDistro
 from canonical.launchpad.database.binarypackage import BinaryPackage
-from canonical.launchpad.database.person import Person
+from canonical.launchpad.database.product import Product
+from canonical.launchpad.database.project import Project
+from canonical.launchpad.database.bugassignment import SourcePackageBugAssignment
 
 class DistroArchRelease(SQLBase):
 

@@ -6,7 +6,7 @@
 <head>
 
     <title metal:fill-slot="title">
-    Release <span tal:replace="context/release/title">Title</span>: Bugs
+    Release <span tal:replace="context/title">Title</span>: Bugs
     </title>
 
     <!-- Plone style sheet -->
@@ -19,49 +19,28 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-
-<tal:block tal:define="distro context/release/distribution">
- <div class="portlet">
-  <h4><span tal:content="distro/title">DISTRO</span> Links</h4>
-
-   <div class="portletBody">
-
-     <div class="portletContent even">
-
-     <p><a tal:attributes="href
-string:/soyuz/distros/${distro/name}">
-     Home Page</a>
-
-     <p><a tal:attributes="href
-string:/soyuz/distros/${distro/name}/releases">
-      Releases</a>
-     <p><a tal:attributes="href
-string:/soyuz/distros/${distro/name}/src">
-      Source Packages</a>
-
-     <p><a tal:attributes="href
-string:/soyuz/distros/${distro/name}/bin">
-     Binary Packages</a>
-
-     </div>
-   </div>
- </div>
-
-</tal:block>
+  <div tal:replace="structure view/detailsPortlet" /> <br />
+  <div tal:replace="structure view/linksPortlet" />
 </metal:leftportlets>
 
-<div metal:fill-slot="main" class="documentContent documentEditable">
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure view/actionsPortlet" />
+</metal:rightportlets>
 
-   <h1>Packages with bugs: release <span tal:replace="context/release/title">Title</span> 
+<div metal:fill-slot="main" tal:define="distro context/distribution">
+  <div id="content" class="documentEditable">
+    <div class="documentContent" id="region-content"/>    
+ 
+   <h1>Packages with bugs: release <span tal:replace="context/title">Title</span>
 	</h1>
 
   <tal:block tal:define="bn view/bugSourcePackagesBatchNavigator;
                          prev_url bn/prevBatchURL;
                          next_url bn/nextBatchURL;">
 
-    <ul tal:repeat="package python:list(bn.currentBatch())">      
+    <ul tal:repeat="package python:list(bn.currentBatch())">
       <li><a tal:content="package/shortdesc"
-             tal:attributes="href string:../../src/${context/release/name}/${package/name}">PACKAGE</a>
+             tal:attributes="href string:sources/${package/name}">PACKAGE</a>
       (<a tal:attributes="href
       string:/malone/packages/${package/name}">View Bug List</a>)
     </ul>
@@ -92,7 +71,7 @@ string:/soyuz/distros/${distro/name}/bin">
   </table>
   </tal:block>
 
-
+ </div>
 </div>
 
 </body>

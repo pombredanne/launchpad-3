@@ -18,7 +18,6 @@ from canonical.launchpad.interfaces import IProject, IProjectSet, \
                                            IProjectBugTracker
 
 # Import needed database objects
-from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.product import Product
 
 from sets import Set

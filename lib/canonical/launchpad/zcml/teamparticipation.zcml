@@ -1,0 +1,17 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+  <content class="canonical.launchpad.database.TeamParticipation">
+    <allow interface="canonical.launchpad.interfaces.ITeamParticipation"/>
+  </content>
+
+  <content class="canonical.launchpad.database.TeamParticipationSet">
+    <allow interface="canonical.launchpad.interfaces.ITeamParticipationSet"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+<securedutility
+    class="canonical.launchpad.database.TeamParticipationSet"
+    provides="canonical.launchpad.interfaces.ITeamParticipationSet">
+    <allow
+        interface="canonical.launchpad.interfaces.ITeamParticipationSet" />
+</securedutility>
+</configure>

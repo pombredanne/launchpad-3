@@ -1,0 +1,21 @@
+<html>
+  <head>
+    <title>
+      Launchpad root
+    </title>
+    <link rel="shortcut icon" href="/++resource++defaultFavicon.gif" />
+  </head>
+  <body>
+    <h1>Launchpad!</h1>
+    <ul>
+      <li><a href="rosetta">Rosetta</a></li>
+      <li><a href="soyuz">Soyuz</a></li>
+      <li><a href="malone">Malone</a></li>
+      <li><a href="doap">Projects</a></li>
+      <li><a href="foaf">People</a></li>
+      <li><a href="bounties">Bounties</a></li>
+      <li><a href="bazaar">Bazaar</a>: manage Bazaar branches</li>
+      <li><a href="ubuntulinux/forgottenpassword">Forgotten Password?</a></li>
+    </ul>
+  </body>
+</html>

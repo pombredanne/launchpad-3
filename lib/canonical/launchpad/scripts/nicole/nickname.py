@@ -49,7 +49,7 @@ def generate_nick(email_addr, registered=_nick_registered,
     >>> generate_nick("taken@example")
     'taken-example-1'
     >>> generate_nick("i@tv")
-    'i'
+    'i-tv'
     >>> generate_nick("foo+bar@example.com")
     'foo+bar'
     """

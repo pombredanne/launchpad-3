@@ -16,45 +16,6 @@
 
 <metal:leftportlets fill-slot="portlets_one">
 
-<tal:block tal:define="distro context/release/distribution">
-
- <div class="portlet">
-  <h4><span tal:content="distro/title">DISTRO</span> Links</h4>
-
-   <div class="portletBody">
-
-     <div class="portletContent even">
-
-     <ul>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}">
-     Home Page</a></li>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/releases">
-      Releases</a></li>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/src">
-      Source Packages</a></li>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/bin">
-     Binary Packages</a></li>
-     </ul>
-
-     </div>
-   </div>  
- </div>
-
- <div class="portlet">
-  <h4>Local Links</h4>
-   <div class="portletBody">
-     <div class="portletContent even">
-     <ul>
-     <li> <a tal:attributes="href string:/soyuz/distros/${distro/name}/releases/${context/release/name}" 
-            tal:content="context/release/title">RELEASE</a></li>
-     </ul>
-     </div>
-   </div>  
- </div>
-
-
-</tal:block>
-
 </metal:leftportlets>
 
 
@@ -64,13 +25,10 @@
   <div class="documentContent" id="region-content">
 
 
-<h1><span tal:content="context/release/distribution/title" />
-    <span tal:content="context/release/title" /> Binary Packages</h1>
+<h1><span tal:content="context/distrorelease/title" /> Binary Packages</h1>
 <!-- <div tal:on-error="python: error.type, error.value.args"> -->
 
-<h3><span tal:content="context/release/binarycount" /> Packages</h3>
-
-<form name="search" method="GET" action="+search">
+<form name="search" method="GET">
 Find Binary Package by Name: 
 <br>
 <input type="text" name="name" tal:attributes="value request/name|nothing" />

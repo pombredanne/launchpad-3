@@ -39,3 +39,6 @@ class UbuntuLinuxLayer(IDefaultBrowserLayer):
 
 class DebugLayer(IDefaultBrowserLayer):
     """The `DebugLayer` layer."""
+
+class FOAFLayer(IDefaultBrowserLayer):
+    """The `FOAF` layer."""

@@ -74,66 +74,6 @@
                        value="" tal:attributes="value context/title" />
         </div>
 
-        <div class="field">
-
-            <label>Description</label>
-
-            <span class="fieldRequired" title="Required">(Required)</span>
-
-                <div class="formHelp">
-                  A brief description of the po template.
-                </div>
-
-                <textarea cols="40" rows="7" name="description"
-                          tal:content="context/description" />
-        </div>
-
-        <div class="field">
-
-            <label>Copyright</label>
-
-            <span class="fieldRequired" title="Required">(Required)</span>
-
-                <div class="formHelp">
-                  The copyright of this po template.
-                </div>
-
-                <input type="text" name="copyright" size="30"
-                       value="" tal:attributes="value context/copyright" />
-                
-        </div>
-
-
-        <div class="field">
-
-            <label>path</label>
-
-            <span class="fieldRequired" title="Required">(Required)</span>
-
-                <div class="formHelp">
-                  The directory inside the source package where this po
-                  template is stored. For example, <i>po/</i>,
-                  <i>po-properties</i>.
-                </div>
-
-                <input type="text" name="path" size="30"
-                       value="" tal:attributes="value context/path" />
-        </div>
-
-        <div class="field">
-
-            <label>priority</label>
-
-            <span class="fieldRequired" title="Required">(Required)</span>
-
-                <div class="formHelp">
-                  The priority this template has over other po templates
-                </div>
-
-                <input type="text" name="priority" size="10"
-                       value="" tal:attributes="value context/priority" />
-        </div>
-
         <div class="formControls">
 
             <input class="context" type="submit"

@@ -1,7 +1,7 @@
 
 
   >>> print http(r"""
-  ... GET /foaf/people?name=foo+bar HTTP/1.1
+  ... GET /foaf/people?searchfor=all&name=foo+bar HTTP/1.1
   ... Referer: http://localhost:9000/foaf/people
   ... """)
   HTTP/1.1 200 Ok

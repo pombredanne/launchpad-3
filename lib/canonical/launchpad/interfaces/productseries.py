@@ -30,14 +30,11 @@ class IProductSeriesSet(Interface):
     initialising it with a product, in which case it iterates over only the
     Product Release Series' for that Product."""
 
-    def __init__(self, product=None):
-        """Initialise the ProductSeriesSet with an optional Product."""
-
-    def __iter__(self):
+    def __iter__():
         """Return an interator over the ProductSeries', constrained by
         self.product if the ProductSeries was initialised that way."""
 
-    def __getitem__(self, name):
+    def __getitem__(name):
         """Return a specific ProductSeries, by name, constrained by the
         self.product. For __getitem__, a self.product is absolutely
         required, as ProductSeries names are only unique within the Product

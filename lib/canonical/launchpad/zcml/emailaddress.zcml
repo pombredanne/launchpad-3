@@ -1,0 +1,12 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+
+  <content class="canonical.launchpad.database.EmailAddress">
+    <allow interface="canonical.launchpad.interfaces.IEmailAddress"/>
+    <require permission="zope.Public"
+             set_attributes="email status" />	
+    <!-- XXX: do we really need this?
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    -->
+  </content>
+</configure>
+

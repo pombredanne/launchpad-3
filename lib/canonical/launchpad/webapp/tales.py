@@ -17,7 +17,7 @@ import canonical.lp.dbschema
 
 class TraversalError(NotFoundError):
     """XXX Remove this when we upgrade to a more recent Zope x3"""
-
+    # Steve Alexander, Tue Dec 14 13:07:38 UTC 2004
 
 class HTMLFormAPI:
     """HTML form helper API, available as request:htmlform.

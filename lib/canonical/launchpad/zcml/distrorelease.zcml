@@ -19,13 +19,13 @@
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IDistroRelease"
-        getter="getSourceByName" />
+        getter="traverse" />
 
 	<browser:page
-        for="canonical.launchpad.interfaces.IDistroRelease"
+            for="canonical.launchpad.interfaces.IDistroRelease"
 	    permission="zope.Public"
 	    name="+index"
-        template="../templates/release-index.pt"
+            template="../templates/release-index.pt"
 	    class="canonical.launchpad.browser.DistroReleaseView"
 	    lp:url="Soyuz/distros/$Distribution.name/$Release.name/+index"
 	    />
@@ -46,11 +46,6 @@
 	    permission="zope.Public">
 
 	    <browser:page
-            name="+deliver"
-            template="../templates/release-deliver.pt"
-	        lp:url="Soyuz/distros/$Distribution.name/$Release.name/+deliver"
-	        />
-	    <browser:page
 	        name="+bugs"
             template="../templates/release-bugs.pt"
 	        lp:url="Soyuz/distros/$Distribution.name/$Release.name/+bugs"
@@ -67,7 +62,7 @@
 	    permission="zope.Public"
 	    class="canonical.launchpad.browser.ReleaseSearchView"
 	    name="+search"
-        template="../templates/release-search.pt"
+	    template="../templates/release-search.pt"
 	    lp:url="Soyuz/distros/$Distribution.name/$Release.name/+search"
 	    />
 

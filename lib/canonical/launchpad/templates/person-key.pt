@@ -5,7 +5,7 @@
 
 <head>
   <title metal:fill-slot="title">
-    <span tal:replace="context/person/displayname">Name</span>
+    <span tal:replace="context/displayname">Name</span>
     GPG Key</title>
   <!-- Plone style sheet -->
   <style type="text/css" media="screen">@import url(plone.css);</style>
@@ -17,10 +17,11 @@
 
 <div metal:fill-slot="main">
 
-    <h1 tal:content="context/person/displayname">PERSON</h1> 
-    
-    <fieldset>
-    <legend>GPG Key Infromation </legend>
+    <h1 tal:content="context/displayname">PERSON</h1> 
+
+    <div tal:condition="context/gpg"> 
+    <fieldset> 
+    <legend>GPG Key Information </legend>
     <div>
     <table>
     <tr><td>Key ID : </td>
@@ -37,9 +38,10 @@
     <pre>
       <span tal:content="context/gpg/pubkey" />
     </pre>
+    </div>
 
     <h3>Back to 
-    <a href="./" tal:content="context/person/displayname">PERSON</a>
+    <a href="./" tal:content="context/displayname">PERSON</a>
     </h3>
 
 </div>

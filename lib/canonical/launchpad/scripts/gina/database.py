@@ -6,6 +6,14 @@ PgSQL.noPostgresCursor = 1
 
 from nickname import generate_nick
 
+priomap = {
+    "low": 1,
+    "medium": 2,
+    "high": 3,
+    "emergency": 4
+    # FUCK_PEP8 -- Fuck it right in the ear
+    }
+
 class SQLThing:
     def __init__(self, dbname):
         self.dbname = dbname
@@ -137,16 +145,22 @@ prioritymap = {
 }
 
 class Launchpad(SQLThing):
-    def __init__(self, bar, dr, proc):
+    def __init__(self, bar, distro, dr, proc):
         SQLThing.__init__(self,bar)
         self.compcache = {}
         self.sectcache = {}
         try:
             ddr = self._query_single("""
-            SELECT id,distribution FROM distrorelease WHERE name=%s;
-            """, (dr,))
+            SELECT id FROM distribution WHERE name=%s
+            """, (distro,))
+            self.distro = ddr[0]
+        except:
+            raise ValueError, "Error finding distribution for %s" % distro
+        try:
+            ddr = self._query_single("""
+            SELECT id FROM distrorelease WHERE name=%s AND distribution=%s;
+            """, (dr,self.distro))
             self.distrorelease = ddr[0]
-            self.distro = ddr[1]
         except:
             raise ValueError, "Error finding distrorelease for %s" % dr
         try:
@@ -165,11 +179,6 @@ class Launchpad(SQLThing):
         except:
             raise ValueError, "Unable to find a processor from the processor family chosen from %s/%s" % (dr, proc)
         print "INFO: Chosen D(%d) DR(%d), PROC(%d), DAR(%d) from SUITE(%s), ARCH(%s)" % (self.distro, self.distrorelease, self.processor, self.distroarchrelease, dr, proc)
-        # Attempt to populate self._debiandistro
-        self._debiandistro = self._query_single("""
-        SELECT id FROM distribution WHERE name = 'debian'
-        """)[0]
-        print "INFO: Found Debian GNU/Linux at %d" % (self._debiandistro)
         
     #
     # SourcePackageName
@@ -210,18 +219,6 @@ class Launchpad(SQLThing):
             "srcpackageformat":     1 
         }
         self._insert("sourcepackage", data)
-        data["distro"] = self._debiandistro
-        self._insert("sourcepackage", data)
-
-        ubuntupackage = self.getSourcePackage(src.package)
-        debianpackage = self.getSourcePackage(src.package, self._debiandistro)
-        
-        data = {
-            "subject": ubuntupackage,
-            "label": 4, ## DERIVESFROM
-            "object": debianpackage
-            }
-        self._insert("sourcepackagerelationship", data)
 
     def getSourcePackage(self, name_name, distro = None):
         # Suckage because Python won't analyse default values in the context
@@ -271,9 +268,11 @@ class Launchpad(SQLThing):
             key = None
 
         dsc = self.ensure_string_format(src.dsc)
-        changelog = self.ensure_string_format(src.changelog)
+        changelog = self.ensure_string_format(src.changelog[0]["changes"])
         component = self.getComponentByName(src.component)[0]
         section = self.getSectionByName(src.section)[0]
+        if src.urgency not in priomap:
+            src.urgency = "low"
         data = {
             "sourcepackage":           srcpkgid,
             "version":                 src.version,
@@ -283,7 +282,7 @@ class Launchpad(SQLThing):
             "architecturehintlist":    src.architecture,
             "component":               component,
             "creator":                 maintid,
-            "urgency":                 1,
+            "urgency":                 priomap[src.urgency],
             "changelog":               changelog,
             "dsc":                     dsc,
             "dscsigningkey":           key,
@@ -306,6 +305,27 @@ class Launchpad(SQLThing):
             "section":                 section, ## default Section
         }
         self._insert("sourcepackagepublishing", data)
+
+    def createFakeSourcePackageRelease(self, release, src):
+        self.ensureSourcePackage(src)
+        srcpkgid = self.getSourcePackage(src.package)[0]
+        maintid = self.getPeople(*release["parsed_maintainer"])[0]
+        # XXX these are hardcoded to the current package's value, which is not
+        # really the truth
+        component = self.getComponentByName(src.component)[0]
+        section = self.getSectionByName(src.section)[0]
+        
+        data = {
+            "sourcepackage":           srcpkgid,
+            "version":                 release["version"],
+            "dateuploaded":            release["parsed_date"],
+            "component":               component,
+            "creator":                 maintid,
+            "urgency":                 priomap[release["urgency"]],
+            "changelog":               release["changes"],
+            "section":                 section,
+        }                                                          
+        self._insert("sourcepackagerelease", data)
 
     #
     # Build

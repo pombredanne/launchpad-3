@@ -40,10 +40,19 @@ class IBinaryPackage(Interface):
     title = TextLine(required=True, readonly=True)
     name = Attribute("Binary Package Name")
     pkgpriority = Attribute("Package Priority")
+    status = Attribute("The BinaryPackageStatus Title")
 
-    def currrent():
-        """ xxx """
+    def current(distroRelease):
+        """Get the current BinaryPackage in a distrorelease"""
 
+    def lastversions():
+        """Return the SUPERCEDED BinaryPackages in a DistroRelease
+           that comes from the same SourcePackage"""
+
+    def __getitem__(version):
+        """Return the packagename that matches the given version"""
+    
+    
 class IBinaryPackageName(Interface):
     id = Int(title=_('ID'), required=True)
     name = TextLine(title=_('Name'), required=True)
@@ -80,8 +89,24 @@ class IPackagePublishing(Interface):
     distroarchrelease = Attribute("Distro Arch Relese")
     packages = Attribute("Set of Packages inside a DistroRelease")
 
+
+
 class IBinaryPackageSet(Interface):
-    """A set of binary packages"""
+    """A set of binary packages"""    
+    distrorelease = Attribute("DistroRelease")
+    arch = Attribute("Arch")
+
+    def findPackagesByName(pattern):
+        """Search BinaryPackages matching pattern"""
+
+    def __getitem__(name):
+        """Getter"""    
+
+    def __iter__():
+        """Iterator"""    
+
+class IBinaryPackageUtility(Interface):
+    """A binary packages utility"""
 
     def getByNameInDistroRelease(distroreleaseID, name):
         """Get an BinaryPackage in a DistroRelease by its name"""
@@ -96,7 +121,7 @@ class IBinaryPackageSet(Interface):
     def getByNameVersion(distroreleaseID, name, version):
         """Get a set of BinaryPackages in a DistroRelease by its name and version"""
 
-    def getByArchtag(self, distroreleaseID, name, version, archtag):
+    def getByArchtag(distroreleaseID, name, version, archtag):
         """Get a BinaryPackage in a DistroRelease by its name, version and archtag"""
 
 

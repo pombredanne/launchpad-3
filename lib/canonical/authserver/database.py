@@ -16,6 +16,9 @@ from canonical.foaf import nickname
 
 class DatabaseUserDetailsStorage(object):
     """Launchpad-database backed implementation of IUserDetailsStorage"""
+    # Note that loginID always refers to any name you can login with (an email
+    # address, or a nickname, or a numeric ID), whereas personID always refers
+    # to the numeric ID, which is the value found in Person.id in the database.
     implements(IUserDetailsStorage)
     
     def __init__(self, connectionPool):
@@ -222,6 +225,20 @@ class DatabaseUserDetailsStorage(object):
             % (personID,)
         )
         return [row[0] for row in transaction.fetchall()]
+
+    def getSSHKeys(self, loginID):
+        ri = self.connectionPool.runInteraction
+        return ri(self._getSSHKeysInteraction, loginID)
+
+    def _getSSHKeysInteraction(self, transaction, loginID):
+        row = self._getPerson(transaction, loginID)
+        personID = row[0]
+        transaction.execute(
+            'SELECT keytype, keytext FROM SSHKey '
+            'WHERE person = %d'
+            % (personID,)
+        )
+        return list(transaction.fetchall())
 
 
 def saltFromDigest(digest):

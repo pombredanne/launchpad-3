@@ -20,7 +20,9 @@ from canonical.launchpad.interfaces import ISourcePackageRelease, \
                                            ISourcePackageReleasePublishing, \
                                            ISourcePackage, \
                                            ISourcePackageName, \
-                                           ISourcePackageSet
+                                           ISourcePackageSet, \
+                                           ISourcePackageInDistroSet, \
+                                           ISourcePackageUtility
 
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.binarypackage import BinaryPackage
@@ -37,7 +39,10 @@ class SourcePackage(SQLBase):
     shortdesc   = StringCol(dbName='shortdesc', notNull=True)
     description = StringCol(dbName='description', notNull=True)
 
-    distro            = ForeignKey(foreignKey='Distribution', dbName='distro')
+    srcpackageformat = IntCol(dbName='srcpackageformat', notNull=True)
+
+    distro            = ForeignKey(foreignKey='Distribution', 
+                                   dbName='distro')
     manifest          = ForeignKey(foreignKey='Manifest', dbName='manifest')
     maintainer        = ForeignKey(foreignKey='Person', dbName='maintainer', 
                                    notNull=True)
@@ -184,13 +189,48 @@ class SourcePackageSet(object):
             pkgset.add(pkg)
         return pkgset
 
-    def getSourcePackages(self, distroreleaseID):
-        """Returns a set of SourcePackage in a DistroRelease"""
-        query = ('distrorelease = %d ' 
-                 % (distroreleaseID)
-                 )
+    def getByPersonID(self, personID):
+        # XXXkiko: we should allow supplying a distrorelease here and
+        # get packages by distro
+        return SourcePackageInDistro.select("maintainer = %d" % personID,
+                                            orderBy='name')
 
-        return SourcePackageInDistro.select(query, orderBy='name')
+class SourcePackageInDistroSet(object):
+    """A Set of SourcePackages in a given DistroRelease"""
+    implements(ISourcePackageInDistroSet)
+    def __init__(self, distrorelease):
+        """Take the distrorelease when it makes part of the context"""
+        self.distrorelease = distrorelease
+
+    def findPackagesByName(self, pattern):
+        srcutil = getUtility(ISourcePackageUtility)
+        return srcutil.findByNameInDistroRelease(self.distrorelease.id, pattern)
+
+    def __iter__(self):
+        plublishing_status = dbschema.PackagePublishingStatus.PUBLISHED.value
+        
+        query = ('distrorelease = %d'
+                 % (self.distrorelease.id))
+        
+        return iter(SourcePackageInDistro.select(query,
+                                                 orderBy='VSourcePackageInDistro.name',
+                                                 distinct=True))
+
+    def __getitem__(self, name):
+        plublishing_status = dbschema.PackagePublishingStatus.PUBLISHED.value
+
+        query = ('distrorelease = %d AND publishingstatus=%d AND name=%s'
+                 % (self.distrorelease.id, plublishing_status, quote(name)))
+
+        try:
+            return VSourcePackageReleasePublishing.select(query)[0]
+        except IndexError:
+            raise KeyError, name
+            
+            
+class SourcePackageUtility(object):
+    """A utility for sourcepackages"""
+    implements(ISourcePackageUtility)
 
     def findByNameInDistroRelease(self, distroreleaseID, pattern):
         """Returns a set o sourcepackage that matchs pattern
@@ -216,12 +256,6 @@ class SourcePackageSet(object):
         table = VSourcePackageReleasePublishing 
         return table.select("sourcepackage = %d AND version = %s"
                             % (sourcepackageID, quote(version)))
-
-    def getByPersonID(self, personID):
-        # XXXkiko: we should allow supplying a distrorelease here and
-        # get packages by distro
-        return SourcePackageInDistro.select("maintainer = %d" % personID,
-                                            orderBy='name')
 
 class SourcePackageName(SQLBase):
     implements(ISourcePackageName)
@@ -272,24 +306,6 @@ class SourcePackageRelease(SQLBase):
 
         return BinaryPackage.select(query, clauseTables=clauseTables)
 
-    def linkified_changelog(self):
-        # XXX: salgado: No bugtracker URL should be hardcoded.
-        sourcepkgname = self.sourcepackage.sourcepackagename.name
-        deb_bugs = 'http://bugs.debian.org/cgi-bin/bugreport.cgi?bug='
-        warty_bugs = 'https://bugzilla.ubuntu.com/show_bug.cgi?id='
-        changelog = re.sub(r'%s \(([^)]+)\)' % sourcepkgname,
-                           r'%s (<a href="../\1">\1</a>)' % sourcepkgname,
-                           self.changelog)
-        changelog = re.sub(r'([Ww]arty#)([0-9]+)', 
-                           r'<a href="%s\2">\1\2</a>' % warty_bugs,
-                           changelog)
-        changelog = re.sub(r'[^(W|w)arty]#([0-9]+)', 
-                           r'<a href="%s\1">#\1</a>' % deb_bugs,
-                           changelog)
-        return changelog
-
-    linkified_changelog = property(linkified_changelog)
-
     binaries = property(binaries)
 
     pkgurgency = property(_urgency)
@@ -332,14 +348,15 @@ class VSourcePackageReleasePublishing(SourcePackageRelease):
     #XXX: salgado: wtf is this?
     #MultipleJoin('Build', joinColumn='sourcepackagerelease'),
 
-
-# XXX Mark Shuttleworth: this is somewhat misleading as there
-# will likely be several versions of a source package with the
-# same name, please consider getSourcePackages() 21/10/04
-def getSourcePackage(name):
-    return SourcePackage.selectBy(name=name)
-
-
+    def __getitem__(self, version):
+        """Get a  SourcePackageRelease"""
+        table = VSourcePackageReleasePublishing 
+        try:            
+            return table.select("sourcepackage = %d AND version = %s"
+                                % (self.sourcepackage.id, quote(version)))[0]
+        except IndexError:
+            raise KeyError, 'Version Not Found'
+        
 def createSourcePackage(name, maintainer=0):
     # FIXME: maintainer=0 is a hack.  It should be required (or the DB shouldn't
     #        have NOT NULL on that column).

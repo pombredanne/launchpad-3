@@ -9,8 +9,6 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-
-
 class ISourceSource(Interface):
     """A SourceSource job. This is a holdall for data about the upstream
     revision control system of an open source product, and whether or not
@@ -63,29 +61,32 @@ class ISourceSource(Interface):
                             dbschema.ImportTestStatus.""")
     datestarted = Attribute("The timestamp of the last import run start.")
     datefinished = Attribute("The timestamp of the last import run completion.")
-    
-    def certifyForSync():
-        """enable this to sync"""
 
     def syncCertified():
         """is the sourcesource sync enabled?"""
-
-    def enableAutoSync():
-        """enable this sourcesource for automatic syncronisation"""
-    
     def autoSyncEnabled():
         """is the sourcesource enabled for automatic syncronisation?"""
     
     def canChangeProduct():
         """is this sync allowed to have its product changed?"""
     
-    def changeProduct(product):
-        """change the product this sync belongs to to be 'product'"""
-
     def namesReviewed():
         """Return True if the product and project details have been reviewed
         and are still active."""
     
+class ISourceSourceAdmin(Interface):
+    """Administration of SourceSource jobs"""
+
+    def changeProduct(product):
+        """change the product this sync belongs to to be 'product'"""
+    
+    def certifyForSync():
+        """enable this to sync"""
+
+    def enableAutoSync():
+        """enable this sourcesource for automatic syncronisation"""
+    
+
 
 class ISourceSourceSet(Interface):
     """An interface for the set of all SourceSource objects."""
@@ -103,10 +104,14 @@ class ISourceSourceSet(Interface):
         which are connected to projects and products that match this
         text.""")
 
+    assigned = Attribute("""Setting this will limit the set to those which are
+        connected to any product but the one named 'unassigned'.""")
+
     def __getitem__(sourcesourcename):
         """Return the specified sourcesource object."""
 
-    def filter(sync=None, process=None, tested=None, projecttext=None):
+    def filter(sync=None, process=None, tested=None, projecttext=None,
+               assigned=None):
         """Return a subset of the sourcesources, filtered by the criteria
         given in the arguments."""
 

@@ -9,9 +9,17 @@ LOG=$SRV/logs
 DATE=`date "+%Y%m%d%H%M%S"`
 
 LPL=$SRV/launchpad-dogfood/lib
+#LPL=/home/dsilvers/newpad/lib
 
 GINA=$LPL/canonical/launchpad/scripts/gina
 
 ($GINA/scripts/reload-katie 2>&1) > $LOG/katie-reload.$DATE
 
-(PYTHONPATH=$LPL python -u $GINA/grabber.py hoary i386,amd64,powerpc main restricted universe 2>&1) | tee $LOG/gina.$DATE | $GINA/scripts/gina-loggrep > $LOG/gina.$DATE.summary
+(PYTHONPATH=$LPL python -u $GINA/grabber.py \
+                           --distro=ubuntu \
+                           --distrorelease=hoary \
+                           --arch=i386,amd64,powerpc \
+                           --components=main,restricted,universe \
+                           --run \
+                 2>&1) | tee $LOG/gina.$DATE | \
+                 $GINA/scripts/gina-loggrep > $LOG/gina.$DATE.summary

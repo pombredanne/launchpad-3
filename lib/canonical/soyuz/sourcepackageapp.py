@@ -35,14 +35,15 @@ class DistroReleaseSourcesApp(object):
 
     def __init__(self, release):
         self.release = release
-        self.srcset = getUtility(ISourcePackageSet)
         
     def findPackagesByName(self, pattern):
-        return self.srcset.findByName(self.release.id, pattern)
+        srcset = getUtility(ISourcePackageSet)
+        return srcset.findByName(self.release.id, pattern)
 
     def __getitem__(self, name):
         try:
-            package = self.srcset.getByName(self.release.id, name)
+            srcset = getUtility(ISourcePackageSet)
+            package = srcset.getByName(self.release.id, name)
         except IndexError:
             # Convert IndexErrors into KeyErrors so that Zope will give a
             # NotFound page.
@@ -51,7 +52,8 @@ class DistroReleaseSourcesApp(object):
             return DistroReleaseSourceApp(self.release, package)
 
     def __iter__(self):
-        ret = self.srcset.getSourcePackages(self.release.id)
+        srcset = getUtility(ISourcePackageSet)
+        ret = srcset.getSourcePackages(self.release.id)
         return iter(ret)
 
 class DistroReleaseSourceApp(object):

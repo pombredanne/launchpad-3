@@ -1,6 +1,6 @@
 <fieldset tal:condition="context/teams"> 
  <div>
-   <h3>My Teams(TeamPart)</h3>
+   <h3>My Teams</h3>
    <ul>
    <li tal:repeat="team context/teams">
        <a tal:attributes="href string:../${team/team/name}"

@@ -4,7 +4,7 @@
       i18n:domain="launchpad">
 
 <head>
-    <title metal:fill-slot="title">Source Package: <span tal:replace="context/sourcepackage/shortdesc" /></title>
+    <title metal:fill-slot="title">Source Packages </title>
   <!-- Plone style sheet -->
   <style type="text/css" media="screen">@import url(plone.css);</style>
   <!-- Soyuz style sheet -->
@@ -13,175 +13,66 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-
-<tal:block tal:define="distro context/release/distribution">
- <div class="portlet">
-  <h4><span tal:content="distro/title">DISTRO</span> Links</h4>
-
-   <div class="portletBody">
-
-     <div class="portletContent even">
-     <ul>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}">
-      Homepage</a></li>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/releases">
-      Releases</a></li>
-
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/src">
-      Source Packages</a></li>
-
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/bin">
-      Binary Packages</a></li>
-
-     </ul>
-     </div>
-   </div>  
- </div>
-
- <div class="portlet">
-  <h4>Local Links</h4>
-   <div class="portletBody">
-     <div class="portletContent even">
-     <ul>
-     <li><a href="">Not Yet</a></li>
-     </ul>
-     </div>
-   </div>  
- </div>
-</tal:block>
-
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure view/bugPortlet" />
-  <div tal:replace="structure view/translationPortlet" />
-  <div tal:replace="structure view/watchPortlet" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
  <div id="content" class="documentEditable">
   <div class="documentContent" id="region-content">
-
-    <h1><span tal:content="context/sourcepackage/shortdesc"/></h1>
-    
-      <h4>Description:</h4> 
-
-      <tal:block tal:replace="context/sourcepackage/description" />
-
-      <ul>
-        <li><b>Package name: </b> 
-          <tal:block tal:replace="context/sourcepackage/name" />
-
-        <li><b>Maintainer:   </b><a
-          tal:content="context/sourcepackage/maintainer/displayname" 
-          tal:attributes="href 
-          string:/foaf/people/${context/sourcepackage/maintainer/name}"
-          />
-
-        <li><b>Originating Distribution:   </b> <a tal:condition="context/sourcepackage/distro"
-      tal:content="context/sourcepackage/distro/title" 
-      tal:attributes="href string:../../../../${context/sourcepackage/distro/name}"/>
-          <i tal:condition="not:context/sourcepackage/distro">
-            Not available.
-          </i>
-
-      <li><b>Project:   </b> 
-          <tal:dummy tal:define="product context/sourcepackage/product">
-
-        <tal:dummy tal:condition="python: product and path('product/project')">
-           <a tal:attributes="href string:/doap/projects/${product/project/name}" 
-                tal:content="product/project/title" />
-    </tal:dummy>
-
-    <tal:dummy tal:condition="not:product">
-         No Project for this Package Available
-        </tal:dummy>
-        </tal:dummy>
-
-      <li><b>Product:</b> 
-            <tal:dummy tal:define="product context/sourcepackage/product">
-
-        <tal:dummy tal:condition="product">
-         <a tal:attributes="href string:/doap/projects/${product/project/name}/${product/name}" 
-            tal:content="product/title" />
-        </tal:dummy>
-
-        <tal:dummy tal:condition="not:product">
-         No Product for this Package Available
-        </tal:dummy>
-
-        </tal:dummy>
-
-	   <fieldset>
-	      <legend>
-	         Available Versions
-	      </legend>
-	      
-	      <b>Proposed:</b>
-	      <i class="dummy">Not in dbschema anymore. Why?</i>
-
-	      <b>Current:</b><br>
-	      <tal:dummy tal:condition="context/currentversions">
-	      <tal:block tal:repeat="current context/currentversions">
-	         <a tal:content="current/currentversion" 
-		 tal:attributes="href current/currentversion" />
-		 <tal:block tal:repeat="currentbuild current/currentbuilds">
-		       [<a tal:content="currentbuild"
-	                   tal:attributes="href string:${current/currentversion}/${currentbuild}" />]
-		  </tal:block>
-		  <br>
-	     </tal:block>
-	     </tal:dummy>
-	     <tal:dummy tal:condition="not:context/currentversions">
-	        No Current Releases Available
-	     </tal:dummy>
-	  </fieldset>
-
-	  <fieldset>
-	    <legend>Source Files (Librarian/Lucille)</legend>
-	      <div class="dummy">
-
-	      <ul tal:define="name context/sourcepackage/name"
-		  tal:condition="context/currentversions"
-		  tal:repeat="current context/currentversions"> 
-
-	      <li><a tal:content="string:${name}_${current/currentversion}.dsc"
-	             href="">DSC</a></li>
-	      <li><a tal:content="string:${name}_${current/currentversion}_orig.tar.gz"
-	             href="">TGZ</a></li>
-	      <li><a tal:content="string:${name}_${current/currentversion}.diff.gz"
-	             href="">DIFF</a></li>
-	      </ul>
-	      
-	      <ul tal:condition="not:context/currentversions">
-	      <li>No Source Files Available</li>
-	      </ul>
-	      </div>
-	  </fieldset>
-
-          <fieldset>
-          <legend>Last Packages</legend>
-          <ul tal:define="lastversions context/lastversions">
-	    <li tal:condition="lastversions"
-	        tal:repeat="lastversion lastversions">
-              <a tal:content="lastversion/version" tal:attributes="href lastversion/version">0.0.0-0</a>
-            </li>
-	    <li tal:condition="not:lastversions">
-	       No Packages Available</li>
-           </ul>
-          </fieldset>
+  <h1><span tal:replace="view/bag/distrorelease/title" /> Source Packages </h1>
 
 
-          <fieldset>
-          <legend>Other Links </legend> 
-          <div>
-           <ul>
-            <li class="dummy"><a href="+buildlog">Build Log Summaries</a></li>
-           </ul>
-          </div>
-          </fieldset>
+<form name="search" method="GET">
+Find Source Package by Name: 
+<br>
+<input type="text" name="name" tal:attributes="value request/name|nothing" />
+<input type="submit" value="Search"/>
+</form>
+<br><br>
+
+
+<h3> Browse Source Packages</h3>
+
+
+  <tal:block tal:define="bn view/sourcePackagesBatchNavigator;
+                         prev_url bn/prevBatchURL;
+                         next_url bn/nextBatchURL;">
+
+  <table>
+    <tr>
+      <th>Source Packages</th>
+    </tr>
+    <tr tal:repeat="release python:list(bn.currentBatch())">      
+      <tal:dummy tal:define="package release">
+      <td><a tal:content="string: ${package/name} : ${package/shortdesc}"
+             tal:attributes="href package/name">PACKAGE</a>
+      </td>
+      </tal:dummy>
+    </tr>    
+    <tr>
+    <td align="center">
+    <fieldset tal:condition="python:prev_url or next_url">
+    <div>
+    	  <table>
+	  <tr>
+	  <!-- <th condition="not: prev_url"><< prev</th> -->
+          <th tal:condition="prev_url">
+	       <a tal:attributes="href prev_url"><b><< Prev</b></a>
+	  </th>
+          <th tal:repeat="page_link bn/batchPageURLs">
+	     <a tal:attributes="href python:page_link.values()[0]"
+                tal:content="python:page_link.keys()[0]"></a>
+	  </th>
+          <th tal:condition="next_url" >
+	     <a tal:attributes="href next_url"><b>Next >></b></a>
+          </th>
+          <!-- <th condition="not: next_url">next >></th> -->
+          </tr>
+	  </table>
+     </div>
+     </fieldset>
+    </td>
+    </tr>
+  </table>
+  </tal:block>
 
   </div>
  </div>

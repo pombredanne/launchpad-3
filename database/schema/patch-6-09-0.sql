@@ -35,8 +35,7 @@ CREATE VIEW PublishedPackageView AS SELECT
        SourcePackageRelease.version AS sourcepackagereleaseversion,
        SourcePackageRelease.sourcepackage AS sourcepackage,
        SourcePackageName.name AS sourcepackagename,
-       BinaryPackage.fti as binarypackagefti,
-       SourcePackage.fti as sourcepackagefti
+       BinaryPackage.fti as binarypackagefti
    FROM
        DistroRelease, DistroArchRelease, ProcessorFamily,
        PackagePublishing, Component, Section, BinaryPackage,
@@ -71,8 +70,6 @@ CREATE INDEX sourcepackage_sourcepackagename_idx
     ON SourcePackage(sourcepackagename);
 CREATE INDEX packagepublishing_section_idx
     ON PackagePublishing(section);
-CREATE INDEX packagepublishing_component_idx
-    ON PackagePublishing(component);
 CREATE INDEX build_component_idx
     ON Build(sourcepackagerelease);
 CREATE INDEX packagepublishing_distroarchrelease_idx

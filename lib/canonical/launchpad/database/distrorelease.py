@@ -16,11 +16,16 @@ from canonical.lp import dbschema
 
 # interfaces and database 
 from canonical.launchpad.interfaces import IDistroRelease, \
-        ISourcePackageSet, IBinaryPackageSet
+                                           IBinaryPackageUtility, \
+                                           ISourcePackageUtility
+
 from canonical.launchpad.database import SourcePackageName, \
                                          BinaryPackageName,\
-                                         SourcePackageInDistro
-               
+                                         SourcePackageInDistro,\
+                                         BinaryPackageSet, \
+                                         SourcePackageInDistroSet, \
+                                         PublishedPackageSet
+
 
 class DistroRelease(SQLBase):
     """Distrorelease SQLObject"""
@@ -150,18 +155,31 @@ class DistroRelease(SQLBase):
                    int(dbschema.BugAssignmentStatus.FIXED),
                    int(dbschema.BugAssignmentStatus.REJECTED)))
 
-        return SourcePackageInDistro.select(query, clauseTables=clauseTables)
+        return SourcePackageInDistro.select(query,
+                                            clauseTables=clauseTables,
+                                            distinct=True)
 
     def findSourcesByName(self, pattern):
-        srcset = getUtility(ISourcePackageSet)
+        srcset = getUtility(ISourcePackageUtility)
         return srcset.findByNameInDistroRelease(self.id, pattern)
 
-    def getSourceByName(self, name):
-        srcset = getUtility(ISourcePackageSet)
-        return srcset.getByNameInDistroRelease(self.id, name)
+##    def getSourceByName(self, name):
+#        srcset = getUtility(ISourcePackageSet)
+#        return srcset.getByNameInDistroRelease(self.id, name)
+
+    def traverse(self, name):
+        if name == '+sources':
+            return SourcePackageInDistroSet(self)
+        if name  == '+packages':
+            return PublishedPackageSet()
+        return self.__getitem__(name)
+
+    def __getitem__(self, arch):
+        return BinaryPackageSet(self, arch)
+    
 
     def findBinariesByName(self, pattern):
-        binariesutil = getUtility(IBinaryPackageSet)
+        binariesutil = getUtility(IBinaryPackageUtility)
         selection = Set(binariesutil.findByNameInDistroRelease(self.id, pattern))
         # FIXME: (distinct_query) Daniel Debonzi 2004-10-13
         # XXX Daniel please can you go over this with SABDFL I don't

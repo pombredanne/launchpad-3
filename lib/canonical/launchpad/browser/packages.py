@@ -1,5 +1,7 @@
 __metaclass__ = type
 
+from apt_pkg import ParseDepends
+
 from urllib import quote as urlquote
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -8,6 +10,13 @@ from canonical.lp.dbschema import BugSeverity
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.database import IPerson, SourcePackageBugAssignment
+
+# XXX: Daniel Debonzi
+# Importing stuff from Soyuz directory
+# Until have a place for it or better
+# Solution
+from canonical.soyuz.generalapp import builddepsSet
+    
 
 ##XXX: (batch_size+global) cprov 20041003
 ## really crap constant definition for BatchPages 
@@ -127,7 +136,13 @@ class DistroReleaseBinariesView:
         self.request = request
 
     def binaryPackagesBatchNavigator(self):
-        binary_packages = list(self.context)
+        name = self.request.get("name", "")
+
+        if not name:
+            binary_packages = list(self.context)
+        else:
+            binary_packages = list(self.context.findPackagesByName(name))
+
         start = int(self.request.get('batch_start', 0))
         end = int(self.request.get('batch_end', BATCH_SIZE))
         batch_size = BATCH_SIZE
@@ -166,6 +181,44 @@ class SourcePackageBugsView:
             "id", "title", "status", "priority", "severity",
             "submittedon", "submittedby", "assignedto", "actions"]
 
+class BinaryPackageView(object):
+    """View class for BinaryPackage"""
+
+    lastversionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-binarypackage-lastversions.pt')
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def _buildList(self, packages):
+        blist = []
+        if packages:
+            packs = ParseDepends(packages)
+            for pack in packs:
+                blist.append(builddepsSet(*pack[0]))
+                                          
+        return blist
+
+    def depends(self):
+        return self._buildList(self.context.depends)
+
+    def recommends(self):
+        return self._buildList(self.context.recommends)
+
+    def conflicts(self):
+        return self._buildList(self.context.conflicts)
+
+    def replaces(self):
+        return self._buildList(self.context.replaces)
+
+    def suggests(self):
+        return self._buildList(self.context.suggests)
+
+    def provides(self):
+        return self._buildList(self.context.provides)
+
+    
 ################################################################
 
 # these are here because there is a bug in sqlobject that stub is fixing,

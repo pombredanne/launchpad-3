@@ -31,6 +31,9 @@
             <input type="checkbox" name="tested" id="tested"
                    tal:attributes="checked view/tested">
             <label for="tested">Test successful</label>
+            <input type="checkbox" name="assigned" id="assigned"
+                   tal:attributes="checked view/assigned">
+            <label for="assigned">Assigned</label>
         </div>
 
     </fieldset>

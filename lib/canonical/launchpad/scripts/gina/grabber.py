@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-import apt_pkg, tempfile, os, tempfile, shutil
+
+import apt_pkg, tempfile, os, tempfile, shutil, sys
 
 from classes import SourcePackageRelease, BinaryPackageRelease
 from database import Launchpad, Katie
@@ -7,29 +8,88 @@ from library import attachLibrarian
 
 from traceback import print_exc as printexception
 
-#
-package_root = "/srv/archive.ubuntu.com/ubuntu/"
-keyrings_root = "keyrings/"
-#distrorelease = "hoary"
-#components = ["main", "universe", "restricted"]
-#components = ["main", "restricted"]
-#components = ["restricted"]
-#arch = "i386"
+from optparse import OptionParser
 
 # Parse the commandline...
 
-import sys
+parser = OptionParser()
+parser.add_option("-r","--root", dest="package_root",
+                  help="read archive from ROOT",
+                  metavar="ROOT",
+                  default="/srv/archive.ubuntu.com/ubuntu/")
 
-distrorelease = sys.argv[1]
-archs = sys.argv[2].split(",")
-components = sys.argv[3:]
+parser.add_option("-k","--keyrings", dest="keyrings_root",
+                  help="read keyrings from KEYRINGS",
+                  metavar="KEYRINGS",
+                  default="keyrings/")
 
-LPDB = "launchpad_dogfood"
-KTDB = "katie"
+parser.add_option("-D","--distro", dest="distro",
+                  help="import into DISTRO",
+                  metavar="DISTRO",
+                  default="ubuntu")
 
-LIBRHOST = "localhost"
-LIBRPORT = 9090
+parser.add_option("-d","--distrorelease", dest="distrorelease",
+                  help="import into DISTRORELEASE",
+                  metavar="DISTRORELEASE",
+                  default="warty")
 
+parser.add_option("-c","--components", dest="components",
+                  help="import COMPONENTS components",
+                  metavar="COMPONENTS",
+                  default="main,restricted,universe")
+
+parser.add_option("-a", "--arch", dest="archs",
+                  help="import ARCHS architectures",
+                  metavar="ARCHS",
+                  default="i386,powerpc,amd64")
+
+parser.add_option("-l", "--launchpad", dest="launchpad",
+                  help="use LPDB as the launchpad database",
+                  metavar="LPDB",
+                  default="launchpad_dogfood")
+
+parser.add_option("-K", "--katie", dest="katie",
+                  help="use KTDB as the katie database for DISTRO",
+                  metavar="KTDB",
+                  default="katie")
+
+parser.add_option("-L", "--librarian", dest="librarian",
+                  help="use HOST:PORT as the librarian",
+                  metavar="HOST:PORT",
+                  default="localhost:9090")
+
+parser.add_option("-R", "--run", dest="run",
+                  help="actually do the run",
+                  default=False, action='store_true')
+
+(options,args) = parser.parse_args()
+
+package_root = options.package_root
+keyrings_root = options.keyrings_root
+distro = options.distro
+distrorelease = options.distrorelease
+components = options.components.split(",")
+archs = options.archs.split(",")
+LPDB = options.launchpad
+KTDB = options.katie
+
+(LIBRHOST, LIBRPORT) = options.librarian.split(":")
+LIBRPORT = int(LIBRPORT)
+
+print "$ Packages read from: %s" % package_root
+print "$ Keyrings read from: %s" % keyrings_root
+print "$ Archive to read: %s/%s" % (distro,distrorelease)
+print "$ Components to import: %s" % ", ".join(components)
+print "$ Architectures to import: %s" % ", ".join(archs)
+print "$ Launchpad database: %s" % LPDB
+print "$ Katie database: %s" % KTDB
+print "$ Librarian: %s:%s" % (LIBRHOST,LIBRPORT)
+
+if not options.run:
+    print "* Specify --run to actually run, --help to see help"
+    
+    sys.exit(0)
+    
 #
 # helpers
 #
@@ -55,7 +115,8 @@ def get_tagfiles(root, distrorelease, component, arch):
     os.system("gzip -dc %s > %s" % (di_zipped, di_tagfile))
     difile = os.fdopen(difd)
 
-    return srcfile, sources_tagfile, binfile, binaries_tagfile, difile, di_tagfile
+    return (srcfile, sources_tagfile, binfile, binaries_tagfile, difile,
+            di_tagfile)
 
 def do_packages(source_map, bin_map, lp, kdb, keyrings, component, arch):
     try:
@@ -174,12 +235,18 @@ def do_publishing(pkgs, lp, source):
             else:
                 lp.publishBinaryPackage(pkg)
 
+def do_backpropogation(kdb, lp, sources, keyrings):
+    for srcpkg in sources:
+        if not sources[srcpkg].is_processed:
+            sources[srcpkg].process_package(kdb, package_root, keyrings)
+        sources[srcpkg].backpropogate(lp,)
+
 
 if __name__ == "__main__":
     # get the DB abstractors
     lp = {}
     for arch in archs:
-        lp[arch] = Launchpad(LPDB, distrorelease, arch)
+        lp[arch] = Launchpad(LPDB, distro, distrorelease, arch)
     kdb = Katie(KTDB, distrorelease)
 
     # Comment this out if you need to disable the librarian integration
@@ -217,6 +284,11 @@ if __name__ == "__main__":
     for arch in archs:
         do_arch(lp[arch],kdb,bin_map[arch],source_map)
         lp[arch].commit()
+
+    print "@ Performing backpropogation of sourcepackagerelease..."
+    do_backpropogation(kdb, lp[archs[0]], source_map, keyrings)
+
+#    sys.exit(1);
 
     # Next empty the publishing tables...
     print "@ Emptying publishing tables..."

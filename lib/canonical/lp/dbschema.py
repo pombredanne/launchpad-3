@@ -56,6 +56,7 @@ __all__ = (
 'SourcePackageFormat',
 'SourcePackageRelationships',
 'SourcePackageUrgency',
+'SSHKeyType',
 'TranslationPriority',
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
@@ -484,7 +485,8 @@ class EmailAddressStatus(DBSchema):
         has just been created in the system, either by a person claiming
         it as their own, or because we have stored an email message or
         arch changeset including that email address and have created
-        a phantom person and email address to record it.
+        a phantom person and email address to record it. WE SHOULD
+        NEVER EMAIL A "NEW" EMAIL.
         """)
 
     VALIDATED = Item(2, """
@@ -1801,4 +1803,25 @@ class KarmaField(DBSchema):
 
         User uploaded a new package to the system.
     """)
+
+
+class SSHKeyType(DBSchema):
+    """SSH key type
+
+    SSH (version 2) can use RSA or DSA keys for authentication.  See OpenSSH's
+    ssh-keygen(1) man page for details.
+    """
+
+    RSA = Item(1, """
+        RSA
+
+        RSA
+        """)
+
+    DSA = Item(2, """
+        DSA
+
+        DSA
+        """)
+
 

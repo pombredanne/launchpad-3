@@ -52,3 +52,16 @@ class UserDetailsResource(xmlrpc.XMLRPC):
             newSshaDigestedPassword.decode('base64')
         )
 
+    def xmlrpc_getSSHKeys(self, loginID):
+        """Retrieve SSH public keys for a given user
+        
+        :param loginID: a login ID.
+        :returns: list of 2-tuples of (key type, key text).  This list will be
+            empty if the user has no keys or does not exist.
+        
+        :returns: user dict if loginID exists, otherwise empty dict
+        """
+        if self.debug:
+            print 'getSSHKeys(%r)' % (loginID,)
+        return self.storage.getSSHKeys(loginID)
+

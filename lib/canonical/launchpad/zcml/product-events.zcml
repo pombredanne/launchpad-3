@@ -1,0 +1,10 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    i18n_domain="launchpad">
+
+<subscriber
+   for="canonical.launchpad.interfaces.IProduct
+        zope.app.event.interfaces.IObjectModifiedEvent"
+   factory="canonical.launchpad.subscribers.productsubscribers.product_modified" />
+
+</configure>

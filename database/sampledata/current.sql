@@ -31,6 +31,8 @@ INSERT INTO person (id, displayname, givenname, familyname, "password", teamowne
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (22, 'Stuart Bishop', 'Stuart', 'Bishop', 'I+lQozEFEr+uBuxQZuKGpL4jkiy6lE1dQsZx', NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'stub', NULL, '''bishop'':2,4 ''stuart'':1,3');
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (4, 'Colin Watson', 'Colin', 'Watson', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'kamion', NULL, '''colin'':1,3 ''watson'':2,4');
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (5, 'Scott James Remnant', 'Scott James', 'Remnant', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'keybuk', NULL, '''jame'':2,5 ''scott'':1,4 ''remnant'':3,6');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (25, NULL, NULL, NULL, NULL, 1, 'Launchpad Administrators', 0, '2004-12-13 18:08:27.2609', 'admins', NULL, '');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (26, 'Daniel Silverstone', 'Daniel', 'Silverstone', NULL, NULL, NULL, 0, '2004-12-13 18:10:17.294019', 'kinnison', NULL, '''daniel'':1,3 ''silverston'':2,4');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'person'::pg_catalog.regclass;
@@ -179,6 +181,15 @@ INSERT INTO teamparticipation (id, team, person) VALUES (10, 18, 19);
 INSERT INTO teamparticipation (id, team, person) VALUES (11, 18, 21);
 INSERT INTO teamparticipation (id, team, person) VALUES (12, 24, 2);
 INSERT INTO teamparticipation (id, team, person) VALUES (13, 24, 23);
+INSERT INTO teamparticipation (id, team, person) VALUES (14, 25, 22);
+INSERT INTO teamparticipation (id, team, person) VALUES (15, 25, 2);
+INSERT INTO teamparticipation (id, team, person) VALUES (16, 25, 11);
+INSERT INTO teamparticipation (id, team, person) VALUES (17, 25, 23);
+INSERT INTO teamparticipation (id, team, person) VALUES (19, 25, 7);
+INSERT INTO teamparticipation (id, team, person) VALUES (20, 25, 8);
+INSERT INTO teamparticipation (id, team, person) VALUES (21, 25, 14);
+INSERT INTO teamparticipation (id, team, person) VALUES (22, 25, 13);
+INSERT INTO teamparticipation (id, team, person) VALUES (23, 25, 26);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'teamparticipation'::pg_catalog.regclass;
@@ -253,20 +264,20 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'product'::pg_catalog.regclass;
 
-INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti) VALUES (5, 5, 12, 'evolution', 'Evolution', 'The Evolution Groupware Application', 'Evolution is an email client, addressbook and calendar application that is very well integrated with te Gnome desktop. Evolution is the standard mail client in the Ubuntu distribution, and supports all current mail system standards.', 'Recently, Evolution has seen significant work to make it interoperable with the proprietary Microsoft Exchange Server protocols and formats, allowing organisations to replace Outlook on Windows with Evolution and Linux.
+INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, autoupdate, fti) VALUES (5, 5, 12, 'evolution', 'Evolution', 'The Evolution Groupware Application', 'Evolution is an email client, addressbook and calendar application that is very well integrated with te Gnome desktop. Evolution is the standard mail client in the Ubuntu distribution, and supports all current mail system standards.', 'Recently, Evolution has seen significant work to make it interoperable with the proprietary Microsoft Exchange Server protocols and formats, allowing organisations to replace Outlook on Windows with Evolution and Linux.
 
-The current stable release series of Evolution is 2.0.', '2004-09-24 20:58:02.240163', 'http://www.gnome.org/evolution/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''te'':22 ''2.0'':80 ''mail'':29,39 ''make'':49 ''seen'':45 ''seri'':76 ''well'':19 ''work'':47 ''allow'':61 ''email'':10 ''gnome'':23 ''linux'':71 ''stabl'':74 ''applic'':6,15 ''client'':11,30 ''evolut'':1,2,4,7,25,43,69,78 ''format'':60 ''integr'':20 ''recent'':42 ''releas'':75 ''replac'':64 ''server'':57 ''system'':40 ''ubuntu'':33 ''window'':67 ''current'':38,73 ''desktop'':24 ''exchang'':56 ''organis'':62 ''outlook'':65 ''support'':36 ''calendar'':14 ''groupwar'':5 ''protocol'':58 ''signific'':46 ''standard'':28,41 ''distribut'':34 ''interoper'':51 ''microsoft'':55 ''addressbook'':12 ''proprietari'':54');
-INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti) VALUES (6, 5, 12, 'gnome-terminal', 'GNOME Terminal', 'The GNOME Terminal Emulator', 'Gnome Terminal is a simple terminal application for your Gnome desktop. It allows quick access to console applications, supports all console types, and has many useful features such as tabbed consoles (many consoles in a single window with quick switching between them).', 'The Gnome Terminal application fully supports Gnome 2 and is a standard part of the Gnome Desktop.', '2004-09-24 20:58:02.256678', 'http://www.gnome.org/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''2'':59 ''tab'':39 ''use'':35 ''emul'':9 ''mani'':34,41 ''part'':64 ''type'':31 ''allow'':22 ''fulli'':56 ''gnome'':2,4,7,10,19,53,58,67 ''quick'':23,48 ''simpl'':14 ''singl'':45 ''access'':24 ''applic'':16,27,55 ''consol'':26,30,40,42 ''featur'':36 ''switch'':49 ''termin'':3,5,8,11,15,54 ''window'':46 ''desktop'':20,68 ''support'':28,57 ''standard'':63 ''gnome-termin'':1');
-INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti) VALUES (4, 4, 12, 'firefox', 'Mozilla Firefox', 'Mozilla Firefox', 'The Mozilla Firefox web browser', 'The Mozilla Firefox web browser', '2004-09-24 20:58:02.185708', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''web'':9,14 ''browser'':10,15 ''firefox'':1,3,5,8,13 ''mozilla'':2,4,7,12');
-INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti) VALUES (7, 6, 12, 'iso-codes', 'iso-codes', 'The iso-codes', 'foo', 'bar', '2004-09-24 20:58:02.258743', 'http://www.novell.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''bar'':12 ''foo'':11 ''iso'':2,5,9 ''code'':3,6,10 ''iso-cod'':1,4,8');
-INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti) VALUES (8, 4, 12, 'thunderbird', 'Mozilla Thunderbird', 'Mozilla Thunderbird', 'The Mozilla Thunderbird email client', 'The Mozilla Thunderbird email client', '2004-09-24 20:58:04.478988', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''email'':9,14 ''client'':10,15 ''mozilla'':2,4,7,12 ''thunderbird'':1,3,5,8,13');
-INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti) VALUES (9, 5, 16, 'applets', 'Gnome Applets', 'The Gnome Panel Applets', 'The Gnome Panel Applets are a collection of standard widgets that can be installed on your desktop Panel. These icons act as launchers for applications, or indicators of the status of your machine. For example, panel applets exist to show you your battery status or wifi network signal strength.', 'This is the collection of Panel Applets that is part of the default Gnome release. Additional Panel Applets are available from third parties. A complete set of Panel Applets is included in the Ubuntu OS, for example.
+The current stable release series of Evolution is 2.0.', '2004-09-24 20:58:02.240163', 'http://www.gnome.org/evolution/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, false, '''te'':22 ''2.0'':80 ''mail'':29,39 ''make'':49 ''seen'':45 ''seri'':76 ''well'':19 ''work'':47 ''allow'':61 ''email'':10 ''gnome'':23 ''linux'':71 ''stabl'':74 ''applic'':6,15 ''client'':11,30 ''evolut'':1,2,4,7,25,43,69,78 ''format'':60 ''integr'':20 ''recent'':42 ''releas'':75 ''replac'':64 ''server'':57 ''system'':40 ''ubuntu'':33 ''window'':67 ''current'':38,73 ''desktop'':24 ''exchang'':56 ''organis'':62 ''outlook'':65 ''support'':36 ''calendar'':14 ''groupwar'':5 ''protocol'':58 ''signific'':46 ''standard'':28,41 ''distribut'':34 ''interoper'':51 ''microsoft'':55 ''addressbook'':12 ''proprietari'':54');
+INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, autoupdate, fti) VALUES (6, 5, 12, 'gnome-terminal', 'GNOME Terminal', 'The GNOME Terminal Emulator', 'Gnome Terminal is a simple terminal application for your Gnome desktop. It allows quick access to console applications, supports all console types, and has many useful features such as tabbed consoles (many consoles in a single window with quick switching between them).', 'The Gnome Terminal application fully supports Gnome 2 and is a standard part of the Gnome Desktop.', '2004-09-24 20:58:02.256678', 'http://www.gnome.org/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, false, '''2'':59 ''tab'':39 ''use'':35 ''emul'':9 ''mani'':34,41 ''part'':64 ''type'':31 ''allow'':22 ''fulli'':56 ''gnome'':2,4,7,10,19,53,58,67 ''quick'':23,48 ''simpl'':14 ''singl'':45 ''access'':24 ''applic'':16,27,55 ''consol'':26,30,40,42 ''featur'':36 ''switch'':49 ''termin'':3,5,8,11,15,54 ''window'':46 ''desktop'':20,68 ''support'':28,57 ''standard'':63 ''gnome-termin'':1');
+INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, autoupdate, fti) VALUES (4, 4, 12, 'firefox', 'Mozilla Firefox', 'Mozilla Firefox', 'The Mozilla Firefox web browser', 'The Mozilla Firefox web browser', '2004-09-24 20:58:02.185708', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, false, '''web'':9,14 ''browser'':10,15 ''firefox'':1,3,5,8,13 ''mozilla'':2,4,7,12');
+INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, autoupdate, fti) VALUES (7, 6, 12, 'iso-codes', 'iso-codes', 'The iso-codes', 'foo', 'bar', '2004-09-24 20:58:02.258743', 'http://www.novell.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, false, '''bar'':12 ''foo'':11 ''iso'':2,5,9 ''code'':3,6,10 ''iso-cod'':1,4,8');
+INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, autoupdate, fti) VALUES (8, 4, 12, 'thunderbird', 'Mozilla Thunderbird', 'Mozilla Thunderbird', 'The Mozilla Thunderbird email client', 'The Mozilla Thunderbird email client', '2004-09-24 20:58:04.478988', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, false, '''email'':9,14 ''client'':10,15 ''mozilla'':2,4,7,12 ''thunderbird'':1,3,5,8,13');
+INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, autoupdate, fti) VALUES (9, 5, 16, 'applets', 'Gnome Applets', 'The Gnome Panel Applets', 'The Gnome Panel Applets are a collection of standard widgets that can be installed on your desktop Panel. These icons act as launchers for applications, or indicators of the status of your machine. For example, panel applets exist to show you your battery status or wifi network signal strength.', 'This is the collection of Panel Applets that is part of the default Gnome release. Additional Panel Applets are available from third parties. A complete set of Panel Applets is included in the Ubuntu OS, for example.
 
-The Gnome Panel team includes Abel Kascinsky, Frederick Wurst and Andreas Andropovitch Axelsson.', '2004-10-03 16:46:09.113721', 'http://www.gnome.org/panel/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''os'':91 ''act'':28 ''set'':82 ''abel'':99 ''icon'':27 ''part'':66 ''show'':47 ''team'':97 ''wifi'':53 ''addit'':72 ''avail'':76 ''exist'':45 ''gnome'':2,5,9,70,95 ''indic'':34 ''panel'':6,10,25,43,62,73,84,96 ''parti'':79 ''third'':78 ''wurst'':102 ''andrea'':104 ''applet'':1,3,7,11,44,63,74,85 ''applic'':32 ''exampl'':42,93 ''includ'':87,98 ''instal'':21 ''machin'':40 ''releas'':71 ''signal'':55 ''status'':37,51 ''ubuntu'':90 ''widget'':17 ''batteri'':50 ''collect'':14,60 ''complet'':81 ''default'':69 ''desktop'':24 ''network'':54 ''axelsson'':106 ''launcher'':30 ''standard'':16 ''strength'':56 ''frederick'':101 ''kascinski'':100 ''andropovitch'':105');
-INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti) VALUES (1, 1, 1, 'ubuntu', 'Ubuntu', 'Ubuntu', 'An easy-to-install version of Linux that has a complete set of desktop applications ready to use immediately after installation.', 'Ubuntu is a desktop Linux that you can give your girlfriend to install. Works out of the box with recent Gnome desktop applications configured to make you productive immediately. Ubuntu is updated every six months, comes with security updates for peace of mind, and is available everywhere absolutely free of charge.', '2004-09-24 20:58:00.655518', 'http://www.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''box'':43 ''set'':16 ''six'':59 ''use'':22 ''come'':61 ''easi'':6 ''free'':74 ''give'':34 ''make'':51 ''mind'':68 ''peac'':66 ''work'':39 ''avail'':71 ''charg'':76 ''everi'':58 ''gnome'':46 ''linux'':11,30 ''month'':60 ''readi'':20 ''secur'':63 ''updat'':57,64 ''applic'':19,48 ''immedi'':23,54 ''instal'':8,25,38 ''recent'':45 ''ubuntu'':1,2,3,26,55 ''absolut'':73 ''complet'':15 ''desktop'':18,29,47 ''product'':53 ''version'':9 ''configur'':49 ''everywher'':72 ''girlfriend'':36 ''easy-to-instal'':5');
-INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti) VALUES (2, 2, 2, 'unassigned', 'unassigned syncs', 'unassigned syncs', 'syncs still not assigned to a real product', 'unassigned syncs, will not be processed, to be moved to real proejcts ASAP.', '2004-09-24 20:58:00.674409', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, '''asap'':26 ''move'':22 ''real'':12,24 ''sync'':3,5,6,15 ''still'':7 ''assign'':9 ''process'':19 ''product'':13 ''proejct'':25 ''unassign'':1,2,4,14');
-INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti) VALUES (10, NULL, 2, 'python-gnome2-dev', 'python gnome2 dev', 'python gnome2 dev', 'Python bindings for the GNOME desktop environment', 'Python bindings for the GNOME desktop environment', '2004-09-24 20:58:00.674409', 'http://www.daa.com.au/~james/software/pygtk/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, '''dev'':4,7,10 ''bind'':12,19 ''gnome'':15,22 ''gnome2'':3,6,9 ''python'':2,5,8,11,18 ''desktop'':16,23 ''environ'':17,24 ''python-gnome2-dev'':1');
-INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti) VALUES (3, 3, 2, 'arch-mirrors', 'Arch mirrors', 'Arch archive mirrors', 'Arch Archive Mirroring project.', 'Arch archive full-archive mirror tasks', '2004-09-24 20:58:00.691047', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''arch'':2,4,6,9,13 ''full'':16 ''task'':19 ''archiv'':7,10,14,17 ''mirror'':3,5,8,11,18 ''project'':12 ''full-arch'':15 ''arch-mirror'':1');
+The Gnome Panel team includes Abel Kascinsky, Frederick Wurst and Andreas Andropovitch Axelsson.', '2004-10-03 16:46:09.113721', 'http://www.gnome.org/panel/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, false, '''os'':91 ''act'':28 ''set'':82 ''abel'':99 ''icon'':27 ''part'':66 ''show'':47 ''team'':97 ''wifi'':53 ''addit'':72 ''avail'':76 ''exist'':45 ''gnome'':2,5,9,70,95 ''indic'':34 ''panel'':6,10,25,43,62,73,84,96 ''parti'':79 ''third'':78 ''wurst'':102 ''andrea'':104 ''applet'':1,3,7,11,44,63,74,85 ''applic'':32 ''exampl'':42,93 ''includ'':87,98 ''instal'':21 ''machin'':40 ''releas'':71 ''signal'':55 ''status'':37,51 ''ubuntu'':90 ''widget'':17 ''batteri'':50 ''collect'':14,60 ''complet'':81 ''default'':69 ''desktop'':24 ''network'':54 ''axelsson'':106 ''launcher'':30 ''standard'':16 ''strength'':56 ''frederick'':101 ''kascinski'':100 ''andropovitch'':105');
+INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, autoupdate, fti) VALUES (1, 1, 1, 'ubuntu', 'Ubuntu', 'Ubuntu', 'An easy-to-install version of Linux that has a complete set of desktop applications ready to use immediately after installation.', 'Ubuntu is a desktop Linux that you can give your girlfriend to install. Works out of the box with recent Gnome desktop applications configured to make you productive immediately. Ubuntu is updated every six months, comes with security updates for peace of mind, and is available everywhere absolutely free of charge.', '2004-09-24 20:58:00.655518', 'http://www.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, false, '''box'':43 ''set'':16 ''six'':59 ''use'':22 ''come'':61 ''easi'':6 ''free'':74 ''give'':34 ''make'':51 ''mind'':68 ''peac'':66 ''work'':39 ''avail'':71 ''charg'':76 ''everi'':58 ''gnome'':46 ''linux'':11,30 ''month'':60 ''readi'':20 ''secur'':63 ''updat'':57,64 ''applic'':19,48 ''immedi'':23,54 ''instal'':8,25,38 ''recent'':45 ''ubuntu'':1,2,3,26,55 ''absolut'':73 ''complet'':15 ''desktop'':18,29,47 ''product'':53 ''version'':9 ''configur'':49 ''everywher'':72 ''girlfriend'':36 ''easy-to-instal'':5');
+INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, autoupdate, fti) VALUES (2, 2, 2, 'unassigned', 'unassigned syncs', 'unassigned syncs', 'syncs still not assigned to a real product', 'unassigned syncs, will not be processed, to be moved to real proejcts ASAP.', '2004-09-24 20:58:00.674409', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, false, '''asap'':26 ''move'':22 ''real'':12,24 ''sync'':3,5,6,15 ''still'':7 ''assign'':9 ''process'':19 ''product'':13 ''proejct'':25 ''unassign'':1,2,4,14');
+INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, autoupdate, fti) VALUES (10, NULL, 2, 'python-gnome2-dev', 'python gnome2 dev', 'python gnome2 dev', 'Python bindings for the GNOME desktop environment', 'Python bindings for the GNOME desktop environment', '2004-09-24 20:58:00.674409', 'http://www.daa.com.au/~james/software/pygtk/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, false, '''dev'':4,7,10 ''bind'':12,19 ''gnome'':15,22 ''gnome2'':3,6,9 ''python'':2,5,8,11,18 ''desktop'':16,23 ''environ'':17,24 ''python-gnome2-dev'':1');
+INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, autoupdate, fti) VALUES (3, 3, 2, 'arch-mirrors', 'Arch mirrors', 'Arch archive mirrors', 'Arch Archive Mirroring project.', 'Arch archive full-archive mirror tasks', '2004-09-24 20:58:00.691047', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, false, '''arch'':2,4,6,9,13 ''full'':16 ''task'':19 ''archiv'':7,10,14,17 ''mirror'':3,5,8,11,18 ''project'':12 ''full-arch'':15 ''arch-mirror'':1');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'product'::pg_catalog.regclass;
@@ -296,7 +307,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'productrelease'::pg_catalog.regclass;
 
-INSERT INTO productrelease (id, product, datereleased, "version", title, description, changelog, "owner", shortdesc, productseries) VALUES (3, 4, '2004-10-15 18:27:09.878302', '0.9', 'One Tree Hill', 'What''s New
+INSERT INTO productrelease (id, product, datereleased, "version", title, description, changelog, "owner", shortdesc, productseries, manifest) VALUES (3, 4, '2004-10-15 18:27:09.878302', '0.9', 'One Tree Hill', 'What''s New
 
 Here''s what''s new in this release of Firefox:
 
@@ -331,14 +342,14 @@ For Linux/GTK2 Users
 
       Help us nail down crashes by submitting talkback reports with this crash reporting tool.
 
-', NULL, 16, 'Release 0.9 of Firefox introduced a new theme as well as improved migration tools for people switching to Firefox.', 1);
-INSERT INTO productrelease (id, product, datereleased, "version", title, description, changelog, "owner", shortdesc, productseries) VALUES (4, 4, '2004-10-15 18:31:19.164989', '0.9.1', 'One Tree Hill (v2)', '', NULL, 16, 'This was a bugfix release to patch up problems with the new extension system.', 1);
-INSERT INTO productrelease (id, product, datereleased, "version", title, description, changelog, "owner", shortdesc, productseries) VALUES (5, 4, '2004-10-15 18:32:35.717695', '0.9.2', 'One (secure) Tree Hill', 'Security fixes
+', NULL, 16, 'Release 0.9 of Firefox introduced a new theme as well as improved migration tools for people switching to Firefox.', 1, NULL);
+INSERT INTO productrelease (id, product, datereleased, "version", title, description, changelog, "owner", shortdesc, productseries, manifest) VALUES (4, 4, '2004-10-15 18:31:19.164989', '0.9.1', 'One Tree Hill (v2)', '', NULL, 16, 'This was a bugfix release to patch up problems with the new extension system.', 1, NULL);
+INSERT INTO productrelease (id, product, datereleased, "version", title, description, changelog, "owner", shortdesc, productseries, manifest) VALUES (5, 4, '2004-10-15 18:32:35.717695', '0.9.2', 'One (secure) Tree Hill', 'Security fixes
 
     * 250180 - [Windows] Disallow access to insecure shell: protocol.
-', NULL, 16, 'This was a security fix release for 0.9.', 1);
-INSERT INTO productrelease (id, product, datereleased, "version", title, description, changelog, "owner", shortdesc, productseries) VALUES (1, 4, '2004-06-28 00:00:00', '0.8', NULL, NULL, NULL, 12, NULL, NULL);
-INSERT INTO productrelease (id, product, datereleased, "version", title, description, changelog, "owner", shortdesc, productseries) VALUES (2, 8, '2004-06-28 00:00:00', '0.8', NULL, NULL, NULL, 12, NULL, NULL);
+', NULL, 16, 'This was a security fix release for 0.9.', 1, NULL);
+INSERT INTO productrelease (id, product, datereleased, "version", title, description, changelog, "owner", shortdesc, productseries, manifest) VALUES (1, 4, '2004-06-28 00:00:00', '0.8', NULL, NULL, NULL, 12, NULL, NULL, NULL);
+INSERT INTO productrelease (id, product, datereleased, "version", title, description, changelog, "owner", shortdesc, productseries, manifest) VALUES (2, 8, '2004-06-28 00:00:00', '0.8', NULL, NULL, NULL, 12, NULL, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'productrelease'::pg_catalog.regclass;
@@ -478,15 +489,15 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'manifest'::pg_catalog.regclass;
 
-INSERT INTO manifest (id, datecreated, "owner") VALUES (1, '2004-06-29 00:00:00', 1);
-INSERT INTO manifest (id, datecreated, "owner") VALUES (2, '2004-06-30 00:00:00', 11);
-INSERT INTO manifest (id, datecreated, "owner") VALUES (3, '2004-07-01 00:00:00', 7);
-INSERT INTO manifest (id, datecreated, "owner") VALUES (4, '2004-07-02 00:00:00', 3);
-INSERT INTO manifest (id, datecreated, "owner") VALUES (5, '2004-07-03 00:00:00', 8);
-INSERT INTO manifest (id, datecreated, "owner") VALUES (6, '2004-07-04 00:00:00', 9);
-INSERT INTO manifest (id, datecreated, "owner") VALUES (7, '2004-07-05 00:00:00', 10);
-INSERT INTO manifest (id, datecreated, "owner") VALUES (8, '2004-06-29 00:00:00', 12);
-INSERT INTO manifest (id, datecreated, "owner") VALUES (9, '2004-06-29 00:00:00', 12);
+INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (1, '2004-06-29 00:00:00', 1, '1');
+INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (2, '2004-06-30 00:00:00', 11, '2');
+INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (3, '2004-07-01 00:00:00', 7, '3');
+INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (4, '2004-07-02 00:00:00', 3, '4');
+INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (5, '2004-07-03 00:00:00', 8, '5');
+INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (6, '2004-07-04 00:00:00', 9, '6');
+INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (7, '2004-07-05 00:00:00', 10, '7');
+INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (8, '2004-06-29 00:00:00', 12, '8');
+INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (9, '2004-06-29 00:00:00', 12, '9');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'manifest'::pg_catalog.regclass;
@@ -684,15 +695,6 @@ INSERT INTO sourcepackage (id, maintainer, shortdesc, description, manifest, dis
 	K-Meleon and Camino, but written using the XUL user interface language and 
 	designed to lightweight and cross-platform.', NULL, 3, 1, 1, '''k'':18 ''use'':24 ''web'':3 ''xul'':26 ''user'':27 ''cross'':36 ''camino'':21 ''compon'':13 ''design'':31 ''galeon'':16 ''meleon'':19 ''browser'':4,12 ''firefox'':2,5 ''languag'':29 ''mozilla'':1,11 ''similar'':14 ''written'':23 ''interfac'':28 ''k-meleon'':17 ''platform'':37 ''redesign'':8 ''lightweight'':33 ''cross-platform'':35');
 INSERT INTO sourcepackage (id, maintainer, shortdesc, description, manifest, distro, sourcepackagename, srcpackageformat, fti) VALUES (9, 1, 'Evolution-Dummy', 'This is evolution sample data package', NULL, 1, 9, 1, '''data'':8 ''dummi'':3 ''sampl'':7 ''evolut'':2,6 ''packag'':9 ''evolution-dummi'':1');
-INSERT INTO sourcepackage (id, maintainer, shortdesc, description, manifest, distro, sourcepackagename, srcpackageformat, fti) VALUES (10, 1, 'Mozilla Firefox Web Browser', 'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
-	K-Meleon and Camino, but written using the XUL user interface language and 
-	designed to lightweight and cross-platform.', NULL, 3, 1, 1, '''k'':18 ''use'':24 ''web'':3 ''xul'':26 ''user'':27 ''cross'':36 ''camino'':21 ''compon'':13 ''design'':31 ''galeon'':16 ''meleon'':19 ''browser'':4,12 ''firefox'':2,5 ''languag'':29 ''mozilla'':1,11 ''similar'':14 ''written'':23 ''interfac'':28 ''k-meleon'':17 ''platform'':37 ''redesign'':8 ''lightweight'':33 ''cross-platform'':35');
-INSERT INTO sourcepackage (id, maintainer, shortdesc, description, manifest, distro, sourcepackagename, srcpackageformat, fti) VALUES (11, 1, 'Mozilla Firefox Web Browser', 'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
-	K-Meleon and Camino, but written using the XUL user interface language and 
-	designed to lightweight and cross-platform.', NULL, 3, 1, 1, '''k'':18 ''use'':24 ''web'':3 ''xul'':26 ''user'':27 ''cross'':36 ''camino'':21 ''compon'':13 ''design'':31 ''galeon'':16 ''meleon'':19 ''browser'':4,12 ''firefox'':2,5 ''languag'':29 ''mozilla'':1,11 ''similar'':14 ''written'':23 ''interfac'':28 ''k-meleon'':17 ''platform'':37 ''redesign'':8 ''lightweight'':33 ''cross-platform'':35');
-INSERT INTO sourcepackage (id, maintainer, shortdesc, description, manifest, distro, sourcepackagename, srcpackageformat, fti) VALUES (12, 1, 'Mozilla Firefox Web Browser', 'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
-	K-Meleon and Camino, but written using the XUL user interface language and 
-	designed to lightweight and cross-platform.', NULL, 3, 1, 1, '''k'':18 ''use'':24 ''web'':3 ''xul'':26 ''user'':27 ''cross'':36 ''camino'':21 ''compon'':13 ''design'':31 ''galeon'':16 ''meleon'':19 ''browser'':4,12 ''firefox'':2,5 ''languag'':29 ''mozilla'':1,11 ''similar'':14 ''written'':23 ''interfac'':28 ''k-meleon'':17 ''platform'':37 ''redesign'':8 ''lightweight'':33 ''cross-platform'':35');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackage'::pg_catalog.regclass;
@@ -723,8 +725,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sourcepackagerelease'::pg_catalog.regclass;
 
-INSERT INTO sourcepackagerelease (id, sourcepackage, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section) VALUES (14, 1, 1, '0.9', '2004-09-27 11:57:13', 1, 1, 1, 'Mozilla dummy Changelog......', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'bacula-common (= 1.34.6-2), bacula-director-common (= 1.34.6-2), postgresql-client (>= 7.4)', NULL, NULL, 1);
-INSERT INTO sourcepackagerelease (id, sourcepackage, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section) VALUES (15, 9, 1, '1.0', '2004-09-27 11:57:13', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1);
+INSERT INTO sourcepackagerelease (id, sourcepackage, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename) VALUES (14, 1, 1, '0.9', '2004-09-27 11:57:13', 1, 1, 1, 'Mozilla dummy Changelog......', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'bacula-common (= 1.34.6-2), bacula-director-common (= 1.34.6-2), postgresql-client (>= 7.4)', NULL, NULL, 1, NULL, 1, 1);
+INSERT INTO sourcepackagerelease (id, sourcepackage, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename) VALUES (15, 9, 1, '1.0', '2004-09-27 11:57:13', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 1, 9);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackagerelease'::pg_catalog.regclass;
@@ -739,8 +741,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sourcepackagepublishing'::pg_catalog.regclass;
 
-INSERT INTO sourcepackagepublishing (distrorelease, sourcepackagerelease, status, id, component, section, datepublished, scheduleddeletiondate) VALUES (1, 14, 1, 1, 1, 1, '2004-09-27 11:57:13', NULL);
-INSERT INTO sourcepackagepublishing (distrorelease, sourcepackagerelease, status, id, component, section, datepublished, scheduleddeletiondate) VALUES (1, 15, 1, 2, 1, 1, NULL, NULL);
+INSERT INTO sourcepackagepublishing (distrorelease, sourcepackagerelease, status, id, component, section, datepublished, scheduleddeletiondate) VALUES (1, 15, 2, 2, 1, 1, '2004-09-27 11:57:13', NULL);
+INSERT INTO sourcepackagepublishing (distrorelease, sourcepackagerelease, status, id, component, section, datepublished, scheduleddeletiondate) VALUES (1, 14, 2, 1, 1, 1, '2004-09-27 11:57:13', NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackagepublishing'::pg_catalog.regclass;
@@ -764,7 +766,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'binarypackage'::pg_catalog.regclass;
 
-INSERT INTO binarypackage (id, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true);
+INSERT INTO binarypackage (id, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 1, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', NULL, NULL, NULL, 'mozilla-firefox-dummy', NULL, NULL, NULL, NULL, true, '''web'':3,7 ''browser'':4,8 ''firefox'':2,6 ''mozilla'':1,5');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'binarypackage'::pg_catalog.regclass;
@@ -790,20 +792,6 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'packageselection'::p
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'packageselection'::pg_catalog.regclass;
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'coderelease'::pg_catalog.regclass;
-
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'coderelease'::pg_catalog.regclass;
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'codereleaserelationship'::pg_catalog.regclass;
-
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'codereleaserelationship'::pg_catalog.regclass;
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'osfile'::pg_catalog.regclass;
@@ -1387,13 +1375,6 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'karma'::pg_catalog.r
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'karma'::pg_catalog.regclass;
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'bugassignment'::pg_catalog.regclass;
-
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bugassignment'::pg_catalog.regclass;
-
-
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sshkey'::pg_catalog.regclass;
 
 
@@ -1401,7 +1382,14 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sshkey'::pg_catalog.
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sshkey'::pg_catalog.regclass;
 
 
-SELECT pg_catalog.setval('person_id_seq', 24, true);
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'bugtask'::pg_catalog.regclass;
+
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bugtask'::pg_catalog.regclass;
+
+
+SELECT pg_catalog.setval('person_id_seq', 26, true);
 
 
 
@@ -1433,7 +1421,7 @@ SELECT pg_catalog.setval('membership_id_seq', 8, true);
 
 
 
-SELECT pg_catalog.setval('teamparticipation_id_seq', 13, true);
+SELECT pg_catalog.setval('teamparticipation_id_seq', 23, true);
 
 
 
@@ -1606,10 +1594,6 @@ SELECT pg_catalog.setval('packagepublishing_id_seq', 9, true);
 
 
 SELECT pg_catalog.setval('packageselection_id_seq', 1, false);
-
-
-
-SELECT pg_catalog.setval('coderelease_id_seq', 9, true);
 
 
 
@@ -1791,10 +1775,6 @@ SELECT pg_catalog.setval('karma_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('bugassignment_id_seq', 1, false);
-
-
-
 SELECT pg_catalog.setval('spokenin_id_seq', 334, true);
 
 
@@ -1804,5 +1784,17 @@ SELECT pg_catalog.setval('sourcepackagerelationship_id_seq', 1, false);
 
 
 SELECT pg_catalog.setval('sshkey_id_seq', 1, false);
+
+
+
+SELECT pg_catalog.setval('bugtask_id_seq', 1, false);
+
+
+
+SELECT pg_catalog.setval('branchlabel_id_seq', 1, false);
+
+
+
+SELECT pg_catalog.setval('branchrelationship_id_seq', 1, false);
 
 

@@ -3,10 +3,10 @@
 import re
 
 VALID_EMAIL_1 = re.compile(
-    r"^[_\.0-9a-z-+]+@([0-9a-z][0-9a-z-]+\.)+[a-z]{2,4}$")
+    r"^[_\.0-9a-z-+]+@([0-9a-z][0-9a-z-]*\.)+[a-z]{2,4}$")
 VALID_EMAIL_2 = re.compile(
     r"^[_\.0-9a-z-]+@([0-9a-z][0-9a-z-]+)$")
-MIN_NICK_LENGTH = 1
+MIN_NICK_LENGTH = 2
 
 class NicknameGenerationError(Exception):
     """I get raised when something went wrong generating
@@ -49,7 +49,7 @@ def generate_nick(email_addr, registered=_nick_registered,
     >>> generate_nick("taken@example")
     'taken-example-1'
     >>> generate_nick("i@tv")
-    'i'
+    'i-tv'
     >>> generate_nick("foo+bar@example.com")
     'foo+bar'
     """
@@ -62,19 +62,17 @@ def generate_nick(email_addr, registered=_nick_registered,
         not VALID_EMAIL_2.match(email_addr)):
         raise NicknameGenerationError("%s is not a valid email address" 
                                       % email_addr)
-        
 
     user, domain = re.match("^(\S+)@(\S+)$", email_addr).groups()
-    user = user.replace(".", "-")
-    user = user.replace("_", "-")
+    user = user.replace(".", "-").replace("_", "-")
     domain_parts = domain.split(".")
 
     generated_nick = user
     if (registered(generated_nick) or 
         len(generated_nick) < MIN_NICK_LENGTH):
         if report_collisions:
-            print ("collision: %s already registered or shorter than %d "
-                   "characters." % (generated_nick, MIN_NICK_LENGTH))
+            print ("collision: %s already registered or shorter than 4 "
+                   "characters." % generated_nick)
 
         for domain_part in domain_parts:
             generated_nick += "-" + domain_part
@@ -90,8 +88,8 @@ def generate_nick(email_addr, registered=_nick_registered,
     if (registered(generated_nick) 
         or len(generated_nick) < MIN_NICK_LENGTH):
         if report_collisions:
-            print ("collision: %s already registered or shorter than %d "
-                   "characters." % (generated_nick, MIN_NICK_LENGTH))
+            print ("collision: %s already registered or shorter than 4 "
+                   "characters" % generated_nick)
 
         x = 1
         found_available_nick = False
