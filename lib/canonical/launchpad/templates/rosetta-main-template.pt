@@ -54,10 +54,14 @@
         <span tal:condition="request/lp:person">
             Logged in as
             <span tal:replace="request/lp:person/displayname">Foo Bar</span>
+            &mdash;
+            <a href="/+logout">log out</a>
         </span>
 
         <span tal:condition="not: request/lp:person">
             Not logged in.
+            &mdash;
+            <a href="/+login">log in</a>
         </span>
 
         &mdash;

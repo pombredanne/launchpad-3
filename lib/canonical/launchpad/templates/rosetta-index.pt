@@ -26,10 +26,12 @@
     Rosetta">about</a> page to find out more about Rosetta.
     </div>
 
-    <p>
-    You might like to
-    <a href="+login">log in</a>.
-    </p>
+    <span tal:condition="not: request/lp:person">
+        <p>
+        You might like to
+        <a href="+login">log in</a>.
+        </p>
+    </span>
 
     <form action="search-results"
           method="get">
