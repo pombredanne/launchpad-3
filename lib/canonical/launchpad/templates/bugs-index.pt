@@ -110,14 +110,16 @@
       <td class="batchnav" colspan="11" 
           tal:define="prev_page_url view/batchnav/prevBatchURL;
                       next_page_url view/batchnav/nextBatchURL">
-          <a tal:condition="prev_page_url" tal:attributes="href prev_page_url">< previous</a>
+          <a tal:condition="prev_page_url"
+             tal:attributes="href prev_page_url">&laquo; previous</a>
           <span tal:omit-tag=""
                 tal:repeat="page_url view/batchnav/batchPageURLs">
             <a href=""
                tal:content="python:page_url.keys()[0]"
                tal:attributes="href python:page_url.values()[0]">[1]</a>
           </span>
-          <a tal:condition="next_page_url" tal:attributes="href next_page_url">next ></a>
+          <a tal:condition="next_page_url"
+             tal:attributes="href next_page_url">next &raquo;</a>
       </td>
     </tr>
   </table>

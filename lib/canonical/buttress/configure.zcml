@@ -19,8 +19,12 @@
     <browser:suburl
         for="canonical.buttress.IButtressApplication"
         utility="canonical.launchpad.interfaces.IProjectSet"
-        permission="zope.Public"
         name="upstream" />
+
+    <browser:suburl
+        for="canonical.buttress.IButtressApplication"
+        utility="canonical.launchpad.interfaces.ISourceSourceSet"
+        name="sources" />
 
     <!-- pages for the buttress application -->
     <browser:pages

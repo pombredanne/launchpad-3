@@ -114,9 +114,13 @@
         class="canonical.launchpad.browser.ProjectSetView"
         permission="launchpad.AnyPerson">
         <browser:page
-            name="+forreview"
+            name="+contentreview"
             template="../templates/doap-review.pt"
-            lp:url="doap/+forreview" />
+            lp:url="doap/projects/+contentreview" />
+        <browser:page
+            name="+syncreview"
+            template="../templates/buttress-sync-review.pt"
+            lp:url="doap/projects/+syncreview" />
     </browser:pages>
 
     <browser:page

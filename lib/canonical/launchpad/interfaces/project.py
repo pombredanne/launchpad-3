@@ -118,6 +118,9 @@ class IProjectSet(Interface):
         """Return a list of Projects which need review, or which have
         products that needs review."""
 
+    def forSyncReview():
+        """Return a list of projects that have sourcesources which need
+        review."""
 
 class IProjectBugTracker(Interface):
     id = Int(title=_('ID'))

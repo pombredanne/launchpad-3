@@ -82,7 +82,22 @@ class ISourceSource(Interface):
 class ISourceSourceSet(Interface):
     """An interface for the set of all SourceSource objects."""
 
+    syncingapproved = Attribute("""Setting this will limit the Set to those
+        with syncing approved.""")
+
+    processingapproved = Attribute("""Setting this will limit the Set to those
+        with processing approved.""")
+
+    autotested = Attribute("""Setting this will limit the set to those which
+        have been autotested.""")
+
+    projecttext = Attribute("""Setting this will limit the set to those
+        which are connected to projects and products that match this
+        text.""")
+
     def __getitem__(sourcesourcename):
         """Return the specified sourcesource object."""
 
+    def __iter__():
+        """Iterate over the Set."""
 

@@ -5,8 +5,7 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
     
-    <!-- This is class SourceSource-->
-    <!-- CONTENT CLASSES -->
+    <!-- SourceSource-->
     <content class="canonical.launchpad.database.SourceSource">
         <allow interface="canonical.launchpad.interfaces.ISourceSource"/>
         <require
@@ -19,27 +18,15 @@
     </content>
 
 
-    <!-- UTILITY DECLARATION-->
-
-    <!-- VOCABULARIES -->
-
-    <!--TRAVERSALS-->
-    <browser:traverse
-        for="canonical.launchpad.interfaces.ISourceSourceSet"
-        getter="__getitem__" />
-
-    
-    <!--BROWSER DEFAULTVIEWS-->
     <browser:defaultView
         for="canonical.launchpad.interfaces.ISourceSource"
         name="+index" />
 
 
-    <!--PAGE DECLARATIONS-->
     <browser:pages 
         for="canonical.launchpad.interfaces.ISourceSource"
         permission="launchpad.AnyPerson"
-        class="canonical.soyuz.browser.SourceSourceView" >
+        class="canonical.launchpad.browser.SourceSourceView" >
         <browser:page
             name="+index"
             template="../templates/sourcesource-index.pt"
@@ -48,33 +35,36 @@
     </browser:pages>
 
 
-    <!--FORMS-->
 
-    <!-- This is class SourceSourceSet -->
-    <!-- CONTENT CLASSES -->
+    <!-- SourceSourceSet -->
     <content class="canonical.launchpad.database.SourceSourceSet">
         <allow interface="canonical.launchpad.interfaces.ISourceSourceSet" />
-        <require permission="zope.Public"
-        set_schema="canonical.launchpad.interfaces.ISourceSourceSet" />
+        <require
+            permission="zope.Public"
+            set_attributes="syncingapproved processingapproved autotested" />
     </content>
 
+    <utility
+        factory="canonical.launchpad.database.SourceSourceSet"
+        provides="canonical.launchpad.interfaces.ISourceSourceSet"
+        />
 
-    <!-- UTILITY DECLARATION-->
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ISourceSourceSet"
+        name="+index" />
 
-    <!-- VOCABULARIES -->
+    <browser:traverse
+        for="canonical.launchpad.interfaces.ISourceSourceSet"
+        getter="__getitem__" />
 
-    <!--TRAVERSALS-->
-    
-    <!--BROWSER DEFAULTVIEWS-->
-
-    <!--PAGE DECLARATIONS-->
     <browser:pages
         for ="canonical.launchpad.interfaces.ISourceSourceSet"
+        class="canonical.launchpad.browser.SourceSourceSetView"
         permission="zope.Public">
+        <browser:page
+            name="+index"
+            template="../templates/sources-index.pt"
+            lp:url="buttress/sources/+index" />
     </browser:pages>
-
-
-    <!--FORMS-->
-
 
 </configure>
