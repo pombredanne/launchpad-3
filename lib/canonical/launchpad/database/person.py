@@ -576,7 +576,8 @@ class PersonSet(object):
 
     def getByName(self, name, default=None):
         """See IPersonSet."""
-        results = Person.selectBy(name=name)
+        query = AND(Person.q.name==name, Person.q.mergedID==None)
+        results = Person.select(query)
         if results.count() == 1:
             return results[0]
         else:
@@ -600,18 +601,19 @@ class PersonSet(object):
             return True
 
     def getAllPersons(self):
-        return list(Person.select(Person.q.teamownerID==None))
+        query = AND(Person.q.teamownerID==None, Person.q.mergedID==None)
+        return list(Person.select(query))
 
     def getAllTeams(self):
         return list(Person.select(Person.q.teamownerID!=None))
 
     def findByName(self, name):
-        query = "fti @@ ftq(%s)" % quote(name)
+        query = "fti @@ ftq(%s) AND merged is NULL" % quote(name)
         return list(Person.select(query))
 
     def findPersonByName(self, name):
-        query = "fti @@ ftq(%s) AND teamowner is NULL" % quote(name)
-        return list(Person.select(query))
+        query = "fti @@ ftq(%s) AND teamowner is NULL AND merged is NULL"
+        return list(Person.select(query % quote(name)))
 
     def findTeamByName(self, name):
         query = "fti @@ ftq(%s) AND teamowner is not NULL" % quote(name)

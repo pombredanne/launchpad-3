@@ -331,7 +331,7 @@ class IPersonSet(Interface):
         """
 
     def getByName(name, default=None):
-        """Return the person with the given name.
+        """Return the person with the given name, ignoring merged persons.
 
         Return the default value if there is no such person.
         """
@@ -351,7 +351,6 @@ class IPersonSet(Interface):
         * personset.search(arg = NULL): Match all the IPersons where
           IPerson.arg IS NULL.
         """
-        pass
 
     def getAll():
         """Return all Persons and Teams."""
@@ -360,13 +359,13 @@ class IPersonSet(Interface):
         """Return all Teams."""
 
     def getAllPersons():
-        """Return all Persons."""
+        """Return all Persons, ignoring the merged ones."""
 
     def findByName(name):
-        """Return all Persons and Teams with name matching."""
+        """Return all not-merged Persons and Teams with name matching."""
 
     def findPersonByName(name):
-        """Return all Persons with name matching."""
+        """Return all not-merged Persons with name matching."""
 
     def findTeamByName(name):
         """Return all Teams with name matching."""

@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-06 19:12:00 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1575
+
+    Summary:
+      Ignore merged people when searching on the Person table.
+    Revision:
+      launchpad--devel--0--patch-1575
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-261
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-262
+       Ignore merged people when searching on the Person table.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/person.py
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-261
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-262
+
+
 2005-04-06 16:51:36 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1574
 
     Summary:
