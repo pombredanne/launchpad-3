@@ -4,6 +4,9 @@ check:
 noisycheck:
 	(cd ../../.. ; python test.py canonical.rosetta)
 
+testdb:
+	make -C ../../../database sampledata
+
 url-table:
 	./scripts/extract-urls.py < pages.zcml
 
