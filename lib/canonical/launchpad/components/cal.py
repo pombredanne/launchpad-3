@@ -108,7 +108,7 @@ def calendarFromCalendarOwner(calendarowner):
 class CalendarSubscriptionSet(object):
     implements(ICalendarSubscriptionSet)
 
-    defaultColour = '#9db8d2'
+    defaultColour = '#efefef'
 
     def __init__(self, person):
         self.owner = person

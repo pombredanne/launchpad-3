@@ -59,7 +59,7 @@ class Project(SQLBase):
     def calendar(self):
         if not self._calendar:
             self._calendar = Calendar(ownerID=self.owner.id,
-                                      title='%s Calendar' % self.displayname,
+                                      title='%s Project Calendar' % self.displayname,
                                       revision=0)
         return self._calendar
     calendar = property(calendar)

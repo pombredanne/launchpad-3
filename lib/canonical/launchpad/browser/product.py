@@ -26,6 +26,7 @@ from canonical.launchpad.database import Product, ProductSeriesSet, Bug, \
 
 from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet
 from canonical.launchpad.browser.productrelease import newProductRelease
+from canonical.launchpad.browser.cal import CalendarInfoPortlet
 
 #
 # Traversal functions that help us look up something
@@ -66,6 +67,9 @@ class ProductView:
 
     milestonePortlet = ViewPageTemplateFile(
         '../templates/portlet-product-milestones.pt')
+
+    calendarInfoPortlet = CalendarInfoPortlet(
+        '../templates/portlet-calendar-info.pt')
 
     def __init__(self, context, request):
         self.context = context

@@ -27,6 +27,8 @@ from canonical.rosetta.browser import codes_to_languages, request_languages
 #
 from canonical.launchpad.browser.bugtracker import newBugTracker
 
+from canonical.launchpad.browser.cal import CalendarInfoPortlet
+
 #
 # Traversal functions that help us look up something
 # about a project or product
@@ -54,6 +56,9 @@ class ProjectView(object):
 
     detailsPortlet = ViewPageTemplateFile(
         '../templates/portlet-project-details.pt')
+
+    calendarInfoPortlet = CalendarInfoPortlet(
+        '../templates/portlet-calendar-info.pt')
 
     def edit(self):
         """

@@ -30,11 +30,11 @@ UPDATE Project SET calendar = (SELECT id FROM Calendar WHERE title = 'Ubuntu Pro
 INSERT INTO CalendarSubscription (person, calendar, colour)
     VALUES ((SELECT id from Person WHERE displayname = 'Sample Person'),
             (SELECT id FROM Calendar WHERE title = 'Sample Person\'s Calendar'),
-            '#9db8d2');
+            '#c0d0ff');
 INSERT INTO CalendarSubscription (person, calendar, colour)
     VALUES ((SELECT id from Person WHERE displayname = 'Sample Person'),
             (SELECT id FROM Calendar WHERE title = 'Foo Bar\'s Calendar'),
-            '#9dd2b8');
+            '#c0ffc8');
 INSERT INTO CalendarSubscription (person, calendar, colour)
     VALUES ((SELECT id from Person WHERE displayname = 'Sample Person'),
             (SELECT id FROM Calendar WHERE title = 'Ubuntu Project Calendar'),
@@ -44,11 +44,11 @@ INSERT INTO CalendarSubscription (person, calendar, colour)
 INSERT INTO CalendarSubscription (person, calendar, colour)
     VALUES ((SELECT id from Person WHERE displayname = 'Foo Bar'),
             (SELECT id FROM Calendar WHERE title = 'Foo Bar\'s Calendar'),
-            '#9dd2b8');
+            '#c0ffc8');
 INSERT INTO CalendarSubscription (person, calendar, colour)
     VALUES ((SELECT id from Person WHERE displayname = 'Foo Bar'),
             (SELECT id FROM Calendar WHERE title = 'Sample Person\'s Calendar'),
-            '#9db8d2');
+            '#c0d0ff');
 
 -- Add events to "Sample Person's Calendar"
 INSERT INTO CalendarEvent (unique_id, calendar, dtstart, duration,

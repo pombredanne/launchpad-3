@@ -27,6 +27,7 @@
         <div tal:replace="structure view/detailsPortlet" />
         <div tal:replace="structure view/actionsPortlet" />
         <div tal:replace="structure view/projectPortlet" />
+        <div tal:replace="structure view/calendarInfoPortlet" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main" class="documentContent">

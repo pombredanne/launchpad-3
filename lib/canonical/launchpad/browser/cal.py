@@ -59,8 +59,11 @@ monthnames = [
 
 colours = [
     { 'code': '#ffffff', 'name': _('White') },
-    { 'code': '#9db8d2', 'name': _('Blue') },
-    { 'code': '#9dd2b8', 'name': _('Green') },
+    { 'code': '#c0ffc8', 'name': _('Green') },
+    { 'code': '#c0d0ff', 'name': _('Blue') },
+    { 'code': '#e0d0ff', 'name': _('Purple') },
+    { 'code': '#faffd2', 'name': _('Yellow') },
+    { 'code': '#c1c1c1', 'name': _('Grey') },
     ]
 
 
