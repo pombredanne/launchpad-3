@@ -882,20 +882,32 @@ def getOwner():
 
 class SoyuzProject(object):
     implements (IProject)
-    def __init__(self, dbProject=None,name=None,title=None,url=None,description=None):
+    def __init__(self, dbProject=None,name=None,title=None,url=None,description=None, shortDescription=None, displayName=None):
         if dbProject is not None:
             self._project=dbProject
             self.name=self._project.name
             self.title=self._project.title
             self.url=self._project.homepageurl
             self.description=self._project.description
+            self._shortDescription=self._project.shortDescription
+            self._displayName=self._project.displayName
         else:
             self._project=None
             self.name=name
             self.title=title
             self.url=url
             self.description=description
+            self._shortDescription=shortDescription
+            self._displayName=displayName
             
+
+    def displayName(self, aName=None):
+        """return the projects displayName, setting it if aName is provided"""
+        if aName is not None:
+            # TODO: do we need to check for uniqueness ?
+            self._project.displayName=aName
+            self._displayName=aName
+        return self._displayName
 
     def potFiles(self):
         """Returns an iterator over this project's pot files."""
@@ -916,6 +928,13 @@ class SoyuzProject(object):
     def getProduct(self,name):
         """blah"""
         return ProductMapper().getByName(name, self)
+
+    def shortDescription(self, aDesc=None):
+        """return the projects shortDescription, setting it if aDesc is provided"""
+        if aDesc is not None:
+            self._project.shortDescription=aDesc
+            self._shortDescription=aDesc
+        return self._shortDescription
 
 class SoyuzProduct(object):
     implements (IProduct)

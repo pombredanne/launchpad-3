@@ -196,7 +196,13 @@ def urlTraverseSyncs(product, request, name):
 
 # DONE!
 
-class ViewProjects(object):
+class View(object):
+    def setArg(self, name, kwargs):
+        kwargs[name]=self.getField(name)
+    def getField(self, name):
+        return self.request.form[name]
+        
+class ViewProjects(View):
     def projects(self):
         return iter(self.context.projects())
     def handle_submit(self):
@@ -204,17 +210,22 @@ class ViewProjects(object):
             return
         if not self.request.method == "POST":
             return
-        name=self.request.form['name']
-        url=self.request.form['url']
-        description=self.request.form['description']
-        title=self.request.form['title']
+        name=self.getField('name')
+        url=self.getField('url')
+        description=self.getField('description')
+        title=self.getField('title')
+        shortDescription=self.getField('shortDescription')
+        displayName=self.getField('displayName')
         
-        self.request.response.redirect(name)
-        self.context.new(name,title,description,url)
+        project=self.context.new(name,title,description,url)
+        project.shortDescription(shortDescription)
+        project.displayName(displayName)
+        project=None
         self.submittedok= True
+        self.request.response.redirect(name)
 
 
-class ViewProject(object):
+class ViewProject(View):
     def products(self):
         return self.context.products()
     def handle_submit(self):
@@ -222,20 +233,14 @@ class ViewProject(object):
             return
         if not self.request.method == "POST":
             return
-        name=self.request.form['name']
-        url=self.request.form['url']
-        description=self.request.form['description']
-        title=self.request.form['title']
+        name=self.getField('name')
+        url=self.getField('url')
+        description=self.getField('description')
+        title=self.getField('title')
         
         self.request.response.redirect(name)
         self.context.newProduct(name,title,description,url)
         self.submittedok= True
-
-class View(object):
-    def setArg(self, name, kwargs):
-        kwargs[name]=self.getField(name)
-    def getField(self, name):
-        return self.request.form[name]
         
 class ViewProduct(View):
     def syncs(self):

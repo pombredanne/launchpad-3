@@ -22,11 +22,14 @@
        tal:content="context/url|default"
        tal:attributes="href context/url|nothing">(None supplied)</a>
     </div>
-
+    Display name:  <span tal:content="context/displayName"> </span>
     <p class="documentDescription" tal:content="context/description">
         Mozilla offers a full suite of integrated Internet applications 
         including a web browser, e-mail client, address book, web page composer,
         Internet chat software and calendar application.
+    </p>
+    <p class="documentDescription" tal:content="context/shortDescription">
+        Mozilla can be described shortly too.
     </p>
 
 
