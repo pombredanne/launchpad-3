@@ -15,11 +15,8 @@ from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 from canonical.database.sqlbase import SQLBase, quote
 
 # Launchpad interfaces
-# XXX: David Allouche 2004-11-25
-# Why RCSTypeEnum is inside launchpad.interfaces?
 from canonical.launchpad.interfaces import ISourceSource, \
-    ISourceSourceAdmin, ISourceSourceSet, \
-    RCSTypeEnum, IProductSet
+    ISourceSourceAdmin, ISourceSourceSet, IProductSet
 
 from canonical.lp.dbschema import EnumCol
 from canonical.lp.dbschema import ImportTestStatus
@@ -62,8 +59,6 @@ class SourceSource(SQLBase):
     branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
     lastsynced = DateTimeCol(dbName='lastsynced', default=None)
     syncinterval = DateTimeCol(dbName='syncinterval', default=None)
-    #IntCol('rcstype', dbName='rcstype', default=RCSTypeEnum.cvs,
-    #       notNull=True),
     rcstype = EnumCol(dbName='rcstype',
                       default=RevisionControlSystems.CVS,
                       schema=RevisionControlSystems,
