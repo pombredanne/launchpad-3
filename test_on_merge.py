@@ -6,6 +6,7 @@
 import sys
 import os, os.path
 import tabnanny
+import checkarchtag
 from StringIO import StringIO
 
 def main():
@@ -17,6 +18,9 @@ def main():
     Otherwise, print output and exit(1).
     """
     here = os.path.dirname(os.path.realpath(__file__))
+
+    if not checkarchtag.is_tree_good():
+        return 1
 
     org_stdout = sys.stdout
     sys.stdout = StringIO()
