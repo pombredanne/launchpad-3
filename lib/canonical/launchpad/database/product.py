@@ -17,6 +17,7 @@ from canonical.launchpad.interfaces import *
 #     import sequence
 from canonical.launchpad.database.sourcesource import SourceSource
 from canonical.launchpad.database.productseries import ProductSeries
+from canonical.launchpad.database.pofile import POTemplate
 from canonical.launchpad.interfaces.product import IProduct
 
 class Product(SQLBase):

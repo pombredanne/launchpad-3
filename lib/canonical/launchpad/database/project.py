@@ -56,9 +56,6 @@ class Project(SQLBase):
         for product in self._products:
             yield product
 
-    def rosettaProducts(self):
-        return iter(self.products)
-
     def getProduct(self, name):
         try:
             return Product.selectBy(projectID=self.id, name=name)[0]

@@ -15,6 +15,7 @@ from canonical.launchpad.interfaces.person import IPerson, IPersonSet,  \
                                                   IEmailAddress
 from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.launchpad.database.schema import Schema, Label
+from canonical.launchpad.database.pofile import POTemplate
 from canonical.lp import dbschema
 
 
@@ -50,8 +51,7 @@ class Person(SQLBase):
         if not webname:
             webname = 'UNKNOWN USER #'+str(self.id)
         return webname
-        
-        
+
     # XXX: not implemented
     def maintainedProjects(self):
         '''SELECT Project.* FROM Project
@@ -77,6 +77,10 @@ class Person(SQLBase):
                     origin = 2
                 ORDER BY datefirstseen DESC))
         '''
+        # XXX: Dafydd Harries, 2004/10/13.
+        # Import done here as putting it at the top seems to break it and
+        # right now I'd rather have this working than spend time on working
+        # out the Right solution.
         return POTemplate.select('''
             id IN (SELECT potemplate FROM pomsgset WHERE
                 id IN (SELECT pomsgset FROM POTranslationSighting WHERE

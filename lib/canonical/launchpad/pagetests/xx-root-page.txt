@@ -1,0 +1,29 @@
+
+This test the root page of Launchpad, i.e. the page with the URL '/'.
+
+  >>> print http(r"""
+  ... GET / HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: 434
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  <html>
+    <head>
+      <title>
+        Launchpad root
+      </title>
+    </head>
+    <body>
+      <h1>Launchpad!</h1>
+      <ul>
+        <li><a href="rosetta">Rosetta</a></li>
+        <li><a href="soyuz">Soyuz</a></li>
+        <li><a href="malone">Malone</a></li>
+        <li><a href="doap">Projects</a></li>
+        <li><a href="foaf">People</a></li>
+        <li><a href="ubuntulinux/forgottenpassword">Forgotten Password?</a></li>
+      </ul>
+    </body>
+  </html>
+  <BLANKLINE>
