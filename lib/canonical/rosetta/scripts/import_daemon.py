@@ -13,14 +13,11 @@ from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
 
 
 class ImportDaemon:
-    def __init__(self):
+    def setUp(self):
         self._tm = canonical.lp.initZopeless()
 
     def commit(self):
         self._tm.commit()
-        # XXX: Carlos Perello Marin 01/12/2004 This is used to clear the cache
-        # so this script is useful, but it does not work.
-        sqlos.connection.connCache.clear()
 
     def potimport(self, template):
         importer = TemplateImporter(template, template.rawimporter)
@@ -59,8 +56,12 @@ class ImportDaemon:
         self.commit()
 
     def nextImport(self):
+        # We create the connection every time to prevent a problem with cached
+        # data.
+        self.setUp()
         projectSet = ProjectSet()
         for project in projectSet:
+            project.displayname
             for product in project.products():
                 for template in product.poTemplatesToImport():
                     # We have a template with raw data to be imported.

@@ -1102,8 +1102,6 @@ class TemplateUpload:
         return getUtility(ILanguageSet)
         
     def processUpload(self):
-        print self.request
-
         if not (('SUBMIT' in self.request.form) and
                 (self.request.method == 'POST')):
             return ''
