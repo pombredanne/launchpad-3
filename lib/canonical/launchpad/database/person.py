@@ -58,24 +58,74 @@ class Person(SQLBase):
         return iter(self._emailsJoin)
 
     def browsername(self):
-        """Returns a name suitable for display on a web page."""
-        # XXX: This is *so* bogus.
-        #      1. browsername is not initialized
-        #      2. browsername is treated as a list sometimes and a
-        #         string other times
-        #      3. the docstring is totally unclear as to what the contract
-        #         for this method is
-        #      4. there is no test
-        # Steve Alexander, Tue Dec 14 14:30:38 UTC 2004
+        """Returns a name suitable for display on a web page.
+
+        1. If we have a displayname, then browsername is the displayname.
+
+        2. If we have a familyname or givenname, then the browsername
+           is "FAMILYNAME Givenname".
+
+        3. If we have no displayname, no familyname and no givenname,
+           the browsername is self.name.
+
+        >>> class DummyPerson:
+        ...     displayname = None
+        ...     familyname = None
+        ...     givenname = None
+        ...     name = 'the_name'
+        ...     # This next line is some special evil magic to allow us to
+        ...     # unit test browsername() in isolation.
+        ...     browsername = Person.browsername.im_func
+        ...
+        >>> person = DummyPerson()
+
+        Check with just the name.
+
+        >>> person.browsername()
+        'the_name'
+
+        Check with givenname and name.  Just givenname is used.
+
+        >>> person.givenname = 'the_givenname'
+        >>> person.browsername()
+        'the_givenname'
+
+        Check with givenname, familyname and name.  Both givenname and
+        familyname are used.
+
+        >>> person.familyname = 'the_familyname'
+        >>> person.browsername()
+        'THE_FAMILYNAME the_givenname'
+
+        Check with givenname, familyname, name and displayname.
+        Only displayname is used.
+
+        >>> person.displayname = 'the_displayname'
+        >>> person.browsername()
+        'the_displayname'
+
+        Remove familyname to check with givenname, name and displayname.
+        Only displayname is used.
+
+        >>> person.familyname = None
+        >>> person.browsername()
+        'the_displayname'
+
+        """
         if self.displayname:
             return self.displayname
-        if self.familyname:
-            browsername.append(self.familyname.upper())
-        if self.givenname:
-            browsername.append(self.givenname)
-        if not browsername:
-            browsername = 'UNKNOWN USER #'+str(self.id)
-        return ' '.join(browsername)
+        elif self.familyname or self.givenname:
+            # Make a list containing either ['FAMILYNAME'] or
+            # ['FAMILYNAME', 'Givenname'] or ['Givenname'].
+            # Then turn it into a space-separated string.
+            L = []
+            if self.familyname is not None:
+                L.append(self.familyname.upper())
+            if self.givenname is not None:
+                L.append(self.givenname)
+            return ' '.join(L)
+        else:
+            return self.name
 
     # XXX: not implemented
     def maintainedProjects(self):
