@@ -116,7 +116,7 @@ class ArchiveLocationMapper(object):
             where += ' AND archivetype = ' + quote(type)
         results = ArchiveLocation.select(where)
         from canonical.arch import broker
-        return [broker.ArchiveLocation(r.url, archive, r.url) for r in results]
+        return [broker.ArchiveLocation(archive, r.url, r.archivetype) for r in results]
         
     def getAll(self, archive):
         return self.get(archive)
