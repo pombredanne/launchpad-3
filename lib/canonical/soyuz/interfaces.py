@@ -72,10 +72,15 @@ class IDistroReleaseSourcesApp(Interface):
     
     def __getitem__(name):
         """Retrieve a package by name."""
+
     def __iter__():
         """Iterate over names"""
+
     def findPackagesByName():
-        """Find packages by name"""
+        """Find packages by name."""
+
+    def sourcePackagesBatch():
+        """Return a batch of source packages."""
 
     
 class IDistroReleaseSourceApp(Interface):

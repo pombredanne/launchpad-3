@@ -15,10 +15,10 @@
   <traverse for="canonical.soyuz.sql.DistrosApp" getter="__getitem__" />
   <pages for="canonical.soyuz.sql.DistrosApp"
          permission="zope.Public"
-	 allowed_attributes="results">	 
+	 allowed_attributes="results">
     <page name="index.html"
           template="templates/distros-index.pt"
-          lp:url="Soyuz/distros/index.html" 
+          lp:url="Soyuz/distros/index.html"
           />
   </pages>
 
@@ -38,25 +38,25 @@
 	 name="+add"
        />
 
-	
-  <!-- This view registers 'releases' as 'traverse' of 
+
+  <!-- This view registers 'releases' as 'traverse' of
 	        	     RootObject/soyuz/distros/$Distribution.name/. -->
-  <traverse for="canonical.soyuz.sql.DistroApp" getter="getReleaseContainer" />	
+  <traverse for="canonical.soyuz.sql.DistroApp" getter="getReleaseContainer" />
    <pages for="canonical.soyuz.sql.DistroApp"
 	  permission="zope.Public"
 	  allowed_attributes="results context">
-	
+
 	<page  name="index.html"
-          template="templates/distro-index.pt"	
-	  lp:url="Soyuz/distros/$Distribution.name/index.html"	
+          template="templates/distro-index.pt"
+	  lp:url="Soyuz/distros/$Distribution.name/index.html"
 	/>
 	<page  name="+bugs"
-          template="templates/distro-bugs.pt"	
-	  lp:url="Soyuz/distros/$Distribution.name/+bugs"	
+          template="templates/distro-bugs.pt"
+	  lp:url="Soyuz/distros/$Distribution.name/+bugs"
 	/>
 	<page  name="+translations"
-          template="templates/distro-translations.pt"	
-	  lp:url="Soyuz/distros/$Distribution.name/+translations"	
+          template="templates/distro-translations.pt"
+	  lp:url="Soyuz/distros/$Distribution.name/+translations"
 	/>
   </pages>
 
@@ -64,19 +64,19 @@
          permission="zope.Public"
 	 class="canonical.soyuz.browser.DistrosEditView"
 	 name="+edit"
-	 template="templates/distro-edit.pt"	
-	 lp:url="Soyuz/distros/$Distribution.name/+edit"	
+	 template="templates/distro-edit.pt"
+	 lp:url="Soyuz/distros/$Distribution.name/+edit"
 	/>
 
 
   <traverse for="canonical.soyuz.sql.DistroReleasesApp" getter="__getitem__" />
 
    <pages for="canonical.soyuz.sql.DistroReleasesApp"
-	  allowed_attributes="results"	 
-	  permission="zope.Public"> 
-	
+	  allowed_attributes="results"
+	  permission="zope.Public">
+
 	<page  name="index.html"
-          template="templates/releases-index.pt"	
+          template="templates/releases-index.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/index.html"
 	/>
   </pages>
@@ -85,7 +85,7 @@
 	  permission="zope.Public"
 	  class="canonical.soyuz.browser.ReleasesAddView"
 	  name="+new"
-          template="templates/release-new.pt"	
+          template="templates/release-new.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+new"
 	/>
 
@@ -93,23 +93,23 @@
 <traverse for="canonical.soyuz.sql.DistroReleaseApp" getter="getPackageContainer" />
 
    <pages for="canonical.soyuz.sql.DistroReleaseApp"
-	  allowed_attributes="results sources binaries"	 
-	  permission="zope.Public"> 
-	
+	  allowed_attributes="results sources binaries"
+	  permission="zope.Public">
+
 	<page  name="index.html"
-          template="templates/release-index.pt"	
+          template="templates/release-index.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/index.html"
 	/>
 	<page  name="+deliver"
-          template="templates/release-deliver.pt"	
+          template="templates/release-deliver.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+deliver"
 	/>
 	<page  name="+bugs"
-          template="templates/release-bugs.pt"	
+          template="templates/release-bugs.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+bugs"
 	/>
 	<page  name="+translations"
-          template="templates/release-translations.pt"	
+          template="templates/release-translations.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+translations"
 	/>
   </pages>
@@ -118,39 +118,40 @@
 	  permission="zope.Public"
 	  class="canonical.soyuz.browser.ReleaseEditView"
 	  name="+edit"
-          template="templates/release-edit.pt"	
+          template="templates/release-edit.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+edit"
 	/>
-	
+
 	<page for="canonical.soyuz.sql.DistroReleaseApp"
 	  permission="zope.Public"
 	  class="canonical.soyuz.browser.ReleaseSearchView"
 	  name="+search"
-          template="templates/release-search.pt"	
+          template="templates/release-search.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+search"
 	/>
 
-	
+
 
 <traverse for="canonical.soyuz.sql.DistroSourcesApp" getter="__getitem__" />
 
    <pages for="canonical.soyuz.sql.DistroSourcesApp"
-	  allowed_attributes="results"	 
-	  permission="zope.Public"> 
-	
+	  allowed_attributes="results"
+	  permission="zope.Public">
+
 	<page  name="index.html"
-          template="templates/distroreleases-index.pt"	
+          template="templates/distroreleases-index.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/index.html"
 	/>
    </pages>
 
-<traverse for="canonical.soyuz.sql.DistroReleaseSourcesApp" 
+<traverse for="canonical.soyuz.sql.DistroReleaseSourcesApp"
                                           getter="__getitem__" />
    <pages for="canonical.soyuz.sql.DistroReleaseSourcesApp"
-	  allowed_attributes="results"	 
-	  permission="zope.Public"> 
+	  allowed_attributes="results"
+      class="canonical.soyuz.browser.DistroReleaseSourcesView"
+	  permission="zope.Public">
 	<page  name="index.html"
-          template="templates/sourcepackage-list.pt"	
+          template="templates/sourcepackage-list.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/index.html"
 	/>
    </pages>
@@ -163,45 +164,45 @@
 	 name="+search"
        />
 
-<traverse for="canonical.soyuz.sql.DistroReleaseSourceApp" 
+<traverse for="canonical.soyuz.sql.DistroReleaseSourceApp"
                                           getter="__getitem__" />
    <pages for="canonical.soyuz.sql.DistroReleaseSourceApp"
-	  allowed_attributes="results"	 
-	  permission="zope.Public"> 
+	  allowed_attributes="results"
+	  permission="zope.Public">
 	<page  name="index.html"
-          template="templates/sourcepackage-index.pt"	
+          template="templates/sourcepackage-index.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/index.html"
 	/>
    </pages>
 
 
-<traverse for="canonical.soyuz.sql.DistroReleaseSourceReleaseApp" 
+<traverse for="canonical.soyuz.sql.DistroReleaseSourceReleaseApp"
 					  getter="__getitem__" />
 
    <pages for="canonical.soyuz.sql.DistroReleaseSourceReleaseApp"
-	  allowed_attributes="results"	 
-	  permission="zope.Public"> 
+	  allowed_attributes="results"
+	  permission="zope.Public">
 	<page  name="index.html"
-          template="templates/sourcepackagerelease-index.pt"	
+          template="templates/sourcepackagerelease-index.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/index.html"
 	/>
    </pages>
 
    <pages for="canonical.soyuz.sql.DistroReleaseSourceReleaseApp"
-	  allowed_attributes="results"	 
-	  permission="zope.Public"> 
+	  allowed_attributes="results"
+	  permission="zope.Public">
 	<page  name="+changelog"
-          template="templates/sourcechangelog-index.pt"	
+          template="templates/sourcechangelog-index.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/+changelog"
 	/>
    </pages>
 
    <pages for="canonical.soyuz.sql.DistroReleaseSourceReleaseBuildApp"
 
-	  allowed_attributes="results"	 
-	  permission="zope.Public"> 
+	  allowed_attributes="results"
+	  permission="zope.Public">
 	<page  name="index.html"
-          template="templates/sourcepackagebuild-index.pt"	
+          template="templates/sourcepackagebuild-index.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/$arch/index.html"
 	/>
    </pages>
@@ -210,22 +211,22 @@
 <traverse for="canonical.soyuz.sql.DistroTeamApp" getter="__getitem__" />
 
    <pages for="canonical.soyuz.sql.DistroTeamApp"
-	  allowed_attributes="results"	 
-	  permission="zope.Public"> 
+	  allowed_attributes="results"
+	  permission="zope.Public">
 
 	<page  name="index.html"
-          template="templates/team-index.pt"	
+          template="templates/team-index.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/team/index.html"
 	/>
    </pages>
 
 
    <pages for="canonical.soyuz.sql.DistroReleaseTeamApp"
-	  allowed_attributes="results"	 
-	  permission="zope.Public"> 
-	
+	  allowed_attributes="results"
+	  permission="zope.Public">
+
 	<page  name="index.html"
-          template="templates/releaseteam-index.pt"	
+          template="templates/releaseteam-index.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/team/$Release.name/index.html"
 	/>
    </pages>
@@ -233,11 +234,11 @@
 <traverse for="canonical.soyuz.sql.PeopleApp" getter="__getitem__"/>
 
    <pages for="canonical.soyuz.sql.PeopleApp"
-	  allowed_attributes="results"	 
-	  permission="zope.Public"> 
+	  allowed_attributes="results"
+	  permission="zope.Public">
 
 	<page  name="+list"
-          template="templates/people-list.pt"	
+          template="templates/people-list.pt"
 	  lp:url="Soyuz/people/+list"
 	/>
    </pages>
@@ -259,17 +260,12 @@
        />
 
    <pages for="canonical.soyuz.sql.PersonApp"
-	  allowed_attributes="results context" 
-	  permission="zope.Public"> 
+	  allowed_attributes="results context"
+	  permission="zope.Public">
 
 	<page  name="index.html"
-          template="templates/person-index.pt"	
+          template="templates/person-index.pt"
 	  lp:url="Soyuz/people/$person.id/index.html"
-	/>
-
-	<page  name="+key"
-          template="templates/person-key.pt"	
-	  lp:url="Soyuz/people/$person.id/+key"
 	/>
    </pages>
 
@@ -288,7 +284,7 @@
          lp:url="Soyuz/people/$person.id/+edit"
 	 name="+edit"
        />
-
+<!--
   <page for="canonical.soyuz.sql.PersonApp"
          permission="zope.Public"
 	 class="canonical.soyuz.browser.TeamJoinView"
@@ -296,16 +292,16 @@
          lp:url="Soyuz/people/$person.id/+join"
 	 name="+join"
        />
-
+-->
 
 <traverse for="canonical.soyuz.sql.DistroBinariesApp" getter="__getitem__" />
 
    <pages for="canonical.soyuz.sql.DistroBinariesApp"
-	  allowed_attributes="results"	 
-	  permission="zope.Public"> 
-	
+	  allowed_attributes="results"
+	  permission="zope.Public">
+
 	<page  name="index.html"
-          template="templates/binary-index.pt"	
+          template="templates/binary-index.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/index.html"
 	/>
    </pages>
@@ -314,11 +310,11 @@
 <traverse for="canonical.soyuz.sql.DistroReleaseBinariesApp" getter="__getitem__" />
 
    <pages for="canonical.soyuz.sql.DistroReleaseBinariesApp"
-	  allowed_attributes="results"	 
-	  permission="zope.Public"> 
-	
+	  allowed_attributes="results"
+	  permission="zope.Public">
+
 	<page  name="index.html"
-          template="templates/binarypackage-list.pt"	
+          template="templates/binarypackage-list.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/index.html"
 	/>
    </pages>
@@ -335,11 +331,11 @@
 <traverse for="canonical.soyuz.sql.DistroReleaseBinaryApp" getter="__getitem__" />
 
    <pages for="canonical.soyuz.sql.DistroReleaseBinaryApp"
-	  allowed_attributes="results"	 
-	  permission="zope.Public"> 
-	
+	  allowed_attributes="results"
+	  permission="zope.Public">
+
 	<page  name="index.html"
-          template="templates/binarypackage-index.pt"	
+          template="templates/binarypackage-index.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/index.html"
 	/>
    </pages>
@@ -347,34 +343,28 @@
 <traverse for="canonical.soyuz.sql.DistroReleaseBinaryReleaseApp" getter="__getitem__" />
 
    <pages for="canonical.soyuz.sql.DistroReleaseBinaryReleaseApp"
-	  allowed_attributes="results"	 
-	  permission="zope.Public"> 
-	
+	  allowed_attributes="results"
+	  permission="zope.Public">
+
 	<page  name="index.html"
-          template="templates/binarypackagerelease-index.pt"	
+          template="templates/binarypackagerelease-index.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/$version/index.html"
 	/>
-
-	<page  name="+license"
-          template="templates/binarypackagerelease-license.pt"	
-	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/$version/+license"
-	/>
    </pages>
-
 
    <pages for="canonical.soyuz.sql.DistroReleaseBinaryReleaseBuildApp"
-	  allowed_attributes="results"	 
-	  permission="zope.Public"> 
-	
+	  allowed_attributes="results"
+	  permission="zope.Public">
+
 	<page  name="index.html"
-          template="templates/binarypackagebuild-index.pt"	
+          template="templates/binarypackagebuild-index.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/$version/index.html"
 	/>
    </pages>
 
 
-<!--  packages stuff --> 
-	
+<!--  packages stuff -->
+
   <page for="canonical.soyuz.interfaces.IPackages"
         permission="zope.Public"
         name="index.html"
@@ -443,7 +433,7 @@
          permission="zope.Public">
     <page name="index.html"
           template="templates/project-index.pt"
-          lp:url="Soyuz/projects/$Project.name/index.html" 
+          lp:url="Soyuz/projects/$Project.name/index.html"
           />
     <page name="products+new"
           template="templates/product-add.pt"
@@ -451,29 +441,29 @@
           />
     </pages>
 
-<traverse for="canonical.database.doap.IProject" function="canonical.soyuz.browser.urlTraverseProducts" /> 
-  
+<traverse for="canonical.database.doap.IProject" function="canonical.soyuz.browser.urlTraverseProducts" />
+
   <pages for="canonical.database.doap.IProduct"
          class="canonical.soyuz.browser.ViewProduct"
          permission="zope.Public">
     <page name="index.html"
           template="templates/product-index.pt"
-          lp:url="Soyuz/projects/$Project.name/$SoyuzProduct.name/index.html" 
+          lp:url="Soyuz/projects/$Project.name/$SoyuzProduct.name/index.html"
           />
     <page name="syncs+new"
           template="templates/sourcesource-add.pt"
           lp:url="Soyuz/projects/$Project.name/$SoyuzProduct.name/syncs+new"
-          /> 
+          />
     </pages>
 
-  <traverse for="canonical.database.doap.IProduct" function="canonical.soyuz.browser.urlTraverseSyncs" /> 
- 
+  <traverse for="canonical.database.doap.IProduct" function="canonical.soyuz.browser.urlTraverseSyncs" />
+
   <pages for="canonical.soyuz.interfaces.ISync"
          class="canonical.soyuz.browser.ViewSync"
          permission="zope.Public">
     <page name="index.html"
           template="templates/sourcesource-index.pt"
-          lp:url="Soyuz/projects/$Project.name/$SoyuzProduct.name/?syncs?/$Sync.name/index.html" 
+          lp:url="Soyuz/projects/$Project.name/$SoyuzProduct.name/?syncs?/$Sync.name/index.html"
           />
   </pages>
 

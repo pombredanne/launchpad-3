@@ -331,7 +331,6 @@ class DistroReleaseSourcesApp(object):
                 present.append(bp.sourcepackage.name)
                 yield bp
 
-
 class DistroSourcesApp(object):
     def __init__(self, distribution):
         self.distribution = distribution

@@ -5,6 +5,8 @@ from canonical.soyuz.database import SoyuzSourcePackage, SoyuzBinaryPackage
 from canonical.soyuz.database import TeamParticipation, SoyuzEmailAddress
 from canonical.soyuz.database import GPGKey, ArchUserID, WikiName, JabberID
 from canonical.soyuz.database import IrcID, Membership
+from canonical.lp.z3batching import Batch
+from canonical.lp.batching import BatchNavigator
 
 from sqlobject import LIKE, OR, AND
 
@@ -26,7 +28,7 @@ class DistrosSearchView(object):
 
         #FIXME: add operator '%' for query all distros
         if name or title or description:
-            
+
             name_like = LIKE(SoyuzDistribution.q.name, "%%"+name+"%%")
             title_like = LIKE(SoyuzDistribution.q.title, "%%"+title+"%%")
             description_like = LIKE(SoyuzDistribution.q.description,
@@ -34,15 +36,15 @@ class DistrosSearchView(object):
             self.results = SoyuzDistribution.select(AND(name_like, title_like,
                                                         description_like))
             self.entries = self.results.count()
-            self.enable_results = True                
-            
+            self.enable_results = True
+
 class PeopleSearchView(object):
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.results = []
-        self.enable_results = False       
+        self.enable_results = False
 
         name = self.request.get("name", "")
 
@@ -50,7 +52,7 @@ class PeopleSearchView(object):
             name = name.replace('%', '%%')
             query = quote('%%'+ name.upper() + '%%')
 
-            #FIXME: 'ORDER by displayname' doesn't work properly 
+            #FIXME: 'ORDER by displayname' doesn't work properly
             self.results = SoyuzPerson.select('UPPER(displayname) LIKE %s OR \
             UPPER(teamdescription) LIKE %s'%(query,query))
 
@@ -73,7 +75,7 @@ class PeopleAddView(object):
         password = self.request.get("password", "")
         retype = self.request.get("retype", "")
 
-        #FIXME verify password == retype        
+        #FIXME verify password == retype
         if displayname:
             #FIXME: How to get the true DB result of the INSERT ?
             self.results = SoyuzPerson(displayname=displayname,
@@ -84,11 +86,11 @@ class PeopleAddView(object):
                                        teamdescription=None,
                                        karma=None,
                                        karmatimestamp=None)
-            
+
             SoyuzEmailAddress(person=self.results.id,
                          email=email,
                          status=int(dbschema.EmailAddressStatus.NEW))
-            
+
             self.enable_added = True
 
 class TeamAddView(object):
@@ -120,8 +122,8 @@ class TeamAddView(object):
                               teamID=self.context.id)
 
             ##FIXME: what about Membership ? the owner should be always
-            ##       the admin ? I supose not and 
-            
+            ##       the admin ? I supose not and
+
             self.enable_added = True
 
 class TeamJoinView(object):
@@ -149,19 +151,19 @@ class TeamJoinView(object):
 
         if dummy_id:
             self.person = SoyuzPerson.get(dummy_id)
-            #FIXME: verify if the person is already a member 
+            #FIXME: verify if the person is already a member
             self.results = Membership(personID=dummy_id,
                                       team=self.context.id,
                                       role=role,
                                       status=status)
-            
+
             #FIXME: How to do it recursively as it is suposed to be
             self.results = TeamParticipation(personID=dummy_id,
                                              teamID=self.context.id)
-            
+
             self.enable_join = True
 
-            
+
 class PersonEditView(object):
 
     def __init__(self, context, request):
@@ -183,99 +185,91 @@ class PersonEditView(object):
         jabberid = self.request.get("jabberid", "")
         archuserid = self.request.get("archuserid", "")
         gpgid = self.request.get("gpgid", "")
-        
+
         #FIXME: verify the unique name before update distro
         if displayname :
             self.context.person.displayname = displayname
             self.context.person.givenname = givenname
             self.context.person.familyname = familyname
             self.context.person.teamdescription = teamdescription
-            self.enable_edited = True            
+            self.enable_edited = True
 
-            #EmailAddress                
+            #EmailAddress
             if self.context.email:
                 self.context.email.email = email
                 self.enable_edited = True
             else:
-                if email:
-                    status = int(dbschema.EmailAddressStatus.NEW)
-                    person = self.context.person.id
-                    self.context.email = \
-                         Soyuz.EmailAddress(personID=person,
-                                            email=email, status=status)
-                else:
-                    self.context.email = None
+                try:
+                    self.context.email = Soyuz.EmailAddress(personID=self.context.person.id,
+                                                            email=email,
+                                                            status=int(dbschema.EmailAddressStatus.NEW))
+                except:
+                    pass
             #WikiName
             if self.context.wiki:
                 self.context.wiki.wiki = wiki
                 self.context.wiki.wikiname = wikiname
                 self.enable_edited = True
             else:
-                if wiki or wikiname:
-                    self.context.person.id
-                    self.context.wiki = WikiName(personID=person,
+                try:
+                    self.context.wiki = WikiName(personID=self.context.person.id,
                                                  wiki=wiki,
                                                  wikiname=wikiname)
-                else:
-                    self.context.wiki = None
-
+                except:
+                    pass
             #IrcID
             if self.context.irc:
                 self.context.irc.network = network
                 self.context.irc.nickname = nickname
                 self.enable_edited = True
             else:
-                if network or nickname:
-                    person = self.context.person.id
-                    self.context.irc = IrcID(personID=person,
+                try:
+                    self.context.irc = IrcID(personID=self.context.person.id,
                                              network=network,
                                              nickname=nickname)
-                else:
-                    self.context.irc = None
-                    
-            #JabberID    
+                except IndexError:
+                    pass
+            #JabberID
             if self.context.jabber:
                 self.context.jabber.jabberid = jabberid
                 self.enable_edited = True
             else:
-                if jabberid:
-                    person = self.context.person.id                    
-                    self.context.jabber = JabberID(personID=person,
+                try:
+                    self.context.jabber = JabberID(personID=self.context.person.id,
                                                    jabberid=jabberid)
-                else:
-                    self.context.jabber = None
-                    
+                except IndexError:
+                    pass
             #ArchUserID
             if self.context.archuser:
                 self.context.archuser.archuserid = archuserid
                 self.enable_edited = True
             else:
-                if archuserid:
-                    person = self.context.person.id                    
-                    self.context.archuser = ArchUserID(personID=person,
-                                                       archuserid=archuserid)
-                else:
-                    self.context.archuser = None
+                try:
+                    self.context.archuser = ArchUserID(personID=self.context.person.id,
+                                                   archuserid=archuserid)
+                except IndexError:
+                    pass
 
-#             #GPGKey
-#             if self.context.gpg:
-#                 self.context.gpg.keyid = gpgid
-#                 self.context.gpg.fingerprint = fingerprint
-#                 self.enable_edited = True
-#             else:
-#                 #FIXME: more fields ...
-#                 if gpgid:
-#                     #FIXME: lazy unique fingerprint and pubkey
-#                     pubkey = 'sample%d'%self.context.id
-#                     person = self.context.person.id
-#                     self.context.gpg = GPGKey(personID=person,
-#                                               keyid=gpgid,
-#                                               fingerprint=fingerprint,
-#                                               pubkey=pubkey,
-#                                               revoked=False)
-#                 else:
-#                     self.context.gpg = None
-        
+
+
+            #GPGKey
+            if self.context.gpg:
+                self.context.gpg.keyid = gpgid
+                self.enable_edited = True
+            else:
+                try:
+                    #FIXME: lazy unique fingerprint and pubkey
+                    fingerprint = 'sample%d'%self.context.id
+                    pubkey = fingerprint
+
+                    self.context.gpg = GPGKey(personID=self.context.person.id,
+                                              keyid=gpgid,
+                                              fingerprint=fingerprint,
+                                              pubkey=pubkey,
+                                              revoked=False)
+                except IndexError:
+                    pass
+
 class DistrosAddView(object):
 
     def __init__(self, context, request):
@@ -283,9 +277,9 @@ class DistrosAddView(object):
         self.request = request
         self.results = []
         self.enable_added = False
-        
+
         name = self.request.get("name", "").encode("ascii")
-        title = self.request.get("title", "").encode("ascii")            
+        title = self.request.get("title", "").encode("ascii")
         description = self.request.get("description", "").encode("ascii")
 
         if name or title or description:
@@ -297,7 +291,7 @@ class DistrosAddView(object):
                                              domainname='domain', owner=1)
             #FIXME: verify results
             self.enable_added = True
-    
+
 
 class DistrosEditView(object):
 
@@ -308,7 +302,7 @@ class DistrosEditView(object):
         self.enable_edited = False
 
         name = self.request.get("name", "").encode("ascii")
-        title = self.request.get("title", "").encode("ascii")            
+        title = self.request.get("title", "").encode("ascii")
         description = self.request.get("description", "").encode("ascii")
 
         if name or title or description:
@@ -318,6 +312,22 @@ class DistrosEditView(object):
             self.context.distribution.description = description
             self.enable_edited = True
 
+class DistroReleaseSourcesView(object):
+
+    BATCH_SIZE = 20
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def sourcePackagesBatchNavigator(self):
+        source_packages = list(self.context)
+        start = int(self.request.get('batch_start', 0))
+        end = int(self.request.get('batch_end', self.BATCH_SIZE))
+        batch_size = self.BATCH_SIZE
+        batch = Batch(
+            list = source_packages, start = start, size = batch_size)
+        return BatchNavigator(batch = batch, request = self.request)
 
 class ReleasesAddView(object):
 
@@ -328,7 +338,7 @@ class ReleasesAddView(object):
         self.enable_added = False
 
         name = self.request.get("name", "").encode("ascii")
-        title = self.request.get("title", "").encode("ascii")            
+        title = self.request.get("title", "").encode("ascii")
         description = self.request.get("description", "").encode("ascii")
         version = self.request.get("version", "").encode("ascii")
 
@@ -337,16 +347,16 @@ class ReleasesAddView(object):
             #FIXME: get current UTC
             #FIXME: What about figure out finally what to do with
             #      components, sections ans so on ...
-            #FIXME: parentrelease hardcoded to "warty" 
+            #FIXME: parentrelease hardcoded to "warty"
             self.results = Release(distribution=self.context.distribution.id,\
                                    name=name, title=title, \
                                    description=description,version=version,\
                                    components=1, releasestate=1,sections=1,\
                                    datereleased='2004-08-15 10:00', owner=1,
                                    parentrelease=1)
-            #FIXME: verify the results 
+            #FIXME: verify the results
             self.enable_added = True
-            
+
 class ReleaseEditView(object):
 
     def __init__(self, context, request):
@@ -354,9 +364,9 @@ class ReleaseEditView(object):
         self.request = request
         self.results = []
         self.enable_edited = False
-        
+
         name = self.request.get("name", "").encode("ascii")
-        title = self.request.get("title", "").encode("ascii")            
+        title = self.request.get("title", "").encode("ascii")
         description = self.request.get("description", "").encode("ascii")
         version = self.request.get("version", "").encode("ascii")
 
@@ -366,7 +376,7 @@ class ReleaseEditView(object):
             self.context.release.title = title
             self.context.release.description = description
             self.context.release.version = version
-            #FIXME: verify the results 
+            #FIXME: verify the results
             self.enable_edited = True
 
 class ReleaseSearchView(object):
@@ -375,16 +385,16 @@ class ReleaseSearchView(object):
         self.request = request
         self.sources = []
         self.binaries = []
-        
+
         name = request.get("name", "")
-        
+
         if name:
             self.sources = list(context.findSourcesByName(name))
             self.binaries = list(context.findBinariesByName(name))
         else:
             self.sources = []
             self.binaries = []
-            
+
 class DistrosReleaseSourcesSearchView(object):
 
     def __init__(self, context, request):
@@ -418,7 +428,7 @@ def urlTraverseProjects(projects, request, name):
 
 def urlTraverseProducts(project, request, name):
     return project.getProduct(str(name))
-    
+
 def urlTraverseSyncs(product, request, name):
     return product.getSync(str(name))
 
@@ -429,7 +439,7 @@ class View(object):
         kwargs[name]=self.getField(name)
     def getField(self, name):
         return self.request.form[name]
-        
+
 class ViewProjects(View):
     def projects(self):
         return iter(self.context)
@@ -444,7 +454,7 @@ class ViewProjects(View):
         title=self.getField('title')
         shortDescription=self.getField('shortDescription')
         displayName=self.getField('displayName')
-        
+
         project=self.context.new(name,title,description,url)
         project.shortDescription(shortDescription)
         project.displayName(displayName)
@@ -465,14 +475,14 @@ class ViewProject(View):
         url=self.getField('url')
         description=self.getField('description')
         title=self.getField('title')
-        
+
         self.request.response.redirect(name)
         self.context.newProduct(name,title,description,url)
         self.submittedok= True
-        
+
 class ViewProduct(View):
     def syncs(self):
-        return self.context.syncs
+        return iter(self.context.syncs())
     def handle_submit(self):
         if not self.request.form.get("Register", None)=="Register":
             return
