@@ -316,12 +316,8 @@ class ProductSet:
         clauseTables.add('Product')
         query = '1=1 '
         if text:
-            text = quote('%' + text + '%')
-            query += """ AND 
-                       ( Product.title ILIKE %s OR
-                         Product.shortdesc ILIKE %s OR
-                         Product.description ILIKE %s )""" % (text,
-                         text, text )
+            text = quote(text)
+            query += " AND Product.fti @@ ftq(%s) " % (text,)
         if rosetta:
             clauseTables.add('POTemplate')
         if malone:

@@ -11,6 +11,8 @@ TEST_DBNAME=launchpad_ftest_template
 
 default: all
 
+# NB. Yes - we run fti.py twice. This should be fixed sometime, but
+# it is currently needed to get the fti columns populated correctly.
 test: create 
 	@ echo "* Loading base database schema"
 	@ psql -d ${TEST_DBNAME} -f launchpad-6-00-0.sql | grep : | cat
@@ -18,12 +20,14 @@ test: create
 	@ ls -1 patch*.sql | sort | xargs -n 1 psql -d ${TEST_DBNAME} -q -f | cat
 	@ echo "* Loading language data"
 	@ psql -d ${TEST_DBNAME} -f ../languages.sql | grep : | cat
-	@ echo "* Loading sample data"
-	@ psql -d ${TEST_DBNAME} -f ../sampledata/current.sql | grep : | cat
-	@ echo "* Adding comments"
-	@ psql -d ${TEST_DBNAME} -f comments.sql | grep : | cat
 	@ echo "* Setting up full text indexes"
 	@ env LP_DBNAME=${TEST_DBNAME} python fti.py
+	@ echo "* Loading sample data"
+	@ psql -d ${TEST_DBNAME} -f ../sampledata/current.sql | grep : | cat
+	@ echo "* Setting up full text indexes"
+	@ env LP_DBNAME=${TEST_DBNAME} python fti.py
+	@ echo "* Adding comments"
+	@ psql -d ${TEST_DBNAME} -f comments.sql | grep : | cat
 	@ echo "* Vacuuming"
 	@ psql -d ${TEST_DBNAME} -c 'vacuum full analyze' | grep : | cat
 
@@ -109,7 +113,7 @@ newsample-soyuz:
 	pg_dump -d ${DBNAME} -a -D -O --table=potemplate | grep -v "\(SET \| TOC \)" > ../sampledata/new-rosetta.sql
 
 newsampledata:
-	pg_dump --disable-triggers -a -D -O -d ${DBNAME} | grep -v "\( TOC \|INSERT INTO \"language\" \|INSERT INTO spokenin \|INSERT INTO country \|INSERT INTO launchpaddatabaserevision \|'language_id_seq\|country_id_seq\|^--\)" > ../sampledata/newsampledata.sql
+	pg_dump --schema=public --disable-triggers -a -D -O -d ${DBNAME} | grep -v "\( TOC \|INSERT INTO \"language\" \|INSERT INTO spokenin \|INSERT INTO country \|INSERT INTO launchpaddatabaserevision \|'language_id_seq\|country_id_seq\|^--\)" > ../sampledata/newsampledata.sql
 
 .PHONY: default base all
 
