@@ -2,6 +2,36 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-26 17:26:26 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1255
+
+    Summary:
+      make running librarian easy
+    Revision:
+      launchpad--devel--0--patch-1255
+
+    Patches applied:
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-49
+       merge rocketfuel
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-50
+       make running librarian easy
+    
+
+    new files:
+     lib/canonical/librarian/.arch-ids/.arch-inventory.id
+     lib/canonical/librarian/.arch-ids/Makefile.id
+     lib/canonical/librarian/.arch-inventory
+     lib/canonical/librarian/Makefile
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-49
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-50
+
+
 2005-01-26 14:41:39 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1254
 
     Summary:
