@@ -14,7 +14,11 @@ from canonical.database.sqlbase import SQLBase
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.launchpad.interfaces import *
+from canonical.launchpad.interfaces import IBugProductInfestationSet, \
+                                           IBugPackageInfestationSet, \
+                                           IBugProductInfestation, \
+                                           IBugPackageInfestation
+
 from canonical.launchpad.database.bugset import BugSetBase
 
 

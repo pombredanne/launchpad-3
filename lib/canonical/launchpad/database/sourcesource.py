@@ -16,7 +16,10 @@ from canonical.database.sqlbase import SQLBase, quote
 #from canonical.soyuz.importd import ProjectMapper, ProductMapper
 
 # Launchpad interfaces
-from canonical.launchpad.interfaces import *
+# XXX: Daniel Debonzi 2004-11-25
+# Why RCSTypeEnum is inside launchpad.interfaces?
+from canonical.launchpad.interfaces import ISourceSource, ISourceSourceSet, \
+                                           RCSTypeEnum
 
 # tools
 import datetime

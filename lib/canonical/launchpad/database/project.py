@@ -14,7 +14,8 @@ from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 from canonical.database.sqlbase import SQLBase, quote
 
 # Launchpad interfaces
-from canonical.launchpad.interfaces import *
+from canonical.launchpad.interfaces import IProject, IProjectSet, \
+                                           IProjectBugTracker
 
 # Import needed database objects
 from canonical.launchpad.database.person import Person

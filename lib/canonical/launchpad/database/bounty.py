@@ -7,9 +7,9 @@ from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, FloatCol
 from sqlobject import CurrencyCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.launchpad.interfaces import IBounty, IBountySet
-from canonical.launchpad.interfaces import IAuthorization
-from canonical.launchpad.interfaces import *
+from canonical.launchpad.interfaces import IBounty, IBountySet, \
+                                           IAddFormCustomization, \
+                                           IAuthorization
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC, DEFAULT

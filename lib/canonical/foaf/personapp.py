@@ -17,7 +17,7 @@ from canonical.launchpad.database import SourcePackageInDistro, \
                                          IrcID, Membership, TeamParticipation,\
                                          DistributionRole, DistroReleaseRole
 
-from canonical.launchpad.database import IPeopleApp, IPersonApp
+from canonical.launchpad.interfaces import IPeopleApp, IPersonApp
 
 
 #

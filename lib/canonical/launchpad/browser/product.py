@@ -20,7 +20,8 @@ from canonical.launchpad.database import Project, Product, SourceSource, \
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-from canonical.launchpad.interfaces import *
+from canonical.launchpad.interfaces import IPerson, IProduct
+
 from canonical.launchpad.browser.productrelease import newProductRelease
 
 from zope.app.form.browser.add import AddView

@@ -8,11 +8,18 @@ from canonical.database.constants import nowUTC, DEFAULT
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.launchpad.interfaces import *
+from canonical.launchpad.interfaces import ISourcePackageBugAssignmentSet, \
+                                           ISourcePackageBugAssignment, \
+                                           IProductBugAssignmentSet, \
+                                           IProductBugAssignment, \
+                                           IBugsAssignedReport
+
+
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.bugset import BugSetBase
 
+from canonical.lp import dbschema
 from sets import Set
 
 class ProductBugAssignment(SQLBase):

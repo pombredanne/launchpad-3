@@ -21,11 +21,11 @@ from canonical.launchpad.database import Build, \
                                          VSourcePackageReleasePublishing, \
                                          SourcePackageInDistro
 
-from canonical.launchpad.database import IDistroSourcesApp, \
-                                         IDistroReleaseSourcesApp, \
-                                         IDistroReleaseSourceApp, \
-                                         IDistroReleaseSourceReleaseApp, \
-                                         IDistroReleaseSourceReleaseBuildApp
+from canonical.launchpad.interfaces import IDistroSourcesApp, \
+                                           IDistroReleaseSourcesApp, \
+                                           IDistroReleaseSourceApp, \
+                                           IDistroReleaseSourceReleaseApp, \
+                                           IDistroReleaseSourceReleaseBuildApp
 
 
 

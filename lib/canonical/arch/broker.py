@@ -5,7 +5,24 @@
 from arch import NameParser
 
 from zope.interface import implements, classProvides
-from canonical.launchpad.interfaces import *
+from canonical.launchpad.interfaces import INamespaceObject, ISourceTreeAPI, \
+                                           ISourceTreeFactory, IFileName, \
+                                           IArchiveItem, ICategoryItem, \
+                                           IRevisionFactory, IPatchlog, \
+                                           ICategoryFactory, ICategory, \
+                                           ILogMessage, IArchSourceTree \
+                                           IDirName, IPathNameFactory, \
+                                           IArchiveLocation, IArchive, \
+                                           IBranchItem, IVersionItem, \
+                                           IBranch, IBranchFactory, \
+                                           ISetupable, IPackage, \
+                                           IArchiveCollection, \
+                                           IVersion,IRevision, \
+                                           IRevisionIterable, \
+                                           ICategoryIterable, \
+                                           IVersionIterable
+
+
 from canonical.launchpad import database
 
 default_location = "/tmp/"

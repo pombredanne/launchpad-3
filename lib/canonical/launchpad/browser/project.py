@@ -7,7 +7,7 @@ from canonical.database.constants import nowUTC
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-from canonical.launchpad.interfaces import *
+from canonical.launchpad.interfaces import IPerson
 
 #
 # we need malone.browser.newBugTracker
