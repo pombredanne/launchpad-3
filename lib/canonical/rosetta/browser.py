@@ -262,6 +262,29 @@ class ViewPOFile:
             self.submitted = False
             return ""
 
+def traverseIPOFile(pofile, request, name):
+    print "Entro en el traversal"
+    if name == 'po':
+        print "Es un po"
+        poExport = POExport(pofile.poTemplate)
+        print "Tengo el pot"
+        languageCode = pofile.language.code
+        print "Voy a exportarlo"
+        exportedFile = poExport.export(languageCode)
+        print "Lo he exportado"
+    
+        request.response.setHeader('Content-Type', 'application/x-po')
+        request.response.setHeader('Content-Length', len(exportedFile))
+        request.response.setHeader('Content-disposition',
+                'attachment; filename="%s.po"' % languageCode)
+        return exportedFile
+    # XXX: Implemente .mo export:
+    #elseif name == 'mo':
+    else:
+        # XXX: What should we do if the tye something that it's not a po or
+        # mo?
+        raise RuntimeError("Unknow request!")
+
 
 class TranslatorDashboard:
     def projects(self):
@@ -336,7 +359,7 @@ class ViewPOExport:
     def __call__(self):
         self.export = POExport(self.context)
         # XXX: hardcoded value
-        languageCode = 'cy'
+        languageCode = 'es'
 
         self.pofile = self.export.export(languageCode)
 
