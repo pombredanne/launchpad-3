@@ -23,6 +23,7 @@ from canonical.launchpad.interfaces import ISourceSource, ISourceSourceSet, \
 
 # tools
 import datetime
+from sets import Set
 
 class SourceSource(SQLBase): 
     """SourceSource table"""
@@ -244,17 +245,38 @@ class SourceSourceSet(object):
         return ss[0]
 
     def filter(self, sync=None, process=None, 
-                     tested=None, projecttext=None):
+                     tested=None, projecttext=None,
+                     ready=None):
         query = ''
-        clauseTables = ['SourceSource', ]
+        clauseTables = Set()
+        clauseTables.add('SourceSource')
+        if ready is not None:
+            if len(query) > 0:
+                query = query + ' AND\n'
+            query = query + """SourceSource.product = Product.id AND
+                               Product.project = Project.id AND
+                               Project.active IS TRUE AND
+                               Project.reviewed IS TRUE AND
+                               Product.active IS TRUE AND
+                               Product.reviewed IS TRUE"""
+            clauseTables.add('Product')
+            clauseTables.add('Project')
         if sync is not None:
             if len(query) > 0:
                 query = query + ' AND '
             query = query + 'SourceSource.syncingapproved IS NOT NULL'
+        else:
+            if len(query) > 0:
+                query = query + ' AND '
+            query = query + 'SourceSource.syncingapproved IS NULL'
         if process is not None:
             if len(query) > 0:
                 query = query + ' AND '
             query = query + 'SourceSource.processingapproved IS NOT NULL'
+        else:
+            if len(query) > 0:
+                query = query + ' AND '
+            query = query + 'SourceSource.processingapproved IS NULL'
         if tested is not None:
             if len(query) > 0:
                 query = query + ' AND '
@@ -262,10 +284,11 @@ class SourceSourceSet(object):
         if projecttext is not None:
             if len(query) > 0:
                 query = query + ' AND '
+            if 'Project' not in clauseTables:
+                query = query + """SourceSource.product = Product.id AND
+                               Product.project = Project.id AND"""
             projecttext = quote( '%' + projecttext + '%' )
-            query = query + """SourceSource.product = Product.id AND
-                               Product.project = Project.id AND
-                               ( ( Project.title ILIKE %s ) OR
+            query = query + """( ( Project.title ILIKE %s ) OR
                                  ( Project.shortdesc ILIKE %s ) OR
                                  ( Project.description ILIKE %s ) OR
                                  ( Product.title ILIKE %s ) OR
@@ -274,8 +297,8 @@ class SourceSourceSet(object):
                                  """ % ( projecttext, projecttext,
                                          projecttext, projecttext,
                                          projecttext, projecttext )
-            clauseTables.append('Project')
-            clauseTables.append('Product')
+            clauseTables.add('Project')
+            clauseTables.add('Product')
         if len(query)==0:
             query = None
         return SourceSource.select(query, clauseTables=clauseTables)

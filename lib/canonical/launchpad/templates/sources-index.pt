@@ -16,9 +16,12 @@
 
         <div class="formControls">
             <input type="text" name="projecttext"
-                   tal:attributes="value view/projecttext" size="50">
+                   tal:attributes="value view/projecttext" size="60">
             <input type="submit" name="search" value="Search" />
             <br />
+            <input type="checkbox" name="ready"
+                   tal:attributes="checked view/ready">
+            <b>Ready</b>
             <input type="checkbox" name="sync"
                    tal:attributes="checked view/sync">
             <b>Syncing</b>
@@ -39,7 +42,7 @@
         <th>Product</th>
         <th>Name</th>
         <th>Title</th>
-        <th>Tested</th>
+        <th>Test</th>
         <th>Sync</th>
         <th>Process</th>
         <th>Started</th>
