@@ -31,6 +31,12 @@ class IUserDetailsStorage(Interface):
     def createUser(loginID, sshaDigestedPassword, displayname, emailAddresses):
         """Create a user
         
+        :param loginID: an email address.
+        :param sshaDigestedPassword: SSHA digest of the password.
+        :param displayname: full name, for display.
+        :param emailAddresses: list of email addresses.  The loginID may appear
+            in this list as well; it doesn't matter either way.
+            
         :returns: user dict, or TBD if there is an error such as a database
             constraint being violated.
         """

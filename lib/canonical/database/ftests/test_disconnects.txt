@@ -1,0 +1,70 @@
+This test demonstrates the normal behaviour of psycopg when a connection to
+postgres breaks (i.e. queries fail).  This can happen in real life when postgres
+restarts.
+
+Make a TCP proxy to postgres
+
+    >>> import os
+    >>> os.system('mktap portforward --port 5555 --dest_port 5432')
+    0
+    >>> os.system('twistd -of portforward.tap')
+    0
+
+Wait for the proxy to start (this is a hack).
+
+    >>> import time; time.sleep(1)
+    
+Connect to postgres via the proxy
+
+    >>> import psycopg
+    >>> import canonical.lp
+    >>> conn = psycopg.connect('dbname=%s host=localhost port=5555' % canonical.lp.dbname)
+
+Check that the connection is working normally
+
+    >>> cur = conn.cursor()
+    >>> cur.execute("SELECT 1;")
+    >>> cur.fetchone()[0]
+    1
+
+Break the connection by stopping the proxy 
+
+    >>> os.system('kill `cat twistd.pid`')
+    0
+
+Wait for the proxy to stop (this is a hack, but it's *much* simpler than doing
+it properly).
+
+    >>> time.sleep(1)
+
+And restart it.
+
+    >>> os.system('twistd -of portforward.tap')
+    0
+    >>> time.sleep(1)
+
+Now using our connection should fail
+
+    >>> cur.execute("SELECT 1;")
+    Traceback (most recent call last):
+    ...
+    ProgrammingError: server closed the connection unexpectedly
+        This probably means the server terminated abnormally
+        before or while processing the request.
+    <BLANKLINE>
+    SELECT 1;
+
+And keep failing.
+    
+    >>> cur.fetchone()
+    Traceback (most recent call last):
+    ...
+    Error: no results to fetch
+
+Clean up the proxy.
+
+    >>> os.system('kill `cat twistd.pid`')
+    0
+    >>> os.remove('twistd.log')
+    >>> os.remove('portforward.tap')
+
