@@ -64,8 +64,11 @@
   <include package="zope.app.principalannotation" />
     -->
   <!-- Utilities -->
+
+  <!-- XXX removed as these aren't present in the beta release.
   <include package="zope.app.schema" />
   <include package="zope.app.uniqueid" />
+    -->
 
   <!-- Misc. Service Manager objects -->
   <!-- We don't want service managers.
