@@ -2,6 +2,42 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-08 22:52:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1392
+
+    Summary:
+      fix a nasty (i.e. somewhat hard to track down,
+ based on needle-in-haystack error messages from Z3) bug that caused Z3 to
+ raise an Unauthorized rather than prompting for basic auth on protected pages.
+    Revision:
+      launchpad--devel--0--patch-1392
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-391
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-392
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-393
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-394
+       fix a nasty (i.e. somewhat hard to track down, based on needle-in-haystack error messages from Z3) bug that caused Z3 to raise an Unauthorized rather than prompting for basic auth on protected pages.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/bugs-assigned.pt
+     lib/canonical/launchpad/templates/unauthorized.pt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-391
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-392
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-393
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-394
+
+
 2005-03-08 22:38:09 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1391
 
     Summary:
