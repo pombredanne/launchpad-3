@@ -10,7 +10,7 @@ import zope.security.management
 from canonical.launchpad.interfaces import \
         IOpenLaunchBag, ILaunchBag, \
         ILaunchpadApplication, IPerson, IProject, IProduct, IDistribution, \
-        ISourcePackage, IBug
+        IDistroRelease, ISourcePackage, IBug, ISourcePackageReleasePublishing
 import zope.thread
 
 class LaunchBag(object):
@@ -24,7 +24,9 @@ class LaunchBag(object):
         IProject: 'project',
         IProduct: 'product',
         IDistribution: 'distribution',
+        IDistroRelease: 'distrorelease', 
         ISourcePackage: 'sourcepackage',
+        ISourcePackageReleasePublishing: 'sourcepackagereleasepublishing',
         IBug: 'bug',
         }
 
@@ -82,9 +84,17 @@ class LaunchBag(object):
         return self._store.distribution
     distribution = property(distribution)
 
+    def distrorelease(self):
+        return self._store.distrorelease
+    distrorelease = property(distrorelease)
+
     def sourcepackage(self):
         return self._store.sourcepackage
     sourcepackage = property(sourcepackage)
+
+    def sourcepackagereleasepublishing(self):
+        return self._store.sourcepackagereleasepublishing
+    sourcepackagereleasepublishing = property(sourcepackagereleasepublishing)
 
     def bug(self):
         return self._store.bug

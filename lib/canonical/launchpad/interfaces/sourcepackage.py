@@ -101,17 +101,27 @@ class ISourcePackageSet(Interface):
     def getSourcePackages(distroreleaseID):
         """Returns a set of SourcePackage in a DistroRelease"""
 
+    def getByPersonID(personID):
+        """Get a set of SourcePackages maintained by a Person"""
+
+
+class ISourcePackageInDistroSet(Interface):
+    """A Set of SourcePackages in a given DistroRelease"""
+
+    def __iter__():
+        """Return the SourcePackageInDistroSet Iterator"""
+
+    def __getitem__(name):
+        """Return a SourcePackageRelease Published in a DistroRelease"""
+
+class ISourcePackageUtility(Interface):
+    """A Utility for SourcePackages"""
     def findByNameInDistroRelease(distroreleaseID, pattern):
         """Returns a set o sourcepackage that matchs pattern
         inside a distrorelease"""
 
     def getByNameInDistroRelease(distroreleaseID, name):
         """Returns a SourcePackage by its name"""
-
-    # XXX: WTF is self doing here?
-    # -- Steve Alexander, Fri Dec 10 14:42:08 UTC 2004
-    def getByPersonID(self, personID):
-        """Get a set of SourcePackages maintained by a Person"""
 
     # XXX: What do the following methods and attributes do?
     #      These were missing from the interfaces, but being used

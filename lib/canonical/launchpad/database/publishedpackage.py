@@ -58,6 +58,7 @@ class PublishedPackageSet(object):
         querytxt = '1=1'
         if name:
             name = name.lower().strip()
+            querytxt += " AND binarypackagename ILIKE %s" % quote(name+"%")
             querytxt += " AND binarypackagename = %s" % quote(name)
         if text:
             raise NotImplementedError, 'Need FTI on BinaryPackages'

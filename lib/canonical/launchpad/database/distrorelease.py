@@ -21,7 +21,8 @@ from canonical.launchpad.interfaces import IDistroRelease, \
 from canonical.launchpad.database import SourcePackageName, \
                                          BinaryPackageName,\
                                          SourcePackageInDistro,\
-                                         BinaryPackageSet
+                                         BinaryPackageSet, \
+                                         SourcePackageInDistroSet
 
 
 class DistroRelease(SQLBase):
@@ -163,6 +164,9 @@ class DistroRelease(SQLBase):
 #        return srcset.getByNameInDistroRelease(self.id, name)
 
     def __getitem__(self, arch):
+        if arch == 'sources':
+            return SourcePackageInDistroSet(self)
+        
         return BinaryPackageSet(self, arch)
     
 

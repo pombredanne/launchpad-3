@@ -16,6 +16,7 @@ from canonical.lp import dbschema
 # interfaces and database 
 from canonical.launchpad.interfaces import IBinaryPackage, \
                                            IBinaryPackageUtility, \
+                                           ISourcePackageUtility, \
                                            IBinaryPackageName,\
                                            IBinaryPackageNameSet
 
@@ -114,8 +115,7 @@ class BinaryPackage(SQLBase):
 
 
 class BinaryPackageSet(object):
-    
-
+    """A Set of BinaryPackages"""
     def __init__(self, distrorelease, arch):
         self.distrorelease = distrorelease
         self.arch = arch

@@ -23,8 +23,16 @@
             <td tal:content="bag/distribution/name|nothing" />
         </tr>
         <tr>
+            <td>DistroRelease</td>
+            <td tal:content="bag/distrorelease/name|nothing" />
+        </tr>
+        <tr>
             <td>Sourcepackage</td>
             <td tal:content="bag/sourcepackage/name|nothing" />
+        </tr>
+        <tr>
+            <td>SourcePackageReleasePublishing</td>
+            <td tal:content="bag/sourcepackagereleasepublishing/name|nothing" />
         </tr>
         <tr>
             <td>User</td>

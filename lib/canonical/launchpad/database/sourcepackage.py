@@ -20,7 +20,9 @@ from canonical.launchpad.interfaces import ISourcePackageRelease, \
                                            ISourcePackageReleasePublishing, \
                                            ISourcePackage, \
                                            ISourcePackageName, \
-                                           ISourcePackageSet
+                                           ISourcePackageSet, \
+                                           ISourcePackageInDistroSet, \
+                                           ISourcePackageUtility
 
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.binarypackage import BinaryPackage
@@ -184,13 +186,39 @@ class SourcePackageSet(object):
             pkgset.add(pkg)
         return pkgset
 
-    def getSourcePackages(self, distroreleaseID):
-        """Returns a set of SourcePackage in a DistroRelease"""
-        query = ('distrorelease = %d ' 
-                 % (distroreleaseID)
-                 )
+    def getByPersonID(self, personID):
+        # XXXkiko: we should allow supplying a distrorelease here and
+        # get packages by distro
+        return SourcePackageInDistro.select("maintainer = %d" % personID,
+                                            orderBy='name')
 
-        return SourcePackageInDistro.select(query, orderBy='name')
+class SourcePackageInDistroSet(object):
+    """A Set of SourcePackages in a given DistroRelease"""
+    implements(ISourcePackageInDistroSet)
+    def __init__(self, distrorelease):
+        """Take the distrorelease when it makes part of the context"""
+        self.distrorelease = distrorelease
+
+    def __iter__(self):
+        query = 'distrorelease = %d ' % (self.distrorelease.id)
+        
+        return iter(SourcePackageInDistro.select(query, orderBy='name'))
+
+    def __getitem__(self, name):
+        plublishing_status = dbschema.PackagePublishingStatus.PUBLISHED.value
+
+        query = ('distrorelease = %d AND publishingstatus=%d AND name=%s'
+                 % (self.distrorelease.id, plublishing_status, quote(name)))
+
+        try:
+            return VSourcePackageReleasePublishing.select(query)[0]
+        except IndexError:
+            raise KeyError, name
+            
+            
+class SourcePackageUtility(object):
+    """A utility for sourcepackages"""
+    implements(ISourcePackageUtility)
 
     def findByNameInDistroRelease(self, distroreleaseID, pattern):
         """Returns a set o sourcepackage that matchs pattern
@@ -216,12 +244,6 @@ class SourcePackageSet(object):
         table = VSourcePackageReleasePublishing 
         return table.select("sourcepackage = %d AND version = %s"
                             % (sourcepackageID, quote(version)))
-
-    def getByPersonID(self, personID):
-        # XXXkiko: we should allow supplying a distrorelease here and
-        # get packages by distro
-        return SourcePackageInDistro.select("maintainer = %d" % personID,
-                                            orderBy='name')
 
 class SourcePackageName(SQLBase):
     implements(ISourcePackageName)
