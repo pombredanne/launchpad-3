@@ -9,12 +9,15 @@ import os, sys
 import unittest
 import sets
 import harness
+import sqlos.connection
 
 from canonical.functional import FunctionalDocFileSuite
+from canonical.launchpad.ftests.harness import \
+        _disconnect_sqlos, _reconnect_sqlos
 
 here = os.path.dirname(os.path.realpath(__file__))
 
-class StartStory(harness.LaunchpadTestCase):
+class StartStory(harness.LaunchpadFunctionalTestCase):
     def setUp(self):
         """Setup the database"""
         super(StartStory, self).setUp()
@@ -28,10 +31,9 @@ class StartStory(harness.LaunchpadTestCase):
         # working by accident.
         pass
 
-class EndStory(harness.LaunchpadTestCase):
+class EndStory(harness.LaunchpadFunctionalTestCase):
     def setUp(self):
         """Don't setup the database - it is already"""
-        self._cons = []
         pass
 
     def tearDown(self):
@@ -41,6 +43,12 @@ class EndStory(harness.LaunchpadTestCase):
     def test_tearDownDatabase(self):
         # Fake test to ensure tearDown is called.
         pass
+
+def setUp(test):
+    sqlos.connection.connCache = {}
+
+def tearDown(test):
+    sqlos.connection.connCache = {}
 
 def test_suite():
     suite = unittest.TestSuite()
@@ -80,7 +88,9 @@ def test_suite():
             filename = os.path.join(
                     os.pardir, 'pagetests', story, filename
                     )
-            suite.addTest(FunctionalDocFileSuite(filename))
+            suite.addTest(FunctionalDocFileSuite(
+                filename, setUp=setUp, tearDown=tearDown
+                ))
         suite.addTest(unittest.makeSuite(EndStory))
     return suite
 

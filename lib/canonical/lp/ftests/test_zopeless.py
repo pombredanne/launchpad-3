@@ -74,7 +74,6 @@ class TestZopeless(PgTestCase):
         b = MoreBeer.get(id1)
         self.failUnlessEqual(b.rating, 3)
 
-
     def test_multipleTransactions(self):
         # Here we create a MoreBeer and make modifications in a number
         # of different transactions

@@ -24,6 +24,22 @@ sys.path.append(os.path.join(here, 'lib'))
 # Set PYTHONPATH environment variable for spawned processes
 os.environ['PYTHONPATH'] = ':'.join(sys.path)
 
+# Turn on psycopg debugging wrapper
+#import canonical.database.debug
+#canonical.database.debug.install()
+
+# Silence spurious warnings or turn them into errors
+import warnings
+# Our Z3 is still using whrandom
+warnings.filterwarnings(
+        "ignore",
+        "the whrandom module is deprecated; please use the random module"
+        )
+# Some stuff got deprecated in 2.4 that we can clean up
+warnings.filterwarnings(
+        "error", category=DeprecationWarning, module="email"
+        )
+
 # This is a hack to use canonical.difflib instead of standard difflib
 # so we can easily test it. Comment out and commit to rocketfuel if
 # it causes grief -- StuartBishop 20041130

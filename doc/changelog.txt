@@ -2,6 +2,102 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-12 11:30:58 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1179
+
+    Summary:
+      Refactor and document test harnesses
+    Revision:
+      launchpad--devel--0--patch-1179
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-68
+       Merge in test harness refactor from launchpad--pgtests--2
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-69
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-70
+       Select twistd version based on python version
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-71
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-72
+       Disable UserWarning filter, since we now test for them
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-73
+       Make sqlos disconnect more robust
+    
+     * stuart.bishop@canonical.com/launchpad--pgtests--1--base-0
+       tag of stuart.bishop@canonical.com/launchpad--devel--1--patch-67
+    
+     * stuart.bishop@canonical.com/launchpad--pgtests--1--patch-1
+       Reenable test_poexport, with TODO: on 'fix' used to get it to pass
+    
+     * stuart.bishop@canonical.com/launchpad--pgtests--1--patch-2
+       Increment year in standard_template
+    
+     * stuart.bishop@canonical.com/launchpad--pgtests--1--patch-3
+       Silence spurious warnings
+    
+     * stuart.bishop@canonical.com/launchpad--pgtests--1--patch-4
+       Refactor postgres test harnesses
+    
+     * stuart.bishop@canonical.com/launchpad--pgtests--1--patch-5
+       Turn off spam
+    
+     * stuart.bishop@canonical.com/launchpad--pgtests--2--base-0
+       tag of stuart.bishop@canonical.com/launchpad--pgtests--1--patch-5
+    
+     * stuart.bishop@canonical.com/launchpad--pgtests--2--patch-1
+       Refactoring test harnesses - all tests passing now except page tests
+    
+     * stuart.bishop@canonical.com/launchpad--pgtests--2--patch-2
+       All tests pass
+    
+     * stuart.bishop@canonical.com/launchpad--pgtests--2--patch-3
+       Add doctest documentation of the PostgreSQL and Launchpad test harnesses
+    
+
+    new files:
+     lib/canonical/database/.arch-ids/debug.py.id
+     lib/canonical/database/debug.py
+     lib/canonical/launchpad/doc/.arch-ids/testing.txt.id
+     lib/canonical/launchpad/doc/testing.txt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/authserver/ftests/test_xmlrpc.py
+     lib/canonical/ftests/pgsql.py lib/canonical/functional.py
+     lib/canonical/launchpad/ftests/harness.py
+     lib/canonical/launchpad/ftests/test_harness.py
+     lib/canonical/launchpad/ftests/test_pages.py
+     lib/canonical/launchpad/ftests/test_poexport.py
+     lib/canonical/launchpad/ftests/test_system_documentation.py
+     lib/canonical/launchpad/mail/ftests/test_stub.py
+     lib/canonical/lp/ftests/test_zopeless.py
+     lib/canonical/lucille/library.py test.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-68
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-69
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-70
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-71
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-72
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-73
+     stuart.bishop@canonical.com/launchpad--pgtests--1--base-0
+     stuart.bishop@canonical.com/launchpad--pgtests--1--patch-1
+     stuart.bishop@canonical.com/launchpad--pgtests--1--patch-2
+     stuart.bishop@canonical.com/launchpad--pgtests--1--patch-3
+     stuart.bishop@canonical.com/launchpad--pgtests--1--patch-4
+     stuart.bishop@canonical.com/launchpad--pgtests--1--patch-5
+     stuart.bishop@canonical.com/launchpad--pgtests--2--base-0
+     stuart.bishop@canonical.com/launchpad--pgtests--2--patch-1
+     stuart.bishop@canonical.com/launchpad--pgtests--2--patch-2
+     stuart.bishop@canonical.com/launchpad--pgtests--2--patch-3
+
+
 2005-01-12 09:01:06 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1178
 
     Summary:

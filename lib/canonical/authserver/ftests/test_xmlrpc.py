@@ -20,8 +20,10 @@ class XMLRPCTestCase(LaunchpadTestCase):
     # DB created by running make in launchpad's database/schema directory.
     def setUp(self):
         super(XMLRPCTestCase, self).setUp()
+        # need to run different twistd depending on python version
+        ver = sys.version[:3]
         os.system('kill `cat twistd.pid 2> /dev/null` > /dev/null 2>&1')
-        cmd = 'twistd -oy %s' % (sibpath(__file__, 'test.tac'),)
+        cmd = 'twistd%s -oy %s' % (ver, sibpath(__file__, 'test.tac'),)
         rv = os.system(cmd)
         self.failUnlessEqual(rv, 0)
 
