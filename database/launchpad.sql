@@ -16,6 +16,7 @@
 	- create custom schema systems for components, etc.
         - add Series to products and projects
 	- setup translatable package descriptions
+        - mirror recent changes to dia
   CHANGES
 
 
@@ -26,6 +27,12 @@
         - don't require homepageurl for Project or Product
         - add ChangesetFileHash.id for Robert Weir
         - rename UpstreamRelease to ProductRelease
+        - rename BugExternalref -> BugExternalRef
+        - add BugExternalRef.id
+        - rename ProductBugsystem -> ProductBugSystem
+        - add BugSubscription.id
+        - add ProductBugAssignment.id, moving existing pk to unique constraint
+        - add SourcepackageBugAssignment.id, and add unique constraint
   v0.98:
         - merge SourceSource table from Andrew Bennetts
 	- change SourceSource.homepageurl to SourceSource.product
@@ -1620,6 +1627,7 @@ CREATE TABLE Bug (
   The relationship between a person and a bug.
 */
 CREATE TABLE BugSubscription (
+  id             serial PRIMARY KEY,
   person         integer NOT NULL REFERENCES Person,
   bug            integer NOT NULL REFERENCES Bug,
   subscription   integer NOT NULL -- watch, cc, ignore
@@ -1660,6 +1668,7 @@ CREATE TABLE BugInfestation (
   the release bug status is static ("is the bug present or not").
 */
 CREATE TABLE SourcepackageBugAssignment (
+  id                 serial PRIMARY KEY,
   bug                integer NOT NULL REFERENCES Bug,
   sourcepackage      integer NOT NULL REFERENCES Sourcepackage,
   -- see Bug Assignment Status schema
@@ -1670,7 +1679,7 @@ CREATE TABLE SourcepackageBugAssignment (
      but it would be a UI challenge */
   severity           integer NOT NULL,
   binarypackage      integer REFERENCES Binarypackage,
-  PRIMARY KEY ( bug, sourcepackage )
+  UNIQUE ( bug, sourcepackage )
 );
 
 
@@ -1685,6 +1694,7 @@ CREATE TABLE SourcepackageBugAssignment (
   the release bug status is static ("is the bug present or not").
 */
 CREATE TABLE ProductBugAssignment (
+  id                 serial PRIMARY KEY,
   bug                integer NOT NULL REFERENCES Bug,
   product            integer NOT NULL REFERENCES Sourcepackage,
   -- see Bug Assignment Status schema
@@ -1693,7 +1703,7 @@ CREATE TABLE ProductBugAssignment (
   priority           integer NOT NULL,
   -- see Bug Severity schema
   severity           integer NOT NULL,
-  PRIMARY KEY ( bug, product )
+  UNIQUE ( bug, product )
 );
 
 
@@ -1719,13 +1729,14 @@ CREATE TABLE BugActivity (
 
 
 /*
-  BugExternalref
+  BugExternalRef
   A table of external references for a bug, that are NOT remote
   bug system references, except where the remote bug system is
   not supported by the BugWatch table.
  XXX can we set the default timestamp to "now"
 */
-CREATE TABLE BugExternalref (
+CREATE TABLE BugExternalRef (
+  id          serial PRIMARY KEY,
   bug         integer NOT NULL REFERENCES Bug,
   -- see the Bug External Reference Types schema
   bugreftype  integer NOT NULL,
@@ -1800,7 +1811,7 @@ CREATE TABLE BugWatch (
   us to setup a bug system and then easily create watches once a bug
   has been assigned to an upstream product.
 */
-CREATE TABLE ProjectBugsystem (
+CREATE TABLE ProjectBugSystem (
   project         integer NOT NULL REFERENCES Project,
   bugsystem       integer NOT NULL REFERENCES BugSystem,
   PRIMARY KEY ( project, bugsystem )
