@@ -2,6 +2,50 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-10 16:20:21 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1409
+
+    Summary:
+      improve the wording of the bug privacy checkbox and add a distro bugs listing that also includes links to each release. the distro bugs listing is not intended to be the One True Implementation of this functionality, but rather something dead simple that we can use right now and improve with user feedback.
+    Revision:
+      launchpad--devel--0--patch-1409
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-395
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-396
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-397
+       improve the wording of IBug.private's title/description. add the field to the distro bug filing form as well
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-398
+       add a distro bugs page, with links to the bugs pages of individual releases as well
+    
+
+    new files:
+     lib/canonical/launchpad/templates/.arch-ids/distribution-bugs.pt.id
+     lib/canonical/launchpad/templates/distribution-bugs.pt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/distribution.py
+     lib/canonical/launchpad/browser/distrorelease.py
+     lib/canonical/launchpad/database/distribution.py
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/interfaces/bug.py
+     lib/canonical/launchpad/interfaces/distribution.py
+     lib/canonical/launchpad/zcml/bug.zcml
+     lib/canonical/launchpad/zcml/distribution.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-395
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-396
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-397
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-398
+
+
 2005-03-10 15:21:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1408
 
     Summary:

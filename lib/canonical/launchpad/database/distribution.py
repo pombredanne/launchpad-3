@@ -11,7 +11,7 @@ from canonical.launchpad.database.bug import BugTask
 from canonical.launchpad.database.publishedpackage import PublishedPackageSet
 from canonical.lp import dbschema
 
-# interfaces and database 
+# interfaces and database
 from canonical.launchpad.interfaces import IDistribution
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.interfaces import IDistroPackageFinder
@@ -20,36 +20,24 @@ __all__ = ['Distribution', 'DistributionSet']
 
 
 class Distribution(SQLBase):
-
+    """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(IDistribution)
 
-    _table = 'Distribution'
-    
     _defaultOrder='name'
-    
+
     name = StringCol(notNull=True, alternateID=True, unique=True)
-    
     displayname = StringCol()
-    
     title = StringCol()
-    
     summary = StringCol()
-    
     description = StringCol()
-    
     domainname = StringCol()
-    
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-
-    releases = MultipleJoin('DistroRelease', 
-                            joinColumn='distribution') 
-
-    bounties = RelatedJoin('Bounty', joinColumn='project',
-                            otherColumn='bounty',
-                            intermediateTable='ProjectBounty')
-
-    role_users = MultipleJoin('DistributionRole', 
-                              joinColumn='distribution')
+    releases = MultipleJoin('DistroRelease', joinColumn='distribution')
+    bounties = RelatedJoin(
+        'Bounty', joinColumn='project', otherColumn='bounty',
+        intermediateTable='ProjectBounty')
+    bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
+    role_users = MultipleJoin('DistributionRole', joinColumn='distribution')
 
     def traverse(self, name):
         if name == '+packages':
@@ -85,7 +73,6 @@ class Distribution(SQLBase):
             counts.append(count)
 
         return counts
-
     bugCounter = property(bugCounter)
 
 

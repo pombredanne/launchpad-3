@@ -1,0 +1,43 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+
+    <title metal:fill-slot="title">
+    Release <span tal:replace="context/title">Title</span>: Bugs
+    </title>
+
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Soyuz style sheet -->
+    <style type="text/css" media="screen">@import url(soyuz.css);</style>
+    <title>Open bugs on <span tal:content="context/name">Distro</span></title>
+</head>
+
+<body>
+
+<div metal:fill-slot="column_one"></div>
+
+<div metal:fill-slot="main">
+  <div id="content" class="documentEditable">
+
+  <h1>Bugs in <span tal:replace="context/title">Title</span></h1>
+
+  <div metal:use-macro="context/@@bugtask_search_listing/buglisting" />
+
+  <div>
+    <small>release bugs:
+    <tal:block repeat="distrorelease context/releases">
+      <a href="#"
+         tal:content="python:distrorelease.name + '(' + str(len(distrorelease.bugtasks)) + ')'"
+         tal:attributes="href distrorelease/name"/>
+    </tal:block>
+    </small>
+  </div>
+ </div>
+</div>
+
+</body>
+</html>

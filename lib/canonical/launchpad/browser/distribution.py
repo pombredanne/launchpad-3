@@ -1,30 +1,24 @@
-
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
 from zope.interface import implements
 from zope.schema import TextLine, Int, Choice
-
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-
-from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
-
-from canonical.launchpad.database import Distribution, DistributionSet
-
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
-
-from canonical.launchpad.interfaces import IDistribution, \
-        IDistributionSet, IPerson
-
 from zope.app.form.browser.add import AddView
 from zope.app.form.browser import SequenceWidget, ObjectWidget
 from zope.app.form import CustomWidgetFactory
-
+from zope.event import notify
+from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
 import zope.security.interfaces
+from zope.i18nmessageid import MessageIDFactory
+_ = MessageIDFactory('launchpad')
 
+from canonical.launchpad.database import Distribution, DistributionSet
+from canonical.lp.z3batching import Batch
+from canonical.lp.batching import BatchNavigator
+from canonical.launchpad.interfaces import IDistribution, \
+        IDistributionSet, IPerson
 
 class DistributionView:
 
@@ -37,8 +31,17 @@ class DistributionView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self.batch = Batch(
+            list(self.context.bugtasks), int(request.get('batch_start', 0)))
+        self.batchnav = BatchNavigator(self.batch, request)
 
-    
+    def task_columns(self):
+        return [
+            "id", "package", "title", "status", "submittedby", "assignedto"]
+
+    def assign_to_milestones(self):
+        return []
+
 
 class DistributionSetView:
 

@@ -1,16 +1,15 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-# sqlobject/sqlos
-from sqlobject import LIKE, AND
+__metaclass__ = type
 
-# lp imports
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
-from canonical.lp import dbschema                       
-
-# zope imports
 from zope.component import getUtility
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.component import getUtility
+
+from sqlobject import LIKE, AND
+
+from canonical.lp.z3batching import Batch
+from canonical.lp.batching import BatchNavigator
+from canonical.lp import dbschema
 
 BATCH_SIZE = 20
 
@@ -21,10 +20,10 @@ class DistroReleaseView(object):
 
     actionsPortlet = ViewPageTemplateFile(
         '../templates/portlet-distrorelease-actions.pt')
-    
+
     linksPortlet = ViewPageTemplateFile(
         '../templates/portlet-distrorelease-links.pt')
-    
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -47,7 +46,7 @@ class ReleasesAddView(object):
         self.results = []
 
     def add_action(self):
-        person = IPerson(self.request.principal, None)        
+        person = IPerson(self.request.principal, None)
         if not person:
             return False
 
@@ -81,7 +80,7 @@ class ReleaseEditView(object):
 
     def edit_action(self):
 
-        name = self.request.get("name", "")        
+        name = self.request.get("name", "")
         title = self.request.get("title", "")
         shortdesc = self.request.get("shortdesc", "")
         description = self.request.get("description", "")
@@ -89,7 +88,7 @@ class ReleaseEditView(object):
 
         if not (name or title or description or version):
             return False
-        
+
         ##XXX: (uniques) cprov 20041003
         self.context.release.name = name
         self.context.release.title = title

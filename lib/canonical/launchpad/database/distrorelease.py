@@ -14,7 +14,7 @@ from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
 from canonical.database.sqlbase import SQLBase
 from canonical.lp import dbschema
 
-# interfaces and database 
+# interfaces and database
 from canonical.launchpad.interfaces import IDistroRelease, \
     IBinaryPackageUtility, IDistroReleaseSet, ISourcePackageUtility
 
@@ -32,7 +32,7 @@ from canonical.launchpad.database.soyuz import DistroArchRelease
 ## from canonical.launchpad.database import SourcePackagePublishing
 
 class DistroRelease(SQLBase):
-    """Distrorelease SQLObject"""
+    """A particular release of a distribution."""
     implements(IDistroRelease)
 
     _table = 'DistroRelease'
@@ -99,7 +99,7 @@ class DistroRelease(SQLBase):
 
     def bugCounter(self):
         counts = []
-        
+
         clauseTables = ("VSourcePackageInDistro",
                         "SourcePackage")
         severities = [
@@ -108,7 +108,7 @@ class DistroRelease(SQLBase):
             dbschema.BugTaskStatus.FIXED,
             dbschema.BugTaskStatus.REJECTED
         ]
-        
+
         _query = ("bugtask.distrorelease = %i AND "
                   "bugtask.bugstatus = %i"
                  )
@@ -163,7 +163,7 @@ class DistroRelease(SQLBase):
                                               architecturetag=arch)[0]
         except:
             raise KeyError
-            
+
 
 # XXX: Daniel Debonzi 2005-03-04
 # I think this method is obsolet. I will comment out

@@ -39,7 +39,7 @@
 
         <browser:page
             name="+bugs"
-            template="../templates/malone-distro-index.pt"
+            template="../templates/distribution-bugs.pt"
             lp:url="malone/distros/$Distribution.name/" />
 
         <!-- XXX sabdfl moved this here, need to reactivate search tools -->

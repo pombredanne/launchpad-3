@@ -81,10 +81,11 @@ class IBug(Interface):
             #default=datetime.utcnow,
             )
     private = Bool(
-            title=_("Is this bug security related?"), required=False,
+            title=_("Should this bug be kept confidential?"), required=False,
             description=_(
-                "Check the box if this bug exposes a security vulnerability. If "
-                "you're not sure, leave this unchecked."),
+                "Check this box if, for example, this bug exposes a security "
+                "vulnerability. If selected, this bug will be visible only to "
+                "its subscribers."),
             default=False)
 
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
