@@ -4,7 +4,8 @@ import psycopg
 
 from zope.interface import implements
 
-from twisted.enterprise import adbapi
+#from twisted.enterprise import adbapi
+from canonical.authserver import adbapi
 
 from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
 from canonical.lp import dbschema
@@ -96,7 +97,8 @@ class DatabaseUserDetailsStorage(object):
         # TODO: Catch bad types, e.g. unicode, and raise appropriate exceptions
 
         # Create the Person
-        name = displayname.replace(" ", "")[:8].lower()
+        displaynameOrig = displayname
+        name = displayname.replace(" ", "")[:8].lower().encode('utf-8')
         displayname = displayname.replace("'", "''").encode('utf-8')
         pw = sshaDigestedPassword.replace("'", "''")
         sql = ("""\
@@ -111,8 +113,7 @@ class DatabaseUserDetailsStorage(object):
             "FROM Person "
             "WHERE Person.displayname = '%s' "
             "AND Person.password = '%s'"
-            % (displayname.replace("'", "''").encode('utf-8'),
-              sshaDigestedPassword.replace("'", "''"))
+            % (displayname, pw)
         )
 
         # No try/except IndexError here, because this shouldn't be able to fail!
@@ -130,7 +131,7 @@ class DatabaseUserDetailsStorage(object):
 
         return {
             'id': personID,
-            'displayname': displayname,
+            'displayname': displaynameOrig,
             'emailaddresses': list(emailAddresses)
         }
                 
