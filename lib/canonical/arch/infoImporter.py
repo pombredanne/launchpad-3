@@ -112,8 +112,10 @@ class SourceSource(SQLBase):
     # Translate importd.Job.Job's instance variables to database columns by
     # creating some simple properties.  [Note that SQLObject turns _get_* and
     # _sets_* methods into properties automagically]
+    #FIXME: buildbot should updated this on mirror completion.
     def _get_TYPE(self):
-        if self.lastsynced is None:
+ #       if self.lastsynced is None:
+        if self.frequency is None or int(self.frequency) == 0:
             return 'import'
         else:
             return 'sync'
@@ -140,18 +142,24 @@ class SourceSource(SQLBase):
         # it so can't, inheritance doesn't work here.
         from importd.Job import CopyJob
         job = CopyJob()
-        if self.lastsynced is None:
+        job.repository = str(self.repository)
+ #       if self.lastsynced is None:
+        if self.syncingapproved is None:
+	#self.frequency is None or int(self.frequency) == 0:
             job.TYPE = 'import'
+            if self.cvstarfileurl is not None and self.cvstarfileurl != "":
+                job.repository = str(self.cvstarfileurl)
+            job.frequency=0
         else:
             job.TYPE = 'sync'
 
-        job.frequency=None
+            job.frequency=int(self.frequency)
+
         job.tagging_rules=[]
 
   
         job.name = self.name
         job.RCS = RCSNames[self.rcstype]
-        job.repository = str(self.repository)
         job.svnrepository = self.svnrepository
         job.module = str(self.cvsmodule)
 
