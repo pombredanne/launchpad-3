@@ -36,7 +36,7 @@
   >>> body = msg.get_payload()
   >>> link = re.findall(r'http.*/token/.*', body)[0]
   >>> token = re.sub(r'.*token/', '', link)
-  >>> base_path = '/foaf/token/%s' % token
+  >>> base_path = '/token/%s' % token
 
   Check if the email was sent to the right address.
 

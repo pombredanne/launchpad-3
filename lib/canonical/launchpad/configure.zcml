@@ -51,6 +51,13 @@
     permission="zope.Public"
     />
 
+  <browser:suburl
+    for="canonical.publication.RootObject"
+    name="token"
+    utility="canonical.launchpad.interfaces.ILoginTokenSet"
+    permission="zope.Public"
+    />
+
   <!-- legal link -->
   <browser:page
     for="canonical.publication.RootObject"

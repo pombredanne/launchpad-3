@@ -38,7 +38,7 @@
         permission="zope.Public" 
         class="canonical.launchpad.browser.LoginTokenView"
         template="../templates/logintoken-index.pt"
-        lp:url="foaf/token/$token/+index" />
+        lp:url="token/$token/+index" />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
@@ -46,7 +46,7 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.ValidateEmailView"
         template="../templates/foaf-validateemail.pt"
-        lp:url="foaf/token/$token/+validate" />
+        lp:url="token/$token/+validate" />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
@@ -54,7 +54,7 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.ResetPasswordView"
         template="../templates/foaf-resetpassword.pt"
-        lp:url="foaf/token/$token/+resetpassword" />
+        lp:url="token/$token/+resetpassword" />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
@@ -62,7 +62,7 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.MergePeopleView"
         template="../templates/foaf-mergepeople.pt"
-        lp:url="foaf/token/$token/+accountmerge" />
+        lp:url="token/$token/+accountmerge" />
 
     <browser:addform
         name="+newaccount"
@@ -73,6 +73,6 @@
         class="canonical.launchpad.browser.NewAccountView"
         permission="zope.Public"
         template="../templates/foaf-newaccount.pt"
-        lp:url="foaf/token/$token/+newaccount" />
+        lp:url="token/$token/+newaccount" />
 
 </configure>

@@ -2,6 +2,41 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-10 14:35:41 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1407
+
+    Summary:
+      Moving /foaf/token to /token. This includes fixing pagetests and email message templates we send to the user.
+    Revision:
+      launchpad--devel--0--patch-1407
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--no-foaf-paths--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1406
+    
+     * guilherme.salgado@canonical.com/launchpad--no-foaf-paths--0--patch-1
+       Moving /foaf/token to /token. This includes fixing pagetests and email message templates we send to the user.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/foaf/configure.zcml
+     lib/canonical/launchpad/configure.zcml
+     lib/canonical/launchpad/pagetests/foaf/30-foaf-createaccount.txt
+     lib/canonical/launchpad/pagetests/foaf/32-foaf-addemail.txt
+     lib/canonical/launchpad/pagetests/foaf/33-foaf-mergepeople.txt
+     lib/canonical/launchpad/pagetests/foaf/40-validateemail.txt
+     lib/canonical/launchpad/pagetests/foaf/99-resetpassword.txt
+     lib/canonical/launchpad/templates/forgottenpassword.txt
+     lib/canonical/launchpad/templates/newuser-email.txt
+     lib/canonical/launchpad/templates/request-merge.txt
+     lib/canonical/launchpad/templates/validate-email.txt
+     lib/canonical/launchpad/zcml/logintoken.zcml
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--no-foaf-paths--0--base-0
+     guilherme.salgado@canonical.com/launchpad--no-foaf-paths--0--patch-1
+
+
 2005-03-10 12:57:44 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1406
 
     Summary:

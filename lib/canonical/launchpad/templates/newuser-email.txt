@@ -4,7 +4,7 @@ Thank you for registering at The Launchpad. To complete your
 registration, please click on the link below and follow the
 instructions to create your account:
 
-   %(appurl)s/foaf/token/%(longstring)s
+   %(appurl)s/token/%(longstring)s
 
 The Launchpad is a web portal for open source developers that
 includes easy web based translation and bug management. We'll
