@@ -1482,7 +1482,7 @@ VALUES (19, 5, 1, now(), now(), TRUE, 1,
 
 /* A multiline example */
 INSERT INTO POTranslation (translation)
-VALUES ('La ubicación y jerarquía de las carpetas de contactos de Evolution ha cambiado desde Evolution 1.x.\n\nTenga paciencia mientras Evolution migra sus carpetas...')
+VALUES ('La ubicación y jerarquía de las carpetas de contactos de Evolution ha cambiado desde Evolution 1.x.\n\nTenga paciencia mientras Evolution migra sus carpetas...');
 INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete, obsolete,
 		      fuzzy)
 VALUES (68, 5, 1, 1, TRUE, FALSE, FALSE);
@@ -1501,7 +1501,7 @@ INSERT INTO POTranslation (translation)
 VALUES ('_Añadir grupo');
 INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete, obsolete,
 		      fuzzy) 
-VALUES (95, 5, 1, 1, TRUE, TRUE, FALSE);
+VALUES (95, 6, 1, 1, TRUE, TRUE, FALSE);
 
 INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
 			      datelastseen, inlastrevision, pluralform)
