@@ -36,18 +36,6 @@
     lp:url="malone/bugs/+new"
     />
 
-  <!-- XXX: This form isn't listed on the MaloneURLs Wiki. This functionality
-    may not be desirable -->
-  <editform
-    name="+edit"
-    schema="canonical.database.malone.IBug"
-    label="Change Bug Information"
-    permission="zope.View"
-    template="templates/bug-edit.pt"
-    lp:url="malone/bugs/$Bug.id/+edit">
-    <!--<widget field="datecreated" class="canonical.widgets.DateWidget" />-->
-  </editform>
-
   <!-- BugAttachment forms -->
   <addform
     name="+new"

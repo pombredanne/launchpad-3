@@ -59,6 +59,9 @@
 	   -> .iscurrent is now represented by .sequence>0
 	- make POTemplate.branch NOT NULL
 	- add POFile.fuzzyheader
+	- remove Language.pluralform
+	- add Language.pluralformexpresion
+	- add Language.pluralforms
   v0.98:
         - merge SourceSource table from Andrew Bennetts
 	- change SourceSource.homepageurl to SourceSource.product
@@ -1596,7 +1599,10 @@ CREATE TABLE Language (
   code                  text NOT NULL UNIQUE,
   englishname           text,
   nativename            text,
-  pluralform		text
+  pluralforms           integer,
+  pluralexpresion	text,
+  CHECK ( ( pluralforms IS NOT NULL AND pluralexpresion IS NOT NULL) OR
+          ( pluralforms IS NULL AND pluralexpresion IS NULL ) )
 );
 
 
