@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces import IPasswordEncryptor
 from canonical.launchpad.interfaces import ITeamParticipationSet
 from canonical.launchpad.interfaces import ICalendarOwner
 from canonical.launchpad.database.pofile import POTemplate
+from canonical.launchpad.database.calendar import Calendar
 from canonical.lp.dbschema import KarmaField
 from canonical.lp import dbschema
 from canonical.foaf import nickname
@@ -45,8 +46,6 @@ class Person(SQLBase):
         StringCol('teamdescription', default=None),
         IntCol('karma', default=0),
         DateTimeCol('karmatimestamp', default=UTC_NOW),
-        ForeignKey(name='calendar', foreignKey='Calendar', dbName='calendar',
-                   default=None),
     ]
 
     # RelatedJoin gives us also an addLanguage and removeLanguage for free
@@ -59,6 +58,17 @@ class Person(SQLBase):
 
     def emails(self):
         return iter(self._emailsJoin)
+
+    _calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
+                           default=None, forceDBName=True)
+    def calendar(self):
+        if not self._calendar:
+            self._calendar = Calendar(ownerID=self.id,
+                                      title=self.displayname,
+                                      revision=0)
+        return self._calendar
+    calendar = property(calendar)
+
 
     # XXX Marius Gedminas, 2004-12-13.
     #     the following function is buggy and untested

@@ -115,5 +115,4 @@ def calendarFromPersonApp(personapp):
     canonical.launchpad.interfaces.ICalendar"""
     import sys
     person = personapp.person
-    print >> sys.stderr, (personapp, person, person.calendar)
     return person.calendar

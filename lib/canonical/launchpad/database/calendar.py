@@ -1,4 +1,4 @@
-from zope.interface import implements
+from zope.interface import implements, providedBy
 
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, EnumCol
 
@@ -12,7 +12,7 @@ class Calendar(SQLBase):
     implements(ICalendar, ILaunchpadCalendar)
     owner = ForeignKey(dbName='owner', notNull=True, foreignKey='Person')
     title = StringCol(dbName='title', notNull=True)
-    revision = IntCol(dbName='revision', notNull=True)
+    revision = IntCol(dbName='revision', notNull=True, default=0)
 
 class CalendarSubscription(SQLBase):
     person = ForeignKey(dbName='person', notNull=True, foreignKey='Person')
@@ -33,3 +33,4 @@ class CalendarEvent(SQLBase):
     exceptions = StringCol(dbName='exceptions')
     interval = IntCol(dbName='interval')
     rec_list = StringCol(dbName='rec_list')
+
