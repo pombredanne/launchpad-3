@@ -6,44 +6,25 @@
     i18n_domain="launchpad">
     
 
-<securedutility
-   class="canonical.launchpad.database.BinaryPackageUtility"
-   provides="canonical.launchpad.interfaces.IBinaryPackageUtility">
-   <allow interface="canonical.launchpad.interfaces.IBinaryPackageUtility" />
-</securedutility>
+    <!-- BinaryPackage -->
+    <content class="canonical.launchpad.database.BinaryPackage">
+        <allow interface="canonical.launchpad.interfaces.IBinaryPackage" />
+    </content>
 
-<!-- BinaryPackage -->
-<content class="canonical.launchpad.database.BinaryPackage">
-   <allow interface="canonical.launchpad.interfaces.IBinaryPackage" />
-</content>
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IBinaryPackage"
+        name="+index" />
 
-<browser:defaultView
-   for="canonical.launchpad.interfaces.IBinaryPackage"
-   name="+index" />
+    <browser:traverse
+        for="canonical.launchpad.database.BinaryPackage" 
+        getter="__getitem__" />
 
-<browser:traverse
-   for="canonical.launchpad.database.BinaryPackage" 
-   getter="__getitem__" />
-
-<browser:page
-   for="canonical.launchpad.database.BinaryPackage" 
-   class="canonical.launchpad.browser.BinaryPackageView"
-   permission="zope.Public"
-   name="+index"
-   template="../templates/binarypackage-index.pt"
-   lp:url="Soyuz/distros/$Distribution/$Distrorelease/$Archtag/$Bin/+index"/>
-
-
-<!-- BinaryPackageSet -->
-<content class="canonical.launchpad.database.BinaryPackageSet">
-   <allow interface="canonical.launchpad.interfaces.IBinaryPackageSet" />
-   <implements interface="zope.app.container.interfaces.IItemContainer"/>
-</content>
-
-<!-- BinaryPackagename -->
-<content class="canonical.launchpad.database.BinaryPackageName">
-   <allow interface="canonical.launchpad.interfaces.IBinaryPackageName" />
-</content>
-
+    <browser:page
+        for="canonical.launchpad.database.BinaryPackage" 
+        class="canonical.launchpad.browser.BinaryPackageView"
+        permission="zope.Public"
+        name="+index"
+        template="../templates/binarypackage-index.pt"
+        lp:url="Soyuz/distros/$Distribution/$Distrorelease/$Archtag/$Bin/+index"/>
 
 </configure>

@@ -9,19 +9,19 @@ from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.database.distribution import Distribution
-from canonical.launchpad.database.distrorelease import DistroRelease
-from canonical.launchpad.database.person import Person
-from canonical.launchpad.database.person import GPGKey
-from canonical.launchpad.database.sourcepackage import SourcePackage, \
+from canonical.launchpad.database import Distribution
+from canonical.launchpad.database import DistroRelease
+from canonical.launchpad.database import Person
+from canonical.launchpad.database import GPGKey
+from canonical.launchpad.database import SourcePackage, \
     SourcePackageRelease, SourcePackageName
-from canonical.launchpad.database.binarypackage import BinaryPackage, \
-    BinaryPackageName
-from canonical.launchpad.database.milestone import Milestone
-from canonical.launchpad.database.product import Product
-from canonical.launchpad.database.project import Project
-from canonical.launchpad.database.productrelease import ProductRelease
-from canonical.launchpad.database.bugtracker import BugTracker
+from canonical.launchpad.database import BinaryPackage
+from canonical.launchpad.database import BinaryPackageName
+from canonical.launchpad.database import Milestone
+from canonical.launchpad.database import Product
+from canonical.launchpad.database import Project
+from canonical.launchpad.database import ProductRelease
+from canonical.launchpad.database import BugTracker
 from canonical.database.sqlbase import SQLBase, quote_like, quote
 
 from sqlobject import AND, OR, CONTAINSSTRING

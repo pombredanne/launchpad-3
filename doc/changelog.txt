@@ -2,6 +2,130 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-10 02:39:36 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1402
+
+    Summary:
+      Got classes related with source and binary packages into diferent files on database, interfaces and zcml directories.
+    Revision:
+      launchpad--devel--0--patch-1402
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-453
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-454
+       Got classes related with source and binary packages into diferent files on database, interfaces and zcml directories.
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-455
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-456
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-457
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-458
+       Code fix to get tests pass
+    
+
+    new files:
+     lib/canonical/launchpad/database/.arch-ids/binarypackagename.py.id
+     lib/canonical/launchpad/database/.arch-ids/binarypackagenameset.py.id
+     lib/canonical/launchpad/database/.arch-ids/binarypackageset.py.id
+     lib/canonical/launchpad/database/.arch-ids/binarypackageutility.py.id
+     lib/canonical/launchpad/database/.arch-ids/sourcepackageindistro.py.id
+     lib/canonical/launchpad/database/.arch-ids/sourcepackageindistroset.py.id
+     lib/canonical/launchpad/database/.arch-ids/sourcepackagename.py.id
+     lib/canonical/launchpad/database/.arch-ids/sourcepackagenameset.py.id
+     lib/canonical/launchpad/database/.arch-ids/sourcepackagerelease.py.id
+     lib/canonical/launchpad/database/.arch-ids/sourcepackageutility.py.id
+     lib/canonical/launchpad/database/.arch-ids/vsourcepackagereleasepublishing.py.id
+     lib/canonical/launchpad/database/binarypackagename.py
+     lib/canonical/launchpad/database/binarypackagenameset.py
+     lib/canonical/launchpad/database/binarypackageset.py
+     lib/canonical/launchpad/database/binarypackageutility.py
+     lib/canonical/launchpad/database/sourcepackageindistro.py
+     lib/canonical/launchpad/database/sourcepackageindistroset.py
+     lib/canonical/launchpad/database/sourcepackagename.py
+     lib/canonical/launchpad/database/sourcepackagenameset.py
+     lib/canonical/launchpad/database/sourcepackagerelease.py
+     lib/canonical/launchpad/database/sourcepackageutility.py
+     lib/canonical/launchpad/database/vsourcepackagereleasepublishing.py
+     lib/canonical/launchpad/interfaces/.arch-ids/binarypackagename.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/binarypackagenameset.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/binarypackageset.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/binarypackageutility.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/general.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/package.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/sourcepackageindistro.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/sourcepackageindistroset.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/sourcepackagename.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/sourcepackagenameset.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/sourcepackagerelease.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/sourcepackageutility.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/vsourcepackagereleasepublishing.py.id
+     lib/canonical/launchpad/interfaces/binarypackagename.py
+     lib/canonical/launchpad/interfaces/binarypackagenameset.py
+     lib/canonical/launchpad/interfaces/binarypackageset.py
+     lib/canonical/launchpad/interfaces/binarypackageutility.py
+     lib/canonical/launchpad/interfaces/general.py
+     lib/canonical/launchpad/interfaces/package.py
+     lib/canonical/launchpad/interfaces/sourcepackageindistro.py
+     lib/canonical/launchpad/interfaces/sourcepackageindistroset.py
+     lib/canonical/launchpad/interfaces/sourcepackagename.py
+     lib/canonical/launchpad/interfaces/sourcepackagenameset.py
+     lib/canonical/launchpad/interfaces/sourcepackagerelease.py
+     lib/canonical/launchpad/interfaces/sourcepackageutility.py
+     lib/canonical/launchpad/interfaces/vsourcepackagereleasepublishing.py
+     lib/canonical/launchpad/zcml/.arch-ids/binarypackagename.zcml.id
+     lib/canonical/launchpad/zcml/.arch-ids/binarypackagenameset.zcml.id
+     lib/canonical/launchpad/zcml/.arch-ids/binarypackageset.zcml.id
+     lib/canonical/launchpad/zcml/.arch-ids/binarypackageutility.zcml.id
+     lib/canonical/launchpad/zcml/.arch-ids/sourcepackagename.zcml.id
+     lib/canonical/launchpad/zcml/.arch-ids/sourcepackagenameset.zcml.id
+     lib/canonical/launchpad/zcml/.arch-ids/sourcepackagerelease.zcml.id
+     lib/canonical/launchpad/zcml/.arch-ids/sourcepackagereleaseindistro.zcml.id
+     lib/canonical/launchpad/zcml/.arch-ids/sourcepackagereleaseindistroset.zcml.id
+     lib/canonical/launchpad/zcml/.arch-ids/sourcepackageset.zcml.id
+     lib/canonical/launchpad/zcml/.arch-ids/sourcepackageutility.zcml.id
+     lib/canonical/launchpad/zcml/.arch-ids/vsourcepackagereleasepublishing.zcml.id
+     lib/canonical/launchpad/zcml/binarypackagename.zcml
+     lib/canonical/launchpad/zcml/binarypackagenameset.zcml
+     lib/canonical/launchpad/zcml/binarypackageset.zcml
+     lib/canonical/launchpad/zcml/binarypackageutility.zcml
+     lib/canonical/launchpad/zcml/sourcepackagename.zcml
+     lib/canonical/launchpad/zcml/sourcepackagenameset.zcml
+     lib/canonical/launchpad/zcml/sourcepackagerelease.zcml
+     lib/canonical/launchpad/zcml/sourcepackagereleaseindistro.zcml
+     lib/canonical/launchpad/zcml/sourcepackagereleaseindistroset.zcml
+     lib/canonical/launchpad/zcml/sourcepackageset.zcml
+     lib/canonical/launchpad/zcml/sourcepackageutility.zcml
+     lib/canonical/launchpad/zcml/vsourcepackagereleasepublishing.zcml
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/configure.zcml
+     lib/canonical/launchpad/database/__init__.py
+     lib/canonical/launchpad/database/binarypackage.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/interfaces/__init__.py
+     lib/canonical/launchpad/interfaces/binarypackage.py
+     lib/canonical/launchpad/interfaces/sourcepackage.py
+     lib/canonical/launchpad/vocabularies/dbobjects.py
+     lib/canonical/launchpad/zcml/binarypackage.zcml
+     lib/canonical/launchpad/zcml/configure.zcml
+     lib/canonical/launchpad/zcml/sourcepackage.zcml
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-453
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-454
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-455
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-456
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-457
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-458
+
+
 2005-03-09 23:25:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1401
 
     Summary:

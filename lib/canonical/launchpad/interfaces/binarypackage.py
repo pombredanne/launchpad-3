@@ -1,13 +1,8 @@
 # Imports from zope
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
+from zope.schema import Bool, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
-
-# Launchpad Interface import
-from canonical.launchpad.interfaces.sourcepackage import \
-     IPackageSet
 
 
 #
@@ -57,91 +52,29 @@ class IBinaryPackage(Interface):
         """Return the packagename that matches the given version"""
     
     
-class IBinaryPackageName(Interface):
-    id = Int(title=_('ID'), required=True)
-    name = TextLine(title=_('Name'), required=True)
-    binarypackages = Attribute('binarypackages')
+# XXX: Daniel Debonzi 20050309
+# I believe it is older tha I :)
+# Will remove if nothing breaks
 
-    def nameSelector(sourcepackage=None, selected=None):
-        """Return browser-ready HTML to select a Binary Package Name"""
-
-    def __unicode__():
-        """Return the name"""
-
-class IBinaryPackageNameSet(Interface):
-
-    def __getitem__():
-        """Return the packagename that matches the given name text"""
-
-    def query(name, distribution=None, distrorelease=None,
-              distroarchrelease=None, text=None):
-        """Return the binary package names for packages that match the given
-        criteria."""
-
-class IBinaryPackageBuild(Interface):
-    """A binary package build, e.g apache-utils 2.0.48-4_i386"""
-    # See the BinaryPackageBuild table
+## class IBinaryPackageBuild(Interface):
+##     """A binary package build, e.g apache-utils 2.0.48-4_i386"""
+##     # See the BinaryPackageBuild table
     
-    version = Attribute("A version string")
-    maintainer = Attribute("Maintainer")
-    sourcePackageRelease = Attribute("An ISourcePackageRelease")
-    sourcepackage = Attribute("An ISourcePackage")
-    binaryPackage = Attribute("An ISourcePackageRelease")
-    processor = Attribute("An ISourcePackageRelease")
-    binpackageformat = Attribute("An ISourcePackageRelease")
-    datebuilt = Attribute("An ISourcePackageRelease")
-
-class IPackagePublishing(Interface):
-    binarypackage = Attribute("BinaryPackage")
-    distroarchrelease = Attribute("Distro Arch Relese")
-    packages = Attribute("Set of Packages inside a DistroRelease")
+##     version = Attribute("A version string")
+##     maintainer = Attribute("Maintainer")
+##     sourcePackageRelease = Attribute("An ISourcePackageRelease")
+##     sourcepackage = Attribute("An ISourcePackage")
+##     binaryPackage = Attribute("An ISourcePackageRelease")
+##     processor = Attribute("An ISourcePackageRelease")
+##     binpackageformat = Attribute("An ISourcePackageRelease")
+##     datebuilt = Attribute("An ISourcePackageRelease")
 
 
+# XXX: Daniel Debonzi 20050309
+# Seems to be duplicated. We already have it in publishing.py
+# Will remove if nothing breaks
 
-class IBinaryPackageSet(Interface):
-    """A set of binary packages"""    
-    
-    distrorelease = Attribute("DistroRelease")
-
-    arch = Attribute("Arch")
-
-    title = Attribute('Title')
-
-    def findPackagesByName(pattern):
-        """Search BinaryPackages matching pattern"""
-
-    def findPackagesByArchtagName(archtag, pattern, fti=False):
-        """Search BinaryPackages matching pattern and archtag"""
-
-    def __getitem__(name):
-        """Getter"""    
-
-    def __iter__():
-        """Iterator"""    
-
-class IBinaryPackageUtility(Interface):
-    """A binary packages utility"""
-
-    def getByNameInDistroRelease(distroreleaseID, name):
-        """Get an BinaryPackage in a DistroRelease by its name"""
-
-    def findByNameInDistroRelease(distroreleaseID, pattern,
-                                  archtag=None, fti=False):
-        """Returns a set of binarypackages that matchs pattern
-        inside a distrorelease"""
-
-    def getDistroReleasePackages(distroreleaseID):
-        """Get a set of BinaryPackages in a distrorelease"""
-    
-    def getByNameVersion(distroreleaseID, name, version):
-        """Get a set of BinaryPackages in a DistroRelease by its name and version"""
-
-    def getByArchtag(distroreleaseID, name, version, archtag):
-        """Get a BinaryPackage in a DistroRelease by its name, version and archtag"""
-
-
-
-
-
-
-
+## class IPackagePublishing(Interface):
+##     binarypackage = Attribute("BinaryPackage")
+##     distroarchrelease = Attribute("Distro Arch Relese")
+##     packages = Attribute("Set of Packages inside a DistroRelease")

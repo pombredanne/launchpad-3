@@ -24,6 +24,7 @@
 
   <browser:suburl
     for="canonical.publication.RootObject"
+    newlayer="canonical.launchpad.layers.SoyuzLayer"
     name="distros"
     utility="canonical.launchpad.interfaces.IDistributionSet"
     permission="zope.Public"
