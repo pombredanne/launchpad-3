@@ -1226,7 +1226,7 @@
               <div class="boardCommentDetails">
                   <strong>Strange bug with duplicate messages.</strong>
   <BLANKLINE>
-                  Posted by (none)
+                  Posted by Sample Person
                   at 24 Sep 04 21:35
               </div>
   <BLANKLINE>
@@ -1261,7 +1261,7 @@
                           enter it below.
                       </div>
                       <input name="field.title" type="text" /><br />
-                      <textarea name="field.contents"></textarea>
+                      <textarea name="field.contents"...></textarea>
                       <input type="submit" name="UPDATE_SUBMIT" value="Add" />
                   </form>
               </div>
@@ -1283,7 +1283,7 @@
               <div class="boardCommentDetails">
                   <strong>Fantastic idea, I'd really like to see this</strong>
   <BLANKLINE>
-                  Posted by (none)
+                  Posted by Sample Person
                   at 24 Sep 04 21:29
               </div>
   <BLANKLINE>
@@ -1318,7 +1318,7 @@
                           enter it below.
                       </div>
                       <input name="field.title" type="text" /><br />
-                      <textarea name="field.contents"></textarea>
+                      <textarea name="field.contents"...></textarea>
                       <input type="submit" name="UPDATE_SUBMIT" value="Add" />
                   </form>
               </div>
@@ -1375,7 +1375,7 @@
                           enter it below.
                       </div>
                       <input name="field.title" type="text" /><br />
-                      <textarea name="field.contents"></textarea>
+                      <textarea name="field.contents"...></textarea>
                       <input type="submit" name="UPDATE_SUBMIT" value="Add" />
                   </form>
               </div>
@@ -1419,7 +1419,7 @@
                           enter it below.
                       </div>
                       <b>Subject:</b> <input name="field.title" type="text" size="50" /><br />
-                      <b>Comment:</b> <textarea name="field.contents"></textarea>
+                      <b>Comment:</b> <textarea name="field.contents"...></textarea>
                       <input type="submit" name="UPDATE_SUBMIT" value="Add" />
                   </form>
               </div>

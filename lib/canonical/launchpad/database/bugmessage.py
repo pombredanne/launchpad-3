@@ -35,7 +35,6 @@ class BugMessage(SQLBase):
 
 def BugMessageFactory(context, **kw):
     bug = context.context.context.id # view.comments.bug
-    # XXX Brad Bollenbach this bug message is being set to owner 1
     return BugMessage(
             bug=bug, parent=None, datecreated=datetime.utcnow(),
             ownerID=context.request.principal.id,

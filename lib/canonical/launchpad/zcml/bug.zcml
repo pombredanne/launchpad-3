@@ -86,6 +86,10 @@
         template="../templates/bug-edit.pt"
         fields="title shortdesc description name"
         lp:url="malone/bugs/$Bug.id/+edit">
+        <browser:widget
+           field="title"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="55" />
     </browser:editform>
 
     <browser:view
@@ -127,7 +131,11 @@
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
         lp:url="malone/bugs/+new">
-        <widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget
+           field="title"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="55" />
     </browser:addform>
 
     <browser:pages

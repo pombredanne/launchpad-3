@@ -11,7 +11,7 @@ from canonical.lp.dbschema import BugAssignmentStatus, BugPriority, \
      BugSubscription
 from canonical.launchpad.vocabularies import BugTrackerVocabulary
 
-FROM_ADDR = "noreply@bbnet.ca"
+FROM_ADDR = "Malone Bugtracker <noreply@canonical.com>"
 GLOBAL_NOTIFICATION_EMAIL_ADDRS = ("global@bbnet.ca", "dilys@muse.19inch.net")
 CC = "CC"
 

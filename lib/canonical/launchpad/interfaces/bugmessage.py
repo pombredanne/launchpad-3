@@ -28,7 +28,7 @@ class IBugMessage(Interface):
     contents = Text(
             title=_('Contents'), required=True, readonly=True,
             )
-    personmsg = Int(
+    owner = Int(
             title=_('Person'), required=False, readonly=True,
             )
     parent = Int(
