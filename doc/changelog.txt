@@ -2,6 +2,48 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-30 09:44:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1518
+
+    Summary:
+      Create ProductSeries entries for ProductReleases referenced by Rosetta, which requires this. Temporary fix RequireProductSeries lands
+    Revision:
+      launchpad--devel--0--patch-1518
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-252
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-253
+       Create ProductSeries entries for ProductReleases referenced by Rosetta, which requires this. Temporary fix RequireProductSeries lands
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-254
+       Invoke DBA perogative and renumber patches to avoid using patch releases
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-255
+       Set correct patch numbers in the DB
+    
+
+    new files:
+     database/schema/.arch-ids/patch-11-13-0.sql.id
+     database/schema/patch-11-13-0.sql
+
+    modified files:
+     database/schema/patch-11-14-0.sql doc/changelog.txt
+
+    renamed files:
+     database/schema/.arch-ids/patch-11-13-0.sql.id
+       ==> database/schema/.arch-ids/patch-11-14-0.sql.id
+     database/schema/patch-11-13-0.sql
+       ==> database/schema/patch-11-14-0.sql
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-252
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-253
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-254
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-255
+
+
 2005-03-30 08:17:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1517
 
     Summary:
