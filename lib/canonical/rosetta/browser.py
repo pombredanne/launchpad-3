@@ -510,6 +510,7 @@ class ViewPOTemplate:
             except:
                 # The file is not correct
                 self.status_message= 'Please, review the pot file seems to have a problem'
+                return
 
             self.context.rawfile = base64.encodestring(potfile)
             self.context.daterawimport = UTC_NOW
