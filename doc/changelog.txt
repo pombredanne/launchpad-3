@@ -2,6 +2,48 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-12 22:16:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1191
+
+    Summary:
+      malone bugfixes related to discussion earlier today with mark,
+ steve and kiko
+    Revision:
+      launchpad--devel--0--patch-1191
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-289
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-290
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-291
+       changed malone front page bug filing url as a quick fix to steer the user around a non-context-aware bug filing form
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-292
+       made the upstream task listing fit in human-size browsers (fixes bug #39/production)
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-293
+       merge from rf
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-anonymous.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-authenticated.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-maintainer.txt
+     lib/canonical/launchpad/templates/bugassignment-search-listing.pt
+     lib/canonical/launchpad/templates/malone-index.pt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-289
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-290
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-291
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-292
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-293
+
+
 2005-01-12 20:58:41 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1190
 
     Summary:

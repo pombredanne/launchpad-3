@@ -257,8 +257,7 @@ class ProductBugsView:
 
     def assignment_columns(self):
         return [
-            "id", "title", "milestone", "status", "priority", "severity",
-            "submittedon", "submittedby", "assignedto", "actions"]
+            "id", "title", "milestone", "status", "submittedby", "assignedto"]
 
     def assign_to_milestones(self):
         if self.request.principal:

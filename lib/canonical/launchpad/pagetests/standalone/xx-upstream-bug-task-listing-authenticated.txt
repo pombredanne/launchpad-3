@@ -10,13 +10,13 @@
           Ubuntu
       </h1>
   ...
-    <small>displaying matching bugs 1 to 2 of 2</small> <small> :: 
         <a ...>unassigned</a> .
         <a ...>my todo list</a> .
         <a ...>critical</a>
         .
             <a ...>submitted by me</a>
   ...
+    <small>displaying matching bugs 1 to 2 of 2</small>...
             <td onclick="window.location='/malone/tasks/3/+edit'">2</td>
   ...
             <td onclick="window.location='/malone/tasks/1/+edit'">1</td>
