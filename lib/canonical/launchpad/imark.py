@@ -827,6 +827,9 @@ class IPerson(Interface):
     karmatimestamp = Datetime(
             title=_('Karma Timestamp'), required=False, readonly=True,
             )
+    name = TextLine(
+            title=_('Team Description'), required=False, readonly=False,
+            )
 
 class IDOAPApplication(Interface):
     """DOAP application class."""

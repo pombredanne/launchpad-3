@@ -465,7 +465,7 @@ class ISourcePackage(Interface):
     name = Attribute("A string")
     shortdesc = Attribute("Package Shortdesc")
     description = Attribute("Package Description")
-    distro = Attribute("Package Distribution")
+    distro = Attribute("Package Original Distribution")
     ##releases = Attribute("List of ISourcePackageRelease objects")
     proposed = Attribute("A source package release with upload status of "
                          "PROPOSED, else None")

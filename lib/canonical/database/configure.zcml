@@ -104,14 +104,15 @@
         <allow interface="canonical.launchpad.interfaces.IBinarypackageName" />
     </content>
 
-    <content class="canonical.launchpad.database.Person">
-        <allow interface="canonical.launchpad.interfaces.IPerson"/>
-	<require
-	permission="zope.Public"
-	set_attributes="password"
-	/>
+<!-- It is already declared in soyuz/sql.zcml     -->
+<!--     <content class="canonical.launchpad.database.Person"> -->
+<!--         <allow interface="canonical.launchpad.interfaces.IPerson"/> -->
+<!-- 	<require -->
+<!-- 	permission="zope.Public" -->
+<!-- 	set_attributes="password" -->
+<!-- 	/> -->
 
-    </content>
+<!--     </content> -->
 
     <adapter for="canonical.lp.placelessauth.interfaces.ILaunchpadPrincipal"
         provides="canonical.launchpad.interfaces.IPerson"

@@ -27,8 +27,8 @@ from canonical.launchpad.database import SoyuzBinaryPackage, SoyuzBuild, \
                                          ManifestEntry, Release, \
                                          SoyuzSourcePackageRelease, \
                                          SoyuzDistroArchRelease, \
-                                         SoyuzDistribution, SoyuzPerson, \
-                                         SoyuzEmailAddress, GPGKey, \
+                                         SoyuzDistribution, Person, \
+                                         EmailAddress, GPGKey, \
                                          ArchUserID, WikiName, JabberID, \
                                          IrcID, Membership, TeamParticipation,\
                                          DistributionRole, DistroReleaseRole, \
@@ -284,7 +284,7 @@ class DistroReleaseSourcesApp(object):
 
     def __init__(self, release):
         self.release = release
-        self.people = SoyuzPerson.select('teamowner IS NULL')
+        self.people = Person.select('teamowner IS NULL')
         
     def _query(self):
         return (
@@ -366,8 +366,8 @@ class DistroTeamApp(object):
 class PeopleApp(object):
     def __init__(self):
         #FIXME these names are totaly crap
-        self.p_entries = SoyuzPerson.select('teamowner IS NULL').count()
-        self.t_entries = SoyuzPerson.select('teamowner IS NOT NULL').count()
+        self.p_entries = Person.select('teamowner IS NULL').count()
+        self.t_entries = Person.select('teamowner IS NOT NULL').count()
 
     #FIXME: traverse by ID ?
     def __getitem__(self, id):
@@ -379,12 +379,12 @@ class PeopleApp(object):
 
     def __iter__(self):
         #FIXME is that the only way to ORDER
-        return iter(SoyuzPerson.select('1=1 ORDER by displayname'))
+        return iter(Person.select('1=1 ORDER by displayname'))
 
 class PersonApp(object):
     def __init__(self, id):
         self.id = id
-        self.person = SoyuzPerson.get(self.id)
+        self.person = Person.get(self.id)
 
         self.packages = self._getsourcesByPerson()
 
@@ -400,7 +400,7 @@ class PersonApp(object):
 
         
         # FIXME: Most of this code probably belongs as methods/properties of
-        #        SoyuzPerson
+        #        Person
 
         try:
             self.members = Membership.selectBy(teamID=self.id)
@@ -450,7 +450,7 @@ class PersonApp(object):
             
         # Retrieve an email by person id
         #FIXME: limited to one, solve the EDIT multi emails problem 
-        self.email = SoyuzEmailAddress.selectBy(personID=self.id)
+        self.email = EmailAddress.selectBy(personID=self.id)
 
         try:
             self.wiki = WikiName.selectBy(personID=self.id)[0]

@@ -16,11 +16,11 @@ from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.database import SoyuzSourcePackage, WikiName
 from canonical.launchpad.database import SoyuzBinaryPackage, JabberID 
 from canonical.launchpad.database import TeamParticipation, Membership
-from canonical.launchpad.database import SoyuzEmailAddress, IrcID
+from canonical.launchpad.database import EmailAddress, IrcID
 from canonical.launchpad.database import GPGKey, ArchUserID 
 
 # app components
-from canonical.soyuz.sql import SoyuzDistribution, Release, SoyuzPerson
+from canonical.soyuz.sql import SoyuzDistribution, Release, Person
 from canonical.soyuz.importd import ProjectMapper, ProductMapper
 
 
@@ -86,7 +86,7 @@ class PeopleListView(object):
         self.request = request
 
     def viewPeopleBatchNavigator(self):
-        people = list(SoyuzPerson.select())
+        people = list(Person.select())
         start = int(self.request.get('batch_start', 0))
         end = int(self.request.get('batch_end', BATCH_SIZE))
         batch_size = BATCH_SIZE
@@ -126,7 +126,7 @@ class PeopleSearchView(object):
         ##  Order all results alphabetically,
         ## btw, 'ORDER by displayname' doesn't work properly here and should
         ## be moved to Person SQLBASE class
-        return SoyuzPerson.select("""UPPER(displayname) LIKE %s OR UPPER(teamdescription) LIKE %s"""%(query, query))
+        return Person.select("""UPPER(displayname) LIKE %s OR UPPER(teamdescription) LIKE %s"""%(query, query))
 
 
 class PeopleAddView(object):
@@ -151,7 +151,7 @@ class PeopleAddView(object):
         ## otherwise we will get an exception 
         if displayname:
             
-            self.results = SoyuzPerson(displayname=displayname,
+            self.results = Person(displayname=displayname,
                                        givenname=givenname,
                                        familyname=familyname,
                                        password=password,
@@ -160,7 +160,7 @@ class PeopleAddView(object):
                                        karma=None,
                                        karmatimestamp=None)
             
-            SoyuzEmailAddress(person=self.results.id,
+            EmailAddress(person=self.results.id,
                          email=email,
                          status=int(dbschema.EmailAddressStatus.NEW))
             
@@ -189,7 +189,7 @@ class TeamAddView(object):
             #XXX: (team+authserver) cprov 20041003
             ##  The team is owned by the current ID now,
             ##  but it should comes from authserver
-            self.results = SoyuzPerson(displayname=displayname,
+            self.results = Person(displayname=displayname,
                                        givenname=None,
                                        familyname=None,
                                        password=None,
@@ -226,7 +226,7 @@ class TeamJoinView(object):
         status = dbschema.MembershipStatus.PROPOSED.value
 
         if dummy_id:
-            self.person = SoyuzPerson.get(dummy_id)
+            self.person = Person.get(dummy_id)
             ##XXX: (uniques) cprov 20041003
             self.results = Membership(personID=dummy_id,
                                       team=self.context.id,

@@ -76,7 +76,7 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.launchpad.database.SoyuzEmailAddress">
+  <content class="canonical.launchpad.database.EmailAddress">
     <allow interface="canonical.launchpad.interfaces.ISoyuzEmailAddress"/>
     <require
      permission="zope.Public"
@@ -251,13 +251,13 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.sql.SoyuzPerson">
-    <allow interface="canonical.launchpad.interfaces.ISoyuzPerson"/>
+  <content class="canonical.soyuz.sql.Person">
+    <allow interface="canonical.launchpad.interfaces.IPerson"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
     <require
      permission="zope.Public"
      set_attributes="displayname givenname familyname teamowner
-    teamdescription password karma karmatimestamp"
+     teamdescription password karma karmatimestamp"
     />
   </content>
 

@@ -7,7 +7,7 @@
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Rosetta style sheet -->
-    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+<!--     <style type="text/css" media="screen">@import url(rosetta.css);</style> -->
 </head>
 
 <body>
@@ -25,37 +25,38 @@
 
 <div  tal:condition="not:view/success">
 
- <p>
-  <b>
+ <p class="documentDescription">
    Enter your valid registration email address below.  
    You will receive an email on how to reset your password. 
-  </b>
  </p>
 
 
- <form name="passwdretrive" method="POST">
  <fieldset>
    <legend>
      Account details
    </legend>
+ <form name="passwdretrive" method="POST">
  <div class="field">
-   <label for="__ac_email">Email address</label>
+   <label>Email address</label>
+      <div class="formHelp">
+        Make sure this is the e-mail address you registered with.
+      </div>
+      <input type="text" size="50" name="email" tal:attributes="value request/email|nothing" />
+      <div class="formControls">
+        <input class="context" tabindex="4" type="submit" value="Send"/>
+      </div>
+ </div>
+ </form>
+ </fieldset>
 
-     <div class="field">
-       <input type="text" size="50" name="email" tal:attributes="value request/email|nothing" />
-        <div class="formControls">
-          <input class="context" tabindex="4" type="submit" value="Send"/>
-        </div>
-     </div>
-  </div>
-  </fieldset>
-  </form>
 
 </div>
 
 <div tal:condition="view/success">
  <br>
- <b>Thank you!</b>
+ <p class="documentDescription">
+    Thank you!
+ </p>
  <br>
  <br>
  You have been sent an email with a link to reset your password.
