@@ -27,7 +27,9 @@
             </address>
 			<address class="app">Malone</address>			
 		</div>
-		<form class="search" tal:condition="view/showGlobalSearchBox|nothing">
+		<form class="search"
+              tal:condition="not:view/hideGlobalSearchBox|nothing"
+              tal:attributes="action string:${request/getApplicationURL}/malone/products/${context/name}">
 			<input type="text" name="searchtext"
                    tal:attributes="value request/searchtext|nothing"/>
 			<input type="submit" value="Search"/>

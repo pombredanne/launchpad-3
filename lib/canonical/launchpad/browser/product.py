@@ -160,12 +160,10 @@ class ProductBugsView:
             self.bugtask_search(), int(request.get('batch_start', 0)))
         self.batchnav = BatchNavigator(self.batch, request)
 
-    def showGlobalSearchBox(self):
-        """Should the global search box be shown on the page?"""
-        if self.request.form.get("searchtext"):
+    def hideGlobalSearchBox(self):
+        """Should the global search box be hidden on the page?"""
+        if not self.request.form.get("searchtext"):
             return True
-        else:
-            return False
 
     def bugtask_search(self):
         """Search for bug tasks, pulling the params out of the request."""

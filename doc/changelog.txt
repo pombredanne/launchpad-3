@@ -2,6 +2,36 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-09 22:32:16 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1299
+
+    Summary:
+      more integration of the new UI,
+ and trying as best as possible to integrate the old Malone UI,
+ where it makes sense to do so.
+    Revision:
+      launchpad--devel--0--patch-1299
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-349
+       tidy up slightly the upstream bug filing form. looks acceptable (in lieu of having our newly-designed one) in 800x600 now, IMHO.
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-350
+       fix the global search widget so that the search actually works in all places that the widget is displayed.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/templates/bug-add.pt
+     lib/canonical/launchpad/templates/malone_skin/css/malone.css
+     lib/canonical/launchpad/templates/malone_skin/malone-standard-page.pt
+     lib/canonical/launchpad/zcml/product.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-349
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-350
+
+
 2005-02-09 19:34:25 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1298
 
     Summary:
