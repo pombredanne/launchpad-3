@@ -1,4 +1,4 @@
-
+# Imports from zope
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
                         TextLine, Password
 from zope.interface import Interface, Attribute
@@ -74,3 +74,65 @@ class IEmailAddress(Interface):
         title=_('Person'), required=True,
         )
     
+# XXX: Daniel Debonzi 2004-10-14
+# It should not been used anymore
+class ISoyuzPerson(Interface):
+    """A person"""
+    # use id instead unique name
+    id = Attribute("ID for a person")
+    givenname = Attribute("Given name")
+    familyname = Attribute("Family name")
+    displayname = Attribute("Display name")
+    teamowner = Attribute("The Team Owner") 
+    teamdescription = Attribute("The Team Description")
+    karma = Attribute("Karma")
+    karmatimestamp = Attribute("Karma Time stamp")
+    password = Attribute("Password")
+    name = Attribute("Login or Nick")
+    
+
+class ISoyuzEmailAddress(Interface):
+    """Email aka our unique name"""
+    person = Attribute("Owner")
+    email = Attribute("Email")
+    status = Attribute("Status")
+    statusname = Attribute("StatusName")
+
+
+#
+# Person related Applications Interfaces
+#
+
+class IPeopleApp(Interface):
+    """A People Tag """
+    p_entries = Attribute("Number of person entries")
+    t_entries = Attribute("Number of teams entries")
+
+    def __getitem__(release):
+        """retrieve personal by name"""
+
+    def __iter__():
+        """retrieve an iterator"""
+
+
+class IPersonApp(Interface):
+    """A Person Tag """
+    person = Attribute("Person entry")
+    id = Attribute("Person entry")
+    email = Attribute("Email")
+    wiki = Attribute("Wiki")
+    jabber = Attribute("Jabber")
+    irc = Attribute("IRC")    
+    archuser = Attribute("Arch user")    
+    gpg = Attribute("GPG")
+
+    members = Attribute("Members of a Team")
+    teams = Attribute("Team which I'm a member")
+    subteams = Attribute("Sub Teams")
+    distroroles = Attribute("Distribution Roles")
+    distroreleaseroles = Attribute("Distrorelase Roles")
+
+    packages = Attribute("A Selection of SourcePackageReleases")
+
+    roleset = Attribute("Possible Roles")
+    statusset = Attribute("Possible Status")

@@ -20,11 +20,22 @@ from canonical.launchpad.interfaces.person import *
 from canonical.launchpad.interfaces.translationeffort import *
 from canonical.launchpad.interfaces.infestation import *
 from canonical.launchpad.interfaces.language import *
+from canonical.launchpad.interfaces.archuser import *
+from canonical.launchpad.interfaces.binarypackage import *
+from canonical.launchpad.interfaces.build import *
+from canonical.launchpad.interfaces.distro import *
+from canonical.launchpad.interfaces.gpg import *
+from canonical.launchpad.interfaces.irc import *
+from canonical.launchpad.interfaces.jabber import *
+from canonical.launchpad.interfaces.manifest import *
+from canonical.launchpad.interfaces.processor import *
+from canonical.launchpad.interfaces.team import *
+from canonical.launchpad.interfaces.wikiname import *
 
 # these will go...
 from canonical.launchpad.iandrew import *
 from canonical.launchpad.imark import *
-from canonical.launchpad.ikiko import *
+
 
 
 class IAuthApplication(Interface):

@@ -4,8 +4,9 @@
 """
 
 # Python standard library imports
-from string import split, join
+from string import split, strip, join
 from sets import Set
+from apt_pkg import ParseDepends, ParseSrcDepends
 
 # Zope imports
 from zope.interface import implements
@@ -15,7 +16,7 @@ from canonical.lp import dbschema
 from canonical.database.sqlbase import quote
 
 # launchpad imports
-from canonical.launchpad.interfaces import IBinaryPackage,IBinaryPackageBuild,\
+from canonical.launchpad.interfaces import IBinarypackage,IBinaryPackageBuild,\
                                            ISourcePackageRelease,\
                                            IManifestEntry, IPackages,\
                                            IBinaryPackageSet,\
@@ -162,15 +163,13 @@ class DistroReleaseSourceReleaseBuildApp(object):
             self.build = build_results[0]
 
 class builddepsContainer(object):
-    def __init__(self, name, version):
+    def __init__(self, name, version, signal):
         self.name = name
-        tmp = split(version)
-        if len(tmp) <= 1:
-            self.signal = None
-            self.version = ''
-        else:
-            self.signal = tmp[0]
-            self.version = tmp[1][:-1]
+        self.version = version
+        if len(strip(signal)) == 0:
+            signal = None
+        self.signal = signal
+
 
 class DistroReleaseSourceReleaseApp(object):
     def __init__(self, sourcepackage, version, distrorelease):
@@ -198,24 +197,22 @@ class DistroReleaseSourceReleaseApp(object):
 
         if self.sourcepackagerelease.builddepends:
             self.builddepends = []
-            builddepends = split(self.sourcepackagerelease.builddepends, ',')
-            for pack in builddepends:
-                tmp = split(pack)
-                self.builddepends.append(builddepsContainer(tmp[0],
-                                                            join(tmp[1:])))
+
+            depends = ParseSrcDepends(self.sourcepackagerelease.builddepends)
+            for dep in depends:
+                self.builddepends.append(builddepsContainer(*dep[0]))
+
         else:
             self.builddepends = None
 
 
         if self.sourcepackagerelease.builddependsindep:
             self.builddependsindep = []
-            builddependsindep = split(self.sourcepackagerelease.\
-                                      builddependsindep, ',')
-            for pack in builddependsindep:
-                tmp = split(pack)
-                self.builddependsindep.\
-                        append(builddepsContainer(tmp[0],
-                                                  join(tmp[1:])))
+
+            depends = ParseSrcDepends(self.sourcepackagerelease.builddependsindep)
+            for dep in depends:
+                self.builddependsindep.append(builddepsContainer(*dep[0]))
+
         else:
             self.builddependsindep = None
 
@@ -523,13 +520,11 @@ class DistroReleaseBinaryReleaseBuildApp(object):
     pkgformat = property(pkgformat)
 
     def _buildList(self, packages):
-        package_list = split(packages, ',') 
         blist = []
-        for pack in package_list:
-            tmp = split(pack)
-            if tmp:
-                blist.append(builddepsContainer(tmp[0],
-                                                join(tmp[1:])))
+        packs = ParseDepends(packages)
+        for pack in packs:
+            blist.append(builddepsContainer(*pack[0]))
+                                          
         return blist
 
     def depends(self):

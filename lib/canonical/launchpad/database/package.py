@@ -15,8 +15,6 @@ from canonical.lp import dbschema
 
 # interfaces and database 
 from canonical.launchpad.interfaces import ISourcePackageRelease, \
-                                           ISourcePackage, \
-                                           IBinaryPackage, \
                                            ISourcepackage, IBinarypackage, \
                                            ISourcepackageName, IBinarypackageName
 
@@ -42,7 +40,7 @@ class SoyuzPackagePublishing(SQLBase):
 
 
 class Binarypackage(SQLBase):
-    implements(IBinaryPackage)
+    implements(IBinarypackage)
     _table = 'BinaryPackage'
     _columns = [
         ForeignKey(name='binarypackagename', dbName='binarypackagename', 
@@ -126,30 +124,6 @@ class BinarypackageName(SQLBase):
             )
     ####
 
-class SoyuzBuild(SQLBase):
-    _table = 'Build'
-    _columns = [
-        DateTimeCol('datecreated', dbName='datecreated', notNull=True),
-        ForeignKey(name='processor', dbName='processor',
-                   foreignKey='SoyuzProcessor', notNull=True),
-        ForeignKey(name='distroarchrelease', dbName='distroarchrelease', 
-                   foreignKey='SoyuzDistroArchRelease', notNull=True),
-        IntCol('buildstate', dbName='buildstate', notNull=True),
-        DateTimeCol('datebuilt', dbName='datebuilt'),
-        DateTimeCol('buildduration', dbName='buildduration'),
-        ForeignKey(name='buildlog', dbName='buildlog',
-                   foreignKey='LibraryFileAlias'),
-        ForeignKey(name='builder', dbName='builder',
-                   foreignKey='SoyuzBuilder'),
-        ForeignKey(name='gpgsigningkey', dbName='gpgsigningkey',
-                   foreignKey='GPGKey'),
-        StringCol('changes', dbName='changes'),
-        ForeignKey(name='sourcepackagerelease', dbName='sourcepackagerelease',
-                   foreignKey='SourcePackageRelease', notNull=True),
-
-    ]
-
-
 class SourcePackageRelease(SQLBase):
     """A source package release, e.g. apache 2.0.48-3"""
     
@@ -223,7 +197,7 @@ def createSourcePackage(name, maintainer=0):
 class Sourcepackage(SQLBase):
     """A source package, e.g. apache2."""
 
-    implements(ISourcePackage)
+    implements(ISourcepackage)
 
     _table = 'SourcePackage'
 
@@ -231,7 +205,7 @@ class Sourcepackage(SQLBase):
     sourcepackagename = ForeignKey(foreignKey='SourcepackageName',
                    dbName='sourcepackagename', notNull=True)
     shortdesc = StringCol(dbName='shortdesc', notNull=True)
-    description = StringCol(dbName='description', notNull=True),
+    description = StringCol(dbName='description', notNull=True)
     manifest = ForeignKey(foreignKey='Manifest', dbName='manifest',
                           default=None)
     distro = ForeignKey(foreignKey='Distribution', dbName='distro')

@@ -380,6 +380,11 @@
           template="../launchpad/templates/binarypackagerelease-index.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/$version/index.html"
 	/>
+
+	<page  name="+license"
+          template="../launchpad/templates/binarypackagerelease-license.pt"
+	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/$version/+license"
+	/>
    </pages>
 
    <pages for="canonical.soyuz.sql.DistroReleaseBinaryReleaseBuildApp"
@@ -388,7 +393,7 @@
 
 	<page  name="index.html"
           template="../launchpad/templates/binarypackagebuild-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/$version/index.html"
+	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/$version/$archtag/index.html"
 	/>
    </pages>
 
@@ -424,7 +429,7 @@
         />
 
 
-  <page for="canonical.launchpad.interfaces.IBinaryPackage"
+  <page for="canonical.launchpad.interfaces.IBinarypackage"
         permission="zope.Public"
         name="index.html"
         template="../launchpad/templates/package-index.pt"

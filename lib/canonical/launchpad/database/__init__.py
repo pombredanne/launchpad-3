@@ -21,12 +21,15 @@ from canonical.launchpad.database.person import *
 from canonical.launchpad.database.schema import *
 from canonical.launchpad.database.language import *
 from canonical.launchpad.database.translation_effort import *
-
+from canonical.launchpad.database.processor import *
+from canonical.launchpad.database.manifest import *
+from canonical.launchpad.database.branch import *
+from canonical.launchpad.database.build import *
 
 #
 # Now the older ones that need to be cleaned out
 #
-from canonical.launchpad.dkiko import *
+
 
 
 

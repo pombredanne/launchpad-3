@@ -66,7 +66,7 @@ tal:content="context/binarypackagerelease/installedsize" /> Kbytes
 	        <a tal:content="bindepends/name"
 		tal:attributes="href string:../../../${bindepends/name}"/> 
 		<tal:dummy condition="bindepends/signal">
-		  <span tal:content="bindepends/signal" /> 
+		  ( <span tal:content="bindepends/signal" /> 
 		  <span tal:content="bindepends/version" />)
 <!-- 		  <a tal:content="bindepends/version" -->
 <!-- 		  tal:attributes="href string:../../../${bindepends/name}/${bindepends/version}" /> ) -->
@@ -89,7 +89,7 @@ tal:content="context/binarypackagerelease/installedsize" /> Kbytes
 	        <a tal:content="binrecommends/name"
 		tal:attributes="href string:../../../${binrecommends/name}"/> 
 		<tal:dummy condition="binrecommends/signal">
-		  <span tal:content="binrecommends/signal" /> 
+		  ( <span tal:content="binrecommends/signal" /> 
 		  <span tal:content="binrecommends/version" /> )
 		</tal:dummy> 
 	      </li> 
@@ -115,7 +115,7 @@ tal:content="context/binarypackagerelease/installedsize" /> Kbytes
 	        <a tal:content="binconflicts/name"
 		tal:attributes="href string:../../../${binconflicts/name}"/> 
 		<tal:dummy condition="binconflicts/signal">
-		  <span tal:content="binconflicts/signal" /> 
+		  ( <span tal:content="binconflicts/signal" /> 
 		  <span tal:content="binconflicts/version" /> )
 		</tal:dummy> 
 	      </li> 
@@ -136,7 +136,7 @@ tal:content="context/binarypackagerelease/installedsize" /> Kbytes
 	        <a tal:content="binreplaces/name"
 		tal:attributes="href string:../../../${binreplaces/name}"/>  
 		<tal:dummy condition="binreplaces/signal">
-		  <span tal:content="binreplaces/signal" /> 
+		  ( <span tal:content="binreplaces/signal" /> 
 		  <span tal:content="binreplaces/version" /> )
 		</tal:dummy> 
 	      </li> 
@@ -161,7 +161,7 @@ tal:content="context/binarypackagerelease/installedsize" /> Kbytes
 	        <a tal:content="binsuggests/name"
 		tal:attributes="href string:../../../${binsuggests/name}"/>  
 		<tal:dummy condition="binsuggests/signal">
-		  <span tal:content="binsuggests/signal" />
+		  ( <span tal:content="binsuggests/signal" />
 		  <span tal:content="binsuggests/version" /> )
 		</tal:dummy>
 	      </li>
@@ -181,7 +181,7 @@ tal:content="context/binarypackagerelease/installedsize" /> Kbytes
 	     <li>
 	      <span tal:content="binprovides/name" />
 		<tal:dummy condition="binprovides/signal">
-		  <span tal:content="binprovides/signal" />
+		  ( <span tal:content="binprovides/signal" />
 		  <span tal:content="binprovides/version" /> )
 		</tal:dummy>
 	      </li>
