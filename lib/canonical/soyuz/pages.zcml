@@ -207,6 +207,26 @@
 	/>
    </pages>
 
+   <pages for="canonical.soyuz.sql.DistroReleaseSourceReleaseBuildApp"
+
+	  allowed_attributes="results"
+	  permission="zope.Public">
+	<page  name="+changes"
+          template="../launchpad/templates/sourcepackagebuild-changes.pt"
+	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/$arch/+changes"
+	/>
+   </pages>
+
+   <pages for="canonical.soyuz.sql.DistroReleaseSourceReleaseBuildApp"
+
+	  allowed_attributes="results"
+	  permission="zope.Public">
+	<page  name="+buildlog"
+          template="../launchpad/templates/sourcepackagebuild-buildlog.pt"
+	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/$arch/+buildlog"
+	/>
+   </pages>
+
 
 <traverse for="canonical.soyuz.sql.DistroTeamApp" getter="__getitem__" />
 

@@ -144,6 +144,17 @@ class DistroReleaseSourceReleaseBuildApp(object):
         self.sourcepackagerelease = sourcepackagerelease
         self.arch = arch
 
+        query = ('Build.sourcepackagerelease = %i '
+                 'AND Build.distroarchrelease = Distroarchrelease.id '
+                 'AND Distroarchrelease.architecturetag = %s'
+                 % (self.sourcepackagerelease.id, quote(self.arch))
+                 )
+
+        build_results = SoyuzBuild.select(query)
+
+        if build_results.count() > 0:
+            self.build = build_results[0]
+
 class builddepsContainer(object):
     def __init__(self, name, version):
         self.name = name
@@ -489,80 +500,41 @@ class DistroReleaseBinaryReleaseBuildApp(object):
         return 'Unknown (%d)' %self.binarypackagerelease.binpackageformat
     pkgformat = property(pkgformat)
 
-
-    def depends(self):
-        bindepends = split(self.binarypackagerelease.depends, ',') 
-        bindep_list = []
-        for pack in bindepends:
+    def _buildList(self, packages):
+        package_list = split(packages, ',') 
+        blist = []
+        for pack in package_list:
             tmp = split(pack)
             if tmp:
-                bindep_list.append(builddepsContainer(tmp[0],
-                                                      join(tmp[1:])))
-        
-        return bindep_list
+                blist.append(builddepsContainer(tmp[0],
+                                                join(tmp[1:])))
+        return blist
+
+    def depends(self):
+        return self._buildList(self.binarypackagerelease.depends)
     depends = property(depends)
 
     def recommends(self):
-        binrecommends = split(self.binarypackagerelease.recommends, ',') 
-        binrec_list = []
-        for pack in binrecommends:
-            tmp = split(pack)
-            if tmp:
-                binrec_list.append(builddepsContainer(tmp[0],
-                                                      join(tmp[1:])))
-            return binrec_list
+        return self._buildList(self.binarypackagerelease.recommends)
     recommends = property(recommends)
 
     def conflicts(self):
-        binconflicts = split(self.binarypackagerelease.conflicts, ',') 
-        bincfl_list = []
-        for pack in binconflicts:
-            tmp = split(pack)
-            if tmp:
-                bincfl_list.append(builddepsContainer(tmp[0],
-                                                      join(tmp[1:])))
-        
-        return bincfl_list
-
+        return self._buildList(self.binarypackagerelease.conflicts)
     conflicts = property(conflicts)
 
 
     def replaces(self):
-        binreplaces = split(self.binarypackagerelease.replaces, ',') 
-        binrep_list = []
-        for pack in binreplaces:
-            tmp = split(pack)
-            if tmp:
-                binrep_list.append(builddepsContainer(tmp[0],
-                                                      join(tmp[1:])))
-        
-        return binrep_list
+        return self._buildList(self.binarypackagerelease.replaces)
     replaces = property(replaces)
 
 
     def suggests(self):
-        binsuggests = split(self.binarypackagerelease.suggests, ',') 
-        binsug_list = []
-        for pack in binsuggests:
-            tmp = split(pack)
-            if tmp:
-                binsug_list.append(builddepsContainer(tmp[0],
-                                                      join(tmp[1:])))
-        
-        return binsug_list
+        return self._buildList(self.binarypackagerelease.suggests)
     suggests = property(suggests)
 
 
     def provides(self):
-        binprovides = split(self.binarypackagerelease.provides, ',') 
-        binprv_list = []
-        for pack in binprovides:
-            tmp = split(pack)
-            if tmp:
-                binprv_list.append(builddepsContainer(tmp[0],
-                                                 join(tmp[1:])))
-        
-        return binprv_list
+        return self._buildList(self.binarypackagerelease.provides)
     provides = property(provides)
 
 

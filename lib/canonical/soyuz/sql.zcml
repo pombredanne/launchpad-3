@@ -154,6 +154,21 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
+  <content class="canonical.launchpad.database.SoyuzBuilder">
+    <allow interface="canonical.launchpad.interfaces.IBuilder"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.launchpad.database.SoyuzProcessor">
+    <allow interface="canonical.launchpad.interfaces.IProcessor"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.launchpad.database.SoyuzProcessorFamily">
+    <allow interface="canonical.launchpad.interfaces.IProcessorFamily"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
  <content class="canonical.soyuz.sql.DistroBinariesApp">
     <allow interface="canonical.launchpad.interfaces.IDistroBinariesApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>

@@ -104,6 +104,7 @@ class IDistroReleaseSourceApp(Interface):
 class IDistroReleaseSourceReleaseBuildApp(Interface):
         sourcepackagerelease = Attribute("SourcePackageRelease")
         arch = Attribute("Builded arch")
+        build = Attribute("The SourcePackageRelease Build Table")
 
 class IDistroReleaseSourceReleaseApp(Interface):
     """A SourcePackageRelease Proxy """
@@ -420,11 +421,38 @@ class IBuild(Interface):
     buildstate = Attribute("BinaryBuild State")
     datebuilt = Attribute("Binary Date of Built")
     buildduration = Attribute("Build Duration Interval")
+    buildlog = Attribute("The Build LOG Referency")
+    builder = Attribute("The Builder")
+    gpgsigningkey = Attribute("GPG Signing Key")
+    changes = Attribute("The Build Changes")
     component = Attribute("The BinaryPackage Component")
     section = Attribute("The BinaryPackage Section")
     sourcepackagerelease = Attribute("Sourcepackagerelease reference")
+
+class IBuilder(Interface):
+    processor = Attribute("The Builder Processor")
+    fqdn = Attribute("The FQDN")
+    name = Attribute("The Builder Name")
+    title = Attribute("The Builder Title")
+    description = Attribute("The Builder Description")
+    owner = Attribute("The Builder Owner")
+
+
+class IProcessor(Interface):
+    """The SQLObject Processor Interface"""
+    family = Attribute("The Processor Family Reference")
+    name = Attribute("The Processor Name")
+    title = Attribute("The Processor Title")
+    description = Attribute("The Processor Description")
+    owner = Attribute("The Processor Owner")
     
-    
+class IProcessorFamily(Interface):
+    """The SQLObject ProcessorFamily Interface"""
+    name = Attribute("The Processor Family Name")
+    title = Attribute("The Processor Family Title")
+    description = Attribute("The Processor Name Description")
+    owner = Attribute("The Processor Family Owner")
+
 class IBinaryPackage(Interface):
     """A binary package, e.g apache-utils"""
     # See the BinaryPackage table

@@ -24,7 +24,9 @@ from canonical.launchpad.interfaces import ISourcePackageRelease, IManifestEntry
                                            IDistributionRole, IDistroReleaseRole, \
                                            IDistribution, IRelease, \
                                            ISourcepackage, IBinarypackage, \
-                                           ISourcepackageName, IBinarypackageName
+                                           ISourcepackageName, IBinarypackageName, \
+                                           IProcessor, IProcessorFamily, \
+                                           IBuilder
 
 from canonical.launchpad.database import Archive, Branch, ArchNamespace
 
@@ -221,7 +223,7 @@ class SoyuzBuild(SQLBase):
     _table = 'Build'
     _columns = [
         DateTimeCol('datecreated', dbName='datecreated', notNull=True),
-        ForeignKey(name='processor', dbName='Processor',
+        ForeignKey(name='processor', dbName='processor',
                    foreignKey='SoyuzProcessor', notNull=True),
         ForeignKey(name='distroarchrelease', dbName='distroarchrelease', 
                    foreignKey='SoyuzDistroArchRelease', notNull=True),
@@ -231,15 +233,55 @@ class SoyuzBuild(SQLBase):
         ForeignKey(name='buildlog', dbName='buildlog',
                    foreignKey='LibraryFileAlias'),
         ForeignKey(name='builder', dbName='builder',
-                   foreignKey='Builder'),
+                   foreignKey='SoyuzBuilder'),
         ForeignKey(name='gpgsigningkey', dbName='gpgsigningkey',
                    foreignKey='GPGKey'),
+        StringCol('changes', dbName='changes'),
         ForeignKey(name='sourcepackagerelease', dbName='sourcepackagerelease',
                    foreignKey='SoyuzSourcePackageRelease', notNull=True),
 
     ]
- 
 
+class SoyuzBuilder(SQLBase):
+    implements(IBuilder)
+
+    _table = 'Builder'
+    _columns = [
+        ForeignKey(name='processor', dbName='processor',
+                   foreignKey='SoyuzProcessor', notNull=True),
+        StringCol('fqdn', dbName='fqdn'),
+        StringCol('name', dbName='name'),
+        StringCol('title', dbName='title'),
+        StringCol('description', dbName='description'),
+        ForeignKey(name='owner', dbName='owner',
+                   foreignKey='SoyuzPerson', notNull=True),
+        ]
+ 
+class SoyuzProcessor(SQLBase):
+    implements(IProcessor)
+
+    _table = 'Processor'
+    _columns = [
+        ForeignKey(name='family', dbName='family',
+                   foreignKey='SoyuzProcessorFamily', notNull=True),
+        StringCol('name', dbName='name', notNull=True),
+        StringCol('title', dbName='title', notNull=True),
+        StringCol('description', dbName='description', notNull=True),
+        ForeignKey(name='owner', dbName='owner',
+                   foreignKey='SoyuzPerson', notNull=True),
+        ]
+
+class SoyuzProcessorFamily(SQLBase):
+    implements(IProcessorFamily)
+
+    _table = 'ProcessorFamily'
+    _columns = [
+        StringCol('name', dbName='name', notNull=True),
+        StringCol('title', dbName='title', notNull=True),
+        StringCol('description', dbName='description', notNull=True),
+        ForeignKey(name='owner', dbName='owner',
+                   foreignKey='SoyuzPerson', notNull=True),
+        ]
 
 class SoyuzSourcePackage(SQLBase):
     """A source package, e.g. apache2."""
@@ -539,17 +581,18 @@ class GPGKey(SQLBase):
         StringCol('fingerprint', dbName='fingerprint', notNull=True),
         StringCol('pubkey', dbName='pubkey', notNull=True),
         BoolCol('revoked', dbName='revoked', notNull=True),
-        IntCol('algorithm', dbName='algorithm', notNull=True),
-        IntCol('keysize', dbName='keysize', notNull=True),
+        ## Not in DB
+        ## IntCol('algorithm', dbName='algorithm', notNull=True),
+        ## IntCol('keysize', dbName='keysize', notNull=True),
         ]
 
-    def _algorithmname(self):
-        for algorithm in dbschema.GPGKeyAlgorithms.items:
-            if algorithm.value == self.algorithm:
-                return algorithm.title
-        return 'Unknown (%d)' %self.algorithm
+##     def _algorithmname(self):
+##         for algorithm in dbschema.GPGKeyAlgorithms.items:
+##             if algorithm.value == self.algorithm:
+##                 return algorithm.title
+##         return 'Unknown (%d)' %self.algorithm
     
-    algorithmname = property(_algorithmname)
+##     algorithmname = property(_algorithmname)
 
 
     

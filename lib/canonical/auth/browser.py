@@ -6,9 +6,19 @@ from canonical.zodb import zodbconnection
 
 from string import strip
 import random
+import re
 
-def mailChecker(email):
-    pass
+VALID_EMAIL_1 = re.compile(
+    r"^[_\.0-9a-z-+]+@([0-9a-z][0-9a-z-]+\.)+[a-z]{2,4}$")
+ 
+VALID_EMAIL_2 = re.compile(
+    r"^[_\.0-9a-z-]+@([0-9a-z][0-9a-z-]+)$")
+
+def mailChecker(email_addr):
+    if (not VALID_EMAIL_1.match(email_addr) and
+        not VALID_EMAIL_2.match(email_addr)):
+        return False
+    return True
 
 class SendPasswordToEmail(object):
     def __init__(self, context, request):
@@ -25,9 +35,7 @@ class SendPasswordToEmail(object):
         if self.email:
             ## Check if the given email address has a valid format
 
-            ##XXX: Must be enhaced
-            ##Daniel Debonzi 2004-10-03
-            if '@' not in self.email:                
+            if not mailChecker(self.email):
                 return 'Please check you have entered a valid email address.'
 
 
@@ -68,9 +76,7 @@ class changeEmailPassword(object):
         if (self.email and self.password and self.repassword):
             ##Check if the given email address has a valid format
 
-            ##XXX: Must be enhaced
-            ##Daniel Debonzi 2004-10-03
-            if '@' not in self.email:
+            if not mailChecker(self.email):
                 return 'Please check you have entered a valid email address.'
 
             ##Verify password misstyping

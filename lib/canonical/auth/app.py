@@ -26,6 +26,6 @@ class SendPasswordChangeEmail(object):
         ##email = 'Daniel Debonzi <debonzi@gwyddion.com>'
                
         sender = SMTP("localhost")
-        sender.sendmail("Launchpad Team <launchpad@warthogs.hbd.com>",
+        sender.sendmail("Ubuntu Webmaster <webmaster@ubuntulinux.org>",
                         email,
                         msg)
