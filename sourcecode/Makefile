@@ -9,7 +9,9 @@ check: build
 
 build:
 	@ for subdir in ${test_dirs}; do\
-		$(MAKE) -C $$subdir || exit $$?;\
+		if [ -e $$subdir/Makefile ]; then\
+			$(MAKE) -C $$subdir || exit $$?;\
+		fi\
 	done
 
 .PHONY: check all build

@@ -857,6 +857,7 @@ CREATE TABLE Manifest (
   piece of code (revision) is brought into the release.
 */
 CREATE TABLE ManifestEntry (
+  id              serial PRIMARY KEY,
   manifest        integer NOT NULL REFERENCES Manifest,
   sequence        integer NOT NULL,
   branch          integer REFERENCES Branch NOT NULL,
