@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-05 13:43:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1561
+
+    Summary:
+      add nicer forbidden page
+    Revision:
+      launchpad--devel--0--patch-1561
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-356
+       refuel
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-357
+       added a page for 403 forbidden
+    
+
+    new files:
+     lib/canonical/launchpad/templates/.arch-ids/launchpad-forbidden.pt.id
+     lib/canonical/launchpad/templates/launchpad-forbidden.pt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/webapp/login.py
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--devel--0--patch-356
+     steve.alexander@canonical.com/launchpad--devel--0--patch-357
+
+
 2005-04-05 10:45:00 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1560
 
     Summary:

@@ -17,8 +17,12 @@ from canonical.launchpad.webapp.interfaces import LoggedOutEvent
 from canonical.launchpad.interfaces import ILoginTokenSet, IPersonSet
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.lp.dbschema import LoginTokenType
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 class UnauthorizedView:
+
+    forbidden_page = ViewPageTemplateFile(
+        '../templates/launchpad-forbidden.pt')
 
     def __call__(self):
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
@@ -28,7 +32,7 @@ class UnauthorizedView:
             return ''
         else:
             self.request.response.setStatus(403) # Forbidden
-            return "Sorry Dave, I can't let you do that."
+            return self.forbidden_page()
 
 
 class BasicLoginPage:
