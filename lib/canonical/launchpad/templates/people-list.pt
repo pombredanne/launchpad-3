@@ -28,7 +28,7 @@
     </tr>    
     <tr>
     <td align="center">
-    <fieldset>
+    <fieldset tal:condition="python:prev_url or next_url">
     <div>
     	  <table>
 	  <tr>

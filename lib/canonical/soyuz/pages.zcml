@@ -86,7 +86,7 @@
 	  class="canonical.soyuz.browser.ReleasesAddView"
 	  name="+new"
           template="../launchpad/templates/release-new.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+new"
+	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+new"
 	/>
 
 
@@ -98,19 +98,19 @@
 
 	<page  name="index.html"
           template="../launchpad/templates/release-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/index.html"
+	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/index.html"
 	/>
 	<page  name="+deliver"
           template="../launchpad/templates/release-deliver.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+deliver"
+	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+deliver"
 	/>
 	<page  name="+bugs"
           template="../launchpad/templates/release-bugs.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+bugs"
+	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+bugs"
 	/>
 	<page  name="+translations"
           template="../launchpad/templates/release-translations.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+translations"
+	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+translations"
 	/>
   </pages>
 
@@ -119,7 +119,7 @@
 	  class="canonical.soyuz.browser.ReleaseEditView"
 	  name="+edit"
           template="../launchpad/templates/release-edit.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+edit"
+	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+edit"
 	/>
 
 	<page for="canonical.soyuz.sql.DistroReleaseApp"
@@ -127,7 +127,7 @@
 	  class="canonical.soyuz.browser.ReleaseSearchView"
 	  name="+search"
           template="../launchpad/templates/release-search.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+search"
+	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+search"
 	/>
 
 
@@ -169,10 +169,16 @@
    <pages for="canonical.soyuz.sql.DistroReleaseSourceApp"
 	  allowed_attributes="results"
 	  permission="zope.Public">
-	<page  name="index.html"
-          template="../launchpad/templates/soyuz-sourcepackage-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/index.html"
+     <page  name="index.html"
+            template="../launchpad/templates/soyuz-sourcepackage-index.pt"
+	    lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/index.html"
 	/>
+    
+     <page  name="+buildlog"
+            template="../launchpad/templates/sourcepackage-buildlog.pt"
+	    lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/+buildlog"
+	/>
+
    </pages>
 
 
@@ -182,49 +188,43 @@
    <pages for="canonical.soyuz.sql.DistroReleaseSourceReleaseApp"
 	  allowed_attributes="results"
 	  permission="zope.Public">
-	<page  name="index.html"
-          template="../launchpad/templates/sourcepackagerelease-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/index.html"
-	/>
+
+     <page  name="index.html"
+            template="../launchpad/templates/sourcepackagerelease-index.pt"
+	    lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/index.html"
+	    />
+
+     <page  name="+changelog"
+            template="../launchpad/templates/sourcechangelog-index.pt"
+	    lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/+changelog"
+	    />
+
+     <page  name="+buildlog"
+            template="../launchpad/templates/sourcepackagerelease-buildlog.pt"
+	    lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/+buildlog"
+	    />
+
    </pages>
 
-   <pages for="canonical.soyuz.sql.DistroReleaseSourceReleaseApp"
-	  allowed_attributes="results"
-	  permission="zope.Public">
-	<page  name="+changelog"
-          template="../launchpad/templates/sourcechangelog-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/+changelog"
-	/>
-   </pages>
 
    <pages for="canonical.soyuz.sql.DistroReleaseSourceReleaseBuildApp"
-
 	  allowed_attributes="results"
 	  permission="zope.Public">
-	<page  name="index.html"
-          template="../launchpad/templates/sourcepackagebuild-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/$arch/index.html"
-	/>
-   </pages>
 
-   <pages for="canonical.soyuz.sql.DistroReleaseSourceReleaseBuildApp"
+     <page  name="index.html"
+            template="../launchpad/templates/sourcepackagebuild-index.pt"
+	    lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/$arch/index.html"
+	    />
 
-	  allowed_attributes="results"
-	  permission="zope.Public">
-	<page  name="+changes"
-          template="../launchpad/templates/sourcepackagebuild-changes.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/$arch/+changes"
-	/>
-   </pages>
+     <page  name="+changes"
+            template="../launchpad/templates/sourcepackagebuild-changes.pt"
+	    lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/$arch/+changes"
+	    />
 
-   <pages for="canonical.soyuz.sql.DistroReleaseSourceReleaseBuildApp"
-
-	  allowed_attributes="results"
-	  permission="zope.Public">
-	<page  name="+buildlog"
-          template="../launchpad/templates/sourcepackagebuild-buildlog.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/$arch/+buildlog"
-	/>
+     <page  name="+buildlog"
+            template="../launchpad/templates/sourcepackagebuild-buildlog.pt"
+	    lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/$arch/+buildlog"
+	    />
    </pages>
 
 
@@ -436,15 +436,19 @@
         lp:url="Soyuz/distros/$Distribution.name/$Release.name/binary/index.html"
         />
 
-  <page for="canonical.launchpad.interfaces.ISourcePackageRelease"
-        permission="zope.Public"
-        name="index.html"
-        template="../launchpad/templates/package-index.pt"
-        lp:url="Soyuz/distros/$Distribution.name/$Release.name/source/index.html"
-        />
+  <pages for="canonical.launchpad.interfaces.ISourcePackageRelease"
+         permission="zope.Public">
+
+    <page name="index.html"
+          template="../launchpad/templates/package-index.pt"
+          lp:url="Soyuz/distros/$Distribution.name/$Release.name/source/index.html"
+	/>
+
+  </pages>
 
   <pages for="canonical.launchpad.interfaces.IProjectSet"
          permission="zope.Public">
+
     <page name="index.html"
           template="../launchpad/templates/soyuz-projects-index.pt"
           lp:url="Soyuz/projects/index.html"

@@ -130,11 +130,13 @@ class IDistroReleaseSourcesApp(Interface):
 class IDistroReleaseSourceApp(Interface):
     """A SourcePackage Proxy """
     sourcepackage = Attribute("SourcePackage")
+    releases = Attribute("SourcePackageReleases")
     proposed = Attribute("Proposed source package release")
     lastversions = Attribute("Last Release Versions")
     currentversions = Attribute("Current Release Versions")
     bugsCounter = Attribute("A tuple of bug counters")
-
+    archs = Attribute("A tuple of architectures")
+    
     def __getitem__(name):
         """Retrieve a package release by version."""
 

@@ -151,9 +151,14 @@ class Launchpad(SQLThing):
         data = {
             "maintainer":           people,
             "shortdesc" :           short_desc,
-            "distro":               1, # XXX
+            ## XXX: (distro+hardcoded) cprov 20041025
+            ## Ubuntu hardcoded
+            "distro":               1, 
             "description":          description,
-            "sourcepackagename":    name[0]
+            "sourcepackagename":    name[0],
+            ## XXX: (srcpackageformat+hardcoded) cprov 20041025
+            ## Sourcepackeformat hardcoded for .deb or whatever ...
+            "srcpackageformat":     1 
         }
         self._insert("sourcepackage", data)
 
@@ -211,7 +216,6 @@ class Launchpad(SQLThing):
             "builddependsindep":       src.build_depends_indep,
             "architecturehintlist":    src.architecture,
             "component":               component,
-            "srcpackageformat":        1,
             "creator":                 maintid,
             "urgency":                 1,
             "changelog":               changelog,
@@ -224,11 +228,11 @@ class Launchpad(SQLThing):
         release = self.getSourcePackageRelease(src.package, src.version)[0]
 
         data = {
-            "distrorelease":           1,
+            "distrorelease":           1, ## Warty Warthogs
             "sourcepackagerelease":    release[0],
-            "status":                  4,
+            "status":                  2, ## Published !!!
             "component":               component,
-            "section":                 1, # XXX
+            "section":                 1, ## default Section
         }
         self._insert("sourcepackagepublishing", data)
 

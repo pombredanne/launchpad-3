@@ -177,7 +177,7 @@
           <legend>Other Links </legend> 
           <div class="dummy">
            <ul>
-            <li><a href="">Build Log</a></li>
+            <li><a href="+buildlog">Build Log</a></li>
             <li><a href="">Translations</a></li>
            </ul>
           </div>
