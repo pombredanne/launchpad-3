@@ -46,7 +46,7 @@
             </tr>
             <tr tal:repeat="row view/layout" valign="top">
               <td tal:repeat="daynum row">
-                <div tal:condition="daynum"
+                <tal:block tal:condition="daynum"
                      tal:define="day python:view.days[daynum-1]">
                 <a tal:attributes="href day/dayURL"
                    tal:content="day/date/day">1</a>
@@ -59,7 +59,10 @@
                     </a>
                   </li>
                 </ul>
+                <div tal:condition="view/canAddEvents">
+                  <a tal:attributes="href day/addURL">(add)</a>
                 </div>
+                </tal:block>
               </td>
             </tr>
           </table>

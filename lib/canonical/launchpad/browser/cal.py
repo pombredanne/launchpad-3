@@ -10,13 +10,14 @@ _ = MessageIDFactory('launchpad')
 
 from zope.interface import implements
 from zope.event import notify
+from zope.security import checkPermission
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from schoolbell.interfaces import IEditCalendar, ICalendarEvent
 from schoolbell.simple import SimpleCalendarEvent
-from canonical.launchpad.interfaces import IHasOwner, IRequestTzInfo
+from canonical.launchpad.interfaces import IRequestTzInfo
 from canonical.launchpad.interfaces import ICalendarDay, ICalendarWeek
 from canonical.launchpad.interfaces import ICalendarMonth, ICalendarYear
 from canonical.launchpad.interfaces import ICalendarEventCollection
@@ -161,6 +162,7 @@ class CalendarViewBase(object):
         self.request = request
         self.datestring = datestring
         self.user_timezone = IRequestTzInfo(request).getTzInfo()
+        self.canAddEvents = checkPermission('launchpad.Edit', context.calendar)
 
     def _setViewURLs(self, date):
         """Computes the URLs used to switch calendar views."""
@@ -188,6 +190,8 @@ class DayInfo(object):
         self.dayURL = '../%04d-%02d-%02d' % (date.year,
                                              date.month,
                                              date.day)
+        self.addURL = '../+add?field.dtstart=%04d-%02d-%02d%%2008:00:00' % \
+                      (date.year, date.month, date.day)
         self.events = []
     def hasEvents(self):
         return len(self.events) != 0
@@ -370,8 +374,7 @@ class ViewCalendarEvent(object):
         self.context = context
         self.request = request
     def __call__(self):
-        hasowner = IHasOwner(self.context)
-        if hasowner and hasowner.owner.id == self.request.principal.id:
+        if checkPermission('launchpad.Edit', self.context):
             self.request.response.redirect('+edit')
         else:
             self.request.response.redirect('+display')
