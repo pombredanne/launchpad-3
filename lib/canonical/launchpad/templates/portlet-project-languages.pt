@@ -1,0 +1,28 @@
+<div class="portlet"> 
+    <h4>Your Languages:</h4>
+
+    <div class="portletBody">
+        <div class="portletContent even">
+
+        <table class="listing rowNavigation" border="0" width="100%">
+            <tr><th></th></tr>
+            <tr tal:repeat="language view/languages">
+                <td><b><span tal:replace="language/englishname">language</span></b>
+                    <span tal:condition="language/nativename" tal:omit-tag>
+                        (<span tal:replace="language/nativename">nativename</span>)
+                    </span>
+                </td>
+            </tr>
+        </table>
+
+        <a href="+newbugtracker"
+            style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+            title="Change Language Prefs">
+            <img src="/++resource++edit.gif" alt="+" />
+            Change Language Prefs...
+        </a><br />
+
+        </div>
+                
+    </div>
+</div>

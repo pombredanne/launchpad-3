@@ -84,7 +84,7 @@
                     ondblclick="javascript:addSelectedKeywords('prefs-available-languages','prefs-selected-languages');return false;">
 
                     <option tal:repeat="language languages"
-                            tal:content="language/englishName"
+                            tal:content="language/englishname"
                             tal:attributes="name language/code" />
 
             </select>
@@ -110,7 +110,7 @@
                       ondblclick="javascript:removeWords('prefs-selected-languages');return false;">
 
                       <option tal:repeat="language selectedLanguages"
-                      tal:content="language/englishName"
+                      tal:content="language/englishname"
                   tal:attributes="name language/code" />
 
               </select>

@@ -29,9 +29,9 @@ class DummyProduct:
 
 
 class DummyLanguage:
-    def __init__(self, code, pluralForms):
+    def __init__(self, code, pluralforms):
         self.code = code
-        self.pluralForms = pluralForms
+        self.pluralforms = pluralforms
 
 
 class DummyLanguageSet:
@@ -253,11 +253,9 @@ def test_parse_cformat_string():
 
 def test_RosettaProjectView():
     '''
-    >>> from canonical.launchpad.browser import RosettaProjectView
-    >>> view = RosettaProjectView()
-    >>> view.context = DummyProject()
-    >>> view.request = DummyRequest()
-    >>> view.thereAreProducts()
+    >>> from canonical.launchpad.browser import ProjectView
+    >>> view = ProjectView(DummyProject(), DummyRequest())
+    >>> view.hasProducts()
     True
     '''
 
@@ -288,7 +286,7 @@ def test_TranslatePOTemplate_init():
     'ja'
     >>> [l.code for l in t.languages]
     ['ja']
-    >>> t.pluralForms
+    >>> t.pluralforms
     {'ja': 4}
     >>> t.badLanguages
     []
@@ -314,7 +312,7 @@ def test_TranslatePOTemplate_init():
     True
     >>> [l.code for l in t.languages]
     ['es']
-    >>> t.pluralForms
+    >>> t.pluralforms
     {'es': 4}
     >>> t.badLanguages
     []
@@ -340,7 +338,7 @@ def test_TranslatePOTemplate_init():
     'fr'
     >>> [l.code for l in t.languages]
     ['fr']
-    >>> t.pluralForms
+    >>> t.pluralforms
     {'fr': 3}
     >>> t.badLanguages
     []
@@ -367,7 +365,7 @@ def test_TranslatePOTemplate_init():
     'cy'
     >>> [l.code for l in t.languages]
     ['cy']
-    >>> t.pluralForms
+    >>> t.pluralforms
     {'cy': None}
     >>> len(t.badLanguages)
     1

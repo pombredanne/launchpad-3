@@ -14,6 +14,11 @@
 
 <body>
 
+<metal:rightportlets fill-slot="portlets_two">
+        <div tal:replace="structure view/languagesPortlet" />
+        <div tal:replace="structure view/trackersPortlet" />
+</metal:rightportlets>
+
 <div metal:fill-slot="main">
 
     <h1>Translation overview: <span tal:replace="context/title">NAME</span></h1>
@@ -24,6 +29,10 @@
        tal:content="context/homepageurl|default"
        tal:attributes="href context/homepageurl|nothing">(None supplied)</a>
     </div>
+
+    <p  tal:content="context/shortdesc"
+        class="documentDescription">Project Summary
+    </p>
 
     <p tal:content="context/description">
     Mozilla offers a full suite of integrated Internet applications including
@@ -45,13 +54,12 @@
     browser/IP:
     </p>
 
-    <div tal:condition="view/thereAreProducts">
-        <div class="documentDescription">
-        Here are the products available, select language from the
-        pulldown, and click a product.
-        </div>
+    <div tal:condition="view/hasProducts">
 
-        <table class="listing">
+        <p>Here are the products available, select language from the
+        pulldown, and click a product.</p>
+
+        <table class="listing rowNavigation">
             <thead>
                 <th>Product</th>
                 <th>Translated</th>
@@ -60,12 +68,11 @@
             </thead>
 
             <tbody>
-                <tr tal:repeat="product view/products">
-                    <td><a tal:attributes="href
-                        string:${product/name}/"
-                        tal:content="product/title">Product Name</a></td>
-                    <td><span tal:replace="product/poTranslated">0</span></td>
-                    <td><span tal:replace="product/poUntranslated">0</span></td>
+                <tr tal:repeat="product view/productTranslationStats"
+                    tal:attributes="onclick string:window.location='${product/name}'">
+                    <td tal:content="product/title">Product Title</td>
+                    <td tal:content="product/poTranslated">0</td>
+                    <td tal:content="product/poUntranslated">0</td>
                     <td>
                     <img src="/++resource++green-bar.png"
                              height="15"
@@ -96,9 +103,9 @@
             </tbody>
         </table>
 
-    </div> <!-- tal:condition="view/thereAreProducts -->
+    </div> <!-- tal:condition="view/hasProducts -->
 
-    <div tal:condition="not: view/thereAreProducts">
+    <div tal:condition="not: view/hasProducts">
         <p>
         Rosetta doesn't currently know of any product for
         <span tal:content="context/title">project title</span>.

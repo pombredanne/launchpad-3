@@ -14,16 +14,6 @@
         />
     </content>
 
-    <!-- XXX begin cruft - Daf please get rid of this -->
-    <content class="canonical.rosetta.domain.RosettaProject">
-        <allow interface="canonical.launchpad.interfaces.IRosettaProject"/>
-    </content>
-
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IRosettaProject"
-        getter="product" />
-    <!-- XXX end cruft -->
-
     <browser:traverse
         for="canonical.launchpad.interfaces.IProject"
         getter="getProduct" />
@@ -66,11 +56,11 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IProject"
         permission="zope.Public"
-        class="canonical.launchpad.browser.RosettaProjectView"
+        class="canonical.launchpad.browser.ProjectView"
         lp:url="Rosetta/projects/$Project.name">
         <browser:page
             name="+rosetta-index"
-            template="../templates/rosetta-project-index.pt"
+            template="../templates/project-rosetta-index.pt"
             lp:url="Rosetta/projects/$Project.name/+index" />
     </browser:pages>
 

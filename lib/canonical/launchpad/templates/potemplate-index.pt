@@ -32,11 +32,11 @@
     <ul>
         <li tal:repeat="language view/languages">
             <a tal:attributes="href language/code"
-                tal:content="language/englishName">Language, in English</a>
+                tal:content="language/englishname">Language, in English</a>
             <span tal:condition="python:
-                    language.nativeName != language.englishName and
-                    language.nativeName">
-                (<span tal:content="language/nativeName">Language, in the
+                    language.nativename != language.englishname and
+                    language.nativename">
+                (<span tal:content="language/nativename">Language, in the
                     language</span>)
             </span>
             <br/>

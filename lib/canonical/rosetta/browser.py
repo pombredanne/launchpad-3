@@ -67,18 +67,14 @@ def request_languages(request):
     person = IPerson(request.principal, None)
 
     # If the user is authenticated, try seeing if they have any languages set.
-
     if person is not None:
         languages = person.languages
-
         if languages:
             return languages
 
     # If the user is not authenticated, or they are authenticated but have no
     # languages set, try looking at the HTTP headers for clues.
-
     codes = IUserPreferredLanguages(request).getPreferredLanguages()
-
     return codes_to_languages(codes)
 
 def parse_cformat_string(s):
@@ -204,7 +200,7 @@ class TemplateLanguages:
 
     def _language(self, language):
         retdict = {
-            'name': language.englishName,
+            'name': language.englishname,
             'title': self.title,
             'code' : language.code,
             'poLen': len(self.template),
@@ -297,7 +293,7 @@ class ViewPOTemplate:
 
     def languages(self):
         languages = list(self.context.languages())
-        languages.sort(lambda a, b: cmp(a.englishName, b.englishName))
+        languages.sort(lambda a, b: cmp(a.englishname, b.englishname))
         return languages
 
     def edit(self):
@@ -352,7 +348,7 @@ class ViewPOFile:
                     self.request.form['pluralforms'],
                     self.request.form['expression'])
                 self.context.header = self.header.msgstr.encode('utf-8')
-                self.context.pluralForms = int(self.request.form['pluralforms'])
+                self.context.pluralforms = int(self.request.form['pluralforms'])
             else:
                 raise RuntimeError("This form must be posted!")
 
@@ -403,15 +399,15 @@ class ViewPreferences:
                 else:
                     newInterest = []
 
-                # XXX: We should fix this, instead of get englishName list, we
+                # XXX: We should fix this, instead of get englishname list, we
                 # should get language's code
-                for englishName in newInterest:
+                for englishname in newInterest:
                     for language in self.languages():
-                        if language.englishName == englishName:
+                        if language.englishname == englishname:
                             if language not in oldInterest:
                                 self.person.addLanguage(language)
                 for language in oldInterest:
-                    if language.englishName not in newInterest:
+                    if language.englishname not in newInterest:
                         self.person.removeLanguage(language)
             else:
                 raise RuntimeError("This form must be posted!")
@@ -521,7 +517,7 @@ class TranslatePOTemplate:
         #    A list of codes for the langauges to translate into.
         #  languages:
         #    A list of languages to translate into.
-        #  pluralForms:
+        #  pluralforms:
         #    A dictionary by language code of plural form counts.
         #  badLanguages:
         #    A list of languages for which no plural form information is
@@ -561,8 +557,8 @@ class TranslatePOTemplate:
         # Get plural form and completeness information.
 
         self.completeness = {}
-        self.pluralForms = {}
-        self.pluralFormsError = False
+        self.pluralforms = {}
+        self.pluralformsError = False
 
         all_languages = getUtility(ILanguageSet)
 
@@ -570,25 +566,25 @@ class TranslatePOTemplate:
             try:
                 pofile = context.poFile(language.code)
             except KeyError:
-                if all_languages[language.code].pluralForms is not None:
-                    self.pluralForms[language.code] = \
-                        all_languages[language.code].pluralForms
+                if all_languages[language.code].pluralforms is not None:
+                    self.pluralforms[language.code] = \
+                        all_languages[language.code].pluralforms
                 else:
                     # We don't have a default plural form for this Language
-                    self.pluralForms[language.code] = None
+                    self.pluralforms[language.code] = None
                     self.error = True
                 # As we don't have teh pofile, the completeness is 0
                 self.completeness[language.code] = 0
             else:
-                self.pluralForms[language.code] = pofile.pluralforms
+                self.pluralforms[language.code] = pofile.pluralforms
                 try:
                     self.completeness[language.code] = \
                         float(pofile.translatedCount()) / len(pofile.potemplate) * 100
                 except ZeroDivisionError:
                     self.completeness[language.code] = 0
 
-        self.badLanguages = [ all_languages[x] for x in self.pluralForms
-            if self.pluralForms[x] is None ]
+        self.badLanguages = [ all_languages[x] for x in self.pluralforms
+            if self.pluralforms[x] is None ]
 
         # Get pagination information.
 

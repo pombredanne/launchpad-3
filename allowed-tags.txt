@@ -19,7 +19,6 @@ lib/canonical/lucille/tests/test_utils.py 90e6eb79-83a2-47e8-9f8b-3c687079c923
 lib/canonical/lucille/utils.py fbcb5758-d345-4610-8e57-8cc664a376bc
 lib/canonical/rosetta/browser.py db407517-732d-47e3-a4c1-c1f8f9dece3a
 lib/canonical/rosetta/docs/poexport.txt 06f3feef-229e-42b9-a9d5-ab8c3758a23b
-lib/canonical/rosetta/domain.py d84c3aaa-f65c-49eb-aeea-47ef2bb559c7
 lib/canonical/rosetta/poexport.py aef7f683-dbd0-46d0-944d-6442bfdbdb13
 lib/canonical/rosetta/scripts/createproduct.py 6ff81610-1bc0-4c22-960c-4e0c2f33c0c9
 lib/canonical/rosetta/scripts/createproject.py b9019fba-02b5-4d42-87e4-39b4754da09b

@@ -91,7 +91,7 @@ class TranslationsList(object):
         # cache the number of plural forms, as we use that value a lot
         # find the correct number of forms - fortunately we
         # have a method that does just that
-        self._nplurals = messageset.pluralForms()
+        self._nplurals = messageset.pluralforms()
 
     # XXX: this list implementation is incomplete.  Dude, if you want to do
     # del foo.msgstrs[2]
@@ -427,7 +427,7 @@ class POFileImporter(object):
             return
         # check that the plural forms info is valid
         if not header.nplurals:
-            if self.pofile.pluralForms:
+            if self.pofile.pluralforms:
                 # first attempt: check if the database already knows it
                 old_header = POHeader(msgstr=self.pofile.header)
                 old_header.finish()
@@ -435,13 +435,13 @@ class POFileImporter(object):
             else:
                 # we absolutely don't know it; only complain if
                 # a plural translation is present
-                header.pluralForms = 1
+                header.pluralforms = 1
         # store it; use a single db operation
         self.pofile.set(
             topComment=header.commentText.encode('utf-8'),
             header=header.msgstr.encode('utf-8'),
             headerFuzzy='fuzzy' in header.flags,
-            pluralForms=header.nplurals)
+            pluralforms=header.nplurals)
         # state that we've done so, or someone might give us a card
         self.header_stored = True
 
@@ -467,7 +467,7 @@ class POFileImporter(object):
     def __call__(self, msgid, **kw):
         "Instantiate a single message/messageset"
         # check if we already stored the header, and if we haven't,
-        # store it, so that msgset.pluralForms() can return the
+        # store it, so that msgset.pluralforms() can return the
         # right thing
         self.store_header()
         # fetch the message set

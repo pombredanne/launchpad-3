@@ -408,7 +408,7 @@ class IPOMsgSet(Interface):
 
     potmsgset = Attribute("The msgid set that is translating this set.")
 
-    def pluralForms():
+    def pluralforms():
         """Number of translations that have to point to this message set
         for it to be complete."""
 

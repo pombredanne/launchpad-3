@@ -13,7 +13,7 @@ class LanguageSet(object):
     implements(ILanguageSet)
 
     def __iter__(self):
-        return iter(Language.select(orderBy='englishName'))
+        return iter(Language.select(orderBy='englishname'))
 
     def __getitem__(self, code):
         try:
@@ -30,14 +30,12 @@ class Language(SQLBase):
 
     _table = 'Language'
 
-    _columns = [
-        StringCol(name='code', dbName='code', notNull=True, unique=True,
-            alternateID=True),
-        StringCol(name='nativeName', dbName='nativename'),
-        StringCol(name='englishName', dbName='englishname'),
-        IntCol(name='pluralForms', dbName='pluralforms'),
-        StringCol(name='pluralExpression', dbName='pluralexpression'),
-    ]
+    code = StringCol(dbName='code', notNull=True, unique=True,
+            alternateID=True)
+    nativename = StringCol(dbName='nativename')
+    englishname = StringCol(dbName='englishname')
+    pluralforms = IntCol(dbName='pluralforms')
+    pluralexpression = StringCol(dbName='pluralexpression')
 
     translators = RelatedJoin('Person', joinColumn='language',
         otherColumn='person', intermediateTable='PersonLanguage')

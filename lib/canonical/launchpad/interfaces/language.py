@@ -8,13 +8,13 @@ class ILanguage(Interface):
 
     code = Attribute("""The ISO 639 code for this language.""")
 
-    englishName = Attribute("The English name of this language.")
+    englishname = Attribute("The English name of this language.")
 
-    nativeName = Attribute("The name of this language in the language itself.")
+    nativename = Attribute("The name of this language in the language itself.")
 
-    pluralForms = Attribute("The number of plural forms this language has.")
+    pluralforms = Attribute("The number of plural forms this language has.")
 
-    pluralExpression = Attribute("""The expression that relates a number of
+    pluralexpression = Attribute("""The expression that relates a number of
         items to the appropriate plural form.""")
 
     translators = Attribute("""A list of Persons that are interested on 

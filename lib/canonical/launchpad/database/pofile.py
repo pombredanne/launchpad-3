@@ -333,7 +333,7 @@ class POTemplate(SQLBase):
         else:
             raise KeyError(
                 "This template already has a POFile for %s variant %s" %
-                (language.englishName, variant))
+                (language.englishname, variant))
 
         try:
             language = Language.byCode(language_code)
@@ -343,7 +343,7 @@ class POTemplate(SQLBase):
         now = datetime.now()
         data = {
             'year': now.year,
-            'languagename': language.englishName,
+            'languagename': language.englishname,
             'languagecode': language_code,
             'productname': self.product.title,
             'date': now.isoformat(' '),
@@ -351,8 +351,8 @@ class POTemplate(SQLBase):
             #'templatedate': self.datecreated.gmtime().Format('%Y-%m-%d %H:%M+000'),
             'templatedate': self.datecreated,
             'copyright': self.copyright,
-            'nplurals': language.pluralForms or 1,
-            'pluralexpr': language.pluralExpression or '0',
+            'nplurals': language.pluralforms or 1,
+            'pluralexpr': language.pluralexpression or '0',
             }
 
         return POFile(potemplate=self,
@@ -492,7 +492,7 @@ class POTMsgSet(SQLBase):
             pluralforms = pofile.pluralforms
         except KeyError:
             pofile = None
-            pluralforms = languages[language].pluralForms
+            pluralforms = languages[language].pluralforms
 
         # If we only have a msgid, we change pluralforms to 1, if it's a
         # plural form, it will be the number defined in the pofile header.
@@ -875,7 +875,7 @@ class POMsgSet(SQLBase):
     potmsgset = ForeignKey(foreignKey='POTMsgSet', dbName='potmsgset',
         notNull=True)
 
-    def pluralForms(self):
+    def pluralforms(self):
         if self.potmsgset.messageIDs().count() > 1:
             # has plurals
             return self.pofile.pluralforms
@@ -884,7 +884,7 @@ class POMsgSet(SQLBase):
             return 1
 
     def translations(self):
-        pluralforms = self.pluralForms()
+        pluralforms = self.pluralforms()
         if pluralforms is None:
             raise RuntimeError(
                 "Don't know the number of plural forms for this PO file!")

@@ -24,15 +24,15 @@
         layer="canonical.launchpad.layers.RosettaLayer"
         />
 
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IRosettaApplication"
+        name="+index"
+        />
+
     <browser:suburl
         for="canonical.launchpad.interfaces.IRosettaApplication"
         utility="canonical.launchpad.interfaces.IProjectSet"
         name="projects"
-        />
-
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IRosettaApplication"
-        name="+index"
         />
 
     <browser:pages
@@ -58,17 +58,9 @@
             template="../launchpad/templates/project-interest.pt"
             lp:url="Rosetta/project/+interest" />
         <browser:page
-            name="sitemap"
-            template="../launchpad/templates/sitemap.pt"
-            lp:url="Rosetta/sitemap" />
-        <browser:page
             name="legal"
             template="../launchpad/templates/legal.pt"
             lp:url="Rosetta/legal" />
-        <browser:page
-            name="sendto"
-            template="../launchpad/templates/sendto.pt"
-            lp:url="Rosetta/sendto" />
     </browser:pages>
 
     <browser:page

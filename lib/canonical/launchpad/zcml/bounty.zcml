@@ -8,7 +8,6 @@
     <!-- This view registers 'bounties' as a suburl of RootObject. -->
     <browser:suburl
         for="canonical.publication.RootObject"
-        permission="zope.Public"
         class="canonical.launchpad.database.BountySet"
         name="bounties" />
 
@@ -39,7 +38,7 @@
         schema="canonical.launchpad.interfaces.IBounty"
         label="Modify Bounty:"
         fields="name title summary usdvalue difficulty duration description"
-        permission="zope.Public"
+        permission="launchpad.AnyPerson"
         template="../templates/launchpad-editform.pt"
         lp:url="malone/bounties/+edit">
     </browser:editform>

@@ -70,13 +70,6 @@ class IProject(Interface):
     def getProduct(name):
         """Get a product with name `name`."""
     
-    def rosettaProducts():
-        """Iterates over Rosetta Products in this project.
-        XXX Mark Shuttleworth 02/10/04 what is the difference
-            between a Rosetta Product and a normal product?
-            Can this duplication be cleaned up or the difference
-            clarified and documented?"""
-
     # XXX: This will go away once we move to project->product->potemplate
     #      traversal rather than project->potemplate traversal.
     def poTemplate(name):
@@ -142,8 +135,5 @@ class IProjectBugTracker(Interface):
     project = Int(title=_('Owner'))
     bugtracker = Int(title=_('Bug Tracker'))
     
-
-class IRosettaProject(IRosettaStats, IProject):
-    """a Project that knows about Rosetta Stats."""
 
 

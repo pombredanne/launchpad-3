@@ -34,13 +34,16 @@ def traverseProject(project, request, name):
 #
 class ProjectView(object):
 
-    trackersPortlet = ViewPageTemplateFile(
-        '../templates/portlet-project-trackers.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.form = self.request.form
+
+    languagesPortlet = ViewPageTemplateFile(
+        '../templates/portlet-project-languages.pt')
+
+    trackersPortlet = ViewPageTemplateFile(
+        '../templates/portlet-project-trackers.pt')
 
     def newproduct(self):
         #
@@ -119,15 +122,10 @@ class ProjectView(object):
         # Now redirect to view it again
         self.request.response.redirect(self.request.URL[-1])
 
-
-
-# XXX Mark Shuttleworth moved this here as a first step to integrating it to
-# ProjectView above. 27/11/04
-class RosettaProjectView:
-    def thereAreProducts(self):
+    def hasProducts(self):
         return len(list(self.context.products())) > 0
 
-    def products(self):
+    def productTranslationStats(self):
         for product in self.context.products():
             total = 0
             currentCount = 0
@@ -184,6 +182,8 @@ class RosettaProjectView:
 
             yield retdict
 
+    def languages(self):
+        return [language for language in request_languages(self.request)]
 
 
 
