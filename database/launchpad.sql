@@ -4,12 +4,12 @@
 
 /*
 
+  CONVENTIONS
+        - all dates and timestamps MUST be in UTC
   TODO
-
         - re-evalutate some of the "text" field types, they might need
 	  to be "bytea"
 	  unless we can guarantee utf-8
-	- add sample data for the schemas
 	- make sure names are only [a-z][0-9][-.+] and can only start
 	  with [a-z]
 	- set DEFAULT's for datestamps (now) and others
@@ -19,13 +19,20 @@
   CHANGES
 
 
-  v0.98-dev:
+  v0.99-dev:
+        - add BugAttachmentContent.id for Stuart Bishop
+	- and move the BugAttachment.name to BugAttachmentContent
+        - make ProductRelease.version NOT NULL and add a .changelog
+        - don't require homepageurl for Project or Product
+        - add ChangesetFileHash.id for Robert Weir
+        - rename UpstreamRelease to ProductRelease
+  v0.98:
         - merge SourceSource table from Andrew Bennetts
 	- change SourceSource.homepageurl to SourceSource.product
 	- BugInfestation: dateverified and verifiedby need to be NULL
 	  if its not verified
 	- set a lot of datecreated and lastverified etc fields to
-	  DEFAULT CURRENT_TIMESTAMP
+	  DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
 	- use Andrew Bennett's way of putting comments inside the table
 	  def, above the
 	  line being commented, it makes lines shorter.
@@ -50,6 +57,8 @@
 	  - move add POMsgSet.current
 	  - add POTranslationSighting.deprecated
 	  - rename POTranslationSighting.lastseen -> .lasttouched
+	- make Project.product NOT NULL
+	- add stats gathering to POTemplate and POFile
   v0.97:
         - rename Membership.label to Membership.role
 	- rename EmailAddress.label to EmailAddress.status
@@ -118,7 +127,7 @@
 	  Product and a Sourcepackage
   v0.92:
         - make Schema and Label have name, title, description
-        - added filenames for UpstreamreleaseFile, SourcepackageFile
+        - added filenames for ProductreleaseFile, SourcepackageFile
 	  and BinarypackageBuildFile
         - linked BinarypackageBuild to DistroRelease instead of
 	  DistroArchRelease
@@ -168,7 +177,7 @@ DROP TABLE BranchRelationship;
 DROP TABLE ProjectBugsystem;
 DROP TABLE BugWatch;
 DROP TABLE BugSystem;
-DROP TABLE BugattachmentContent;
+DROP TABLE BugAttachmentContent;
 DROP TABLE BugAttachment;
 DROP TABLE POTranslationSighting;
 DROP TABLE POMsgIDSighting;
@@ -204,8 +213,8 @@ DROP TABLE SourcepackageLabel;
 DROP TABLE Sourcepackage;
 DROP TABLE ArchConfigEntry;
 DROP TABLE ArchConfig;
-DROP TABLE UpstreamReleaseFile;
-DROP TABLE UpstreamRelease;
+DROP TABLE ProductReleaseFile;
+DROP TABLE ProductRelease;
 DROP TABLE ChangesetFileHash;
 DROP TABLE ChangesetFile;
 DROP TABLE ChangesetFileName;
@@ -574,6 +583,7 @@ CREATE TABLE ChangesetFile (
   A cryptographic hash of a changeset file.
 */
 CREATE TABLE ChangesetFileHash (
+  id                serial PRIMARY KEY,
   changesetfile     integer NOT NULL REFERENCES ChangesetFile,
   /* see Hash Algorithms schema */
   hashalg           integer NOT NULL,
@@ -619,7 +629,7 @@ CREATE TABLE BranchLabel (
 */
 CREATE TABLE Manifest (
   id               serial PRIMARY KEY,
-  datecreated      timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  datecreated      timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   owner            integer NOT NULL REFERENCES Person
 );
 
@@ -674,8 +684,8 @@ CREATE TABLE Project (
     name         text NOT NULL UNIQUE,
     title        text NOT NULL,
     description  text NOT NULL,
-    datecreated  timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    homepageurl  text NOT NULL
+    datecreated  timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+    homepageurl  text
     );
 
 
@@ -709,8 +719,8 @@ CREATE TABLE Product (
   name          text NOT NULL,
   title         text NOT NULL,
   description   text NOT NULL,
-  datecreated   timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  homepageurl   text NOT NULL,
+  datecreated   timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+  homepageurl   text,
   manifest      integer REFERENCES Manifest,
   UNIQUE ( project, name ),
   -- ( id, project ) must be unique so it can be a foreign key
@@ -732,21 +742,23 @@ CREATE TABLE ProductLabel (
 
 
 /*
-  UpstreamRelease
-  A specific tarball release of Upstream.
+  ProductRelease
+  A specific tarball release of Product.
 */
-CREATE TABLE UpstreamRelease (
+CREATE TABLE ProductRelease (
   id               serial PRIMARY KEY,
   product          integer NOT NULL REFERENCES Product,
   datereleased     timestamp NOT NULL,
   -- the version without anything else, "1.3.29"
-  version          text,
+  version          text NOT NULL,
   -- the GSV Name "The Warty Web Release"
   title            text,
   description      text,
-  owner            integer REFERENCES Person,
+  changelog        text,
+  owner            integer NOT NULL REFERENCES Person,
   UNIQUE ( product, version )
 );
+
 
 
 /*
@@ -763,7 +775,7 @@ CREATE TABLE ArchConfig (
   name             text NOT NULL,
   title            text NOT NULL,
   description      text NOT NULL,
-  upstreamrelease  integer REFERENCES UpstreamRelease,
+  productrelease  integer REFERENCES ProductRelease,
   owner            integer REFERENCES Person
 );
 
@@ -931,13 +943,13 @@ CREATE TABLE LaunchpadFileHash (
 
 
 /*
-  UpstreamReleaseFile
-  A file from an Upstream Coderelease. Usually this would be a tarball.
+  ProductReleaseFile
+  A file from an Product Coderelease. Usually this would be a tarball.
 */
-CREATE TABLE UpstreamReleaseFile (
-  upstreamrelease integer NOT NULL REFERENCES UpstreamRelease,
+CREATE TABLE ProductReleaseFile (
+  productrelease integer NOT NULL REFERENCES ProductRelease,
   launchpadfile   integer NOT NULL REFERENCES LaunchpadFile,
-  -- see Upstream File Type schema
+  -- see Product File Type schema
   filetype        integer NOT NULL,
   filename        text NOT NULL
 );
@@ -1020,7 +1032,7 @@ CREATE TABLE SourcepackageRelease (
   creator                integer NOT NULL REFERENCES Person,
   -- "2.0.48-3"
   version                text NOT NULL,
-  dateuploaded           timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  dateuploaded           timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   -- see Source Package Urgency schema
   urgency                integer NOT NULL,
   dscsigningkey          integer REFERENCES GPGKey,
@@ -1156,9 +1168,9 @@ CREATE TABLE BinarypackageUpload (
 
 /*
   LIBRARIAN. TRACKING UPSTREAM AND SOURCE PACKAGE RELEASES.
-  This section is devoted to data that tracks upstream and distribution
+  This section is devoted to data that tracks product and distribution
   SOURCE PACKAGE releases. So, for example, Apache 2.0.48 is an
-  UpstreamRelease. Apache 2.0.48-3 is a Debian SourcepackageRelease.
+  ProductRelease. Apache 2.0.48-3 is a Debian SourcepackageRelease.
   We have data tables for both of those, and the Coderelease table is
   the data that is common to any kind of Coderelease. This subsystem also
   keeps track of the actual files associated with Codereleases, such as
@@ -1169,24 +1181,24 @@ CREATE TABLE BinarypackageUpload (
 
 /*
   Coderelease
-  A release of software. Could be an Upstream release or
+  A release of software. Could be an Product release or
   a SourcepackageRelease.
 */
 CREATE TABLE Coderelease (
   id                   serial PRIMARY KEY,
-  upstreamrelease      integer REFERENCES UpstreamRelease,
+  productrelease      integer REFERENCES ProductRelease,
   sourcepackagerelease integer REFERENCES SourcepackageRelease,
   manifest             integer REFERENCES Manifest,
-  CHECK ( NOT ( upstreamrelease IS NULL AND sourcepackagerelease IS NULL ) ),
-  CHECK ( NOT ( upstreamrelease IS NOT NULL AND sourcepackagerelease IS NOT NULL ) )
-); -- EITHER upstreamrelease OR sourcepackagerelease must not be NULL
+  CHECK ( NOT ( productrelease IS NULL AND sourcepackagerelease IS NULL ) ),
+  CHECK ( NOT ( productrelease IS NOT NULL AND sourcepackagerelease IS NOT NULL ) )
+); -- EITHER productrelease OR sourcepackagerelease must not be NULL
 
 
 
 
 /*
   CodereleaseRelationship
-  Maps the relationships between releases (upstream and
+  Maps the relationships between releases (product and
   sourcepackage).
 */
 CREATE TABLE CodereleaseRelationship (
@@ -1260,80 +1272,6 @@ CREATE TABLE TranslationFilter (
 
 
 /*
- The TranslationEffort table. Stores information about each active
- translation effort. Note, a translationeffort is an aggregation of
- resources. For example, the Gnome Translation Project, which aims to
- translate the PO files for many gnome applications. This is a point
- for the translation team to rally around.
-*/
-CREATE TABLE TranslationEffort (
-  id                    serial PRIMARY KEY,
-  owner                 integer NOT NULL REFERENCES Person,
-  project               integer NOT NULL REFERENCES Project,
-  name                  text NOT NULL UNIQUE,
-  title                 text NOT NULL,
-  description           text NOT NULL
-);
-
-
-
-
-
-/*
-  POTInheritance
-  A handle on an inheritance sequence for POT files.
-CREATE TABLE POTInheritance (
-  id                    serial PRIMARY KEY,
-  title                 text,
-  description           text
-);
-*/
-
-
-
-/*
-  License
-  A license. We need quite a bit more in the long term
-  to track licence compatibility etc.
-*/
-CREATE TABLE License (
-  id                    serial PRIMARY KEY,
-  legalese              text NOT NULL
-);
-
-
-
-/*
-  POTemplate
-  A PO Template File, which is the first thing that Rosetta will set
-  about translating.
-*/
-CREATE TABLE POTemplate (
-  id                    serial PRIMARY KEY,
-  project               integer NOT NULL REFERENCES Project,
-  product               integer REFERENCES Product,
-  branch                integer REFERENCES Branch,
-  changeset             integer REFERENCES Changeset,
-  name                  text NOT NULL UNIQUE,
-  title                 text NOT NULL,
-  description           text NOT NULL,
-  copyright             text NOT NULL,
-  license               integer NOT NULL REFERENCES License,
-  datecreated           timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  path                  text NOT NULL,
-  iscurrent             boolean NOT NULL,
-  owner                 integer REFERENCES Person,
-  -- EITHER branch OR changeset:
-  CHECK ( NOT ( branch IS NULL AND changeset IS NULL ) ),
-  CHECK ( NOT ( branch IS NOT NULL AND changeset IS NOT NULL ) ),
-  -- make sure, if we refer to a Product, that it is from
-  -- the same Project
-  FOREIGN KEY ( product, project ) REFERENCES Product ( id, project )
-);
-
-
-
-/*
   POMsgID
   A PO or POT File MessageID
 */
@@ -1398,12 +1336,71 @@ CREATE TABLE SpokenIn (
 
 
 /*
+  POTInheritance
+  A handle on an inheritance sequence for POT files.
+CREATE TABLE POTInheritance (
+  id                    serial PRIMARY KEY,
+  title                 text,
+  description           text
+);
+*/
+
+
+
+/*
+  License
+  A license. We need quite a bit more in the long term
+  to track licence compatibility etc.
+*/
+CREATE TABLE License (
+  id                    serial PRIMARY KEY,
+  legalese              text NOT NULL
+);
+
+
+
+/*
+  POTemplate
+  A PO Template File, which is the first thing that Rosetta will set
+  about translating.
+*/
+CREATE TABLE POTemplate (
+  id                    serial PRIMARY KEY,
+  project               integer NOT NULL REFERENCES Project,
+  product               integer NOT NULL REFERENCES Product,
+  branch                integer REFERENCES Branch,
+  -- see Translation Priority schema
+  priority              integer NOT NULL,
+  changeset             integer REFERENCES Changeset,
+  name                  text NOT NULL UNIQUE,
+  title                 text NOT NULL,
+  description           text NOT NULL,
+  copyright             text NOT NULL,
+  license               integer NOT NULL REFERENCES License,
+  datecreated           timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+  path                  text NOT NULL,
+  iscurrent             boolean NOT NULL,
+  -- the total number of POMsgSet's associated with this POTemplate
+  -- when we last parsed the Template.
+  messagecount          integer NOT NULL,
+  owner                 integer REFERENCES Person,
+  -- EITHER branch OR changeset:
+  CHECK ( NOT ( branch IS NULL AND changeset IS NULL ) ),
+  CHECK ( NOT ( branch IS NOT NULL AND changeset IS NOT NULL ) ),
+  -- make sure, if we refer to a Product, that it is from
+  -- the same Project
+  FOREIGN KEY ( product, project ) REFERENCES Product ( id, project )
+);
+
+
+
+/*
   POFile
   A PO File. This is a language-specific set of translations.
 */
 CREATE TABLE POFile (
   id                   serial PRIMARY KEY,
-  potemplate              integer NOT NULL REFERENCES POTemplate,
+  potemplate           integer NOT NULL REFERENCES POTemplate,
   language             integer NOT NULL REFERENCES Language,
   title                text,
   description          text,
@@ -1411,7 +1408,17 @@ CREATE TABLE POFile (
   header               text,  -- the contents of the NULL msgstr
   lasttranslator       integer REFERENCES Person,
   license              integer REFERENCES License,
-  completeness         integer,  -- between 0 and 100
+  -- the number of msgsets matched to the potemplate that have a
+  -- non-fuzzy translation in the PO file when we last parsed it
+  currentcount         integer NOT NULL,
+  -- the number of msgsets where we have a newer translation in
+  -- rosetta than the one in the PO file when we last parsed it
+  updatescount         integer NOT NULL,
+  -- the number of msgsets where we have a translation in rosetta
+  -- but there was no translation in the PO file when we last parsed it
+  rosettacount         integer NOT NULL,
+  -- the timestamp when we last parsed this PO file
+  lastparsed           timestamp,
   owner                integer REFERENCES Person,
   -- the number of plural forms needed to translate this
   -- pofile.
@@ -1498,8 +1505,8 @@ CREATE TABLE RosettaPOTranslationSighting (
   language             integer NOT NULL REFERENCES Language,
   potranslation        integer NOT NULL REFERENCES POTranslation,
   license              integer NOT NULL REFERENCES License,
-  dateprovided         timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  datetouched          timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  dateprovided         timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+  datetouched          timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   pluralform           integer,
   CHECK ( pluralform >= 0 )
 );
@@ -1520,10 +1527,28 @@ CREATE TABLE POComment (
   language            integer REFERENCES Language,
   potranslation       integer REFERENCES POTranslation,
   commenttext         text NOT NULL,
-  datecreated         timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  datecreated         timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   person              integer REFERENCES Person
 );
 
+
+
+
+/*
+ The TranslationEffort table. Stores information about each active
+ translation effort. Note, a translationeffort is an aggregation of
+ resources. For example, the Gnome Translation Project, which aims to
+ translate the PO files for many gnome applications. This is a point
+ for the translation team to rally around.
+*/
+CREATE TABLE TranslationEffort (
+  id                    serial PRIMARY KEY,
+  owner                 integer NOT NULL REFERENCES Person,
+  project               integer NOT NULL REFERENCES Project,
+  name                  text NOT NULL UNIQUE,
+  title                 text NOT NULL,
+  description           text NOT NULL
+);
 
 
 
@@ -1535,7 +1560,9 @@ CREATE TABLE POComment (
 */
 CREATE TABLE TranslationeffortPOTemplateRelationship (
   translationeffort  integer NOT NULL REFERENCES TranslationEffort ON DELETE CASCADE,
-  potemplate            integer NOT NULL REFERENCES POTemplate,
+  potemplate         integer NOT NULL REFERENCES POTemplate,
+  -- see Translation Priority schema
+  priority           integer NOT NULL,
   UNIQUE (translationeffort , potemplate)
 );
 
@@ -1572,7 +1599,7 @@ CREATE TABLE POSubscription (
 */
 CREATE TABLE Bug (
   id                      serial PRIMARY KEY,
-  datecreated             timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  datecreated             timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   nickname                text UNIQUE,
   title                   text NOT NULL,
   description             text NOT NULL,
@@ -1614,11 +1641,11 @@ CREATE TABLE BugInfestation (
   explicit         boolean NOT NULL,
   -- see Bug Infestation Status schema
   infestation      integer NOT NULL,
-  datecreated      timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  datecreated      timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   creator          integer NOT NULL REFERENCES Person,
   dateverified     timestamp,
   verifiedby       integer REFERENCES Person,
-  lastmodified     timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  lastmodified     timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   lastmodifiedby   integer NOT NULL REFERENCES Person,
   PRIMARY KEY ( bug, coderelease )
 );
@@ -1704,7 +1731,7 @@ CREATE TABLE BugExternalref (
   bugreftype  integer NOT NULL,
   data        text NOT NULL,
   description text NOT NULL,
-  datecreated timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  datecreated timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   owner       integer NOT NULL REFERENCES Person
 );
 
@@ -1750,7 +1777,7 @@ CREATE TABLE BugSystem (
 /*
   BugWatch
   This is a table of bugs in remote bug systems (for example, upstream
-  bugzilla's) which we want to monitor for status changes.
+  bugzilla instances) which we want to monitor for status changes.
 */
 CREATE TABLE BugWatch (
   id               serial PRIMARY KEY,
@@ -1758,9 +1785,9 @@ CREATE TABLE BugWatch (
   bugsystem        integer NOT NULL REFERENCES BugSystem,
   remotebug        text NOT NULL, -- unique identifier of bug in that system
   remotestatus     text NOT NULL, -- textual representation of status
-  lastchanged      timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  lastchecked      timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  datecreated      timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  lastchanged      timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+  lastchecked      timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+  datecreated      timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   owner            integer NOT NULL REFERENCES Person
 );
 
@@ -1789,7 +1816,7 @@ CREATE TABLE ProjectBugsystem (
 CREATE TABLE BugAttachment (
   id              serial PRIMARY KEY,
   bug             integer NOT NULL REFERENCES Bug,
-  name            text NOT NULL,
+  -- name (filename) is in BugAttachmentContent
   title           text NOT NULL,
   description     text NOT NULL
 );
@@ -1797,18 +1824,19 @@ CREATE TABLE BugAttachment (
 
 
 /*
-  BugattachmentContent
+  BugAttachmentContent
   The actual content of a bug attachment. There can be multiple
   uploads over time, each revision gets a changecomment.
 */
-CREATE TABLE BugattachmentContent (
+CREATE TABLE BugAttachmentContent (
+  id             serial PRIMARY KEY,
   bugattachment  integer NOT NULL REFERENCES BugAttachment,
-  daterevised    timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  daterevised    timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   changecomment  text NOT NULL,
   content        bytea NOT NULL,
+  filename       text NOT NULL,
   mimetype       text,
-  owner          integer REFERENCES Person,
-  PRIMARY KEY ( bugattachment, daterevised )
+  owner          integer REFERENCES Person
 );
 
 
@@ -1849,7 +1877,7 @@ CREATE TABLE BugRelationship (
 CREATE TABLE BugMessage (
   id                   serial PRIMARY KEY,
   bug                  integer NOT NULL REFERENCES Bug,
-  datecreated          timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  datecreated          timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   -- short title or subject of comment / message
   title                text NOT NULL,
   -- the message or full email with headers
@@ -1906,6 +1934,8 @@ CREATE TABLE SourceSource (
   newbranchcategory         text,
   newbranchbranch           text,
   newbranchversion          text,
+  packagedistro		    text,
+  packagefiles_collapsed    text,
   owner                     integer NOT NULL REFERENCES Person
 );
 
