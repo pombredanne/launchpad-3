@@ -82,11 +82,11 @@
 
           <div tal:condition="sourcecount" align="center">
 
-              <form name="search" method="GET" action="+search">
+              <form name="search" method="POST" action="+packages">
                <div class="formControls">
                 <label>Search:</label>
                 <input title="Search for a package" size="30"
-                   type="text" name="name"/>
+                   type="text" name="text"/>
                 <input type="submit" value="Search"/>
                </div>
               </form>

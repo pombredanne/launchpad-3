@@ -36,7 +36,16 @@
 
       <ul>
 
-	<li><b>Current Version:</b> <span tal:replace="context/version" />
+	<li tal:define="cversion view/currentversion">
+	   <b>Current Version:</b> 
+	     <a tal:condition="python:cversion != view.context.version"
+	        tal:content="view/currentversion"
+	        tal:attributes="href string:.." />
+
+	     <span tal:condition="python:cversion == view.context.version"
+	           tal:replace="view/currentversion" />
+
+	</li>
 
         <li><b>Upload Date:</b> 
            <span tal:content="context/dateuploaded">
@@ -49,6 +58,28 @@
         <li><b>Component:</b>
            <span tal:content="context/component/name">
            Component</span>
+
+        <li><b>Project:</b>
+	   <tal:block tal:condition="context/sourcepackage/product">
+           <a tal:define="project context/sourcepackage/product/project"
+	      tal:content="project/displayname"
+	      tal:attributes="href string:/doap/projects/${project/name}">
+           Project</a>
+	   </tal:block>
+	   <i tal:condition="not:context/sourcepackage/product">
+	     No project available for this sourcepackage
+	   </i>
+
+        <li><b>Product:</b>
+           <a tal:condition="context/sourcepackage/product"
+	      tal:define="product context/sourcepackage/product"
+	      tal:content="product/displayname"
+	      tal:attributes="href string:/doap/products/${product/name}">
+           Product</a>
+	   <i tal:condition="not:context/sourcepackage/product">
+	     No product available for this sourcepackage
+	   </i>
+
 
         <li><b>Binary Packages</b> 
              (<a tal:condition="context/changelog"

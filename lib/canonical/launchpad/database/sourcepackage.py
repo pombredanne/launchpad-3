@@ -127,7 +127,7 @@ class SourcePackage(SQLBase):
         :returns: iterable of SourcePackageReleases
         """
         return self.uploadsByStatus(distroRelease, 
-                                    dbschema.PackagePublishingStatus.PUBLISHED)
+                                    dbschema.PackagePublishingStatus.PUBLISHED)[0]
 
     def lastversions(self, distroRelease):
         return self.uploadsByStatus(distroRelease, 

@@ -52,6 +52,9 @@ class ISourcePackage(Interface):
         Get the lastest version of a
         sourcepackagerelease in a distrorelease
         """
+
+    def current(distrorelease):
+        """Current SourcePackageRelease of a SourcePackage"""
         
 class ISourcePackageinDistro(Interface):
     """A SourcePackage in Distro PG View"""

@@ -44,6 +44,13 @@
            PRIORITY</span>
 	</li>
 
+        <li><b>Source package:</b>
+           <a tal:define="spackage context/build/sourcepackagerelease/sourcepackage"
+	         tal:content="spackage/sourcepackagename/name"
+		 tal:attributes="href string:../../+sources/${spackage/sourcepackagename/name}">
+           SOURCEPACKAGE</a>
+	</li>
+
       </ul>
 
       <table width="100%">

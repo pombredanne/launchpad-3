@@ -2,6 +2,75 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-10 16:01:33 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1165
+
+    Summary:
+      More Soyuz improments: permissions, layout and links.
+    Revision:
+      launchpad--devel--0--patch-1165
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-408
+       star-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-409
+       Soyuz distrorelease page search sending now to ..../.name/+packages in a proper way.
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-410
+       star-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-411
+       Changing Soyuz write permissions from launchpad.AnyPerson to launchpad.Admin.
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-412
+       star-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-413
+       missing product/project links missing in sourcepackagerelease page added. missing sourcepackage link missing in binarypackage page added.
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-414
+       sourcepackagerelease latest versions fix
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-415
+       Daniel Debonzi add to sample data as admins member
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-416
+       page test fix after using launchpad.Admin.
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-417
+       Adding Salgado and Cprov to sampledata as admins members.
+    
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/launchpad/browser/publishedpackage.py
+     lib/canonical/launchpad/browser/sourcepackage.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/interfaces/sourcepackage.py
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-add-distribution.txt
+     lib/canonical/launchpad/templates/binarypackage-index.pt
+     lib/canonical/launchpad/templates/package-search.pt
+     lib/canonical/launchpad/templates/portlet-distro-actions.pt
+     lib/canonical/launchpad/templates/portlet-sourcepackagerelease-lastversions.pt
+     lib/canonical/launchpad/templates/release-index.pt
+     lib/canonical/launchpad/templates/sourcepackagerelease-index.pt
+     lib/canonical/launchpad/zcml/distribution.zcml
+     lib/canonical/launchpad/zcml/distrorelease.zcml
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-408
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-409
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-410
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-411
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-412
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-413
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-414
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-415
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-416
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-417
+
+
 2005-01-10 09:49:44 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1164
 
     Summary:

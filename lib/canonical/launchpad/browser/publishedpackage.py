@@ -65,19 +65,19 @@ class PublishedPackageSetView:
         self.searchtext = request.form.get('text', None)
         if self.searchtext:
             self.searchrequested = True
+        self.launchbag = getUtility(ILaunchBag)
 
     def searchresults(self):
         if self.searchresultset is not None:
             return self.searchresultset
         if not self.searchtext:
             return []
-        launchbag = getUtility(ILaunchBag)
-        if launchbag.distribution:
-            distribution = launchbag.distribution.id
+        if self.launchbag.distribution:
+            distribution = self.launchbag.distribution.id
         else:
             distribution = None
-        if launchbag.distrorelease:
-            distrorelease = launchbag.distrorelease.id
+        if self.launchbag.distrorelease:
+            distrorelease = self.launchbag.distrorelease.id
         else:
             distrorelease = None
         pkgset = self.context

@@ -79,9 +79,15 @@ class SourcePackageReleasePublishingView(object):
         return changelog
 
     def lastversions(self):
+        """latest ten versions"""
         return list(self.context.sourcepackage.lastversions\
-                                       (self.bag.distrorelease))
+                    (self.bag.distrorelease))[-10:]
 
+    def currentversion(self):
+        """Current SourcePackageRelease of a SourcePackage"""
+        srelease = self.context.sourcepackage.current(self.bag.distrorelease)
+        return srelease.version
+    
     def binaries(self):
         """Format binary packeges into binarypackagename and archtags"""
 
