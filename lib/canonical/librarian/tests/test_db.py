@@ -49,5 +49,7 @@ class DBTestCase(unittest.TestCase):
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(DBTestCase))
+    # Disabled - tests are doing initZopeless and don't play well with the
+    # z3 test harness (Bug 2077).
+    #suite.addTest(unittest.makeSuite(DBTestCase))
     return suite

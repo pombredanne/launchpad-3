@@ -537,7 +537,6 @@ class SourcepackageView(object):
                 stats = m.setdefault(binarypackage, sevdef.copy())
                 m[binarypackage][severity] += 1
         rv = m.items()
-        print '====== %r ===== ' % (rv,)
         rv.sort(lambda a,b: cmp(a.id, b.id))
         return rv
 
