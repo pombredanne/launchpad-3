@@ -33,6 +33,29 @@ test: create
 	@ echo "* Vacuuming"
 	@ psql -d ${TEST_DBNAME} -c 'vacuum full analyze' | grep : | cat
 
+empty: create 
+	@ echo "* Loading base database schema"
+	@ psql -d ${TEST_DBNAME} -f launchpad-6-00-0.sql | grep : | cat
+	@ echo "* Installing tsearch2 into ts2 schema"
+	@ env LP_DBNAME=${TEST_DBNAME} python fti.py --setup-only
+	@ echo "* Patching the database schema"
+	@ ls -1 patch*.sql |sort| xargs -n 1 psql -d ${TEST_DBNAME} -q -f | cat
+	@ echo "* Setting up full text indexes"
+	@ env LP_DBNAME=${TEST_DBNAME} python fti.py
+	@ echo "* Loading language data"
+	@ psql -d ${TEST_DBNAME} -f ../languages.sql | grep : | cat
+	@ echo "* Setting up full text indexes"
+	@ env LP_DBNAME=${TEST_DBNAME} python fti.py
+	@ echo "* Adding comments"
+	@ psql -d ${TEST_DBNAME} -f comments.sql | grep : | cat
+	@ echo "* Vacuuming"
+	@ psql -d ${TEST_DBNAME} -c 'vacuum full analyze' | grep : | cat
+	@ echo "* Creating ${DBNAME}"
+	@if [ "$$((`psql -l | grep ${DBNAME} | wc -l`))" = '1' ]; \
+	    then dropdb ${DBNAME} | grep : | cat ; \
+	fi
+	@ createdb -E UNICODE --template=${TEST_DBNAME} ${DBNAME} | grep : | cat
+
 dev: test
 	@ echo "* Creating ${DBNAME}"
 	@if [ "$$((`psql -l | grep ${DBNAME} | wc -l`))" = '1' ]; \
@@ -40,9 +63,9 @@ dev: test
 	fi
 	@ createdb -E UNICODE --template=${TEST_DBNAME} ${DBNAME} | grep : | cat
 
-testdb: drop create devdb
-	@ echo "* Creating ${TEST_DBNAME} for unittests"
-	@ createdb -E UNICODE --template=${DBNAME} ${TEST_DBNAME} | grep : | cat
+#testdb: drop create devdb
+#	@ echo "* Creating ${TEST_DBNAME} for unittests"
+#	@ createdb -E UNICODE --template=${DBNAME} ${TEST_DBNAME} | grep : | cat
 
 create:
 	@ echo "* If this fails you need to run as the postgresql superuser"
