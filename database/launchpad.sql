@@ -175,8 +175,8 @@
         - rename Release to Coderelease (and all dependent tables)
         - refactor Processor and ProcessorFamily:
 	  - the distroarchrelease now has a processorfamily field
-	  - the binarypackagebuild (deb) now records its processor
-	- refactor the allocation of binarypackagebuild's (debs) to
+	  - the binarypackage (deb) now records its processor
+	- refactor the allocation of binarypackage's (debs) to
 	  distroarchrelease's
 	  - create a new table BinarypackageUpload that stores the
 	    packagearchivestatus
@@ -199,6 +199,7 @@
 /*
   DESTROY ALL TABLES
 */
+DROP TABLE PackageSelection;
 DROP TABLE SourcepackageBugAssignment;
 DROP TABLE ArchArchiveLocationSigner;
 DROP TABLE BugSubscription;
@@ -234,16 +235,20 @@ DROP TABLE Coderelease;
 DROP TABLE OSFileInPackage;
 DROP TABLE OSFile;
 DROP TABLE SourceSource;
-DROP TABLE BinarypackageBuildFile;
-DROP TABLE BinarypackageUpload;
-DROP TABLE BinarypackageBuild;
+DROP TABLE BinarypackageFile;
+DROP TABLE PackagePublishing;
 DROP TABLE Binarypackage;
+DROP TABLE BinarypackageName;
+DROP TABLE Build;
 DROP TABLE SourcepackageReleaseFile;
 DROP TABLE SourcepackageRelationship;
 DROP TABLE SourcepackageUpload;
 DROP TABLE SourcepackageRelease;
 DROP TABLE SourcepackageLabel;
 DROP TABLE Sourcepackage;
+DROP TABLE SourcepackageName;
+DROP TABLE Section;
+DROP TABLE Component;
 DROP TABLE ArchConfigEntry;
 DROP TABLE ArchConfig;
 DROP TABLE ProductReleaseFile;
@@ -947,9 +952,7 @@ CREATE TABLE ArchConfigEntry (
 
 
 /*
-  LOGISTIX. THE PACKAGES AND DISTRIBUTION MANAGER.
-  Nicknamed after UPS (United Parcel Service) this is the
-  Launchpad subsystem that deals with distribution and packages.
+  SOYUZ. THE PACKAGES AND DISTRIBUTION MANAGER.
 */
 
 
@@ -999,6 +1002,31 @@ CREATE TABLE Builder (
   description        text NOT NULL,
   owner              integer NOT NULL REFERENCES Person,
   UNIQUE ( fqdn, name )
+);
+
+
+
+/*
+  Component
+  Distributions divide their packages into a set
+  of "components" which have potentially different
+  policies and practices.
+*/
+CREATE TABLE Component (
+  id                 serial PRIMARY KEY,
+  name               text NOT NULL UNIQUE
+);
+
+
+
+/*
+  Section
+  For historical reasons, each package can be assigned
+  to a particular section within the distribution.
+*/
+CREATE TABLE Section (
+  id                serial PRIMARY KEY,
+  name              text NOT NULL UNIQUE
 );
 
 
@@ -1054,6 +1082,10 @@ CREATE TABLE DistroRelease (
   -- see Distribution Release State schema
   releasestate    integer NOT NULL,
   datereleased    timestamp,
+  -- the Ubuntu distrorelease from which this distrorelease
+  -- is derived. This needs to point at warty, hoary, grumpy
+  -- etc.
+  parentrelease   integer REFERENCES DistroRelease,
   owner           integer NOT NULL REFERENCES Person
 );
 
@@ -1140,6 +1172,18 @@ CREATE TABLE ProductReleaseFile (
 
 
 /*
+  SourcepackageName
+  Source packages can share names, so these are stored
+  in a separate table.
+*/
+CREATE TABLE SourcepackageName (
+  id               serial PRIMARY KEY,
+  name             text NOT NULL UNIQUE
+);
+
+
+
+/*
   Sourcepackage
   A distribution source package. In RedHat or Debian this is the name
   of the source package, in Gentoo it's the Ebuild name.
@@ -1150,7 +1194,13 @@ CREATE TABLE Sourcepackage (
   name             text NOT NULL,
   title            text NOT NULL,
   description      text NOT NULL,
-  manifest         integer REFERENCES Manifest
+  -- the "head manifest" if this package is being
+  -- maintained in HCT
+  manifest         integer REFERENCES Manifest,
+  -- the distribution to which this package was
+  -- origininally uploaded, or ubuntu if it is
+  -- not a derivative distro package.
+  distro           integer REFERENCES Distribution
 );
 
 
@@ -1221,7 +1271,6 @@ CREATE TABLE SourcepackageRelease (
   dscsigningkey          integer REFERENCES GPGKey,
   component              integer REFERENCES Label,
   changelog              text,
-  changes                text,
   builddepends           text,
   builddependsindep      text,
   architecturehintlist   text,
@@ -1261,45 +1310,59 @@ CREATE TABLE SourcepackageUpload (
 );
 
 
+/*
+  Build
+  This table describes a build (or upload if the binary packages
+  were built elsewhere and then uploaded to us. If we need to build
+  then we create an entry in this table and the Build Scheduler will
+  figure out who gets to do the work.
+*/
+CREATE TABLE Build (
+  id                serial PRIMARY KEY,
+  datecreated       timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+  processor         integer NOT NULL REFERENCES Processor,
+  distroarchrelease integer NOT NULL REFERENCES DistroArchRelease,
+  buildstate        integer NOT NULL,
+  datebuilt         timestamp,
+  buildduration     interval,
+  buildlog          integer REFERENCES LaunchpadFile,
+  buildlogfilename  text,
+  builder           integer REFERENCES Builder,
+  gpgsigningkey     integer REFERENCES GPGKey,
+  changes           text
+);
+
+
 
 /*
-  Binarypackage
-  This is a binary package... not an actual built package (that
-  is a BinarypackageBuild) but the concept of that binary package.
-  It stores the name of the binary package, together with other
-  details. Note that different distributions might well have
-  different binary packages with the same name. In fact, a single
-  distribution might have binary packages with the same name at
-  different times, that have entirely different source packages
-  and hence maintainers.
+  BinarypackageName
+  This is a binary package name... not an actual built package
 */
-CREATE TABLE Binarypackage (
+CREATE TABLE BinarypackageName (
   id               serial PRIMARY KEY,
-  name             text NOT NULL,
-  title            text NOT NULL,
-  description      text NOT NULL
+  name             text NOT NULL UNIQUE
 );
 
 
 
 
 /*
-  BinarypackageBuild
+  Binarypackage
   This is an actual package, built on a specific architecture,
   ready for installation.
 */
-CREATE TABLE BinarypackageBuild (
+CREATE TABLE Binarypackage (
   id                     serial PRIMARY KEY,
   sourcepackagerelease   integer NOT NULL REFERENCES SourcepackageRelease,
-  binarypackage          integer NOT NULL REFERENCES Binarypackage,
-  processor              integer NOT NULL REFERENCES Processor,
+  binarypackagename      integer NOT NULL REFERENCES BinarypackageName,
+  version                text NOT NULL,
+  shortdesc              text NOT NULL,
+  description            text NOT NULL,
+  build                  integer NOT NULL REFERENCES Build,
   -- see Binary Package Formats schema
   binpackageformat       integer NOT NULL,
-  version                text NOT NULL,
-  datebuilt              timestamp NOT NULL,
-  gpgsigningkey          integer REFERENCES GPGKey,
-  component              integer REFERENCES Label,
-  section                integer REFERENCES Label,
+  component              integer NOT NULL REFERENCES Component,
+  section                integer NOT NULL REFERENCES Section,
   -- see Binary Package Priority schema
   priority               integer,
   shlibdeps              text,
@@ -1310,7 +1373,10 @@ CREATE TABLE BinarypackageBuild (
   replaces               text,
   provides               text,
   essential              boolean,
-  installedsize          integer
+  installedsize          integer,
+  copyright              text,
+  licence                text,
+  UNIQUE ( binarypackagename, version )
 );
 
 
@@ -1320,32 +1386,50 @@ CREATE TABLE BinarypackageBuild (
   This is a file associated with a built binary package. Could
   be a .deb or an rpm, or something similar from a gentoo box.
 */
-CREATE TABLE BinarypackageBuildFile (
-  binarypackagebuild     integer NOT NULL REFERENCES BinarypackageBuild,
-  launchpadfile          integer NOT NULL REFERENCES LaunchpadFile,
+CREATE TABLE BinarypackageFile (
+  binarypackage     integer NOT NULL REFERENCES Binarypackage,
+  launchpadfile     integer NOT NULL REFERENCES LaunchpadFile,
   -- see Binary Package File Type schema
-  filetype               integer NOT NULL,
-  filename               text NOT NULL
+  filetype          integer NOT NULL,
+  filename          text NOT NULL
 );
 
 
 
 /*
-  BinarypackageUpload
-  This table records the status of a binarypackagebuild (deb) in a
-  distrorelease (woody)
+  PackagePublishing
+  This table records the status of a binarypackage (deb) in a
+  distroarchrelease (woody i386)
 */
-CREATE TABLE BinarypackageUpload (
-  binarypackagebuild     integer NOT NULL REFERENCES BinarypackageBuild,
+CREATE TABLE PackagePublishing (
+  id                     serial PRIMARY KEY,
+  binarypackage          integer NOT NULL REFERENCES Binarypackage,
   distroarchrelease      integer NOT NULL REFERENCES DistroArchRelease,
   -- see Package Upload Status schema
-  uploadstatus           integer NOT NULL,
-  component              integer NOT NULL REFERENCES Label,
-  section                integer NOT NULL REFERENCES Label,
+  component              integer NOT NULL REFERENCES Component,
+  section                integer NOT NULL REFERENCES Section,
   -- see Binary Package Priority schema
   priority               integer NOT NULL
 );
 
+
+
+/*
+  PackageSelection
+  This table records the policy of a distribution in terms
+  of packages they will accept and reject.
+*/
+CREATE TABLE PackageSelection (
+  id                     serial PRIMARY KEY,
+  distrorelease          integer NOT NULL REFERENCES DistroRelease,
+  sourcepackagename      integer REFERENCES SourcepackageName,
+  binarypackagename      integer REFERENCES BinarypackageName,
+  action                 integer NOT NULL,
+  component              integer REFERENCES Component,
+  section                integer REFERENCES Section,
+  -- see the Binary Package Priority schema
+  priority               integer
+);
 
 
 
@@ -1416,7 +1500,7 @@ CREATE TABLE OSFile (
 */
 CREATE TABLE OSFileInPackage (
   osfile               integer NOT NULL REFERENCES OSFile,
-  binarypackagebuild   integer NOT NULL REFERENCES BinarypackageBuild,
+  binarypackage        integer NOT NULL REFERENCES Binarypackage,
   unixperms            integer NOT NULL,
   conffile             boolean NOT NULL,
   createdoninstall     boolean NOT NULL
