@@ -550,7 +550,7 @@ def test_TranslatePOTemplate_URLs():
     >>> request = DummyRequest()
     >>> t = TranslatePOTemplate(context, request)
 
-    >>> t._makeURL()
+    >>> t.URL()
     'http://this.is.a/fake/url'
 
     >>> t.beginningURL()
@@ -584,7 +584,7 @@ def test_TranslatePOTemplate_URLs():
     ...     count=43)
     >>> t = TranslatePOTemplate(context, request)
 
-    >>> t._makeURL()
+    >>> t.URL()
     'http://this.is.a/fake/url?count=43&languages=ca'
 
     >>> t.endURL()

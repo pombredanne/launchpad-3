@@ -78,7 +78,7 @@
 
     <!-- Display settings. -->
 
-    <form method="post" tal:attributes="action request/URL">
+    <form method="post" tal:attributes="action view/URL">
         <fieldset>
         <legend>Display Settings</legend>
             <div class="field">
@@ -161,7 +161,7 @@
 
     <!-- The translation form. -->
 
-    <form method="post" tal:attributes="action request/URL">
+    <form method="post" tal:attributes="action view/URL">
         <fieldset class="message-strings" tal:repeat="set view/messageSets">
             <input type="hidden"
                 tal:attributes="

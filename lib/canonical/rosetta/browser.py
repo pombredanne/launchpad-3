@@ -895,7 +895,7 @@ class TranslatePOTemplate:
     def atEnd(self):
         return self.offset + self.count >= len(self.context)
 
-    def _makeURL(self, **kw):
+    def URL(self, **kw):
         parameters = {}
 
         # Parameters to copy from kwargs or form.
@@ -921,7 +921,7 @@ class TranslatePOTemplate:
             return str(self.request.URL)
 
     def beginningURL(self):
-        return self._makeURL()
+        return self.URL()
 
     def endURL(self):
         # The largest offset less than the length of the template x that is a
@@ -935,21 +935,21 @@ class TranslatePOTemplate:
             offset = length - (length % self.count)
 
         if offset == 0:
-            return self._makeURL()
+            return self.URL()
         else:
-            return self._makeURL(offset = offset)
+            return self.URL(offset = offset)
 
     def previousURL(self):
         if self.offset - self.count <= 0:
-            return self._makeURL()
+            return self.URL()
         else:
-            return self._makeURL(offset = self.offset - self.count)
+            return self.URL(offset = self.offset - self.count)
 
     def nextURL(self):
         if self.offset + self.count >= len(self.context):
             raise ValueError
         else:
-            return self._makeURL(offset = self.offset + self.count)
+            return self.URL(offset = self.offset + self.count)
 
     def _mungeMessageID(self, text, flags, space=SPACE_CHAR,
         newline=NEWLINE_CHAR):
