@@ -56,7 +56,7 @@ class SQLObjectVocabularyBase(object):
     implements(IVocabulary, IVocabularyTokenized)
     _orderBy = None
 
-    def __init__(self, context):
+    def __init__(self, context=None):
         self.context = context
 
     def _toTerm(self, obj):

@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-12 15:11:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1187
+
+    Summary:
+      Vocabulary context optional by default
+    Revision:
+      launchpad--devel--0--patch-1187
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-78
+       Vocabulary context optional by default
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/vocabularies/dbobjects.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-78
+
+
 2005-01-12 15:00:30 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1186
 
     Summary:
