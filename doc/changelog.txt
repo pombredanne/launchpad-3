@@ -2,6 +2,40 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-15 10:49:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1435
+
+    Summary:
+      fixed the poupload feature (bug #213)
+    Revision:
+      launchpad--devel--0--patch-1435
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-213--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1406
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-213--0--patch-1
+       Fixed the production bug #213 and added a pagetest for it
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-213--0--patch-2
+       The pagetest is more robust to small changes now
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-pofile-upload.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-pofile-upload.txt
+
+    modified files:
+     database/schema/pending/carlos-potemplate-linkages.sql
+     doc/changelog.txt lib/canonical/rosetta/browser.py
+     lib/canonical/rosetta/tests/test_browser.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--bug-213--0--base-0
+     carlos.perello@canonical.com--2004/launchpad--bug-213--0--patch-1
+     carlos.perello@canonical.com--2004/launchpad--bug-213--0--patch-2
+
+
 2005-03-14 23:09:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1434
 
     Summary:

@@ -173,7 +173,7 @@ class DummyPOTemplate:
     def hasPluralMessage(self):
         return True
 
-    def attachFile(self, contents, importer=None):
+    def attachRawFileData(self, contents, importer=None):
         pass
 
 

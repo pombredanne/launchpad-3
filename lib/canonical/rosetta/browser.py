@@ -321,7 +321,8 @@ def import_tar(potemplate, importer, tarfile, pot_paths, po_paths):
     # We don't support other kinds of tarballs and before calling this
     # function we did already the needed tests to be sure that pot_paths
     # follows our requirements.
-    potemplate.attachFile(tarfile.extractfile(pot_paths[0]).read(), importer)
+    potemplate.attachRawFileData(tarfile.extractfile(pot_paths[0]).read(),
+                                 importer)
     pot_base_dir = os.path.dirname(pot_paths[0])
 
     # List of .pot and .po files that were not able to be imported.
@@ -352,7 +353,7 @@ def import_tar(potemplate, importer, tarfile, pot_paths, po_paths):
         pofile = potemplate.getOrCreatePOFile(code, variant, importer)
 
         try:
-            pofile.attachFile(contents, importer)
+            pofile.attachRawFileData(contents, importer)
         except (POSyntaxError, POInvalidInputError):
             errors.append(path)
             continue
@@ -502,7 +503,7 @@ class ProductView:
         self._templates.append(potemplate)
 
         if filename.endswith('.pot'):
-            potemplate.attachFile(contents, owner)
+            potemplate.attachRawFileData(contents, owner)
             self.status_message = (
                 "Your PO template has been queued for import.")
         else:
@@ -628,10 +629,10 @@ class ViewPOTemplate:
         """Called from the page template to do any processing needed if a form
         was submitted with the request."""
 
-        if request.method == 'POST':
-            if 'EDIT' in request.form:
+        if self.request.method == 'POST':
+            if 'EDIT' in self.request.form:
                 self.edit()
-            elif 'UPLOAD' in request.form:
+            elif 'UPLOAD' in self.request.form:
                 self.upload()
 
         return ''
@@ -696,14 +697,14 @@ class ViewPOTemplate:
             potfile = file.read()
 
             try:
-                self.context.attachFile(potfile, owner)
+                self.context.attachRawFileData(potfile, owner)
             except (POSyntaxError, POInvalidInputError):
                 # The file is not correct.
                 self.status_message = (
                     'There was a problem parsing the file you uploaded.'
                     ' Please check that it is correct.')
 
-            self.context.attachFile(potfile, owner)
+            self.context.attachRawFileData(potfile, owner)
         elif is_tar_filename(filename):
             tf = string_to_tarfile(file.read())
             pot_paths, po_paths = examine_tarfile(tf)
@@ -784,7 +785,7 @@ class ViewPOFile:
             user = getUtility(ILaunchBag).user
 
             try:
-                self.context.attachFile(pofile, user, None)
+                self.context.attachRawFileData(pofile, user)
             except (POSyntaxError, POInvalidInputError):
                 # The file is not correct.
                 self.status_message = 'Please, review the po file seems to have a problem'

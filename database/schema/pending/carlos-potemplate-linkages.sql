@@ -41,3 +41,7 @@ COMMENT ON COLUMN POTemplateName.description IS 'A brief text about this POTempl
 
 COMMENT ON COLUMN POTemplate.potemplatename IS 'A reference to a POTemplateName row that tells us the name/domain for this POTemplate.';
 COMMENT ON COLUMN POTemplate.productrelease IS 'A reference to a ProductRelease from where this POTemplate comes.';
+
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (11,99,0);
+
