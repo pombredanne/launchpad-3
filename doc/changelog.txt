@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-31 21:30:47 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1533
+
+    Summary:
+      refactor BugFactory to have an API that communicates what it does (fixes https://launchpad.ubuntu.com/malone/bugs/133). rip out a big chunk of search code that was behind the anorak search screen. this screen now just redirects to the Malone homepage, of course, but if the redirect doesn't happen in time, code was being hit in the search() method of its view that was raising errors. the view class itself will be entirely ripped out in another round of refactoring (noted in XXX's).
+    Revision:
+      launchpad--devel--0--patch-1533
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-473
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-474
+       refactor BugFactory to have an API that communicates what it does (fixes https://launchpad.ubuntu.com/malone/bugs/133). rip out a big chunk of search code that was behind the anorak search screen. this screen now just redirects to the Malone homepage, of course, but if the redirect doesn't happen in time, code was being hit in the search() method of its view that was raising errors. the view class itself will be entirely ripped out in another round of refactoring (noted in XXX's).
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/bugtask.py
+     lib/canonical/launchpad/database/bug.py
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-473
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-474
+
+
 2005-03-31 20:09:10 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1532
 
     Summary:

@@ -1,9 +1,8 @@
-"""Launchpad Bug-related Database Table Objects
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-Part of the Launchpad system.
+"""Launchpad bug-related database table classes."""
 
-(c) 2004 Canonical, Ltd.
-"""
+__metaclass__ = type
 
 from sets import Set
 from datetime import datetime
@@ -152,61 +151,72 @@ class Bug(SQLBase):
         return emails
 
 
-def BugFactory(*args, **kw):
-    """Create a bug from an IBugAddForm. Note some unusual behaviour in this
-    Factory:
+def BugFactory(addview=None, distribution=None, sourcepackagename=None,
+               binarypackagename=None, product=None, comment=None,
+               description=None, rfc822msgid=None, shortdesc=None,
+               datecreated=None, title=None, private=False,
+               owner=None):
+    """Create a bug.
 
-      - the Summary and Description are not normally passed, we generally
-        like to create bugs with just a title and a first comment, and let
-        expert users create the summary and description if needed.
-      - if a Description is passed without a Summary, then the summary will
-        be the first sentence of the description.
-      - it is an error to pass neither a product nor a package.
+    Things to note when using this factory:
+
+      * addview is not used for anything in this factory
+
+      * one of either distribution or product must be provided. If neither
+        are provided, a ValueError will be raised
+
+      * if no description is passed, the comment will be used as the
+        description
+
+      * if shortdesc is not passed then the shortdesc will be the
+        first sentence of the description
+
+      * the appropriate bug task (exactly one, from this function) and
+        subscriptions will be added
+
+      * the return value is an IBugAddForm to play nicely with the Z3
+        addform machinery
     """
 
     # make sure that the factory has been passed enough information
-    if not (kw.get('distribution') or kw.get('product')):
-        raise ValueError, 'Must pass BugFactory a distro or a product'
-    if not (kw.get('comment', None) or
-            kw.get('description', None) or
-            kw.get('rfc822msgid', None)):
+    if not (distribution or product):
+        raise ValueError, 'Must pass BugFactory a distribution or a product'
+    if not (comment or description or rfc822msgid):
         raise ValueError, 'BugFactory requires a comment, rfc822msgid or description'
 
     # extract the details needed to create the bug and optional msg
-    description = kw.get('description')
     if not description:
-        description = kw.get('comment')
-    summary = kw.get('shortdesc')
+        description = comment
 
     # if we have been passed only a description, then we set the summary to
     # be the first paragraph of it, up to 320 characters long
-    if description and not summary:
-        summary = description.split('. ')[0]
-        if len(summary) > 320:
-            summary = summary[:320] + '...'
-    datecreated = kw.get('datecreated', datetime.now())
-    bug = Bug(
-        title = kw['title'],
-        shortdesc = summary,
-        description = description,
-        private = kw.get("private", False),
-        owner = kw['owner'].id,
-        datecreated=datecreated)
+    if description and not shortdesc:
+        shortdesc = description.split('. ')[0]
+        if len(shortdesc) > 320:
+            shortdesc = shortdesc[:320] + '...'
 
-    if kw.get("private"):
-        if kw.get("product"):
+    if not datecreated:
+        datecreated = datetime.now()
+
+    bug = Bug(
+        title = title, shortdesc = shortdesc,
+        description = description, private = private,
+        owner = owner.id, datecreated=datecreated)
+
+    if private:
+        if product:
             # subscribe the upstream maintainer on a private bug, to
             # ensure they can actually see it!
             BugSubscription(
-                person = kw['product'].owner.id, bug = bug.id,
+                person = product.owner.id, bug = bug.id,
                 subscription = dbschema.BugSubscription.CC)
-        elif kw.get("sourcepackagename"):
-            spn = kw.get("sourcepackagename")
-            distributionid = kw.get("distribution")
-            if spn and distributionid:
+        elif sourcepackagename:
+            # subscribe the sourcepackage maintainer on a private bug,
+            # to ensure they can actually see it!
+            if sourcepackagename and distribution:
                 maintainerships = Maintainership.selectBy(
-                    sourcepackagenameID=spn.id,
-                    distributionID=distributionid)
+                    sourcepackagenameID=sourcepackagename.id,
+                    distributionID=distribution)
                 if maintainerships.count():
                     BugSubscription(
                         person = maintainerships[0].maintainer.id,
@@ -214,48 +224,51 @@ def BugFactory(*args, **kw):
                         subscription = dbschema.BugSubscription.CC)
 
     BugSubscription(
-        person = kw['owner'].id, bug = bug.id,
+        person = owner.id, bug = bug.id,
         subscription = dbschema.BugSubscription.CC)
 
     # create the bug comment if one was given
-    if kw.get('comment', None):
-        if not kw.get('rfc822msgid', None):
-            kw['rfc822msgid'] = make_msgid('malonedeb')
+    if comment:
+        if not rfc822msgid:
+            rfc822msgid = make_msgid('malonedeb')
+
     # retrieve or create the message in the db
     try:
-        msg = MessageSet().get(rfc822msgid=kw['rfc822msgid'])
+        msg = MessageSet().get(rfc822msgid=rfc822msgid)
     except IndexError:
-        msg = Message(title=kw['title'],
-            contents = kw['comment'],
-            distribution = kw.get('distribution', None),
-            rfc822msgid = kw['rfc822msgid'],
-            owner = kw['owner'])
+        msg = Message(
+            title = title, contents = comment,
+            distribution = distribution,
+            rfc822msgid = rfc822msgid, owner = owner)
 
     # link the bug to the message
     bugmsg = BugMessage(bugID=bug.id, messageID=msg.id)
 
     # create the task on a product if one was passed
-    if kw.get('product', None):
-        BugTask(
-            bug = bug,
-            product = kw['product'].id,
-            owner = kw['owner'].id)
-    # create the task on a source package name if one was passed
-    if kw.get('distribution', None):
-        BugTask(
-            bug = bug,
-            distribution = kw['distribution'],
-            sourcepackagename = kw['sourcepackagename'],
-            binarypackagename = kw.get('binarypackagename', None),
-            owner = kw['owner'].id)
+    if product:
+        BugTask(bug = bug, product = product.id, owner = owner.id)
 
-    class BugAdded(object):
+    # create the task on a source package name if one was passed
+    if distribution:
+        BugTask(
+            bug = bug,
+            distribution = distribution,
+            sourcepackagename = sourcepackagename,
+            binarypackagename = binarypackagename,
+            owner = owner.id)
+
+    class BugAdded:
         implements(IBugAddForm)
         def __init__(self, **kw):
             for attr, val in kw.items():
                 setattr(self, attr, val)
 
-    bug_added = BugAdded(**kw)
+    bug_added = BugAdded(
+        distribution = distribution, sourcepackagename = sourcepackagename,
+        binarypackagename = binarypackagename, product = product,
+        comment = comment, description = description, rfc822msgid = rfc822msgid,
+        shortdesc = shortdesc, datecreated = datecreated, title = title,
+        private = private, owner = owner)
     bug_added.id = bug.id
 
     return bug_added
