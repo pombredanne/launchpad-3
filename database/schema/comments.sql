@@ -100,6 +100,8 @@ COMMENT ON COLUMN SourcepackageName.name IS
     'A lowercase name identifying one or more sourcepackages';
 COMMENT ON COLUMN BinarypackageName.name IS
     'A lowercase name identifying one or more binarypackages';
+COMMENT ON COLUMN SourcePackage.srcpackageformat IS 
+    'The format of this source package, e.g. DPKG, RPM, EBUILD, etc.';
 
 
 /* Lucille's configuration */

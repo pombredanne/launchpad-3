@@ -111,7 +111,7 @@
   <body>
 
     <!-- Primary Index -->
-	<p><br><br>Dumped on 2004-10-13</p>
+	<p><br><br>Dumped on 2004-10-14</p>
 <h1><a name="index">Index of database - launchpad_test</a></h1>
 <ul>
     
@@ -741,7 +741,7 @@
 				<td>
                 
                   
-                  <a href="#public.table.branch">branch.id#1</a>
+                  <a href="#public.table.changeset">changeset.branch#1</a>
                   
                 
                 </td>
@@ -1903,10 +1903,6 @@
 			<p>Tables referencing this one via Foreign Key Constraints:</p>
 		
 			<ul>	
-				<li><a href="#public.table.archconfigentry">archconfigentry</a></li>
-			</ul>
-		
-			<ul>	
 				<li><a href="#public.table.branchlabel">branchlabel</a></li>
 			</ul>
 		
@@ -1916,14 +1912,6 @@
 		
 			<ul>	
 				<li><a href="#public.table.changeset">changeset</a></li>
-			</ul>
-		
-			<ul>	
-				<li><a href="#public.table.manifestentry">manifestentry</a></li>
-			</ul>
-		
-			<ul>	
-				<li><a href="#public.table.potemplate">potemplate</a></li>
 			</ul>
 		
 			<ul>	
@@ -9556,10 +9544,6 @@ generating archives for this distro release
 			</ul>
 		
 			<ul>	
-				<li><a href="#public.table.manifestentry">manifestentry</a></li>
-			</ul>
-		
-			<ul>	
 				<li><a href="#public.table.sourcepackage">sourcepackage</a></li>
 			</ul>
 		
@@ -9619,7 +9603,7 @@ generating archives for this distro release
 				<td>
                 
                   
-                  <a href="#public.table.manifest">manifest.id#1</a>
+                  <a href="#public.table.manifestentry">manifestentry.manifest#2</a>
                   
                 
                   
@@ -9675,7 +9659,7 @@ generating archives for this distro release
 				<td>
                 
                   
-                  <a href="#public.table.branch">branch.id#2</a>
+                  <a href="#public.table.changeset">changeset.branch#1</a>
                   
                 
                 </td>
@@ -9699,7 +9683,7 @@ generating archives for this distro release
 				<td>
                 
                   
-                  <a href="#public.table.changeset">changeset.id#2</a>
+                  <a href="#public.table.changeset">changeset.id#1</a>
                   
                 
                 </td>
@@ -9755,7 +9739,7 @@ generating archives for this distro release
 				<td>
                 
                   
-                  <a href="#public.table.manifestentry">manifestentry.sequence#1</a>
+                  <a href="#public.table.manifestentry">manifestentry.sequence#2</a>
                   
                 
                 </td>
@@ -12243,7 +12227,7 @@ generating archives for this distro release
 				<td>
                 
                   
-                  <a href="#public.table.potemplate">potemplate.id#1</a>
+                  <a href="#public.table.pofile">pofile.potemplate#1</a>
                   
                 
                   
@@ -12730,7 +12714,7 @@ generating archives for this distro release
 				<td>
                 
                   
-                  <a href="#public.table.branch">branch.id#1</a>
+                  <a href="#public.table.changeset">changeset.branch#1</a>
                   
                 
                 </td>
@@ -12992,10 +12976,6 @@ generating archives for this distro release
 		
 			<ul>	
 				<li><a href="#public.table.pofile">pofile</a></li>
-			</ul>
-		
-			<ul>	
-				<li><a href="#public.table.pomsgset">pomsgset</a></li>
 			</ul>
 		
 			<ul>	
@@ -15117,6 +15097,22 @@ generating archives for this distro release
             <tr class="tr0">
 				<td>
                 
+                </td>
+            	<td>shortdesc</td>
+            	<td>text</td>
+                <td><i>
+				
+
+				
+				
+				</i>
+				<br><br>A short description of this ProductRelease. This should be a very brief overview of changes and highlights, just a short paragraph of text.
+				</td>
+			 </tr>
+            
+            <tr class="tr1">
+				<td>
+                
                   
                   <a href="#public.table.productseries">productseries.id</a>
                   
@@ -15134,7 +15130,7 @@ generating archives for this distro release
 				
 				
 				</i>
-				
+				<br><br>A pointer to the Product Series this release forms part of. Using a Product Series allows us to distinguish between releases on stable and development branches of a product even if they are interspersed in time.
 				</td>
 			 </tr>
             
@@ -15521,6 +15517,22 @@ generating archives for this distro release
 				
 				</i>
 				
+				</td>
+			 </tr>
+            
+            <tr class="tr0">
+				<td>
+                
+                </td>
+            	<td>shortdesc</td>
+            	<td>text</td>
+                <td><i>
+				
+
+				NOT NULL
+				
+				</i>
+				<br><br>A short description of this Product Series. A good example would include the date the series was initiated and whether this is the current recommended series for people to use.
 				</td>
 			 </tr>
             
@@ -16949,6 +16961,22 @@ generating archives for this distro release
 				</td>
 			 </tr>
             
+            <tr class="tr1">
+				<td>
+                
+                </td>
+            	<td>srcpackageformat</td>
+            	<td>integer</td>
+                <td><i>
+				
+
+				NOT NULL
+				
+				</i>
+				
+				</td>
+			 </tr>
+            
         </table>
 
 		
@@ -17840,22 +17868,6 @@ generating archives for this distro release
             <tr class="tr0">
 				<td>
                 
-                </td>
-            	<td>srcpackageformat</td>
-            	<td>integer</td>
-                <td><i>
-				
-
-				NOT NULL
-				
-				</i>
-				
-				</td>
-			 </tr>
-            
-            <tr class="tr1">
-				<td>
-                
                   
                   <a href="#public.table.person">person.id</a>
                   
@@ -17877,7 +17889,7 @@ generating archives for this distro release
 				</td>
 			 </tr>
             
-            <tr class="tr0">
+            <tr class="tr1">
 				<td>
                 
                 </td>
@@ -17893,7 +17905,7 @@ generating archives for this distro release
 				</td>
 			 </tr>
             
-            <tr class="tr1">
+            <tr class="tr0">
 				<td>
                 
                 </td>
@@ -17909,7 +17921,7 @@ generating archives for this distro release
 				</td>
 			 </tr>
             
-            <tr class="tr0">
+            <tr class="tr1">
 				<td>
                 
                 </td>
@@ -17925,7 +17937,7 @@ generating archives for this distro release
 				</td>
 			 </tr>
             
-            <tr class="tr1">
+            <tr class="tr0">
 				<td>
                 
                   
@@ -17949,7 +17961,7 @@ generating archives for this distro release
 				</td>
 			 </tr>
             
-            <tr class="tr0">
+            <tr class="tr1">
 				<td>
                 
                   
@@ -17973,7 +17985,7 @@ generating archives for this distro release
 				</td>
 			 </tr>
             
-            <tr class="tr1">
+            <tr class="tr0">
 				<td>
                 
                 </td>
@@ -17989,7 +18001,7 @@ generating archives for this distro release
 				</td>
 			 </tr>
             
-            <tr class="tr0">
+            <tr class="tr1">
 				<td>
                 
                 </td>
@@ -18005,7 +18017,7 @@ generating archives for this distro release
 				</td>
 			 </tr>
             
-            <tr class="tr1">
+            <tr class="tr0">
 				<td>
                 
                 </td>
@@ -18021,7 +18033,7 @@ generating archives for this distro release
 				</td>
 			 </tr>
             
-            <tr class="tr0">
+            <tr class="tr1">
 				<td>
                 
                 </td>
@@ -18037,7 +18049,7 @@ generating archives for this distro release
 				</td>
 			 </tr>
             
-            <tr class="tr1">
+            <tr class="tr0">
 				<td>
                 
                 </td>
@@ -18053,7 +18065,7 @@ generating archives for this distro release
 				</td>
 			 </tr>
             
-            <tr class="tr0">
+            <tr class="tr1">
 				<td>
                 
                   
