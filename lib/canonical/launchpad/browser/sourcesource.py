@@ -1,6 +1,8 @@
 
+from zope.component import getUtility
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
+from canonical.launchpad.interfaces import IProductSet
 
 class SourceSourceView(object):
     """Present a SourceSource table for a browser."""
@@ -47,25 +49,19 @@ class SourceSourceView(object):
         product = self.form.get('product', None)
         if product and self.context.canChangeProduct():
             self.context.changeProduct(product)
-            newurl='../../../../' + self.context.product.project.name + "/" + self.context.product.name
+            newurl='/doap/products/' + self.context.product.name
             self.request.response.redirect(newurl)
 
 
     def selectedProduct(self):
-        return self.context.product.name + "/" + self.context.product.project.name
+        return self.context.product.name # "/" + self.context.product.project.name
 
     def products(self):
         """all the products that context can switch between"""
-        """ugly"""
-        from canonical.soyuz.importd import ProjectMapper, ProductMapper
-        projMapper=ProjectMapper()
-        prodMapper=ProductMapper()
-        for project in projMapper.findByName("%%"):
-            if project.name != "do-not-use-info-imports":
-                for product in prodMapper.findByName("%%", project):
-                    name=project.name + "/" + product.name
-                    if name != "do-not-use-info-imports/unassigned":
-                        yield name
+        products = getUtility(IProductSet)
+        for product in products:
+            if product.name != "unassigned":
+                yield product.name
 
 
 class SourceSourceSetView(object):
