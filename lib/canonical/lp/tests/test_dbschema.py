@@ -1,6 +1,5 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 #
-# arch-tag: 59b05113-a166-4c57-abf0-1b4155b968ff
 
 import unittest
 from zope.testing.doctestunit import DocTestSuite

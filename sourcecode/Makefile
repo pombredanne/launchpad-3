@@ -17,4 +17,3 @@ build:
 .PHONY: check all build
 
 
-#arch-tag: 0f9bfda9-6831-467e-ba80-bd32e1ea2306

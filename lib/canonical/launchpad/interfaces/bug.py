@@ -1,4 +1,3 @@
-# arch-tag: 2C926820-E0AE-11D8-A7D9-000D9329A36C
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')

@@ -1,6 +1,5 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 #
-# arch-tag: 490df5ca-e28a-4e73-8c3b-8a00fd195f45
 """ZODB integration for Launchpad.
 
 To use:

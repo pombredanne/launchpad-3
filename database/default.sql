@@ -1,8 +1,6 @@
 /*
    LAUNCHPAD INITIAL DATA
 
-# arch-tag: 72b5bbef-19d6-4a07-b434-60f2a121ade2
-
 this is initial data for launchpad. unlike the sample data, this will be loaded into our production install.
 
 */

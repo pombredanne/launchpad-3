@@ -1,6 +1,5 @@
 # (c) Canonical Software Ltd. 2004, all rights reserved.
 #
-# arch-tag: e739465e-bd5d-458c-b332-de6a783f21b7
 
 __metaclass__ = type
 

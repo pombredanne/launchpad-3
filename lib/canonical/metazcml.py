@@ -1,6 +1,5 @@
 # (c) Canonical Software Ltd. 2004, all rights reserved.
 #
-# arch-tag: ddc2fb34-7033-4867-8fb0-85d7f3da53d0
 """Implementation of the browser:suburl and browser:traverser directives.
 """
 

@@ -12,7 +12,6 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
-# arch-tag: e7f23c0d-41de-4ddf-9bfa-72544de70f92
 """Test script
 
 $Id: test.py 25177 2004-06-02 13:17:31Z jim $

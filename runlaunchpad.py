@@ -12,7 +12,6 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
-# arch-tag: 65bbad4c-38de-4a86-9aa5-d4d2fd38c97d
 """Start script for Soyuz: loads configuration and starts the server.
 
 $Id: z3.py 25266 2004-06-04 21:25:45Z jim $

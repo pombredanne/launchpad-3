@@ -1,6 +1,5 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 #
-# arch-tag: fb47064d-e0cd-45d2-b552-f92e803aae71
 """Password reset application.
 
 """

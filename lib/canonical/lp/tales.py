@@ -1,6 +1,5 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 #
-# arch-tag: 91afdd13-6952-46c3-8bf2-0dc201a7dca1
 """What you get from the lp: namespace in TALES.
 
 """

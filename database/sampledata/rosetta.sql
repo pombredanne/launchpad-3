@@ -4,7 +4,6 @@
    This is some sample data for Rosetta.  This requires the default
    data to be inserted first.
 
-   arch-tag: 5734820d-754e-4297-bb54-fbe33b88af4c
 */
 
 

@@ -1,6 +1,5 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 #
-# arch-tag: 42773c8c-4df2-486f-abf2-7f5b84c2f2a9
 """Database schemas
 
 Use them like this:
