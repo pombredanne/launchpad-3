@@ -1,3 +1,4 @@
+SET client_min_messages=ERROR;
 
 /*
   Make BugMessages able to apply to multiple bugs at once. This is something we

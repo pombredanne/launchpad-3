@@ -271,7 +271,7 @@ COMMENT ON COLUMN Bounty.reviewer IS 'The person who will review this bounty reg
 COMMENT ON COLUMN Bounty.owner IS 'The person who created the bounty. The owner can update the specification of the bounty, and appoints the reviewer.';
 
 -- SourceSource
-COMMENT ON COLUMN SourceSource.branchpoint IS 'The source specification for an import job to branch from.'
+COMMENT ON COLUMN SourceSource.branchpoint IS 'The source specification for an import job to branch from.';
 
 -- Messaging subsytem
 COMMENT ON TABLE BugMessage IS 'This table maps a message to a bug. In other words, it shows that a particular message is associated with a particular bug.';

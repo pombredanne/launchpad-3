@@ -1,3 +1,5 @@
+SET client_min_messages=ERROR;
+
 UPDATE SourcePackageBugAssignment SET bugstatus = 10 WHERE bugstatus = 1;
 UPDATE SourcePackageBugAssignment SET bugstatus = 20 WHERE bugstatus = 2;
 UPDATE SourcePackageBugAssignment SET bugstatus = 30 WHERE bugstatus = 3;
