@@ -16,7 +16,7 @@ export LP_DBNAME=launchpad_dev
 export LP_DBHOST=localhost
 export LP_DBUSER=debonzi
 
-($GINA/scripts/reload-katie.example 2>&1) > $LOG/katie-reload.$DATE
+#($GINA/scripts/reload-katie.example 2>&1) > $LOG/katie-reload.$DATE
 
 (PYTHONPATH=$LPL python -u $GINA/grabber.py \
                            --distro=ubuntu \

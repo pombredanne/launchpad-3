@@ -2,6 +2,57 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-17 20:12:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1453
+
+    Summary:
+      Class to try to check no consistance on gina runs added
+    Revision:
+      launchpad--devel--0--patch-1453
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-474
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-475
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-476
+       Class to try to check no consistance on gina runs added
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-477
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--gina--0--patch-10
+       Merge from devel--0
+    
+     * daniel.debonzi@canonical.com/launchpad--gina--0--patch-11
+       merge from devel--0
+    
+     * daniel.debonzi@canonical.com/launchpad--gina--0--patch-12
+       merge from devel-0
+    
+     * daniel.debonzi@canonical.com/launchpad--gina--0--patch-13
+       Class to try to check no consistance on gina runs added
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/scripts/gina/database.py
+     lib/canonical/launchpad/scripts/gina/grabber.py
+     lib/canonical/launchpad/scripts/gina/scripts/run-gina-zopeless.example
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-474
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-475
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-476
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-477
+     daniel.debonzi@canonical.com/launchpad--gina--0--patch-10
+     daniel.debonzi@canonical.com/launchpad--gina--0--patch-11
+     daniel.debonzi@canonical.com/launchpad--gina--0--patch-12
+     daniel.debonzi@canonical.com/launchpad--gina--0--patch-13
+
+
 2005-03-17 17:23:08 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1452
 
     Summary:

@@ -3,7 +3,7 @@
 import apt_pkg, tempfile, os, tempfile, shutil, sys
 
 from classes import SourcePackageRelease, BinaryPackageRelease
-from database import Launchpad, Katie
+from database import Launchpad, Katie, LaunchpadTester
 from library import attachLibrarian
 
 from traceback import print_exc as printexception
@@ -368,6 +368,9 @@ if __name__ == "__main__":
             print "@ Publishing %s binaries..." % arch
             do_publishing(bin_map[arch], lp[arch], False)
             lp[arch].commit()
+
+    tester = LaunchpadTester(source_map, bin_map)
+    tester.run()
 
     print "@ Closing database connections..."
     

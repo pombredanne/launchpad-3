@@ -1,4 +1,5 @@
 import re
+from sets import Set
 from pyPgSQL import PgSQL
 
 # Disable cursors for now (can cause issues sometimes it seems)
@@ -30,10 +31,10 @@ from canonical.lp.dbschema import PackagePublishingStatus,  \
                                   BuildStatus
 
 priomap = {
-    "low": SourcePackageUrgency.LOW.value,
-    "medium": SourcePackageUrgency.LOW.value,
-    "high": SourcePackageUrgency.LOW.value,
-    "emergency": SourcePackageUrgency.LOW.value
+    "low": SourcePackageUrgency.LOW,
+    "medium": SourcePackageUrgency.LOW,
+    "high": SourcePackageUrgency.LOW,
+    "emergency": SourcePackageUrgency.LOW
     # FUCK_PEP8 -- Fuck it right in the ear
     }
 
@@ -166,12 +167,12 @@ class Katie(SQLThing):
         """, (sourcepackage, self.suite))[0]
 
 prioritymap = {
-"required": BinaryPackagePriority.REQUIRED.value,
-"important": BinaryPackagePriority.IMPORTANT.value,
-"standard": BinaryPackagePriority.STANDARD.value,
-"optional": BinaryPackagePriority.OPTIONAL.value,
-"extra": BinaryPackagePriority.EXTRA.value,
-"source": BinaryPackagePriority.EXTRA.value #Some binarypackages ended up
+"required": BinaryPackagePriority.REQUIRED,
+"important": BinaryPackagePriority.IMPORTANT,
+"standard": BinaryPackagePriority.STANDARD,
+"optional": BinaryPackagePriority.OPTIONAL,
+"extra": BinaryPackagePriority.EXTRA,
+"source": BinaryPackagePriority.EXTRA #Some binarypackages ended up
                                            #with priority source.
 }
 
@@ -226,25 +227,25 @@ class Launchpad(SQLThingBase):
 
     def getFileType(self, fname):
         if fname.endswith(".deb"):
-            return BinaryPackageFileType.DEB.value
+            return BinaryPackageFileType.DEB
         if fname.endswith(".udeb"):
-            return BinaryPackageFileType.DEB.value
+            return BinaryPackageFileType.DEB
         if fname.endswith(".dsc"):
-            return SourcePackageFileType.DSC.value
+            return SourcePackageFileType.DSC
         if fname.endswith(".diff.gz"):
-            return SourcePackageFileType.DIFF.value
+            return SourcePackageFileType.DIFF
         if fname.endswith(".orig.tar.gz"):
-            return SourcePackageFileType.ORIG.value
+            return SourcePackageFileType.ORIG
         if fname.endswith(".tar.gz"):
-            return SourcePackageFileType.TARBALL.value
+            return SourcePackageFileType.TARBALL
 
     def getBinaryPackageFormat(self, fname):
         if fname.endswith(".deb"):
-            return BinaryPackageFormat.DEB.value
+            return BinaryPackageFormat.DEB
         if fname.endswith(".udeb"):
-            return BinaryPackageFormat.UDEB.value
+            return BinaryPackageFormat.UDEB
         if fname.endswith(".rpm"):
-            return BinaryPackageFormat.RPM.value
+            return BinaryPackageFormat.RPM
         
         
 
@@ -280,7 +281,7 @@ class Launchpad(SQLThingBase):
                       distro=self.distro.id,
                       description=description,
                       sourcepackagename=name.id,
-                      srcpackageformat=SourcePackageFormat.DPKG.value,
+                      srcpackageformat=SourcePackageFormat.DPKG,
                       manifest=None
                       )
 
@@ -375,7 +376,7 @@ class Launchpad(SQLThingBase):
         release = self.getSourcePackageRelease(src.package, src.version)[0].id
         componentID = self.getComponentByName(src.component).id
         sectionID = self.getSectionByName(src.section).id
-        status=PackagePublishingStatus.PUBLISHED.value
+        status=PackagePublishingStatus.PUBLISHED
 
         SourcePackagePublishing(distrorelease=self.distrorelease.id,
                                 sourcepackagerelease=release,
@@ -464,7 +465,7 @@ class Launchpad(SQLThingBase):
 
         build = Build(processor=self.processor.id,
                       distroarchrelease=self.distroarchrelease.id,
-                      buildstate=BuildStatus.FULLYBUILT.value, 
+                      buildstate=BuildStatus.FULLYBUILT, 
                       gpgsigningkey=key,
                       sourcepackagerelease=srcpkg.id,
                       buildduration=None,
@@ -602,7 +603,7 @@ class Launchpad(SQLThingBase):
            "priority":          prioritymap[bin.priority],
            "distroarchrelease": self.distroarchrelease.id,
             # XXX dsilvers 2004-11-01: This *ought* to be pending
-           "status": PackagePublishingStatus.PUBLISHED.value
+           "status": PackagePublishingStatus.PUBLISHED
         }
 
         PackagePublishing(**data)
@@ -684,7 +685,7 @@ class Launchpad(SQLThingBase):
         data = {
             "email":    email,
             "person":   pid,
-            "status":   EmailAddressStatus.NEW.value
+            "status":   EmailAddressStatus.NEW
         }
 
         EmailAddress(**data)
@@ -783,3 +784,92 @@ class Launchpad(SQLThingBase):
             Section(name=section)
 
 
+class LaunchpadTester:
+    """Class to test the launchpad db consistance"""
+
+    def __init__(self, srcmap={}, binmap={}):
+        self.ztm = initZopeless()
+        self.srcmap = srcmap
+        self.binmap = binmap
+
+    def countBinaryPackages(self):
+        return BinaryPackage.select().count()
+    
+    def countBinaryBuilds(self):
+        bins = BinaryPackage.select()
+        builds = []
+
+        for bin in bins:
+            builds.append(bin.build)
+
+        return len(Set(builds))
+
+    def countBuilds(self):
+        return Build.select().count()
+
+    def countBuildSourceReleases(self):
+        builds = Build.select()
+        sprs = []
+
+        for build in builds:
+            sprs.append(build.sourcepackagerelease)
+
+        return len(Set(sprs))
+
+    def countSourceReleases(self):
+        return SourcePackageRelease.select().count()
+
+    def run(self):
+        print 'Start to check DB'
+
+        print ' @Counting BinaryPackages'
+        bin = self.countBinaryPackages()
+        print '\t ***Found %d BinaryPackages'%bin
+
+        print ' @Counting BinaryPackages builds'
+        bpbuild = self.countBinaryBuilds()
+        print '\t***Found %d Builds in BinaryPackage rows'%bpbuild
+        
+        print ' @Counting Builds'
+        build = self.countBuilds()
+        print '\t***Found %d Builds'%build
+        
+        print ' @Counting Builds SourcePackageReleases'
+        bspr = self.countBuildSourceReleases()
+        print '\t***Found %d SourcePackageRelease in Build rows'%bspr
+        
+        print ' @Counting SourcePackageReleases'
+        spr = self.countSourceReleases()
+        print '\t***Found %d SourcePackageReleases'%spr
+
+        print ' @Checking SourcePackageRelease against the Archive Source File'
+        src_errors = 0
+        src_notfound = 0
+        for k, src in self.srcmap.items():
+            try:
+                clauseTables = ('SourcePackageName',)
+                query = ('SourcePackageRelease.sourcepackagename = '
+                         'sourcepackagename.id AND '
+                         'SourcePackageName.name = %s AND '
+                         'SourcePackageRelease.version = %s'
+                         %(quote(src.package), quote(src.version))
+                         )
+
+                if not SourcePackageRelease.select(\
+                    query, clauseTables=clauseTables).count():
+                    src_notfound += 1
+                    print ('\t===SourcePackageRelease %s-%s not found'
+                           %(src.package, src.version)
+                           )
+            except:
+                print ('\t---Exception found in SourcePackage %s-%s'
+                       %(src.package, src.version)
+                       )
+                src_errors += 1
+        print '\t***%d exceptions found checking SourcePackages'%src_errors
+        print '\t***%d SourcePackageRelease not included'%src_notfound
+
+
+        
+
+        
