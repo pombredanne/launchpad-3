@@ -109,6 +109,7 @@ COMMENT ON TABLE POTemplateName IS 'POTemplate Name. This table stores the domai
 COMMENT ON COLUMN POTemplateName.name IS 'The name of the POTemplate set. It must be unique';
 COMMENT ON COLUMN POTemplateName.title IS 'The title we are going to use every time that we render a view of this POTemplateName row.';
 COMMENT ON COLUMN POTemplateName.description IS 'A brief text about this POTemplateName so the user could know more about it.';
+COMMENT ON COLUMN POTemplateName.translationdomain IS 'The translation domain name for this POTemplateName';
 
 -- POFile
 COMMENT ON TABLE POFile IS 'This table stores a po file for a given product.';

@@ -2,6 +2,39 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-24 11:19:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1491
+
+    Summary:
+      Add POTemplateName.translationdomain
+    Revision:
+      launchpad--devel--0--patch-1491
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-238
+       Add POTemplateName.translationdomain
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-239
+       Merge from Rocketuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-240
+       Update sampledata
+    
+
+    new files:
+     database/schema/.arch-ids/patch-11-10-0.sql.id
+     database/schema/patch-11-10-0.sql
+
+    modified files:
+     database/sampledata/current.sql database/schema/comments.sql
+     doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-238
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-239
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-240
+
+
 2005-03-24 09:53:06 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1490
 
     Summary:
