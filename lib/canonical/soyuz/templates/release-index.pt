@@ -56,6 +56,13 @@
          <th align="right">
            <span tal:content="context/release/datereleased">DATERELEASED</span>
          </th></tr>
+         <tr tal:condition="context/release/parentrelease">
+	 <td>ParentRelease</td>
+         <th align="right"><a 
+	 tal:attributes="href string:../${context/release/parentrelease/name}">
+           <span tal:content="context/release/parentrelease/title">
+	   PARENTRELEASE</span></a>
+         </th></tr>
          </table>
        </div>
       </td></tr>
@@ -66,6 +73,7 @@
       <a href="+edit">Edit Release Information</a>
    </th></tr>
    <tr><td>
+     <div class="dummy">
       <table width="100%">
       <legend><h4>Release Bugs (XXX)</h4></legend>
       <tr><td>
@@ -79,7 +87,9 @@
 	</div>
       </td></tr>
       </table>
+     </div> 
    </td><td>
+     <div class="dummy">
       <table width="100%">
       <legend><h4>Releases Translations (XXX)</h4></legend>
       <tr><td>
@@ -92,7 +102,8 @@
 	</table>
 	</div>
       </td></tr>
-      </table>   
+      </table>
+     </div>   
    </td></tr>
    <tr>
    <th align="right">
@@ -102,6 +113,7 @@
       tal:content="context/release/title"/> Translations</a> 
    </th></tr>
    <tr><td>
+     <div class="dummy">
       <table width="100%">
       <legend><h4>Release Teams(XXX)</h4></legend>
       <tr><td>
@@ -113,7 +125,8 @@
 	</table>
 	</div>
       </td></tr>
-      </table>   
+      </table> 
+     </div>   
    </td></tr>
    <tr><th align="right">
    <a

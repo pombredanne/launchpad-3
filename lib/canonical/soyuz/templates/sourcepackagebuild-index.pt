@@ -16,26 +16,16 @@
 
 
     <h1> 
-     <tal:block tal:replace="context/sourcepackagerelease/sourcepackage/title">
-	TITLE </tal:block>
-     <tal:block tal:replace="context/sourcepackagerelease/version">
-	Version</tal:block>-
-     <tal:block tal:replace="context/arch">
-	Arch</tal:block>
+     <spam tal:content="context/sourcepackagerelease/sourcepackage/title">
+	TITLE </spam>
+     <spam tal:content="context/sourcepackagerelease/version">
+	Version</spam>-
+     <spam tal:content="context/arch">
+	Arch</spam>
     </h1>
+
     
-    <p>
-     <tal:block tal:replace="context/sourcepackagerelease/sourcepackage/title">
-	TITLE </tal:block>
-     <tal:block tal:replace="context/sourcepackagerelease/version">
-	Version</tal:block>-
-     <tal:block tal:replace="context/arch">
-	Arch</tal:block> Informations will be were
-
-
 </div>
-
-    <li> <a href="packages">Packages</a></li>
-  </body>
+</body>
 </html>
  

@@ -21,12 +21,10 @@
   <p> <span tal:content="context/release/description" />
 
   <h3><span tal:content="context/release/title" /> State </h3>
-  <p> <span tal:content="context/release/releasestate" />
+  <p> <span tal:content="context/release/state" />
 
   <h3><span tal:content="context/release/title" /> Datereleased </h3>
   <p> <span tal:content="context/release/datereleased" />
-
-
   </div>
 
   <table width="50%">
@@ -37,6 +35,7 @@
   </tr>
   <tr>
   <td>
+  <div class="dummy">
   <table class="listing">	
    <tr> <th> Name</th> <th> Role</th> </tr>
     <tal:block tal:repeat="team context/team">
@@ -44,26 +43,27 @@
 	<td><span tal:content="team/role">ROLE</span></td></tr>
     </tal:block>
   </table>
+  </div>
   </td>
   </tr>
   </table>
 
-  <h3>Package Maintainers for <span tal:content="context/release/title" /></h3>
-
+  <div class="dummy">
+  <h3>Package Maintainers for <span tal:content="context/release/title"/></h3>
     <form name="add" action="" method="POST">
     	<table>
-
 	<tr><td>Maintainer</td> 
 	<td><input type="text" name="name"/></td>
 	<td> <input type="submit" value="Search"/></td>
 	<td> <table>
-	     <tr><td><a href="">View List</a></td></tr>
+	     <tr><td><a href="+list">View List</a></td></tr>
 	     <tr><td> ( 350 entries)</td></tr>
 	     </table>
 	</td> 
 	</tr>
 	</table>
     </form>
+  </div>
 
 </div>
 

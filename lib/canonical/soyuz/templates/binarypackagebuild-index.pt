@@ -14,28 +14,14 @@
 
 <div metal:fill-slot="main">
 
-
-    <h1> 
-     <tal:block tal:replace="context/binarypackagerelease/shortdesc">
-	TITLE </tal:block>
-     <tal:block tal:replace="context/version">
-	Version</tal:block>-
-     <tal:block tal:replace="context/arch">
-	Arch</tal:block>
-    </h1>
+<h1><spam tal:content="context/binarypackagerelease/shortdesc">
+     TITLE </spam>
+    <spam tal:content="context/version">Version</spam>-
+    <spam tal:content="context/arch">Arch</tal:block>
+</h1>
     
-    <p>
-     <tal:block tal:replace="context/binarypackagerelease/shortdesc">
-	TITLE </tal:block>
-     <tal:block tal:replace="context/version">
-	Version</tal:block>-
-     <tal:block tal:replace="context/arch">
-	Arch</tal:block> Informations will be were
-
 
 </div>
-
-    <li> <a href="packages">Packages</a></li>
-  </body>
+</body>
 </html>
  
