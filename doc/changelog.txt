@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-21 00:03:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1225
+
+    Summary:
+      Update tsearch2 installation scripts to support en_* locales as well as the C locale
+    Revision:
+      launchpad--devel--0--patch-1225
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-88
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-89
+       Update tsearch2 installation scripts to support en_* locales as well as the C locale
+    
+
+    modified files:
+     database/schema/fti.py doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-88
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-89
+
+
 2005-01-20 21:17:01 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1224
 
     Summary:

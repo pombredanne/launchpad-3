@@ -37,11 +37,18 @@ def quote_identifier(identifier):
             identifier=quote_dict[dkey].join(identifier.split(dkey))
     return '"%s"' % identifier
 
-def execute(con, sql):
+
+def execute(con, sql, results=False):
     sql = sql.strip()
     if options.verbose > 1:
         print '* %s' % sql
-    con.cursor().execute(sql)
+    cur = con.cursor()
+    cur.execute(sql)
+    if results:
+        return list(cur.fetchall())
+    else:
+        return None
+
 
 def fti(con, table, columns, configuration=DEFAULT_CONFIG):
     '''Setup full text indexing for a table'''
@@ -90,6 +97,7 @@ def fti(con, table, columns, configuration=DEFAULT_CONFIG):
         """ % (table, ', '.join(columns))
     execute(con, sql)
     con.commit()
+
 
 def setup(con, configuration=DEFAULT_CONFIG):
     """Setup and install tsearch2 if isn't already"""
@@ -151,6 +159,34 @@ def setup(con, configuration=DEFAULT_CONFIG):
 
     con.commit()
 
+    # Confirm database locale is valid, and set the 'default' tsearch2
+    # configuration to use it.
+    r = execute(con, r"""
+            SELECT setting FROM pg_settings
+            WHERE context='internal' AND name='lc_ctype'
+            """, results=True)
+    assert len(r) == 1, 'Unable to determine database locale'
+    locale = r[0][0]
+    assert locale.startswith('en_') or locale == 'C', (
+            "Non-english database locales are not supported with launchpad. "
+            "Fresh initdb required."
+            )
+    r = locale.split('.',1)
+    if len(r) > 1:
+        assert r[1].upper() == "UTF8", \
+                "Only UTF8 encodings supported. Fresh initdb required."
+    else:
+        assert len(r) == 1, 'Invalid database locale %s' % repr(locale)
+
+    execute(con, r"""
+            UPDATE ts2.pg_ts_cfg SET locale=(
+                SELECT setting FROM pg_settings
+                WHERE context='internal' AND name='lc_ctype'
+                )
+            WHERE ts_name='default'
+            """)
+    
+
     # Don't bother with this - the setting is not exported with dumps
     # or propogated  when duplicating the database. Only reliable
     # way we can use is setting search_path in postgresql.conf
@@ -158,6 +194,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
     # Set the default schema search path so this stuff can be found
     #execute(con, 'ALTER DATABASE %s SET search_path = public,ts2;' % dbname)
     #con.commit()
+
 
 def main():
     if options.verbose:
@@ -170,6 +207,7 @@ def main():
     if not options.setup:
         for row in ALL_FTI:
             fti(con, *row)
+
 
 if __name__ == '__main__':
     parser = OptionParser()
