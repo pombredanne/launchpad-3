@@ -3,6 +3,9 @@ check: tests/test_interfaces_sql.py
 	python ../../../test_on_merge.py -u canonical.rosetta
 
 noisycheck: tests/test_interfaces_sql.py
+	(cd ../../.. ; python test.py -u canonical.rosetta)
+
+fullcheck: tests/test_interfaces_sql.py
 	(cd ../../.. ; python test.py canonical.rosetta)
 
 testdb:

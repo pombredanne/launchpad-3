@@ -125,6 +125,8 @@ class POBasicTestCase(unittest.TestCase):
     #         self.fail("no exception on bad escape sequence")
 
     def testPlural(self):
+        self.parser.header = pofile.POHeader()
+        self.parser.header.nplurals = 2
         self.parser.write('''msgid "foo"\nmsgid_plural "foos"\n'''
             '''msgstr[0] "bar"\nmsgstr[1] "bars"\n''')
         self.parser.finish()
@@ -194,6 +196,7 @@ class POBasicTestCase(unittest.TestCase):
             pass
         else:
             self.fail("no error when duplicate msgid encountered")
+
     def testSquareBracketAndPlural(self):
         try:
             self.parser.write(

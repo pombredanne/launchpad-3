@@ -20,6 +20,8 @@ class IProjects(Interface):
         """Creates a new project with the given name.
 
         Returns that project.
+
+        Raises an KeyError if a project with that name already exists.
         """
 
     def search(query):
@@ -70,10 +72,13 @@ class IProduct(Interface):
     def poTemplate(name):
         """Returns the PO template with the given name."""
 
+    # XXX: branch
     def newPOTemplate(name, title):
         """Creates a new PO template.
 
         Returns the newly created template.
+
+        Raises an KeyError if a po template with that name already exists.
         """
 
 
@@ -137,11 +142,14 @@ class IEditPOTemplate(IPOTemplate):
     def expireAllMessages():
         """Mark all of our message sets as not current (sequence=0)"""
 
-    def newMessageSet(messageid_text):
+    def makeMessageSet(messageid_text, pofile=None, update=False):
         """Add a message set to this template.  Primary message ID
-        is 'messageid_text'."""
+        is 'messageid_text'.
+        If one already exists, behaviour depends on 'update'; if
+        update is allowed, the existing one is and returned.  If it is
+        not, then a KeyError is raised."""
 
-    def createPOFile(language, variant=None):
+    def newPOFile(language, variant=None):
         """Create and return a new po file in the given language. The
         variant is optional.
 
@@ -336,6 +344,9 @@ class IPOMessageID(Interface):
     msgid = Attribute("")
 
 
+# no IEditPOMessageID - message IDs are read-only
+
+
 class IPOTranslationSighting(Interface):
     """A sighting of a translation in a PO file."""
 
@@ -367,6 +378,9 @@ class IPOTranslation(Interface):
 
     # this is called "translation" in the DB
     translation = Attribute("")
+
+
+# no IEditPOTranslation - translations are read-only
 
 
 class IBranch(Interface):

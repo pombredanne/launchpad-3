@@ -56,6 +56,7 @@ class POMessage(object):
     implements(IPOMessage)
 
     def __init__(self, **kw):
+        self.check(**kw)
         self.msgid = kw.get('msgid', '')
         self.msgidPlural = kw.get('msgidPlural', '')
         self.msgstr = kw.get('msgstr', '')
@@ -65,6 +66,17 @@ class POMessage(object):
         self.flags = kw.get('flags', sets.Set())
         self.msgstrPlurals = kw.get('msgstrPlurals', [])
         self.obsolete = kw.get('obsolete', False)
+        self._lineno = kw.get('_lineno')
+
+    def check(self, **kw):
+        if kw.get('msgstrPlurals'):
+            if 'header' not in kw or type(kw['header'].nplurals) is not int:
+                raise POInvalidInputError(msg="File has plural forms, but plural-forms "
+                                          "header entry is missing or invalid")
+            if len(kw['msgstrPlurals']) != kw['header'].nplurals:
+                raise POInvalidInputError(lno=kw['_lineno'],
+                                          msg="Bad number of plural-forms in entry "
+                                          "'%s' (line %d)" % (kw['msgid'], kw['_lineno']))
 
     def is_obsolete(self):
         return self.obsolete
@@ -97,7 +109,14 @@ class POMessage(object):
     def __unicode__(self, wrap=80):
         r'''
         Text representation of the message.  Should wrap correctly.
+        For some of these examples to work (the ones with plural forms),
+        we need a header that looks valid.
         '
+        >>> header = POHeader()
+
+        >>> header.nplurals = 2
+
+        (end of initialization)
 
         >>> unicode(POMessage(msgid="foo", msgstr="bar"))
         u'msgid "foo"\nmsgstr "bar"'
@@ -107,7 +126,7 @@ class POMessage(object):
         u'#, fuzzy\n#~ msgid "foo"\n#~ msgstr "bar"'
 
         plural forms automatically trigger the correct syntax
-        >>> unicode(POMessage(msgid="foo", msgidPlural="foos", msgstrPlurals=["bar", "bars"]))
+        >>> unicode(POMessage(header=header, msgid="foo", msgidPlural="foos", msgstrPlurals=["bar", "bars"]))
         u'msgid "foo"\nmsgid_plural "foos"\nmsgstr[0] "bar"\nmsgstr[1] "bars"'
 
         backslashes are escaped (doubled) and quotes are backslashed
@@ -248,6 +267,8 @@ class POHeader(dict, POMessage):
         self.header = self
         self.charset = kw.get('charset', 'utf8')
         self.messages = kw.get('messages', [])
+        self.nplurals = None
+        self.pluralExpr = '0'
 
     def finish(self):
         for l in self.msgstr.strip().split('\n'):
@@ -262,18 +283,24 @@ class POHeader(dict, POMessage):
             self[field] = value
             self._casefold[field.lower()] = value
         if 'content-type' in self:
-            for o in self['content-type'].split(';')[1:]:
-                try:
-                    name, value = o.split('=')
-                except ValueError:
-                    continue
-                if name.strip().lower() == 'charset':
-                    self.charset = value.strip()
-                    if self.charset == 'CHARSET':
-                        self.charset = 'us-ascii'
+            d = parse_assignments(self['content-type'], skipfirst=True)
+            if 'charset' in d:
+                if d['charset'] != 'CHARSET':
+                    self.charset = d['charset']
+                else:
+                    self.charset = 'us-ascii'
         else:
             warnings.warn(POSyntaxWarning(msg='PO file header entry has no content-type field'))
             self['Content-Type'] = 'text/plain; us-ascii'
+
+        # Plural forms logic
+        if 'plural-forms' in self:
+            d = parse_assignments(self['plural-forms'])
+            try:
+                self.nplurals = int(d.get('nplurals'))
+            except ValueError:
+                raise POInvalidInputError(msg='Malformed plural-forms header entry')
+            self.pluralExpr = d.get('plural', '0')
 
         # Convert attributes to unicode
         for attr in ('msgidPlural', 'msgstrPlurals', 'fileReferences'):
@@ -424,6 +451,7 @@ class POParser(object):
         self._partial_transl['flags'] = sets.Set()
         self._partial_transl['msgstrPlurals'] = []
         self._partial_transl['obsolete'] = False
+        self._partial_transl['_lineno'] = self._lineno
 
     def append(self):
         if self._partial_transl:
@@ -431,7 +459,8 @@ class POParser(object):
                 if message.msgid == self._partial_transl['msgid']:
                     raise POInvalidInputError('Po file: duplicate msgid on line %d'
                                               % self._lineno)
-            transl = self.translation_factory(**self._partial_transl)
+            transl = self.translation_factory(header=self.header,
+                                              **self._partial_transl)
             self.messages.append(transl)
         self._partial_transl = None
 
@@ -590,6 +619,23 @@ class POParser(object):
                 # only happen when the file is empty
                 self._make_header()
 
+
+# convenience function to parse "assignment" expressions like
+# the plural-form header
+
+def parse_assignments(text, separator=';', assigner='=', skipfirst=False):
+    d = {}
+    if skipfirst:
+        start=1
+    else:
+        start=0
+    for assignment in text.split(separator)[start:]:
+        if not assignment.strip():
+            # empty
+            continue
+        name, value = assignment.split(assigner, 1)
+        d[name.strip()] = value.strip()
+    return d
 
 # convenience function to dump a catalog to a file-like object
 

@@ -72,14 +72,22 @@ class RosettaProjects:
         else:
             return ret[0]
 
-    def new(self, name, displayName, title, url, description, owner):
+    def new(self, name, title, url, description, owner):
+        name = name.encode('ascii')
+        displayName = displayName.encode('ascii')
+        title = title.encode('ascii')
         if type(url) != NoneType:
-            url = url
+            url = url.encode('ascii')
+        description = description.encode('ascii')
+
+        if RosettaProject.selectBy(name=name).count():
+            raise KeyError, "There is already a project with that name"
+
         return RosettaProject(name=name,
-            displayName=displayName,
-            title=title, url=url,
-            description=description,
-            owner=owner, datecreated='now')
+                              displayName=displayName,
+                              title=title, url=url,
+                              description=description,
+                              owner=owner, datecreated='now')
 
     def search(self, query):
         query = quote('%%' + query + '%%')
@@ -160,6 +168,10 @@ class RosettaProduct(SQLBase):
 
     def newPOTemplate(self, name, title):
         # XXX: we have to fill up a lot of other attributes
+        if RosettaPOTemplate.selectBy(productID=self.id,
+                                      name=name).count():
+            raise KeyError, \
+                  "This product already has a template named %s" % name
         return RosettaPOTemplate(name=name, title=title, product=self)
 
 
@@ -259,7 +271,7 @@ class RosettaPOTemplate(SQLBase):
                                ' WHERE potemplate = %d AND pofile IS NULL'
                                % self.id)
 
-    def newMessageSet(self, text):
+    def makeMessageSet(self, text, pofile=None, update=False):
         if type(text) is unicode:
             text = text.encode('utf-8')
         messageIDs = RosettaPOMessageID.selectBy(msgid=text)
@@ -268,8 +280,19 @@ class RosettaPOTemplate(SQLBase):
         else:
             assert messageIDs.count() == 1
             messageID = messageIDs[0]
+            existing = RosettaPOMessageSet.selectBy(
+                poTemplateID=self.id,
+                poFileID=(pofile and pofile.id),
+                primeMessageID_ID=messageID.id)
+            if existing.count():
+                assert existing.count() == 1
+                if not update:
+                    raise KeyError, "There is already a message set for " \
+                          "this template, file and primary msgid"
+                existing = existing[0]
+                return existing
         msgSet = RosettaPOMessageSet(poTemplate=self,
-                                   poFile=None,
+                                   poFile=pofile,
                                    primeMessageID_=messageID,
                                    sequence=0,
                                    isComplete=False,
@@ -281,13 +304,13 @@ class RosettaPOTemplate(SQLBase):
                                    flagsComment='')
         sighting = RosettaPOMessageIDSighting(poMessageSet=msgSet,
                                               poMessageID_=messageID,
-                                              firstSeen="NOW",
-                                              lastSeen="NOW",
+                                              dateFirstSeen="NOW",
+                                              dateLastSeen="NOW",
                                               inLatestRevision=False,
                                               pluralForm=0)
         return msgSet
 
-    def createPOFile(self, language, variant=None):
+    def newPOFile(self, language, variant=None):
         # assume we are getting a IRosettaLanguage object
         if RosettaPOFile.selectBy(poTemplate=self,
                                   language=language,
@@ -494,7 +517,7 @@ class RosettaPOMessageSet(SQLBase):
             inLatestRevision=True,
             pluralForm=plural_form)
         if translations.count() == 0:
-            raise KeyError, plural_form
+            raise IndexError, plural_form
         else:
             return translations[0]
 
@@ -557,15 +580,15 @@ class RosettaPOMessageSet(SQLBase):
                 raise KeyError, "There is already a translation sighting for " \
                       "this message set, text, and plural form"
             existing = existing[0]
-            existing.set(lastActive="NOW",
+            existing.set(dateLastActive="NOW",
                          active=True,
                          inLatestRevision=existing.inLatestRevision or fromPOFile)
             return existing
         return RosettaPOTranslationSighting(
             poMessageSet=self,
             poTranslation=translation,
-            firstSeen="NOW",
-            lastActive="NOW",
+            dateFirstSeen="NOW",
+            dateLastActive="NOW",
             inLatestRevision=fromPOFile,
             pluralForm=plural_form,
             active=True,

@@ -1,15 +1,16 @@
 from ipofile import IPOHeader, IPOMessage
-from pofile import POHeader, POMessage, POParser
+from pofile import POHeader, POMessage, POParser, POInvalidInputError
 from interfaces import IPOMessageSet
 from zope.interface import implements
 import sets
 
-# This file raises string exceptions.  These should be considered
-# "XXX FIXME" markings - as in, replace these with whatever real
-# exception should be raised in each case.
-
 class DatabaseConstraintError(Exception):
     pass
+
+
+# XXX: if you *modify* the adapted pofile "object", it assumes you're updating
+#      it from the latest revision (for the purposes of inLatestRevision fields).
+#      That should probably be optional.
 
 
 class WatchedSet(sets.Set):
@@ -76,13 +77,14 @@ class TranslationsList(object):
     # then you're probably on crack anyway.
 
     def __setitem__(self, index, value):
-        current = self._msgset.getTranslationSighting(index)
-        if current is not None:
-            if value == current.poTranslation.text:
+        if not value:
+            try:
+                sighting = self._msgset.getTranslationSighting(index)
+            except IndexError:
+                # nothing passed, nothing in the DB, then it's ok
                 return
-            current.inPOFile = False
-        if value:
-            self._msgset.makeTranslationSighting(value, index)
+            sighting.inLatestRevision = False
+        self._msgset.makeTranslationSighting(value, index, update=True, fromPOFile=True)
 
     def __getitem__(self, index):
         return self._msgset.getTranslationSighting(index).poTranslation.text
@@ -196,17 +198,14 @@ class TemplateImporter(object):
         self.parser.write(filelike.read())
         self.parser.finish()
         if not self.parser.header:
-            # bitch like crazy
-            raise 'something'
+            raise POInvalidInputError('PO template has no header', 0)
 
     def __call__(self, msgid, **kw):
         "Instantiate a single message/messageset"
         try:
             msgset = self.potemplate[msgid]
         except KeyError:
-            msgset = self.potemplate.newMessageSet(msgid)
-        if msgset is None:
-            msgset = potemplate.newMessageSet(msgid)
+            msgset = self.potemplate.makeMessageSet(msgid)
         else:
             msgset.getMessageIDSighting(0).touch()
         self.len += 1
@@ -214,9 +213,7 @@ class TemplateImporter(object):
         proxy = MessageProxy(msgset)
         proxy.msgidPlural = kw.get('msgidPlural', '')
         if kw.get('msgstr'):
-            # if not is_it_the_header:
-            raise "You're on crack. (%r) as msgstr" % kw['msgstr']
-            proxy.msgstr = kw['msgstr']
+            raise POInvalidInputError('PO template has msgstrs', 0)
         proxy.commentText = kw.get('commentText', '')
         proxy.sourceComment = kw.get('sourceComment', '')
         proxy.fileReferences = kw.get('fileReferences', '').strip()
@@ -224,7 +221,7 @@ class TemplateImporter(object):
         plurals = []
         for inp_plural in kw.get('msgstrPlurals', ()):
             if inp_plural:
-                raise "You're on crack (%r)." % kw.get('msgstrPlurals')
+                raise POInvalidInputError('PO template has msgstrs', 0)
             plurals.append(inp_plural)
         proxy.msgstrPlurals = plurals
         proxy.obsolete = kw.get('obsolete', False)
@@ -232,28 +229,31 @@ class TemplateImporter(object):
 
 
 class POFileImporter(object):
-    def __init__(self, potemplate, changeset):
-        raise NotImplementedError
-        self.potemplate = potemplate
+    def __init__(self, pofile, changeset):
+        self.pofile = pofile
         self.changeset = changeset # are we going to use this?
         self.len = 0
         self.parser = POParser(translation_factory=self)
 
     def doImport(self, filelike):
         "Import a file (or similar object)"
-        self.potemplate.expireAllMessages()
+        self.pofile.expireAllMessages()
         # what policy here? small bites? lines? how much memory do we want to eat?
         parser.write(filelike.read())
         parser.finish()
         if not parser.header:
-            # bitch like crazy
-            raise 'something'
+            raise POInvalidInputError('PO file has no header', 0)
+        self.pofile.set(
+            topComment=parser.header.commentText.encode('utf-8'),
+            header=parser.header.msgstr.encode('utf-8'),
+            headerFuzzy='fuzzy' in parser.header.flags,
+            pluralforms=parser.header.nplurals)
 
     def __call__(self, msgid, **kw):
         "Instantiate a single message/messageset"
-        msgset = self.potemplate[msgid]
+        msgset = self.pofile[msgid]
         if msgset is None:
-            msgset = potemplate.newMessageSet(msgid)
+            msgset = self.pofile.poTemplate.makeMessageSet(msgid, self.pofile)
         else:
             msgset.getMessageIDSighting(0).touch()
         self.len += 1
