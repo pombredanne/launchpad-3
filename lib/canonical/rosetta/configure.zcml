@@ -51,11 +51,11 @@
       />
   <browser:defaultView
       for="canonical.rosetta.domain.RosettaProjectSet"
-      name="index"
+      name="+index"
       />
   <browser:defaultView
       for="canonical.rosetta.domain.RosettaProject"
-      name="index"
+      name="+index"
       />
   <!--
   XXX Mark Shuttleworth comments 03/10/04:

@@ -32,6 +32,11 @@
     <include file="language.zcml" />
     <include file="pofile.zcml" />
     <include file="potemplate.zcml" />
+    <include file="potmsgset.zcml" />
+    <include file="pomsgid.zcml" />
+    <include file="pomsgset.zcml" />
+    <include file="potranslationsighting.zcml" />
+    <include file="potranslation.zcml" />
 
     <include file="widgets.zcml" />
     <include file="fields.zcml" />

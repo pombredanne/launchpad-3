@@ -36,37 +36,6 @@
   <traverse for="canonical.launchpad.interfaces.IRosettaProject"
             getter="product" />
 
-  <!-- pages for a POFile -->
-  <pages for="canonical.launchpad.interfaces.IPOFile"
-         permission="zope.Public"
-         class="canonical.rosetta.browser.ViewPOFile"
-         lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language">
-    <page name="+index"
-          template="../launchpad/templates/pofile-index.pt"
-          lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language"/>
-  </pages>
-
-  <page name="+edit"
-        permission="launchpad.AnyPerson"
-        class="canonical.rosetta.browser.ViewPOFile"
-        for="canonical.launchpad.interfaces.IPOFile"
-        template="../launchpad/templates/pofile-edit.pt"
-        lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language/+edit" />
-
-  <page name="po"
-        for="canonical.launchpad.interfaces.IPOFile"
-        permission="zope.Public"
-        class="canonical.rosetta.browser.ViewPOExport"
-        attribute="__call__"
-        lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$Language.code/po" />
-
-  <page name="mo"
-        for="canonical.launchpad.interfaces.IPOFile"
-        permission="zope.Public"
-        class="canonical.rosetta.browser.ViewMOExport"
-        attribute="__call__"
-        lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$Language.code/mo" />
-
   <!-- pages for the rosetta application -->
   <pages for="canonical.launchpad.interfaces.IRosettaApplication"
          permission="zope.Public"
