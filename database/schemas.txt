@@ -1,0 +1,798 @@
+
+LAUNCHPAD SCHEMAS
+
+These are the schemas we currently know about. This knowledge will be transferred
+to a set of Schema classes in due course, making them easy to work with and to
+map to the Wiki in an automated fashion.
+
+For the moment, we are capturing these in text format.
+
+
+Manifest Entry Type
+
+ A Sourcerer Manifest is a list of branches that are brought together to make up
+ a source package. Each branch can be included in the package in a number of
+ different ways, and the Manifest Entry Type tells sourcerer how to bring
+ that branch into the package.
+
+  1 tar: A Tar File
+      This branch will be tarred up and installed in the source
+      package as a tar file. Typically, the package build system
+      will know how to untar that code and use it during the
+      build.
+ 
+  2 patch: A Patch File
+      This branch will be brought into the source file as a patch
+      against another branch. Usually, the patch is stored in the
+      "patches" directory, then applied at build time by the source
+      package build scripts.
+
+  3 copy: Copied Source Code
+      This branch will simply be copied into the source package at
+      a specified location. Typically this is used where a source
+      package includes chunks of code such as libraries or reference
+      implementation code, and builds it locally for static linking
+      rather than depending on a system-installed shared library.
+
+  4 dir: A Directory
+      This is a special case of Manifest Entry Type, and tells
+      sourcerer simply to create an empty directory with the
+      given name.
+ 
+  5 ignore: An Item To Ignore
+      This manifest entry type tells sourcerer to ignore something
+      in the source package. For example, there might be a file which
+      looks like a patch but isn't one (a shell script called xxx.patch
+      is typical).
+
+
+
+Packaging
+
+ Source packages include software from one or more Upstream open source
+ projects. This schema shows the relationship between a source package
+ and the upstream open source products that it might incorporate. This
+ schema is used in the Packaging table.
+
+  1 prime: Primary Product
+      This is the primary product packaged in this source package. For
+      example, a source package "apache2" would have a "prime" Packaging
+      relationship with the "apache2" product from the Apache Project.
+      The product and package don't have to have the same name.
+ 
+  2 includes: Sourcepackage Includes Product
+      This source package includes some part or all of the product. For example,
+      the "cadaver" source package has an "includes" Packaging relationship
+      with the libneon product.
+
+
+
+
+Branch Relationships
+
+ In Arch, everything is a branch. Your patches are all branches. Your brother,
+ sister and hifi system are all branches. If it moves, it's a branch. And Buttress
+ (the Arch subsystem of Launchpad) tracks the relationships between those branches.
+
+  1 tracks: Subject Branch Tracks Object Branch
+      The source branch "tracks" the destination branch. This means that
+      we generally try to merge changes made in branch B into branch A.
+      For example, if we have inlcuded a fix-branch into a source package,
+      and there is an upstream for that fix-branch, then we will try to
+      make our fix-branch "track" the upstream fix, so that our package
+      inherits the latest fixes.
+
+  2 continues: Subject Branch is a continuation of Object Branch
+      The term "continuation" is an Arch term meaning that the branch was
+      tagged from another one.
+
+  3 releases: Subject Branch is a "Release Branch" of Object Branch
+      A "release branch" is a branch that is designed to capture the extra
+      bits that are added to release tarballs and which are not in the
+      project revision control system. For example, when a product is
+      released, the project administrators will typically tag the
+      code in the revision system, then pull that code into a clean
+      directory. The files at this stage represent what is in the revision
+      control system. They will often then add other files, for example
+      files created by the Gnu Automake and Autoconf system, before
+      tarring up the directory and pushing that tarball out as the
+      release. Those extra files are included in a release branch.
+
+  4 fixes: Subject Branch is a fix for Object Branch
+      This relationship indicates that Subject Branch includes a fix for
+      the Object Branch. It is used to indicate that Subject Branch's main purpose
+      is for the development of a fix to a specific issue in
+      Object Branch. The description and title of the Subject will usually
+      include information about the issue and the fix. Such fixes
+      are usually merged when the fix is considered stable.
+
+  5 ports: Subject Branch is a porting branch of B
+      This relationship indicates that Subject Branch is a port of Object Branch
+      to a different architecture or operating system. Such changes will
+      usually be merged back at a future date when they are considered
+      stable.
+
+  6 enhances: Subject Branch contains a new feature for Object Branch
+      This relationship indicates that Subject Branch is a place where developers
+      are working on a new feature for the software in Object Branch. Usually
+      such a feature is merged at some future date when the code is
+      considered stable. Subject The Branch.description will usually describe
+      the feature being implemented.
+
+  7 forks: The Subject Branch is a For of the Object Branch
+      Sometimes the members of an open source project cannot agree on the
+      direction a project should take, and the project forks. In this case,
+      one group will "fork" the codebase and start work on a new version
+      of the product which will likely not be merged. That new version
+      is a "fork" of the original code.
+
+
+
+Email Address Status
+
+ Launchpad keeps track of email addresses associated with a person. They
+ can be used to login to the system, or to associate an Arch changeset
+ with a person, or to associate a bug system email message with a person,
+ for example.
+
+  1 new: New Email Address
+      This email address has had no validation associated with it. It
+      has just been created in the system, either by a person claiming
+      it as their own, or because we have stored an email message or
+      arch changeset including that email address and have created
+      a phantom person and email address to record it.
+
+  2 validated: Validated Email Address
+      We have proven that the person associated with this email address
+      can read email sent to this email address, by sending a token
+      to that address and getting the appropriate response from that
+      person.
+
+  3 old: Old Email Address
+      The email address was validated for this person, but is now no
+      longer accessible or in use by them. We should not use this email
+      address to login that person, nor should we associate new incoming
+      content from that email address with that person.
+
+
+
+Membership Role
+
+ Launchpad knows about teams and individuals. People can be a member
+ of many teams, and in each team that they are a member they will
+ have a specific role. These are the kind of roles they could have.
+
+  1 admin: Administrator
+      The person is an administrator of this team. Typically that means
+      that they can do anything that the owner of the team can do, it is
+      a way for the owner to delegate authority in the team.
+
+  2 member: Member
+      The person is a normal member of the team, and can view and edit
+      objects associated with that team accordingly.
+
+
+
+Membership Status
+
+ Some teams to not have automatic membership to anybody who wishes to
+ join. In this case, a person can be proposed for membership, and the
+ request can be approved or declined. The status of a membership can
+ be one of these values. The Person.teamowner is always an admin
+ member of the team, they do not need to have a membership record.
+
+  1 proposed: Proposed Member
+      The person has been proposed or has proposed themselves as a
+      member of this team. This status conveys no access rights or
+      privileges to the person.
+
+  2 current: Current Member
+      This person is currently a member of the team. This status means
+      that the person will have full access as a member or admin, depending
+      on their role.
+
+
+
+
+Hash Algorithms
+
+ We use "hash" or "digest" cryptographic algorithms in a number of
+ places in Launchpad. Usually these are a way of verifying the
+ integrity of a file, but they can also be used to check if a file
+ has been seen before. We support only "sha1" initially, if this
+ is no longer trusted at some time we will add other algorithms.
+
+ 1 sha1: The SHA-1 Digest Algorithm
+    This algorithm is specified by the US-NIST and is used as part
+    of TLS and other common cryptographic protocols. It is a 168-bit
+    digest algorithm.
+
+
+
+
+Project Relationship
+
+ Launchpad tracks different open source projects, and the relationships
+ between them. This schema is used to describe the relationship between
+ two open source projects.
+
+  1 aggregates: Subject Project Aggregates Object Project
+      Some open source projects are in fact an aggregation of several
+      other projects. For example, the Gnome Project aggregates
+      Gnumeric, Abiword, EOG, and many other open source projects.
+
+  2 similar: Subject Project is Similar to Object Project
+      Often two different groups will start open source projects
+      that are similar to one another. This relationship is used
+      to describe projects that are similar to other projects in
+      the system.
+
+
+
+
+
+Distribution Release State
+
+ A DistroRelease (warty, hoary, or grumpy for example) changes state
+ throughout its development. This schema describes the level of
+ development of the distrorelease. The typical sequence for a
+ distrorelease is to progress from experimental to development to
+ frozen to current to supported to obsolete, in a linear fashion.
+
+  1 experimental: Experimental
+      This distrorelease contains code that is far from active
+      release planning or management. Typically, distroreleases
+      that are beyond the current "development" release will be
+      marked as "experimental". We create those so that people
+      have a place to upload code which is expected to be part 
+      of that distant future release, but which we do not want
+      to interfere with the current development release.
+
+  2 development: Active Development
+      The distrorelease that is under active current development
+      will be tagged as "development". Typically there is only
+      one active development release at a time. When that freezes
+      and releases, the next release along switches from "experimental"
+      to "development".
+  
+  3 frozen: Pre-release Freeze
+      When a distrorelease is near to release the administrators
+      will freeze it, which typically means that new package uploads
+      require significant review before being accepted into the 
+      release.
+  
+  4 current: Current Stable Release
+      This is the latest stable release. Normally there will only
+      be one of these for a given distribution.
+
+  5 supported: Supported
+      This distrorelease is still supported, but it is no longer
+      the current stable release. In Ubuntu we normally support
+      a distrorelease for 2 years from release.
+  
+  6 obsolete: Obsolete
+      This distrorelease is no longer supported, it is considered
+      obsolete and should not be used on production systems.
+
+
+
+
+Upstream File Type
+
+ When upstream open source project release a product they will
+ include several files in the release. All of these files are
+ stored in Launchpad (we throw nothing away ;-). This schema
+ gives the type of files that we know about.
+
+  1 codetarball: Code Release Tarball
+      This file contains code in a compressed package like
+      a tar.gz or tar.bz or .zip file.
+
+  2 readme: README File
+      This is a README associated with the upstream
+      release. It might be in .txt or .html format, the
+      filename would be an indicator.
+
+  3 releasenotes: Release Notes
+      This file contains the release notes of the new
+      upstream release. Again this could be in .txt or
+      in .html format.
+
+  4 changelog: ChangeLog File
+      This file contains information about changes in this
+      release from the previous release in the series. This
+      is usually not a detailed changelog, but a high-level
+      summary of major new features and fixes.
+
+
+
+Source Package Format
+
+ Launchpad supports distributions that use source packages in a variety
+ of source package formats. This schema documents the types of source
+ package format that we understand.
+
+  1 dpkg: The DEB Format
+      This is the source package format used by Ubuntu, Debian, Linspire
+      and similar distributions.
+
+  2 rpm: The RPM Format
+      This is the format used by Red Hat, Mandrake, SUSE and other similar
+      distributions.
+
+  3 ebuild: The Ebuild Format
+      This is the source package format used by Gentoo.
+
+
+
+
+
+Source Package Urgency
+
+ When a source package is released it is given an "urgency" which tells
+ distributions how important it is for them to consider bringing that
+ package into their archives. This schema defines the possible values
+ for source package urgency.
+
+  1 low: Low Urgency
+      This source package release does not contain any significant or
+      important updates, it might be a cleanup or documentation update
+      fixing typos and speling errors, or simply a minor upstream
+      update.
+
+  2 medium: Medium Urgency
+      This package contains updates that are worth considering, such
+      as new upstream or packaging features, or significantly better
+      documentation.
+
+  3 high: Very Urgent
+      This update contains updates that fix security problems or major
+      system stability problems with previous releases of the package.
+      Administrators should urgently evaluate the package for inclusion
+      in their archives.
+
+  4 emergency: Critically Urgent
+      This release contains critical security or stability fixes that
+      affect the integrity of systems using previous releases of the
+      source package, and should be installed in the archive as soon
+      as possible after appropriate review.
+
+
+
+
+Source Package File Type
+
+ Launchpad tracks files associated with a source package release. These
+ files are stored on one of the inner servers, and a record is kept in
+ Launchpad's database of the file's name and location. This schema
+ documents the files we know about.
+
+  1 ebuild: Ebuild File
+      This is a Gentoo Ebuild, the core file that Gentoo uses as a source
+      package release. Typically this is a shell script that pulls in the
+      upstream tarballs, configures them and builds them into the appropriate
+      locations.
+      
+  2 srpm: Source RPM
+      This is a Source RPM, a normal RPM containing the needed source code
+      to build binary packages. It would include the Spec file as well as
+      all control and source code files.
+  
+  3 dsc: DSC File
+      This is a DSC file containing the Ubuntu source package description,
+      which in turn lists the orig.tar.gz and diff.tar.gz files used to make
+      up the package.
+  
+  4 orig: Orig Tarball
+      This file is an Ubuntu "orig" file, typically an upstream tarball or
+      other lightly-modified upstreamish thing.
+
+  5 diff: Diff File
+      This is an Ubuntu "diff" file, containing changes that need to be made
+      to upstream code for the packaging on Ubuntu. Typically this diff
+      creates additional directories with patches and documentation used
+      to build the binary packages for Ubuntu.
+
+  6 tarball: Tarball
+      This is a tarball, usually of a mixture of Ubuntu and upstream code,
+      used in the build process for this source package.
+
+
+
+
+Source Upload Status
+
+ A source package has a lifecycle in a distrorelease. This schema documents
+ the possible values for the status of a source package in a distrorelease 
+ at any time.
+
+  1 proposed: Proposed
+      This source package has been proposed for the distrorelease. This is
+      the status used for new source packages which have been uploaded but
+      not yet approved or checked in any way.
+  
+  2 new: New
+      A source package with a "new" upload status has passed some initial
+      tests (for example, linting or basic format and digital signature
+      verification) but has not yet been accepted by the archive maintainer
+      team. Typically, source packages which are first uploaded to the
+      archive sit in the "new" status till they are reviewed and an automatic
+      processing policy can be defined for them. Once that policy is defined
+      they can move from "proposed" straight to accepted if they meet the policy.
+  
+  3 accepted: Accepted
+      Packages in the "accepted" state have been accepted into the archive but
+      have not yet been published. For example, if there is an unmet dependency
+      on that package, it might wait "accepted" until the dependency is met and
+      the package can be published.
+  
+  4 published: Published
+      This package is currently published as part of the archive for that
+      distrorelease. There can only be one release of a given source package
+      that is "published" at any one time.
+      
+  5 rejected: Rejected
+      A package might not be accepted by the archive maintainers. In this case
+      it is "rejected" and will not be proposed again.
+  
+  6 superceded: Superceded
+      When a newer version of a source package is published the existing
+      one is marked as "superceded".
+  
+  7 removed: Removed
+      If a package is actually removed from the archive it will be marked as
+      "removed".
+
+
+
+Source Package Relationships
+
+ Launchpad tracks many source packages. Some of these are related to one
+ another. For example, a source package in Ubuntu called "apache2" might
+ be related to a source package in Mandrake called "httpd". This schema
+ defines the relationships that Launchpad understands.
+
+  1 replaces: Replaces
+      The subject source package was designed to replace the object
+      source package.
+  
+  2 reimplements: Reimplements
+      The subject source package is a completely new packaging of
+      the same underlying products as the object package.
+  
+  3 similarto: Similar To
+      The subject source package is similar, in that it packages
+      software that has similar functionality to the object package.
+      For example, postfix and exim4 would be "similarto" one
+      another.
+  
+  4 derivesfrom: Derives From
+      The subject source package derives from and tracks the object source
+      package. This means that new uploads of the object package should
+      trigger a notification to the maintainer of the subject source package.
+
+  5 correspondsto: Corresponds To
+      The subject source package includes the same products as th
+      object source package, but for a different distribution. For
+      example, the "apache2" Ubuntu package "correspondsto" the
+      "httpd2" package in Red Hat.
+
+
+
+
+Binary Package Format
+
+ Launchpad tracks a variety of binary package formats. This schema
+ documents the list of binary package formats that are supported
+ in Launchpad.
+
+  1 deb: Ubuntu Package
+      This is the binary package format used by Ubuntu and all
+      similar distributions. It includes dependency information
+      to allow the system to ensure it always has all the software
+      installed to make any new package work correctly.
+  
+  2 udeb: Ubuntu Installer Package
+      This is the binary package format use by the installer
+      in Ubuntu and similar distributions.
+  
+  3 ebuild: Gentoo Ebuild Package
+      This is the Gentoo binary package format. While Gentoo
+      is primarily known for being a build-it-from-source-yourself
+      kind of distribution, it is possible to exchange binary
+      packages between Gentoo systems.
+
+  4 rpm: RPM Package
+      This is the format used by Mandrake and other similar
+      distributions. It does not include dependency tracking
+      information.
+
+
+
+Binary Package Priority
+
+ When a binary package is installed in an archive it can be assigned
+ a specific priority. This schema documents the priorities that Launchpad
+ knows about.
+
+   1 required: Required Package
+       This package is required for the distribution to operate normally.
+       Usually these are critical core packages that are essential for the
+       correct operation of the operating system.
+
+   2 important: Important
+       This package is important, and should be installed under normal
+       circumstances.
+   
+   3 standard: Standard
+       The typical install of this distribution should include this
+       package.
+   
+   4 optional: Optional
+       This is an optional package in this distribution.
+
+   5 extra: Extra
+       This is an extra package in this distribution. An "extra" package
+       might conflict with one of the standard or optional packages so
+       it should be treated with some caution.
+
+
+
+
+
+
+Binary Package File Type
+
+ Launchpad handles a variety of packaging systems and binary package
+ formats. This schema documents the known binary package file types.
+
+  1 deb: DEB Format
+      This format is the standard package format used on Ubuntu and other
+      similar operating systems.
+ 
+  2 rpm: RPM Format
+      This format is used on mandrake, Red Hat, Suse and other similar
+      distributions.
+
+
+
+
+Coderelease Relationships
+
+ Code releases are both upstream releases and distribution source package
+ releases, and in this schema we document the relationships that Launchpad
+ understands between these two.
+
+  1 packages: Packages
+      The subject is a distribution packing of the object. For example,
+      apache2-2.0.48-1 "packages" the upstream apache2.0.48.tar.gz.
+
+  2 replaces: Replaces
+      A subsequent release in the same product series typically
+      "replaces" the prior release. For example, apache2.0.48
+      "replaces" apache2.0.47. Similarly, within the distribution
+      world, apache-2.0.48-3ubuntu2 "replaces" apache2-2.0.48-3ubuntu2.
+  
+  3 derivesfrom: Derives From
+     The subject package derives from the object package. It is common
+     for distributions to build on top of one another's work, creating
+     source packages that are modified versions of the source package
+     in a different distribution, and this relationship captures that
+     concept.
+
+
+
+
+
+
+Bug Infestation Status
+
+ Malone is the bug tracking application that is part of Launchpad. It
+ tracks the status of bugs in different distributions as well as
+ upstream. This schema documents the kinds of infestation of a bug
+ in a coderelease.
+
+
+  1 unknown: Unknown
+      We don't know if this bug infests that coderelease.
+  
+  2 affected: Affected
+      It is believed that this bug affects that coderelease. The
+      verifiedby field will indicate whether that has been verified
+      by a package maintainer.
+  
+  3 dormant: Dormant
+      The bug exists in the code of this coderelease, but it is dormant
+      because that codepath is unused in this release.
+  
+  4 unaffected: Unaffected
+      It is believed that this bug does not infest this release of code.
+  
+  5 fixed: Fixed
+      It is believed that the bug is actually fixed in this release of code.
+      Setting the "fixed" flag allows us to generate lists of bugs fixed
+      in a release.
+  
+  6 victimized: Victimized
+      This code release does not actually contain the buggy code, but
+      it is affected by the bug nonetheless because of the way it
+      interacts with the products or packages that are actually buggy.
+      Often users will report a bug against the package which displays
+      the symptoms when the bug itself lies elsewhere.
+
+
+
+
+
+Bug Assignment Status
+
+ Bugs are assigned to products and to source packages in Malone. The
+ assignment carries a status - new, open or closed. This schema
+ documents those possible status values.
+
+  1 new: New
+      This is a new bug and has not yet been accepted by the maintainer
+      of this product or source package.
+
+  2 open: Open
+      This bug has been reviewed and accepted by the maintainer, and
+      is still open.
+
+  3 closed: Closed
+      This bug has been closed by the maintainer.
+
+
+
+
+Bug Priority
+
+ Each bug in Malone can be assigned a priority by the maintainer of
+ the bug. The priority is an indication of the maintainer's desire
+ to fix the bug. This schema documents the priorities Malone allows.
+
+  1 high: High
+      This is a high priority bug for the maintainer.
+  
+  2 medium: Medium
+      This is a medium priority bug for the maintainer.
+  
+  3 low: Low
+      This is a low priority bug for the maintainer.
+  
+  4 wontfix: Won't Fix
+      The maintainer does not intend to fix this bug.
+
+
+
+
+Bug Severity
+
+ A bug assignment has a severity, which is an indication of the
+ extent to which the bug impairs the stability and security of
+ the distribution.
+
+  1 critical: Critical Severity
+      This bug is essential to fix as soon as possible. It affects
+      system stability, data integrity and / or remote access
+      security.
+  
+  2 major: Major Severity
+      This but needs urgent attention from the maintainer or
+      upstream. It affects local system security or data integrity.
+  
+  3 normal: Normal Severity
+      This bug warrants an upload just to fix it, but can be put
+      off until other major or critical bugs have been fixed.
+      
+  4 minor: Minor Severity
+      This bug does not warrant an upload just to fix it, but 
+      should if possible be fixed when next the maintainer does an
+      upload. For example, it might be a typo in a document.
+
+  5 wishlist: Wishlist
+      This is not a bug, but is a request for an enhancement or
+      new feature that does not yet exist in the package. It does
+      not affect system stability, it might be a usability or
+      documentation fix.
+
+
+
+
+Bug External Reference Type
+
+ Malone allows external information references to be attached to
+ a bug. This schema lists the known types of external references.
+
+  1 cve: A CVE Number
+      This external reference is a CVE number, which means it
+      exists in the CVE database of security bugs.
+
+  2 url: A URL
+      This external reference is a URL. Typically that means it
+      is a reference to a web page or other internet resource
+      related to the bug.
+
+
+Bug Relationship
+
+ Malone allows for rich relationships between bugs to be specified,
+ and this schema lists the types of relationships supported.
+
+  1 related: Related Bug
+    This indicates that the subject and object bugs are related in 
+    some way. The order does not matter. When displaying one bug, it
+    would be appropriate to list the other bugs which are related to
+    it.
+
+  
+
+
+Upstream Release Version Style
+
+ Sourcerer will actively look for new upstream releases, and it needs
+ to know roughly what version numbering format upstream uses. The
+ release version number schemes understood by Sourcerer are documented
+ in this schema. XXX andrew please fill in!
+
+  1 gnu: GNU-style Version Numbers
+      XXX Andrew need description here
+  
+
+
+Revision Control Systems
+
+ Buttress brings code from a variety of upstream revision control
+ systems into Arch. This schema documents the known and supported
+ revision control systems.
+
+  1 cvs: Concurrent Version System
+      The Concurrent Version System is very widely used among
+      older open source projects, it was the first widespread
+      open source version control system in use.
+  
+  2 svn: Subversion
+      Subversion aims to address some of the shortcomings in
+      CVS, but retains the central server bottleneck inherent
+      in the CVS design.
+  
+  3 arch: The Arch Revision Control System
+      An open source revision control system that combines truly
+      distributed branching with advanced merge algorithms. This
+      removes the scalability problems of centralised revision
+      control.
+  
+  4 package: ???
+  
+  5 bitkeeper: Bitkeeper
+      A commercial revision control system that, like Arch, uses
+      distributed branches to allow for faster distributed
+      development.
+
+
+
+
+Arch Archive Type
+
+ An arch archive can be read only, or it might be an archive
+ into which we can push new changes, or it might be a mirror
+ into which we can only push changes from the upstream. This schema
+ documents those states.
+
+ 0 readwrite: ReadWrite Archive
+     This archive can be written to with new changesets, it
+     is an archive which we "own" and therefor are free to
+     write changesets into. Note that an archive which has
+     been created for upstream CVS mirroring, for example, would
+     be "readwrite" because we need to be able to create new
+     changesets in it as we mirror the changes in the CVS
+     repository.
+ 
+ 1 readonly: Read Only Archive
+     An archive in the "readonly" state can only be published
+     and read from, it cannot be written to.
+     
+ 2 mirrortarget: Mirror Target
+     We can write into this archive, but we can only write 
+     changesets which have actually come from the upstream
+     arch archive of which this is a mirror.
+ 

@@ -8,16 +8,38 @@
 
         - re-evalutate some of the "text" field types, they might need to be "bytea"
 	  unless we can guarantee utf-8
-        - re-evaluate the relationship table names, see if there isn't a better name for each of them
 	- add sample data for the schemas
 	- make sure names are only [a-z][0-9][-.+] and can only start with [a-z]
 	- set DEFAULT's for datestamps (now) and others
 	- create custom schema systems for components, etc.
-	- present the database as a set of Interfaces
         - add Series to products and projects
 	- setup translatable package descriptions
   CHANGES
 
+
+  v0.98-dev:
+        - merge SourceSource table from Andrew Bennetts
+	- change SourceSource.homepageurl to SourceSource.product
+	- BugInfestation: dateverified and verifiedby need to be NULL if its not verified
+	- set a lot of datecreated and lastverified etc fields to DEFAULT CURRENT_TIMESTAMP
+	- use Andrew Bennett's way of putting comments inside the table def, above the
+	  line being commented, it makes lines shorter.
+  v0.97:
+        - rename Membership.label to Membership.role
+	- rename EmailAddress.label to EmailAddress.status
+	- move fields of Packaging around and rename Packaging.label to Packaging.packaging
+        - restructure recursive relationships to be "subject - label - object"
+	  - BranchRelationship
+	  - ProjectRelationship
+	  - CodereleaseRelationship
+	  - SourcepackageRelationship
+	  - BugRelationship
+	  - Packaging
+	- removed releasestatus from DistroArchRelease (we already have it on DistroRelease)
+	- moved releasedate to DistroArchRelease (simplify but lose ability to release different arches at different dates)
+	- remove ProjectTranslationEffortRelationship table altogether
+	- add a TranslationEffort.project field
+	- rename BugInfestation.affected to BugInfestation.infestation
   v0.96:
 	- split categorybranchversion into category, branch and version
 	- rename SourcepackageBug to SourcepackageBugAssignment
@@ -90,96 +112,95 @@
 /*
   DESTROY ALL TABLES
 */
-DROP TABLE SourcepackageBugAssignment CASCADE;
-DROP TABLE ArchArchiveLocationSigner CASCADE;
-DROP TABLE BugSubscription CASCADE;
-DROP TABLE SpokenIn CASCADE;
-DROP TABLE Country CASCADE;
-DROP TABLE TranslationEffortPOTFileRelationship CASCADE;
-DROP TABLE POComment CASCADE;
-DROP TABLE BranchRelationship CASCADE;
-DROP TABLE ProjectBugsystem CASCADE;
-DROP TABLE BugWatch CASCADE;
-DROP TABLE BugSystem CASCADE;
-DROP TABLE RosettaPOTranslationSighting CASCADE;
-DROP TABLE BugattachmentContent CASCADE;
-DROP TABLE BugAttachment CASCADE;
-DROP TABLE POTranslationSighting CASCADE;
-DROP TABLE POFile CASCADE;
-DROP TABLE POTMsgIDSighting CASCADE;
-DROP TABLE POTSubscription CASCADE;
-DROP TABLE POTFile CASCADE;
-DROP TABLE License CASCADE;
-DROP TABLE BugRelationship CASCADE;
-DROP TABLE BugMessage CASCADE;
-DROP TABLE BugExternalref CASCADE;
-DROP TABLE BugLabel CASCADE;
-DROP TABLE BugInfestation CASCADE;
-DROP TABLE ProductBugAssignment CASCADE;
-DROP TABLE BugActivity CASCADE;
-DROP TABLE BugSystemType CASCADE;
-DROP TABLE Bug CASCADE;
-DROP TABLE Packaging CASCADE;
-DROP TABLE CodereleaseRelationship CASCADE;
-DROP TABLE Coderelease CASCADE;
-DROP TABLE OSFileInPackage CASCADE;
-DROP TABLE OSFile CASCADE;
-DROP TABLE BinarypackageBuildFile CASCADE;
-DROP TABLE BinarypackageUpload CASCADE;
-DROP TABLE BinarypackageBuild CASCADE;
-DROP TABLE Binarypackage CASCADE;
-DROP TABLE SourcepackageReleaseFile CASCADE;
-DROP TABLE SourcepackageRelationship CASCADE;
-DROP TABLE SourcepackageUpload CASCADE;
-DROP TABLE SourcepackageRelease CASCADE;
-DROP TABLE SourcepackageLabel CASCADE;
-DROP TABLE Sourcepackage CASCADE;
-DROP TABLE ArchConfigEntry CASCADE;
-DROP TABLE ArchConfig CASCADE;
-DROP TABLE UpstreamReleaseFile CASCADE;
-DROP TABLE UpstreamRelease CASCADE;
-DROP TABLE ChangesetFileHash CASCADE;
-DROP TABLE ChangesetFile CASCADE;
-DROP TABLE ChangesetFileName CASCADE;
-DROP TABLE ManifestEntry CASCADE;
-DROP TABLE ProductLabel CASCADE;
-DROP TABLE Product CASCADE;
-DROP TABLE Manifest CASCADE;
-DROP TABLE Changeset CASCADE;
-DROP TABLE BranchLabel CASCADE;
-DROP TABLE Branch CASCADE;
-DROP TABLE ArchArchiveLocation CASCADE;
-DROP TABLE ArchArchive CASCADE;
-DROP TABLE POTranslation CASCADE;
-DROP TABLE POTInheritance CASCADE;
-DROP TABLE ProjectRelationship CASCADE;
-DROP TABLE POMsgID CASCADE;
-DROP TABLE Language CASCADE;
-DROP TABLE ProjectTranslationEffortRelationship CASCADE;
-DROP TABLE TranslationEffort CASCADE;
-DROP TABLE Project CASCADE;
-DROP TABLE EmailAddress CASCADE;
-DROP TABLE TranslationFilter CASCADE;
-DROP TABLE GPGKey CASCADE;
-DROP TABLE ArchUserID CASCADE;
-DROP TABLE Membership CASCADE;
-DROP TABLE WikiName CASCADE;
-DROP TABLE JabberID CASCADE;
-DROP TABLE IRCID CASCADE;
-DROP TABLE PersonLabel CASCADE;
-DROP TABLE TeamParticipation CASCADE;
-DROP TABLE Builder CASCADE;
-DROP TABLE DistroArchRelease CASCADE;
-DROP TABLE Processor CASCADE;
-DROP TABLE ProcessorFamily CASCADE;
-DROP TABLE DistroRelease CASCADE;
-DROP TABLE Distribution CASCADE;
-DROP TABLE LaunchpadFileHash CASCADE;
-DROP TABLE LaunchpadFile CASCADE;
-DROP TABLE Label CASCADE;
-DROP TABLE Schema CASCADE;
-DROP TABLE Person CASCADE;
-DROP TABLE SourceSource CASCADE;
+DROP TABLE SourcepackageBugAssignment;
+DROP TABLE ArchArchiveLocationSigner;
+DROP TABLE BugSubscription;
+DROP TABLE SpokenIn;
+DROP TABLE Country;
+DROP TABLE TranslationEffortPOTFileRelationship;
+DROP TABLE POComment;
+DROP TABLE BranchRelationship;
+DROP TABLE ProjectBugsystem;
+DROP TABLE BugWatch;
+DROP TABLE BugSystem;
+DROP TABLE RosettaPOTranslationSighting;
+DROP TABLE BugattachmentContent;
+DROP TABLE BugAttachment;
+DROP TABLE POTranslationSighting;
+DROP TABLE POFile;
+DROP TABLE POTMsgIDSighting;
+DROP TABLE POTSubscription;
+DROP TABLE POTFile;
+DROP TABLE License;
+DROP TABLE BugRelationship;
+DROP TABLE BugMessage;
+DROP TABLE BugExternalref;
+DROP TABLE BugLabel;
+DROP TABLE BugInfestation;
+DROP TABLE ProductBugAssignment;
+DROP TABLE BugActivity;
+DROP TABLE BugSystemType;
+DROP TABLE Bug;
+DROP TABLE Packaging;
+DROP TABLE CodereleaseRelationship;
+DROP TABLE Coderelease;
+DROP TABLE OSFileInPackage;
+DROP TABLE OSFile;
+DROP TABLE SourceSource;
+DROP TABLE BinarypackageBuildFile;
+DROP TABLE BinarypackageUpload;
+DROP TABLE BinarypackageBuild;
+DROP TABLE Binarypackage;
+DROP TABLE SourcepackageReleaseFile;
+DROP TABLE SourcepackageRelationship;
+DROP TABLE SourcepackageUpload;
+DROP TABLE SourcepackageRelease;
+DROP TABLE SourcepackageLabel;
+DROP TABLE Sourcepackage;
+DROP TABLE ArchConfigEntry;
+DROP TABLE ArchConfig;
+DROP TABLE UpstreamReleaseFile;
+DROP TABLE UpstreamRelease;
+DROP TABLE ChangesetFileHash;
+DROP TABLE ChangesetFile;
+DROP TABLE ChangesetFileName;
+DROP TABLE ManifestEntry;
+DROP TABLE ProductLabel;
+DROP TABLE Product;
+DROP TABLE Manifest;
+DROP TABLE Changeset;
+DROP TABLE BranchLabel;
+DROP TABLE Branch;
+DROP TABLE ArchArchiveLocation;
+DROP TABLE ArchArchive;
+DROP TABLE POTranslation;
+DROP TABLE POTInheritance;
+DROP TABLE ProjectRelationship;
+DROP TABLE POMsgID;
+DROP TABLE Language;
+DROP TABLE TranslationEffort;
+DROP TABLE Project;
+DROP TABLE EmailAddress;
+DROP TABLE TranslationFilter;
+DROP TABLE GPGKey;
+DROP TABLE ArchUserID;
+DROP TABLE Membership;
+DROP TABLE WikiName;
+DROP TABLE JabberID;
+DROP TABLE IRCID;
+DROP TABLE PersonLabel;
+DROP TABLE TeamParticipation;
+DROP TABLE Builder;
+DROP TABLE DistroArchRelease;
+DROP TABLE Processor;
+DROP TABLE ProcessorFamily;
+DROP TABLE DistroRelease;
+DROP TABLE Distribution;
+DROP TABLE LaunchpadFileHash;
+DROP TABLE LaunchpadFile;
+DROP TABLE Label;
+DROP TABLE Schema;
+DROP TABLE Person;
 
 
 
@@ -210,12 +231,6 @@ CREATE TABLE Person (
   karmatimestamp        timestamp
 );
 
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Mark Shuttleworth', 'Mark', 'Shuttleworth' );     -- 1
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Dave Miller', 'David', 'Miller' );                -- 2
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Colin Watson', 'Colin', 'Watson' );               -- 3
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Steve Alexander', 'Steve', 'Alexander' );         -- 4
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Scott James Remnant', 'Scott James', 'Remnant' ); -- 5
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Robert Collins', 'Robert', 'Collins' );           -- 6
 
 
 /*
@@ -225,12 +240,7 @@ INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Robert 
 
 /*
   Schema
-  This is the (finger finger) "metadata" (finger finger)
-  which makes us... muahaha... distinctive... muahaha,
-  muahahaha, muahahahahahaa....
-
-  And yes, I'm not yet sure if my database model for this
-  is on crack. Comments please. MS 24/06/04
+  This is the (finger finger) "metadata" (finger finger).
 */
 CREATE TABLE Schema (
   id             serial PRIMARY KEY,
@@ -266,7 +276,8 @@ CREATE TABLE EmailAddress (
   id          serial PRIMARY KEY,
   email       text NOT NULL UNIQUE,
   person      integer NOT NULL REFERENCES Person,
-  label       integer NOT NULL REFERENCES Label
+  -- see Email Address Status schema
+  status      integer NOT NULL
 );
 
 
@@ -357,8 +368,10 @@ CREATE TABLE PersonLabel (
 CREATE TABLE Membership (
   person      integer NOT NULL REFERENCES Person,
   team        integer NOT NULL REFERENCES Person,
-  label       integer NOT NULL REFERENCES Label,
-  status      integer NOT NULL REFERENCES Label,
+  /* see Membership Role schema */
+  role        integer NOT NULL, 
+  /* see Membership Status schema */
+  status      integer NOT NULL,
   PRIMARY KEY ( person, team )
 );
 
@@ -411,7 +424,8 @@ CREATE TABLE ArchArchive (
 CREATE TABLE ArchArchiveLocation (
   id            serial PRIMARY KEY,
   archive       integer NOT NULL REFERENCES ArchArchive,
-  archivetype   integer NOT NULL, -- 0: readwrite, 1: readonly, 2: mirrortarget
+  /* see the Arch Archive Type schema */
+  archivetype   integer NOT NULL,
   url           text NOT NULL,
   gpgsigned     boolean NOT NULL
 );
@@ -494,7 +508,8 @@ CREATE TABLE ChangesetFile (
 */
 CREATE TABLE ChangesetFileHash (
   changesetfile     integer NOT NULL REFERENCES ChangesetFile,
-  hashalg           integer NOT NULL REFERENCES Label,
+  /* see Hash Algorithms schema */
+  hashalg           integer NOT NULL,
   hash              bytea NOT NULL,
   UNIQUE ( changesetfile, hashalg )
 );
@@ -504,14 +519,15 @@ CREATE TABLE ChangesetFileHash (
 /*
   BranchRelationship
   A table of relationships between branches. For example:
-  "src is a debianization-branch-of dst"
-  "src is-a-patch-branch-of dst
+  "subject is a debianization-branch-of object"
+  "subject is-a-patch-branch-of object"
 */
 CREATE TABLE BranchRelationship (
-  src        integer NOT NULL REFERENCES Branch,
-  dst        integer NOT NULL REFERENCES Branch,
-  label      integer NOT NULL REFERENCES Label,
-  PRIMARY KEY ( src, dst )
+  subject       integer NOT NULL REFERENCES Branch,
+  /* see the Branch Relationships schema */
+  label         integer NOT NULL,
+  object        integer NOT NULL REFERENCES Branch,
+  PRIMARY KEY ( subject, object )
 );
 
 
@@ -536,7 +552,7 @@ CREATE TABLE BranchLabel (
 */
 CREATE TABLE Manifest (
   id               serial PRIMARY KEY,
-  datecreated      timestamp NOT NULL,
+  datecreated      timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   owner            integer NOT NULL REFERENCES Person
 );
 
@@ -554,7 +570,8 @@ CREATE TABLE ManifestEntry (
   sequence        integer NOT NULL,
   branch          integer REFERENCES Branch,
   changeset       integer REFERENCES Changeset,
-  entrytype       integer NOT NULL REFERENCES Label,
+  /* see Manifest Entry Type schema */
+  entrytype       integer NOT NULL,
   path            text NOT NULL,
   patchon         integer,
   dirname         text,
@@ -562,10 +579,10 @@ CREATE TABLE ManifestEntry (
   CHECK ( sequence > 0 ),
   -- EITHER branch OR changeset:
   CHECK ( NOT ( branch IS NOT NULL AND changeset IS NOT NULL ) ),
-  -- the "patchon" must be another manifestentry from the same
-  -- manifest, and a different sequence
-  -- XXX no idea how to express this constraint, help!
-  -- the primary key is the combination of manifest and sequence
+  /* the "patchon" must be another manifestentry from the same
+     manifest, and a different sequence */
+  FOREIGN KEY ( manifest, patchon ) REFERENCES ManifestEntry ( manifest, sequence ),
+  CHECK ( patchon <> sequence ),
   PRIMARY KEY ( manifest, sequence )
 );
 
@@ -589,8 +606,8 @@ CREATE TABLE Project (
     name         text NOT NULL UNIQUE,
     title        text NOT NULL,
     description  text NOT NULL,
-    datecreated  timestamp NOT NULL,
-    homepageurl  text
+    datecreated  timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    homepageurl  text NOT NULL
     );
 
 
@@ -600,9 +617,10 @@ CREATE TABLE Project (
  the Gnome project aggregates the GnomeMeeting project.
 */
 CREATE TABLE ProjectRelationship (
-  src           integer NOT NULL REFERENCES Project,
-  dst           integer NOT NULL REFERENCES Project,
-  label         integer NOT NULL REFERENCES Label
+  subject       integer NOT NULL REFERENCES Project,
+  -- see Project Relationships schema
+  label         integer NOT NULL,
+  object        integer NOT NULL REFERENCES Project
 );
 
 
@@ -623,8 +641,8 @@ CREATE TABLE Product (
   name          text NOT NULL,
   title         text NOT NULL,
   description   text NOT NULL,
-  datecreated   timestamp NOT NULL,
-  homepageurl   text,
+  datecreated   timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  homepageurl   text NOT NULL,
   manifest      integer REFERENCES Manifest,
   UNIQUE ( project, name )
 );
@@ -651,8 +669,10 @@ CREATE TABLE UpstreamRelease (
   id               serial PRIMARY KEY,
   product          integer NOT NULL REFERENCES Product,
   datereleased     timestamp NOT NULL,
-  version          text, -- the version without anything else, "1.3.29"
-  title            text, -- the GSV Name "The Warty Web Release"
+  -- the version without anything else, "1.3.29"
+  version          text,
+  -- the GSV Name "The Warty Web Release"
+  title            text,
   description      text,
   owner            integer REFERENCES Person,
   UNIQUE ( product, version )
@@ -781,9 +801,11 @@ CREATE TABLE DistroRelease (
   title           text NOT NULL, -- "Ubuntu 4.10 (The Warty Warthog Release)"
   description     text NOT NULL,
   version         text NOT NULL, -- "4.10"
-  components       integer NOT NULL REFERENCES Schema,
-  sections         integer NOT NULL REFERENCES Schema,
-  releasestate    integer NOT NULL REFERENCES Label
+  components      integer NOT NULL REFERENCES Schema,
+  sections        integer NOT NULL REFERENCES Schema,
+  -- see Distribution Release State schema
+  releasestate    integer NOT NULL,
+  datereleased    timestamp
 );
 
 
@@ -798,8 +820,6 @@ CREATE TABLE DistroArchRelease (
   distrorelease     integer NOT NULL REFERENCES DistroRelease,
   processorfamily   integer NOT NULL REFERENCES ProcessorFamily,
   architecturetag   text NOT NULL,
-  releasestatus     integer NOT NULL REFERENCES Label,
-  datereleased      timestamp,
   owner             integer NOT NULL REFERENCES Person
 );
 
@@ -833,7 +853,8 @@ CREATE TABLE LaunchpadFile (
 */
 CREATE TABLE LaunchpadFileHash (
   launchpadfile   integer NOT NULL REFERENCES LaunchpadFile,
-  hashalg         integer NOT NULL REFERENCES Label,
+  -- see Hash Algorithms schema
+  hashalg         integer NOT NULL,
   hash            bytea NOT NULL
 );
 
@@ -846,7 +867,8 @@ CREATE TABLE LaunchpadFileHash (
 CREATE TABLE UpstreamReleaseFile (
   upstreamrelease integer NOT NULL REFERENCES UpstreamRelease,
   launchpadfile   integer NOT NULL REFERENCES LaunchpadFile,
-  filetype        integer NOT NULL REFERENCES Label,
+  -- see Upstream File Type schema
+  filetype        integer NOT NULL,
   filename        text NOT NULL
 );
 
@@ -875,10 +897,12 @@ CREATE TABLE Sourcepackage (
   reflect that here.
 */
 CREATE TABLE SourcepackageRelationship (
-  src       integer NOT NULL REFERENCES Sourcepackage,
-  dst       integer NOT NULL REFERENCES Sourcepackage,
-  label     integer NOT NULL REFERENCES Sourcepackage,
-  CHECK ( src <> dst )
+  subject      integer NOT NULL REFERENCES Sourcepackage,
+  -- see Source Package Relationship schema
+  label        integer NOT NULL,
+  object       integer NOT NULL REFERENCES Sourcepackage,
+  CHECK ( subject <> object ),
+  PRIMARY KEY ( subject, object )
 );
 
 
@@ -903,9 +927,10 @@ CREATE TABLE SourcepackageLabel (
   httpd Product from the Apache Group.
 */
 CREATE TABLE Packaging (
-  product         integer NOT NULL REFERENCES Product,
   sourcepackage   integer NOT NULL REFERENCES Sourcepackage,
-  label           integer NOT NULL REFERENCES Label
+  -- see the Packaging schema
+  packaging       integer NOT NULL,
+  product         integer NOT NULL REFERENCES Product
 );
 
 
@@ -920,11 +945,14 @@ CREATE TABLE Packaging (
 CREATE TABLE SourcepackageRelease (
   id                     serial PRIMARY KEY,
   sourcepackage          integer NOT NULL REFERENCES Sourcepackage,
-  srcpackageformat       integer NOT NULL REFERENCES Label,
+  -- see Source Package Format schema
+  srcpackageformat       integer NOT NULL,
   creator                integer NOT NULL REFERENCES Person,
-  version                text NOT NULL, -- "2.0.48-3"
-  dateuploaded           timestamp NOT NULL,
-  urgency                integer NOT NULL REFERENCES Label,
+  -- "2.0.48-3"
+  version                text NOT NULL,
+  dateuploaded           timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  -- see Source Package Urgency schema
+  urgency                integer NOT NULL,
   dscsigningkey          integer REFERENCES GPGKey,
   component              integer REFERENCES Label,
   changelog              text,
@@ -945,7 +973,8 @@ CREATE TABLE SourcepackageRelease (
 CREATE TABLE SourcepackageReleaseFile (
   sourcepackagerelease  integer NOT NULL REFERENCES SourcepackageRelease,
   launchpadfile         integer NOT NULL REFERENCES LaunchpadFile,
-  filetype              integer NOT NULL REFERENCES Label,
+  -- see Source Package File Types schema
+  filetype              integer NOT NULL,
   filename              text NOT NULL
 );
 
@@ -961,7 +990,8 @@ CREATE TABLE SourcepackageReleaseFile (
 CREATE TABLE SourcepackageUpload (
   distrorelease          integer NOT NULL REFERENCES DistroRelease,
   sourcepackagerelease   integer NOT NULL REFERENCES SourcepackageRelease,
-  releasestatus          integer NOT NULL REFERENCES Label,
+  -- see Source Upload Status schema
+  uploadstatus           integer NOT NULL,
   PRIMARY KEY ( distrorelease, sourcepackagerelease )
 );
 
@@ -998,12 +1028,15 @@ CREATE TABLE BinarypackageBuild (
   sourcepackagerelease   integer NOT NULL REFERENCES SourcepackageRelease,
   binarypackage          integer NOT NULL REFERENCES Binarypackage,
   processor              integer NOT NULL REFERENCES Processor,
-  binpackageformat       integer NOT NULL REFERENCES Label,
+  -- see Binary Package Formats schema
+  binpackageformat       integer NOT NULL,
   version                text NOT NULL,
   datebuilt              timestamp NOT NULL,
   gpgsigningkey          integer REFERENCES GPGKey,
   component              integer REFERENCES Label,
   section                integer REFERENCES Label,
+  -- see Binary Package Priority schema
+  priority               integer,
   shlibdeps              text,
   depends                text,
   recommends             text,
@@ -1025,7 +1058,8 @@ CREATE TABLE BinarypackageBuild (
 CREATE TABLE BinarypackageBuildFile (
   binarypackagebuild     integer NOT NULL REFERENCES BinarypackageBuild,
   launchpadfile          integer NOT NULL REFERENCES LaunchpadFile,
-  filetype               integer NOT NULL REFERENCES Label,
+  -- see Binary Package File Type schema
+  filetype               integer NOT NULL,
   filename               text NOT NULL
 );
 
@@ -1039,9 +1073,12 @@ CREATE TABLE BinarypackageBuildFile (
 CREATE TABLE BinarypackageUpload (
   binarypackagebuild     integer NOT NULL REFERENCES BinarypackageBuild,
   distrorelease          integer NOT NULL REFERENCES DistroRelease,
-  packagestatus          integer NOT NULL REFERENCES Label,
+  -- see Package Upload Status schema
+  uploadstatus           integer NOT NULL,
   component              integer NOT NULL REFERENCES Label,
-  section                integer NOT NULL REFERENCES Label
+  section                integer NOT NULL REFERENCES Label,
+  -- see Binary Package Priority schema
+  priority               integer NOT NULL
 );
 
 
@@ -1083,10 +1120,12 @@ CREATE TABLE Coderelease (
   sourcepackage).
 */
 CREATE TABLE CodereleaseRelationship (
-  src       integer NOT NULL REFERENCES Coderelease,
-  dst       integer NOT NULL REFERENCES Coderelease,
-  label     integer NOT NULL REFERENCES Label,
-  PRIMARY KEY ( src, dst )
+  subject       integer NOT NULL REFERENCES Coderelease,
+  -- see Coderelease Relationships schema
+  label         integer NOT NULL,
+  object        integer NOT NULL REFERENCES Coderelease,
+  CHECK ( subject <> object ),
+  PRIMARY KEY ( subject, object )
 );
 
 
@@ -1160,26 +1199,13 @@ CREATE TABLE TranslationFilter (
 CREATE TABLE TranslationEffort (
   id                    serial PRIMARY KEY,
   owner                 integer NOT NULL REFERENCES Person,
+  project               integer NOT NULL REFERENCES Project,
   name                  text NOT NULL UNIQUE,
   title                 text NOT NULL,
   description           text NOT NULL,
   translationfilter     integer REFERENCES TranslationFilter
 );
 
-
-
-
-/*
-  ProjectTranslationeffortRelationship
-  Maps the way a translation project is related to an open source
-  project.
-*/
-CREATE TABLE ProjectTranslationeffortRelationship (
-  project             integer NOT NULL REFERENCES Project,
-  translationeffort   integer NOT NULL REFERENCES TranslationEffort,
-  label               integer NOT NULL REFERENCES Label,
-  PRIMARY KEY ( project, translationeffort )
-);
 
 
 
@@ -1223,7 +1249,7 @@ CREATE TABLE POTFile (
   description           text NOT NULL,
   copyright             text NOT NULL,
   license               integer NOT NULL REFERENCES License,
-  datecreated           timestamp NOT NULL,
+  datecreated           timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   path                  text NOT NULL,
   iscurrent             boolean NOT NULL,
   defaultinheritance    integer REFERENCES POTInheritance,
@@ -1373,8 +1399,8 @@ CREATE TABLE RosettaPOTranslationSighting (
   language             integer NOT NULL REFERENCES Language,
   potranslation        integer NOT NULL REFERENCES POTranslation,
   license              integer NOT NULL REFERENCES License,
-  dateprovided         timestamp NOT NULL,
-  datetouched          timestamp NOT NULL,
+  dateprovided         timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  datetouched          timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   pluralform           integer,
   CHECK ( pluralform >= 0 )
 );
@@ -1394,7 +1420,7 @@ CREATE TABLE POComment (
   language            integer REFERENCES Language,
   potranslation       integer REFERENCES POTranslation,
   commenttext         text NOT NULL,
-  datecreated         timestamp NOT NULL,
+  datecreated         timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   person              integer REFERENCES Person
 );
 
@@ -1449,7 +1475,7 @@ CREATE TABLE POTSubscription (
 */
 CREATE TABLE Bug (
   id                      serial PRIMARY KEY,
-  datecreated             timestamp NOT NULL,
+  datecreated             timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   nickname                text UNIQUE,
   title                   text NOT NULL,
   description             text NOT NULL,
@@ -1489,12 +1515,13 @@ CREATE TABLE BugInfestation (
   bug              integer NOT NULL REFERENCES Bug,
   coderelease      integer NOT NULL REFERENCES Coderelease,
   explicit         boolean NOT NULL,
-  affected         integer NOT NULL REFERENCES Label,
-  datecreated      timestamp NOT NULL,
+  -- see Bug Infestation Status schema
+  infestation      integer NOT NULL,
+  datecreated      timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   createor         integer NOT NULL REFERENCES Person,
-  dateverified     timestamp NOT NULL,
-  verifiedby       integer NOT NULL REFERENCES Person,
-  lastmodified     timestamp,
+  dateverified     timestamp,
+  verifiedby       integer REFERENCES Person,
+  lastmodified     timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   lastmodifiedby   integer NOT NULL REFERENCES Person,
   PRIMARY KEY ( bug, coderelease )
 );
@@ -1511,9 +1538,13 @@ CREATE TABLE BugInfestation (
 CREATE TABLE SourcepackageBugAssignment (
   bug                integer NOT NULL REFERENCES Bug,
   sourcepackage      integer NOT NULL REFERENCES Sourcepackage,
-  bugstatus          integer NOT NULL REFERENCES Label,
-  priority           integer NOT NULL REFERENCES Label,
-  severity           integer NOT NULL REFERENCES Label, -- backwards looking but still not versioned
+  -- see Bug Assignment Status schema
+  bugstatus          integer NOT NULL,
+  -- See Bug Priority schema
+  priority           integer NOT NULL,
+  /* see BugSeverity schema, in theory this belongs on BugInfestation
+     but it would be a UI challenge */
+  severity           integer NOT NULL,
   binarypackage      integer REFERENCES Binarypackage,
   PRIMARY KEY ( bug, sourcepackage )
 );
@@ -1532,9 +1563,12 @@ CREATE TABLE SourcepackageBugAssignment (
 CREATE TABLE ProductBugAssignment (
   bug                integer NOT NULL REFERENCES Bug,
   product            integer NOT NULL REFERENCES Sourcepackage,
-  bugstatus          integer NOT NULL REFERENCES Label,
-  priority           integer NOT NULL REFERENCES Label,
-  severity           integer NOT NULL REFERENCES Label,
+  -- see Bug Assignment Status schema
+  bugstatus          integer NOT NULL,
+  -- see Bug Priority schema
+  priority           integer NOT NULL,
+  -- see Bug Severity schema
+  severity           integer NOT NULL,
   PRIMARY KEY ( bug, product )
 );
 
@@ -1568,10 +1602,11 @@ CREATE TABLE BugActivity (
 */
 CREATE TABLE BugExternalref (
   bug         integer NOT NULL REFERENCES Bug,
-  bugreftype  integer NOT NULL REFERENCES Label,
+  -- see the Bug External Reference Types schema
+  bugreftype  integer NOT NULL,
   data        text NOT NULL,
   description text NOT NULL,
-  datecreated timestamp NOT NULL,
+  datecreated timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   owner       integer NOT NULL REFERENCES Person
 );
 
@@ -1590,11 +1625,9 @@ CREATE TABLE BugSystemType (
   title           text NOT NULL,
   description     text NOT NULL,
   homepage        text,
-  owner           integer NOT NULL REFERENCES Person -- who knows most about these
+  -- the Launchpad person who knows most about these
+  owner           integer NOT NULL REFERENCES Person
 );
-INSERT INTO BugSystemType VALUES ( 1, 'bugzilla', 'BugZilla', 'Dave Miller\'s Labour of Love, the Godfather of Open Source project issue tracking.', 'http://www.bugzilla.org/', 2 );
-INSERT INTO BugSystemType VALUES ( 2, 'debbugs', 'DebBugs', 'The Debian bug tracking system, ugly as sin but fast and productive as a rabbit in high heels.', 'http://bugs.debian.org/', 3 );
-INSERT INTO BugSystemType VALUES ( 3, 'roundup', 'Round-Up', 'Python-based open source bug tracking system with an elegant design and reputation for cleanliness and usability.', 'http://www.roundup.org/', 4 );
 
 
 /*
@@ -1627,9 +1660,9 @@ CREATE TABLE BugWatch (
   bugsystem        integer NOT NULL REFERENCES BugSystem,
   remotebug        text NOT NULL, -- unique identifier of bug in that system
   remotestatus     text NOT NULL, -- textual representation of status
-  lastchanged      timestamp NOT NULL,
-  lastchecked      timestamp NOT NULL,
-  datecreated      timestamp NOT NULL,
+  lastchanged      timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  lastchecked      timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  datecreated      timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   owner            integer NOT NULL REFERENCES Person
 );
 
@@ -1672,7 +1705,7 @@ CREATE TABLE BugAttachment (
 */
 CREATE TABLE BugattachmentContent (
   bugattachment  integer NOT NULL REFERENCES BugAttachment,
-  daterevised    timestamp NOT NULL,
+  daterevised    timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   changecomment  text NOT NULL,
   content        bytea NOT NULL,
   mimetype       text,
@@ -1700,9 +1733,10 @@ CREATE TABLE BugLabel (
   The relationship between two bugs, with a label.
 */
 CREATE TABLE BugRelationship (
-  src        integer NOT NULL REFERENCES Bug,
-  dst        integer NOT NULL REFERENCES Bug,
-  label      integer NOT NULL REFERENCES Label
+  subject        integer NOT NULL REFERENCES Bug,
+  -- see the Bug Relationships schema
+  label          integer NOT NULL,
+  object         integer NOT NULL REFERENCES Bug
 );
 
 
@@ -1717,9 +1751,11 @@ CREATE TABLE BugRelationship (
 CREATE TABLE BugMessage (
   id                   serial PRIMARY KEY,
   bug                  integer NOT NULL REFERENCES Bug,
-  datecreated          timestamp NOT NULL,
-  title                text NOT NULL, -- short title of comment
-  contents             text NOT NULL, -- the message or full email with headers
+  datecreated          timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  -- short title or subject of comment / message
+  title                text NOT NULL,
+  -- the message or full email with headers
+  contents             text NOT NULL,
   personmsg            integer REFERENCES Person, -- NULL if we don't know it
   parent               integer REFERENCES BugMessage, -- gives us threading
   distribution         integer REFERENCES Distribution,
@@ -1732,55 +1768,45 @@ CREATE TABLE BugMessage (
 /* SourceSource
    A table of sources of source code from upstream locations.  This might be
    CVS, SVN or Arch repositories, or even a tarball of a CVS repository.
+   This table is what defines the import daemon's work, for initial imports,
+   sync jobs, and for finding new upstream releases.
 */
-
 CREATE TABLE SourceSource (
   id	                    serial PRIMARY KEY,
   name                      text NOT NULL,
+  title                     text NOT NULL,
   description               text NOT NULL,
-
+  product                   integer NOT NULL REFERENCES Product,
   cvsroot                   text,
   cvsmodule                 text,
-  /* TODO: The dia file has this column: */
-  -- cvstarfile                integer REFERENCES FileAssociation,
+  cvstarfile                integer REFERENCES LaunchpadFile,
+  cvstarfilename            text,
   cvstarfileurl             text,
   cvsbranch                 text,
-
   svnrepository             text,
-
-  releaseroot               text, -- The URL of the directory (usually FTP)
-                                  -- where they have releases
-  releaseverstyle           text, -- FIXME: Is this the best way to do an enum?
+  -- The URL of the directory (usually FTP) where they have releases
+  releaseroot               text,
+  releaseverstyle           integer,
   releasefileglob           text,
-  releaseparentarchbranch   integer REFERENCES Branch, -- The arch branch from
-                                                       -- which these release
-                                                       -- tarballs may have been
-                                                       -- derived
+  -- The arch branch from which these release tarballs may have been derived
+  releaseparentbranch       integer REFERENCES Branch,
   sourcepackage             integer REFERENCES Sourcepackage,
-  branch                    integer REFERENCES Branch, -- The arch branch this 
-                                                       -- source is imported to
-  lastsynced                timestamp, -- NULL means never, i.e. this is an
-                                       -- import job
+  -- The arch branch this source is imported to
+  branch                    integer REFERENCES Branch UNIQUE,
+  lastsynced                timestamp, -- NULL means never, i.e. this is an import job
   syncinterval              interval,
-
-  /* FIXME: The following columns aren't in dia */
-  rcstype                   text NOT NULL,  -- Enum, see CHECK
-  
-  webpage                   text,
+  -- see Revision Control Systems schema
+  rcstype                   integer NOT NULL,
   hosted                    text,
   upstreamname              text,
-  
   processingapproved        boolean NOT NULL DEFAULT false,
   syncingapproved           boolean NOT NULL DEFAULT false,
-
   /* These columns are used to create new archives/branches in the DB based on
-   * values imported from .info files */
-  newarchivename            text,
+     values imported from .info files */
+  newarchive                text,
   newbranchcategory         text,
   newbranchbranch           text,
-  newbranchversion          text,
-  
-  /* TODO: Define constraints */
-  CHECK (rcstype in ('cvs', 'svn', 'package'))
+  newbranchversion          text
 );
+
 
