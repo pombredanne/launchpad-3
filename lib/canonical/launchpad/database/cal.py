@@ -3,6 +3,7 @@ from zope.interface import implements
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, EnumCol
 from sqlobject import MultipleJoin
 from sqlobject import SQLObjectNotFound
+from sqlobject import AND
 
 from schoolbell.interfaces import ICalendarEvent
 from schoolbell.mixins import CalendarMixin, EditableCalendarMixin
@@ -32,6 +33,14 @@ class Calendar(SQLBase, CalendarMixin, EditableCalendarMixin):
             return CalendarEvent.byUniqueID(unique_id)
         except SQLObjectNotFound:
             raise KeyError(unique_id)
+
+    def expand(self, first, last):
+        first = first.astimezone(_utc_tz)
+        last = last.astimezone(_utc_tz)
+        return iter(CalendarEvent.select(AND(
+            CalendarEvent.q.calendarID == self.id,
+            CalendarEvent.q.dtstart + CalendarEvent.q.duration > first,
+            CalendarEvent.q.dtstart < last)))
 
     def addEvent(self, event):
         # TODO: support recurring events
