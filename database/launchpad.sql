@@ -18,7 +18,7 @@
   CHANGES
 
 
-  v0.98-dev:
+  v0.98:
         - merge SourceSource table from Andrew Bennetts
 	- change SourceSource.homepageurl to SourceSource.product
 	- BugInfestation: dateverified and verifiedby need to be NULL
