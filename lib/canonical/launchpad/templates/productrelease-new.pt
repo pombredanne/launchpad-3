@@ -1,0 +1,135 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Launchpad style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <tal:dummy condition="view/newProductRelease" />
+
+    <h1>Register a New Release of: "<span
+    tal:content="context/product/displayname">$Product.displayname</span>"</h1>
+
+    <div class="documentDescription">
+    Please fill in the details below to register a new release of
+    for <span tal:content="context/displayname">$SOMETHING.displayname</span>.
+    </div>
+
+    <fieldset>
+
+        <legend><span
+        tal:replace="context/product/displayname">Product</span> Release Details</legend>
+
+        <form action="+addrelease" method="post">
+
+        <div class="field">
+
+            <label>Release Version</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+                <div class="formHelp">
+                    The version of this release is a short set of numbers
+                    that uniquely identifies this release of <span
+                    tal:replace="context/product/displayname">$product</span>,
+                    and is used in URLs and references to the product. All
+                    lowercase, numbers, letters, dots and dashes ok. For example,
+                    <i>2.0.48</i> or <i>2.0.3-rc3</i>.
+                </div>
+
+                <input type="text" name="version" size="15"
+                       value="" style="text-transform: lowercase" />
+        </div>
+
+        <div class="field">
+
+            <label>Title</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+                  <div class="formHelp">
+                    This is the full title of the release, can contain
+                    spaces, special characters etc. Often, this is the "GSV
+                    name" (you have to read Iain M Banks to fully get that)
+                    or "slogan name" of the release. For example, <i>All
+                    Your Base-0 Are Belong To Us</i> or <i>Setting Worldy
+                    Warthogs Free</i>.
+                  </div>
+
+                <input type="text" name="title" size="30"
+                       value="" />
+        </div>
+
+        <div class="field">
+
+            <label>Short Description</label>
+
+                  <div class="formHelp">
+                    A single paragraph introduction or overview of this
+                    release. For example: <i>Version 2.4.2 of Gnome-Terminal
+                    adds support for tabbed consoles, as well as supporting
+                    several new kinds of terminal mode.</i>
+                  </div>
+
+                <textarea cols="40" rows="4" name="shortdesc"></textarea>
+        </div>
+        
+        <div class="field">
+
+            <label>Complete Description</label>
+
+                  <div class="formHelp">
+                    A full description of the release. This should continue
+                    from the short description above, and add more details
+                    of the release highlights and features. This is sort of
+                    "release notes" space.
+                  </div>
+
+                <textarea cols="40" rows="7" name="description"></textarea>
+        </div>
+
+        <div class="field">
+
+            <label>Release URL</label>
+
+                <div class="formHelp">
+                    The release URL, if it has a distinct one. This should
+                    be the direct url of a tarball we can download via HTTP.
+                    We will immediately go and try to fetch this tarball and
+                    add it to the archives.
+                </div>
+
+                <input type="text" name="releaseurl" size="30"
+                       value="http://" />
+        </div>
+
+
+        <div class="formControls">
+
+            <!-- NB if you change the text on the button please also change
+            the code that checks it in newProductRelease. -->
+
+            <input class="context" type="submit"
+                   name="Register"
+                   value="Register New Release" />
+
+        </div>
+        </form>
+
+    </fieldset>
+
+</div>
+
+</body>
+</html>

@@ -9,6 +9,10 @@ _ = MessageIDFactory('launchpad')
 
 class IProductSeries(Interface):
     """A series of releases. For example "2.0" or "1.3" or "dev"."""
+    # XXX Mark Shuttleworth 14/10/04 would like to get rid of id in
+    # interfaces, as soon as SQLobject allows using the object directly
+    # instead of using object.id.
+    id = Int(title=_('ID'))
     # field names
     product = Choice( title=_('Product'), required=True,
                       vocabulary='Product')
@@ -18,6 +22,8 @@ class IProductSeries(Interface):
     # convenient joins
     releases = Attribute(_("An iterator over the releases in this \
                                   Series."))
+    def getRelease(version):
+        """Get the release in this series that has the specified version."""
     
 class IProductSeriesSet(Interface):
     """A set of ProductSeries objects. Note that it can be restricted by

@@ -15,6 +15,10 @@
         />
     </content>
 
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IProductSeries"
+        getter="getRelease" />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProductSeries"
         name="+index" />
@@ -36,6 +40,12 @@
             name="+edit"
             template="../templates/series-edit.pt"
             lp:url="doap/projects/$Project.name/$Product.name/+series/$ProductSeries.name/+edit" />
+        <!-- this same functionality is available straight from the Product
+        too -->
+        <browser:page
+            name="+addrelease"
+            template="../templates/productrelease-new.pt"
+            lp:url="doap/projects/$Project.name/$Product.name/+series/$ProductSeries.name/+addrelease" />
     </browser:pages>
 
     <!-- ProductSeriesSet -->

@@ -23,6 +23,11 @@ class ProductSeries(SQLBase):
     # useful joins
     releases = MultipleJoin('ProductRelease', joinColumn='productseries')
 
+    def getRelease(self, version):
+        for release in self.releases:
+            if release.version==version: return release
+        raise KeyError, version
+
 class ProductSeriesSet:
     implements(IProductSeriesSet)
 

@@ -18,6 +18,8 @@ class IProductRelease(Interface):
         title=_('Version'), required=True, readonly=True)
     title = TextLine(
         title=_('Title'), required=True, readonly=True)
+    shortdesc = Text(
+        title=_("Short Description"), required=True)
     description = Text(
         title=_("Description"), required=True)
     changelog = Text(

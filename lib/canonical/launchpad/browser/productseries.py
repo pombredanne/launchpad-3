@@ -8,7 +8,8 @@ from zope.interface import implements
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-from canonical.launchpad.interfaces import *
+from canonical.launchpad.interfaces import IPerson
+from canonical.launchpad.browser.productrelease import newProductRelease
 
 __all__ = ['ProductSeriesView']
 
@@ -40,3 +41,14 @@ class ProductSeriesView(object):
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
 
+    def newProductRelease(self):
+        """
+        Process a submission to create a new ProductRelease
+        for this series.
+        """
+        # figure out who is calling
+        owner = IPerson(self.request.principal)
+        pr = newProductRelease(self.form, self.context.product, owner,
+                               series=self.context.id)
+        if pr:
+            self.request.response.redirect(pr.version)
