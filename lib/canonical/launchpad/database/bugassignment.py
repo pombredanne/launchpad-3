@@ -31,7 +31,9 @@ def mark_as_sourcepackage_task(task):
     mark_task(task, ISourcePackageBugTask)
 
 class BugTaskSet:
+
     implements(IBugTaskSet)
+
     table = BugTask
 
     def __init__(self, bug=None):

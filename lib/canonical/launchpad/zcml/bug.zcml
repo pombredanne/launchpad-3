@@ -83,10 +83,10 @@
         schema="canonical.launchpad.interfaces.IBugAddForm"
         class="canonical.launchpad.browser.bug.BugAddView"
         label="File a Bug on a Product"
-        fields="product title description owner"
+        fields="product title comment owner"
         content_factory="canonical.launchpad.database.BugFactory"
         arguments=""
-        keyword_arguments="product title description owner"
+        keyword_arguments="product title comment owner"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
         lp:url="malone/bugs/+product">
@@ -96,7 +96,7 @@
            class="zope.app.form.browser.TextWidget"
            displayWidth="55" />
         <browser:widget
-           field="description"
+           field="comment"
            class="zope.app.form.browser.TextAreaWidget"
            height="10" />
     </browser:addform>
@@ -107,10 +107,10 @@
         schema="canonical.launchpad.interfaces.IBugAddForm"
         class="canonical.launchpad.browser.bug.BugAddView"
         label="File a Bug on a Package"
-        fields="distribution sourcepackagename title description owner"
+        fields="distribution sourcepackagename title comment owner"
         content_factory="canonical.launchpad.database.BugFactory"
         arguments=""
-        keyword_arguments="distribution sourcepackagename title description owner"
+        keyword_arguments="distribution sourcepackagename title comment owner"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
         lp:url="malone/bugs/+product">
@@ -120,7 +120,7 @@
            class="zope.app.form.browser.TextWidget"
            displayWidth="55" />
         <browser:widget
-           field="description"
+           field="comment"
            class="zope.app.form.browser.TextAreaWidget"
            height="10" />
     </browser:addform>

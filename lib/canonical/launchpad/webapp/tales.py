@@ -168,6 +168,8 @@ class FormattersAPI:
         TODO: This should probably just live in the stylesheet if this
             CSS implementation is good enough.
         """
+        if not self._stringtoformat:
+            return self._stringtoformat
         return (
                 '<pre style="'
                 'white-space: -moz-pre-wrap; white-space: -o-pre-wrap; '

@@ -44,6 +44,9 @@ class IBugSubscriptionSetAdapter:
             if best_email:
                 emails.add(best_email)
 
+        best_owner_email = _get_best_email_address(self.bug.owner)
+        if best_owner_email:
+            emails.add(best_owner_email)
         emails = list(emails)
         emails.sort()
         return emails

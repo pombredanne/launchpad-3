@@ -5,16 +5,22 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <!-- BugTask -->
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IBugTask"
+        name="+edit" />
+
+    <!-- BugTaskSet -->
     <content class="canonical.launchpad.database.BugTaskSet">
         <allow interface="canonical.launchpad.interfaces.IBugTaskSet" />
         <allow
             interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
     </content>
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IBugTask"
-        name="+edit" />
+    <securedutility
+        provides="canonical.launchpad.interfaces.IBugTaskSet"
+        class="canonical.launchpad.database.BugTaskSet">
+        <allow interface="canonical.launchpad.interfaces.IBugTaskSet" />
+    </securedutility>
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IBugTaskSet"

@@ -6,6 +6,7 @@ Part of the Launchpad system.
 """
 
 from datetime import datetime
+from email.Utils import make_msgid
 
 from zope.interface import implements
 
@@ -20,6 +21,8 @@ from canonical.database.constants import nowUTC, DEFAULT
 
 from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.launchpad.database.message import Message, MessageSet
+from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.lp.dbschema import BugSubscription as BugSubscriptionVocab
@@ -33,14 +36,14 @@ class Bug(SQLBase):
     _defaultOrder = '-id'
 
     # db field names
-    name = StringCol(dbName='name', unique=True, default=None)
-    title = StringCol(dbName='title', notNull=True)
-    shortdesc = StringCol(dbName='shortdesc', notNull=True)
-    description = StringCol(dbName='description', notNull=True)
+    name = StringCol(unique=True, default=None)
+    title = StringCol(notNull=True)
+    shortdesc = StringCol(notNull=False, default=None)
+    description = StringCol(notNull=False,
+                            default=None)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     duplicateof = ForeignKey(dbName='duplicateof', foreignKey='Bug', default=None)
-    datecreated = DateTimeCol(dbName='datecreated', notNull=True,
-                              default=nowUTC)
+    datecreated = DateTimeCol(notNull=True, default=nowUTC)
     communityscore = IntCol(dbName='communityscore', notNull=True, default=0)
     communitytimestamp = DateTimeCol(dbName='communitytimestamp',
                                      notNull=True, default=DEFAULT)
@@ -67,30 +70,71 @@ class Bug(SQLBase):
     subscriptions = MultipleJoin('BugSubscription', joinColumn='bug')
 
 def BugFactory(*args, **kw):
-    """Create a bug from an IBugAddForm"""
-    description = kw['description']
-    summary = description.split('\n')[0]
-    kw['shortdesc'] = summary
+    """Create a bug from an IBugAddForm. Note some unusual behaviour in this
+    Factory:
+    
+      - the Summary and Description are not normally passed, we generally
+        like to create bugs with just a title and a first comment, and let
+        expert users create the summary and description if needed.
+      - if a Description is passed without a Summary, then the summary will
+        be the first sentence of the description.
+      - it is an error to pass neither a product nor a package.
+    """
+
+    # make sure that the factory has been passed enough information
+    if not (kw.get('distribution') or kw.get('product')):
+        raise ValueError, 'Must pass BugFactory a distro or a product'
+    if kw.get('distribution'):
+        if not kw.get('sourcepackagename'):
+            raise ValueError, 'Must pass BugFactory a SourcePackageName'
+    if not (kw.get('comment', None) or kw.get('distribution', None)):
+        raise ValueError, 'Must pass BugFactory a comment or description'
+    
+    description = kw.get('description', None)
+    summary = kw.get('shortdesc', None)
+    if description and not summary:
+        summary = description.split('. ')[0]
+    datecreated = kw.get('datecreated', datetime.now())
     bug = Bug(
         title = kw['title'],
-        shortdesc = kw['shortdesc'],
-        description = kw['description'],
-        owner = kw['owner'])
+        shortdesc = summary,
+        description = description,
+        owner = kw['owner'],
+        datecreated=datecreated)
 
+    # create the bug comment if one was given
+    if kw.get('comment', None):
+        if not kw.get('rfc822msgid', None):
+            kw['rfc822msgid'] = make_msgid('malonedeb')
+        try:
+            msg = MessageSet().get(rfc822msgid=kw['rfc822msgid'])
+        except IndexError:
+            msg = Message(title=kw['title'],
+                contents = kw['comment'],
+                distribution = kw.get('distribution', None),
+                rfc822msgid = kw['rfc822msgid'],
+                owner = kw['owner']
+                )
+        bugmsg = BugMessage(bugID=bug.id,
+                            messageID=msg.id)
+
+
+    # create the task on a product if one was passed
     if kw.get('product', None):
         BugTask(
-            bug = bug, product = kw['product'].id, owner = kw['owner'].id)
+            bug = bug,
+            product = kw['product'].id,
+            owner = kw['owner'].id)
 
-    if kw.get('sourcepackagename', None):
+    # create the task on a source package name if one was passed
+    if kw.get('distribution', None):
         BugTask(
-            bug = bug, sourcepackagename = kw['sourcepackagename'],
-            binarypackagename = None, owner = kw['owner'].id,
-            distribution = kw.get('distribution', 1))
-
-    # auto-Cc the person who submitted the bug
-    BugSubscription(
-        person = kw['owner'], bugID = bug.id,
-        subscription = BugSubscriptionVocab.CC.value)
+            bug = bug,
+            distribution = kw['distribution'],
+            sourcepackagename = kw['sourcepackagename'],
+            binarypackagename = kw.get('binarypackagename', None),
+            owner = kw['owner'].id,
+            )
 
     class BugAdded(object):
         implements(IBugAddForm)

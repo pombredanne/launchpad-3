@@ -1,76 +1,50 @@
 
+
   >>> print http(r"""
   ... GET /malone/bugs/+package HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Cookie: __ac_name="admin"
   ... """)
   HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
   ...
-          <h3>File a Bug on a Package</h3>
+      <title>Malone: Add a New Bug
+      </title>
   ...
+
 
   >>> print http(r"""
   ... POST /malone/bugs/+package HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 802
-  ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
-  ... Cookie: __ac_name="admin"
+  ... Content-Length: 729
+  ... Content-Type: multipart/form-data; boundary=---------------------------124775592710556272331137042681
   ... Referer: http://localhost:9000/malone/bugs/+package
   ... 
-  ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="field.title"
+  ... -----------------------------124775592710556272331137042681
+  ... Content-Disposition: form-data; name="field.distribution"
   ... 
-  ... testing something
-  ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="field.shortdesc"
-  ... 
-  ... blah
-  ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="field.description"
-  ... 
-  ... foobar
-  ... ------------0xKhTmLbOuNdArY
+  ... ubuntu
+  ... -----------------------------124775592710556272331137042681
   ... Content-Disposition: form-data; name="field.sourcepackagename"
   ... 
   ... 1
-  ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="field.sourcepackagename-empty-marker"
+  ... -----------------------------124775592710556272331137042681
+  ... Content-Disposition: form-data; name="field.title"
   ... 
-  ... 1
-  ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="field.product"
+  ... A brief bug title
+  ... -----------------------------124775592710556272331137042681
+  ... Content-Disposition: form-data; name="field.comment"
   ... 
-  ... 
-  ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="field.product-empty-marker"
-  ... 
-  ... 1
-  ... ------------0xKhTmLbOuNdArY
+  ... A really brief bug description.
+  ... -----------------------------124775592710556272331137042681
   ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
   ... 
   ... Add
-  ... ------------0xKhTmLbOuNdArY--
+  ... -----------------------------124775592710556272331137042681--
   ... """)
   HTTP/1.1 303 See Other
   ...
-          <h3>File a Bug on a Package</h3>
-  ...
-
-  >>> print http(r"""
-  ... GET /malone/bugs/ HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Cookie: __ac_name="admin"
-  ... Referer: http://localhost:9000/malone/bugs/+package
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-    <h1>Bugs</h1>
-  ...
-      <tr>
-  ...
-        <td...>4</td>
-  ...
-        <td...>testing something</td>
-  ...
-      </tr>
+      <title>Malone: Add a New Bug
+      </title>
   ...

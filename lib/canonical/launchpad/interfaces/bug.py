@@ -38,13 +38,13 @@ class IBug(Interface):
             description=_("""A one-line summary of the problem"""),
             )
     shortdesc = Summary(
-            title=_('Summary'), required=True,
+            title=_('Summary'), required=False,
             description=_("""The bug summary is a single paragraph
             description that should capture the essence of the bug, where it
             has been observed, and what triggers it."""),
             )
     description = Text(
-            title=_('Description'), required=True,
+            title=_('Description'), required=False,
             description=_("""A detailed description of the problem,
             including the steps required to reproduce it""")
             )
@@ -102,9 +102,10 @@ class IBugAddForm(IBug):
             emerge or similar"""),
             vocabulary="Product")
     sourcepackagename = Choice(
-            title=_("Source Package"), required=False,
-            description=_("""The thing you found this bug in,
-            which was installed via apt-get, rpm, emerge or similar"""),
+            title=_("Source Package Name"), required=False,
+            description=_("""The distribution package you found
+            this bug in, which was installed via apt-get, rpm,
+            emerge or similar."""),
             vocabulary="SourcePackageName")
     distribution = Choice(
             title=_("Linux Distribution"), required=False,
@@ -114,6 +115,9 @@ class IBugAddForm(IBug):
             title=_("Binary Package"), required=False,
             vocabulary="BinaryPackage")
     owner = Int(title=_("Owner"), required=True)
+    comment = Text(title=_('Comment'), required=True,
+            description=_("""A detailed description of the problem you are
+            seeing."""))
 
 # Interfaces for set
 class IBugSet(IAddFormCustomization):
