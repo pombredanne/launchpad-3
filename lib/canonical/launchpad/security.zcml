@@ -20,9 +20,16 @@
 
   <adapter
       provides="canonical.launchpad.interfaces.IAuthorization"
-      for="canonical.launchpad.interfaces.ISourceSource"
+      for="canonical.launchpad.interfaces.ISourceSourceAdmin"
       name="launchpad.Admin"
       factory="canonical.launchpad.security.AdminSourceSourceByButtSource"
+      />
+
+  <adapter
+      provides="canonical.launchpad.interfaces.IAuthorization"
+      for="canonical.launchpad.interfaces.ISourceSource"
+      name="launchpad.Edit"
+      factory="canonical.launchpad.security.EditSourceSourceByButtSource"
       />
 
 </configure>

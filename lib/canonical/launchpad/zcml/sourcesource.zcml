@@ -7,9 +7,16 @@
     
     <!-- SourceSource-->
     <content class="canonical.launchpad.database.SourceSource">
-        <allow interface="canonical.launchpad.interfaces.ISourceSource"/>
+        <require
+            permission="launchpad.Admin"
+            interface ="canonical.launchpad.interfaces.ISourceSourceAdmin"
+            />
         <require
             permission="launchpad.AnyPerson"
+            interface="canonical.launchpad.interfaces.ISourceSource"
+            />
+        <require
+            permission="launchpad.Edit"
             set_attributes="
               title description cvsroot cvsbranch cvsmodule cvstarfileurl
               svnrepository releaseroot releaseverstyle releasefileglobe

@@ -94,5 +94,5 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
                     warnings.warn(
                         'authorization returning non-bool value: %r' %
                         objectauthorization)
-                return bool(authorization.checkPermission(user, permission))
+                return bool(authorization.checkPermission(user))
 

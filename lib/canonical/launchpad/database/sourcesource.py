@@ -17,7 +17,7 @@ from canonical.database.sqlbase import SQLBase, quote
 # Launchpad interfaces
 # XXX: Daniel Debonzi 2004-11-25
 # Why RCSTypeEnum is inside launchpad.interfaces?
-from canonical.launchpad.interfaces import ISourceSource, ISourceSourceSet, \
+from canonical.launchpad.interfaces import ISourceSource, ISourceSourceAdmin, ISourceSourceSet, \
                                            RCSTypeEnum, RCSNames, IProductSet
 from canonical.lp.dbschema import ImportTestStatus
 
@@ -28,7 +28,8 @@ from sets import Set
 class SourceSource(SQLBase): 
     """SourceSource table"""
 
-    implements (ISourceSource)
+    implements (ISourceSource,
+                ISourceSourceAdmin)
     
     _table = 'SourceSource'
 
