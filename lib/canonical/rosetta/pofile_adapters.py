@@ -12,6 +12,11 @@ class FakePerson(object):
     id = 1
 XXXperson = FakePerson()
 
+# XXX: not using Person at all yet
+class FakePerson(object):
+    id = 1
+XXXperson = FakePerson()
+
 # XXX: if you *modify* the adapted pofile "object", it assumes you're updating
 #      it from the latest revision (for the purposes of inLatestRevision fields).
 #      That should probably be optional.
