@@ -167,9 +167,12 @@ class POTemplate(SQLBase):
         slice:
             The range of results to be selected, or None, for all results.
         '''
-
-        for l in languages:
-            assert(isinstance(l, Language))
+        # XXX: Carlos Perello Marin 11/12/2004 Commented the code because it's
+        # not working and it's not needed.
+        #if __DEBUG__:
+        #    for l in languages:
+        #        assert l.__class__ == Language
+        #        assert ILanguage.providedBy(l)
 
         if current is not None:
             if current:

@@ -1457,7 +1457,7 @@ SELECT pg_catalog.setval('projectrole_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('product_id_seq', 9, true);
+SELECT pg_catalog.setval('product_id_seq', 10, true);
 
 
 
