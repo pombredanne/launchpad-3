@@ -20,9 +20,19 @@ __all__ = ['ArchiveAlreadyRegistered', 'ArchiveNotRegistered',
            'RevisionAlreadyRegistered', 'VersionNotRegistered',
            'VersionAlreadyRegistered', 'BranchAlreadyRegistered',
            'CategoryAlreadyRegistered', 'IBranch',
-           'RCSTypeEnum', 'NamespaceError',
+           'RCSTypeEnum', 'RCSNames', 'NamespaceError',
            'IArchive', 'IArchiveLocation',
-           'IArchiveCollection'
+           'IArchiveCollection', 'INamespaceObject',
+           'ISourceTreeAPI', 'ISourceTreeFactory',
+           'IFileName', 'IArchiveItem', 'ICategoryItem',
+           'IRevisionFactory', 'IPatchlog',
+           'ICategoryFactory', 'ILogMessage', 
+           'IArchSourceTree', 'IDirName', 'IPathNameFactory',
+           'IBranchItem', 'IVersionItem', 'IBranchFactory',
+           'ISetupable', 'IPackage', 'IVersion', 'IRevision',
+           'IRevisionIterable', 'ICategoryIterable',
+           'IVersionIterable', 'IBranchIterable',
+           'ILogMessageFactory', 'IPathName'
            ]
 
 __docformat__ = "restructuredtext en"

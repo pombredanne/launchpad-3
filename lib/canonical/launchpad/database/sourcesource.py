@@ -19,7 +19,8 @@ from canonical.database.sqlbase import SQLBase, quote
 # XXX: Daniel Debonzi 2004-11-25
 # Why RCSTypeEnum is inside launchpad.interfaces?
 from canonical.launchpad.interfaces import ISourceSource, ISourceSourceSet, \
-                                           RCSTypeEnum
+                                           RCSTypeEnum, RCSNames
+from canonical.lp.dbschema import ImportTestStatus
 
 # tools
 import datetime
@@ -80,6 +81,7 @@ class SourceSource(SQLBase):
                    notNull=True)
     currentgpgkey = StringCol(dbName='currentgpgkey', default=None)
     fileidreference = StringCol(dbName='fileidreference', default=None)
+    # canonical.lp.dbschema.ImportTestStatus
     autotested = IntCol(dbName='autotested', notNull=True, default=0)
     datestarted = DateTimeCol(dbName='datestarted', notNull=False,
         default=None)
@@ -159,8 +161,8 @@ class SourceSource(SQLBase):
     def _set_archversion(self, value): self.newbranchversion = value
     
     def buildJob(self):
-        # FIXME: The rest of this method can probably be deleted now.
-        # it so can't, inheritance doesn't work here.
+        # OLD: The rest of this method can probably be deleted now.
+        # NEW: it so can't, inheritance doesn't work here due to the RPC constraints.
         from importd.Job import CopyJob
         job = CopyJob()
         job.repository = str(self.repository)
@@ -197,6 +199,7 @@ class SourceSource(SQLBase):
         job.product_id = self.product.id
 
         job.description = self.description
+        job.sourceID = self.id
         return job
 
 

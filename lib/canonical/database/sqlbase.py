@@ -212,7 +212,8 @@ class ZopelessTransactionManager(object):
         return self.sqlClass._connection._dm
 
     def begin(self):
-        self.manager.begin()
+        txn = self.manager.begin()
+        txn.join(self._dm())
 
     def commit(self, sub=False):
         self.manager.get().commit(sub)

@@ -16,11 +16,14 @@ import psycopg
 import tempfile
 import arch
 
+txnManager = None
+
 def _connect():
     from sqlobject import connectionForURI
-    from canonical.database.sqlbase import SQLBase
-    conn = connectionForURI('postgres:///launchpad_test')
-    SQLBase.initZopeless(conn)
+    from canonical.lp import initZopeless, dbname, dbhost
+    conn = connectionForURI('postgres://%s/%s' % (dbhost, dbname))
+    global txnManager
+    txnManager = initZopeless()
     return conn.getConnection()
 
 class DatabaseTestCase(unittest.TestCase):

@@ -20,7 +20,10 @@ from canonical.launchpad.interfaces import INamespaceObject, ISourceTreeAPI, \
                                            IVersion,IRevision, \
                                            IRevisionIterable, \
                                            ICategoryIterable, \
-                                           IVersionIterable
+                                           IVersionIterable, \
+                                           IBranchIterable, \
+                                           ILogMessageFactory, \
+                                           IPathName
 
 
 from canonical.launchpad import database
