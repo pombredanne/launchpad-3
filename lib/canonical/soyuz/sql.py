@@ -25,14 +25,14 @@ from canonical.launchpad.interfaces import IBinarypackage,IBinaryPackageBuild,\
 
 from canonical.launchpad.database import Binarypackage, Build, \
                                          Sourcepackage, Manifest, \
-                                         ManifestEntry, Distrorelease, \
+                                         ManifestEntry, DistroRelease, \
                                          SourcePackageRelease, \
-                                         Distroarchrelease, \
+                                         DistroArchRelease, \
                                          Distribution, Person, \
                                          EmailAddress, GPGKey, \
                                          ArchUserID, WikiName, JabberID, \
                                          IrcID, Membership, TeamParticipation,\
-                                         Distributionrole, Distroreleaserole, \
+                                         DistributionRole, DistroReleaseRole, \
                                          SourceSource, \
                                          RCSTypeEnum, Branch, Changeset
 
@@ -54,7 +54,7 @@ class DistrosApp(object):
 class DistroApp(object):
     def __init__(self, name):
         self.distribution = Distribution.selectBy(name=name)[0]
-        self.releases = Distrorelease.selectBy(distributionID=self.distribution.id)
+        self.releases = DistroRelease.selectBy(distributionID=self.distribution.id)
 
         if self.releases.count():
             self.enable_releases = True
@@ -79,7 +79,7 @@ class DistroApp(object):
 class DistroReleaseApp(object):
     def __init__(self, release):
         self.release = release
-        self.roles=Distroreleaserole.selectBy(distroreleaseID=self.release.id) 
+        self.roles=DistroReleaseRole.selectBy(distroreleaseID=self.release.id) 
 
     def getPackageContainer(self, name):
         container = {
@@ -138,11 +138,11 @@ class DistroReleasesApp(object):
         self.distribution = distribution
 
     def __getitem__(self, name):
-        return DistroReleaseApp(Distrorelease.selectBy(distributionID=
+        return DistroReleaseApp(DistroRelease.selectBy(distributionID=
                                                  self.distribution.id,
                                                  name=name)[0])
     def __iter__(self):
-    	return iter(Distrorelease.selectBy(distributionID=self.distribution.id))
+    	return iter(DistroRelease.selectBy(distributionID=self.distribution.id))
 
 
 # Source app component Section (src) 
@@ -152,8 +152,8 @@ class DistroReleaseSourceReleaseBuildApp(object):
         self.arch = arch
 
         query = ('Build.sourcepackagerelease = %i '
-                 'AND Build.distroarchrelease = Distroarchrelease.id '
-                 'AND Distroarchrelease.architecturetag = %s'
+                 'AND Build.distroarchrelease = DistroArchRelease.id '
+                 'AND DistroArchRelease.architecturetag = %s'
                  % (self.sourcepackagerelease.id, quote(self.arch))
                  )
 
@@ -337,34 +337,34 @@ class DistroSourcesApp(object):
         self.distribution = distribution
 
     def __getitem__(self, name):
-        return DistroReleaseSourcesApp(Distrorelease.selectBy(distributionID=\
+        return DistroReleaseSourcesApp(DistroRelease.selectBy(distributionID=\
                                                         self.distribution.id,
                                                         name=name)[0])
 
     def __iter__(self):
-    	return iter(Distrorelease.selectBy(distributionID=self.distribution.id))
+    	return iter(DistroRelease.selectBy(distributionID=self.distribution.id))
 
 class DistroReleaseTeamApp(object):
     def __init__(self, release):
         self.release = release
 
-        self.team=Distroreleaserole.selectBy(distroreleaseID=
+        self.team=DistroReleaserole.selectBy(distroreleaseID=
                                              self.release.id)
         
 
 class DistroTeamApp(object):
     def __init__(self, distribution):
         self.distribution = distribution
-        self.team = Distributionrole.selectBy(distributionID=
+        self.team = DistributionRole.selectBy(distributionID=
                                             self.distribution.id)
 
     def __getitem__(self, name):
-        return DistroReleaseTeamApp(Distrorelease.selectBy(distributionID=
+        return DistroReleaseTeamApp(DistroRelease.selectBy(distributionID=
                                                      self.distribution.id,
                                                      name=name)[0])
 
     def __iter__(self):
-    	return iter(Distrorelease.selectBy(distributionID=self.distribution.id))
+    	return iter(DistroRelease.selectBy(distributionID=self.distribution.id))
 
 
 class PeopleApp(object):
@@ -446,7 +446,7 @@ class PersonApp(object):
             self.subteams = None
 
         try:
-            self.distroroles = Distributionrole.selectBy(personID=self.id)
+            self.distroroles = DistributionRole.selectBy(personID=self.id)
             if self.distroroles.count() == 0:
                 self.distroroles = None
                 
@@ -454,7 +454,7 @@ class PersonApp(object):
             self.distroroles = None
 
         try:
-            self.distroreleaseroles = Distroreleaserole.selectBy(personID=\
+            self.distroreleaseroles = DistroReleaserole.selectBy(personID=\
                                                                  self.id)
             if self.distroreleaseroles.count() == 0:
                 self.distroreleaseroles = None
@@ -569,7 +569,7 @@ class DistroReleaseBinaryReleaseApp(object):
                  %(self.binarypackagerelease.build.sourcepackagerelease.id))
 
 
-        self.sourcedistrorelease = Distrorelease.select(query)[0]
+        self.sourcedistrorelease = DistroRelease.select(query)[0]
 
 
         binaryReleases = self.binarypackagerelease.current(distrorelease)
@@ -698,12 +698,12 @@ class DistroBinariesApp(object):
         self.distribution = distribution
         
     def __getitem__(self, name):
-        release = Distrorelease.selectBy(distributionID=self.distribution.id,
+        release = DistroRelease.selectBy(distributionID=self.distribution.id,
                                    name=name)[0]
         return DistroReleaseBinariesApp(release)
     
     def __iter__(self):
-      	return iter(Distrorelease.selectBy(distributionID=self.distribution.id))
+      	return iter(DistroRelease.selectBy(distributionID=self.distribution.id))
 
 # end of binary app component related data ....
   

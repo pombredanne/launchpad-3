@@ -47,13 +47,13 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.sql.Distributionrole">
-    <allow interface="canonical.launchpad.interfaces.IDistributionrole"/>
+  <content class="canonical.soyuz.sql.DistributionRole">
+    <allow interface="canonical.launchpad.interfaces.IDistributionRole"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.sql.Distroreleaserole">
-    <allow interface="canonical.launchpad.interfaces.IDistroreleaserole"/>
+  <content class="canonical.soyuz.sql.DistroReleaseRole">
+    <allow interface="canonical.launchpad.interfaces.IDistroReleaseRole"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
@@ -194,8 +194,8 @@
   </content>
   
 
-  <content class="canonical.soyuz.sql.Distrorelease">
-    <allow interface="canonical.launchpad.interfaces.IDistrorelease"/>
+  <content class="canonical.soyuz.sql.DistroRelease">
+    <allow interface="canonical.launchpad.interfaces.IDistroRelease"/>
     <require
      permission="zope.Public"
      set_attributes="distribution name title shortdesc description version components sections releasestate datereleased owner"

@@ -20,7 +20,7 @@ from canonical.launchpad.database import EmailAddress, IrcID
 from canonical.launchpad.database import GPGKey, ArchUserID 
 
 # app components
-from canonical.soyuz.sql import Distribution, Distrorelease, Person
+from canonical.soyuz.sql import Distribution, DistroRelease, Person
 from canonical.soyuz.importd import ProjectMapper, ProductMapper
 
 
@@ -450,7 +450,7 @@ class ReleasesAddView(object):
             ## Parentrelease is hardcoded to "warty", should the users
             ## be able to select then now ??
             
-            self.results = Distrorelease(distribution=self.context.distribution.id,
+            self.results = DistroRelease(distribution=self.context.distribution.id,
                                          name=name, title=title,
                                          shortdesc=shortdesc,
                                          description=description,version=version,
