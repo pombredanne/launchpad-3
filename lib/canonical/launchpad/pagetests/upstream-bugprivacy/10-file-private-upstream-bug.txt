@@ -4,7 +4,6 @@
   ... GET /malone/products/firefox/+filebug HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Cookie: LASTORDER=relevance%20desc; BUGLIST=1; Bugzilla_login=1; VERSION-AroundTheHouse=unspecified; DEFAULTFORMAT=advanced; Bugzilla_logincookie=6; launchpad=QkzzzjgaIOL77DpiQ2ND.0i6AD0C-qg3RPGKQYupambRWTL7lNofb4
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -17,7 +16,6 @@
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 696
   ... Content-Type: multipart/form-data; boundary=---------------------------7564071467832000371737554862
-  ... Cookie: LASTORDER=relevance%20desc; BUGLIST=1; Bugzilla_login=1; VERSION-AroundTheHouse=unspecified; DEFAULTFORMAT=advanced; Bugzilla_logincookie=6; launchpad=QkzzzjgaIOL77DpiQ2ND.0i6AD0C-qg3RPGKQYupambRWTL7lNofb4
   ... Referer: http://localhost:9000/malone/products/firefox/+filebug
   ... 
   ... -----------------------------7564071467832000371737554862
@@ -49,7 +47,6 @@
   ... GET /malone/products/firefox/ HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Cookie: LASTORDER=relevance%20desc; BUGLIST=1; Bugzilla_login=1; VERSION-AroundTheHouse=unspecified; DEFAULTFORMAT=advanced; Bugzilla_logincookie=6; launchpad=QkzzzjgaIOL77DpiQ2ND.0i6AD0C-qg3RPGKQYupambRWTL7lNofb4
   ... Referer: http://localhost:9000/malone/products/firefox/+filebug
   ... """)
   HTTP/1.1 200 Ok

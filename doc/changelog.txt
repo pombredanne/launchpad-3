@@ -2,6 +2,89 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-18 21:40:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1462
+
+    Summary:
+      fix a bug to respect privacy when listing bug tasks on a distro release. clean some cookie junk out of the existing upstream privacy page tests. add page tests for distro listing privacy.
+    Revision:
+      launchpad--devel--0--patch-1462
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-429
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-430
+       fix a bug to respect privacy when listing bug tasks on a distro release. clean some cookie junk out of the existing upstream privacy page tests. add page tests for distro listing privacy.
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-431
+       merge from rf
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/distro-bugprivacy/.arch-ids/10-file-private-distro-bug.txt.id
+     lib/canonical/launchpad/pagetests/distro-bugprivacy/.arch-ids/20-private-distro-bug-not-visible-to-anonymous.txt.id
+     lib/canonical/launchpad/pagetests/distro-bugprivacy/.arch-ids/30-private-distro-bug-not-visible-to-nonsubscriber-user.txt.id
+     lib/canonical/launchpad/pagetests/distro-bugprivacy/.arch-ids/=id
+     lib/canonical/launchpad/pagetests/distro-bugprivacy/10-file-private-distro-bug.txt
+     lib/canonical/launchpad/pagetests/distro-bugprivacy/20-private-distro-bug-not-visible-to-anonymous.txt
+     lib/canonical/launchpad/pagetests/distro-bugprivacy/30-private-distro-bug-not-visible-to-nonsubscriber-user.txt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/distrorelease.py
+     lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/interfaces/bugtask.py
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/10-file-private-upstream-bug.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/20-private-upstream-bug-not-visible-to-anonymous.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/30-private-upstream-bug-not-accessible-to-anonymous.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/40-private-upstream-bug-not-visible-to-nonsubscriber-user.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/50-private-upstream-bug-not-accessible-to-nonsubscriber-user.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/60-private-upstream-task-not-accessible-to-anonymous.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/70-private-upstream-task-not-accessible-to-nonsubscriber-user.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/80-private-upstream-bug-accessible-to-subscribed-user.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/90-private-upstream-task-accessible-to-subscribed-user.txt
+
+    renamed files:
+     lib/canonical/launchpad/pagetests/bugprivacy/.arch-ids/10-file-private-upstream-bug.txt.id
+       ==> lib/canonical/launchpad/pagetests/upstream-bugprivacy/.arch-ids/10-file-private-upstream-bug.txt.id
+     lib/canonical/launchpad/pagetests/bugprivacy/.arch-ids/20-private-upstream-bug-not-visible-to-anonymous.txt.id
+       ==> lib/canonical/launchpad/pagetests/upstream-bugprivacy/.arch-ids/20-private-upstream-bug-not-visible-to-anonymous.txt.id
+     lib/canonical/launchpad/pagetests/bugprivacy/.arch-ids/30-private-upstream-bug-not-accessible-to-anonymous.txt.id
+       ==> lib/canonical/launchpad/pagetests/upstream-bugprivacy/.arch-ids/30-private-upstream-bug-not-accessible-to-anonymous.txt.id
+     lib/canonical/launchpad/pagetests/bugprivacy/.arch-ids/40-private-upstream-bug-not-visible-to-nonsubscriber-user.txt.id
+       ==> lib/canonical/launchpad/pagetests/upstream-bugprivacy/.arch-ids/40-private-upstream-bug-not-visible-to-nonsubscriber-user.txt.id
+     lib/canonical/launchpad/pagetests/bugprivacy/.arch-ids/50-private-upstream-bug-not-accessible-to-nonsubscriber-user.txt.id
+       ==> lib/canonical/launchpad/pagetests/upstream-bugprivacy/.arch-ids/50-private-upstream-bug-not-accessible-to-nonsubscriber-user.txt.id
+     lib/canonical/launchpad/pagetests/bugprivacy/.arch-ids/60-private-upstream-task-not-accessible-to-anonymous.txt.id
+       ==> lib/canonical/launchpad/pagetests/upstream-bugprivacy/.arch-ids/60-private-upstream-task-not-accessible-to-anonymous.txt.id
+     lib/canonical/launchpad/pagetests/bugprivacy/.arch-ids/70-private-upstream-task-not-accessible-to-nonsubscriber-user.txt.id
+       ==> lib/canonical/launchpad/pagetests/upstream-bugprivacy/.arch-ids/70-private-upstream-task-not-accessible-to-nonsubscriber-user.txt.id
+     lib/canonical/launchpad/pagetests/bugprivacy/.arch-ids/80-private-upstream-bug-accessible-to-subscribed-user.txt.id
+       ==> lib/canonical/launchpad/pagetests/upstream-bugprivacy/.arch-ids/80-private-upstream-bug-accessible-to-subscribed-user.txt.id
+     lib/canonical/launchpad/pagetests/bugprivacy/.arch-ids/90-private-upstream-task-accessible-to-subscribed-user.txt.id
+       ==> lib/canonical/launchpad/pagetests/upstream-bugprivacy/.arch-ids/90-private-upstream-task-accessible-to-subscribed-user.txt.id
+     lib/canonical/launchpad/pagetests/bugprivacy/.arch-ids/=id
+       ==> lib/canonical/launchpad/pagetests/upstream-bugprivacy/.arch-ids/=id
+
+    new directories:
+     lib/canonical/launchpad/pagetests/distro-bugprivacy
+     lib/canonical/launchpad/pagetests/distro-bugprivacy/.arch-ids
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/.arch-ids
+
+    removed directories:
+     lib/canonical/launchpad/pagetests/bugprivacy/.arch-ids
+
+    renamed directories:
+     lib/canonical/launchpad/pagetests/bugprivacy
+       ==> lib/canonical/launchpad/pagetests/upstream-bugprivacy
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-429
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-430
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-431
+
+
 2005-03-18 20:03:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1461
 
     Summary:

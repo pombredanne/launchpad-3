@@ -9,7 +9,9 @@ from sqlobject import LIKE, AND
 
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
-from canonical.lp import dbschema
+from canonical.lp.dbschema import BugTaskStatus
+from canonical.launchpad.interfaces import IBugTaskSet
+from canonical.launchpad.searchbuilder import any
 
 BATCH_SIZE = 20
 
@@ -27,8 +29,11 @@ class DistroReleaseView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        bugtasks_to_show = getUtility(IBugTaskSet).search(
+            status = any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
+            distrorelease = self.context, orderby = "-id")
         self.batch = Batch(
-            list(self.context.bugtasks), int(request.get('batch_start', 0)))
+            list(bugtasks_to_show), int(request.get('batch_start', 0)))
         self.batchnav = BatchNavigator(self.batch, request)
 
     def task_columns(self):

@@ -109,14 +109,14 @@ class IBugTaskSet(Interface):
         """
 
     def search(bug=None, searchtext=None, status=None, priority=None,
-               severity=None, product=None, distribution=None, milestone=None,
-               assignee=None, submitter=None, orderby=None):
+               severity=None, product=None, distribution=None, distrorelease=None,
+               milestone=None, assignee=None, submitter=None, orderby=None):
         """Return a set of IBugTasks that satisfy the query arguments.
 
         Keyword arguments should always be used. The argument passing
         semantics are as follows:
 
-        * BugTaskSet.search(arg = 'foo'): Match all IBugTasks where 
+        * BugTaskSet.search(arg = 'foo'): Match all IBugTasks where
           IBugTask.arg == 'foo'.
 
         * BugTaskSet.search(arg = any('foo', 'bar')): Match all IBugTasks

@@ -169,8 +169,9 @@ class BugTaskSet:
         return bugtask
 
     def search(self, bug=None, searchtext=None, status=None, priority=None,
-               severity=None, product=None, distribution=None, milestone=None,
-               assignee=None, submitter=None, orderby=None):
+               severity=None, product=None, distribution=None,
+               distrorelease=None, milestone=None, assignee=None,
+               submitter=None, orderby=None):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
         def build_where_condition_fragment(arg_name, arg_val, cb_arg_id):
             fragment = ""
@@ -189,7 +190,7 @@ class BugTaskSet:
 
         query = ""
         # build the part of the query for FK columns
-        for arg_name in ('bug', 'product', 'distribution',
+        for arg_name in ('bug', 'product', 'distribution', 'distrorelease',
                          'milestone', 'assignee', 'submitter'):
             query_arg = eval(arg_name)
             if query_arg is not None:

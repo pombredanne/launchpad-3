@@ -1,0 +1,12 @@
+
+
+  >>> print http(r"""
+  ... GET /malone/distros/ubuntu/ HTTP/1.1
+  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+    <h1>Bugs in Ubuntu Linux</h1>
+  ...
+    <small>displaying matching bugs 0 to 0 of 0</small>
+  ...
