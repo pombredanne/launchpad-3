@@ -8,9 +8,9 @@ import unittest
 
 from zope.component import getService, servicenames
 from zope.component.tests.placelesssetup import PlacelessSetup
-from canonical.rosetta.interfaces import ILanguages
-from canonical.database.doap import Project
-from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
+from canonical.launchpad.interfaces import ILanguages
+from canonical.launchpad.database import Project
+from canonical.launchpad.database import RosettaPerson, RosettaPOTemplate, \
     RosettaProduct, RosettaLanguages
 from canonical.rosetta.poexport import POExport
 import canonical.lp

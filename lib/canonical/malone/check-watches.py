@@ -3,7 +3,7 @@
 Cron job to run daily to check all of the BugWatches
 """
 
-from canonical.database.malone import BugWatch, BugSystem
+from canonical.launchpad.database import BugWatch, BugSystem
 from externalsystem import ExternalSystem
 
 # This script probably doesn't work yet, it'll get cleaned up

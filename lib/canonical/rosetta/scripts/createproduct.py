@@ -4,13 +4,14 @@
 # arch-tag: 6ff81610-1bc0-4c22-960c-4e0c2f33c0c9
 
 import os, popen2
-
-from zope.component.tests.placelesssetup import PlacelessSetup
-import canonical.lp
-from canonical.database.doap import Product, Project
-from canonical.rosetta.sql import RosettaPerson
 from optparse import OptionParser
 from datetime import datetime
+
+from zope.component.tests.placelesssetup import PlacelessSetup
+
+import canonical.lp
+from canonical.launchpad.database import Product, Project
+from canonical.launchpad.database import RosettaPerson
 
 if __name__ == '__main__':
     parser = OptionParser()

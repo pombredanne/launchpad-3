@@ -7,7 +7,7 @@ __metaclass__ = type
 from zope.interface import implements, Interface
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.browser.interfaces import IBrowserWidget
-from canonical.database.foaf import IPerson
+from canonical.launchpad.interfaces import IPerson
 
 class RequestWidget(object):
     '''A widget that sets itself to a value calculated from request

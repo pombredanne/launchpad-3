@@ -1,7 +1,19 @@
+
+import psycopg
+
 from canonical.database.sqlbase import quote, SQLBase
 from canonical.launchpad.interfaces import ArchiveAlreadyRegistered, ArchiveNotRegistered, ArchiveLocationDoublyRegistered
 from sqlobject import StringCol, BoolCol, ForeignKey, IntCol, DateTimeCol, \
                       MultipleJoin
+
+from canonical.launchpad.database import BranchRelationship
+
+from canonical.launchpad.interfaces import RevisionNotRegistered
+from canonical.launchpad.interfaces import RevisionAlreadyRegistered
+from canonical.launchpad.interfaces import VersionNotRegistered
+from canonical.launchpad.interfaces import VersionAlreadyRegistered
+from canonical.launchpad.interfaces import BranchAlreadyRegistered
+from canonical.launchpad.interfaces import CategoryAlreadyRegistered
 
 class ArchPerson(SQLBase):
 
@@ -88,7 +100,6 @@ class Branch(SQLBase):
         return repository
 
     def createRelationship(self, branch, relationship):
-        from canonical.soyuz.database import BranchRelationship
         BranchRelationship(subject=self, object=branch, label=relationship)
 
     def getRelations(self):
@@ -241,7 +252,6 @@ class CategoryMapper(object):
 
     def insert(self, category):
         """insert a category into the database"""
-        from canonical.arch.interfaces import CategoryAlreadyRegistered
         if self.exists(category):
             raise CategoryAlreadyRegistered(category.nonarch)
         ArchNamespace(
@@ -276,7 +286,6 @@ class BranchMapper(object):
 
     def insert(self, branch):
         """insert a branch into the database"""
-        from canonical.arch.interfaces import BranchAlreadyRegistered
         if self.exists(branch):
             raise BranchAlreadyRegistered(branch.fullname)
         archive_id = ArchiveMapper()._getId(branch.category.archive)
@@ -313,7 +322,6 @@ class VersionMapper(object):
 
     def insert(self, version):
         """insert a version into the database"""
-        from canonical.arch.interfaces import VersionAlreadyRegistered
         if self.exists(version):
             raise VersionAlreadyRegistered(version.fullname)
         archive_id = ArchiveMapper()._getId(version.branch.category.archive)
@@ -346,7 +354,6 @@ class VersionMapper(object):
         return bool(ArchNamespace.select(where).count())
 
     def _getId(self, version, cursor=None):
-        from canonical.arch.interfaces import VersionNotRegistered
         where = ("category = %s AND branch = %s AND version = %s" 
                  % (quote(version.branch.category.nonarch),
                     quote(version.branch.name), quote(version.name)))
@@ -356,7 +363,6 @@ class VersionMapper(object):
             raise VersionNotRegistered(version.fullname)
             
     def _getDBBranchId(self, version):
-        from canonical.arch.interfaces import VersionNotRegistered
         id=self._getId(version)
         where = ("archnamespace = %d" % id) 
         try:
@@ -379,7 +385,6 @@ class RevisionMapper(object):
 
     def insert(self, revision):
         """insert a revision into the database"""
-        from canonical.arch.interfaces import RevisionAlreadyRegistered
         if self.exists(revision):
             raise RevisionAlreadyRegistered(revision.fullname)
         #FIXME: ask Mark if we should include correct date?
@@ -412,7 +417,6 @@ class RevisionMapper(object):
  
     def _getId(self, revision, cursor):
         """Get the id of a revision"""
-        from canonical.arch.interfaces import RevisionNotRegistered
         branch_id = VersionMapper()._getId(revision.version, cursor)
         cursor.execute("SELECT id FROM Changeset WHERE name = '%s' AND branch = %d" % (revision.name, branch_id))
         try:
@@ -423,7 +427,6 @@ class RevisionMapper(object):
     def insert_file(self, revision, filename, data, checksums):
         """Insert a file into the database"""
         size = len(data)
-        import psycopg
         name = ChangesetFileName.select('filename = %s' % quote(filename))
         if name.count() == 0:
             #        data = psycopg.Binary(data)

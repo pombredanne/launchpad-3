@@ -8,38 +8,38 @@
     <allow interface="canonical.launchpad.interfaces.IProduct"/>
   </content>
 
-  <content class="canonical.launchpad.database.POTemplate">
+  <content class="canonical.launchpad.database.RosettaPOTemplate">
     <allow interface="canonical.launchpad.interfaces.IPOTemplate"/>
   </content>
 
-  <content class="canonical.launchpad.database.POFile">
+  <content class="canonical.launchpad.database.RosettaPOFile">
     <require permission="zope.Public"
         interface="canonical.launchpad.interfaces.IEditPOFile"
         set_attributes="header pluralForms"/>
   </content>
 
-  <content class="canonical.launchpad.database.POMessageSet">
+  <content class="canonical.launchpad.database.RosettaPOMessageSet">
     <allow interface="canonical.launchpad.interfaces.IEditPOTemplateOrPOFileMessageSet"/>
   </content>
 
-  <content class="canonical.launchpad.database.POTranslationSighting">
+  <content class="canonical.launchpad.database.RosettaPOTranslationSighting">
     <allow interface="canonical.launchpad.interfaces.IPOTranslationSighting"/>
   </content>
 
-  <content class="canonical.launchpad.database.POMessageID">
+  <content class="canonical.launchpad.database.RosettaPOMessageID">
     <allow interface="canonical.launchpad.interfaces.IPOMessageID"/>
   </content>
 
-  <content class="canonical.launchpad.database.POTranslation">
+  <content class="canonical.launchpad.database.RosettaPOTranslation">
     <allow interface="canonical.launchpad.interfaces.IPOTranslation"/>
   </content>
 
-  <content class="canonical.launchpad.database.Language">
+  <content class="canonical.launchpad.database.RosettaLanguage">
     <allow interface="canonical.launchpad.interfaces.ILanguage"/>
   </content>
 
   <utility
-      factory="canonical.launchpad.database.Languages"
+      factory="canonical.launchpad.database.RosettaLanguages"
       provides="canonical.launchpad.interfaces.ILanguages"
       />
 

@@ -2,7 +2,7 @@
 
 import urllib
 from xml.dom import minidom
-from canonical.database.malone import BugSystem, BugSystemType
+from canonical.launchpad.database import BugSystem, BugSystemType
 
 class UnknownBugSystemTypeError(Exception):
     """

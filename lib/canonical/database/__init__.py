@@ -6,9 +6,9 @@
 Here you'll find the Interfaces and SQLObject classes that you can use
 to talk to the database. In general:
 
-  import canonical.database
+  import canonical.launchpad.database
 
-  canonical.database.Project.select('name="gnome"')
+  canonical.launchpad.database.Project.select('name="gnome"')
   ... etc
 
 """

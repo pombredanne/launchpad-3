@@ -7,7 +7,7 @@ __metaclass__ = type
 import unittest
 from zope.testing.doctestunit import DocTestSuite
 
-from canonical.rosetta.interfaces import ILanguages, IPerson
+from canonical.launchpad.interfaces import ILanguages, IPerson
 from zope.interface import implements
 from zope.app.security.interfaces import IPrincipal
 from zope.publisher.interfaces.browser import IBrowserRequest

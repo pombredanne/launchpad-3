@@ -3,7 +3,7 @@
 It will create ArchArchive and Branch entries as needed.
 """
 
-#from canonical.arch.database import Archive
+#from canonical.launchpad.database import Archive
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.soyuz.importd import SoyuzProduct
 import canonical.lp

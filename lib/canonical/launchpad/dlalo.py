@@ -1,6 +1,11 @@
 # arch-tag: da5d31ba-6994-4893-b252-83f4f66f0aba
-
 from canonical.database.sqlbase import SQLBase, quote
+
+from types import NoneType
+from datetime import datetime
+from sets import Set
+
+standardPOTemplateCopyright = 'Canonical Ltd'
 
 import canonical.launchpad.interfaces as interfaces
 from canonical.database.constants import nowUTC
@@ -9,12 +14,7 @@ from sqlobject import ForeignKey, MultipleJoin, RelatedJoin, IntCol, \
     BoolCol, StringCol, DateTimeCol, SQLObjectNotFound
 from zope.interface import implements, directlyProvides
 from zope.component import getUtility
-from types import NoneType
-from datetime import datetime
-from sets import Set
 
-
-standardPOTemplateCopyright = 'Canonical Ltd'
 
 # XXX: in the four strings below, we should fill in owner information
 standardPOTemplateTopComment = ''' PO template for %(productname)s

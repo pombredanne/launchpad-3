@@ -47,7 +47,7 @@
   <traverse for="canonical.launchpad.interfaces.IProjectContainer"
             getter="__getitem__" />
 
-  <pages for="canonical.database.IProject"
+  <pages for="canonical.launchpad.database.IProject"
          permission="zope.Public">
     <page name="+index"
           template="../launchpad/templates/project-index.pt"

@@ -1,8 +1,11 @@
+
+import sets
+
+from zope.interface import implements
+
 from canonical.rosetta.ipofile import IPOHeader, IPOMessage
 from canonical.rosetta.pofile import POHeader, POMessage, POParser, POInvalidInputError
-from canonical.rosetta.interfaces import IPOTemplate, IPOFile
-from zope.interface import implements
-import sets
+from canonical.launchpad.interfaces import IPOTemplate, IPOFile
 
 class DatabaseConstraintError(Exception):
     pass

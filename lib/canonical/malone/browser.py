@@ -4,13 +4,17 @@
 
 from datetime import datetime
 from email.Utils import make_msgid
+
 from zope.interface import implements
 from zope.app.form.browser.interfaces import IAddFormCustomization
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.schema import TextLine, Int, Choice
-from canonical.database.malone import BugWatch
-from canonical.database.doap import Product
-from canonical.database.soyuz import \
+#
+# XXX duped imports, clean me up XXX
+#
+from canonical.launchpad.database import BugWatch
+from canonical.launchpad.database import Product
+from canonical.launchpad.database import \
         Sourcepackage, SourcepackageName, Binarypackage
 from canonical.database import sqlbase
 
@@ -19,7 +23,7 @@ _ = MessageIDFactory('malone')
 
 from canonical.lp import dbschema
 
-from interfaces import \
+from canonical.launchpad.interfaces import \
         IBugMessagesView, IBugExternalRefsView, \
         IMaloneBug, IMaloneBugAttachment, \
         IBugContainer, IBugAttachmentContainer, IBugExternalRefContainer, \
@@ -27,14 +31,18 @@ from interfaces import \
         ISourcepackageContainer, IBugWatchContainer, \
         IProductBugAssignmentContainer, ISourcepackageBugAssignmentContainer
 
-from canonical.database.foaf import IPerson
+from canonical.launchpad.database import IPerson
 
 # TODO: Anything that relies on these imports should not be in this file!
-from canonical.database.malone import \
+from canonical.launchpad.database import \
         Bug, BugAttachment, BugExternalRef, BugSubscription, BugMessage, \
         ProductBugAssignment, SourcepackageBugAssignment
-from canonical.database.soyuz import Sourcepackage
-from canonical.database.foaf import Person, EmailAddress
+from canonical.launchpad.database import Sourcepackage
+from canonical.launchpad.database import Person, EmailAddress
+
+#
+# XXX duped imports, clean me up XXX
+#
 
 def traverseBug(bug, request, name):
     if name == 'attachments':

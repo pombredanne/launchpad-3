@@ -32,7 +32,7 @@
       name="+search" />
 
   <browser:defaultView
-      for="canonical.database.IProject"
+      for="canonical.launchpad.database.IProject"
       name="+index" />
 
   <include file="pages.zcml" />

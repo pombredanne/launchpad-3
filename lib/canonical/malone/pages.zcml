@@ -71,7 +71,7 @@
             template="../launchpad/templates/attachment-index.pt" />
     </pages>
 
-  <pages for="canonical.database.IProject"
+  <pages for="canonical.launchpad.interface.IProject"
          permission="zope.Public">
     <page name="index"
           template="../launchpad/templates/malone-project-index.pt"
@@ -89,7 +89,7 @@
       getter="__getitem__" />
 
   <pages 
-      for="canonical.database.soyuz.ISourcepackage" 
+      for="canonical.launchpad.interface.ISourcepackage" 
       permission="zope.Public"
       class=".browser.SourcepackageView">
       <page name="index"
@@ -158,7 +158,7 @@
         getter="__getitem__" />
 
     <pages 
-        for="canonical.database.malone.IBugExternalRef"
+        for="canonical.launchpad.interface.IBugExternalRef"
         permission="zope.Public">
         <page name="index"
             template="../launchpad/templates/reference-index.pt"

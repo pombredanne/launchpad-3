@@ -11,12 +11,14 @@ from xml.sax.saxutils import escape as xml_escape
 
 from zope.component import getUtility
 from zope.i18n.interfaces import IUserPreferredLanguages
-from canonical.rosetta.interfaces import ILanguages, IPerson
-from canonical.database.doap import IProjectSet
-from canonical.rosetta.sql import RosettaLanguage, RosettaPerson
+
+from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
+from canonical.launchpad.interfaces import ILanguages, IPerson
+from canonical.launchpad.interfaces import IProjectSet
+from canonical.launchpad.database import RosettaLanguage, RosettaPerson
+
 from canonical.rosetta.poexport import POExport
 from canonical.rosetta.pofile import POHeader
-from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
 
 charactersPerLine = 50
 

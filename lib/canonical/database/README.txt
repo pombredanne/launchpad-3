@@ -30,7 +30,7 @@ may change, but the convention may still remain.
 
    python -i harness.py
 
-   person = canonical.database.doap.Person.get(1)
-   spackage = canonical.database.soyuz.Sourcepackage.get(1)
+   person = canonical.launchpad.database.Person.get(1)
+   spackage = canonical.launchpad.database.Sourcepackage.get(1)
    ... etc
    

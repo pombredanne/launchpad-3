@@ -18,11 +18,11 @@ from canonical.lp import dbschema
 from canonical.database.sqlbase import quote
 
 # Interfaces
+from canonical.launchpad.interfaces import ISync
 from canonical.launchpad.interfaces import IProjectSet, IProduct, IProject
 from canonical.launchpad.interfaces import Project as dbProject, Product \
      as dbProduct
 
-from canonical.soyuz.interfaces import ISync
 
 class Projects(object):
     """Stub projects collection"""

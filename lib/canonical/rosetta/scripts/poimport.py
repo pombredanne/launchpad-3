@@ -1,15 +1,18 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 # arch-tag: 752bd71e-584e-416e-abff-a4eb6c82399c
 
+from optparse import OptionParser
+
 from zope.component.tests.placelesssetup import PlacelessSetup
+
+from sqlobject.dbconnection import Transaction
+
 import canonical.lp
-from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
+from canonical.launchpad.database import RosettaPerson, RosettaPOTemplate, \
     RosettaProduct
-from canonical.database.doap import ProjectSet
+from canonical.launchpad.database import ProjectSet
 from canonical.database.sqlbase import SQLBase
 from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
-from optparse import OptionParser
-from sqlobject.dbconnection import Transaction
 
 stats_message = """
 Msgsets matched to the potemplate that have a non-fuzzy translation in

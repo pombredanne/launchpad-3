@@ -9,7 +9,7 @@ from textwrap import wrap
 from canonical.lp import initZopeless
 from canonical.lp.dbschema import EmailAddressStatus
 from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
-from canonical.rosetta.sql import RosettaPerson, RosettaEmailAddress
+from canonical.launchpad.database import RosettaPerson, RosettaEmailAddress
 from optparse import OptionParser
 from zope.component.tests.placelesssetup import PlacelessSetup
 

@@ -1,4 +1,4 @@
-from canonical.database.foaf import EmailAddress, Person
+from canonical.launchpad.database import EmailAddress, Person
 from canonical.auth.app import sendPasswordChangeEmail
 from canonical.auth.app import passwordChangeApp
 

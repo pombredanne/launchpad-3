@@ -1,18 +1,19 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
 import unittest
-
+import os
 from cStringIO import StringIO
+
 from zope.component import getService, servicenames
 from zope.component.tests.placelesssetup import PlacelessSetup
-from canonical.rosetta.interfaces import ILanguages
-from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
+
+from canonical.launchpad.interfaces import ILanguages
+from canonical.launchpad.database import RosettaPerson, RosettaPOTemplate, \
      RosettaProduct, RosettaLanguages, RosettaPOMessageSet, \
      RosettaPOMessageIDSighting
 from canonical.rosetta.pofile_adapters import MessageProxy, \
      TemplateImporter, POFileImporter
-from canonical.database.doap import Project
-import os
+from canonical.launchpad.database import Project
 import canonical.lp
 
 # XXX: not using Person at all, probably should

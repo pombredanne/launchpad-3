@@ -13,7 +13,7 @@ from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
 from sqlobject.sqlbuilder import func
 
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.launchpad.database import Product, DBProject
+from canonical.launchpad.database import Product, Project
 from canonical.lp import dbschema
 
 # interfaces and database 

@@ -9,7 +9,7 @@
     <addform
         name="register"
         for="canonical.launchpad.interfaces.IMaloneApplication"
-        schema="canonical.database.foaf.IPerson"
+        schema="canonical.launchpad.interface.IPerson"
         label="Register"
         fields="displayname givenname familyname password"
         content_factory=".browser.PersonFactory"
@@ -41,7 +41,7 @@
 
     <editform
         name="+edit"
-        schema="canonical.database.malone.IBug"
+        schema="canonical.launchpad.interface.IBug"
         label="Change Bug Information"
         permission="launchpad.AnyPerson"
         template="../launchpad/templates/bug-edit.pt"
@@ -79,7 +79,7 @@
 
     <!-- IBugMessage -->
     <view
-        for="canonical.database.malone.IBug"
+        for="canonical.launchpad.interface.IBug"
         name="messages"
         class=".browser.BugMessagesView"
         permission="zope.Public"
@@ -97,7 +97,7 @@
 
     <addform
         name="+new"
-        schema="canonical.database.malone.IBugMessage"
+        schema="canonical.launchpad.interface.IBugMessage"
         for="canonical.launchpad.interfaces.IBugMessagesView"
         label="Add a Comment"
         fields="title contents"
@@ -111,7 +111,7 @@
 
     <addform
         name="+new"
-        schema="canonical.database.malone.IProductBugAssignment"
+        schema="canonical.launchpad.interface.IProductBugAssignment"
         for="canonical.launchpad.interfaces.IProductBugAssignmentContainer"
         label="Add Product Bug Assignment"
         fields="product bugstatus priority severity assignee"
@@ -124,8 +124,8 @@
 
     <editform
         name="+edit"
-        for="canonical.database.malone.IProductBugAssignment"
-        schema="canonical.database.malone.IProductBugAssignment"
+        for="canonical.launchpad.interface.IProductBugAssignment"
+        schema="canonical.launchpad.interface.IProductBugAssignment"
         fields="bugstatus priority severity assignee"
         label="Edit Product Bug Assignment"
         permission="launchpad.AnyPerson"
@@ -134,7 +134,7 @@
 
     <addform
         name="+new"
-        schema="canonical.database.malone.ISourcepackageBugAssignment"
+        schema="canonical.launchpad.interface.ISourcepackageBugAssignment"
         for="canonical.launchpad.interfaces.ISourcepackageBugAssignmentContainer"
         label="Add Sourcepackage Bug Assignment"
         fields="sourcepackage bugstatus priority severity binarypackage assignee"
@@ -147,8 +147,8 @@
 
     <editform
         name="+edit"
-        for="canonical.database.malone.ISourcepackageBugAssignment"
-        schema="canonical.database.malone.ISourcepackageBugAssignment"
+        for="canonical.launchpad.interface.ISourcepackageBugAssignment"
+        schema="canonical.launchpad.interface.ISourcepackageBugAssignment"
         fields="bugstatus priority severity binarypackage assignee"
         label="Edit Sourcepackage Bug Assignment"
         permission="launchpad.AnyPerson"
@@ -157,7 +157,7 @@
 
     <addform
         name="+new"
-        schema="canonical.database.malone.IBugExternalRef"
+        schema="canonical.launchpad.interface.IBugExternalRef"
         for=".browser.IBugExternalRefContainer"
         label="Add External Reference"
         fields="bugreftype data description"
@@ -170,7 +170,7 @@
 
     <editform
         name="+edit"
-        schema="canonical.database.malone.IBugExternalRef"
+        schema="canonical.launchpad.interface.IBugExternalRef"
         label="Change Bug External Reference"
         permission="launchpad.AnyPerson"
         template="../launchpad/templates/default-editform.pt"
@@ -179,7 +179,7 @@
 
     <addform
         name="+new"
-        schema="canonical.database.malone.IBugWatch"
+        schema="canonical.launchpad.interface.IBugWatch"
         for=".browser.IBugWatchContainer"
         label="Add Watch"
         fields="bugsystem remotebug"
@@ -192,7 +192,7 @@
 
     <editform
         name="+edit"
-        schema="canonical.database.malone.IBugWatch"
+        schema="canonical.launchpad.interface.IBugWatch"
         label="Change Bug Watch"
         permission="launchpad.AnyPerson"
         template="../launchpad/templates/default-editform.pt"
@@ -201,7 +201,7 @@
 
     <addform
         name="+new"
-        schema="canonical.database.malone.IBugSubscription"
+        schema="canonical.launchpad.interface.IBugSubscription"
         for=".browser.IBugSubscriptionContainer"
         label="Add Person"
         fields="subscription person"
@@ -214,7 +214,7 @@
 
     <editform
         name="+edit"
-        schema="canonical.database.malone.IBugSubscription"
+        schema="canonical.launchpad.interface.IBugSubscription"
         label="Change Bug Subscription"
         permission="launchpad.AnyPerson"
         template="../launchpad/templates/default-editform.pt"

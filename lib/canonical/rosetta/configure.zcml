@@ -35,7 +35,7 @@
 
 
   <content class="canonical.rosetta.domain.RosettaProjectSet">
-    <allow interface="canonical.database.doap.IProjectSet" />
+    <allow interface="canonical.launchpad.interfaces.IProjectSet" />
   </content>
 
   <!-- Set the default view for the rosetta application, for projects and
