@@ -5,6 +5,8 @@ from datetime import datetime, date, timedelta, tzinfo
 
 import pytz
 
+from sqlobject import SQLObjectNotFound
+
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
@@ -22,7 +24,7 @@ from canonical.launchpad.interfaces import ICalendarDay, ICalendarWeek
 from canonical.launchpad.interfaces import ICalendarMonth, ICalendarYear
 from canonical.launchpad.interfaces import ICalendarEventCollection
 
-from canonical.launchpad.database import CalendarEvent
+from canonical.launchpad.database import Calendar, CalendarEvent
 from canonical.launchpad.components.cal import CalendarSubscriptionSet
 
 from schoolbell.utils import prev_month, next_month
@@ -556,3 +558,42 @@ class ViewCalendarEvent(object):
             self.request.response.redirect('+edit')
         else:
             self.request.response.redirect('+display')
+
+class ViewCalendarSubscriptions(object):
+    colours = [
+        { 'code': '#ffffff', 'name': _('White') },
+        { 'code': '#9db8d2', 'name': _('Blue') },
+        { 'code': '#9dd2b8', 'name': _('Green') },
+        ]
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+        person = IPerson(request.principal, None)
+        self._subscriptions = CalendarSubscriptionSet(person)
+
+    def subscriptions(self):
+        for cal in self._subscriptions:
+            yield { 'id': cal.id, 'title': cal.title,
+                    'subscribed': True,
+                    'colour': self._subscriptions.getColour(cal) }
+
+    def submit(self):
+        if 'UPDATE_SUBMIT' in self.request.form:
+            if self.request.method != "POST":
+                raise RuntimeError("This form must be posted!")
+            # iterate through calendar ids:
+            for id in [ int(name[4:]) for name in self.request.form.keys()
+                        if re.match(r'sub.\d+', name) ]:
+                try:
+                    calendar = Calendar.get(id=id)
+                except SQLObjectNotFound:
+                    raise RuntimeError("Unknown calendar ID found in submitted form data")
+                if self.request.form.get('sub.%d' % id, None) != 'no':
+                    self._subscriptions.subscribe(calendar)
+                else:
+                    self._subscriptions.unsubscribe(calendar)
+
+                colour = self.request.get('colour.%d' % id, None)
+                if colour:
+                    self._subscriptions.setColour(calendar, colour)

@@ -18,6 +18,7 @@ from zope.publisher.interfaces import NotFound
 
 from schoolbell.interfaces import ICalendar
 from canonical.launchpad.interfaces import IPerson, ILaunchpadCalendar
+from canonical.launchpad.interfaces import ILaunchpadMergedCalendar
 from canonical.launchpad.interfaces import ICalendarSubscriptionSet
 
 from canonical.launchpad.database import CalendarSubscription
@@ -149,7 +150,7 @@ class CalendarSubscriptionSet(object):
             sub.colour = colour
 
 class MergedCalendar(CalendarMixin, EditableCalendarMixin):
-    implements(ILaunchpadCalendar)
+    implements(ILaunchpadCalendar, ILaunchpadMergedCalendar)
 
     def __init__(self, person):
         self.id = None

@@ -22,6 +22,7 @@
 
   <content class="canonical.launchpad.components.cal.MergedCalendar">
     <allow interface="canonical.launchpad.interfaces.ILaunchpadCalendar" />
+    <allow interface="canonical.launchpad.interfaces.ILaunchpadMergedCalendar" />
   </content>
 
   <adapter
@@ -220,5 +221,15 @@
         class="canonical.launchpad.browser.TimeDurationWidget"
       />
   </browser:editform>
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.ILaunchpadMergedCalendar"
+      permission="launchpad.AnyPerson"
+      class="canonical.launchpad.browser.ViewCalendarSubscriptions">
+    <browser:page
+        name="+subscriptions"
+        template="../templates/calendar-subscriptions.pt"
+        lp:url="/calendar/+subscripitions" />
+  </browser:pages>
 
 </configure>

@@ -26,6 +26,9 @@ class ILaunchpadCalendar(IEditCalendar, IHasOwner):
                    each time the calendar is changed.""")
                    )
 
+class ILaunchpadMergedCalendar(Interface):
+    """Marker interface to identify the user's merged calendar."""
+
 class ICalendarOwner(Interface):
     """An object that has a calendar."""
 
