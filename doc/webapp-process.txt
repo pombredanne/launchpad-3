@@ -29,6 +29,11 @@ In summary, we write a web application by
 Of course, this isn't a completely linear process.  Steps may be carried out
 in parallel, and ongoing work in each step will feed into the other steps.
 
+So that we can make rapid progress, and learn about the application as early
+as possible, we should do steps 2, 3 and 4 focusing on just a few URLs at
+a time (say, five or so).  Then, when those are finished, we can make any
+necessary changes to the database model, and then repeat steps 2, 3 and 4
+with some new URLs and new application functionality.
 
 
 
@@ -153,7 +158,7 @@ Here's an example of a table for the Rosetta project::
   ./                  index.html   app component   The rosetta application
 
   ./index.html                     page            Initial navigation page
-precious ^.*\.pyc$
+
   ./intro.html                     page            Introductory page
 
   ./signup.html                    form            Allows a new user to
@@ -252,6 +257,7 @@ Iteration Process
 ~~~~~~~~~~~~~~~~~
 
 1. Write the URLs required for this iteration into the URLs table.
+   Ideally, there should be 3 to 7 URLs in each iteration.
 2. Document the functionality required for each page.
 3. Produce page template mockups.
 4. Implement the functionality, using stub application components rather
@@ -268,6 +274,7 @@ then implement them in two iterations.  The important thing is to understand
 where you are in this process, and why you are doing what you are doing at any
 particular stage.
 
+Keep the iterations short!
 
 
 Glossary
