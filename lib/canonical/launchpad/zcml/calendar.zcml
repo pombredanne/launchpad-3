@@ -161,14 +161,22 @@
       />
 
   <browser:addform
-      name="+new"
+      name="+add"
       for="schoolbell.interfaces.IEditCalendar"
       schema="canonical.launchpad.interfaces.ICalendarEventAddForm"
       label="New Calendar Event"
       fields="title location dtstart duration"
       permission="zope.Public"
-      template="../templates/launchpad-addform.pt"
-      class="canonical.launchpad.browser.CalendarEventAddView"
+      template="../templates/calendar-event-add.pt"
+      class="canonical.launchpad.browser.CalendarEventAddView">
+    <browser:widget
+        field="title"
+        class="canonical.launchpad.browser.TitleWidget"
       />
+    <browser:widget
+        field="dtstart"
+        class="canonical.launchpad.browser.LocalDateTimeWidget"
+      />
+  </browser:addform>
 
 </configure>
