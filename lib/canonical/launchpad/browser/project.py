@@ -125,8 +125,17 @@ class ProjectSetView(object):
         self.context = context
         self.request = request
         self.form = self.request.form
+        self.soyuz = self.form.get('soyuz', None)
+        self.rosetta = self.form.get('rosetta', None)
+        self.malone = self.form.get('malone', None)
+        self.buttress = self.form.get('buttress', None)
+        self.text = self.form.get('text', None)
         self.searchrequested = False
-        if 'searchtext' in self.form:
+        if (self.text is not None or \
+            self.buttress is not None or \
+            self.malone is not None or \
+            self.rosetta is not None or \
+            self.soyuz is not None):
             self.searchrequested = True
         self.results = None
         self.gotmatches = 0
@@ -137,7 +146,11 @@ class ProjectSetView(object):
         time the method is called, otherwise return previous results.
         """
         if self.results is None:
-            self.results = self.context.search(self.request.get('searchtext'))
+            self.results = self.context.search(text=self.text,
+                                               buttress=self.buttress,
+                                               malone=self.malone,
+                                               rosetta=self.rosetta,
+                                               soyuz=self.soyuz)
         self.gotmatches = len(list(self.results))
         return self.results
 
