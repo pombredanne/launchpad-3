@@ -15,6 +15,7 @@ from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 from canonical.launchpad.interfaces import *
+from canonical.launchpad.browser.productrelease import newProductRelease
 
 
 #
@@ -35,6 +36,7 @@ def traverseProduct(product, request, name):
 class ProductView(object):
     def __init__(self, context, request):
         self.context = context
+        self.product = context
         self.request = request
         self.form = request.form
 
@@ -72,6 +74,11 @@ class ProductView(object):
         owner = IPerson(self.request.principal)
         ss = self.context.newSourceSource(self.form, owner)
         self.request.response.redirect('+sources/'+self.form['name'])
+
+    def newProductRelease(self):
+        # default owner is the logged in user
+        owner = IPerson(self.request.principal)
+        pr = newProductRelease(self.form, self.context, owner)
  
     def newseries(self):
         #

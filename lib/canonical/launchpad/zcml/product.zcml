@@ -61,6 +61,11 @@
             template="../templates/series-new.pt"
             lp:url="doap/projects/$Project.name/$Product.name/+addseries"
             />
+        <browser:page
+            name="+addrelease"
+            template="../templates/productrelease-new.pt"
+            lp:url="doap/projects/$Project.name/$Product.name/+addrelease"
+            />
     </browser:pages>
 
     <!--FORMS-->

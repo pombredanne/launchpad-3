@@ -16,6 +16,7 @@ def newProductRelease(form, product, owner, series=None):
     description = form['description']
     releaseurl = form['releaseurl']
     # series may be passed in arguments, or in the form, or be NULL
+    import pdb; pdb.set_trace()
     if not series:
         if form.has_key('series'):
             series = int(form['series'])

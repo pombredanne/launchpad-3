@@ -74,6 +74,8 @@ class Product(SQLBase):
 
     serieslist = MultipleJoin('ProductSeries', joinColumn='product')
 
+    releases = MultipleJoin('ProductRelease', joinColumn='product',
+                             orderBy='-datereleased')
 
 
     def newseries(self, form):

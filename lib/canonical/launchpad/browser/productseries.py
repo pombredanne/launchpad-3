@@ -19,6 +19,7 @@ __all__ = ['ProductSeriesView']
 class ProductSeriesView(object):
     def __init__(self, context, request):
         self.context = context
+        self.product = context.product
         self.request = request
         self.form = request.form
 

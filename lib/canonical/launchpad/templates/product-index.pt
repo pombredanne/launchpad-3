@@ -83,7 +83,7 @@
 
     <div tal:condition="context/serieslist">
 
-        <h2>Release Series</h2>
+        <h2>Release Series (or "Branches")</h2>
 
         <p>Most open source projects issue releases as part of a "series".
         For example, some releases are from their "unstable" or "head" or
@@ -102,6 +102,22 @@
     </div>
 
     [ <a href="+addseries">Add a Release Series</a> ]
+
+    <div >
+
+        <h2>Releases of <span
+        tal:replace="context/displayname">$Product.displayname</span></h2>
+
+        <ol tal:repeat="release context/releases">
+        
+            <li><span tal:content="release/version">version</span>: 
+                "<span tal:content="release/title">title</span>"</li>
+
+        </ol>
+
+    </div>
+
+    [ <a href="+addrelease">Register a New Release</a> ]
 
 </div>
 

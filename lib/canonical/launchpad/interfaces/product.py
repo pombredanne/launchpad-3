@@ -55,6 +55,9 @@ class IProduct(Interface):
     serieslist = Attribute(_("""An iterator over the ProductSeries for this
         product"""))
 
+    releases = Attribute(_("""An iterator over the ProductReleases for this
+        product."""))
+
     def poTemplates():
         """Returns an iterator over this product's PO templates."""
 
