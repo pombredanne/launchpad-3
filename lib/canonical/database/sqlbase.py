@@ -106,7 +106,8 @@ class ZopelessTransactionManager(object):
 
     Quick & dirty doctest:
 
-    >>> ztm = ZopelessTransactionManager('postgres:///launchpad_test')
+    >>> from canonical.lp import dbname
+    >>> ztm = ZopelessTransactionManager('postgres:///' + dbname)
 
     The _connection attribute of SQLBase should now be a descriptor that returns
     sqlobject.dbconnection.Transaction instances.
