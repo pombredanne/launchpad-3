@@ -142,45 +142,6 @@ class SoyuzProduct(object):
         for source in SourceSource.select("sourcesource.product=%s" % quote(self._product.id)):
             yield Sync(self, sync)
 
-    def newSync(self,**kwargs):
-        """create a new sync job"""
-        print kwargs
-        rcstype=RCSTypeEnum.cvs
-        if kwargs['svnrepository']:
-            rcstype=RCSTypeEnum.svn
-        #handle arch
-        
-        return Sync(self, SourceSource(name=kwargs['name'],
-            title=kwargs['title'],
-            ownerID=getOwner(),
-            description=kwargs['description'],
-            product=self._product,
-            cvsroot=kwargs['cvsroot'],
-            cvsmodule=kwargs['module'],
-            cvstarfileurl=kwargs['cvstarfile'],
-            cvsbranch=kwargs['branchfrom'],
-            svnrepository=kwargs['svnrepository'],
-            #StringCol('releaseroot', dbName='releaseroot', default=None),
-            #StringCol('releaseverstyle', dbName='releaseverstyle', default=None),
-            #StringCol('releasefileglob', dbName='releasefileglob', default=None),
-            #ForeignKey(name='releaseparentbranch', foreignKey='Branch',
-            #       dbName='releaseparentbranch', default=None),
-            #ForeignKey(name='sourcepackage', foreignKey='SourcePackage',
-            #       dbName='sourcepackage', default=None),
-            #ForeignKey(name='branch', foreignKey='Branch',
-            #       dbName='branch', default=None),
-            #DateTimeCol('lastsynced', dbName='lastsynced', default=None),
-            #IntCol('frequency', dbName='syncinterval', default=None),
-            # WARNING: syncinterval column type is "interval", not "integer"
-            # WARNING: make sure the data is what buildbot expects
-            rcstype=rcstype,
-            hosted=None,
-            upstreamname=None,
-            newarchive=None,
-            newbranchcategory=None,
-            newbranchbranch=None,
-            newbranchversion=None))
-        
     def getSync(self,name):
         """get a sync"""
         return Sync(self, SourceSource.select("name=%s and sourcesource.product=%s" % (quote(name), self._product.id)  )[0])
