@@ -2,6 +2,46 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-28 13:41:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1261
+
+    Summary:
+      Builder table mods and new BuildQueue table for Kinnison
+    Revision:
+      launchpad--devel--0--patch-1261
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-103
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-104
+       star-merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-105
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-106
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-107
+       Builder table mods and new BuildQueue table for Kinnison
+    
+
+    new files:
+     database/schema/.arch-ids/patch-6-31-0.sql.id
+     database/schema/patch-6-31-0.sql
+
+    modified files:
+     database/schema/comments.sql doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-103
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-104
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-105
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-106
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-107
+
+
 2005-01-28 11:52:13 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1260
 
     Summary:
