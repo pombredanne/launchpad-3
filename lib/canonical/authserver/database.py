@@ -72,9 +72,9 @@ class DatabaseUserDetailsStorage(object):
     def createUser(self, loginID, sshaDigestedPassword, displayName,
                    emailAddresses):
         ri = self.connectionPool.runInteraction
-        deferred = ri(_createUserInteraction, transaction, sshaDigestedPassword,
+        deferred = ri(self._createUserInteraction, transaction, sshaDigestedPassword,
                       displayName, emailAddresses)
-        deferred.addErrback(_eb_createUser)
+        deferred.addErrback(self._eb_createUser)
         return deferred
 
     def _eb_createUser(self, failure):
