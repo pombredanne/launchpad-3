@@ -260,6 +260,9 @@ class SourcePackageName(SQLBase):
 
     name = StringCol(dbName='name', notNull=True)
 
+    def __unicode__(self):
+        return self.name
+
 
 class SourcePackageRelease(SQLBase):
     implements(ISourcePackageRelease)

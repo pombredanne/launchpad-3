@@ -85,10 +85,15 @@
         layer="canonical.launchpad.layers.DebugLayer"
         />
 
+    <!-- And we want the changelog available on the debug view too, so people
+    can see when their patches make it to the dogfood server. -->
+
     <browser:page
+        layer="canonical.launchpad.layers.DebugLayer"
         for="canonical.publication.RootObject"
-        name="lists"
-        template="mailman-index.html"
+        name="changelog.html"
+        template="launchpad/templates/debug-root-changelog.pt"
+        class="canonical.launchpad.browser.changelog.ChangeLog"
         permission="zope.Public"
         />
 

@@ -110,19 +110,32 @@ def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
     changes = what_changed(sqlobject_modified_event)
     if changes:
         assignment_title = ""
+        obm = sqlobject_modified_event.object_before_modification
         if bug_task_edited.product:
-            assignment_title = sqlobject_modified_event.object_before_modification.product.name
+            if obm.product is None:
+                assignment_title = None
+            else:
+                assignment_title = obm.product.name
         else:
-            assignment_title = sqlobject_modified_event.object_before_modification.sourcepackagename.name
+            if obm.sourcepackagename is None:
+                assignment_title = None
+            else:
+                assignment_title = obm.sourcepackagename.name
         right_now = datetime.utcnow()
         for changed_field in changes.keys():
+            ov = changes[changed_field][0]
+            if ov is not None:
+                ov = unicode(ov)
+            nv = changes[changed_field][1]
+            if nv is not None:
+                nv = unicode(nv)
             BugActivity(
                 bug=bug_task_edited.bug.id,
                 datechanged=right_now,
                 person=int(sqlobject_modified_event.principal.id),
                 whatchanged="%s: %s" % (assignment_title, changed_field),
-                oldvalue=changes[changed_field][0],
-                newvalue=changes[changed_field][1],
+                oldvalue=ov,
+                newvalue=nv,
                 message='XXX: not yet implemented')
 
 def record_product_assignment_added(product_assignment, object_created_event):

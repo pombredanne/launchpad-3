@@ -130,7 +130,7 @@ COMMENT ON COLUMN BugTask.binarypackagename IS 'The name of the binary package b
 COMMENT ON COLUMN BugTask.assignee IS 'The person who has been assigned to fix this bug in this product or (sourcepackagename, distro)';
 COMMENT ON COLUMN BugTask.dateassigned IS 'The date on which the bug in this (sourcepackagename, distro) or product was assigned to someone to fix';
 COMMENT ON COLUMN BugTask.datecreated IS 'A timestamp for the creation of this bug assignment. Note that this is not the date the bug was created (though it might be), it''s the date the bug was assigned to this product, which could have come later.';
-
+COMMENT ON COLUMN BugTask.milestone IS 'A way to mark a bug for grouping purposes, e.g. to say it needs to be fixed by version 1.2';
 
 -- CVERef
 COMMENT ON TABLE CVERef IS 'This table stores CVE references for bugs. CVE is a way of tracking security problems across multiple vendor products.';
@@ -532,4 +532,10 @@ COMMENT ON COLUMN LoginToken.email IS 'The email address that this request was s
 COMMENT ON COLUMN LoginToken.created IS 'The timestamp that this request was made.';
 COMMENT ON COLUMN LoginToken.tokentype IS 'The type of request, as per dbschema.TokenType.';
 COMMENT ON COLUMN LoginToken.token IS 'The token (not the URL) emailed used to uniquely identify this request. This token will be used to generate a URL that when clicked on will continue a workflow.';
+
+
+COMMENT ON TABLE Milestone IS 'An identifier that helps a maintainer group together things in some way, e.g. "1.2" could be a Milestone that bazaar developers could use to mark a task as needing fixing in bazaar 1.2.';
+COMMENT ON COLUMN Milestone.product IS 'The product for which this is a milestone.';
+COMMENT ON COLUMN Milestone.name IS 'The identifier text, e.g. "1.2."';
+COMMENT ON COLUMN Milestone.title IS 'The description of, e.g. "1.2."';
 

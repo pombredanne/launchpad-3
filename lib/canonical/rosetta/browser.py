@@ -3,9 +3,8 @@
 
 __metaclass__ = type
 
-import re, os, popen2, base64
+import base64, popen2, os, re, sys
 from math import ceil
-import sys
 from xml.sax.saxutils import escape as xml_escape
 from StringIO import StringIO
 
@@ -18,8 +17,8 @@ from zope.publisher.browser import FileUpload
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import ILanguageSet, IPerson, \
-        IProjectSet, IProductSet, IPasswordEncryptor, \
-        IRequestLocalLanguages, IRequestPreferredLanguages
+    IProjectSet, IProductSet, IPasswordEncryptor, IRequestLocalLanguages, \
+    IRequestPreferredLanguages
 
 from canonical.launchpad.database import Language, Person, POTemplate, POFile
 
@@ -28,6 +27,8 @@ from canonical.rosetta.pofile import POHeader
 from canonical.lp.dbschema import RosettaImportStatus
 
 charactersPerLine = 50
+SPACE_CHAR = u'<span class="po-message-special">\u2022</span>'
+NEWLINE_CHAR = u'<span class="po-message-special">\u21b5</span><br/>\n'
 
 def count_lines(text):
     '''Count the number of physical lines in a string. This is always at least
@@ -184,12 +185,52 @@ def parse_translation_form(form):
 
     return sets
 
-
 def escape_msgid(s):
-    return s.replace('\\', '\\\\').replace('\n', '\\n')
+    return s.replace('\\', '\\\\').replace('\n', '\\n').replace('\t', '\\t')
 
 def unescape_msgid(s):
-    return s.replace('\\n', '\n').replace('\\\\', '\\')
+    return s.replace('\\t', '\t').replace('\\n', '\n').replace('\\\\', '\\')
+
+def msgid_html(text, flags, space=SPACE_CHAR, newline=NEWLINE_CHAR):
+    '''Convert a message ID to a HTML representation.'''
+
+    lines = []
+
+    for line in xml_escape(text).split('\n'):
+        # Pattern:
+        # - group 1: zero or more spaces: leading whitespace
+        # - group 2: zero or more groups of (zero or
+        #   more spaces followed by one or more non-spaces): maximal string
+        #   which doesn't begin or end with whitespace
+        # - group 3: zero or more spaces: trailing whitespace
+        match = re.match('^( *)((?: *[^ ]+)*)( *)$', line)
+
+        if match:
+            lines.append(
+                space * len(match.group(1)) +
+                match.group(2) +
+                space * len(match.group(3)))
+        else:
+            raise AssertionError(
+                "A regular expression that should always match didn't.")
+
+    for i in range(len(lines)):
+        if 'c-format' in flags:
+            line = ''
+
+            for segment in parse_cformat_string(lines[i]):
+                type, content = segment
+
+                if type == 'interpolation':
+                    line += '<span class="interpolation">%s</span>' % content
+                elif type == 'string':
+                    line += content
+
+            lines[i] = line
+
+    # Replace newlines and tabs with their respective representations.
+
+    return '\n'.join(lines).replace('\n', newline).replace('\t', '\\t')
 
 
 class TabIndexGenerator:
@@ -750,8 +791,6 @@ class ViewMOExport:
 
 class TranslatePOTemplate:
     DEFAULT_COUNT = 10
-    SPACE_CHAR = u'<span class="po-message-special">\u2022</span>'
-    NEWLINE_CHAR = u'<span class="po-message-special">\u21b5</span><br/>\n'
 
     def __init__(self, context, request):
         # This sets up the following instance variables:
@@ -951,50 +990,6 @@ class TranslatePOTemplate:
         else:
             return self.URL(offset = self.offset + self.count)
 
-    def _mungeMessageID(self, text, flags, space=SPACE_CHAR,
-        newline=NEWLINE_CHAR):
-        '''Convert leading and trailing spaces on each line to open boxes
-        (U+2423).'''
-
-        lines = []
-
-        for line in xml_escape(text).split('\n'):
-            # Pattern:
-            # - group 1: zero or more spaces: leading whitespace
-            # - group 2: zero or more groups of (zero or
-            #   more spaces followed by one or more non-spaces): maximal
-            #   string which doesn't begin or end with whitespace
-            # - group 3: zero or more spaces: trailing whitespace
-            match = re.match('^( *)((?: *[^ ]+)*)( *)$', line)
-
-            if match:
-                lines.append(
-                    space * len(match.group(1)) +
-                    match.group(2) +
-                    space * len(match.group(3)))
-            else:
-                raise AssertionError(
-                    "A regular expression that should always match didn't.")
-
-        for i in range(len(lines)):
-            if 'c-format' in flags:
-                line = ''
-
-                for segment in parse_cformat_string(lines[i]):
-                    type, content = segment
-
-                    if type == 'interpolation':
-                        line += ('<span class="interpolation">%s</span>'
-                            % content)
-                    elif type == 'string':
-                        line += content
-
-                lines[i] = line
-
-        # Insert arrows and HTML line breaks at newlines.
-
-        return '\n'.join(lines).replace('\n', newline)
-
     def _messageID(self, messageID, flags):
         lines = count_lines(messageID.msgid)
 
@@ -1002,7 +997,7 @@ class TranslatePOTemplate:
             'lines' : lines,
             'isMultiline' : lines > 1,
             'text' : escape_msgid(messageID.msgid),
-            'displayText' : self._mungeMessageID(messageID.msgid, flags)
+            'displayText' : msgid_html(messageID.msgid, flags)
         }
 
     def _messageSet(self, set):
@@ -1073,8 +1068,6 @@ class TranslatePOTemplate:
         be new.
         '''
 
-        self.submitted = False
-
         if not "SUBMIT" in self.request.form:
             return None
 
@@ -1126,8 +1119,6 @@ class TranslatePOTemplate:
                     new_translations=new_translations,
                     fuzzy=fuzzy,
                     fromPOFile=False)
-
-        self.submitted = True
 
 
 class ViewImportQueue:

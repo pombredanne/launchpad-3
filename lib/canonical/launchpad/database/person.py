@@ -407,9 +407,15 @@ def createPerson(displayname, givenname, familyname, password, email):
 
     if Person.selectBy(name=nick).count() > 0:
         return
-    
-    password = getUtility(IPasswordEncryptor).encrypt(password)
-    
+
+    # XXX: Carlos Perello Marin 22/12/2004 We cannot use getUtility from
+    # initZopeless scripts and Rosetta's import_daemon.py calls indirectly to
+    # this function :-(
+    from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
+    password = SSHADigestEncryptor().encrypt(password)
+
+    # password = getUtility(IPasswordEncryptor).encrypt(password)
+
     person = Person(displayname=displayname,
                     givenname=givenname,
                     familyname=familyname,

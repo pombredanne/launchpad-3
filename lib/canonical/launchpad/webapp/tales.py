@@ -199,9 +199,9 @@ class FormattersAPI:
         specific -moz-pre-wrap value of the white-space property. We try to
         fall back for IE by using the IE specific word-wrap property.
 
-        TODO: Test IE compatibility. StuartBishop 2004/11/18
+        TODO: Test IE compatibility. StuartBishop 20041118
         TODO: This should probably just live in the stylesheet if this
-            CSS implementation is good enough.
+            CSS implementation is good enough. StuartBishop 20041118
         """
         if not self._stringtoformat:
             return self._stringtoformat
