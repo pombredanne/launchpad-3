@@ -4,6 +4,20 @@
       i18n:domain="rosetta">
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure view/peoplePortlet" />
+    <div tal:replace="structure view/productInfestationPortlet" />
+    <div tal:replace="structure view/packageInfestationPortlet" />
+
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/actionsPortlet" />
+    <div tal:replace="structure view/cvePortlet" />
+    <div tal:replace="structure view/referencePortlet" />
+    <div tal:replace="structure view/watchPortlet" />
+</metal:rightportlets>
+
 <div metal:fill-slot="main">
  
 <div id="content" class="documentEditable">

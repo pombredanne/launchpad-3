@@ -19,8 +19,9 @@ CC = "CC"
 def send_edit_notification_simple(bug, from_addr, to_addrs, subject, message):
     '''Simple wrapper around simple_sendmail that prepends the id of the bug
     passed in to the subject of the message.'''
-    simple_sendmail(from_addr, to_addrs, "Bug #%d: %s" % (bug.id, subject),
-        message)
+    subject = "Bug #%d: %s" % (bug.id, subject)
+    simple_sendmail(
+        from_addr, to_addrs, subject, subject + "\n\n" + message)
 
 def send_edit_notification(bug, from_addr, to_addrs, subject, edit_header_line,
                       changes):
@@ -35,18 +36,6 @@ The following changes were made:
                 changed_field, changes[changed_field]["old"], changes[changed_field]["new"])
 
         send_edit_notification_simple(bug, from_addr, to_addrs, subject, msg)
-
-#def get_cc_list(bug):
-#    """Return the list of people that are CC'd on this bug."""
-#    subscribers = [
-#        s.person for s in bug.subscriptions
-#        if BugSubscription.items[s.subscription].title == CC]
-#    emails = list(GLOBAL_NOTIFICATION_EMAIL_ADDRS)
-#    for s in subscribers:
-#        emails.append(
-#            EmailAddress.select(EmailAddress.q.personID == s.id)[0].email)
-#
-#    return emails
 
 def get_cc_list(bug):
     """Return the list of people that are CC'd on this bug."""

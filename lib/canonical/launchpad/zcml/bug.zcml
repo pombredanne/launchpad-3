@@ -36,7 +36,7 @@
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.IBug"
-        class="canonical.launchpad.browser.editview.SQLObjectEditView"
+        class="canonical.launchpad.browser.bug.BugEditView"
         label="Change Bug Information"
         permission="launchpad.AnyPerson"
         template="../templates/bug-edit.pt"
