@@ -22,6 +22,10 @@
      />
   </content>
 
+  <content class="canonical.launchpad.database.DistroArchRelease">
+    <allow interface="canonical.launchpad.interfaces.IDistroArchRelease"/>
+  </content>
+
   <content class="canonical.launchpad.database.DistributionRole">
     <allow interface="canonical.launchpad.interfaces.IDistributionRole"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>

@@ -23,10 +23,7 @@ from canonical.launchpad.interfaces import IBuildSet, \
                                            ISourcePackageSet, \
                                            IDistroReleaseSourcesApp, \
                                            IDistroReleaseSourceApp, \
-                                           IDistroReleaseSourceReleaseApp, \
-                                           IDistroReleaseSourceReleaseBuildApp
-
-
+                                           IDistroReleaseSourceReleaseApp
 
 
 #
@@ -193,21 +190,13 @@ class DistroReleaseSourceReleaseApp(object):
     builddependsindep = property(builddependsindep)
 
     def __getitem__(self, arch):
-        return DistroReleaseSourceReleaseBuildApp(self.distrorelease,
-                                                  self.sourcepackagerelease,
-                                                  arch)
-class DistroReleaseSourceReleaseBuildApp(object):
-    implements(IDistroReleaseSourceReleaseBuildApp)
+        bset = getUtility(IBuildSet)
+        results = bset.getBuildBySRAndArchtag(self.sourcepackagerelease.id,
+                                              arch)
+        if results.count() > 0:
+            self.build = results[0]
 
-    def __init__(self, distrorelease, sourcepackagerelease, arch):
-        self.distrorelease = distrorelease
-        self.sourcepackagerelease = sourcepackagerelease
-        self.arch = arch
+        return self.build
 
-        buildset = getUtility(IBuildSet)
-        build_results = buildset.getBuildBySRAndArchtag(sourcepackagerelease.id,
-                                                        arch)
-        if build_results.count() > 0:
-            self.build = build_results[0]
 
 

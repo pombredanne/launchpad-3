@@ -214,27 +214,6 @@
    </pages>
 
 
-   <pages for="canonical.soyuz.sourcepackageapp.DistroReleaseSourceReleaseBuildApp"
-	  allowed_attributes="results"
-	  permission="zope.Public">
-
-     <page  name="index.html"
-            template="../launchpad/templates/sourcepackagebuild-index.pt"
-	    lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/$arch/index.html"
-	    />
-
-     <page  name="+changes"
-            template="../launchpad/templates/sourcepackagebuild-changes.pt"
-	    lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/$arch/+changes"
-	    />
-
-     <page  name="+buildlog"
-            template="../launchpad/templates/sourcepackagebuild-buildlog.pt"
-	    lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/$arch/+buildlog"
-	    />
-   </pages>
-
-
 <traverse for="canonical.soyuz.binarypackageapp.DistroBinariesApp" 
 	  getter="__getitem__" />
 

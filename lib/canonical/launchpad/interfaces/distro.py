@@ -128,6 +128,13 @@ class IDistroReleaseApp(Interface):
     def findBinariesByName(name):
         """Returns The Release BianriesPackages by name"""
 
+class IDistroArchRelease(Interface):
+    """DistroArchRelease Table Interface"""
+    distrorelease = Attribute("DistroRelease")
+    processorfamily = Attribute("ProcessorFamily")
+    architecturetag = Attribute("ArchitectureTag")
+    owner = Attribute("Owner")
+    
 class IDistrosSet(Interface):
     """Interface for DistrosSet"""
 

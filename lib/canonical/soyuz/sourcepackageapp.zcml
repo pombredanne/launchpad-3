@@ -19,11 +19,6 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.sourcepackageapp.DistroReleaseSourceReleaseBuildApp">
-    <allow interface="canonical.launchpad.interfaces.IDistroReleaseSourceReleaseBuildApp"/>
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
-
   <content class="canonical.soyuz.sourcepackageapp.DistroSourcesApp">
     <allow interface="canonical.launchpad.interfaces.IDistroSourcesApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>

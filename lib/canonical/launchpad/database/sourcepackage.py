@@ -5,6 +5,7 @@ from datetime import datetime
 
 # Zope imports
 from zope.interface import implements
+from zope.component import getUtility
 
 # SQLObject/SQLBase
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE

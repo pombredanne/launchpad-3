@@ -45,6 +45,7 @@ class Build(SQLBase):
 
     ]
 
+
 class BuildSet(object):
     implements(IBuildSet)
     def getBuildBySRAndArchtag(self, sourcepackagereleaseID, archtag):

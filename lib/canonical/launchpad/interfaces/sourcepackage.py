@@ -133,6 +133,18 @@ class ISourcePackageReleasePublishing(ISourcePackageRelease):
     maintainer = Attribute("The maintainer of this package")
 
 
+class IbuilddepsSet(Interface):
+    name = Attribute("Package name for a builddepends/builddependsindep")
+    signal = Attribute("Dependence Signal e.g = >= <= <")
+    version = Attribute("Package version for a builddepends/builddependsindep")
+
+class ICurrentVersion(Interface):
+    release = Attribute("The binary or source release object")
+    currentversion = Attribute("Current version of A binary or source package")
+    currentbuilds = Attribute("The current builds for binary or source package")
+
+
+
 #
 # SourcePackage related Applications Interfaces
 #
@@ -190,21 +202,5 @@ class IDistroReleaseSourceReleaseApp(Interface):
     def __getitem__(name):
         """Retrieve a package release build by arch."""
 
-class IDistroReleaseSourceReleaseBuildApp(Interface):
-    distrorelease = Attribute("Current DistroRelease")
-    sourcepackagerelease = Attribute("SourcePackageRelease")
-    arch = Attribute("Builded arch")
-    build = Attribute("The SourcePackageRelease Build Table")
-
-
-class IbuilddepsSet(Interface):
-    name = Attribute("Package name for a builddepends/builddependsindep")
-    signal = Attribute("Dependence Signal e.g = >= <= <")
-    version = Attribute("Package version for a builddepends/builddependsindep")
-
-class ICurrentVersion(Interface):
-    release = Attribute("The binary or source release object")
-    currentversion = Attribute("Current version of A binary or source package")
-    currentbuilds = Attribute("The current builds for binary or source package")
 
 

@@ -20,7 +20,7 @@
 	TITLE </span>
      <span tal:content="context/sourcepackagerelease/version">
 	Version</span>-
-     <span tal:content="context/arch">
+     <span tal:content="context/distroarchrelease/architecturetag">
 	Arch</span>
      Build Log
     </h1>

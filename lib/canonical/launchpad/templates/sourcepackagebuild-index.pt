@@ -15,7 +15,7 @@
 
 <metal:leftportlets fill-slot="portlets_one">
 
-<tal:block tal:define="distro context/distrorelease">
+<tal:block tal:define="distro context/distroarchrelease/distrorelease/distribution">
  <div class="portlet">
   <h4><span tal:content="distro/title">DISTRO</span> Links</h4>
 
@@ -70,7 +70,7 @@
 	TITLE </span>
      <span tal:content="context/sourcepackagerelease/version">
 	Version</span>-
-     <span tal:content="context/arch">
+     <span tal:content="context/distroarchrelease/architecturetag">
 	Arch</span>
     </h1>
 
@@ -79,54 +79,54 @@
 
       <ul>
     <li> <b>Datecreate: </b> 
-           <span tal:content="context/build/datecreated" /></li>
+           <span tal:content="context/datecreated" /></li>
 
     <li> <b>Processor: </b>
-           <span tal:content="context/build/processor/title" /></li>
+           <span tal:content="context/processor/title" /></li>
 
     <li> <b>Buildstate: </b>
-           <span tal:content="context/build/buildstate" /></li>
+           <span tal:content="context/buildstate" /></li>
 
     <li> <b>Datebuilt: </b> 
-           <span tal:condition="not:context/build/datebuilt">
+           <span tal:condition="not:context/datebuilt">
 	     <i> Information not Available </i>
 	   </span>
-           <span tal:content="context/build/datebuilt" /></li>
+           <span tal:content="context/datebuilt" /></li>
 
     <li> <b>Buildduration: </b>
-           <span tal:condition="not:context/build/buildduration">
+           <span tal:condition="not:context/buildduration">
 	     <i> Information not Available </i>
 	   </span>
-           <span tal:content="context/build/buildduration" /></li>
+           <span tal:content="context/buildduration" /></li>
 
     <li> <b>Buildlog: </b>
-           <span tal:condition="not:context/build/buildlog">
+           <span tal:condition="not:context/buildlog">
 	     <i> Information not Available </i>
 	   </span>
-	   <a tal:condition="context/build/buildlog" href="+buildlog"> 
+	   <a tal:condition="context/buildlog" href="+buildlog"> 
 	     <i> Build log </i> 
 	   </a></li>
 	   	   
 
     <li> <b>Builder: </b>
-           <span tal:condition="not:context/build/builder">
+           <span tal:condition="not:context/builder">
 	     <i> Information not Available </i>
 	   </span>
-           <span tal:condition="context/build/builder" 
-	   tal:content="context/build/builder/title" /></li>
+           <span tal:condition="context/builder" 
+	   tal:content="context/builder/title" /></li>
 
     <li> <b>Gpgsigningkey Fingerprint: </b>
-           <span tal:condition="not:context/build/gpgsigningkey">
+           <span tal:condition="not:context/gpgsigningkey">
 	     <i> Information not Available </i>
 	   </span>
-	   <span tal:condition="context/build/gpgsigningkey"
-	   tal:content="context/build/gpgsigningkey/fingerprint" /></li>
+	   <span tal:condition="context/gpgsigningkey"
+	   tal:content="context/gpgsigningkey/fingerprint" /></li>
 
     <li> <b>Changes: </b> 
-           <span tal:condition="not:context/build/changes">
+           <span tal:condition="not:context/changes">
 	     <i> Information not Available </i>
 	   </span>
-           <a tal:condition="context/build/changes" href="+changes">
+           <a tal:condition="context/changes" href="+changes">
 	     <i> Changes </i> 
 	   </a></li>
    </ul>
