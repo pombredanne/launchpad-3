@@ -2,6 +2,49 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-18 12:56:30 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1211
+
+    Summary:
+      Changed the way we log messages with the poimport script. The old way was python2.4 specific :-(. Renamed old poimport.py as poattach.py
+    Revision:
+      launchpad--devel--0--patch-1211
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-499
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-500
+       Changed the way we log messages with the poimport script. The old way was python2.4 specific :-(
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-501
+       Renamed the old poimport.py as poattach.py
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-502
+       Fixed the tags list after the file rename
+    
+
+    new files:
+     lib/canonical/rosetta/scripts/.arch-ids/poattach.py.id
+     lib/canonical/rosetta/scripts/poattach.py
+
+    removed files:
+     lib/canonical/rosetta/scripts/poimport.py
+
+    modified files:
+     allowed-tags.txt doc/changelog.txt
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/interfaces/pofile.py
+     lib/canonical/launchpad/scripts/lockfile.py
+     lib/canonical/launchpad/scripts/poimport/poimport.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-499
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-500
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-501
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-502
+
+
 2005-01-18 10:51:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1210
 
     Summary:

@@ -8,24 +8,30 @@
 import logging, os, sys
 
 class LockFile(object):
-    """I represent a lock that is made on the file system, to prevent concurrent execution of this code"""
-    def __init__(self, filename):
+    """I represent a lock that is made on the file system,
+    to prevent concurrent execution of this code"""
+    def __init__(self, filename, logger=None):
         self.filename=filename
         self.locked=False
+        self.logger=logger
 
     def acquire(self):
-        logging.info('creating lockfile')
+        if self.logger:
+            self.logger.info('creating lockfile')
         try:
             os.open(self.filename, os.O_CREAT | os.O_EXCL)
             self.locked=True
         except OSError, e:
-            logging.info("lockfile %s already exists, exiting", self.filename)
+            if self.logger:
+                self.logger.info("lockfile %s already exists, exiting",
+                    self.filename)
             sys.exit(0)
 
     def release(self):
         if not self.locked:
             return
-        logging.debug('Removing lock file: %s', self.filename)
+        if self.logger:
+            self.logger.debug('Removing lock file: %s', self.filename)
         os.unlink(self.filename)
         self.locked=False
 

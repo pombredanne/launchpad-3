@@ -28,7 +28,6 @@ lib/canonical/rosetta/scripts/createuser.py 6c618e88-b377-4ee6-8bfb-4d42fda1d378
 lib/canonical/rosetta/scripts/generate_sql_tests.py 831a7fe6-9e88-499f-9819-289844d1de6c
 lib/canonical/rosetta/scripts/import_from_apt.py 6c51db1e-9d35-4eaa-8dca-905f0b982589
 lib/canonical/rosetta/scripts/plural-form-data 26f84e2a-1a75-48d5-bf0d-28672ebc61aa
-lib/canonical/rosetta/scripts/poimport.py 752bd71e-584e-416e-abff-a4eb6c82399c
 lib/canonical/rosetta/tests/test_browser.py 05d714d2-c14d-4f72-bfc3-f210d0ee052d
 lib/canonical/sourcerer/ChangeLog automatic-ChangeLog--scott@canonical.com--2004/sourcerer--devel--0
 lib/canonical/sourcerer/Makefile 466ae877-4a82-4f7b-8361-6530b8100b6e

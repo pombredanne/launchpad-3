@@ -532,9 +532,7 @@ class POTemplate(SQLBase, RosettaStats):
 
         return self.createMessageSetFromMessageID(messageID)
 
-    def doRawImport(self):
-        import logging
-
+    def doRawImport(self, logger=None):
         importer = TemplateImporter(self, self.rawimporter)
 
         file = StringIO.StringIO(base64.decodestring(self.rawfile))
@@ -565,8 +563,9 @@ class POTemplate(SQLBase, RosettaStats):
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.
             self.rawimportstatus = RosettaImportStatus.FAILED.value
-            logging.warning('We got an error importing %s' , self.name,
-            exc_info = 1)
+            if logger:
+                logger.warning('We got an error importing %s' , self.name,
+                    exc_info = 1)
 
 
 class POTMsgSet(SQLBase):
@@ -1083,13 +1082,11 @@ class POFile(SQLBase, RosettaStats):
         except IndexError:
             return None
 
-    def doRawImport(self):
-        import logging
-
+    def doRawImport(self, logger=None):
         if self.rawfile is None:
             # We don't have anything to import.
             return
-        
+
         rawdata = base64.decodestring(self.rawfile)
 
         # We need to parse the file to get the last translator information so
@@ -1186,9 +1183,11 @@ class POFile(SQLBase, RosettaStats):
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.
             self.rawimportstatus = RosettaImportStatus.FAILED.value
-            logging.warning(
-                'We got an error importing %s language for %s template' % (
-                    self.language.code, self.potemplate.name), exc_info = 1)
+            if logger:
+                logger.warning(
+                    'We got an error importing %s language for %s template' % (
+                        self.language.code, self.potemplate.name),
+                        exc_info = 1)
 
 
 class POMsgSet(SQLBase):

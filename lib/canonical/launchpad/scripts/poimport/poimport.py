@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
-import logging
+import logging, sys
 
 from optparse import OptionParser
 
@@ -24,13 +24,13 @@ class ImportProcess:
         for product in self.productSet:
             for template in product.poTemplatesToImport():
                 # We have a template with raw data to be imported.
-                logging.info('Importing the template %s from %s' % (
+                logger.info('Importing the template %s from %s' % (
                     template.name, product.displayname))
                 yield template
             for template in product.potemplates:
                 for pofile in template.poFilesToImport():
                     # We have a po with raw data to be imported.
-                    logging.info('Importing the %s translation of %s from %s' % (
+                    logger.info('Importing the %s translation of %s from %s' % (
                         pofile.language.englishname,
                         template.name,
                         product.displayname))
@@ -42,7 +42,7 @@ class ImportProcess:
                 # object could be a POTemplate or a POFile but both
                 # objects implement the doRawImport method so we don't
                 # need to care about it here.
-                object.doRawImport()
+                object.doRawImport(logger)
 
                 # As soon as the import is done, we commit the transaction
                 # so it's not lost.
@@ -50,7 +50,7 @@ class ImportProcess:
         except:
             # If we have any exception, we log it before terminating the
             # process.
-            logging.error('We got an unexpected exception', exc_info = 1)
+            logger.error('We got an unexpected exception', exc_info = 1)
             self.abort()
 
 def parse_options():
@@ -86,20 +86,23 @@ if __name__ == '__main__':
         elif loglevel == logging.ERROR:
             loglevel = logging.CRITICAL
 
-    logging.basicConfig(
-        level=loglevel,
-        format='%(asctime)s %(levelname)s %(message)s')
+    logger = logging.getLogger("poimport")
+
+    hdlr = logging.StreamHandler(strm=sys.stderr)
+    hdlr.setFormatter(logging.Formatter(fmt='%(asctime)s %(levelname)s %(message)s'))
+    logger.addHandler(hdlr)
+    logger.setLevel(loglevel)
 
     # We create a lock file so we don't have two daemons running at the same
     # time.
-    lockfile = LockFile(options.lockfilename)
+    lockfile = LockFile(options.lockfilename, logger=logger)
     lockfile.acquire()
 
     # Do the import of all pending files from the queue.
     process = ImportProcess()
-    logging.debug('Starting the import process')
+    logger.debug('Starting the import process')
     process.run()
-    logging.debug('Finished the import process')
+    logger.debug('Finished the import process')
 
     # Release the lock so next planned task can be executed.
     lockfile.release()
