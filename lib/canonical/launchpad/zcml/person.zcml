@@ -53,6 +53,39 @@
           lp:url="foaf/people/+index" />
   </browser:pages>
 
+  <browser:addform
+      name="+requestmerge"
+      for="canonical.launchpad.interfaces.IPersonSet"
+      schema="canonical.launchpad.interfaces.IRequestPeopleMerge"
+      label="Request Merge of User Accounts"
+      fields="dupeaccount"
+      class="canonical.launchpad.browser.RequestPeopleMergeView"
+      permission="launchpad.AnyPerson"
+      template="../templates/foaf-requestmerge.pt"
+      lp:url="foaf/people/+requestmerge">
+  </browser:addform>
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.IPersonSet"
+      permission="launchpad.AnyPerson"
+      class="canonical.launchpad.browser.RequestPeopleMergeMultipleEmailsView">
+      <browser:page
+          name="+requestmerge-multiple"
+          template="../templates/foaf-requestmerge-multiple.pt"
+          lp:url="foaf/people/+requestmerge-multiple" />
+  </browser:pages>
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.IPersonSet"
+      permission="launchpad.AnyPerson"
+      class="canonical.launchpad.browser.FinishedPeopleMergeRequestView">
+      <browser:page
+          name="+mergerequest-sent"
+          template="../templates/foaf-mergerequest-sent.pt"
+          lp:url="foaf/people/+mergerequest-sent" />
+  </browser:pages>
+
+
   <content class="canonical.launchpad.database.Person">
       <allow interface="canonical.launchpad.interfaces.IPerson" />
       <require 

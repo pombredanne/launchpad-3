@@ -25,7 +25,7 @@ from canonical.launchpad.database import Person
 from canonical.launchpad.database import SSHKey
 
 # interface import
-from canonical.launchpad.interfaces import IPerson, IPersonSet
+from canonical.launchpad.interfaces import IPerson, IPersonSet, IEmailAddressSet
 from canonical.launchpad.interfaces import ILaunchBag, ILoginTokenSet
 from canonical.launchpad.interfaces import IPasswordEncryptor
 
@@ -173,6 +173,125 @@ class PersonView(object):
         return len(self.context.sshkeys)
 
 
+class RequestPeopleMergeView(AddView):
+    """The view for the page where the user asks a merge of two accounts.
+
+    If the dupe account have only one email address we send a message to that
+    address and then redirect the user to other page saying that everything
+    went fine. Otherwise we redirect the user to another page where we list
+    all email addresses owned by the dupe account and the user selects which
+    of those (s)he wants to claim.
+    """
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        AddView.__init__(self, context, request)
+        self._nextURL = '.'
+
+    def nextURL(self):
+        return self._nextURL
+
+    def createAndAdd(self, data):
+        kw = {}
+        for key, value in data.items():
+            kw[str(key)] = value
+
+        user = getUtility(ILaunchBag).user
+        dupeaccount = kw['dupeaccount']
+        if dupeaccount == user:
+            # Please, don't try to merge you into yourself.
+            return
+
+        emails = EmailAddress.selectBy(personID=dupeaccount.id)
+        if emails.count() > 1:
+            # The dupe account have more than one email address. Must redirect
+            # the user to another page to ask which of those emails (s)he
+            # wants to claim.
+            self._nextURL = '+requestmerge-multiple?dupe=%d' % dupeaccount.id
+            return
+
+        assert emails.count() == 1
+        email = emails[0]
+        login = getUtility(ILaunchBag).login
+        logintokenset = getUtility(ILoginTokenSet)
+        token = logintokenset.new(user, login, email.email, 
+                                  LoginTokenType.ACCOUNTMERGE)
+        dupename = dupeaccount.name
+        sendMergeRequestEmail(token, dupename, self.request.getApplicationURL())
+        self._nextURL = './+mergerequest-sent'
+
+
+class FinishedPeopleMergeRequestView(object):
+    """A simple view for a page where we only tell the user that we sent the
+    email with further instructions to complete the merge."""
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+
+class RequestPeopleMergeMultipleEmailsView(object):
+    """A view for the page where the user asks a merge and the dupe account
+    have more than one email address."""
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.formProcessed = False
+
+        dupe = self.request.form.get('dupe')
+        if dupe is None:
+            # We just got redirected to this page and we don't have the dupe
+            # hidden field in request.form.
+            dupe = self.request.get('dupe')
+        self.dupe = getUtility(IPersonSet).get(int(dupe))
+        emailaddrset = getUtility(IEmailAddressSet)
+        self.dupeemails = emailaddrset.getByPerson(self.dupe.id)
+
+    def processForm(self):
+        if self.request.method != "POST":
+            return
+
+        self.formProcessed = True
+        user = getUtility(ILaunchBag).user
+        login = getUtility(ILaunchBag).login
+        logintokenset = getUtility(ILoginTokenSet)
+
+        ids = self.request.form.get("selected")
+        if ids is not None:
+            # We can have multiple email adressess selected, and in this case 
+            # ids will be a list. Otherwise ids will be str or int and we need
+            # to make a list with that value to use in the for loop.
+            if not isinstance(ids, list):
+                ids = [ids]
+
+            for id in ids:
+                email = EmailAddress.get(id)
+                assert email in self.dupeemails
+                token = logintokenset.new(user, login, email.email, 
+                                          LoginTokenType.ACCOUNTMERGE)
+                dupename = self.dupe.name
+                url = self.request.getApplicationURL()
+                sendMergeRequestEmail(token, dupename, url)
+
+
+def sendMergeRequestEmail(token, dupename, appurl):
+    template = open('lib/canonical/launchpad/templates/request-merge.txt').read()
+    fromaddress = "Launchpad Account Merge <noreply@ubuntu.com>"
+
+    replacements = {'longstring': token.token,
+                    'dupename': dupename,
+                    'requester': token.requester.name,
+                    'requesteremail': token.requesteremail,
+                    'toaddress': token.email,
+                    'appurl': appurl}
+    message = template % replacements
+
+    subject = "Launchpad: Merge of Accounts Requested"
+    simple_sendmail(fromaddress, token.email, subject, message)
+
+
 class TeamView(object):
     """A simple View class to be used in Team's pages where we don't have
     actions to process.
@@ -191,7 +310,7 @@ class TeamView(object):
 
         status = int(TeamMembershipStatus.APPROVED)
         members = self.context.getMembershipsByStatus(status)
-        return list(admins) + list(members)
+        return admins + members
 
     def userInTeam(self):
         user = getUtility(ILaunchBag).user
@@ -435,9 +554,11 @@ class EmailAddressEditView(object):
             if results.count() > 0:
                 email = results[0]
                 self.message = ("The email address '%s' was already "
-                                "registered by user '%s'. If you think this "
-                                "is your email address, you can hijack it by "
-                                "clicking here.") % \
+                                "registered by user '%s'. If you think that "
+                                "is a duplicated account, you can go to the "
+                                "<a href=\"../+requestmerge\">Merge Accounts"
+                                "</a> page to claim this email address and "
+                                "everything that is owned by that account.") % \
                                (email.email, email.person.browsername())
                 return
 

@@ -17,10 +17,15 @@
 
   <h1>People and Teams Overview</h1>
 
-  <div class="documentDescription">	
-  This Application should help the user to find more Information about
-  each developer in Launchpad, I mean, it should be the portal for each
-  personal user page .... 
+  <div> 
+    This is the Friend Of A Friend web service, where we catalogue all the 
+    users registered in The Launchpad.<br /> 
+    Please note that some of the accounts registered here may have been
+    automatically created by our system, and thus we can have different
+    accounts representing the same person. If you find a dupe for your
+    account, please go to the 
+    <em><a href="+requestmerge">People Merge</a></em> page to turn the two
+    accounts into a single one.
   </div>
  
   <fieldset>

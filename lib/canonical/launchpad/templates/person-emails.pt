@@ -25,7 +25,7 @@
 
   <tal:dummy tal:define="submitted view/formSubmitted">
   <div tal:condition="submitted">
-    <p class="portalMessage" tal:content="view/message"></p>
+    <p class="portalMessage" tal:content="structure view/message"></p>
   </div>
   </tal:dummy>
   

@@ -251,19 +251,37 @@ class IPersonSet(Interface):
 
 class IEmailAddress(Interface):
     """The object that stores the IPerson's emails."""
-    id = Int(
-        title=_('ID'), required=True, readonly=True,
-        )
-    email = Text(
-        title=_('Email Address'), required=True,
-        )
-    status = Int(
-        title=_('Email Address Status'), required=True,
-        )
-    person = Int(
-        title=_('Person'), required=True,
-        )
+
+    id = Int(title=_('ID'), required=True, readonly=True)
+    email = Text(title=_('Email Address'), required=True, readonly=False)
+    status = Int(title=_('Email Address Status'), required=True, readonly=False)
+    person = Int(title=_('Person'), required=True, readonly=False)
     statusname = Attribute("StatusName")
+
+
+class IEmailAddressSet(Interface):
+    """The set of EmailAddresses."""
+
+    def __getitem__(emailid):
+        """Return the email address with the given id.
+
+        Raise KeyError if there is no such email address.
+        """
+
+    def get(emailid, default=None):
+        """Return the email address with the given id.
+
+        Return the default value if there is no such email address.
+        """
+
+    def getByPerson(personid):
+        """Return all email addresses for the given person."""
+
+    def getByEmail(email, default=None):
+        """Return the EmailAddress object for the given email.
+
+        Return the default value if there is no such email address.
+        """
 
 
 class ITeamMembership(Interface):
@@ -302,4 +320,13 @@ class ITeamParticipationSet(Interface):
 
     def getAllMembers(team):
         """Return a list of (direct / indirect) members for the given team."""
+
+
+class IRequestPeopleMerge(Interface):
+    """This schema is used only because we want the PersonVocabulary."""
+
+    dupeaccount = Choice(title=_('Duplicated Account'), required=True, 
+                         vocabulary='Person',
+                         description=_("The duplicated account you found in "
+                                       "Launchpad"))
 

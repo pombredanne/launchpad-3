@@ -2,6 +2,89 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-01 02:00:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1347
+
+    Summary:
+      Almost finished People Merge. It needs only some UI polish and stuart's magic function to make everything pointing to the dupe account points to the real user account.
+    Revision:
+      launchpad--devel--0--patch-1347
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--people-merge--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1340
+    
+     * guilherme.salgado@canonical.com/launchpad--people-merge--0--patch-1
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--people-merge--0--patch-2
+       People Merge, Take One: User can search for the dupe account and request the merge. If the account has more than one registered email address, user can claim all of them.
+    
+     * guilherme.salgado@canonical.com/launchpad--people-merge--0--patch-3
+       People Merge, Take Two: New MergePeopleView, which assigns the dupe account's email to the user and if that's the last email registered for the dupe account we'll have to call stub's blackmagic function to reassign everything that is owned by the dupe account to the user. Also fixed a small bug in ResetPasswordView.
+    
+     * guilherme.salgado@canonical.com/launchpad--people-merge--0--patch-4
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--people-merge--0--patch-5
+       Fix queries in database/person.py to always return a list of objects, so we don't have to use lots of count()s. Lots of new pagetests: account creation, login, email add, people merge, email deletion, set of preferred email and reset password.
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids/30-foaf-createaccount.txt.id
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids/31-foaf-login.txt.id
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids/32-foaf-addemail.txt.id
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids/33-foaf-mergepeople.txt.id
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids/34-foaf-deleteemail.txt.id
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids/40-validateemail.txt.id
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids/45-setpreferredemail.txt.id
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids/99-resetpassword.txt.id
+     lib/canonical/launchpad/pagetests/foaf/30-foaf-createaccount.txt
+     lib/canonical/launchpad/pagetests/foaf/31-foaf-login.txt
+     lib/canonical/launchpad/pagetests/foaf/32-foaf-addemail.txt
+     lib/canonical/launchpad/pagetests/foaf/33-foaf-mergepeople.txt
+     lib/canonical/launchpad/pagetests/foaf/34-foaf-deleteemail.txt
+     lib/canonical/launchpad/pagetests/foaf/40-validateemail.txt
+     lib/canonical/launchpad/pagetests/foaf/45-setpreferredemail.txt
+     lib/canonical/launchpad/pagetests/foaf/99-resetpassword.txt
+     lib/canonical/launchpad/templates/.arch-ids/foaf-mergepeople.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/foaf-mergerequest-sent.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/foaf-requestmerge-multiple.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/foaf-requestmerge.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/request-merge.txt.id
+     lib/canonical/launchpad/templates/foaf-mergepeople.pt
+     lib/canonical/launchpad/templates/foaf-mergerequest-sent.pt
+     lib/canonical/launchpad/templates/foaf-requestmerge-multiple.pt
+     lib/canonical/launchpad/templates/foaf-requestmerge.pt
+     lib/canonical/launchpad/templates/request-merge.txt
+
+    removed files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-launchpad-createaccount-and-login.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-launchpad-createaccount-and-login.txt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/logintoken.py
+     lib/canonical/launchpad/browser/people.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/templates/foaf-resetpassword.pt
+     lib/canonical/launchpad/templates/foaf-validateemail.pt
+     lib/canonical/launchpad/templates/people-index.pt
+     lib/canonical/launchpad/templates/person-emails.pt
+     lib/canonical/launchpad/zcml/emailaddress.zcml
+     lib/canonical/launchpad/zcml/logintoken.zcml
+     lib/canonical/launchpad/zcml/person.zcml
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--people-merge--0--base-0
+     guilherme.salgado@canonical.com/launchpad--people-merge--0--patch-1
+     guilherme.salgado@canonical.com/launchpad--people-merge--0--patch-2
+     guilherme.salgado@canonical.com/launchpad--people-merge--0--patch-3
+     guilherme.salgado@canonical.com/launchpad--people-merge--0--patch-4
+     guilherme.salgado@canonical.com/launchpad--people-merge--0--patch-5
+
+
 2005-02-28 12:28:10 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1346
 
     Summary:

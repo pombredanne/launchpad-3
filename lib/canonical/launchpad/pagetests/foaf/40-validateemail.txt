@@ -1,0 +1,84 @@
+
+
+  >>> print http(r"""
+  ... GET /foaf/people/salgado/+emails HTTP/1.1
+  ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...<h1>Your email adresses</h1>...
+  ...
+
+
+  >>> print http(r"""
+  ... POST /foaf/people/salgado/+emails HTTP/1.1
+  ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... newemail=&password=&NOT_VALIDATED_EMAIL=25&VALIDATE_EMAIL=Validate""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...A new email was sent to 'guilherme.salgado@canonical.com'...
+  ...
+
+
+  Get the token we'll have to use to finish the registration process.
+
+  >>> import email, re
+  >>> from canonical.launchpad.mail import stub
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> msg = email.message_from_string(raw_msg)
+  >>> body = msg.get_payload()
+  >>> link = re.findall(r'http.*/token/.*', body)[0]
+  >>> token = re.sub(r'.*token/', '', link)
+  >>> base_path = '/foaf/token/%s' % token
+
+  Check if the email was sent to the right address.
+
+  >>> to_addrs
+  ['guilherme.salgado@canonical.com']
+
+
+  >>> print http(r"""
+  ... GET %s HTTP/1.1
+  ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
+  ... """ % base_path)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...<h1>You're being redirected</h1>...
+  ...
+
+
+  >>> path = "%s/+validate" % base_path
+  >>> print http(r"""
+  ... GET %s HTTP/1.1
+  ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
+  ... """ % path)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...<h1>Validate email: guilherme.salgado@canonical.com</h1>...
+  ...
+
+
+  >>> print http(r"""
+  ... POST %s HTTP/1.1
+  ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... password=zeca&SUBMIT_CHANGES=Submit""" % path)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...<h1>Email validated successfully.</h1>...
+  ...

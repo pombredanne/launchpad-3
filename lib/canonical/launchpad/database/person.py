@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces import IIrcID, IArchUserID, IJabberID
 from canonical.launchpad.interfaces import ISSHKey, IGPGKey, IKarma
 from canonical.launchpad.interfaces import IObjectAuthorization
 from canonical.launchpad.interfaces import IPasswordEncryptor
-from canonical.launchpad.interfaces import ISourcePackageSet
+from canonical.launchpad.interfaces import ISourcePackageSet, IEmailAddressSet
 
 from canonical.launchpad.database.translation_effort import TranslationEffort
 from canonical.launchpad.database.soyuz import DistributionRole
@@ -265,18 +265,17 @@ class Person(SQLBase):
 
     def getMembershipsByStatus(self, status):
         query = ("TeamMembership.team = %d AND TeamMembership.status = %d "
-                 "AND Person.id = TeamMembership.team "
-                 "ORDER BY Person.name") % (self.id, status)
-        return TeamMembership.select(query, clauseTables=['Person'])
+                 "AND Person.id = TeamMembership.team") % (self.id, status)
+        return list(TeamMembership.select(query, clauseTables=['Person']))
 
     def _getEmailsByStatus(self, status):
-        return EmailAddress.select(AND(EmailAddress.q.personID==self.id,
-                                       EmailAddress.q.status==int(status)))
+        query = AND(EmailAddress.q.personID==self.id,
+                    EmailAddress.q.status==int(status))
+        return list(EmailAddress.select(query))
 
     def getMembersByStatus(self, status):
         query = ("TeamMembership.team = %d AND TeamMembership.status = %d "
-                 "AND TeamMembership.person = Person.id "
-                 "ORDER BY Person.name") % (self.id, status)
+                 "AND TeamMembership.person = Person.id") % (self.id, status)
         return list(Person.select(query, clauseTables=['TeamMembership']))
 
     #
@@ -308,10 +307,11 @@ class Person(SQLBase):
     approvedmembers = property(_approvedmembers)
 
     def _memberships(self):
-        return TeamMembership.selectBy(personID=self.id)
+        return list(TeamMembership.selectBy(personID=self.id))
     memberships = property(_memberships)
 
     def _teams(self):
+        # XXX: Fix this by doing a query in Person
         memberships = TeamMembership.selectBy(personID=self.id)
         return [m.team for m in memberships]
     teams = property(_teams)
@@ -333,11 +333,11 @@ class Person(SQLBase):
     subteams = property(_subteams)
 
     def _distroroles(self):
-        return DistributionRole.selectBy(personID=self.id)
+        return list(DistributionRole.selectBy(personID=self.id))
     distroroles = property(_distroroles)
 
     def _distroreleaseroles(self):
-        return DistroReleaseRole.selectBy(personID=self.id)
+        return list(DistroReleaseRole.selectBy(personID=self.id))
     distroreleaseroles = property(_distroreleaseroles)
 
     def _setPreferredemail(self, email):
@@ -371,15 +371,15 @@ class Person(SQLBase):
     notvalidatedemails = property(_notvalidatedemails)
 
     def _bugs(self):
-        return Bug.selectBy(ownerID=self.id)
+        return list(Bug.selectBy(ownerID=self.id))
     bugs= property(_bugs)
 
     def _translations(self):
-        return TranslationEffort.selectBy(ownerID=self.id)
+        return list(TranslationEffort.selectBy(ownerID=self.id))
     translations = property(_translations)
 
     def _activities(self):
-        return Karma.selectBy(personID=self.id)
+        return list(Karma.selectBy(personID=self.id))
     activities = property(_activities)
 
     def _wiki(self):
@@ -434,7 +434,7 @@ class Person(SQLBase):
 
     def _getSourcesByPerson(self):
         sputil = getUtility(ISourcePackageSet)
-        return sputil.getByPersonID(self.id)
+        return list(sputil.getByPersonID(self.id))
     packages = property(_getSourcesByPerson)
 
 
@@ -587,6 +587,34 @@ class EmailAddress(SQLBase):
         return 'Unknown (%d)' %self.status
     
     statusname = property(_statusname)
+
+
+class EmailAddressSet(object):
+    implements(IEmailAddressSet)
+
+    def get(self, emailid, default=None):
+        """See IEmailAddressSet."""
+        try:
+            return EmailAddress.get(emailid)
+        except SQLObjectNotFound:
+            return default
+
+    def __getitem__(self, emailid):
+        """See IEmailAddressSet."""
+        email = self.get(emailid)
+        if email is None:
+            raise KeyError, emailid
+        else:
+            return email
+
+    def getByPerson(self, personid):
+        return list(EmailAddress.selectBy(personID=personid))
+
+    def getByEmail(self, email, default=None):
+        try:
+            return EmailAddress.byEmail(email)
+        except SQLObjectNotFound:
+            return default
 
 
 class GPGKey(SQLBase):
