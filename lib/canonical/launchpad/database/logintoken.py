@@ -27,9 +27,13 @@ class LoginToken(SQLBase):
     tokentype = IntCol(dbName='tokentype', notNull=True)
     created = DateTimeCol(dbName='created', notNull=True)
 
+    title = 'Launchpad Email Verification'
 
 class LoginTokenSet(object):
     implements(ILoginTokenSet)
+
+    def __init__(self):
+        self.title = 'Launchpad Email Verification System'
 
     def new(self, requester, requesteremail, email, tokentype):
         """See ILoginTokenSet"""

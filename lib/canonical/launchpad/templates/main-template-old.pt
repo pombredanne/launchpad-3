@@ -12,7 +12,7 @@
     <metal:block define-slot="title"></metal:block>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(/++resource++plone.css);</style>
-    <!-- Launchpad style sheet -->
+    <!-- Rosetta style sheet -->
     <style type="text/css" media="screen">@import url(/++resource++launchpad.css);</style>
     <!-- Launchpad JS code -->
     <script type="text/javascript" src="/++resource++launchpad.js"></script>
@@ -20,56 +20,86 @@
   </head>
 
   <body>
-      <div id="portal-top">
-               <a href="/">
-                  <img src="/++resource++launchpad.png" alt="Launchpad Home" />
+      <div id="portal-top"
+           tal:define="path_info request/PATH_INFO">
+               <a href="/rosetta"
+                  tal:condition="python:'/rosetta' in path_info">
+                  <img src="/++resource++rosetta.png" alt="Rosetta" />
                </a>
-               <span tal:content="context/title | string: No Context Title">
-                The Context Object Title
-               </span><br />
+               <a href="/malone"
+                  tal:condition="python:'/malone' in path_info">
+                  <img src="/++resource++malone.png" alt="Malone" />
+               </a>
+               <a href="/soyuz"
+                  tal:condition="python:'/soyuz' in path_info">
+                  <img src="/++resource++soyuz.png" alt="Soyuz" />
+               </a>
       </div>
 
           <ul id="portal-globalnav"
               tal:define="path_info request/PATH_INFO">
 
-            <li class="plain">
-              <a href=".">Home</a>
+            <li class="selected"
+                tal:condition="python:'/foaf' in path_info">
+              <a href="/foaf">People</a>
+            </li>
+            <li class="plain"
+                tal:condition="python:'/foaf' not in path_info">
+              <a href="/foaf">People</a>
             </li>
 
             <li class="selected"
-                tal:condition="python:'/people' in path_info">
-              <a href="/people/">People</a>
+                tal:condition="python:'/doap' in path_info">
+              <a href="/doap">Projects</a>
             </li>
             <li class="plain"
-                tal:condition="python:'/people' not in path_info">
-              <a href="/people/">People</a>
+                tal:condition="python:'/doap' not in path_info">
+              <a href="/doap">Projects</a>
             </li>
 
             <li class="selected"
-                tal:condition="python:'/products' in path_info">
-              <a href="/products">Products</a>
+                tal:condition="python:'/malone' in path_info">
+              <a href="/malone">Malone</a>
             </li>
             <li class="plain"
-                tal:condition="python:'/products' not in path_info">
-              <a href="/products">Products</a>
+                tal:condition="python:'/malone' not in path_info">
+              <a href="/malone">Malone</a>
             </li>
 
             <li class="selected"
-                tal:condition="python:'/distros' in path_info">
-              <a href="/distros">Distributions</a>
+                tal:condition="python:'/rosetta' in path_info">
+              <a href="/rosetta">Rosetta</a>
             </li>
             <li class="plain"
-                tal:condition="python:'/distros' not in path_info">
-              <a href="/distros">Distributions</a>
+                tal:condition="python:'/rosetta' not in path_info">
+              <a href="/rosetta">Rosetta</a>
             </li>
 
             <li class="selected"
-                tal:condition="python:'/projects' in path_info">
-              <a href="/projects">Projects</a>
+                tal:condition="python:'/soyuz' in path_info">
+              <a href="/soyuz">Soyuz</a>
             </li>
             <li class="plain"
-                tal:condition="python:'/projects' not in path_info">
-              <a href="/projects">Projects</a>
+                tal:condition="python:'/soyuz' not in path_info">
+              <a href="/soyuz">Soyuz</a>
+            </li>
+
+            <li class="selected"
+                tal:condition="python:'/bounties' in path_info">
+              <a href="/bounties">Bounties</a>
+            </li>
+            <li class="plain"
+                tal:condition="python:'/bounties' not in path_info">
+              <a href="/bounties">Bounties</a>
+            </li>
+
+            <li class="selected"
+                tal:condition="python:'/bazaar' in path_info">
+              <a href="/bazaar">Bazaar</a>
+            </li>
+            <li class="plain"
+                tal:condition="python:'/bazaar' not in path_info">
+              <a href="/bazaar">Bazaar</a>
             </li>
 
           </ul>
@@ -79,25 +109,25 @@
 
         <span tal:condition="request/lp:person">
             Logged in as
-            <a tal:attributes="href string:/people/${request/lp:person/name}">
+            <a tal:attributes="href string:/foaf/people/${request/lp:person/name}">
             <span tal:replace="request/lp:person/displayname">Foo Bar</span></a>
             &mdash;
             <a href="/+logout">Log Out</a>
         </span>
 
-        <span tal:condition="not: request/lp:person" tal:omit-tag>
+        <span tal:condition="not: request/lp:person">
             <a href="/+login">Log In</a>
             &mdash;
             <a href="/+register">Join</a>
         </span>
 
-        <span tal:condition="python:'/rosetta' in path_info"
-              tal:omit-tag>
-            &mdash;
-            <a href="/rosetta/translator">Translation Dashboard</a>
-            &mdash;
-            <a href="/rosetta/prefs">Rosetta Prefs</a>
-        </span>
+        &mdash;
+
+        <a href="/rosetta/translator">Translator Dashboard</a>
+
+        &mdash;
+
+        <a href="/rosetta/prefs">My Preferences</a>
 
       </div>
 

@@ -26,3 +26,6 @@ class DOAPApplication(object):
     __parent__ = rootObject
 
     name = 'DOAP'
+
+    def __init__(self):
+        self.title = 'The DOAP System in Launchpad'

@@ -1,37 +1,5 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
-    <!-- TODO: Consider splitting this into multiple files, matching the .py -->
-
-    <content class="canonical.launchpad.database.BugExternalRef">
-        <allow interface="canonical.launchpad.interfaces.IBugExternalRef" />
-            <require permission="zope.Public"
-                set_schema="canonical.launchpad.interfaces.IBugExternalRef" />
-    </content>
-
-    <content class="canonical.launchpad.database.BugTracker">
-        <allow interface="canonical.launchpad.interfaces.IBugTracker" />
-        <require permission="zope.Public"
-            set_schema="canonical.launchpad.interfaces.IBugTracker" />
-    </content>
-
-    <content class="canonical.launchpad.database.BugWatch">
-        <allow interface="canonical.launchpad.interfaces.IBugWatch" />
-        <require permission="zope.Public"
-            set_schema="canonical.launchpad.interfaces.IBugWatch" />
-    </content>
-
-    <content class="canonical.launchpad.database.BugMessage">
-        <allow interface="canonical.launchpad.interfaces.IBugMessage" />
-    </content>
-
-    <content class="canonical.launchpad.database.BugSubscription">
-        <allow interface="canonical.launchpad.interfaces.IBugSubscription" />
-        <require
-            permission="zope.Public"
-            set_schema="canonical.launchpad.interfaces.IBugSubscription"
-        />
-    </content>
-
     <adapter for="canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal"
         provides="canonical.launchpad.interfaces.IPerson"
         factory="canonical.launchpad.database.personFromPrincipal" />

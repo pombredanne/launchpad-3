@@ -45,6 +45,8 @@ class IDistribution(Interface):
 class IDistributionSet(Interface):
     """Interface for DistrosSet"""
 
+    title = Attribute('Title')
+
     def __iter__():
         """Iterate over distributions."""
 

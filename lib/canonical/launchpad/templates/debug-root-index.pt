@@ -1,12 +1,19 @@
 <html>
   <head>
     <title>
-      Launchpad root
+      Launchpad Home Page
     </title>
     <link rel="shortcut icon" href="/++resource++defaultFavicon.gif" />
   </head>
   <body>
-    <h1>Launchpad!</h1>
+    <h1>Welcome to the  Launchpad</h1>
+    <ul>
+      <li><a href="people">People</a></li>
+      <li><a href="products">Products</a></li>
+      <li><a href="projects">Projects</a></li>
+      <li><a href="distros">Distributions</a></li>
+    </ul>
+    <h1>Old-Style Apps</h1>
     <ul>
       <li><a href="rosetta">Rosetta</a></li>
       <li><a href="soyuz">Soyuz</a></li>

@@ -37,6 +37,9 @@ class ILoginToken(Interface):
                 required=True,
         )
 
+    # used for launchpad page layout
+    title = Attribute('Title')
+
     def destroySelf():
         """Remove this LoginToken from the database.
 
@@ -48,6 +51,8 @@ class ILoginToken(Interface):
 
 class ILoginTokenSet(Interface):
     """The set of LoginTokens."""
+
+    title = Attribute('Title')
 
     def new(requester, requesteremail, email, tokentype):
         """ Create a new LoginToken object. Parameters must be:

@@ -129,6 +129,9 @@ class IPerson(Interface):
                           'members can only be added by one of the '
                           'administrators of the team.'))
 
+    # title is required for the Launchpad Page Layout main template
+    title = Attribute('Person Page Title')
+
     def browsername():
         """Return a textual name suitable for display in a browser."""
 
@@ -202,6 +205,8 @@ class ITeam(IPerson):
 
 class IPersonSet(Interface):
     """The set of Persons."""
+
+    title = Attribute('Title')
 
     def __getitem__(personid):
         """Return the person with the given id.

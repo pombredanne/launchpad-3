@@ -2,6 +2,355 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-01 17:54:54 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1351
+
+    Summary:
+      new page layout
+    Revision:
+      launchpad--devel--0--patch-1351
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-732
+       add product, projects, people and distros as top-level items
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-733
+       continue restructuring launchpad page layout
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-734
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-735
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-736
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-737
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-738
+       move debsync into scripts dir
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-739
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-740
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-741
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-742
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-743
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-744
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-745
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-746
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-747
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-748
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-749
+       clean up dup work
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-750
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-751
+       moving towards new site page layout
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-752
+       use latest plone.css
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-753
+       start adding titles to all context objects for the new page layout
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-754
+       add title for bugtask
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-755
+       add a title for Soyuz app
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-756
+       add title for the Rosetta app
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-757
+       add title for the Malone app
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-758
+       add title for the RootObject
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-759
+       finalise app titles for new page layout
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-760
+       add title for BugSet
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-761
+       add title for bounty set
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-762
+       add title for bazaar ap
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-763
+       add title to bug subscription set
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-764
+       tweak bug subscribers portlet to show 'submitter' rather than 'submitted by'
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-765
+       add title for bug cve and web ref sets
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-766
+       ad title to bugtrackerset
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-767
+       add title to bug infestation sets
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-768
+       add titles to doap and foaf
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-769
+       more new page layout tweaks
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-770
+       add titles on bugtasks and infestations
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-771
+       fix login page test, and add titles for email verification pages
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-772
+       bugtracker has no displayname, so use title
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-773
+       don't require a title on every context object
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-774
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-775
+       merge rocketfuel, resolving conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-776
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-777
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-778
+       merge rocketfuel
+    
+
+    new files:
+     lib/canonical/launchpad/images/.arch-ids/launchpad.png.id
+     lib/canonical/launchpad/images/launchpad.png
+     lib/canonical/launchpad/templates/.arch-ids/main-template-old.pt.id
+     lib/canonical/launchpad/templates/main-template-old.pt
+     lib/canonical/launchpad/zcml/.arch-ids/bugmessage.zcml.id
+     lib/canonical/launchpad/zcml/bugmessage.zcml
+
+    modified files:
+     doc/changelog.txt lib/canonical/bazaar/__init__.py
+     lib/canonical/bazaar/configure.zcml
+     lib/canonical/database/configure.zcml
+     lib/canonical/doap/__init__.py
+     lib/canonical/doap/configure.zcml
+     lib/canonical/foaf/__init__.py
+     lib/canonical/foaf/configure.zcml
+     lib/canonical/launchpad/configure.zcml
+     lib/canonical/launchpad/database/binarypackage.py
+     lib/canonical/launchpad/database/bounty.py
+     lib/canonical/launchpad/database/bugextref.py
+     lib/canonical/launchpad/database/bugset.py
+     lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/database/bugtracker.py
+     lib/canonical/launchpad/database/bugwatch.py
+     lib/canonical/launchpad/database/cveref.py
+     lib/canonical/launchpad/database/distribution.py
+     lib/canonical/launchpad/database/infestation.py
+     lib/canonical/launchpad/database/logintoken.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/database/productseries.py
+     lib/canonical/launchpad/database/project.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/interfaces/binarypackage.py
+     lib/canonical/launchpad/interfaces/bounty.py
+     lib/canonical/launchpad/interfaces/bug.py
+     lib/canonical/launchpad/interfaces/bugextref.py
+     lib/canonical/launchpad/interfaces/bugsubscription.py
+     lib/canonical/launchpad/interfaces/bugtask.py
+     lib/canonical/launchpad/interfaces/bugtracker.py
+     lib/canonical/launchpad/interfaces/bugwatch.py
+     lib/canonical/launchpad/interfaces/cveref.py
+     lib/canonical/launchpad/interfaces/distribution.py
+     lib/canonical/launchpad/interfaces/infestation.py
+     lib/canonical/launchpad/interfaces/launchpad.py
+     lib/canonical/launchpad/interfaces/logintoken.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/interfaces/product.py
+     lib/canonical/launchpad/interfaces/productseries.py
+     lib/canonical/launchpad/interfaces/project.py
+     lib/canonical/launchpad/interfaces/sourcepackage.py
+     lib/canonical/launchpad/pagetests/malone/91-bug-add-owner-auto-subscribed.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-foaf-people-index.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-login-and-join-links.txt
+     lib/canonical/launchpad/templates/debug-root-index.pt
+     lib/canonical/launchpad/templates/distros-index.pt
+     lib/canonical/launchpad/templates/launchpad.css
+     lib/canonical/launchpad/templates/main-template.pt
+     lib/canonical/launchpad/templates/people-index.pt
+     lib/canonical/launchpad/templates/plone.css
+     lib/canonical/launchpad/templates/portlet-bug-people.pt
+     lib/canonical/launchpad/templates/products-index.pt
+     lib/canonical/launchpad/templates/projects-index.pt
+     lib/canonical/launchpad/zcml/bugextref.zcml
+     lib/canonical/launchpad/zcml/bugsubscription.zcml
+     lib/canonical/launchpad/zcml/bugtracker.zcml
+     lib/canonical/launchpad/zcml/bugwatch.zcml
+     lib/canonical/launchpad/zcml/configure.zcml
+     lib/canonical/launchpad/zcml/distrorelease.zcml
+     lib/canonical/launchpad/zcml/message.zcml
+     lib/canonical/launchpad/zcml/resources.zcml
+     lib/canonical/malone/__init__.py
+     lib/canonical/malone/configure.zcml
+     lib/canonical/publication.py lib/canonical/rosetta/__init__.py
+     lib/canonical/soyuz/__init__.py scripts/debsync.py
+
+    renamed files:
+     lib/canonical/launchpad/templates/.arch-ids/release-bugs.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/distrorelease-bugs.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/release-deliver.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/distrorelease-deliver.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/release-edit.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/distrorelease-edit.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/release-index.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/distrorelease-index.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/release-new.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/distrorelease-new.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/release-search.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/distrorelease-search.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/release-sources.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/distrorelease-sources.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/release-translations.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/distrorelease-translations.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/releases-index.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/distroreleases-index.pt.id
+     lib/canonical/launchpad/templates/release-bugs.pt
+       ==> lib/canonical/launchpad/templates/distrorelease-bugs.pt
+     lib/canonical/launchpad/templates/release-deliver.pt
+       ==> lib/canonical/launchpad/templates/distrorelease-deliver.pt
+     lib/canonical/launchpad/templates/release-edit.pt
+       ==> lib/canonical/launchpad/templates/distrorelease-edit.pt
+     lib/canonical/launchpad/templates/release-index.pt
+       ==> lib/canonical/launchpad/templates/distrorelease-index.pt
+     lib/canonical/launchpad/templates/release-new.pt
+       ==> lib/canonical/launchpad/templates/distrorelease-new.pt
+     lib/canonical/launchpad/templates/release-search.pt
+       ==> lib/canonical/launchpad/templates/distrorelease-search.pt
+     lib/canonical/launchpad/templates/release-sources.pt
+       ==> lib/canonical/launchpad/templates/distrorelease-sources.pt
+     lib/canonical/launchpad/templates/release-translations.pt
+       ==> lib/canonical/launchpad/templates/distrorelease-translations.pt
+     lib/canonical/launchpad/templates/releases-index.pt
+       ==> lib/canonical/launchpad/templates/distroreleases-index.pt
+     lib/canonical/malone/debsync/.arch-ids/debbugs-log.pl.id
+       ==> scripts/.arch-ids/debbugs-log.pl.id
+     lib/canonical/malone/debsync/.arch-ids/debbugs.py.id
+       ==> scripts/.arch-ids/debbugs.py.id
+     lib/canonical/malone/debsync/.arch-ids/debsync.py.id
+       ==> scripts/.arch-ids/debsync.py.id
+     lib/canonical/malone/debsync/.arch-ids/ginalog.py.id
+       ==> scripts/.arch-ids/ginalog.py.id
+     lib/canonical/malone/debsync/.arch-ids/malone.py.id
+       ==> scripts/.arch-ids/malone.py.id
+     lib/canonical/malone/debsync/Debbugs/.arch-ids/=id
+       ==> scripts/Debbugs/.arch-ids/=id
+     lib/canonical/malone/debsync/Debbugs/.arch-ids/Log.pm.id
+       ==> scripts/Debbugs/.arch-ids/Log.pm.id
+     lib/canonical/malone/debsync/debbugs-log.pl
+       ==> scripts/debbugs-log.pl
+     lib/canonical/malone/debsync/debbugs.py
+       ==> scripts/debbugs.py
+     lib/canonical/malone/debsync/debsync.py
+       ==> scripts/debsync.py
+     lib/canonical/malone/debsync/ginalog.py
+       ==> scripts/ginalog.py
+     lib/canonical/malone/debsync/malone.py
+       ==> scripts/malone.py
+
+    new directories:
+     scripts/Debbugs/.arch-ids
+
+    removed directories:
+     lib/canonical/malone/debsync/Debbugs/.arch-ids
+
+    renamed directories:
+     lib/canonical/malone/debsync/Debbugs
+       ==> scripts/Debbugs
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-732
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-733
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-734
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-735
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-736
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-737
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-738
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-739
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-740
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-741
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-742
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-743
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-744
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-745
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-746
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-747
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-748
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-749
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-750
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-751
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-752
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-753
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-754
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-755
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-756
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-757
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-758
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-759
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-760
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-761
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-762
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-763
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-764
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-765
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-766
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-767
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-768
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-769
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-770
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-771
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-772
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-773
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-774
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-775
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-776
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-777
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-778
+
+
 2005-03-01 17:24:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1350
 
     Summary:

@@ -1,5 +1,6 @@
-from zope.interface import Interface
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
+from zope.interface import Interface, Attribute
+from zope.schema import Bool, Bytes, Choice, Datetime, \
+    Int, Text, TextLine
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
@@ -28,6 +29,8 @@ class IBugSubscriptionSet(Interface):
     """A set for IBugSubscription objects."""
 
     bug = Int(title=_("Bug id"), readonly=True)
+
+    title = Attribute('Title')
 
     def __getitem__(key):
         """Get a BugSubscription object."""

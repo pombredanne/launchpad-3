@@ -85,6 +85,9 @@ class DistributionSet(object):
 
     implements(IDistributionSet)
 
+    def __init__(self):
+        self.title = "Launchpad Distributions"
+
     def __iter__(self):
         return iter(Distribution.select())
 

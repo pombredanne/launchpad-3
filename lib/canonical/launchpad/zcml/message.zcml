@@ -5,6 +5,7 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
+    <!-- Message -->
     <content class="canonical.launchpad.database.Message">
         <allow interface="canonical.launchpad.interfaces.IMessage" />
         <require
@@ -12,7 +13,6 @@
             set_schema="canonical.launchpad.interfaces.IMessage" />
     </content>
 
-    <!-- Message -->
     <browser:page
         name="+index"
         for="canonical.launchpad.interfaces.IMessagesView"

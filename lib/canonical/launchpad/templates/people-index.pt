@@ -4,7 +4,7 @@
       i18n:domain="launchpad">
 
 <head>
-    <title metal:fill-slot="title">FOAF</title>
+    <title metal:fill-slot="title">Launchpad People</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Soyuz style sheet -->
@@ -15,7 +15,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>People and Teams Overview</h1>
+  <h1>People and Teams in the Launchpad</h1>
 
   <div> 
     This is the Friend Of A Friend web service, where we catalogue all the 
@@ -27,7 +27,7 @@
     <em><a href="+requestmerge">People Merge</a></em> page to turn the two
     accounts into a single one.
   </div>
- 
+
   <fieldset>
     <legend>Search</legend>
     <table>
@@ -55,7 +55,7 @@
       </td>
       <td>named</td>
       <td>
-        <input type="text" name="name" 
+        <input type="text" name="name" size="30"
                tal:attributes="value request/name|nothing"/>
       </td>
       <td>
@@ -66,10 +66,17 @@
       </form>
     </table>
 
-    <p>View all: <img src="/++resource++user.gif" /><a href="+peoplelist">Persons</a>
+    <p>View all <img src="/++resource++user.gif" /><a href="+peoplelist">Persons</a>
     or <img src="/++resource++user.gif" /><a href="+teamlist">Teams</a></p>
 
   <tal:block tal:define="bn view/searchPeopleBatchNavigator">
+
+    <tal:block tal:condition="not: bn" tal:omit-tag>
+
+      <p>Enter some or all of a person or team's name to search for matching
+      people in the Launchpad registry.</p>
+    
+    </tal:block>
 
   <tal:block tal:condition="bn">
 

@@ -42,6 +42,9 @@ class BugTask(SQLBase):
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution',
         notNull=False, default=None)
+    distrorelease = ForeignKey(
+        dbName='distrorelease', foreignKey='DistroRelease',
+        notNull=False, default=None)
     milestone = ForeignKey(
         dbName='milestone', foreignKey='Milestone',
         notNull=False, default=None)
@@ -88,6 +91,23 @@ class BugTask(SQLBase):
     bugtitle = property(bugtitle)
     bugdescription = property(bugdescription)
 
+    def _title(self):
+        title = 'Malone Bug #' + str(self.bug.id)
+        title += ' (' + self.bug.title + ')' + ' on '
+        if self.distribution:
+            title += self.distribution.name + ' '
+            if self.distrorelease:
+                title += self.distrorelease.name + ' '
+            if self.sourcepackagename:
+                title += self.sourcepackagename.name + ' '
+            if self.binarypackagename:
+                title += self.binarypackagename.name
+        if self.product:
+            title += self.product.displayname
+        return title
+    title = property(_title)
+
+
 
 class BugTaskSet:
 
@@ -97,6 +117,7 @@ class BugTaskSet:
 
     def __init__(self, bug=None):
         self.bug = bug
+        self.title = 'A Set of Bug Tasks'
 
     def __getitem__(self, id):
         principal = _get_authenticated_principal()

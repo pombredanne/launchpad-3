@@ -64,6 +64,9 @@ from new import instancemethod
 class RootObject(Location):
     implements(IContainmentRoot, ILaunchpadApplication)
 
+    def __init__(self):
+        self.title = 'The Open Source Launchpad'
+
 
 
 class DebugView:

@@ -46,6 +46,14 @@ class BugProductInfestation(SQLBase):
     lastmodified = DateTimeCol(notNull=True)
     lastmodifiedby = ForeignKey(dbName="lastmodifiedby", foreignKey='Person', notNull=True)
 
+    # used for launchpad pages
+    def _title(self):
+        title = 'Malone Bug #' + str(self.bug.id) + ' infests '
+        title += self.productrelease.productseries.product.displayname
+        return title
+    title = property(_title)
+    
+
 
 
 class BugPackageInfestation(SQLBase):
@@ -64,6 +72,13 @@ class BugPackageInfestation(SQLBase):
     lastmodified = DateTimeCol(dbName='lastmodified')
     lastmodifiedby = ForeignKey(dbName='lastmodifiedby', foreignKey='Person')
 
+    # used for launchpad pages
+    def _title(self):
+        title = 'Malone Bug #' + str(self.bug.id) + ' infests '
+        title += self.sourcepackagerelease.name
+        return title
+    title = property(_title)
+    
 
 class BugProductInfestationSet(BugSetBase):
     """A set for BugProductInfestation."""

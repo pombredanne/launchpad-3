@@ -100,8 +100,12 @@ class IPackagePublishing(Interface):
 
 class IBinaryPackageSet(Interface):
     """A set of binary packages"""    
+    
     distrorelease = Attribute("DistroRelease")
+
     arch = Attribute("Arch")
+
+    title = Attribute('Title')
 
     def findPackagesByName(pattern):
         """Search BinaryPackages matching pattern"""

@@ -6,6 +6,14 @@
     i18n_domain="launchpad">
 
     <!-- BugSubscription -->
+    <content class="canonical.launchpad.database.BugSubscription">
+        <allow interface="canonical.launchpad.interfaces.IBugSubscription" />
+        <require
+            permission="zope.Public"
+            set_schema="canonical.launchpad.interfaces.IBugSubscription"
+        />
+    </content>
+
     <browser:addform
         name="+new"
         schema="canonical.launchpad.interfaces.IBugSubscription"

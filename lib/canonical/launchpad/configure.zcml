@@ -8,6 +8,34 @@
   <include file="security.zcml" />
   <include file="robots.zcml" />
 
+  <browser:suburl
+    for="canonical.publication.RootObject"
+    name="products"
+    utility="canonical.launchpad.interfaces.IProductSet"
+    permission="zope.Public"
+    />
+
+  <browser:suburl
+    for="canonical.publication.RootObject"
+    name="people"
+    utility="canonical.launchpad.interfaces.IPersonSet"
+    permission="zope.Public"
+    />
+
+  <browser:suburl
+    for="canonical.publication.RootObject"
+    name="distros"
+    utility="canonical.launchpad.interfaces.IDistributionSet"
+    permission="zope.Public"
+    />
+
+  <browser:suburl
+    for="canonical.publication.RootObject"
+    name="projects"
+    utility="canonical.launchpad.interfaces.IProjectSet"
+    permission="zope.Public"
+    />
+
   <!-- legal link -->
   <browser:page
     for="canonical.publication.RootObject"

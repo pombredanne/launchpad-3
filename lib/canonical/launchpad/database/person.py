@@ -282,6 +282,10 @@ class Person(SQLBase):
     # Properties
     #
 
+    def _title(self):
+        return self.browsername()
+    title = property(_title)
+
     def _deactivatedmembers(self): 
         return self.getMembersByStatus(int(TeamMembershipStatus.DEACTIVATED))
     deactivatedmembers = property(_deactivatedmembers)
@@ -441,6 +445,9 @@ class Person(SQLBase):
 class PersonSet(object):
     """The set of persons."""
     implements(IPersonSet)
+
+    def __init__(self):
+        self.title = 'Launchpad People'
 
     def __iter__(self):
         return self.getall()

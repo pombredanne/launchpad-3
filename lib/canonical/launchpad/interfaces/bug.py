@@ -132,6 +132,8 @@ class IBugAddForm(IBug):
 class IBugSet(IAddFormCustomization):
     """A set for bugs."""
 
+    title = Attribute('Title')
+
     def __getitem__(key):
         """Get a Bug."""
 

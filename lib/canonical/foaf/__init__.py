@@ -23,3 +23,7 @@ class FOAFApplication(object):
     __parent__ = rootObject
 
     name = 'FOAF'
+
+    def __init__(self):
+        self.title = 'The FOAF System in Launchpad'
+

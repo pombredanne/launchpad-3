@@ -206,6 +206,7 @@ class SourcePackageInDistroSet(object):
     def __init__(self, distrorelease):
         """Take the distrorelease when it makes part of the context"""
         self.distrorelease = distrorelease
+        self.title = 'Source Packages in: ' + distrorelease.title
 
     def findPackagesByName(self, pattern, fti=False):
         srcutil = getUtility(ISourcePackageUtility)
@@ -337,6 +338,10 @@ class SourcePackageRelease(SQLBase):
     #
     # Properties
     #
+    def _name(self):
+        return self.sourcepackage.sourcepackagename.name
+    name = property(_name)
+
     def _urgency(self):
         for urgency in dbschema.SourcePackageUrgency.items:
             if urgency.value == self.urgency:
@@ -419,6 +424,14 @@ class VSourcePackageReleasePublishing(SourcePackageRelease):
                                dbName='distrorelease')
     #XXX: salgado: wtf is this?
     #MultipleJoin('Build', joinColumn='sourcepackagerelease'),
+
+    def _title(self):
+        title = 'Source package '
+        title += self.name
+        title += ' in ' + self.distrorelease.distribution.name
+        title += ' ' + self.distrorelease.name
+        return title
+    title = property(_title)
 
     def __getitem__(self, version):
         """Get a  SourcePackageRelease"""

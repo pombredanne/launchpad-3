@@ -4,7 +4,7 @@
       i18n:domain="launchpad">
 
 <head>
-    <title metal:fill-slot="title">Search for Projects</title>
+    <title metal:fill-slot="title">Launchpad Project Registry</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Rosetta style sheet -->
@@ -15,7 +15,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Project Search</h1>
+    <h1>Launchpad Project Registry</h1>
 
     <form method="post">
 
@@ -23,18 +23,23 @@
 
             <legend>Search for a project</legend>
 
-            <input name="text" size="60" tal:attributes="value view/text" />
+            <input name="text" size="45"
+                   tal:attributes="value view/text" />
+
+            &nbsp;
+            
             <input type="submit" value="Search" />
+
+            &nbsp;
+
+            <a style="font-size: 0.85;" href="+search">Advanced
+            Search</a>
 
             <p class="formHelp">
             Enter any part of the project name, title or
             description.
             </p>
 
-            <p>
-            <a style="font-size: 0.85;" href="+search">Advanced
-            Search</a>
-            </p>
 
         </fieldset>
 

@@ -2,10 +2,12 @@
 
 # TODO:
 #  - fix datecreated from emails, we are getting it wrong, losing the
-#    hour/minute
+#    hour/minute (might be the problem jamesh found)
+#  - Get rid of ginalog and instead use a query against the current database
+#    schema for binary-source package name mapping.
+#
 
 import sys
-import debbugs
 import email
 import email.Message
 import email.Generator
@@ -18,9 +20,9 @@ import urllib2
 import re
 import StringIO
 from datetime import datetime
-
 from mx.DateTime import DateTime
-import ginalog
+
+# canonical launchpad modules
 from canonical.lp import initZopeless
 from canonical.database.sqlbase import quote
 ztm = initZopeless()
@@ -31,7 +33,10 @@ from canonical.lp.encoding import guess as ensure_unicode
 from canonical.foaf.nickname import NicknameGenerationError
 from canonical.launchpad.validators.name import valid_name
 
+# debsync-specific modules
 from malone import Launchpad
+import debbugs
+import ginalog
 
 # setup core values and defaults
 deb = debbugs.Database('/srv/bugs-mirror.debian.org/')
@@ -132,7 +137,7 @@ def sync():
 
     print 'Selecting bugs...'
     debian_bugs = filter(bug_filter, deb)
-    print len(debian_bugs), 'debian bugs to syncronise.'
+    print len(debian_bugs), 'debian bugs ready to syncronise.'
 
     print 'Sorting bugs...'
     debian_bugs.sort(lambda a, b: cmp(a.id, b.id))

@@ -476,6 +476,9 @@ class Product(SQLBase):
 class ProductSet:
     implements(IProductSet)
 
+    def __init__(self):
+        self.title = "Launchpad Products"
+
     def __iter__(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         return iter(Product.select())
