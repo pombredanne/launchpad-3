@@ -1,0 +1,21 @@
+<configure
+   xmlns="http://namespaces.zope.org/zope"
+   xmlns:browser="http://namespaces.zope.org/browser">
+
+  <browser:defaultView name="index.html" />
+
+  <!-- We're including our own views on exceptions.
+  <include package="zope.app.exception.browser" />
+    -->
+  <include package="zope.app.traversing.browser" />
+
+  <!--  Don't need this stuff.
+  <include package="zope.app.container.browser" />
+  <include package="zope.app.registration.browser" />
+  <include package="zope.app.form.browser" />
+  <include package="zope.app.utility.browser" />
+
+  <include package="zope.app.site.browser" />
+    -->
+</configure>
+<!-- arch-tag: 082f31e9-949e-48a6-a435-a7e5042a58e2 -->

@@ -103,7 +103,7 @@
   <include package="zope.app.folder" />
   -->
   <!-- Browser Configurations -->
-  <include package="zope.app" file="browser.zcml" />
+  <include file="zopeappbrowser.zcml" />
 
 </configure>
 <!-- arch-tag: ae87fdb2-412e-42ab-9fe7-6394c74710da -->
