@@ -74,10 +74,18 @@
 
     <content class="canonical.launchpad.database.Project">
         <allow interface="canonical.launchpad.interfaces.IProject" />
+        <require
+            permission="zope.View"
+            set_schema="canonical.launchpad.interfaces.IProject"
+        />
     </content>
 
     <content class="canonical.launchpad.database.Product">
         <allow interface="canonical.launchpad.interfaces.IProduct" />
+        <require
+            permission="zope.View"
+            set_schema="canonical.launchpad.interfaces.IProduct"
+        />
     </content>
 
     <content class="canonical.launchpad.database.Sourcepackage">

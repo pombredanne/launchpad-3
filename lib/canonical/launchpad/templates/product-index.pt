@@ -1,0 +1,58 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1><span tal:replace="context/title">$Product.title</span></h1>
+
+    <div style="float: right; clear: both; margin-top: 0.25em;">
+    Product home page:
+    <a tal:content="context/homepageurl|default"
+       tal:attributes="href context/homepageurl|nothing">(None supplied)</a>
+    </div>
+
+    <div class="documentDescription" tal:content="context/shortdesc">
+        $Product.shortdesc goes here. This should be quite short,
+        just a single paragraph of text really, giving the product
+        highlights.
+    </div>
+    <div tal:content="context/description">
+        $Product.description goes here. This should be a longer piece of
+        text, up to three paragraphs in length, which gives much more
+        detailed information about the open source product in question.
+        Ideally, this text is formatted using some formatting convention
+        which we have not yet determined (HTML, reStructuredText or
+        something else, for example).
+    </div>
+    <div>
+        [ <a href="+edit">Edit</a> ]
+    </div>
+
+
+        <h2>Revision Control System</h2>
+
+        <dl tal:repeat="source context/sourcesources">
+            <dt><a tal:attributes="href source/name"
+                    tal:content="source/title">Sync Title</a>&nbsp;<a
+                    tal:condition="source/canChangeProduct"
+                    tal:attributes="href source/name">Assign to product</a></dt>
+            <dd tal:content="source/description"></dd>
+        </dl>
+
+        [ <a href="+add-sourcesource">Add SourceSource</a> ]
+        
+</div>
+
+</body>
+</html>

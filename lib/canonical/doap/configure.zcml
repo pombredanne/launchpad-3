@@ -32,7 +32,11 @@
       name="+index" />
 
   <browser:defaultView
-      for="canonical.launchpad.database.IProject"
+      for="canonical.launchpad.interfaces.IProject"
+      name="+index" />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IProduct"
       name="+index" />
 
   <include file="pages.zcml" />

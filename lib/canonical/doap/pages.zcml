@@ -63,13 +63,17 @@
             lp:url="doap/projects/$Project.name/+index" />
     </pages>
 
-    <page for="canonical.launchpad.interfaces.IProject"
-        name="+newproduct"
+    <pages for="canonical.launchpad.interfaces.IProject"
         class="canonical.doap.browser.ProjectView"
-        permission="launchpad.AnyPerson"
-        template="../launchpad/templates/product-new.pt"
-        lp:url="doap/projects/$Project.name/+newproduct" />
-    
+        permission="launchpad.AnyPerson" >
+        <page name="+newproduct"
+            template="../launchpad/templates/product-new.pt"
+            lp:url="doap/projects/$Project.name/+newproduct" />
+        <page name="+edit"
+            template="../launchpad/templates/project-edit.pt"
+            lp:url="doap/projects/$Project.name/+edit" />
+    </pages>
+
     <pages for="canonical.launchpad.interfaces.IProduct"
         permission="zope.Public"
         class="canonical.doap.browser.ProductView" >
@@ -78,4 +82,11 @@
             lp:url="doap/projects/$Project.name/$Product.name/" />
     </pages>
 
+    <pages for="canonical.launchpad.interfaces.IProduct"
+        class="canonical.doap.browser.ProductView"
+        permission="launchpad.AnyPerson" >
+        <page name="+edit"
+            template="../launchpad/templates/product-edit.pt"
+            lp:url="doap/projects/$Project.name/$Product.name/+edit" />
+    </pages>
 </configure>

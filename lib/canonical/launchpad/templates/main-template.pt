@@ -1,4 +1,7 @@
-<metal:page define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
+<metal:page define-macro="master">
+<metal:doctype define-slot="doctype">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+</metal:doctype>
 <metal:block define-slot="top_slot" />
 <html xmlns="http://www.w3.org/1999/xhtml"
       xml:lang="en"
@@ -42,6 +45,24 @@
             <li class="plain"
                 tal:condition="python:not path_info.endswith('/ubuntu')">
               <a href="http://localhost:8080/ubuntu">Ubuntu</a>
+            </li>
+
+            <li class="selected"
+                tal:condition="python:'/foaf' in path_info">
+              <a href="/foaf">people</a>
+            </li>
+            <li class="plain"
+                tal:condition="python:'/foaf' not in path_info">
+              <a href="/foaf">people</a>
+            </li>
+
+            <li class="selected"
+                tal:condition="python:'/doap' in path_info">
+              <a href="/doap">projects</a>
+            </li>
+            <li class="plain"
+                tal:condition="python:'/doap' not in path_info">
+              <a href="/doap">projects</a>
             </li>
 
             <li class="selected"

@@ -14,6 +14,7 @@ import canonical.launchpad.interfaces as interfaces
 from canonical.launchpad.interfaces import *
 from canonical.launchpad.database import *
 
+
 class RosettaLanguages(object):
     implements(interfaces.ILanguages)
 
@@ -644,7 +645,8 @@ class SourceSource(SQLBase):
         StringCol('name', dbName='name', notNull=True),
         StringCol('title', dbName='title', notNull=True),
         StringCol('description', dbName='description', notNull=True),
-        ForeignKey(name='product', foreignKey='SoyuzProduct', dbName='product',
+        # Mark Shuttleworth 03/10/04 Robert Collins why is this default=1?
+        ForeignKey(name='product', foreignKey='Product', dbName='product',
                    default=1),
         StringCol('cvsroot', dbName='cvsroot', default=None),
         StringCol('cvsmodule', dbName='cvsmodule', default=None),
@@ -666,32 +668,26 @@ class SourceSource(SQLBase):
         DateTimeCol('frequency', dbName='syncinterval', default=None),
         # WARNING: syncinterval column type is "interval", not "integer"
         # WARNING: make sure the data is what buildbot expects
-
         #IntCol('rcstype', dbName='rcstype', default=RCSTypeEnum.cvs,
         #       notNull=True),
-        
         # FIXME: use 'RCSTypeEnum.cvs' rather than '1'
         IntCol('rcstype', dbName='rcstype', default=1,
                notNull=True),
-
         StringCol('hosted', dbName='hosted', default=None),
         StringCol('upstreamname', dbName='upstreamname', default=None),
         DateTimeCol('processingapproved', dbName='processingapproved',
                     notNull=False, default=None),
         DateTimeCol('syncingapproved', dbName='syncingapproved', notNull=False,
                     default=None),
-
         # For when Rob approves it
         StringCol('newarchive', dbName='newarchive'),
         StringCol('newbranchcategory', dbName='newbranchcategory'),
         StringCol('newbranchbranch', dbName='newbranchbranch'),
         StringCol('newbranchversion', dbName='newbranchversion'),
-
         # Temporary keybuk stuff
         StringCol('package_distro', dbName='packagedistro', default=None),
         StringCol('package_files_collapsed', dbName='packagefiles_collapsed',
                 default=None),
-
         ForeignKey(name='owner', foreignKey='Person', dbName='owner',
                    notNull=True),
         StringCol('currentgpgkey', dbName='currentgpgkey', default=None),
@@ -801,7 +797,7 @@ class Person(SQLBase):
 
 def personFromPrincipal(principal):
     """Adapt canonical.lp.placelessauth.interfaces.ILaunchpadPrincipal 
-        to IPerson
+       to IPerson
     """
     if IUnauthenticatedPrincipal.providedBy(principal):
         # When Zope3 interfaces allow returning None for "cannot adapt"
@@ -822,52 +818,6 @@ class EmailAddress(SQLBase):
             name='person', dbName='person', foreignKey='Person',
             )
         ]
-
-
-class ProjectSet:
-    implements(IProjectSet)
-
-    def __iter__(self):
-        return iter(Project.select())
-
-    def __getitem__(self, name):
-        ret = Project.selectBy(name=name)
-
-        if ret.count() == 0:
-            raise KeyError, name
-        else:
-            return ret[0]
-
-    def new(self, name, displayname, title, homepageurl, shortdesc, 
-            description, owner):
-        #
-        # XXX Mark Shuttleworth 03/10/04 Should the "new" method to create
-        #     a new project be on ProjectSet? or Project?
-        #
-        name = name.encode('ascii')
-        displayname = displayname.encode('ascii')
-        title = title.encode('ascii')
-        if type(url) != NoneType:
-            url = url.encode('ascii')
-        description = description.encode('ascii')
-
-        if Project.selectBy(name=name).count():
-            raise KeyError, "There is already a project with that name"
-
-        return Project(name = name,
-                       displayname = displayname,
-                       title = title,
-                       shortdesc = shortdesc,
-                       description = description,
-                       homepageurl = url,
-                       owner = owner,
-                       datecreated = 'now')
-
-    def search(self, query):
-        query = quote('%%' + query + '%%')
-        #query = quote(query)
-        return Project.select(
-            'title ILIKE %s OR description ILIKE %s' % (query, query))
 
 
 class Project(SQLBase):
@@ -917,6 +867,90 @@ class Project(SQLBase):
         else:
             raise AssertionError("Too many results.")
 
+
+
+#
+# XXX Mark Shuttleworth 03/10/04 This classname is deprecated in favour of
+#     ProjectSet below
+#
+class ProjectContainer(object):
+    """A container for Project objects."""
+
+    implements(IProjectContainer)
+    table = Project
+
+    def __getitem__(self, name):
+        try:
+            return self.table.select(self.table.q.name == name)[0]
+        except IndexError:
+            # Convert IndexError to KeyErrors to get Zope's NotFound page
+            raise KeyError, id
+
+    def __iter__(self):
+        for row in self.table.select():
+            yield row
+
+    def search(self, searchtext):
+        q = """name LIKE '%%%%' || %s || '%%%%' """ % (
+                quote(searchtext.lower())
+                )
+        q += """ OR lower(title) LIKE '%%%%' || %s || '%%%%'""" % (
+                quote(searchtext.lower())
+                )
+        q += """ OR lower(shortdesc) LIKE '%%%%' || %s || '%%%%'""" % (
+                quote(searchtext.lower())
+                )
+        q += """ OR lower(description) LIKE '%%%%' || %s || '%%%%'""" % (
+                quote(searchtext.lower())
+                )
+        return Project.select(q)
+
+
+
+class ProjectSet:
+    implements(IProjectSet)
+
+    def __iter__(self):
+        return iter(Project.select())
+
+    def __getitem__(self, name):
+        ret = Project.selectBy(name=name)
+
+        if ret.count() == 0:
+            raise KeyError, name
+        else:
+            return ret[0]
+
+    def new(self, name, displayname, title, homepageurl, shortdesc, 
+            description, owner):
+        #
+        # XXX Mark Shuttleworth 03/10/04 Should the "new" method to create
+        #     a new project be on ProjectSet? or Project?
+        #
+        name = name.encode('ascii')
+        displayname = displayname.encode('ascii')
+        title = title.encode('ascii')
+        if type(url) != NoneType:
+            url = url.encode('ascii')
+        description = description.encode('ascii')
+
+        if Project.selectBy(name=name).count():
+            raise KeyError, "There is already a project with that name"
+
+        return Project(name = name,
+                       displayname = displayname,
+                       title = title,
+                       shortdesc = shortdesc,
+                       description = description,
+                       homepageurl = url,
+                       owner = owner,
+                       datecreated = 'now')
+
+    def search(self, query):
+        query = quote('%%' + query + '%%')
+        #query = quote(query)
+        return Project.select(
+            'title ILIKE %s OR description ILIKE %s' % (query, query))
 
 
 class Product(SQLBase):

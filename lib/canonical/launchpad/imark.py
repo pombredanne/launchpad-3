@@ -947,6 +947,9 @@ class IProduct(Interface):
     name = TextLine(title=_('The short name of this product, which must be \
         unique among all the products from the same project.'))
 
+    displayname = TextLine(title=_('The display name of this product, is \
+        the name of this product as it would appear in a paragraph of text.'))
+
     title = TextLine(title=_('The product title. Should be just a few words.'))
 
     shortdesc = Text(title=_('A short description, should be a single \

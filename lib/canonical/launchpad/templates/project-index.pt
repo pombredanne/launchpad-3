@@ -8,12 +8,13 @@
 
     <h1 tal:content="context/title">Project Title</h1>
 
-    <div class="documentDescription"
-        tal:content="context/shortdesc">This is the project Short
-        Description, which should be no longer than 72 characters,
-        although it might be.</div>
+    <div class="documentDescription" tal:content="context/shortdesc">
+        This is the project Short Description, which should be no
+        longer than 72 characters, although it might be.
+    </div>
 
-    <div tal:content="context/description">This is the Project Description,
+    <div tal:content="context/description">
+    This is the Project Description,
     which is a much more substantial description of the project. It should
     be several paragraphs long, and give you a very clear insight into the
     work of the Project, and the people behind it. It should describe the
@@ -22,7 +23,11 @@
     The Project Description should also mention the major product or
     products from that project. For example, the Apache Project description
     would highlight its work on the Apache Server, and mention other
-    products such as APR.</div>
+    products such as APR.
+    </div>
+    <div>
+        [ <a href="+edit">Edit</a> ]
+    </div>
 
     <h2>Products</h2>
 

@@ -11,9 +11,7 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.schema import TextLine, Int, Choice
 
-from canonical.launchpad.database import Project
-from canonical.launchpad.database import Product
-from canonical.database import sqlbase
+from canonical.launchpad.database import Project, Product, SourceSource
 from canonical.database.constants import nowUTC
 
 from zope.i18nmessageid import MessageIDFactory
@@ -49,11 +47,16 @@ class ProjectContainerView(object):
         return self.results
 
     def newproject(self):
+        """
+        Create the new Project instance if a form with details
+        was submitted.
+        """
+        # Check that a field called "Register" was set to "Register
+        # Project". This method should continue only if the form was
+        # submitted. We do this because it is ALWAYS called, by the
+        # tal:dummy item in the page template.
         #
-        # Create the new Project instance if a form with details
-        # was submitted.
-        #
-        if not self.form.get("Register", None)=="Register":
+        if not self.form.get("Register", None)=="Register Project":
             return
         if not self.request.method == "POST":
             return
@@ -63,14 +66,20 @@ class ProjectContainerView(object):
         title = self.form['title']
         shortdesc = self.form['shortdesc']
         description = self.form['description']
-        url = self.form['url']
-        # No create a new project in the db
-        project = self.context.new(name,title,description,url)
-        project.shortdesc(shortdesc)
-        project.displayname(displayname)
-        # XXX Mark Shuttleworth 02/10/04 I don't under stand this
+        homepageurl = self.form['url']
+        # get the launchpad person who is creating this product
+        owner = IPerson(self.request.principal)
+        # Now create a new project in the db
+        project = Project(name=name,
+                          displayname=displayname,
+                          title=title,
+                          shortdesc=shortdesc,
+                          description=description,
+                          owner=owner,
+                          homepageurl=homepageurl,
+                          datecreated=nowUTC)
+        # XXX Mark Shuttleworth 02/10/04 I don't understand this
         #     next line. Why do we reset project to None?
-        project = None
         self.submittedok=True
         self.request.response.redirect(name)
 
@@ -106,8 +115,9 @@ class ProjectView(object):
         # XXX Mark Shuttleworth 03/10/04 this check is not yet being done.
         # check to see if there is an existing product with
         # this name.
-        # Now create a new product in the db
+        # get the launchpad person who is creating this product
         owner = IPerson(self.request.principal)
+        # Now create a new product in the db
         product = Product(name=name,
                           displayname=displayname,
                           title=title,
@@ -117,46 +127,34 @@ class ProjectView(object):
                           owner=owner,
                           homepageurl=url,
                           datecreated=nowUTC)
-        # XXX Mark Shuttleworth 02/10/04 I don't under stand this
+        # XXX Mark Shuttleworth 02/10/04 I don't understand this
         #     next line. Why do we reset product to None?
         product = None
         self.submittedok=True
         self.request.response.redirect(name)
-    
 
-
-class ProjectContainer(object):
-    """A container for Project objects."""
-
-    implements(IProjectContainer)
-    table = Project
-
-    def __getitem__(self, name):
-        try:
-            return self.table.select(self.table.q.name == name)[0]
-        except IndexError:
-            # Convert IndexError to KeyErrors to get Zope's NotFound page
-            raise KeyError, id
-
-    def __iter__(self):
-        for row in self.table.select():
-            yield row
-
-    def search(self, searchtext):
-        q = """name LIKE '%%%%' || %s || '%%%%' """ % (
-                sqlbase.quote(searchtext.lower())
-                )
-        q += """ OR lower(title) LIKE '%%%%' || %s || '%%%%'""" % (
-                sqlbase.quote(searchtext.lower())
-                )
-        q += """ OR lower(shortdesc) LIKE '%%%%' || %s || '%%%%'""" % (
-                sqlbase.quote(searchtext.lower())
-                )
-        q += """ OR lower(description) LIKE '%%%%' || %s || '%%%%'""" % (
-                sqlbase.quote(searchtext.lower())
-                )
-        return Project.select(q)
-
+    def edit(self):
+        # XXX Mark Shuttleworth 03/10/04 This method is virtually
+        #     identical to ProductView.edit(), should they have a common
+        #     ancestor class or mixin?
+        """
+        Update the contents of a Project. This method is called by a
+        tal:dummy element in a page template. It checks to see if a
+        form has been submitted that has a specific element, and if
+        so it continues to process the form, updating the fields of
+        the database as it goes.
+        """
+        # check that we are processing the correct form, and that
+        # it has been POST'ed
+        if not self.form.get("Update", None)=="Update Project":
+            return
+        if not self.request.method == "POST":
+            return
+        # Extract details from the form and update the Product
+        self.context.displayname = self.form['displayname']
+        self.context.title = self.form['title']
+        self.context.shortdesc = self.form['shortdesc']
+        self.context.description = self.form['description']
 
 
 #
@@ -168,6 +166,26 @@ class ProductView(object):
         self.request = request
         self.form = request.form
 
-    def sourcesources(self):
-        return SourceSource.select(product=self.context.id)
+    def edit(self):
+        # XXX Mark Shuttleworth 03/10/04 This method is virtually
+        #     identical to ProjectView.edit(), should they have a common
+        #     ancestor class or mixin?
+        """
+        Update the contents of a Product. This method is called by a
+        tal:dummy element in a page template. It checks to see if a
+        form has been submitted that has a specific element, and if
+        so it continues to process the form, updating the fields of
+        the database as it goes.
+        """
+        # check that we are processing the correct form, and that
+        # it has been POST'ed
+        if not self.form.get("Update", None)=="Update Product":
+            return
+        if not self.request.method == "POST":
+            return
+        # Extract details from the form and update the Product
+        self.context.displayname = self.form['displayname']
+        self.context.title = self.form['title']
+        self.context.shortdesc = self.form['shortdesc']
+        self.context.description = self.form['description']
 

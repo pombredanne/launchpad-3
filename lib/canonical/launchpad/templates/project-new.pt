@@ -14,7 +14,7 @@
 
 <div metal:fill-slot="main">
 
-   <tal:dummy condition="view/newproject" />
+    <tal:dummy condition="view/newproject" />
 
     <h1>Register a Project with The Launchpad!</h1>
 

@@ -14,36 +14,27 @@
 
 <div metal:fill-slot="main">
 
-   <tal:dummy condition="view/newproduct" />
-    <h1>Register a New Product for: <span
-    tal:content="context/displayname">$Project.displayname</span></h1>
+    <!--
+    This tal:dummy block never turns into HTML, but it triggers the edit
+    method on the ProductView class. This checks to see if a form has been
+    submitted to it, and if so updates the product.
+    -->
+    <tal:dummy condition="view/edit" />
+
+    <h1>Edit "<span
+    tal:content="context/displayname">$Product.displayname</span>" Product
+    Details</h1>
 
     <div class="documentDescription">
-    Please fill in the details below to register a new Product for the <span
-    tal:content="context/displayname">$Project.displayname</span>.
+    Please edit the product details below for <span
+    tal:content="context/displayname">$Product.displayname</span>.
     </div>
 
     <fieldset>
 
         <legend>Product Details</legend>
 
-        <form action="+newproduct" method="post">
-        <div class="field">
-
-            <label>Name</label>
-
-            <span class="fieldRequired" title="Required">(Required)</span>
-
-                  <div class="formHelp">
-                    The name of the project is a short name - a unique
-                    name that identifies the product, and is used in 
-                    URLs and references to the product. All lowercase,
-                    no special characters.
-                  </div>
-
-                <input type="text" name="name" size="15"
-                       value="" style="text-transform: lowercase" />
-        </div>
+        <form action="+edit" method="post">
 
         <div class="field">
 
@@ -60,7 +51,7 @@
                   </div>
 
                 <input type="text" name="displayname" size="20"
-                       value="" />
+                       value="" tal:attributes="value context/displayname" />
         </div>
 
         <div class="field">
@@ -78,7 +69,7 @@
                   </div>
 
                 <input type="text" name="title" size="30"
-                       value="" />
+                       value="" tal:attributes="value context/title" />
         </div>
 
         <div class="field">
@@ -93,7 +84,9 @@
                     plugins.</i>
                   </div>
 
-                <textarea cols="40" rows="3" name="shortdesc"></textarea>
+                <textarea cols="40" rows="3" name="shortdesc" 
+                          tal:content="context/shortdesc">
+                </textarea>
         </div>
         
         <div class="field">
@@ -106,28 +99,35 @@
                     of the product highlights and features.
                   </div>
 
-                <textarea cols="40" rows="7" name="description"></textarea>
+                <textarea cols="40" rows="7" name="description"
+                          tal:content="context/description">
+                </textarea>
         </div>
 
         <div class="field">
 
-            <label>URL</label>
+            <label>Home Page</label>
 
                   <div class="formHelp">
-                    The product home page, if it has a distinct one. Itcan
+                    The product home page, if it has a distinct one. It can
                     be the same as the overall project home page.
                   </div>
 
-                <input type="text" name="url" size="30"
-                       value="http://" />
+                <input type="text" name="homepageurl" size="30"
+                       value="" tal:attributes="value context/homepageurl" />
         </div>
 
 
         <div class="formControls">
 
+            <!--
+            NB the name and value of the submit field below are essential to
+            clue the ProductView.edit() method in that the form has been
+            submitted.
+            -->
             <input class="context" type="submit"
-                   name="Register"
-                   value="Register Product" />
+                   name="Update"
+                   value="Update Product" />
 
         </div>
         </form>
