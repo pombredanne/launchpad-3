@@ -135,5 +135,15 @@
           template="templates/reference-index.pt"
           lp:url="malone/bugs/$Bug.id/reference/$Reference.id" />
   </pages>
+  
+  <!-- Draft templates that haven't been placed anywhere yet.  -->
+  <pages for="canonical.malone.interfaces.IMaloneApplication"
+         permission="zope.Public"
+         lp:url="malone">
+    <page name="packages-overview"
+          template="templates/packages-overview.pt"
+          />
+  </pages>
+  
 
 </configure>

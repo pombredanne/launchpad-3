@@ -285,7 +285,7 @@ class TranslatePOTemplate:
 
         return {
             'lines' : lines,
-            'isMultiline' : lines > 0,
+            'isMultiline' : lines > 1,
             'text' : self._munge(messageID.msgid)
         }
 

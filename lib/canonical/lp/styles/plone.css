@@ -189,7 +189,6 @@ textarea {
 }
 input {
     font-family: "Lucida Grande", Verdana, Lucida, Helvetica, Arial, sans-serif;
-    visibility: visible;
     color: Black;
     background-color: white;
     vertical-align: middle;
@@ -1290,12 +1289,6 @@ ol.visualNoMarker {
 }
 
 .portalNotLoggedIn {} /* Used on all descriptions relevant to those not logged in */
-
-#portal-column-content fieldset > * input:focus,
-#portal-column-content fieldset > * textarea:focus {
-    border-color: #ffa500; 
-    border-width: 1px;
-}
 
 .visualOverflow {
     overflow: auto;
