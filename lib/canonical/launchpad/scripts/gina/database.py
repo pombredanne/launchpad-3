@@ -1,6 +1,9 @@
 import re
 from pyPgSQL import PgSQL
 
+# Disable cursors for now (can cause issues sometimes it seems)
+PgSQL.noPostgresCursor = 1
+
 from nickname import generate_nick
 
 class SQLThing:
@@ -246,6 +249,10 @@ class Launchpad(SQLThing):
         return self._query("""SELECT * FROM build 
                               WHERE  id = %s;""", (build_id[0],))
 
+    def getBuildBySourcePackage(self, srcid):
+        return self._query("""SELECT id FROM build
+                              WHERE sourcepackagerelease = %s""", srcid)[0]
+
     def createBuild(self, bin):
         srcpkg = self.getSourcePackageRelease(bin.source, bin.source_version)
         if not srcpkg:
@@ -265,6 +272,15 @@ class Launchpad(SQLThing):
                                  *bin.gpg_signing_key_owner)[0]
         else:
             key = None
+
+        try:
+            buildid = self.getBuildBySourcePackage(srcpkg[0][0])
+            return buildid
+        except:
+            # Nothing to do if we fail we insert...
+            print "\tUnable to retrieve build for %d; making new one..." % srcpkg[0][0]
+            pass
+        
     
         data = {
             "processor":            1,

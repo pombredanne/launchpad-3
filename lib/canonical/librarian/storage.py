@@ -82,20 +82,20 @@ class FatSamFile(object):
         # Find potentially matching files
         similarFiles = self.storage.library.lookupBySHA1(dstDigest)
         newFile = True
+        txn = self.storage.library.getTransaction()
         if len(similarFiles) == 0:
-            fileID, txn = self.storage.library.add(dstDigest, self.size)
+            fileID = self.storage.library.add(dstDigest, self.size, txn)
         else:
             for candidate in similarFiles:
                 candidatePath = self.storage._fileLocation(candidate)
                 if sameFile(candidatePath, self.tmpfilepath):
                     # Found a file with the same content
                     fileID = candidate
-                    txn = None
                     newFile = False
                     break
             else:
                 # No matches -- we found a hash collision in SHA-1!
-                fileID, txn = self.storage.library.add(dstDigest, self.size)
+                fileID = self.storage.library.add(dstDigest, self.size, txn)
 
         alias = self.storage.library.addAlias(fileID, self.filename,
                                               self.mimetype, txn)
