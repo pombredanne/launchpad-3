@@ -246,7 +246,7 @@ def importInfoFile(infofile):
                         cvsroot=job.repository,
                         cvsmodule=job.module,
                         cvstarfileurl=info.get("cvstarfile") or None,
-                        cvsbranch=job.branchfrom,
+                        cvsbranch=job.sourceBranch(),
                         **kwargs)
             if job.RCS == 'svn':
                 ss = SourceSource(
