@@ -39,8 +39,11 @@
     </tr>
   </table>    
 
-<input type="submit" value="Add"
-         onclick="window.open('+add', '_top')" />
+<fieldset>
+<div>
+<a href="+add">Add New Distribution</a>
+</div>
+</fieldset>
 
 </div>
 

@@ -28,7 +28,7 @@
 
        <tr tal:condition="context/person/teamowner">
        <td>Owner:</td>
-       <td><a tal:attributes="href string:../${context/person/teamowner/id}"
+       <td><a tal:attributes="href string:../${context/person/teamowner/name}"
               tal:content="context/person/teamowner/displayname">
               OWNER</a></td>
        </tr>

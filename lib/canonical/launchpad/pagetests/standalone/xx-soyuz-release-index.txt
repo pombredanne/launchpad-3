@@ -2,11 +2,9 @@
 
   >>> print http(r"""
   ... GET /soyuz/distros/ubuntu/releases/warty HTTP/1.1
-  ... Cookie: gallery_sessionadd_photos_mode=url; CP=null*; tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"
-  ... Referer: http://localhost:9000/soyuz/distros/ubuntu
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: 8649
+  Content-Length: 8669
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   <BLANKLINE>
@@ -208,7 +206,7 @@
            <table width="100%">
            <tr><td>Owner</td>
            <th align="right"> 
-             <a href="../../../../people/1">Mark Shuttleworth</a>
+             <a href="../../../../people/name1">Mark Shuttleworth</a>
            </th></tr> 
            <tr><td>State</td>
            <th align="right">
@@ -277,25 +275,25 @@
   	<table>
   	<tr>
   	 <td>
-  	  <a href="../../../../people/1">Mark Shuttleworth</a>
+  	  <a href="../../../../people/name1">Mark Shuttleworth</a>
            </td>
   	 <td>Release Manager</td>
           </tr>
   	<tr>
   	 <td>
-  	  <a href="../../../../people/11">Steve Alexander</a>
+  	  <a href="../../../../people/name11">Steve Alexander</a>
            </td>
   	 <td>Unknown (2)</td>
           </tr>
   	<tr>
   	 <td>
-  	  <a href="../../../../people/20">Warty Security Team</a>
+  	  <a href="../../../../people/name20">Warty Security Team</a>
            </td>
   	 <td>Unknown (4)</td>
           </tr>
   	<tr>
   	 <td>
-  	  <a href="../../../../people/19">Warty Gnome Team</a>
+  	  <a href="../../../../people/name19">Warty Gnome Team</a>
            </td>
   	 <td>Unknown (4)</td>
           </tr>	
@@ -336,12 +334,12 @@
   	    <table>
   	    <tr><th><a href="../../src/warty">
   	    View Source Packages List</a></th>
-  	    <th>(<span>...</span> 
+  	    <th>(<span>2</span> 
   	    Packages)</th>
   	    </tr><tr>
   	    <th><a href="../../bin/warty">
   	    View Binary Packages List</a></th>
-  	    <th>(<span>...</span> 
+  	    <th>(<span>1</span> 
   	    Packages)</th>
   	    </tr>
   	    </table>

@@ -75,7 +75,7 @@ class BinaryPackage(SQLBase):
         # The import is here to avoid a circular import. See top of module.
         from canonical.launchpad.database.sourcepackage import \
              SourcePackageRelease
-        clauseTables = ('SourcePackagePublishing', 'SourcepackageRelease')
+        clauseTables = ('SourcePackagePublishing',)
         
         last = list(SourcePackageRelease.select(
             'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id'
@@ -150,34 +150,45 @@ class BinaryPackage(SQLBase):
     getBinariesByName = classmethod(getBinariesByName)
     
     def getBinaries(klass, distrorelease):
+        clauseTables = ('PackagePublishing', 'DistroArchRelease',
+                        'BinaryPackageName')
+        
         query = ('PackagePublishing.binarypackage = BinaryPackage.id AND '
                  'PackagePublishing.distroarchrelease = DistroArchRelease.id AND '
-                 'DistroArchRelease.distrorelease = %d '
+                 'DistroArchRelease.distrorelease = %d AND '
+                 'BinaryPackage.binarypackagename = BinaryPackageName.id'
                  % distrorelease.id
                  )
 
         # FIXME: (distinct_query) Daniel Debonzi 2004-10-13
         # FIXME: (SQLObject_Selection+batching)
         # they were LIMITED by hand
-        return klass.select(query, orderBy=\
-                            'BinaryPackageName.name')[:500]
+        return klass.select(query,clauseTables=clauseTables,
+                            orderBy='BinaryPackageName.name')
 
     getBinaries = classmethod(getBinaries)
         
     def getByVersion(klass, binarypackages, version):
         """From get given BinaryPackageSelection get the one with version"""
+        clauseTables = ('PackagePublishing', 'DistroArchRelease',
+                        'BinaryPackageName',)
 
         query = binarypackages.clause + \
                 ' AND BinaryPackage.version = %s' %quote(version)
-        return klass.select(query)
+        return klass.select(query, clauseTables=clauseTables)
 
     getByVersion = classmethod(getByVersion)
 
     def selectByArchtag(klass, binarypackages, archtag):
-        """Select from a give BinaryPackage.SelectResult BinaryPackage with archtag"""
+        """Select from a give BinaryPackage.SelectResult BinaryPackage with
+        archtag"""
+        clauseTables = ('SourcePackagePublishing', 'DistroArchRelease',
+                        'BinaryPackage', 'Build', 'PackagePublishing',
+                        'DistroArchRelease', 'BinaryPackageName',)
+
         query = binarypackages.clause + \
                 ' AND DistroArchRelease.architecturetag = %s' %quote(archtag)
-        return klass.select(query)[0]
+        return klass.select(query, clauseTables=clauseTables)[0]
         
     selectByArchtag = classmethod(selectByArchtag)
 

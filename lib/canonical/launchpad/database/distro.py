@@ -210,11 +210,12 @@ class DistroRelease(SQLBase):
     #
 
     def getBySourcePackageRelease(klass, sourcepackagereleaseID):
+        clauseTables=('SourcePackagePublishing',)
         query = ('SourcePackagePublishing.distrorelease = DistroRelease.id '
                  'AND SourcePackagePublishing.sourcepackagerelease = %i '
                  %(sourcepackagereleaseID))
         
-        return klass.select(query)[0]
+        return klass.select(query, clauseTables=clauseTables)[0]
     getBySourcePackageRelease = \
                               classmethod(getBySourcePackageRelease)
 

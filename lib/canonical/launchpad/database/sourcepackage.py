@@ -328,18 +328,23 @@ class SourcePackageRelease(SQLBase):
 
 
     def selectByVersion(klass, sourcereleases, version):
-        """Select from SourcePackageRelease.SelectResult that have version=version"""
+        """Select from SourcePackageRelease.SelectResult that have
+        version=version"""
+
+        clauseTables = ('SourcePackagePublishing', 'Build',
+                        'BinaryPackage')
+        
         query = sourcereleases.clause + \
                 ' AND SourcePackageRelease.version = %s' %quote(version)
 
-        return klass.select(query)
+        return klass.select(query, clauseTables=clauseTables)
 
     selectByVersion = classmethod(selectByVersion)
 
     def selectByBinaryVersion(klass, sourcereleases, version):
         """Select from SourcePackageRelease.SelectResult that have
         BinaryPackage.version=version"""
-        clauseTables = ('BinaryPackage', 'Build')
+        clauseTables = ('SourcepackagePublishing','BinaryPackage', 'Build')
         
         query = sourcereleases.clause + \
                 (' AND Build.id = BinaryPackage.build'
@@ -347,7 +352,7 @@ class SourcePackageRelease(SQLBase):
                  ' AND BinaryPackage.version = %s' %quote(version)
                 )
 
-        return klass.select(query)
+        return klass.select(query, clauseTables=clauseTables)
 
     selectByBinaryVersion = classmethod(selectByBinaryVersion)
 

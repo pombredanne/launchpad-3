@@ -2,10 +2,9 @@
 
   >>> print http(r"""
   ... GET /soyuz/distros HTTP/1.1
-  ... Cookie: gallery_sessionadd_photos_mode=url; CP=null*; tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: 4966
+  Content-Length: 4968
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   <BLANKLINE>
@@ -183,7 +182,11 @@
       </tr>
     </table>    
   <BLANKLINE>
-  <input type="submit" value="Add" onclick="window.open('+add', '_top')" />
+  <fieldset>
+  <div>
+  <a href="+add">Add New Distribution</a>
+  </div>
+  </fieldset>
   <BLANKLINE>
   </div>
                 </div>
@@ -220,11 +223,10 @@
 
   >>> print http(r"""
   ... GET /soyuz/distros/ubuntu HTTP/1.1
-  ... Cookie: gallery_sessionadd_photos_mode=url; CP=null*; tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"
   ... Referer: http://localhost:9000/soyuz/distros
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: 8110
+  Content-Length: 8126
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   <BLANKLINE>
@@ -418,7 +420,7 @@
      <span>Ubuntu is a new concept of GNU/Linux Distribution based on Debian GNU/Linux.</span>
      </td></tr>
      <tr><td>
-     Owner: <a href="../../people/1">Mark Shuttleworth</a>
+     Owner: <a href="../../people/name1">Mark Shuttleworth</a>
      </td></tr>
      <tr><th albgign="right"><a href="+edit">Edit Information</a></th></tr>  
      <!--Conditional block -->
@@ -457,7 +459,7 @@
              <a href="releases/warty">Warty</a>
         </td>          
   <BLANKLINE>
-        <td><a href="../../people/1">Mark Shuttleworth</a>
+        <td><a href="../../people/name1">Mark Shuttleworth</a>
         </td>            
       </tr>
       <tr>
@@ -481,7 +483,7 @@
              <a href="releases/warty">Warty</a>
         </td>          
   <BLANKLINE>
-        <td><a href="../../people/1">Mark Shuttleworth</a>
+        <td><a href="../../people/name1">Mark Shuttleworth</a>
         </td>            
       </tr>
       <tr>
@@ -505,7 +507,7 @@
   <BLANKLINE>
         </td>          
   <BLANKLINE>
-        <td><a href="../../people/1">Mark Shuttleworth</a>
+        <td><a href="../../people/name1">Mark Shuttleworth</a>
         </td>            
       </tr>
       </table>

@@ -86,7 +86,7 @@ class PeopleListView(object):
         self.request = request
 
     def viewPeopleBatchNavigator(self):
-        people = list(Person.select())
+        people = list(Person.select(orderBy='displayname'))
         start = int(self.request.get('batch_start', 0))
         end = int(self.request.get('batch_end', BATCH_SIZE))
         batch_size = BATCH_SIZE
@@ -122,11 +122,9 @@ class PeopleSearchView(object):
     def _findPeopleByName(self, name):
         name = name.replace('%', '%%')
         query = quote('%%'+ name.upper() + '%%')
-        #XXX: (order) cprov 20041003
-        ##  Order all results alphabetically,
-        ## btw, 'ORDER by displayname' doesn't work properly here and should
-        ## be moved to Person SQLBASE class
-        return Person.select("""UPPER(displayname) LIKE %s OR UPPER(teamdescription) LIKE %s"""%(query, query))
+        return Person.select("""UPPER(displayname) LIKE %s
+        OR UPPER(teamdescription) LIKE %s ORDER by displayname"""%(query,
+                                                                   query))
 
 
 class PeopleAddView(object):
