@@ -1,3 +1,13 @@
+2004-12-14 cprov:
+	-> BUGS
+		* Not writing correct fm/sf-project data
+		* 
+
+
+2004-10-06 cprov:
+     -> Skiping Already added projects
+     -> List of Packages comming from Sources file (Packages.gz)
+
 2004-10-05 cprov:
      First Release, it was never tested with the entire set of 
      sourcepackages (7400), obviosily because the long time that 
@@ -5,6 +15,4 @@
      The DOAP insertions are not complete may we can improve it 
      ASAP.
 
-2004-10-06 cprov:
-     -> Skiping Already added projects
-     -> List of Packages comming from Sources file (Packages.gz)
+

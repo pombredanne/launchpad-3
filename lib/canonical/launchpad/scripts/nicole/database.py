@@ -193,11 +193,6 @@ class Doap(SQLThing):
     #
     # SourcePackageName
     #
-    def ensureSourcePackageName(self, name):
-        if self.getSourcePackageName(name):
-            return
-        name = self.ensure_string_format(name)
-        self._insert("sourcepackagename", {"name": name})
 
     def getSourcePackage(self, name):
         # only get the Ubuntu source package
@@ -272,62 +267,16 @@ class Doap(SQLThing):
 
         return self.getPersonByEmail(email)
 
-    #
-    # Project
-    #
-    def ensureProject(self, data):
-
-        if self.getProject(data["project"]):
-            print '@\tProject Already Included'
-            return
-
-        fit = FitData(data)
-
-        owner = self.ensurePerson(fit.pname, fit.pemail)[0]
-
-        datecreated = 'now()'
-        
-        ##XXX: (project+lastdoap) cprov 20041015
-        ## Missing just lastdoap field
-        dbdata = {"owner":               owner,
-                  "name" :               fit.name,
-                  "displayname":         fit.displayname,
-                  "title" :              fit.title,
-                  "shortdesc" :          fit.shortdesc,
-                  "description":         fit.description,
-                  "datecreated":         datecreated,
-                  "homepageurl":         fit.homepage,
-                  "wikiurl":             fit.wiki,
-                  "sourceforgeproject":  fit.sourceforgeproject,
-                  "freshmeatproject":    fit.freshmeatproject,
-                  }
-                                          
-        self._insert("project", dbdata)
-        print '@\tProject %s Created' % fit.displayname
-
-        ## projectrole
-        project = self.getProject(data["project"])[0]
-        ## wtf is it ? verify dbschema
-        role = 2
-        dbdata = {"person": owner,
-                  "project": project,
-                  "role": role,            
-                  }
-        
-        self._insert("projectrole", dbdata)
-        print '@\tProject Role %s Created' % role
-
-    def getProjectByName(self, name):
-        return self._query_single("""SELECT id FROM project WHERE name=%s;
-        """, name)
-
     def getProductByName(self, name):
         return self._query_single("""SELECT * FROM product WHERE name=%s;""", name)
 
+    ##XXX: cprov
+    ## Try to return the right project name (reviewed sf/fm one)
+    ## not the DOAP name.
     def getProductsForUpdate(self):
-        products = self._query("""SELECT * FROM product WHERE
-        autoupdate=True AND reviewed=True;""")
-        return len(products), products
+        products = self._query("""SELECT name FROM product WHERE
+                                  autoupdate=True AND reviewed=True;""")
+        return len(products), [product[0] for product in products]
 
     def getProductSeries(self, product, name):
         return self._query_single("""SELECT * FROM productseries WHERE
@@ -349,18 +298,15 @@ class Doap(SQLThing):
                                           
         # the query reinforces the requirement that we only update when the
         # autoupdate field is true
-        self._update("product", dbdata, ("name='%s' and autoupdate=True" % product_name))
+        self._update("product", dbdata, ("name='%s' and autoupdate=True"
+                                         % product_name))
         print '@\tProduct %s Updated' % fit.displayname
 
-    def ensureProduct(self, project, data, source):
 
-        project_result = self.getProject(project)
-
-        if project_result:
-            project_id = project_result[0]
-            
-        if self.getProduct(project_id, data['project']):
-            print '@\tSkipping Already Added Project'        
+    def ensureProduct(self, data, product_name, source):            
+        if self.getProductByName(data['product']):
+            print '@\tUpdate Already Added Project'        
+            self.updateProduct(data, product_name)
             return 
 
         fit = FitData(data)
@@ -370,8 +316,7 @@ class Doap(SQLThing):
 
         ##XXX: (product+lastdoap) cprov 20041015
         ## Missed lastdoap field
-        dbdata = {"project":             project_id,
-                  "owner":               owner,
+        dbdata = {"owner":               owner,
                   "name" :               fit.name,
                   "displayname":         fit.displayname,
                   "title":               fit.title,
@@ -392,7 +337,7 @@ class Doap(SQLThing):
 
 
         ## productrole
-        product = self.getProduct(project_id, fit.name)[0]
+        product = self.getProductByName(fit.name)[0]
         ##XXX:  Hardcoded Role too Member
         role = 2 
 

@@ -509,7 +509,7 @@ class ProductPage:
         if releases: self.theDict['releases'] = releases
 
         ## Insert the Product Original 
-        self.theDict[self.repository] = self.url
+        self.theDict[self.repository] = self.product
 
     def getDict(self):
         return self.theDict
