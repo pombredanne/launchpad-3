@@ -1365,7 +1365,7 @@ class RosettaTranslationOrigin(DBSchema):
          ''')
 
 
-class DistributionRole(DbSchema):
+class DistributionRole(DBSchema):
     """Distribution Role
 
     This schema documents the roles that a person can play in
