@@ -1,8 +1,13 @@
-2004-12-14 cprov:
-	-> BUGS
-		* Not writing correct fm/sf-project data
-		* 
+2004-12-15 cprov:
+     -> Right FM/SF data store in DB
+     -> Can INSERT products from a <namelist-file> or UPDATE 
+	products with autoupdate and autoreviewed set.
+     -> HTML entity filter used for all fields in sourceforge (UPSTREAM)
+     -> Launchpad(ZopeX3) dependencies (needs special PYTHONPATH)
+     -> Merging data from FM and SF
 
+2004-12-14 cprov:
+     -> BUGS: Not writing correct fm/sf-project data
 
 2004-10-06 cprov:
      -> Skiping Already added projects

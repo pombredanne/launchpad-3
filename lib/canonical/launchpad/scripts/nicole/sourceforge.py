@@ -68,7 +68,22 @@ import string
 from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup
 
 # Constants
-Error = 'sourceforge.py error'
+class Error(Exception):
+    pass
+
+#===============================================================
+# Sanitizer for Upstream ... XXX cprov !!!!
+from sgmllib import entityref
+from htmlentitydefs import entitydefs
+
+def entities_remove(data):
+    ##XXX: cprov
+    ## Use some blackmagic to remove HTML pieces.
+    mapset = re.findall(entityref, data)    
+    for key in mapset:
+        data = re.sub(entityref, entitydefs[key], data)
+    return data
+#==============================================================
 
 def getProductSpec(product, repository='sf'):
     page = ProductPage(product, repository)
@@ -86,8 +101,10 @@ def makeURL(product, repository='sf'):
     return url
 
 def getHTML(url):
-    try: urlobj = urllib2.urlopen(url)
-    except urllib2.HTTPError: return None
+    try:
+        urlobj = urllib2.urlopen(url)
+    except (urllib2.HTTPError, urllib2.URLError):
+        return None
     html = urlobj.read()
     urlobj.close()
     return html
@@ -473,43 +490,70 @@ class ProductPage:
         else:
             return None
 
-
     def makeDict(self):
         self.theDict = {}
-        self.theDict['product'] = self.product
+        
+        self.theDict['product'] = entities_remove(self.product)
+
         #
         productname = self.getProductName()
-        if productname: self.theDict['productname'] = productname
+        if productname:
+            self.theDict['productname'] = entities_remove(productname)
+        else:
+            self.theDict['productname'] = None
         #
         homepage = self.getHomePage()
-        if homepage: self.theDict['homepage'] = homepage
+        if homepage:
+            self.theDict['homepage'] = entities_remove(homepage)
+        else:
+            self.theDict['homepage'] = None 
         #
         programminglang = self.getProgramminglang()
-        if programminglang: self.theDict['programminglang'] = programminglang
-        else: self.theDict['programminglang'] = []
+
+        if programminglang:
+            self.theDict['programminglang'] = programminglang
+        else:
+            self.theDict['programminglang'] = []
         #
         description = self.getDescription()
-        if description: self.theDict['description'] = description
+        if description:
+            self.theDict['description'] = entities_remove(description)
+        else:
+            self.theDict['description'] = None
         #
         mailinglist = self.getMailinglist()
-        if mailinglist: self.theDict['list'] = mailinglist
-        else: self.theDict['list'] = []
+        if mailinglist:
+            self.theDict['list'] = mailinglist
+        else:
+            self.theDict['list'] = []
         #
         screenshot = self.getScreenshot()
-        if screenshot: self.theDict['screenshot'] = screenshot
+        if screenshot:
+            self.theDict['screenshot'] = entities_remove(screenshot)
+        else:
+            self.theDict['screenshot'] = None 
         #
-        devels = self.getDevels()
-        if devels: self.theDict['devels'] = devels
-        else: self.theDict['devels'] = {}
+        devels = self.getDevels()        
+        if devels:
+            self.theDict['devels'] = devels
+        else:
+            self.theDict['devels'] = {}
         #
         naturallang = self.getNaturallang()
-        if naturallang: self.theDict['naturallang'] = naturallang
+        if naturallang:
+            self.theDict['naturallang'] = entities_remove(naturallang)
+        else:
+            self.theDict['naturallang'] = None
+            
         #
         releases = self.getReleases()
-        if releases: self.theDict['releases'] = releases
+        if releases:
+            self.theDict['releases'] = releases
+        else:
+            self.theDict['releases'] = []
 
         ## Insert the Product Original 
-        self.theDict[self.repository] = self.product
+        self.theDict[self.repository] = entities_remove(self.product)
 
     def getDict(self):
         return self.theDict
