@@ -7,7 +7,7 @@ from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.database.bug import BugContainerBase
 
-from canonical.launchpad.interfaces.bugattachment import \
+from canonical.launchpad.interfaces import \
         IBugAttachment, IBugAttachmentContainer, IBugAttachment
 
 from canonical.database.sqlbase import SQLBase

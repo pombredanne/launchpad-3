@@ -14,9 +14,9 @@ from canonical.database.constants import UTC_NOW
 
 # canonical imports
 from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
-from canonical.launchpad.interfaces.person import IPerson, IPersonSet,  \
+from canonical.launchpad.interfaces import IPerson, IPersonSet,  \
                                                   IEmailAddress
-from canonical.launchpad.interfaces.language import ILanguageSet
+from canonical.launchpad.interfaces import ILanguageSet
 from canonical.launchpad.database.pofile import POTemplate
 from canonical.lp import dbschema
 from canonical.foaf import nickname

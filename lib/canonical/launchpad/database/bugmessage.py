@@ -7,7 +7,7 @@ from zope.interface import implements
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.launchpad.interfaces.bugmessage import IBugMessage
+from canonical.launchpad.interfaces import IBugMessage
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC

@@ -7,7 +7,7 @@ from sqlobject import RelatedJoin, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote
 
 # canonical imports
-from canonical.launchpad.interfaces.schema import ISchemaSet, ISchema, ILabel
+from canonical.launchpad.interfaces import ISchemaSet, ISchema, ILabel
 
 class SchemaSet(object):
     """The set of schemas."""

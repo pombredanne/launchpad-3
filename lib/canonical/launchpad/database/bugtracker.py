@@ -5,7 +5,7 @@ from zope.interface import implements
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.launchpad.interfaces.bugtracker import \
+from canonical.launchpad.interfaces import \
         IBugTrackerType, IBugTracker, IBugTrackerSet
 
 from canonical.database.sqlbase import SQLBase

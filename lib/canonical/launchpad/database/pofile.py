@@ -11,11 +11,11 @@ from datetime import datetime
 from sets import Set
 
 # canonical imports
-from canonical.launchpad.interfaces.pofile import IPOTemplate, IPOTMsgSet, \
+from canonical.launchpad.interfaces import IPOTemplate, IPOTMsgSet, \
     IEditPOTemplate, IEditPOTMsgSet, IPOMsgID, IPOMsgIDSighting, IPOFile, \
     IEditPOFile, IPOMsgSet, IEditPOMsgSet, IPOTranslation, \
     IPOTranslationSighting
-from canonical.launchpad.interfaces.language import ILanguageSet
+from canonical.launchpad.interfaces import ILanguageSet
 from canonical.launchpad.database.language import Language
 from canonical.lp.dbschema import RosettaTranslationOrigin
 from canonical.database.constants import DEFAULT, UTC_NOW

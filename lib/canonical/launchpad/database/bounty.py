@@ -7,7 +7,7 @@ from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, FloatCol, \
                       CurrencyCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.launchpad.interfaces.bounty import IBounty, IBountySet
+from canonical.launchpad.interfaces import IBounty, IBountySet
 from canonical.launchpad.interfaces import *
 
 from canonical.database.sqlbase import SQLBase

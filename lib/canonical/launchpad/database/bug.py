@@ -12,7 +12,7 @@ from zope.interface import implements
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.launchpad.interfaces.bug import IBug, IBugContainer
+from canonical.launchpad.interfaces import IBug, IBugContainer
 from canonical.launchpad.interfaces import *
 
 from canonical.database.sqlbase import SQLBase

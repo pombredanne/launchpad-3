@@ -15,7 +15,7 @@ from canonical.database.sqlbase import SQLBase, quote
 from canonical.lp import dbschema
 
 # interfaces and database 
-from canonical.launchpad.interfaces.build import IBuild, IBuilder
+from canonical.launchpad.interfaces import IBuild, IBuilder
 
 #
 # Build related SQLObjects
