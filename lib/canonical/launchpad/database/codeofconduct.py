@@ -240,11 +240,19 @@ class SignedCodeOfConductSet(object):
         # and I'm not sure if the best solution here is to use
         # trivial ILIKE query. Oppinion required on Review.
 
-        # use FTI
-        query = ('SignedCodeOfConduct.person = Person.id AND '
-                 'Person.fti @@ ftq(%s)'
-                 % quote(displayname))
+        # glue Person and SignedCoC table
+        query = 'SignedCodeOfConduct.person = Person.id'
 
+        # XXX cprov 20050302
+        # I'm not sure if the it is correct way to query ALL
+        # entries. If it is it should be part of FTI queries,
+        # isn't it ?
+
+        # if displayname was '%' return all SignedCoC entries
+        if displayname != '%':
+            query +=' AND Person.fti @@ ftq(%s)'% quote(displayname)
+        
+        # Attempt to search for directive
         if searchfor == 'activeonly':
             query += ' AND SignedCodeOfConduct.active = true'
             
@@ -278,7 +286,7 @@ class SignedCodeOfConductSet(object):
         # * Valid Person (probably always true via permission lp.AnyPerson),
         # * Person has valid email address (send a email acknoledging),
         # * Valid GPGKey (valid and active),
-        # * Person and GPGkey matches,
+        # * Person and GPGkey matches (done on DB side too),
         # * CoC is the current version available, or the previous
         #   still-supported version in old.txt,
         # * CoC was signed (correctly) by the GPGkey.

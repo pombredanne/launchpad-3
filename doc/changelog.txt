@@ -2,6 +2,32 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-02 23:25:36 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1362
+
+    Summary:
+      Permission setup for CoC related pages and query ALL signatures for Admin's page.
+    Revision:
+      launchpad--devel--0--patch-1362
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-526
+       Add support to query ALL entries on Admin Console pages and setup correct permissions.
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-527
+       Merge from RF, gina InitZopeLess landed.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/codeofconduct.py
+     lib/canonical/launchpad/zcml/codeofconduct.zcml
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-526
+     celso.providelo@canonical.com/launchpad--devel--0--patch-527
+
+
 2005-03-02 20:58:46 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1361
 
     Summary:

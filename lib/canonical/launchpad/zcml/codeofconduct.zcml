@@ -113,7 +113,7 @@
 	class="canonical.launchpad.browser.SignedCodeOfConductEditView"
         label="Edit Code of Conduct Signature:"
         fields="signingkey signedcode"
-        permission="launchpad.Edit"
+        permission="launchpad.Admin"
         template="../templates/launchpad-editform.pt"
 	lp:url="foaf/$person.name/cocs/$signed.id/+edit">
     </browser:editform>
@@ -137,7 +137,7 @@
 	class="canonical.launchpad.browser.SignedCodeOfConductDeactiveView"
         label="Deactive Code of Conduct Signature:"
         fields="admincomment"
-        permission="launchpad.Edit"
+        permission="launchpad.Admin"
         template="../templates/launchpad-editform.pt"
 	lp:url="foaf/$person.name/cocs/$signed.id/+deactive">
     </browser:editform>
