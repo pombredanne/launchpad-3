@@ -1,6 +1,6 @@
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-
+from zope.app.form.browser.add import AddView
 from zope.interface import implements
 from zope.schema.interfaces import IText
 from zope.app.form.browser import TextAreaWidget, TextWidget
@@ -70,6 +70,14 @@ class BugView(object):
     assignmentsHeadline = ViewPageTemplateFile(
         '../templates/portlet-bug-assignments-headline.pt')
 
+class BugAddView(AddView):
+    def add(self, content):
+        retval = super(BugAddView, self).add(content)
+        self.bugadded = content
+        return retval
+
+    def nextURL(self):
+        return ".?bugadded=" + str(self.bugadded.id)
 
 class BugsCreatedByView(object):
     def __init__(self, context, request):

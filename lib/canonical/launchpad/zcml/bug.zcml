@@ -79,6 +79,7 @@
         name="+new"
         for="canonical.launchpad.interfaces.IBugSet"
         schema="canonical.launchpad.interfaces.IBugAddForm"
+        class="canonical.launchpad.browser.bug.BugAddView"
         label="Create A New Bug Record"
         fields="title shortdesc description sourcepackage product owner"
         content_factory="canonical.launchpad.database.BugFactory"

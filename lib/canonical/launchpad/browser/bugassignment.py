@@ -241,6 +241,22 @@ class BugAssignmentsView(object):
 
         return assignments
 
+    def status_message(self):
+        # XXX: Brad Bollenbach, 2004-11-30: This method is a bit of a dirty
+        # hack at outputting a useful message if a bug has just been added, in
+        # lieu of a more general status message mechanism that avoids defacement
+        # attacks (e.g. http://www.example.com?status_message=You+have+been+hax0red).
+        bugadded = self.request.get('bugadded', None)
+        if bugadded:
+            try:
+                int(bugadded)
+                return 'Successfully added <a href="%s">bug # %s</a>. Thank you!' % (
+                    bugadded, bugadded)
+            except ValueError, err:
+                pass
+
+        return ''
+
     def submitted(self):
         return self.request.get('search', None)
 

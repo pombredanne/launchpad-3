@@ -32,6 +32,10 @@
      }
   </script>
 
+  <div class="portalMessage" 
+       tal:condition="view/status_message"
+       tal:content="structure view/status_message">Successful</div>
+
   <form action="" method="GET">
   <h1>Bugs</h1>
   <small tal:content="python:'displaying matching bugs ' + str(ass_batch.startNumber()) + ' to ' + str(ass_batch.endNumber()) + ' of ' + str(ass_batch.total())">displaying 1 to 20 of 42 </small><small> :: <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=unassigned&product=all&sourcepackage=all&search=Search">unassigned</a> . <span tal:omit-tag="" tal:condition="logged_in"><a href="" tal:attributes="href string:${request/URL}/?status=10&status=20&assignee=${request/lp:person/name}&product=all&sourcepackage=all&search=Search">my todo list</a> . </span><a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=all&product=all&sourcepackage=all&severity=50&search=Search">critical</a> <span tal:omit-tag="" tal:condition="logged_in">. <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=all&submitter=${request/lp:person/name}&product=all&sourcepackage=all&search=Search">submitted by me</a></span> :: bug id or text <input style="border-style: solid; border-width: 1px; border-color: grey;" type="text" name="searchtext" tal:attributes="value request/searchtext|nothing;"/> <input type="submit" style="border-style: solid; border-width: 1px; border-color: grey; background-color: #DCDCDC; " name="search" value="Search" /></small>
