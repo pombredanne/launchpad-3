@@ -232,6 +232,7 @@ COMMENT ON COLUMN BinaryPackage.architecturespecific IS 'This field indicates wh
 COMMENT ON COLUMN Distribution.lucilleconfig IS 'Configuration
 information which lucille will use when processing uploads and
 generating archives for this distribution';
+COMMENT ON COLUMN Distribution.members IS 'Person or team with upload and commit priviledges relating to this distribution. Other rights may be assigned to this role in the future.';
 
 /* DistroRelease */
 

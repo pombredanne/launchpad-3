@@ -436,7 +436,7 @@ class ValidGPGKeyVocabulary(SQLObjectVocabularyBase):
 
     def _toTerm(self, obj):
         return SimpleTerm(
-            obj, obj.id, obj.person.displayname + " " + obj.keyid)
+            obj, obj.id, obj.owner.displayname + " " + obj.keyid)
 
 
     def search(self, query):
@@ -446,7 +446,7 @@ class ValidGPGKeyVocabulary(SQLObjectVocabularyBase):
 
             query = quote(query.lower())
 
-            objs = self._table.select(("GPGKey.person = Person.id AND "
+            objs = self._table.select(("GPGKey.owner = Person.id AND "
                                        "Person.fti @@ ftq(%s)" % query),
                                       orderBy=self._orderBy,
                                       clauseTables=clauseTables)

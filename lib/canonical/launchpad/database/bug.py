@@ -56,17 +56,21 @@ class Bug(SQLBase):
     private = BoolCol(notNull=True, default=False)
 
     # useful Joins
-    activity = MultipleJoin('BugActivity', joinColumn='bug')
+    activity = MultipleJoin('BugActivity', joinColumn='bug', orderBy='id')
     messages = RelatedJoin('Message', joinColumn='bug',
                            otherColumn='message',
                            intermediateTable='BugMessage')
-    bugtasks = MultipleJoin('BugTask', joinColumn='bug')
-    productinfestations = MultipleJoin('BugProductInfestation', joinColumn='bug')
-    packageinfestations = MultipleJoin('BugPackageInfestation', joinColumn='bug')
+    bugtasks = MultipleJoin('BugTask', joinColumn='bug', orderBy='id')
+    productinfestations = MultipleJoin(
+            'BugProductInfestation', joinColumn='bug', orderBy='id')
+    packageinfestations = MultipleJoin(
+            'BugPackageInfestation', joinColumn='bug', orderBy='id')
     watches = MultipleJoin('BugWatch', joinColumn='bug')
-    externalrefs = MultipleJoin('BugExternalRef', joinColumn='bug')
-    cverefs = MultipleJoin('CVERef', joinColumn='bug')
-    subscriptions = MultipleJoin('BugSubscription', joinColumn='bug')
+    externalrefs = MultipleJoin(
+            'BugExternalRef', joinColumn='bug', orderBy='id')
+    cverefs = MultipleJoin('CVERef', joinColumn='bug', orderBy='cveref')
+    subscriptions = MultipleJoin(
+            'BugSubscription', joinColumn='bug', orderBy='id')
 
     def followup_title(self):
         return 'Re: '+ self.title

@@ -2,6 +2,50 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-27 09:05:35 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1503
+
+    Summary:
+      Database patches, bugfixes and tidying
+    Revision:
+      launchpad--devel--0--patch-1503
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-241
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-242
+       Add missing patch for debonzi
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-243
+       SQLObject Join attributes should specify orderBy if we need a predictable order, which is the case in many tests
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-244
+       Rename SignedCodeOfConduct.person and GPGKey.person to .owner, handle fallout, tidy properties in person.py
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-245
+       Make POFile.owner NOT NULL
+    
+
+    new files:
+     database/schema/.arch-ids/patch-11-12-0.sql.id
+     database/schema/patch-11-12-0.sql
+
+    modified files:
+     database/sampledata/current.sql database/schema/comments.sql
+     doc/changelog.txt lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/gpg.py
+     lib/canonical/launchpad/vocabularies/dbobjects.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-241
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-242
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-243
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-244
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-245
+
+
 2005-03-25 22:59:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1502
 
     Summary:

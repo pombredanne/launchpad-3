@@ -345,66 +345,67 @@ class Person(SQLBase):
     # Properties
     #
 
-    def _unvalidatedEmails(self):
-        tokens = LoginToken.select("requester=%d AND email IS NOT NULL" % self.id)
+    def unvalidatedEmails(self):
+        tokens = LoginToken.select("requester=%d AND email IS NOT NULL"
+                % self.id)
         return [token.email for token in tokens]
-    unvalidatedEmails = property(_unvalidatedEmails)
+    unvalidatedEmails = property(unvalidatedEmails)
 
-    def _title(self):
+    def title(self):
         return self.browsername()
-    title = property(_title)
+    title = property(title)
 
-    def _deactivatedmembers(self): 
+    def deactivatedmembers(self):
         return self.getMembersByStatus(TeamMembershipStatus.DEACTIVATED)
-    deactivatedmembers = property(_deactivatedmembers)
+    deactivatedmembers = property(deactivatedmembers)
 
-    def _expiredmembers(self): 
+    def expiredmembers(self):
         return self.getMembersByStatus(TeamMembershipStatus.EXPIRED)
-    expiredmembers = property(_expiredmembers)
+    expiredmembers = property(expiredmembers)
 
-    def _declinedmembers(self): 
+    def declinedmembers(self):
         return self.getMembersByStatus(TeamMembershipStatus.DECLINED)
-    declinedmembers = property(_declinedmembers)
+    declinedmembers = property(declinedmembers)
 
-    def _proposedmembers(self):
+    def proposedmembers(self):
         return self.getMembersByStatus(TeamMembershipStatus.PROPOSED)
-    proposedmembers = property(_proposedmembers)
+    proposedmembers = property(proposedmembers)
 
-    def _administrators(self):
+    def administrators(self):
         return self.getMembersByStatus(TeamMembershipStatus.ADMIN)
-    administrators = property(_administrators)
+    administrators = property(administrators)
 
-    def _approvedmembers(self):
+    def approvedmembers(self):
         return self.getMembersByStatus(TeamMembershipStatus.APPROVED)
-    approvedmembers = property(_approvedmembers)
+    approvedmembers = property(approvedmembers)
 
-    def _activemembers(self):
+    def activemembers(self):
         return self.approvedmembers + self.administrators
-    activemembers = property(_activemembers)
+    activemembers = property(activemembers)
 
-    def _inactivemembers(self):
+    def inactivemembers(self):
         return self.expiredmembers + self.deactivatedmembers
-    inactivemembers = property(_inactivemembers)
+    inactivemembers = property(inactivemembers)
 
-    def _memberships(self):
+    def memberships(self):
         return list(TeamMembership.selectBy(personID=self.id))
-    memberships = property(_memberships)
+    memberships = property(memberships)
 
-    def _teams(self):
+    def teams(self):
         # XXX: Fix this by doing a query in Person
         memberships = TeamMembership.selectBy(personID=self.id)
         return [m.team for m in memberships]
-    teams = property(_teams)
+    teams = property(teams)
 
-    def _superteams(self):
+    def superteams(self):
         teampart = getUtility(ITeamParticipationSet)
         return teampart.getSuperTeams(self)
-    superteams = property(_superteams)
+    superteams = property(superteams)
 
-    def _subteams(self):
+    def subteams(self):
         teampart = getUtility(ITeamParticipationSet)
         return teampart.getSubTeams(self)
-    subteams = property(_subteams)
+    subteams = property(subteams)
 
     def _setPreferredemail(self, email):
         assert email.person == self
@@ -426,29 +427,29 @@ class Person(SQLBase):
         return None
     preferredemail = property(_getPreferredemail, _setPreferredemail)
 
-    def _validatedemails(self):
+    def validatedemails(self):
         status = EmailAddressStatus.VALIDATED
         return self._getEmailsByStatus(status)
-    validatedemails = property(_validatedemails)
+    validatedemails = property(validatedemails)
 
-    def _notvalidatedemails(self):
+    def notvalidatedemails(self):
         status = EmailAddressStatus.NEW
         return self._getEmailsByStatus(status)
-    notvalidatedemails = property(_notvalidatedemails)
+    notvalidatedemails = property(notvalidatedemails)
 
-    def _bugs(self):
+    def bugs(self):
         return list(Bug.selectBy(ownerID=self.id))
-    bugs= property(_bugs)
+    bugs= property(bugs)
 
-    def _translations(self):
+    def translations(self):
         return list(TranslationEffort.selectBy(ownerID=self.id))
-    translations = property(_translations)
+    translations = property(translations)
 
-    def _activities(self):
+    def activities(self):
         return list(Karma.selectBy(personID=self.id))
-    activities = property(_activities)
+    activities = property(activities)
 
-    def _wiki(self):
+    def wiki(self):
         # XXX: salgado, 2005-01-14: This method will probably be replaced
         # by a MultipleJoin since we have a good UI to add multiple Wikis. 
         wiki = WikiName.selectBy(personID=self.id)
@@ -456,9 +457,9 @@ class Person(SQLBase):
         if count:
             assert count == 1
             return wiki[0]
-    wiki = property(_wiki)
+    wiki = property(wiki)
 
-    def _jabber(self):
+    def jabber(self):
         # XXX: salgado, 2005-01-14: This method will probably be replaced
         # by a MultipleJoin since we have a good UI to add multiple
         # JabberIDs. 
@@ -466,9 +467,9 @@ class Person(SQLBase):
         if jabber.count() == 0:
             return None
         return jabber[0]
-    jabber = property(_jabber)
+    jabber = property(jabber)
 
-    def _archuser(self):
+    def archuser(self):
         # XXX: salgado, 2005-01-14: This method will probably be replaced
         # by a MultipleJoin since we have a good UI to add multiple
         # ArchUserIDs. 
@@ -476,9 +477,9 @@ class Person(SQLBase):
         if archuser.count() == 0:
             return None
         return archuser[0]
-    archuser = property(_archuser)
+    archuser = property(archuser)
 
-    def _irc(self):
+    def irc(self):
         # XXX: salgado, 2005-01-14: This method will probably be replaced
         # by a MultipleJoin since we have a good UI to add multiple
         # IrcIDs. 
@@ -486,17 +487,17 @@ class Person(SQLBase):
         if irc.count() == 0:
             return None
         return irc[0]
-    irc = property(_irc)
+    irc = property(irc)
 
-    def _gpg(self):
+    def gpg(self):
         # XXX: salgado, 2005-01-14: This method will probably be replaced
         # by a MultipleJoin since we have a good UI to add multiple
         # GPGKeys. 
-        gpg = GPGKey.selectBy(personID=self.id)
+        gpg = GPGKey.selectBy(ownerID=self.id)
         if gpg.count() == 0:
             return None
         return gpg[0]
-    gpg = property(_gpg)
+    gpg = property(gpg)
 
     def _getSourcesByPerson(self):
         sputil = getUtility(ISourcePackageSet)
@@ -504,10 +505,10 @@ class Person(SQLBase):
     packages = property(_getSourcesByPerson)
 
 
-    def _isUbuntite(self):
+    def isUbuntite(self):
         putil = getUtility(IPersonSet)
         return putil.isUbuntite(self.id)
-    ubuntite = property(_isUbuntite)
+    ubuntite = property(isUbuntite)
     
 
 class PersonSet(object):
@@ -630,7 +631,7 @@ class PersonSet(object):
         conf = getUtility(ICodeOfConductConf)
 
         query = ('SignedCodeOfConduct.active = True AND '
-                 'SignedCodeOfConduct.person = %s' % user)
+                 'SignedCodeOfConduct.owner = %s' % user)
                  
         sign = SignedCodeOfConduct.select(query)
 
@@ -750,7 +751,7 @@ class GPGKey(SQLBase):
 
     _table = 'GPGKey'
 
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
     keyid = StringCol(dbName='keyid', notNull=True)
     pubkey = StringCol(dbName='pubkey', notNull=True)
