@@ -19,8 +19,8 @@ from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.pofile import POTemplate
 
-from canonical.launchpad.interfaces import IProduct, IProductSet, \
-    IAuthorization
+from canonical.launchpad.interfaces import IProduct, IProductSet
+from canonical.launchpad.interfaces import IObjectAuthorization
 
 from sets import Set
 from datetime import datetime
@@ -28,7 +28,7 @@ from datetime import datetime
 class Product(SQLBase):
     """A Product."""
 
-    implements(IProduct, IAuthorization)
+    implements(IProduct, IObjectAuthorization)
 
     _table = 'Product'
 

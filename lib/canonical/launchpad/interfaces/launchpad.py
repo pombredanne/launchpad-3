@@ -14,7 +14,8 @@ __all__ = ('ILaunchpadApplication', 'IMaloneApplication',
            'IDOAPApplication', 'IFOAFApplication',
            'IPasswordEncryptor', 'IReadZODBAnnotation',
            'IWriteZODBAnnotation', 'IZODBAnnotation',
-           'IAuthorization', 'IOpenLaunchBag', 'ILaunchBag')
+           'IAuthorization', 'IObjectAuthorization',
+           'IOpenLaunchBag', 'ILaunchBag')
 
 class ILaunchpadApplication(Interface):
     """Marker interface for a launchpad application.
@@ -98,18 +99,27 @@ class IZODBAnnotation(IReadZODBAnnotation, IWriteZODBAnnotation):
     pass
 
 
-class IAuthorization(Interface):
+class IObjectAuthorization(Interface):
     """Authorization policy for a particular object."""
 
     def checkPermission(principal, permission):
         """Returns True if the principal has that permission on the adapted
         object.
 
-        Otherwise returns False or returns None; these are equivalent.
-
-        The easiest way to return None is to allow the flow control to
-        'fall off the end' of the method.
+        Otherwise returns False.
         """
+
+
+class IAuthorization(Interface):
+    """Authorization policy for a particular object and permission"""
+
+    def checkPermission(principal):
+        """Returns True if the principal has that permission on the adapted
+        object.
+
+        Otherwise returns False.
+        """
+
 
 class ILaunchBag(Interface):
     site = Attribute('The application object, or None')
@@ -121,6 +131,7 @@ class ILaunchBag(Interface):
     bug = Attribute('Bug, or None')
 
     user = Attribute('Currently authenticated person, or None')
+
 
 class IOpenLaunchBag(ILaunchBag):
     def add(ob):
