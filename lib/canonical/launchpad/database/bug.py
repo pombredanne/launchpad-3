@@ -14,15 +14,14 @@ from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.interfaces import IBug, IBugAddForm, IBugSet
-
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC, DEFAULT
-
+from canonical.lp import dbschema
 from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.database.message import Message, MessageSet
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugtask import BugTask
-from canonical.lp import dbschema
+from canonical.launchpad.database.bugsubscription import BugSubscription
 
 class Bug(SQLBase):
     """A bug."""
@@ -102,8 +101,12 @@ def BugFactory(*args, **kw):
         shortdesc = summary,
         description = description,
         private = kw.get("private", False),
-        owner = kw['owner'],
+        owner = kw['owner'].id,
         datecreated=datecreated)
+
+    BugSubscription(
+        person = kw['owner'].id, bug = bug.id,
+        subscription = dbschema.BugSubscription.CC.value)
 
     # create the bug comment if one was given
     if kw.get('comment', None):
@@ -117,11 +120,11 @@ def BugFactory(*args, **kw):
             contents = kw['comment'],
             distribution = kw.get('distribution', None),
             rfc822msgid = kw['rfc822msgid'],
-            owner = kw['owner']
-            )
+            owner = kw['owner'])
+
     # link the bug to the message
-    bugmsg = BugMessage(bugID=bug.id,
-                        messageID=msg.id)
+    bugmsg = BugMessage(bugID=bug.id, messageID=msg.id)
+
     # create the task on a product if one was passed
     if kw.get('product', None):
         BugTask(
@@ -135,8 +138,7 @@ def BugFactory(*args, **kw):
             distribution = kw['distribution'],
             sourcepackagename = kw['sourcepackagename'],
             binarypackagename = kw.get('binarypackagename', None),
-            owner = kw['owner'].id,
-            )
+            owner = kw['owner'].id)
 
     class BugAdded(object):
         implements(IBugAddForm)

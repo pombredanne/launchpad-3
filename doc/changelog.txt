@@ -2,6 +2,37 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-07 21:25:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1283
+
+    Summary:
+      make bug filer an explicit subscriber on filing a bug. doctest this
+ modified behaviour. small fixes to IPerson.
+    Revision:
+      launchpad--devel--0--patch-1283
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-335
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-336
+       make bug filer an explicit subscriber on filing a bug. doctest this modified behaviour. small fixes to IPerson
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-337
+       merge from rf
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/doc/bug.txt
+     lib/canonical/launchpad/interfaces/person.py
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-335
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-336
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-337
+
+
 2005-02-07 18:41:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1282
 
     Summary:
