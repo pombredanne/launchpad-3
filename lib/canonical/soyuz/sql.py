@@ -518,6 +518,16 @@ class DistroReleaseBinaryApp(object):
             self.binarypackage = binarypackage
 
         self.release = release
+        self.bugsCounter = self._countBugs()
+
+    def _countBugs(self):
+        all, critical, important, \
+        normal, minor, wishlist, \
+        fixed, pending = self.binarypackage.build.\
+              sourcepackagerelease.sourcepackage.bugsCounter()
+
+        return (all, critical, important + normal,
+                minor + wishlist, fixed + pending)
 
     def currentReleases(self):
         """

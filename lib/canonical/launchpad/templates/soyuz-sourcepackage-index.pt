@@ -60,7 +60,7 @@
                 <tal:dummy tal:define="product context/sourcepackage/product">
 
 	        <tal:dummy tal:condition="product">
-	         <a tal:attributes="href string:/doap/projects/${product/name}/${product/name}" 
+	         <a tal:attributes="href string:/doap/projects/${product/project/name}/${product/name}" 
 	            tal:content="product/title" />
 	        </tal:dummy>
   	        <tal:dummy tal:condition="not:product">
@@ -149,7 +149,13 @@
 	     <div>
 	        <table>
 		<tr><td>All bugs</td>
-		    <td tal:content="python:context.bugsCounter[0]">N</td>
+		    <td>
+		      <a tal:content="python:context.bugsCounter[0]"
+		         tal:attributes="href
+	                 string:/malone/package/${context/sourcepackage/name}">
+			 N
+		      </a>
+		    </td>
 		</tr>
 		<tr><td>Release Critical</td>
 		    <td tal:content="python:context.bugsCounter[1]">N</td>
