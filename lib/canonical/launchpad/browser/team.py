@@ -215,6 +215,9 @@ class TeamMembersView(object):
         self.team = self.context.team
         self.request = request
 
+    def allMembersCount(self):
+        return getUtility(ITeamMembershipSet).getTeamMembersCount(self.team.id)
+
     def activeMembersCount(self):
         return len(self.team.approvedmembers + self.team.administrators)
 

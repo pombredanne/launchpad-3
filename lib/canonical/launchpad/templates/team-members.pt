@@ -36,8 +36,13 @@
       <h1>Members of <span tal:replace="context/team/browsername" /></h1>
 
       <br />
-      <p>These are all members of this team. You can add new ones in the <a
-        href="+add">Add Members</a> page of this team.</p>
+
+      <p tal:condition="view/allMembersCount">These are all members of this team.
+        You can add new ones in the <a href="+add">Add Members</a> page of this team.</p>
+
+      <p tal:condition="not: view/allMembersCount">This team currently have no
+        members. You can add new ones in the <a href="+add">Add Members</a> 
+        page of this team.</p>
 
       <fieldset tal:condition="activeMembersCount">
         <legend>Active members</legend>

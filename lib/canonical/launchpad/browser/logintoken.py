@@ -13,13 +13,11 @@ from canonical.lp.dbschema import EmailAddressStatus, LoginTokenType
 
 from canonical.foaf.nickname import generate_nick
 
-from canonical.launchpad.database import EmailAddress
-
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logInPerson
 
 from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
-from canonical.launchpad.interfaces import IPasswordEncryptor
+from canonical.launchpad.interfaces import IPasswordEncryptor, IEmailAddressSet
 
 
 class LoginTokenView(object):
@@ -78,12 +76,13 @@ class ResetPasswordView(object):
             return
 
         # Make sure this person has a preferred email address.
-        emailaddress = EmailAddress.byEmail(self.context.email)
+        emailset = getUtility(IEmailAddressSet)
+        emailaddress = emailset.getByEmail(self.context.email)
         emailaddress.status = EmailAddressStatus.VALIDATED
         flushUpdates()
         person = emailaddress.person
-        if person.preferredemail is None and \
-           len(person.validatedemails) == 1:
+        if (person.preferredemail is None and 
+            len(person.validatedemails) == 1):
             # This user have no preferred email set and this is the only
             # validated email he owns. We must set it as the preferred one.
             person.preferredemail = emailaddress
@@ -134,9 +133,9 @@ class ValidateEmailView(object):
             self.errormessage = "Wrong password. Please try again."
             return 
 
-        results = EmailAddress.selectBy(email=self.context.requesteremail)
-        assert results.count() == 1
-        reqemail = results[0]
+        emailset = getUtility(IEmailAddressSet)
+        reqemail = emailset.getByEmail(self.context.requesteremail)
+        assert reqemail is not None
         assert reqemail.person == requester
 
         status = EmailAddressStatus.VALIDATED
@@ -146,21 +145,18 @@ class ValidateEmailView(object):
             # with the user.
             status = EmailAddressStatus.PREFERRED
 
-        results = EmailAddress.selectBy(email=self.context.email)
-        if results.count() > 0:
+        email = emailset.getByEmail(self.context.email)
+        if email is not None:
             # This email was obtained via gina or lucille and have been
             # marked as NEW on the DB. In this case all we have to do is
             # set that email status to VALIDATED.
-            assert results.count() == 1
-            email = results[0]
             email.status = status
             self.context.destroySelf()
             return
 
         # New email validated by the user. We must add it to our emailaddress
         # table.
-        email = EmailAddress(email=self.context.email, status=status,
-                             person=requester.id)
+        email = emailset.new(self.context.email, status, requester.id)
         self.context.destroySelf()
 
 
@@ -201,8 +197,9 @@ class NewAccountView(AddView):
         person = getUtility(IPersonSet).newPerson(**kw)
         notify(ObjectCreatedEvent(person))
 
-        email = EmailAddress(person=person.id, email=self.context.email,
-                             status=EmailAddressStatus.PREFERRED)
+        emailset = getUtility(IEmailAddressSet)
+        preferred = EmailAddressStatus.PREFERRED
+        email = emailset.new(self.context.email, preferred, person.id)
         notify(ObjectCreatedEvent(email))
 
         self._nextURL = '/people/%s' % person.name

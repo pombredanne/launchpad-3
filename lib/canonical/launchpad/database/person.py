@@ -21,7 +21,6 @@ from canonical.launchpad.interfaces import IPerson, ITeam, IPersonSet
 from canonical.launchpad.interfaces import ITeamMembership, ITeamParticipation
 from canonical.launchpad.interfaces import ITeamParticipationSet
 from canonical.launchpad.interfaces import ITeamMembershipSet
-from canonical.launchpad.interfaces import ITeamMembershipSubset
 from canonical.launchpad.interfaces import IEmailAddress, IWikiName
 from canonical.launchpad.interfaces import IIrcID, IArchUserID, IJabberID
 from canonical.launchpad.interfaces import ISSHKey, IGPGKey, IKarma
@@ -711,6 +710,11 @@ class EmailAddressSet(object):
         except SQLObjectNotFound:
             return default
 
+    def new(self, email, status, personID):
+        email = email.strip().lower()
+        assert status in EmailAddressStatus.items
+        return EmailAddress(email=email, status=status, person=personID)
+
 
 class GPGKey(SQLBase):
     implements(IGPGKey)
@@ -822,6 +826,9 @@ class TeamMembershipSet(object):
             return default
         assert results.count() == 1
         return results[0]
+
+    def getTeamMembersCount(self, teamID):
+        return TeamMembership.selectBy(teamID=teamID).count()
 
 
 class TeamParticipationSet(object):

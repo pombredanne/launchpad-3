@@ -1,0 +1,58 @@
+
+
+  >>> print http(r"""
+  ... GET /people/myemail/members/+add HTTP/1.1
+  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...New member...
+  ...
+
+
+  >>> print http(r"""
+  ... POST /people/myemail/members/+add HTTP/1.1
+  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
+  ... Content-Length: ...
+  ... Content-Type: multipart/form-data; boundary=---------------------------4242461020359353471242944195
+  ... 
+  ... -----------------------------4242461020359353471242944195
+  ... Content-Disposition: form-data; name="field.newmember"
+  ... 
+  ... salgado
+  ... -----------------------------4242461020359353471242944195
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------4242461020359353471242944195--
+  ... """)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+
+
+  >>> print http(r"""
+  ... GET /people/myemail/members/+add?added=29 HTTP/1.1
+  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...was added as a member of my own team changed...
+  ...
+
+
+  Let's make sure that 'salgado' is now an APPROVED member of 'myemail'
+
+  >>> from canonical.launchpad.database import Person, TeamMembership
+  >>> salgado = Person.byName('salgado')
+  >>> team = Person.byName('myemail')
+  >>> tm = TeamMembership.selectBy(personID=salgado.id, teamID=team.id)[0]
+  >>> tm.statusname
+  'Approved Member'
+  >>> salgado.inTeam(team)
+  True

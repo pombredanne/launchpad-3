@@ -25,7 +25,8 @@
 
       <div tal:condition="view/isActive"> 
 
-        <p>This is an active member of <span tal:replace="context/team/browsername" />.
+        <p>This is an <em>Active Member</em> of 
+          <span tal:replace="context/team/browsername" />.
           In this page you can change the expiration date for this subscription,
           promote/demote the member to/from the Administrator status, and you
           can also Deactivate this subscription. You can also leave a comment

@@ -70,9 +70,6 @@ class IPerson(Interface):
                              "Person is a member of. Either as a PROPOSED "
                              "or CURRENT member."))
     translations = Attribute("Translations")
-    preferredemail = Attribute(("The preferred email address for this "
-                                "person. The one we'll use to communicate "
-                                "with him."))
     validatedemails = Attribute("Emails with status VALIDATED")
     notvalidatedemails = Attribute("Emails waiting validation.")
 
@@ -95,6 +92,9 @@ class IPerson(Interface):
     teamdescription = Text(title=_('Team Description'), required=False, 
                            readonly=False)
 
+    preferredemail = Int(title=_("The preferred email address for this "
+                                 "person. The one we'll use to communicate "
+                                 "with him."), readonly=False)
     email = TextLine(
             title=_('Email Address'), required=True,
             description=_("Please give the email address for this Team. "))
@@ -277,6 +277,12 @@ class IEmailAddress(Interface):
 class IEmailAddressSet(Interface):
     """The set of EmailAddresses."""
 
+    def new(email, status, personID):
+        """Create a new EmailAddress with the given email, pointing to person.
+
+        Also make sure that the given status is in dbschema.
+        """
+
     def __getitem__(emailid):
         """Return the email address with the given id.
 
@@ -329,6 +335,12 @@ class ITeamMembershipSet(Interface):
 
         If there's no TeamMembership for this person in this team, return the
         default value.
+        """
+
+    def getTeamMembersCount(teamID):
+        """Return the number of members this team have.
+
+        This includes active, inactive and proposed members.
         """
 
 

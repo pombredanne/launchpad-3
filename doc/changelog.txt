@@ -2,6 +2,63 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-17 20:23:54 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1454
+
+    Summary:
+      Lots of new pagetests for member management pages and removing database code from launchpad/browser/logintoken.py
+    Revision:
+      launchpad--devel--0--patch-1454
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-184
+       New pagetests for member management pages: Expire a subscription, Renew a subscription, Deactivate and Reactivate subscriptions.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-185
+       New pagetest for adding members into a team.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-186
+       Fix team members page to display a better text when the team have no members.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-187
+       Removed all database code from launchpad/browser/logintoken.py
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-188
+       Fix? resetpassword pagetest.
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids/17-add-member.txt.id
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids/25-expire-subscription.txt.id
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids/26-renew-subscription.txt.id
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids/27-deactivate-subscription.txt.id
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids/28-reactivate-subscription.txt.id
+     lib/canonical/launchpad/pagetests/foaf/17-add-member.txt
+     lib/canonical/launchpad/pagetests/foaf/25-expire-subscription.txt
+     lib/canonical/launchpad/pagetests/foaf/26-renew-subscription.txt
+     lib/canonical/launchpad/pagetests/foaf/27-deactivate-subscription.txt
+     lib/canonical/launchpad/pagetests/foaf/28-reactivate-subscription.txt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/logintoken.py
+     lib/canonical/launchpad/browser/team.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/pagetests/foaf/23-promote-member.txt
+     lib/canonical/launchpad/pagetests/foaf/99-resetpassword.txt
+     lib/canonical/launchpad/templates/team-addmember.pt
+     lib/canonical/launchpad/templates/team-members.pt
+     lib/canonical/launchpad/templates/teammembership-index.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-184
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-185
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-186
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-187
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-188
+
+
 2005-03-17 20:12:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1453
 
     Summary:
