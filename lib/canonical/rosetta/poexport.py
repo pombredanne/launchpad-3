@@ -34,26 +34,30 @@ class POExport:
         for potmsgset in self.potfile:
             try:
                 pomsgset = poFile[potmsgset.primemsgid_.msgid]
+                fuzzy = True
             except KeyError:
                 # the pofile doesn't have that msgid; include the
                 # one from the template
                 pomsgset = None
                 fuzzy = False
-            else:
-                fuzzy = True
             messages.append(
                 MessageProxy(potmsgset=potmsgset, pomsgset=pomsgset, fuzzy=fuzzy))
         # export obsolete messages
         # XXX: Carlos Perello Marin 08/11/2004: Should we mark as fuzzy also
         # the incompleted and obsolete msgsets?
+        obsolete_messages = []
         for pomsgset in poFile.messageSetsNotInTemplate():
             potmsgset = pomsgset.potmsgset
-            messages.append(MessageProxy(potmsgset=potmsgset, pomsgset=pomsgset))
+            obsolete_messages.append(
+                MessageProxy(potmsgset=potmsgset, pomsgset=pomsgset))
 
         output = StringIO()
         writer = codecs.getwriter(header.charset)(output, 'strict')
         writer.write(unicode(header))
         for msg in messages:
+            writer.write(u'\n\n')
+            writer.write(unicode(msg))
+        for msg in obsolete_messages:
             writer.write(u'\n\n')
             writer.write(unicode(msg))
         writer.write(u'\n')

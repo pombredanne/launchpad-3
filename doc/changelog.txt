@@ -2,6 +2,51 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-05 15:01:07 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1150
+
+    Summary:
+      Updated sample data and the poexport test so we detect new errors. Now it's time to fix them
+    Revision:
+      launchpad--devel--0--patch-1150
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-459
+       Moved the poexport functional test to the shared directory. It's still disabled because the bug in our base class for functional tests
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-460
+       The messages should always follow the sequence number
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-461
+       Fixed the way we export obsoleted messages it should work now
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-462
+       Reverted my latest changes, it's not the right way to fix this bug
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-463
+       Added three new errors to our export test detected recently and updated the sample data to be able to check the fixes (when we implement them)
+    
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/ftests/test_poexport.py
+     lib/canonical/rosetta/poexport.py
+
+    renamed files:
+     lib/canonical/rosetta/ftests/.arch-ids/disabled_test_poexport.py.id
+       ==> lib/canonical/launchpad/ftests/.arch-ids/test_poexport.py.id
+     lib/canonical/rosetta/ftests/disabled_test_poexport.py
+       ==> lib/canonical/launchpad/ftests/test_poexport.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-459
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-460
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-461
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-462
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-463
+
+
 2005-01-05 14:21:01 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1149
 
     Summary:
