@@ -7,7 +7,8 @@ from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
 
 from canonical.database.foaf import Person
-from canonical.database.doap import Sourcepackage, Product, Binarypackage
+from canonical.database.soyuz import Sourcepackage, Binarypackage
+from canonical.database.doap import Product
 from canonical.database.malone import BugSystem
 
 __metaclass__ = type

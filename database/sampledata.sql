@@ -1,6 +1,0 @@
-/*
-   LAUNCHPAD SAMPLE DATA
-   
-   This is some sample data for the launchpad system.  This requires the default
-   data to be inserted first.
-*/

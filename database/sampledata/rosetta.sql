@@ -7,52 +7,7 @@
    arch-tag: 5734820d-754e-4297-bb54-fbe33b88af4c
 */
 
-/* All Persons have the same password: 'test' but the encrypted string is different, only
- * fot tests.
- */
-INSERT INTO Person ( displayname, givenname, familyname, password )
-VALUES ( 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín', 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U' );
-INSERT INTO EmailAddress (email, person, status)
-VALUES ('carlos@canonical.com',
-	(SELECT id FROM Person WHERE givenname='Carlos'),
-	2);
-INSERT INTO Person ( displayname, givenname, familyname, password )
-VALUES ( 'Dafydd Harries', 'Dafydd', 'Harries', 'EvSuSe4k4tkRHSp6p+g91vyQIwL5VJ3iTbRZ' );
-INSERT INTO EmailAddress (email, person, status)
-VALUES ('daf@canonical.com',
-	(SELECT id FROM Person WHERE givenname='Dafydd'),
-	2);
-INSERT INTO Person ( displayname, givenname, familyname, password )
-VALUES ( 'Lalo Martins', 'Lalo', 'Martins', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf' );
-INSERT INTO EmailAddress (email, person, status)
-VALUES ('lalo@canonical.com',
-	(SELECT id FROM Person WHERE givenname='Lalo'),
-	2);
-INSERT INTO Person ( displayname, givenname, familyname, password )
-VALUES ( 'Foo Bar', 'Foo', 'Bar', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf' );
-INSERT INTO EmailAddress (email, person, status)
-VALUES ('foo.bar@canonical.com',
-	(SELECT id FROM Person WHERE givenname='Foo'),
-	2);
 
-INSERT INTO Project ( owner, name, displayname, title, shortdesc, description, homepageurl )
-VALUES ((SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
-	'gnome', 'GNOME', 'The GNOME Project', 'foo', 'bar', 'http://www.gnome.org/' );
-INSERT INTO Project ( owner, name, displayname, title, shortdesc, description, homepageurl )
-VALUES ((SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
-	'iso-codes', 'iso-codes', 'iso-codes', 'foo', 'bar', 'http://www.gnome.org/' );
-INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, description, homepageurl )
-VALUES ((SELECT id FROM Project WHERE name='gnome'),
-	(SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
-	'evolution', 'Evolution', 'The Evolution Groupware', 'foo', 'bar', 'http://www.novell.com/' );
-INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, description, homepageurl )
-VALUES ((SELECT id FROM Project WHERE name='gnome'),
-	(SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
-	'gnome-terminal', 'GNOME Terminal', 'The GNOME terminal emulator', 'foo', 'bar', 'http://www.gnome.org/' );
-INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, description, homepageurl )
-VALUES ((SELECT id FROM Project WHERE name='iso-codes'),
-	(SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
-	'iso-codes', 'iso-codes', 'The iso-codes', 'foo', 'bar', 'http://www.novell.com/' );
 INSERT INTO ArchArchive (name, title, description, visible)
 VALUES ('gnome', 'GNOME', 'The GNOME Project', false);
 INSERT INTO ArchArchive (name, title, description, visible)

@@ -5,51 +5,10 @@
    data to be inserted first.
 */
 
-/* 
-INSERT INTO Person (displayname, givenname, familyname)
-VALUES  ('Dave Miller', 'David', 'Miller');
-*/
-
-INSERT INTO Person (displayname) VALUES ('Sample Person');
-
-INSERT INTO EmailAddress (email, person, status) VALUES (
-'justdave@bugzilla.org',
-(SELECT id FROM Person WHERE displayname='Dave Miller'),
-2
-);
 INSERT INTO BugSystemType (name, title, description, homepage, owner)
 VALUES ('bugzilla', 'BugZilla', 'Dave Miller\'s Labour of Love, '
 || 'the Godfather of Open Source project issue tracking.',
 'http://www.bugzilla.org/', 
-(SELECT id FROM Person WHERE displayname='Dave Miller')
-);
-INSERT INTO Project (owner, name, displayname, title, shortdesc, 
-description, homepageurl)
-VALUES (
-(SELECT id FROM Person WHERE displayname='Sample Person'),
-'mozilla', 'The Mozilla Project', 'The Mozilla Project',
-'The Mozilla Project is the largest open source web browser collaborative project.',
-'The Mozilla Project is the largest open source web browser '
-|| 'collaborative project. The Mozilla Project produces several internet '
-|| 'applications that are very widely used, and is also a center for '
-|| 'collaboration on internet standards work by open source groups.',
-'http://www.mozilla.org/'
-);
-
--- Mozilla Firefox
-INSERT INTO Product (project, owner, name, displayname,  title, shortdesc,
-description)
-VALUES (
-(SELECT id FROM Project WHERE name='mozilla'),
-(SELECT id FROM Person WHERE displayname='Sample Person'),
-'firefox', 'Mozilla Firefox', 'Mozilla Firefox',
-'The Mozilla Firefox web browser',
-'The Mozilla Firefox web browser'
-);
-INSERT INTO ProductRelease (product, datereleased, version, owner)
-VALUES (
-(SELECT id FROM Product WHERE name='firefox'),
-timestamp '2004-06-28 00:00', 'mozilla-firefox-0.9.1',
 (SELECT id FROM Person WHERE displayname='Sample Person')
 );
 
@@ -118,16 +77,16 @@ VALUES (
 INSERT INTO Bug (name, title, shortdesc, description, owner, communityscore,
 communitytimestamp, activityscore, activitytimestamp, hits,
 hitstimestamp)
-VALUES ('bob', 'An odd problem', 'Something strange is wrong somewhere',
-'Something strange is wrong somewhere',
+VALUES ('bob', 'Firefox does not support SVG', 'Firefox needs to support embedded SVG images, now that the standard has been finalised.',
+'The SVG standard 1.0 is complete, and draft implementations for Firefox exist. One of these implementations needs to be integrated with the base install of Firefox. Ideally, the implementation needs to include support for the manipulation of SVG objects from JavaScript to enable interactive and dynamic SVG drawings.',
 (SELECT id FROM Person WHERE displayname='Sample Person'),
 0, CURRENT_DATE, 0, CURRENT_DATE, 0, CURRENT_DATE
 );
 
 INSERT INTO Bug (name, title, shortdesc, description, owner, communityscore,
 communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp)
-VALUES ('blackhole', 'Blackhole folder', 
-'Everything put into the folder "Trash" disappears!', 'Where is my email!',
+VALUES ('blackhole', 'Blackhole Trash folder', 
+'Everything put into the folder "Trash" disappears!', 'The Trash folder seems to have significant problems! At the moment, dragging an item to the trash results in immediate deletion. The item does not appear in the Trash, it is just deleted from my hard disk. There is no undo or ability to recover the deleted file. Help!',
 (SELECT id FROM Person WHERE displayname='Sample Person'),
 0, CURRENT_DATE, 0, CURRENT_DATE, 0, CURRENT_DATE
 );

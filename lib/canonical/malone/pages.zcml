@@ -98,7 +98,7 @@
       getter="__getitem__" />
 
   <pages 
-      for="canonical.database.doap.ISourcepackage" 
+      for="canonical.database.soyuz.ISourcepackage" 
       permission="zope.Public"
       class=".browser.SourcepackageView">
       <page name="index" template="templates/sourcepackage-index.pt"

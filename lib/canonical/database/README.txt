@@ -10,3 +10,16 @@ applications (eg. All of Soyuz, Malone and Rosetta will want to traverse
 an IProject, but there can be only one traversal hook). This limitation
 may change, but the convention may still remain.
 
+ WHERE TO FIND WHAT YOU ARE LOOKING FOR:
+
+    doap.py DOAP (Description of a Project)
+      Project, Product, ProductSeries, ProductRelease
+
+    soyuz.py Soyuz (Ubuntu Distribution Management)
+      Sourcepackage, SourcepackageName, Binarypackage, Distro,
+      DistroRelease, DistroArchRelease, Component, Section,
+      Builder, Build
+
+    foaf.py FOAF (Friend of a Friend)
+      Person, EmailAddress, WikiName, JabberID, IrcID,
+      GPGKey

@@ -84,7 +84,7 @@
         <div class="boardComment" tal:repeat="message context/messages">
             
             <div class="boardCommentDetails">
-                <strong tal:content="message/title">Subject</strong>
+                <strong tal:content="message/title">$Bugmessage.title</strong>
 
                 Posted by <span 
                 tal:replace="message/personmsg/displayname|string:(none)">

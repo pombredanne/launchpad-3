@@ -80,20 +80,20 @@
         <allow interface="canonical.database.doap.IProduct" />
     </content>
 
-    <content class="canonical.database.doap.Sourcepackage">
-        <allow interface="canonical.database.doap.ISourcepackage" />
+    <content class="canonical.database.soyuz.Sourcepackage">
+        <allow interface="canonical.database.soyuz.ISourcepackage" />
     </content>
 
-    <content class="canonical.database.doap.SourcepackageName">
-        <allow interface="canonical.database.doap.ISourcepackageName" />
+    <content class="canonical.database.soyuz.SourcepackageName">
+        <allow interface="canonical.database.soyuz.ISourcepackageName" />
     </content>
 
-    <content class="canonical.database.doap.Binarypackage">
-        <allow interface="canonical.database.doap.IBinarypackage" />
+    <content class="canonical.database.soyuz.Binarypackage">
+        <allow interface="canonical.database.soyuz.IBinarypackage" />
     </content>
 
-    <content class="canonical.database.doap.BinarypackageName">
-        <allow interface="canonical.database.doap.IBinarypackageName" />
+    <content class="canonical.database.soyuz.BinarypackageName">
+        <allow interface="canonical.database.soyuz.IBinarypackageName" />
     </content>
 
     <content class="canonical.database.foaf.Person">

@@ -9,7 +9,8 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.schema import TextLine, Int, Choice
 from canonical.database.malone import BugWatch
-from canonical.database.doap import Product, Sourcepackage, Binarypackage
+from canonical.database.doap import Product
+from canonical.database.soyuz import Sourcepackage, Binarypackage
 from canonical.database import sqlbase
 
 from zope.i18nmessageid import MessageIDFactory
@@ -29,7 +30,8 @@ from interfaces import \
 from canonical.database.malone import \
         Bug, BugAttachment, BugExternalRef, BugSubscription, BugMessage, \
         ProductBugAssignment, SourcepackageBugAssignment
-from canonical.database.doap import DBProject, Sourcepackage
+from canonical.database.doap import DBProject
+from canonical.database.soyuz import Sourcepackage
 from canonical.database.foaf import Person, EmailAddress
 
 def traverseBug(bug, request, name):

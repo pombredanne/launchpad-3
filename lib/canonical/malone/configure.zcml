@@ -68,7 +68,7 @@
       name="index" />
 
   <browser:defaultView
-      for="canonical.database.doap.ISourcepackage"
+      for="canonical.database.soyuz.ISourcepackage"
       name="index" />
 
   <browser:defaultView

@@ -1,9 +1,3 @@
-/*
-   EXTRA SOYUZ SAMPLE DATA
-   
-   This requires the Malone sample data, which is why it's not part of the main
-   Soyuz sample data.
-*/
 
 -- Packaging
 INSERT INTO Packaging (sourcepackage, packaging, product)
