@@ -309,6 +309,14 @@ class Launchpad(SQLThing):
             srcpkg = self.getSourcePackageRelease(bin.source,
                                                   bin.source_version)
             if not srcpkg:
+                sentinel = object()
+                if getattr(bin, "sourcepackageref", sentinel) != sentinel:
+                    print "\t() last ditch effort via sourcepackageref..."
+                    srcpkg = self.getSourcePackageRelease(
+                        bin.sourcepackageref.package,
+                        bin.sourcepackageref.version)
+
+            if not srcpkg:
                 print "\t** FMO courtesy of TROUP & TROUT inc. on %s (%s)" \
                     % (bin.source, bin.source_version)
                 return
@@ -365,7 +373,7 @@ class Launchpad(SQLThing):
     # BinaryPackage
     #
     def getBinaryPackage(self, name, version, architecture):
-        print "Looking for %s %s for %s" % (name,version,architecture)
+        #print "Looking for %s %s for %s" % (name,version,architecture)
         bin_id = self.getBinaryPackageName(name)
         if not bin_id:
             print "Failed to find the name"
@@ -434,9 +442,9 @@ class Launchpad(SQLThing):
         ## Just publish the binary as Warty DistroRelease
         component = self.getComponentByName(bin.component)[0]
         section = self.getSectionByName(bin.section)[0]
-        print "%s %s %s" % (bin.package, bin.version, bin.architecture)
+        #print "%s %s %s" % (bin.package, bin.version, bin.architecture)
         bin_id = self.getBinaryPackage(bin.package, bin.version, bin.architecture)
-        print "%s" % bin_id
+        #print "%s" % bin_id
         data = {
            "binarypackage":     bin_id[0], 
            "component":         component, 

@@ -73,8 +73,10 @@ def do_packages(source_map, bin_map, lp, kdb, keyrings, component, arch):
             name = binpkg.package
             bin_map[name] = binpkg
             # source packages with the same name as binaries get descriptions
+            # The binarypackage also gets a convenient link
             if source_map.has_key(name):
                 source_map[name].description = binpkg.description
+                binpkg.sourcepackageref = source_map[name]
 
         dibins = apt_pkg.ParseTagFile(difile)
         while dibins.Step():
@@ -84,8 +86,10 @@ def do_packages(source_map, bin_map, lp, kdb, keyrings, component, arch):
             name = binpkg.package
             bin_map[name] = binpkg
             # source packages with the same name as binaries get descriptions
+            # The binarypackage also gets a convenient link
             if source_map.has_key(name):
                 source_map[name].description = binpkg.description
+                binpkg.sourcepackageref = source_map[name]
                 
     finally:
         os.unlink(bin_tags)
@@ -220,9 +224,12 @@ if __name__ == "__main__":
         print "@ Publishing %s binaries..." % arch
         do_publishing(bin_map[arch], lp[arch], False)
         lp[arch].commit()
+
+    print "@ Closing database connections..."
     
     for arch in archs:
         lp[arch].close()
     kdb.commit()
     kdb.close()
 
+    print "@ Gina completed."
