@@ -96,5 +96,3 @@ COMMENT ON COLUMN SourcepackageName.name IS
 COMMENT ON COLUMN BinarypackageName.name IS
     'A lowercase name identifying one or more binarypackages';
 
-COMMENT ON TABLE ScrapedProject IS 'Temporary table for holding sample data imported from Freshmeat/Sourceforge. Data in this table will be validated and moved into the Product table.';
-
