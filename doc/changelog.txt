@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-24 09:53:06 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1490
+
+    Summary:
+      Tweaks
+    Revision:
+      launchpad--devel--0--patch-1490
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-236
+       Tweaks to DB patch required for working on production data
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-237
+       protect against cut&paste errors and correct schema
+    
+
+    modified files:
+     database/schema/README database/schema/fti.py
+     database/schema/patch-11-08-0.sql doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-236
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-237
+
+
 2005-03-24 05:50:42 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1489
 
     Summary:

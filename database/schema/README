@@ -61,7 +61,7 @@ Stop PostgreSQL:
 
 Start PostgreSQL without external connections
 
-    % pg_ctl start -o '--tcpip-socket=false'
+    % pg_ctl start -o '--tcpip-socket=false' -l /var/log/postgresql/postgres.log
 
 Duplicate the launchpad_prod database
 

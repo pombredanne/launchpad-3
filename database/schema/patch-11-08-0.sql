@@ -43,7 +43,7 @@ UPDATE POTemplate SET product=NULL WHERE product IS NOT NULL AND distrorelease I
 
 -- Add dummy ProductRelease
 INSERT INTO ProductRelease (product, datereleased, version, owner) (
-    SELECT
+    SELECT DISTINCT
         Product.id,
         CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
         'unknown',
@@ -57,7 +57,7 @@ INSERT INTO ProductRelease (product, datereleased, version, owner) (
 
 -- Link POTemplates to ProductRelease instead of Product
 UPDATE POTemplate SET productrelease=(
-    SELECT ProductRelease.id
+    SELECT min(ProductRelease.id)
     FROM ProductRelease JOIN Product ON ProductRelease.product=product.id
     WHERE Product.id = POTemplate.product
     );
