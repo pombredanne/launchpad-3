@@ -23,7 +23,7 @@ create: drop
 	@if [ "`psql -l | grep ${DBNAME} | wc -l`" = '0' ]; then createdb -E UNICODE ${DBNAME} ; else echo ${DBNAME} already exists; fi
 	@ echo
 	@ echo "* Installing PL/Python "
-#	createlang -d launchpad_test plpythonu
+	createlang -d launchpad_test plpythonu
 	@ echo
 	@ echo "* Creating functions"
 	psql -d ${DBNAME} -f trusted.sql
