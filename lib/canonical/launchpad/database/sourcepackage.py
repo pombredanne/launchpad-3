@@ -15,97 +15,16 @@ from canonical.lp import dbschema
 
 # interfaces and database 
 from canonical.launchpad.interfaces import ISourcePackageRelease, \
-                                           ISourcePackage, IBinaryPackage, \
-                                           ISourcePackageName, IBinaryPackageName
+                                           ISourcePackage, \
+                                           ISourcePackageName, \
+                                           ISourcePackageContainer
 
-from canonical.launchpad.database import Product, Project
+from canonical.launchpad.database.product import Product
+from canonical.launchpad.database.project import Project
 from canonical.launchpad.database.person import Person
+#from canonical.launchpad.database.bugassignment import \
+#        SourcePackageBugAssignment
 
-
-class BinaryPackage(SQLBase):
-    implements(IBinaryPackage)
-    _table = 'BinaryPackage'
-    _columns = [
-        ForeignKey(name='binarypackagename', dbName='binarypackagename', 
-                   foreignKey='BinaryPackageName', notNull=True),
-        StringCol('version', dbName='version', notNull=True),
-        StringCol('shortdesc', dbName='shortdesc', notNull=True, default=""),
-        StringCol('description', dbName='description', notNull=True),
-        ForeignKey(name='build', dbName='build', foreignKey='Build',
-                   notNull=True),
-        IntCol('binpackageformat', dbName='binpackageformat', notNull=True),
-        ForeignKey(name='component', dbName='component',
-                   foreignKey='Component', notNull=True),
-        ForeignKey(name='section', dbName='section', foreignKey='Section',
-                   notNull=True),
-        IntCol('priority', dbName='priority'),
-        StringCol('shlibdeps', dbName='shlibdeps'),
-        StringCol('depends', dbName='depends'),
-        StringCol('recommends', dbName='recommends'),
-        StringCol('suggests', dbName='suggests'),
-        StringCol('conflicts', dbName='conflicts'),
-        StringCol('replaces', dbName='replaces'),
-        StringCol('provides', dbName='provides'),
-        BoolCol('essential', dbName='essential'),
-        IntCol('installedsize', dbName='installedsize'),
-        StringCol('copyright', dbName='copyright'),
-        StringCol('licence', dbName='licence'),
-    ]
-
-    def _title(self):
-        return '%s-%s' % (self.binarypackagename.name, self.version)
-    title = property(_title, None)
-
-
-    def name(self):
-        return self.binarypackagename.name
-    name = property(name)
-
-    def maintainer(self):
-        return self.sourcepackagerelease.sourcepackage.maintainer
-    maintainer = property(maintainer)
-
-    def current(self, distroRelease):
-        """Currently published releases of this package for a given distro.
-        
-        :returns: iterable of SourcePackageReleases
-        """
-        return self.build.sourcepackagerelease.sourcepackage.current(distroRelease)
-
-    def lastversions(self, distroRelease):
-        last = list(SourcePackageRelease.select(
-            'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id'
-            ' AND SourcePackagePublishing.distrorelease = %d'
-            ' AND SourcePackageRelease.sourcepackage = %d'
-            ' AND SourcePackagePublishing.status = %d'
-            ' ORDER BY sourcePackageRelease.dateuploaded DESC'
-            % (distroRelease.id, self.build.sourcepackagerelease.sourcepackage.id,dbschema.PackagePublishingStatus.SUPERCEDED)
-        ))
-        if last:
-            return last
-        else:
-            return None
-
-    def _priority(self):
-        for priority in dbschema.BinaryPackagePriority.items:
-            if priority.value == self.priority:
-                return priority.title
-        return 'Unknown (%d)' %self.priority
-
-    pkgpriority = property(_priority)
-
-
-class BinaryPackageName(SQLBase):
-    _table = 'BinaryPackageName'
-    _columns = [
-        StringCol('name', dbName='name', notNull=True),
-    ]
-
-    # Got from BinaryPackageName class
-    binarypackages = MultipleJoin(
-            'BinaryPackage', joinColumn='binarypackagename'
-            )
-    ####
 
 class SourcePackageRelease(SQLBase):
     """A source package release, e.g. apache 2.0.48-3"""
@@ -275,6 +194,42 @@ class SourcePackage(SQLBase):
             return last
         else:
             return None
+
+class SourcePackageContainer(object):
+    """A container for SourcePackage objects."""
+
+    implements(ISourcePackageContainer)
+    table = SourcePackage
+
+    #
+    # We need to return a SourcePackage given a name. For phase 1 (warty)
+    # we can assume that there is only one package with a given name, but
+    # later (XXX) we will have to deal with multiple source packages with
+    # the same name.
+    #
+    def __getitem__(self, name):
+        return self.table.select("SourcePackage.sourcepackagename = \
+        SourcePackageName.id AND SourcePackageName.name = %s" %     \
+        sqlbase.quote(name))[0]
+
+    def __iter__(self):
+        for row in self.table.select():
+            yield row
+
+    #_bugassignments = SourcePackageBugAssignment
+
+    #def bugassignments(self, orderby='-id'):
+    #    # TODO: Ordering
+    #    return self._bugassignments.select(orderBy=orderby)
+
+    #
+    # return a result set of SourcePackages with bugs assigned to them
+    # which in future might be limited by distro, for example
+    #
+    def withBugs(self):
+        return self.table.select("SourcePackage.id = \
+        SourcePackageBugAssignment.sourcepackage")
+
 
 
 class SourcePackageName(SQLBase):

@@ -178,7 +178,7 @@ class ISourcePackageContainer(Interface):
     def __iter__():
         """Iterate through SourcePackages."""
 
-    def bugassignments(self, orderby='-id'):
+    def xxbugassignments(self, orderby='-id'):
         """Sequence of SourcePackageBugAssignment, in order"""
 
     def withBugs(self):

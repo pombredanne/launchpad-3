@@ -8,7 +8,7 @@ from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.interfaces import *
 
-from canonical.launchpad.database.package import SourcePackage
+from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.product import Product
 
 class ProductBugAssignment(SQLBase):

@@ -583,42 +583,6 @@ class BugSubscriptionContainer(BugContainerBase):
         conn.query('DELETE FROM BugSubscription WHERE id=%d' % int(id))
 
 
-class SourcePackageContainer(object):
-    """A container for SourcePackage objects."""
-
-    implements(ISourcePackageContainer)
-    table = SourcePackage
-
-    #
-    # We need to return a SourcePackage given a name. For phase 1 (warty)
-    # we can assume that there is only one package with a given name, but
-    # later (XXX) we will have to deal with multiple source packages with
-    # the same name.
-    #
-    def __getitem__(self, name):
-        return self.table.select("SourcePackage.sourcepackagename = \
-        SourcePackageName.id AND SourcePackageName.name = %s" %     \
-        sqlbase.quote(name))[0]
-
-    def __iter__(self):
-        for row in self.table.select():
-            yield row
-
-    _bugassignments = SourcePackageBugAssignment
-
-    def bugassignments(self, orderby='-id'):
-        # TODO: Ordering
-        return self._bugassignments.select(orderBy=orderby)
-
-    #
-    # return a result set of SourcePackages with bugs assigned to them
-    # which in future might be limited by distro, for example
-    #
-    def withBugs(self):
-        return self.table.select("SourcePackage.id = \
-        SourcePackageBugAssignment.sourcepackage")
-
-
 class BugExternalRefsView(object):
     implements(IBugExternalRefsView)
     def __init__(self, context, request):

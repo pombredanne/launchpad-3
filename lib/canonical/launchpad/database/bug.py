@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces import *
 
 from canonical.launchpad.database.bugassignment \
         import SourcePackageBugAssignment, ProductBugAssignment
-from canonical.launchpad.database.package import SourcePackage
+from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.product import Product
 
 # Python

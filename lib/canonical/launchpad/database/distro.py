@@ -21,7 +21,8 @@ from canonical.launchpad.interfaces import IDistributionRole, IDistroReleaseRole
                                            IDistribution, IDistroRelease
 
 from canonical.launchpad.database import Archive, Branch, ArchNamespace
-from canonical.launchpad.database.package import SourcePackage, BinaryPackage
+from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.launchpad.database.binarypackage import BinaryPackage
 from canonical.launchpad.database.person import Person
 
 class DistributionRole(SQLBase):

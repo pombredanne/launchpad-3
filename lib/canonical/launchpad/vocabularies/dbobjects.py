@@ -4,8 +4,10 @@ from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
 
 from canonical.launchpad.database.person import Person
-from canonical.launchpad.database.package import SourcePackage, BinaryPackage, \
-                                         BinaryPackageName, SourcePackageRelease
+from canonical.launchpad.database.sourcepackage import SourcePackage, \
+                                            SourcePackageRelease
+from canonical.launchpad.database.binarypackage import BinaryPackage, \
+                                            BinaryPackageName
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bug import BugTracker

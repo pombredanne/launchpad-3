@@ -8,7 +8,7 @@
     <include file="product.zcml" />
     <include file="productseries.zcml" />
     <include file="productrelease.zcml" />
-    <include file="package.zcml" />
+    <include file="binarypackage.zcml" />
     <include file="sourcesource.zcml" />
     <include file="productrelease.zcml" />
     <include file="bugpackageinfestation.zcml" />

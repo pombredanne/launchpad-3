@@ -1,0 +1,29 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+    
+    <!-- XXX comments from Mark Shuttleworth: the Soyuz BinaryPackages and
+            SourcePackages objects should be merged into BinaryPackageSet
+            and SourcePackageSet by 16/10/04 unless their continued existence
+            is justified 
+            -->
+    <content class="canonical.soyuz.sql.BinaryPackages">
+        <allow interface="canonical.launchpad.interfaces.IPackageSet"/>
+        <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    </content>
+
+    <!-- BinaryPackage -->
+    <content class="canonical.launchpad.database.BinaryPackage">
+        <allow interface="canonical.launchpad.interfaces.IBinaryPackage" />
+        <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    </content>
+
+    <!-- BinaryPackagename -->
+    <content class="canonical.launchpad.database.BinaryPackageName">
+        <allow interface="canonical.launchpad.interfaces.IBinaryPackageName" />
+    </content>
+
+</configure>

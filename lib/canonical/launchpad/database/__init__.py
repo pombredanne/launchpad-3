@@ -15,7 +15,8 @@ from canonical.launchpad.database.archbranch import *
 from canonical.launchpad.database.archchangeset import *
 from canonical.launchpad.database.librarian import *
 from canonical.launchpad.database.infestation import *
-from canonical.launchpad.database.package import *
+from canonical.launchpad.database.sourcepackage import *
+from canonical.launchpad.database.binarypackage import *
 from canonical.launchpad.database.distro import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.schema import *
