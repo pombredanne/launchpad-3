@@ -1291,8 +1291,7 @@ class POTranslationSighting(SQLBase):
         notNull=True)
     potranslation = ForeignKey(foreignKey='POTranslation',
         dbName='potranslation', notNull=True)
-#   license = ForeignKey(foreignKey='License', dbName='license', notNull=True)
-    license = IntCol(dbName='license', notNull=True)
+    license = IntCol(dbName='license', notNull=False, default=None)
     datefirstseen = DateTimeCol(dbName='datefirstseen', notNull=True)
     datelastactive = DateTimeCol(dbName='datelastactive', notNull=True)
     inlastrevision = BoolCol(dbName='inlastrevision', notNull=True)
