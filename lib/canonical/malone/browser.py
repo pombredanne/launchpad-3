@@ -390,7 +390,6 @@ class SourcepackageContainer(object):
     table = Sourcepackage
 
     def __getitem__(self, name):
-        print '-===== %s ==== ' % name
         try:
             return self.table.select(self.table.q.name == name)[0]
         except IndexError:
