@@ -199,6 +199,7 @@
 /*
   DESTROY ALL TABLES
 */
+DROP TABLE ProductBranchRelationship;
 DROP TABLE PackageSelection;
 DROP TABLE SourcepackageBugAssignment;
 DROP TABLE ArchArchiveLocationSigner;
@@ -426,6 +427,7 @@ CREATE TABLE IRCID (
   in a team, not a non-team person.
 */
 CREATE TABLE Membership (
+  id          serial PRIMARY KEY,
   person      integer NOT NULL REFERENCES Person,
   team        integer NOT NULL REFERENCES Person,
   /* see Membership Role schema */
@@ -447,6 +449,7 @@ CREATE TABLE Membership (
   and quickly find the things a person is an owner of.
 */
 CREATE TABLE TeamParticipation (
+  id           serial PRIMARY KEY,
   team         integer NOT NULL REFERENCES Person,
   person       integer NOT NULL REFERENCES Person,
   PRIMARY KEY ( team, person )
@@ -534,6 +537,7 @@ CREATE TABLE Project (
  the Gnome project aggregates the GnomeMeeting project.
 */
 CREATE TABLE ProjectRelationship (
+  id            serial PRIMARY KEY,
   subject       integer NOT NULL REFERENCES Project,
   -- see Project Relationships schema
   label         integer NOT NULL,
@@ -547,6 +551,7 @@ CREATE TABLE ProjectRelationship (
   The roles that a person can take on in a project.
 */
 CREATE TABLE ProjectRole (
+  id            serial PRIMARY KEY,
   person        integer NOT NULL REFERENCES Person,
   -- see Project Role schema
   role          integer NOT NULL,
@@ -591,9 +596,10 @@ CREATE TABLE Product (
   A label or metadata on a Product.
 */
 CREATE TABLE ProductLabel (
-  product  integer NOT NULL REFERENCES Product,
+  id         serial PRIMARY KEY,
+  product    integer NOT NULL REFERENCES Product,
   label      integer NOT NULL REFERENCES Label,
-  PRIMARY KEY ( product, label )
+  UNIQUE ( product, label )
 );
 
 
@@ -604,6 +610,7 @@ CREATE TABLE ProductLabel (
   product.
 */
 CREATE TABLE ProductRole (
+  id        serial PRIMARY KEY,
   person    integer NOT NULL REFERENCES Person,
   -- see the Product Role schema
   role      integer NOT NULL,
@@ -867,6 +874,20 @@ CREATE TABLE BranchLabel (
   label        int NOT NULL REFERENCES Label
 );
 
+
+
+/*
+  ProductBranchRelationship
+  This is where we can store a mapping between
+  a product and a branch.
+*/
+CREATE TABLE ProductBranchRelationship (
+  id         serial PRIMARY KEY,
+  product    integer NOT NULL REFERENCES Product,
+  branch     integer NOT NULL REFERENCES Branch,
+  -- XXX need to create the Product Branch Relationship schema
+  label      integer NOT NULL
+);
 
 
 /*
