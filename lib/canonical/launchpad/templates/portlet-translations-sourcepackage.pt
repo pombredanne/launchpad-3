@@ -35,25 +35,36 @@
                                 alt="Translated &amp; non updated graph"
                                 tal:condition="template/poNonUpdatesCount"
                                 tal:attributes="width template/poNonUpdatesPercent;
-                                                title string: Translated: ${template/poNonUpdatesPercent}%"
-                            /><img src="++resource++blue-bar.png"
+                                                title string: Translated: ${template/poNonUpdatesPercent}%"/>
+				<div tal:condition="template/poNonUpdatesCount"
+				     tal:content="string: Translated: ${template/poNonUpdatesPercent}%"/>
+
+			      <img src="++resource++blue-bar.png"
                                 height="15"
                                 alt="Updated graph"
                                 tal:condition="template/poUpdatesCount"
                                 tal:attributes="width template/poUpdatesPercent;
-                                                title string: Updates: ${template/poUpdatesPercent}%"
-                            /><img src="++resource++dwelled-bar.png"
+                                                title string: Updates: ${template/poUpdatesPercent}%"/>
+				<div tal:condition="template/poUpdatesCount"
+				     tal:content="string: Updates: ${template/poUpdatesPercent}%"/>
+
+			      <img src="++resource++dwelled-bar.png"
                                 height="15"
                                 alt="Rosetta additions graph"
                                 tal:condition="template/poRosettaCount"
                                 tal:attributes="width template/poRosettaPercent;
-                                                title string: Rosetta additions: ${template/poRosettaPercent}%"
-                            /><img src="++resource++red-bar.png"
+                                                title string: Rosetta additions: ${template/poRosettaPercent}%"/>
+				<div tal:condition="template/poRosettaCount"
+				     tal:content="string: Rosetta additions: ${template/poRosettaPercent}%"/>
+			      
+			      <img src="++resource++red-bar.png"
                                 height="15"
                                 alt="Fuzzy graph"
                                 tal:condition="template/poUntranslated"
                                 tal:attributes="width template/poUntranslatedPercent;
                                                 title string: Untranslated: ${template/poUntranslatedPercent}%" />
+				<div tal:condition="template/poUntranslated"
+				     tal:content="string: Untranslated: ${template/poUntranslatedPercent}%"/>
                         </td>
                     </tr>
                 </tbody>

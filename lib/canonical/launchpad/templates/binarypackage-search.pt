@@ -28,12 +28,12 @@
 
    <h4>Search Results</h4>
 
-  <tal:block tal:define="bn view/searchBinariesBatchNavigator;
-                         prev_url bn/prevBatchURL;
-                         next_url bn/nextBatchURL;"
+  <tal:block tal:define="bn view/searchBinariesBatchNavigator"
 			 tal:condition="bn">
 
-  <div tal:define="batch python:list(bn.currentBatch())">
+  <div tal:define="batch python:list(bn.currentBatch());
+                         prev_url bn/prevBatchURL;
+                         next_url bn/nextBatchURL;">
   <table tal:condition="batch">
     <tr>
       <th>Binary Packages</th>

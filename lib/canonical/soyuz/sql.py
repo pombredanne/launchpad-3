@@ -237,7 +237,10 @@ class DistroReleaseSourceApp(object):
         # If true, it is defined inside launchpad/database/package.py
 
     def lastversions(self):
-        return self.sourcepackage.lastversions(self.release)
+        ans = list(self.sourcepackage.lastversions(self.release))
+        if len(ans) == 0:
+            return None
+        return ans
 
     lastversions = property(lastversions)
     
