@@ -74,10 +74,10 @@
         <tr><td>
 	  <div>
 	  <table>
-	  <legend>Distribution Role</legend>
+	  <legend><b>Distribution Role</b></legend>
           
           <tr tal:condition="not:context/distroroles">
-	    <td>No Distribution Roles</td>
+	    <td><b>No Distribution Roles</b></td>
           </tr>
 
           <tr tal:condition="context/distroroles"
@@ -92,10 +92,10 @@
 	<tr><td>
 	  <div>
 	  <table>
-	  <legend>Release Roles</legend>
+	  <legend><b>Release Roles</b></legend>
 	
           <tr tal:condition="not:context/distroreleaseroles">
-	      <td>No Release Roles</td>
+	      <td><b>No Release Roles</b></td>
           </tr>
 
 	  <tr tal:condition="context/distroreleaseroles"
