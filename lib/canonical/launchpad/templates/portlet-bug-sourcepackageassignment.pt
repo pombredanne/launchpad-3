@@ -24,19 +24,19 @@
             </td>
             <td>
                 <span
-                    tal:omit-tag="" tal:condition="bugass/binarypackagename"
-                    tal:content="bugass/binarypackagename">
+                    tal:omit-tag=""
+                    tal:condition="bugass/binarypackagename"
+                    tal:content="bugass/binarypackagename/name">
                     $BinarypackageName.name
                 </span>
-                <span tal:omit-tag=""
-                      tal:condition="not:bugass/binarypackagename">
+                <span
+                    tal:omit-tag=""
+                    tal:condition="not:bugass/binarypackagename">
                     (none)
                 </span>
             </td>
-            <td tal:content="bugass/assignee/browsername|python:string('(not assigned)')">
-            </td>
         </tr>
     </table>
-    [ <a href="sourcepackageassignments/+new">Assign Bug to Source
-    Package</a> ]
+    [ <a href="sourcepackageassignments/+new">Assign Bug to Source Package</a> ]
 </div>
+
