@@ -42,15 +42,16 @@ def get_current_packages(doap):
     print '@ Retrieve Sourcepackage Information From Soyuz'
     ## get all project names from doap
     ##packages = doap.getSourcePackageNames()
+
     index = 0
 
-##    for package in packages:
-##        ## Anyway, I can't discard any name, since multiple names
-##        ##  means multiple products
-##        name = package['name']
-##        ##print '@      Getting %s' % name
-##        packagenames.append(name)
-##        index += 1
+    ##    for package in packages:
+    ##        ## Anyway, I can't discard any name, since multiple names
+    ##        ##  means multiple products
+    ##        name = package['name']
+    ##        ##print '@      Getting %s' % name
+    ##        packagenames.append(name)
+    ##        index += 1
 
     ## Get SourceNames from Sources file (MAIN)
     sources = ParseTagFile(open(PACKAGES))
@@ -97,6 +98,15 @@ def grab_for_product(data, project, name):
         print '@\tCreating a FreshMeat Product'
     else:
         print '@\tNo Product Found for %s' % name
+        ##XXX: (product+notfound) cprov 20041014
+        ## Insert a product anyway !!! see alsa-xxx for futher
+        ## result feedback
+        data_dummy={"project":      name,
+                    "projectname":  name,
+                    "description": 'Nicole Dummy Product Description.'
+                    }
+        doap.ensureProduct(project, data_dummy, name)
+        print '@\tCreating a Dummy Product'
 
 def present_data(data):
     print '========================================================'
@@ -149,7 +159,7 @@ if __name__ == "__main__":
                 ##present_data(data_sf)            
                 sf +=1            
                 doap.ensureProject(data_sf)
-                ## Partially Commit DB info
+                ## Partially Commit DB Project Info
                 doap.commit()
                 grab_for_product(data_sf, name, package)
                 
@@ -157,7 +167,7 @@ if __name__ == "__main__":
                 ##present_data(data_fm)
                 fm += 1
                 doap.ensureProject(data_fm)
-                ## Partially Commit DB info
+                ## Partially Commit DB Project Info
                 doap.commit()
                 grab_for_product(data_fm, name, package)
 
@@ -166,15 +176,28 @@ if __name__ == "__main__":
                 ##present_data(data_fm)
                 both += 1
                 doap.ensureProject(data_sf)
-                ## Partially Commit DB info
+                ## Partially Commit DB Project Info
                 doap.commit()
                 grab_for_product(data_fm, name, package)    
 
             else:
-                append_list(package)
-                print '@\tNo Project or Product Created'
+                print '@\tNo Product Found for %s' % name
+                ##XXX: (project+notfound) cprov 20041014
+                ## Insert a product anyway !!! see alsa-xxx for futher
+                ## result feedback
+                data_dummy={"project":      name,
+                            "projectname":  name,
+                            "description": 'Nicole Dummy Project Description.'
+                            } 
+                doap.ensureProject(data_dummy)
+                ## Partially Commit DB Project Info
+                doap.commit()
+                grab_for_product(data_dummy, name, package)
+
+                append_list(package)                
+                print '@\tDummy Project/Product Created'
             
-            ## Partially Commit DB info
+            ## Partially Commit DB Product Info
             doap.commit()
             
             ##It should prevent me to be blocked again by SF

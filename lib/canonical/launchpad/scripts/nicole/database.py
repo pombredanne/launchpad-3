@@ -217,13 +217,9 @@ class Doap(SQLThing):
             title = self.ensure_string_format(data['project'])
 
         ## XXX:both don't have shortdesc        
-        save_desc = self.ensure_string_format(data['description'])
-
-        ## use the maximun of 72 char and 10 words
-        ## shortdesc = join(split(save_desc[:72])[:10])
-
         ## Get just the first paragraph 
-        shortdesc = save_desc.split('.')[0]
+        save_desc = data['description'].split('.')[0]
+        shortdesc = self.ensure_string_format(save_desc)
 
         ## both have description
         description = self.ensure_string_format(data['description'])
@@ -272,6 +268,11 @@ class Doap(SQLThing):
         return self._query_single("""SELECT * FROM product WHERE name=%s
         AND project=%s;""", (name, project))
 
+    def getProductSeries(self, product, displayname):
+        return self._query_single("""SELECT * FROM productseries WHERE
+        displayname=%s
+        AND product=%s;""", (displayname, product))
+
     def ensureProduct(self, project, data, source):
         project_result = self.getProject(project)
 
@@ -294,10 +295,15 @@ class Doap(SQLThing):
             email = email.split(',')[0]            
             owner = self.ensurePerson(name, email)[0]
         except:
-            print '@\tException on Owner Field !!! '
-            print '@\tDEBUG:', name
-            print '@\tDEBUG:', email
-            owner = 1
+            print '@ Exception on Owner Field !!! '
+	    try: 
+		print '@\tDEBUG:', name
+		print '@\tDEBUG:', email
+	    except:
+		print '@\tDEBUG: No Devel'
+
+            ## in case of 
+	    owner = 1
 
             
         ## both have project
@@ -308,14 +314,15 @@ class Doap(SQLThing):
             displayname = self.ensure_string_format(data['projectname'])
             title = self.ensure_string_format(data['projectname'])
         except:
-            ## try to imporve it
+            ## try to improve it
             displayname = self.ensure_string_format(data['project'])
             title = self.ensure_string_format(data['project'])
 
-        ## XXX:both don't have shortdesc
-        ## use the maximun of 72 char and 10 words
-        save_desc = self.ensure_string_format(data['description'])
-        shortdesc = join(split(save_desc[:72])[:10])
+        ## XXX:both don't have shortdesc        
+        ## Get just the first paragraph 
+        save_desc = data['description'].split('.')[0]
+        shortdesc = self.ensure_string_format(save_desc)
+
 
         ## both have description
         description = self.ensure_string_format(data['description'])
@@ -418,14 +425,19 @@ class Doap(SQLThing):
         ## Datereleased should be acquired from data, let's insert
         ## now as quick&dirty strategy
         datereleased = 'now()'
+
+        ## isolate productseries id
+        productseries = self.getProductSeries(product, displayname)[0]
         
         dbdata = {"product":       product,
                   "datereleased":  datereleased,
                   "version":       version,
                   "title":         title,
+                  "shortdesc":     shortdesc,
                   "description":   description,
                   "changelog":     changelog, 
                   "owner":         owner,
+                  "productseries": productseries
                   }
 
         self._insert("productrelease", dbdata)
