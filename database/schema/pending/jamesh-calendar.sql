@@ -11,7 +11,9 @@ CREATE TABLE Calendar (
 CREATE TABLE CalendarSubscription (
     id serial NOT NULL PRIMARY KEY,
     person integer NOT NULL,
-    calendar integer NOT NULL
+    calendar integer NOT NULL,
+
+    CONSTRAINT calendarsubscription_sub_key UNIQUE (person, calendar)
 );
 
 CREATE TABLE CalendarEvent (
@@ -21,6 +23,7 @@ CREATE TABLE CalendarEvent (
     dtstart timestamp without time zone NOT NULL,
     duration interval NOT NULL,
     title text NOT NULL,
+    description text NOT NULL,
     location text NOT NULL,
     recurrence varchar(10) NOT NULL,
     count integer, /* if count is not positive, use until */
@@ -29,7 +32,7 @@ CREATE TABLE CalendarEvent (
     interval integer,
     rec_list text,
 
-    CONSTRAINT unique_unique_id UNIQUE (unique_id)
+    CONSTRAINT calendarevent_unique_id_key UNIQUE (unique_id)
 );
 
 ALTER TABLE Calendar

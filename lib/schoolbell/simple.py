@@ -32,11 +32,12 @@ class SimpleCalendarEvent(CalendarEventMixin):
 
     implements(ICalendarEvent)
 
-    def __init__(self, dtstart, duration, title, location=None, unique_id=None,
+    def __init__(self, dtstart, duration, title, description=None, location=None, unique_id=None,
                  recurrence=None):
         self.dtstart = dtstart
         self.duration = duration
         self.title = title
+        self.description=description
         self.location = location
         self.recurrence = recurrence
         self.unique_id = unique_id

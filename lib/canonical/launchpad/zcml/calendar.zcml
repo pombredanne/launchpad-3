@@ -165,13 +165,17 @@
       for="schoolbell.interfaces.IEditCalendar"
       schema="schoolbell.interfaces.ICalendarEvent"
       label="New Calendar Event"
-      fields="title location dtstart duration"
+      fields="title description location dtstart duration"
       permission="zope.Public"
       template="../templates/calendar-event-addform.pt"
       class="canonical.launchpad.browser.CalendarEventAddView">
     <browser:widget
         field="title"
         class="canonical.launchpad.browser.TitleWidget"
+      />
+    <browser:widget
+        field="description"
+        class="canonical.launchpad.browser.DescriptionWidget"
       />
     <browser:widget
         field="dtstart"
@@ -187,28 +191,17 @@
       name="+display"
       for="schoolbell.interfaces.ICalendarEvent"
       schema="schoolbell.interfaces.ICalendarEvent"
-      fields="title location dtstart duration"
+      fields="title description location dtstart duration"
       label="Calendar Event"
       permission="zope.Public"
       template="../templates/calendar-event-display.pt"
-      lp:url="$calendar/events/$event.id/+display">
-    <!--
-    <browser:widget
-        field="title"
-        class="canonical.launchpad.browser.TitleWidget"
-      />
-    <browser:widget
-        field="dtstart"
-        class="canonical.launchpad.browser.LocalDateTimeWidget"
-      />
-    -->
-  </browser:schemadisplay>
+      lp:url="$calendar/events/$event.id/+display" />
 
   <browser:editform
       name="+edit"
       for="schoolbell.interfaces.ICalendarEvent"
       schema="schoolbell.interfaces.ICalendarEvent"
-      fields="title location dtstart duration"
+      fields="title description location dtstart duration"
       label="Edit Event"
       permission="zope.Public"
       template="../templates/calendar-event-editform.pt"
@@ -216,6 +209,10 @@
     <browser:widget
         field="title"
         class="canonical.launchpad.browser.TitleWidget"
+      />
+    <browser:widget
+        field="description"
+        class="canonical.launchpad.browser.DescriptionWidget"
       />
     <browser:widget
         field="dtstart"

@@ -308,7 +308,7 @@ class CalendarEventMixin:
         """
         # The import is here to avoid cyclic dependencies
         from schoolbell.simple import SimpleCalendarEvent
-        for attr in ['dtstart', 'duration', 'title', 'location', 'unique_id',
-                     'recurrence']:
+        for attr in ['dtstart', 'duration', 'title', 'description',
+                     'location', 'unique_id', 'recurrence']:
             kw.setdefault(attr, getattr(self, attr))
         return SimpleCalendarEvent(**kw)

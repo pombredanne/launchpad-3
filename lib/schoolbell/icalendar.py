@@ -36,10 +36,12 @@ You can also parse iCalendar files back into calendars:
 import datetime
 import calendar
 import re
+import pytz
 from cStringIO import StringIO
 from sets import Set
 from schoolbell.simple import SimpleCalendarEvent
 
+_utc_tz = pytz.timezone('UTC')
 
 def convert_event_to_ical(event):
     r"""Convert an ICalendarEvent to iCalendar VEVENT component.
@@ -68,6 +70,8 @@ def convert_event_to_ical(event):
         "BEGIN:VEVENT",
         "UID:%s" % ical_text(event.unique_id),
         "SUMMARY:%s" % ical_text(event.title)]
+    if event.description:
+        result.append("DESCRIPTION:%s" % ical_text(event.description))
     if event.location:
         result.append("LOCATION:%s" % ical_text(event.location))
 ### if event.recurrence is not None:   # TODO
@@ -177,10 +181,17 @@ def ical_datetime(value):
     """Format a datetime as an iCalendar DATETIME value.
 
         >>> from datetime import datetime
+        >>> from pytz import timezone
         >>> ical_datetime(datetime(2004, 12, 16, 10, 45, 07))
         '20041216T104507'
+        >>> ical_datetime(datetime(2004, 12, 16, 10, 45, 07,
+        ...                        tzinfo=timezone('Australia/Perth')))
+        '20041216T024507Z'
 
     """
+    if value.tzinfo:
+        value = value.astimezone(_utc_tz)
+        return value.strftime('%Y%m%dT%H%M%SZ')
     return value.strftime('%Y%m%dT%H%M%S')
 
 

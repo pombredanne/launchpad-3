@@ -85,6 +85,7 @@ class CalendarEvent(SQLBase, CalendarEventMixin):
     # actually an interval ...
     duration = DateTimeCol(dbName='duration', notNull=True)
     title = StringCol(dbName='title', notNull=True)
+    description = StringCol(dbName='description', notNull=True, default='')
     location = StringCol(dbName='location', notNull=True, default='')
 
     recurrence = None # TODO: implement this as a property

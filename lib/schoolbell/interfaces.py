@@ -19,7 +19,7 @@ fashion demonstrated above, you should preserve its unique_id attribute.
 """
 
 from zope.interface import Interface
-from zope.schema import TextLine, Int, Datetime, Date, List, Set, Choice
+from zope.schema import Text, TextLine, Int, Datetime, Date, List, Set, Choice
 from zope.schema import Field, Object
 
 
@@ -299,6 +299,10 @@ class ICalendarEvent(Interface):
     title = TextLine(
         title=u"Title",
         description=u"""The title of the event.""")
+
+    description = Text(
+        title=u"Description",
+        description=u"""A detailed description of the event.""")
 
     location = TextLine(
         title=u"Location",

@@ -3,24 +3,39 @@
 
 INSERT INTO Calendar (owner, title, revision)
     VALUES ((SELECT id from Person WHERE displayname = 'Sample Person'),
-            'Foo Bar', 0);
+            'Sample Person\'s Calendar', 0);
+INSERT INTO Calendar (owner, title, revision)
+    VALUES ((SELECT id from Person WHERE displayname = 'Foo Bar'),
+            'Foo Bar\'s Calendar', 0);
 
-UPDATE Person SET calendar = (SELECT id FROM Calendar WHERE title = 'Foo Bar')
+UPDATE Person SET calendar = (SELECT id FROM Calendar WHERE title = 'Sample Person\'s Calendar')
     WHERE id = (SELECT id from Person WHERE displayname = 'Sample Person');
+UPDATE Person SET calendar = (SELECT id FROM Calendar WHERE title = 'Foo Bar\'s Calendar')
+    WHERE id = (SELECT id from Person WHERE displayname = 'Foo Bar');
 
 INSERT INTO CalendarSubscription (person, calendar)
     VALUES ((SELECT id from Person WHERE displayname = 'Sample Person'),
-            (SELECT id FROM Calendar WHERE title = 'Foo Bar'));
+            (SELECT id FROM Calendar WHERE title = 'Sample Person\'s Calendar'));
+INSERT INTO CalendarSubscription (person, calendar)
+    VALUES ((SELECT id from Person WHERE displayname = 'Foo Bar'),
+            (SELECT id FROM Calendar WHERE title = 'Foo Bar\'s Calendar'));
+INSERT INTO CalendarSubscription (person, calendar)
+    VALUES ((SELECT id from Person WHERE displayname = 'Foo Bar'),
+            (SELECT id FROM Calendar WHERE title = 'Sample Person\'s Calendar'));
 
 INSERT INTO CalendarEvent (unique_id, calendar, dtstart, duration,
-                           title, location, recurrence)
-    VALUES ('sample-id-1', (SELECT id FROM Calendar WHERE title = 'Foo Bar'),
-            '2005-01-01 08:00:00', '01:00:00', 'Event 1', 'Location', '');
+                           title, description, location, recurrence)
+    VALUES ('sample-id-1', (SELECT id FROM Calendar WHERE title = 'Sample Person\'s Calendar'),
+            '2005-01-03 08:00:00', '01:00:00', 'Event 1', 'Desc 1', 'Location', '');
 INSERT INTO CalendarEvent (unique_id, calendar, dtstart, duration,
-                           title, location, recurrence)
-    VALUES ('sample-id-2', (SELECT id FROM Calendar WHERE title = 'Foo Bar'),
-            '2005-01-01 10:00:00', '01:00:00', 'Event 2', 'Location', '');
+                           title, description, location, recurrence)
+    VALUES ('sample-id-2', (SELECT id FROM Calendar WHERE title = 'Sample Person\'s Calendar'),
+            '2005-01-03 10:00:00', '01:00:00', 'Event 2', 'Desc 2', 'Location', '');
 INSERT INTO CalendarEvent (unique_id, calendar, dtstart, duration,
-                           title, location, recurrence)
-    VALUES ('sample-id-3', (SELECT id FROM Calendar WHERE title = 'Foo Bar'),
-            '2005-01-02 08:00:00', '01:00:00', 'Event 1', 'Location', '');
+                           title, description, location, recurrence)
+    VALUES ('sample-id-3', (SELECT id FROM Calendar WHERE title = 'Sample Person\'s Calendar'),
+            '2005-01-04 08:00:00', '01:00:00', 'Event 1', 'Desc 1', 'Location', '');
+INSERT INTO CalendarEvent (unique_id, calendar, dtstart, duration,
+                           title, description, location, recurrence)
+    VALUES ('sample-id-4', (SELECT id FROM Calendar WHERE title = 'Foo Bar\'s Calendar'),
+            '2005-01-04 08:00:00', '01:00:00', 'Foo Bar 1', 'Desc 1', 'Location', '');
