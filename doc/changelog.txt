@@ -2,6 +2,37 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-20 19:15:05 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1223
+
+    Summary:
+      Small fixes for JoinLaunchpad and ForgottenPassword pages.
+    Revision:
+      launchpad--devel--0--patch-1223
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-94
+       Small fixes on JoinLaunchpadView. Some of them according to Andrew's review.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-95
+       Small template fixes to make ForgottenPassword and JoinLaunchpad pages consistent with the Login page.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-96
+       merge from rf
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/launchpad-forgottenpassword.pt
+     lib/canonical/launchpad/templates/launchpad-join.pt
+     lib/canonical/launchpad/webapp/login.py
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-94
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-95
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-96
+
+
 2005-01-20 16:08:08 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1222
 
     Summary:

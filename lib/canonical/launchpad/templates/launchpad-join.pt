@@ -1,3 +1,4 @@
+<tal:do-this-first tal:content="view/process_form" />
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
@@ -5,23 +6,15 @@
 
 <head>
   <title metal:fill-slot="title">Join Launchpad</title>
-  <!-- Plone style sheet -->
   <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Soyuz style sheet -->
-  <style type="text/css" media="screen">@import url(soyuz.css);</style>
 </head>
 
 <body>
 
 <div metal:fill-slot="main">
 
-<div id="content" class="documentEditable">
-
-  <tal:dummy condition="view/formSubmitted">
-  </tal:dummy>
-
   <div tal:condition="not: view/success">
-    <h3>Join Launchpad</h3>
+    <h1>Join Launchpad</h1>
 
     <div class="formHelp">
       To Join Launchpad, just type your email address on the form bellow
@@ -29,42 +22,36 @@
       complete your registration process.
     </div>
 
-    <div class="documentContent" id="region-content">
-      <br />
-      <div class="portalMessage" tal:condition="view/errormessage"
-           tal:content="structure view/errormessage">
-      </div>
-      <form name="join" action="" method="POST">
-      <table>
-        <tr>
-          <td>Email:</td>
-          <td><input type="text" name="email" size="40"
-                     tal:attributes="value view/email|nothing" /></td>
-        </tr>
-        <tr>
-          <td colspan="2" align="right">
-            <input type="submit" name="SUBMIT" value="Join" />
-          </td>
-        </tr>
-      </table>
-      </form>
+    <div class="portalMessage" tal:condition="view/errormessage"
+         tal:content="structure view/errormessage">
     </div>
+
+    <br />
+    <form name="join" action="" method="POST">
+      <div class="field">
+        <label for="email">Email address</label>
+        <div class="formHelp">
+          Enter the email address you want to use on Launchpad
+        </div>
+        <input type="text" name="email" size="40"
+               tal:attributes="value view/email|nothing" />
+      </div>
+      <div class="formControls">
+        <input type="submit" name="SUBMIT" value="Join" />
+      </div>
+    </form>
   </div>
 
   <div tal:condition="view/success">
-    <h3>Thank You</h3>
+    <h1>Thank You</h1>
 
-    <div class="documentContent" id="region-content">
-      <br />
-      <p>An email message was sent to <span tal:replace="view/email"></span>
-      with instructions on how to finish the registration process. Thank you
-      for joining Launchpad.</p>
-    </div>
+    <br />
+    <p>An email message was sent to <span tal:replace="view/email"></span>
+    with instructions on how to finish the registration process. Thank you
+    for joining Launchpad.</p>
   </div>
 
-</div>
 </div>
 </body>
 
 </html>
-
