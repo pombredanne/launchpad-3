@@ -567,6 +567,7 @@ class IBinarypackage(Interface):
     section = Int(required=True)
     priority = Int(required=False)
     shlibdeps = Text(required=False)
+    depends = Text(required=False)
     recommends = Text(required=False)
     suggests = Text(required=False)
     conflicts = Text(required=False)

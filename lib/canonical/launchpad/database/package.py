@@ -96,9 +96,9 @@ class Binarypackage(SQLBase):
             'SourcepackagePublishing.sourcepackagerelease=SourcepackageRelease.id'
             ' AND SourcepackagePublishing.distrorelease = %d'
             ' AND SourcePackageRelease.sourcepackage = %d'
-            ' AND SourcepackagePublishing.uploadstatus = %d'
+            ' AND SourcepackagePublishing.status = %d'
             ' ORDER BY sourcePackageRelease.dateuploaded DESC'
-            % (distroRelease.id, self.build.sourcepackagerelease.sourcepackage.id,dbschema.SourceUploadStatus.SUPERCEDED)
+            % (distroRelease.id, self.build.sourcepackagerelease.sourcepackage.id,dbschema.PackagePublishingStatus.SUPERCEDED)
         ))
         if last:
             return last
@@ -277,7 +277,7 @@ class Sourcepackage(SQLBase):
             'SourcepackagePublishing.sourcepackagerelease=SourcepackageRelease.id'
             ' AND SourcepackagePublishing.distrorelease = %d'
             ' AND SourcePackageRelease.sourcepackage = %d'
-            ' AND SourcepackagePublishing.uploadstatus = %d'
+            ' AND SourcepackagePublishing.status = %d'
             % (distroRelease.id, self.id, status)
         ))
 
@@ -288,7 +288,7 @@ class Sourcepackage(SQLBase):
 
     def proposed(self, distroRelease):
         return self.uploadsByStatus(distroRelease,
-                                    dbschema.SourceUploadStatus.PROPOSED)
+                                    dbschema.PackagePublishingStatus.PROPOSED)
 
     def current(self, distroRelease):
         """Currently published releases of this package for a given distro.
@@ -299,8 +299,8 @@ class Sourcepackage(SQLBase):
             'SourcepackagePublishing.sourcepackagerelease=SourcepackageRelease.id'
             ' AND SourcepackagePublishing.distrorelease = %d'
             ' AND SourcepackageRelease.sourcepackage = %d'
-            ' AND SourcepackagePublishing.uploadstatus = %d'
-            % (distroRelease.id, self.id, dbschema.SourceUploadStatus.PUBLISHED)
+            ' AND SourcepackagePublishing.status = %d'
+            % (distroRelease.id, self.id, dbschema.PackagePublishingStatus.PUBLISHED)
         )
 
         return sourcepackagereleases
@@ -310,9 +310,9 @@ class Sourcepackage(SQLBase):
             'SourcepackagePublishing.sourcepackagerelease=SourcepackageRelease.id'
             ' AND SourcepackagePublishing.distrorelease = %d'
             ' AND SourcePackageRelease.sourcepackage = %d'
-            ' AND SourcepackagePublishing.uploadstatus = %d'
+            ' AND SourcepackagePublishing.status = %d'
             ' ORDER BY sourcePackageRelease.dateuploaded DESC'
-            % (distroRelease.id, self.id,dbschema.SourceUploadStatus.SUPERCEDED)
+            % (distroRelease.id, self.id,dbschema.PackagePublishingStatus.SUPERCEDED)
         ))
 
         if last:

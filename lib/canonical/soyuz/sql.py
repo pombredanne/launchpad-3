@@ -122,7 +122,13 @@ class DistroReleaseApp(object):
                  + 'OR Binarypackage.shortdesc ILIKE %s)'
                  % quote('%%' + pattern + '%%'))
         
-        ## FIXME: is those unique ?
+        # FIXME: (SQLObject_Selection+batching) Daniel Debonzi - 2004-10-13
+        # The selection is limited here because batching and SQLObject
+        # selection still not working properly. Now the days for each
+        # page showing BATCH_SIZE results the SQLObject makes queries
+        # for all the related things available on the database which
+        # presents a very slow result.
+        # Is those unique ?
         return Binarypackage.select(query)[:500]
 
 
@@ -252,20 +258,16 @@ class DistroReleaseSourceApp(object):
     def currentversions(self):
         return [CurrentVersion(k, v) for k,v in self.currentReleases().\
                 iteritems()]
-
-        
-        # FIXME: Probably should be more than just PUBLISHED uploads (e.g.
+        # FIXME: (current_versions) Daniel Debonzi - 2004-10-13
+        # Probably should be more than just PUBLISHED uploads (e.g.
         # NEW + ACCEPTED + PUBLISHED?)
-        #If true, it is defined inside database.py
+        # If true, it is defined inside launchpad/database/package.py
 
     def lastversions(self):
         return self.sourcepackage.lastversions(self.release)
 
     lastversions = property(lastversions)
     
-    ##Does this relation SourcePackageRelease and Builds exists??
-    ##Is it missing in the database or shoult it be retrived
-    ##   using binarypackage table?
     def builds(self):
         return self.sourcepackage.builds
 
@@ -277,8 +279,6 @@ class DistroReleaseSourcesApp(object):
 
     Used for web UI.
     """
-    # FIXME:docstring says this contains SourcePackage objects, but it seems to
-    # contain releases.  Is this a bug or is the docstring wrong?
     table = SourcePackageRelease
     clauseTables = ('Sourcepackage', 'SourcepackagePublishing')
 
@@ -303,8 +303,9 @@ class DistroReleaseSourcesApp(object):
         return Sourcepackage.select(query)[:500]
 
     def __getitem__(self, name):
-        # XXX: What about multiple results?
-        #      (which shouldn't happen here...)
+        # XXX: (mult_results) Daniel Debonzi 2004-10-13
+        # What about multiple results?
+        #(which shouldn't happen here...)
         query = self._query() + \
                 (' AND SourcepackageName.name = '
                  '%s' % quote(name))
@@ -320,8 +321,15 @@ class DistroReleaseSourcesApp(object):
             return DistroReleaseSourceApp(self.release, sourcePackage)
 
 
-    ##FIXME: the results are NOT UNIQUE (DISTINCT)
-    ##FIXME: the results are LIMITED by hand
+    # FIXME: (distinct_query) Daniel Debonzi - 2004-10-13
+    # the results are NOT UNIQUE (DISTINCT)
+
+    # FIXME: (SQLObject_Selection+batching) Daniel Debonzi - 2004-10-13
+    # The selection is limited here because batching and SQLObject
+    # selection still not working properly. Now the days for each
+    # page showing BATCH_SIZE results the SQLObject makes queries
+    # for all the related things available on the database which
+    # presents a very slow result.
     def __iter__(self):
         query = self._query()
         return iter(self.table.select(query,
@@ -364,11 +372,14 @@ class DistroTeamApp(object):
 
 class PeopleApp(object):
     def __init__(self):
-        #FIXME these names are totaly crap
+        # FIXME: (tmp_names) Daniel Debonzi - 2004-10-13
+        # these names are totaly crap
         self.p_entries = Person.select('teamowner IS NULL').count()
         self.t_entries = Person.select('teamowner IS NOT NULL').count()
 
-    #FIXME: traverse by ID ?
+    # FIXME: (person_traverse) Daniel Debonzi - 2004-10-13
+    # The Person page still traversing person by id.
+    # Now it should be traversed by name
     def __getitem__(self, id):
         try:
             return PersonApp(int(id))
@@ -377,7 +388,9 @@ class PeopleApp(object):
             raise
 
     def __iter__(self):
-        #FIXME is that the only way to ORDER
+        # FIXME: (ordered_query) Daniel Debonzi 2004-10-13
+        # Is available in SQLObject a good way to get results
+        # ordered?
         return iter(Person.select('1=1 ORDER by displayname'))
 
 class PersonApp(object):
@@ -391,15 +404,18 @@ class PersonApp(object):
         self.statusset = []
 
 
-        #FIXME: Crap solution for <select> entity on person-join.pt
+        # FIXME: (dbschema_membershiprole) Daniel Debonzi
+        # 2004-10-13
+        # Crap solution for <select> entity on person-join.pt
         for item in dbschema.MembershipRole.items:
             self.roleset.append(item.title)
         for item in dbschema.MembershipStatus.items:
             self.statusset.append(item.title)
 
         
-        # FIXME: Most of this code probably belongs as methods/properties of
-        #        Person
+        # FIXME: Daniel Debonzi 2004-10-13
+        # Most of this code probably belongs as methods/properties of
+        # Person
 
         try:
             self.members = Membership.selectBy(teamID=self.id)
@@ -409,7 +425,8 @@ class PersonApp(object):
             self.members = None
 
         try:
-            #FIXME: My Teams should be:
+            # FIXME: (my_team) Daniel Debonzi 2004-10-13
+            # My Teams should be:
             # -> the Teams owned by me
             # OR
             # -> the Teams which I'm member (as It is)
@@ -448,7 +465,10 @@ class PersonApp(object):
             self.distroreleaseroles = None
             
         # Retrieve an email by person id
-        #FIXME: limited to one, solve the EDIT multi emails problem 
+        
+        # FIXME: (multi_emails) Daniel Debonzi 2004-10-13
+        # limited to one, solve the EDIT multi emails problem
+        # Is it realy be editable ?
         self.email = EmailAddress.selectBy(personID=self.id)
 
         try:
@@ -480,7 +500,10 @@ class PersonApp(object):
                  'AND SourcePackage.maintainer = %i'
                  %self.id)
         
-##FIXME: ORDER by Sourcepackagename !!!
+        # FIXME: (sourcename_order) Daniel Debonzi 2004-10-13
+        # ORDER by Sourcepackagename
+        # The result should be ordered by SourcepackageName
+        # but seems that is it not possible
         return Set(SourcePackageRelease.select(query))
     
 
@@ -636,12 +659,15 @@ class DistroReleaseBinariesApp(object):
                  % quote('%%' + pattern + '%%'))
 
 
-        ## WTF ist That ?? I wonder how many copies of this code we will find !
-        ##FIXME: expensive routine
+        # WTF ist That ?? I wonder how many copies of this code we will find !
+        # Will be solved when bug #2094 is fixed
+        # FIXME: (distinct_query) Daniel Debonzi 2004-10-13
+        # expensive routine
         selection = Set(Binarypackage.select(query)[:500])
 
-        ##FIXME: Dummy solution to avoid a binarypackage to be shown more
-        ##   then once
+        # FIXME: (distinct_query) Daniel Debonzi 2004-10-13
+        # Dummy solution to avoid a binarypackage to be shown more
+        # then once
         present = []
         result = []
         for srcpkg in selection:
@@ -664,8 +690,9 @@ class DistroReleaseBinariesApp(object):
             raise KeyError, name
 
 
-    ##FIXME: The results are NOT UNIQUE (DISTINCT)
-    ##FIXME: they were LIMITED by hand
+    # FIXME: (distinct_query) Daniel Debonzi 2004-10-13
+    # FIXME: (SQLObject_Selection+batching)
+    # they were LIMITED by hand
     def __iter__(self):
         query = self.where % self.release.id
         return iter(Binarypackage.select(query, orderBy=\
@@ -707,7 +734,8 @@ class SourcePackages(object):
             % (self.release.id))
         
     def __getitem__(self, name):
-        # XXX: What about multiple results?
+        # XXX: (mult_results) Daniel Debonzi 2004-10-13
+        # What about multiple results?
         #      (which shouldn't happen here...)
 
         query = self._query() + \
@@ -727,7 +755,7 @@ class SourcePackages(object):
 
 
 ## Doesn't work as expected !!!!
-## 
+## (Deprecated)
 class BinaryPackages(object):
     """Container of BinaryPackage objects.
 
@@ -748,8 +776,9 @@ class BinaryPackages(object):
             % (self.release.id))
         
     def __getitem__(self, name):
-        # XXX: What about multiple results?
-        #      (which shouldn't happen here...)
+        # XXX: (mult_results) Daniel Debonzi 2004-10-13
+        # What about multiple results?
+        #(which shouldn't happen here...)
 
         query = self._query() + \
                 (' AND BinaryPackageBuild.binarypackage = BinaryPackage.id'
