@@ -2,6 +2,52 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-16 05:01:12 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1442
+
+    Summary:
+      Fix front page and tweak main template
+    Revision:
+      launchpad--devel--0--patch-1442
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-191
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-192
+       Tweaks to main HTML template (default heading 'Launchpad' for front page, formatting, and nicer URLs)
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-193
+       More main template tweaks and improve root pagetest. Pagetest currently failing with chunkydiff, so committing for Steve to examine
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-194
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-195
+       Work around pagetest bugs
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-196
+       Add example of pagetest which doesn't pass due to pagetest bugs
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-197
+       Remove failed pagetest example so I can merge
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-root-page.txt
+     lib/canonical/launchpad/templates/main-template.pt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-191
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-192
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-193
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-194
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-195
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-196
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-197
+
+
 2005-03-15 21:45:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1441
 
     Summary:
