@@ -213,8 +213,8 @@ class Launchpad(SQLThing):
         data["distro"] = self._debiandistro
         self._insert("sourcepackage", data)
 
-        ubuntupackage = self.getSourcePackage(name[0])
-        debianpackage = self.getSourcePackage(name[0], self._debiandistro)
+        ubuntupackage = self.getSourcePackage(src.package)
+        debianpackage = self.getSourcePackage(src.package, self._debiandistro)
         
         data = {
             "subject": ubuntupackage,
