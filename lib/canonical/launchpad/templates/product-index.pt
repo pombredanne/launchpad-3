@@ -53,7 +53,7 @@
             <dt><a tal:attributes="href python: string('+sources/') + source.name"
                     tal:content="source/title">Sync Title</a>&nbsp;<a
                     tal:condition="source/canChangeProduct"
-                    tal:attributes="href source/name">Assign to product</a></dt>
+                    tal:attributes="href python: string('+sources/') + source.name">Assign to product</a></dt>
             <dd tal:content="source/description"></dd>
         </dl>
 
