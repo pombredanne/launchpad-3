@@ -76,20 +76,25 @@ def quote(s):
 
 class FileDownloadClient(object):
     """A simple client to download files from the librarian"""
+
     def __init__(self, host, port):
         self.host = host
         self.port = port
+        self._logger = None
+
+    def _warning(self, msg, *args):
+        if self._logger is not None:
+            self._logger.warning(msg, *args)
 
     def getFile(self, fileID, aliasID, filename):
         """Returns a fd to read the file from
-        
+
         :param fileID: A unique ID for the file content to download
         :param aliasID: A unique ID for the alias
         :param flename: The filename of the file being downloaded
 
         :returns: file-like object
         """
-        
         url = ('http://%s:%d/%s/%s/%s'
                % (self.host, self.port, fileID, aliasID, quote(filename)))
         return urllib2.urlopen(url)
@@ -125,6 +130,7 @@ class FileDownloadClient(object):
         """
         url = ('http://%s:%d/byalias?alias=%s'
                % (self.host, self.port, aliasID))
+        self._warning('getPathForAlias: http get %s', url)
         f = urllib2.urlopen(url)
         l = f.read()
         f.close()
@@ -132,9 +138,8 @@ class FileDownloadClient(object):
             raise DownloadFailed, 'Alias %r not found' % (aliasID,)
         if l == 'Bad search':
             raise DownloadFailed, 'Bad search: ' + repr(aliasID)
-
         return l.rstrip()
-    
+
     def getURLForAlias(self, aliasID):
         """Returns the url for talking to the librarian about the given
         alias.
@@ -156,8 +161,8 @@ class FileDownloadClient(object):
         """
         url = self.getURLForAlias(aliasID)
         return urllib2.urlopen(url)
-    
-    
+
+
 if __name__ == '__main__':
     import os, sys, sha
     uploader = FileUploadClient()

@@ -8,6 +8,7 @@
     <include file="soyuz.zcml" />
 
     <!-- Content class configuration -->
+    <include file="datetime.zcml" />
     <include file="skins.zcml" />
     <include file="logintoken.zcml" />
     <include file="archuserid.zcml" />
@@ -61,6 +62,7 @@
     <include file="potranslation.zcml" />
     <include file="files.zcml" />
     <include file="package.zcml" />
+    <include file="codeofconduct.zcml" />
 
 
     <include file="widgets.zcml" />

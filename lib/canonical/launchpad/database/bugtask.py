@@ -271,89 +271,63 @@ class BugTasksReport(object):
         self.Bug = Bug
         self.BT = BugTask
         self.showclosed = False
-        self._maintainedPackageBugs = None
-        self._maintainedProductBugs = None
-        self._productAssigneeBugs = None
-        self._packageAssigneeBugs = None
-        self._assignedBugs = None
 
     # bugs assigned (i.e. tasks) to packages maintained by the user
     def maintainedPackageBugs(self):
-        if self._maintainedPackageBugs is not None:
-            return self._maintainedPackageBugs
-        querystr = """
-            BugTask.sourcepackagename = SourcePackage.sourcepackagename AND 
-            BugTask.distribution = SourcePackage.distribution AND 
-            SourcePackage.maintainer=%s AND
-            BugTask.severity>=%s AND
-            BugTask.priority>=%s
-            """ % (self.user.id,
-                   self.minseverity,
-                   self.minpriority)
+        querystr = (
+            "BugTask.sourcepackagename = SourcePackage.sourcepackagename AND "
+            "BugTask.distribution = SourcePackage.distro AND "
+            "SourcePackage.maintainer = %s AND "
+            "BugTask.severity >= %s AND "
+            "BugTask.priority >= %s") % (
+            self.user.id, self.minseverity, self.minpriority)
         clauseTables = ('SourcePackage',)
 
         if not self.showclosed:
-            querystr = querystr + ' AND BugTask.bugstatus<3'
-        self._maintainedPackageBugs = list(self.BT.select(querystr,
-        clauseTables=clauseTables))
-        return self._maintainedPackageBugs
+            querystr = querystr + ' AND BugTask.status < 30'
+        return list(self.BT.select(querystr, clauseTables=clauseTables))
 
     # bugs assigned (i.e. tasks) to products owned by the user
     def maintainedProductBugs(self):
-        if self._maintainedProductBugs is not None:
-            return self._maintainedProductBugs
-        querystr = """
-            BugTask.product=Product.id AND
-            Product.owner=%s AND
-            BugTask.severity>=%s AND
-            BugTask.priority>=%s
-            """ % (self.user.id,
-                   self.minseverity,
-                   self.minpriority)
+        querystr = (
+            "BugTask.product = Product.id AND "
+            "Product.owner = %s AND "
+            "BugTask.severity >= %s AND "
+            "BugTask.priority >= %s") % (
+            self.user.id, self.minseverity, self.minpriority)
         
         clauseTables = ('Product',)
 
         if not self.showclosed:
-            querystr = querystr + ' AND BugTask.bugstatus<3'
-        self._maintainedProductBugs = list(self.BT.select(querystr,
-        clauseTables=clauseTables))
-        return self._maintainedProductBugs
+            querystr = querystr + ' AND BugTask.status < 30'
+        return list(self.BT.select(querystr, clauseTables=clauseTables))
 
     # package bugs assigned specifically to the user
     def packageAssigneeBugs(self):
-        if self._packageAssigneeBugs is not None:
-            return self._packageAssigneeBugs
-        querystr = """
-            BugTask.assignee=%s AND
-            BugTask.severity>=%s AND
-            BugTask.priority>=%s
-            """ % (self.user.id, self.minseverity,
-                   self.minpriority)
+        querystr = (
+            "BugTask.sourcepackagename IS NOT NULL AND "
+            "BugTask.assignee = %s AND "
+            "BugTask.severity >= %s AND "
+            "BugTask.priority >= %s") % (
+            self.user.id, self.minseverity, self.minpriority)
         if not self.showclosed:
-            querystr = querystr + ' AND BugTask.bugstatus<3'
-        self._packageAssigneeBugs = list(self.BT.select(querystr))
-        return self._packageAssigneeBugs
+            querystr = querystr + ' AND BugTask.status < 30'
+        return list(self.BT.select(querystr))
 
     # product bugs assigned specifically to the user
     def productAssigneeBugs(self):
-        if self._productAssigneeBugs is not None:
-            return self._productAssigneeBugs
-        querystr = """
-            BugTask.assignee=%s AND
-            BugTask.severity>=%s AND
-            BugTask.priority>=%s
-                   """ % (self.user.id,
-                          self.minseverity,
-                          self.minpriority)
+        querystr = (
+            "BugTask.product IS NOT NULL AND "
+            "BugTask.assignee =%s AND "
+            "BugTask.severity >=%s AND "
+            "BugTask.priority >=%s") % (
+            self.user.id, self.minseverity, self.minpriority)
         if not self.showclosed:
-            querystr = querystr + ' AND BugTask.bugstatus<3'
-        self._productAssigneeBugs = list(self.BT.select(querystr))
-        return self._productAssigneeBugs
+            querystr = querystr + ' AND BugTask.status < 30'
+        return list(self.BT.select(querystr))
 
     # all bugs assigned to a user
     def assignedBugs(self):
-        if self._assignedBugs is not None:
-            return self._assignedBugs
         bugs = Set()
         for bugtask in self.maintainedPackageBugs():
             bugs.add(bugtask.bug)
@@ -366,6 +340,5 @@ class BugTasksReport(object):
         buglistwithdates = [ (bug.datecreated, bug) for bug in bugs ]
         buglistwithdates.sort()
         buglistwithdates.reverse()
-        bugs = [ bug[1] for bug in buglistwithdates ]
-        self._assignedBugs = bugs
-        return self._assignedBugs
+        bugs = [bug[1] for bug in buglistwithdates]
+        return bugs

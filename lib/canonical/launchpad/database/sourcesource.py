@@ -102,7 +102,7 @@ class SourceSource(SQLBase):
         """enable the sync for processing"""
         self.processingapproved='NOW'
         self.syncinterval=datetime.timedelta(1)
-    
+
     def syncCertified(self):
         """is the sync enabled"""
         return self.processingapproved is not None
@@ -137,7 +137,7 @@ class SourceSource(SQLBase):
         elif self.rcstype == RCSTypeEnum.svn:
             return self.svnrepository
         elif self.rcstype == RCSTypeEnum.package:
-            return 
+            return
         else:
             logging.critical ("unhandled source rcs type: %s", self.rcstype)
             # FIXME!
@@ -148,8 +148,10 @@ class SourceSource(SQLBase):
     # _sets_* methods into properties automagically]
     #FIXME: buildbot should updated this on mirror completion.
     def _get_TYPE(self):
+        # TODO: That is broken, that is cruft, and should be removed at
+        # earliest convenience. -- 2005-02-17 David Allouche
  #       if self.lastsynced is None:
-        if self.syncinterval is None or int(self.syncinterval) == 0:
+        if self.syncinterval is None or _interval_to_seconds(self.syncinterval) == 0:
             return 'import'
         else:
             return 'sync'
@@ -170,24 +172,21 @@ class SourceSource(SQLBase):
     def _set_branchto(self, value): self.newbranchbranch = value
     def _get_archversion(self): return self.newbranchversion
     def _set_archversion(self, value): self.newbranchversion = value
-    
+
     def buildJob(self):
         # OLD: The rest of this method can probably be deleted now.
         # NEW: it so can't, inheritance doesn't work here due to the RPC constraints.
         from importd.Job import CopyJob
         job = CopyJob()
         job.repository = str(self.repository)
-        #       if self.lastsynced is None:
         if self.syncingapproved is None:
-	#self.frequency is None or int(self.frequency) == 0:
             job.TYPE = 'import'
             if self.cvstarfileurl is not None and self.cvstarfileurl != "":
                 job.repository = str(self.cvstarfileurl)
             job.frequency=0
         else:
             job.TYPE = 'sync'
-
-            job.frequency=int(self.syncinterval)
+            job.frequency = _interval_to_seconds(self.syncinterval)
 
         job.tagging_rules=[]
 
@@ -215,6 +214,14 @@ class SourceSource(SQLBase):
         job.releaseRoot = self.releaseroot
         job.releaseFileGlob = self.releasefileglob
         return job
+
+
+def _interval_to_seconds(interval):
+    try:
+        return interval.days * 24 * 60 * 60 + interval.seconds
+    except AttributeError:
+        msg = "Failed to convert interval to seconds: %r" % (interval,)
+        raise TypeError(msg)
 
 
 class _JobNameMunger(object):

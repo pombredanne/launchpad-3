@@ -91,14 +91,14 @@
     </browser:schemadisplay>
 
     <browser:addform
-        name="+packagetask"
+        name="+distrotask"
         schema="canonical.launchpad.interfaces.IBugTask"
         for="canonical.launchpad.interfaces.IBugTaskSet"
         label="Add SourcePackage Bug Task"
-        fields="distribution sourcepackagename binarypackagename status priority severity assignee owner"
+        fields="distribution sourcepackagename owner"
         content_factory="canonical.launchpad.database.BugTaskFactory"
         arguments=""
-        keyword_arguments="distribution sourcepackagename binarypackagename status priority severity owner"
+        keyword_arguments="distribution sourcepackagename owner"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
         lp:url="malone/bugs/$Bug.id/tasks/+packagetask">
@@ -121,7 +121,8 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IReadOnlyDistroBugTask"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename bugtitle bugdescription status priority severity assignee"
+        fields="sourcepackagename binarypackagename bugtitle bugdescription
+                status priority severity assignee"
         label="Source Package Bug Task"
         permission="zope.Public"
         template="../templates/bugtask-display.pt"
@@ -141,8 +142,10 @@
     <securedutility
         class="canonical.launchpad.database.BugTasksReport"
         provides="canonical.launchpad.interfaces.IBugTasksReport">
-        <allow interface="canonical.launchpad.interfaces.IBugTasksReport"
-            />
+        <allow interface="canonical.launchpad.interfaces.IBugTasksReport" />
+        <require
+            permission="zope.Public"
+            set_attributes="user minseverity minpriority showclosed" />
     </securedutility>
 
     <browser:defaultView

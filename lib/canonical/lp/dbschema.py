@@ -1328,6 +1328,14 @@ class BugTaskStatus(DBSchema):
         something needing fixing.
         """)
 
+    PENDINGUPLOAD = Item(25, """
+        PendingUpload
+
+        The source package with the fix has been sent off to the buildds.
+        The bug will be resolved once the newly uploaded package is
+        completed.
+        """)
+
     FIXED = Item(30, """
         Fixed
 

@@ -19,9 +19,7 @@
             <!-- XXX: Brad Bollenbach, 2004-12-16: Find a place to put this. -->
             <a href="+about">About Malone</a>
         </li>
-        <li tal:replace="nothing">
-            <!-- XXX: Brad Bollenbach, 2004-12-16: We'll get this in
-            soon, but not for the first release. -->
+        <li>
             <a href="bugs/+package">File a Bug on a Package</a> - report a bug
             on something that you installed with apt, rpm, emerge or something
             similar. <b>If you're not sure, start here.</b>
@@ -30,7 +28,14 @@
             <a href="products">File a Bug on a Product</a> - report a bug
             on something that you installed manually.
         </li>
-        <li><a href="bugs">Search/View Bugs</a> - view or search bugs that have already been reported</li>
+        <li>
+            <a href="bugs">Search/View Bugs</a> - view or search bugs that have
+            already been reported
+        </li>
+        <li>
+            <a href="assigned">Assigned Bug Reports</a> - retrieve reports on
+            bugs assigned to a specific person
+        </li>
     </ul>
 
 </div>

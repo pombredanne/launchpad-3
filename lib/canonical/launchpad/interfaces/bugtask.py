@@ -7,7 +7,8 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
-from canonical.launchpad.interfaces import IHasProductAndAssignee
+from canonical.launchpad.interfaces import IHasProductAndAssignee, \
+    IHasDateCreated
 
 class IEditableUpstreamBugTask(IHasProductAndAssignee):
     """A bug assigned to upstream, which is editable by the current
@@ -29,7 +30,7 @@ class IReadOnlyDistroBugTask(Interface):
     current user."""
     pass
 
-class IBugTask(Interface):
+class IBugTask(IHasDateCreated):
     """A description of a bug needing fixing in a particular product
     or package."""
     id = Int(title=_("Bug Task #"))

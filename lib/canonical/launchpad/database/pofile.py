@@ -382,7 +382,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     def poFilesToImport(self):
         for pofile in iter(self.poFiles):
-            if pofile.rawimportstatus == RosettaImportStatus.PENDING:
+            if pofile.rawimportstatus == int(RosettaImportStatus.PENDING):
                 yield pofile
 
     def getPOFileByLang(self, language_code, variant=None):

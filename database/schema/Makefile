@@ -126,7 +126,8 @@ all: dev test
 	@ echo "* All done"
 
 doc:
-	${HOME}/Desktop/build/bin/postgresql_autodoc -d ${DBNAME} -f launchpad -t html
+	postgresql_autodoc -d ${DBNAME} -f launchpad -t html
+	${PYTHON} diagram.py
 
 newsample-foaf:
 	pg_dump -d ${DBNAME} -a -D -O --table=person | grep -v "\(SET \| TOC \)" > ../sampledata/new-foaf.sql
@@ -163,9 +164,3 @@ newsampledata:
 
 .PHONY: default base all
 
-tst:
-	postgresql_autodoc -d launchpad_dev -f tmp -l . -tdot
-	fdp -o tmp.ps -Tps -Gsplines=true -GK=4 -Gmaxiter=100000 -Nwidth=1.75 -Gsep=.1 < tmp.dot
-	gnome-open tmp.ps
-
-	#python hack.py | fdp -o tmp.ps -Tps -Gsplines=true -GK=4 -Gmaxiter=100000 -Nwidth=1.75 -Gsep=.1

@@ -192,7 +192,7 @@ class ProductVocabulary(SQLObjectVocabularyBase):
 
     def getTermByToken(self, token):
         objs = self._table.select(self._table.q.name == token)
-        if len(objs) != 1:
+        if objs.count() != 1:
             raise LookupError, token
         return self._toTerm(objs[0])
 

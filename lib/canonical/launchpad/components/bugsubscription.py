@@ -70,9 +70,10 @@ class BugSubscriptionSetAdapter:
 # XXX, Brad Bollenbach, 2004-12-07: move this into an adapter for IPerson
 def _get_best_email_address(person):
     if person:
-        valid_email_addresses = EmailAddress.select(AND(
-            EmailAddress.q.personID == person.id,
-            EmailAddress.q.status == dbschema.EmailAddressStatus.VALIDATED.value))
+        valid_email_addresses = list(EmailAddress.selectBy(
+            personID=person.id,
+            status=dbschema.EmailAddressStatus.VALIDATED.value
+        ))
 
         best_email = None
         if valid_email_addresses:

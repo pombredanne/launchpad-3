@@ -12,24 +12,6 @@ sys.path.append(os.path.join(
     os.path.dirname(__file__), os.pardir, os.pardir, 'lib'
     ))
 
-# tables = [
-#     '"public"."person"',
-#     '"public"."emailaddress"',
-#     '"public"."gpgkey"',
-#     '"public"."ircid"',
-#     '"public"."jabberid"',
-#     '"public"."karma"',
-#     '"public"."logintoken"',
-#     '"public"."personlabel"',
-#     '"public"."personlanguage"',
-#     '"public"."sshkey"',
-#     '"public"."teammembership"',
-#     '"public"."teamparticipation"',
-#     '"public"."wikiname"',
-#     ]
-# 
-# tables = []
-
 config = SafeConfigParser()
 config.read(['diagram.cfg'])
 
@@ -125,7 +107,8 @@ def tartup(filename, outfile, section):
         # Trim foreign key relationships as specified, replacing with phantom
         # links
         m = re.search(
-                r'^\s*"(.+?)" \s -> \s "(.*?)" \s \[label="(.*?)"\]; \s* $',
+                r'^\s*"(.+?)" \s -> \s "(.*?)" \s '
+                r'\[label="(.*?)"\]; \s* $',
                 line, re.X
                 )
         if m is None:
@@ -166,7 +149,7 @@ def tartup(filename, outfile, section):
         counter += 1
         lines[i] = '''
             "%(fake_node)s" [shape="ellipse",label="%(t2)s",color=red ];
-            "%(t1)s" -> "%(fake_node)s" [label=""];
+            "%(t1)s" -> "%(fake_node)s" [label="", len=.01, w=10000];
             ''' % vars()
     open(outfile, 'w').write('\n'.join(lines))
 
@@ -221,22 +204,23 @@ def main():
         tartup('autodoc.dot', '+%s.dot' % section, section)
 
         # Render
-        lang = config.get(section, 'output')
-        cmd = config.get(section, 'command')
+        for lang in ['ps', 'svg']:
+            cmd = config.get(section, '%s_command' % lang)
 
-        print (
-                'Producing %(section)s.%(lang)s from %(section)s.dot '
-                'using %(lang)s' % vars()
+            print (
+                    'Producing %(section)s.%(lang)s from %(section)s.dot '
+                    'using %(lang)s' % vars()
+                    )
+
+            csection = section.capitalize()
+
+            cmd = (
+                '%(cmd)s -Glabel=%(csection)s -o %(section)s.%(lang)s '
+                '-T%(lang)s +%(section)s.dot' % vars()
                 )
-
-        csection = section.capitalize()
-
-        cmd = (
-            '%(cmd)s -Glabel=%(csection)s -o %(section)s.%(lang)s '
-            '-T%(lang)s +%(section)s.dot' % vars()
-            )
-        rv = os.system(cmd)
-        assert rv == 0, 'Error %d running %r' % (rv, cmd)
+            print repr(cmd)
+            rv = os.system(cmd)
+            assert rv == 0, 'Error %d running %r' % (rv, cmd)
 
     ungraphed_tables = [t for t in all_tables if t not in graphed_tables]
     if ungraphed_tables:

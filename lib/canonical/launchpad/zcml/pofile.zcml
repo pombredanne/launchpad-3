@@ -11,6 +11,11 @@
             interface="canonical.launchpad.interfaces.IEditPOFile"
             set_attributes="header pluralforms"
             />
+        <require
+            permission="zope.Public"
+            interface="canonical.launchpad.interfaces.IRawFileData"
+            set_attributes="rawimportstatus"
+            />
     </content>
 
     <browser:defaultView

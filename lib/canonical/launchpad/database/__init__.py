@@ -1,9 +1,6 @@
-# Monkeypatch sqlobject to add __len__ to SelectResults.
-import sqlobject.main
-if getattr(sqlobject.main.SelectResults, '__len__', None) is None:
-    sqlobject.main.SelectResults.__len__ = lambda self: self.count()
-
 #
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
 # first the real ones
 #
 from canonical.launchpad.database.milestone import *
@@ -52,6 +49,7 @@ from canonical.launchpad.database.queue import *
 from canonical.launchpad.database.country import *
 from canonical.launchpad.database.spokenin import *
 from canonical.launchpad.database.logintoken import *
+from canonical.launchpad.database.codeofconduct import *
 
 # XXX old style file with all the Soyuz classes in it that still need to br
 # broken out.

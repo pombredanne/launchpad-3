@@ -7,6 +7,7 @@ from persistent import IPersistent
 # file, one of person, project, bug, etc.
 #
 
+from canonical.launchpad.interfaces.idatetime import *
 from canonical.launchpad.interfaces.pofile import *
 from canonical.launchpad.interfaces.project import *
 from canonical.launchpad.interfaces.product import *
@@ -57,6 +58,7 @@ from canonical.launchpad.interfaces.geoip import *
 from canonical.launchpad.interfaces.ssh import *
 from canonical.launchpad.interfaces.logintoken import *
 from canonical.launchpad.interfaces.karma import *
+from canonical.launchpad.interfaces.codeofconduct import *
 
 # XXX this is old soyuz style and must go
 from canonical.launchpad.interfaces.soyuz import *

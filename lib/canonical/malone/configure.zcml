@@ -52,6 +52,12 @@
 
     <browser:suburl
         for="canonical.malone.IMaloneApplication"
+        utility="canonical.launchpad.interfaces.IBugTasksReport"
+        permission="zope.Public"
+        name="assigned" />
+
+    <browser:suburl
+        for="canonical.malone.IMaloneApplication"
         utility="canonical.launchpad.interfaces.IProjectSet"
         permission="zope.Public"
         name="projects" />

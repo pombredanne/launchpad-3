@@ -87,7 +87,9 @@
                                             Pride and prejudice in About box
                                         </a>
                                     </strong>
-                                    <small>(7 months old)</small>
+                                    <small tal:content="python:'(' + view.currentApproximateAge(bugtask) + ' old)'">
+                                        (7 months old)
+                                    </small>
                                 </div>
                                 <div>
                                     <small>

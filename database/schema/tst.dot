@@ -1,56 +1,11 @@
 digraph g {
-graph [
-rankdir = "LR",
-concentrate = true,
-ratio = auto
-];
-node [
-fontsize = "10",
-shape = record
-];
-edge [
-];
 
-"emailaddress" [shape = record, label = "<col0> \N |  id:  serial\l email:  text\l person:  integer\l status:  integer\l" ];
+    "POTemplate" [label="POTemplate"];
+    "SourcePackageName" [label="SourcePackageName"];
+    "DistroRelease" [label="DistroRelease"];
+    "Product" [label="Product"];
 
-"gpgkey" [shape = record, label = "<col0> \N |  id:  serial\l person:  integer\l keyid:  text\l fingerprint:  text\l pubkey:  text\l revoked:  boolean\l algorithm:  integer\l keysize:  integer\l" ];
-
-"ircid" [shape = record, label = "<col0> \N |  id:  serial\l person:  integer\l network:  text\l nickname:  text\l" ];
-
-"jabberid" [shape = record, label = "<col0> \N |  id:  serial\l person:  integer\l jabberid:  text\l" ];
-
-"karma" [shape = record, label = "<col0> \N |  id:  serial\l karmafield:  integer\l datecreated:  timestamp without time zone\l person:  integer\l points:  integer\l" ];
-
-"logintoken" [shape = record, label = "<col0> \N |  id:  serial\l requester:  integer\l requesteremail:  text\l email:  text\l created:  timestamp without time zone\l tokentype:  integer\l token:  text\l" ];
-
-"person" [shape = record, label = "<col0> \N |  id:  serial\l displayname:  text\l givenname:  text\l familyname:  text\l password:  text\l teamowner:  integer\l teamdescription:  text\l karma:  integer\l karmatimestamp:  timestamp without time zone\l name:  text\l language:  integer\l fti:  tsvector\l" ];
-
-"personlabel" [shape = record, label = "<col0> \N |  person:  integer\l label:  integer\l" ];
-
-"personlanguage" [shape = record, label = "<col0> \N |  id:  serial\l person:  integer\l language:  integer\l" ];
-
-"sshkey" [shape = record, label = "<col0> \N |  id:  serial\l person:  integer\l keytype:  integer\l keytext:  text\l comment:  text\l" ];
-
-"teammembership" [shape = record, label = "<col0> \N |  id:  serial\l person:  integer\l team:  integer\l role:  integer\l status:  integer\l" ];
-
-"teamparticipation" [shape = record, label = "<col0> \N |  id:  serial\l team:  integer\l person:  integer\l" ];
-
-"wikiname" [shape = record, label = "<col0> \N |  id:  serial\l person:  integer\l wiki:  text\l wikiname:  text\l" ];
-
-
-"emailaddress" -> "person" [label=""];
-"gpgkey" -> "person" [label=""];
-"ircid" -> "person" [label=""];
-"jabberid" -> "person" [label=""];
-"karma" -> "person" [label="karma_person_fk"];
-"logintoken" -> "person" [label="logintoken_requester_fk"];
-"person" -> "person" [label=""];
-"personlabel" -> "person" [label=""];
-"personlanguage" -> "person" [label="personlanguage_person_fk"];
-"sshkey" -> "person" [label=""];
-"teammembership" -> "person" [label=""];
-"teammembership" -> "person" [label=""];
-"teamparticipation" -> "person" [label=""];
-"teamparticipation" -> "person" [label=""];
-"wikiname" -> "person" [label=""];
+    "POTemplate" -> "SourcePackageName" [label=""];
+    "POTemplate" -> "DistroRelease" [label=""];
+    "POTemplate" -> "Product" [label=""];
 }
