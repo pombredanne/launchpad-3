@@ -461,11 +461,11 @@ class ViewPreferences:
                             "The two passwords you entered did not match."
 
                     given = self.request.form['given']
-                    if given and person.givenName != given:
-                        person.givenName = given
+                    if given and person.givenname != given:
+                        person.givenname = given
                     family = self.request.form['family']
-                    if family and person.familyName != family:
-                        person.familyName = family
+                    if family and person.familyname != family:
+                        person.familyname = family
                     display = self.request.form['display']
                     if display and person.displayname != display:
                         person.displayname = display

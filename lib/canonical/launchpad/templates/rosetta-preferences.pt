@@ -44,8 +44,10 @@
             Password: <input type="password" name="currentPassword" />
             <br/>
             <hr/>
-            Given name: <input type="text" name="given" tal:attributes="value translator/givenName"/>
-            Family name: <input type="text" name="family" tal:attributes="value translator/familyName" />
+            Given name: <input type="text" name="given"
+                            tal:attributes="value translator/givenname"/>
+            Family name: <input type="text" name="family"
+                            tal:attributes="value translator/familyname" />
             <br/>
             Display name: <input type="text" name="display"
                 tal:attributes="value translator/displayname" />
