@@ -56,6 +56,12 @@ def adaptPrincipalToNoLanguagePerson(principal):
 class DummyPOFile:
     pluralForms = 4
 
+    def __init__(self, template):
+        self.poTemplate = template
+
+    def translatedCount(self):
+        return 3
+
 
 class DummyMessageID:
     msgid = "foo"
@@ -83,7 +89,7 @@ class DummyPOTemplate:
         self.language_code = language_code
 
         if language_code in ('ja', 'es'):
-            return DummyPOFile()
+            return DummyPOFile(self)
         else:
             raise KeyError
 
