@@ -2,6 +2,38 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-02 14:03:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1359
+
+    Summary:
+      provide a link to the distro release task listing functionality and
+ fix a small bug in the assignments report to properly display distro release
+ tasks
+    Revision:
+      launchpad--devel--0--patch-1359
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-377
+       add a link to the Malone front page providing access to the distro release bug listing
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-378
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-379
+       fix a small bug in the assignments report to work with distro release tasks
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/bugs-assigned.pt
+     lib/canonical/launchpad/templates/malone-index.pt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-377
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-378
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-379
+
+
 2005-03-02 12:25:14 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1358
 
     Summary:

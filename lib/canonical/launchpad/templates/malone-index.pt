@@ -33,6 +33,9 @@
             already been reported
         </li>
         <li>
+            <a href="distros">View Distro Release Bugs</a> - view bugs filed on
+            specific distribution releases        
+        <li>
             <a href="assigned">Assigned Bug Reports</a> - retrieve reports on
             bugs assigned to a specific person
         </li>

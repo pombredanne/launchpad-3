@@ -99,7 +99,7 @@
                     tal:replace="bugtask/bug/name">name</span>)</span></td>
                 <td tal:attributes="title bugtask/bug/shortdesc">
                     <b><span tal:replace="bugtask/bug/title">$Bug.title</span></b></td>
-                <td tal:content="bugtask/distribution/name">
+                <td tal:content="bugtask/distribution/name|string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
                     distro
                 </td>
                 <td tal:content="bugtask/sourcepackagename/name">
@@ -140,7 +140,7 @@
                     tal:replace="bugtask/bug/name">name</span>)</span></td>
                 <td tal:attributes="title bugtask/bug/shortdesc">
                     <b><span tal:replace="bugtask/bug/title">$Bug.title</span></b></td>
-                <td tal:content="bugtask/distribution/name">
+                <td tal:content="bugtask/distribution/name|string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
                     distro
                 </td>
                 <td tal:content="bugtask/sourcepackagename/name">
