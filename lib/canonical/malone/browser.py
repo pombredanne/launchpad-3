@@ -22,7 +22,8 @@ from interfaces import \
         IMaloneBug, IMaloneBugAttachment, \
         IBugContainer, IBugAttachmentContainer, IBugExternalRefContainer, \
         IBugSubscriptionContainer, IProjectContainer, \
-        ISourcepackageContainer, IBugWatchContainer
+        ISourcepackageContainer, IBugWatchContainer, \
+        IProductBugAssignmentContainer, ISourcepackageBugAssignmentContainer
 
 # TODO: Anything that relies on these imports should not be in this file!
 from canonical.database.malone import \
@@ -40,6 +41,10 @@ def traverseBug(bug, request, name):
         return BugSubscriptionContainer(bug=bug.id)
     elif name == 'watches':
         return BugWatchContainer(bug=bug.id)
+    elif name == 'productassignments':
+        return ProductBugAssignmentContainer(bug=bug.id)
+    elif name == 'sourcepackageassignments':
+        return SourcepackageBugAssignmentContainer(bug=bug.id)
     else:
        raise KeyError, name
 
@@ -82,6 +87,20 @@ class MaloneApplicationView(object):
 
 class BugContainerBase(object):
     implements(IBugContainer, IAddFormCustomization)
+    def __init__(self, bug=None):
+        self.bug = bug
+
+    def __getitem__(self, id):
+       try:
+            return self.table.select(self.table.q.id == id)[0]
+       except IndexError:
+            # Convert IndexError to KeyErrors to get Zope's NotFound page
+            raise KeyError, id
+
+    def __iter__(self):
+        for row in self.table.select(self.table.q.bug == self.bug):
+            yield row
+
     def add(self, ob):
         return ob
 
@@ -136,7 +155,13 @@ class MaloneBugAddForm(object):
 # TODO: It should be possible to specify all this via ZCML and not require
 # the MaloneBugView class with its ViewPageTemplateFile attributes
 class MaloneBugView(object):
-    watchesPortlet = ViewPageTemplateFile('templates/bug-watches-portlet.pt')
+    watchPortlet = ViewPageTemplateFile('templates/bug-watch-portlet.pt')
+    productAssignmentPortlet = ViewPageTemplateFile(
+            'templates/bug-productassignment-portlet.pt'
+            )
+    sourcepackageAssignmentPortlet = ViewPageTemplateFile(
+            'templates/bug-sourcepackageassignment-portlet.pt'
+            )
 
 class MaloneBugAttachment(BugAttachment, BugContainerBase):
     implements(IMaloneBugAttachment)
@@ -306,36 +331,33 @@ def BugSubscriptionFactory(context, **kw):
     bug = context.context.bug
     return BugSubscription(bug=bug, **kw)
 
+class ProductBugAssignmentContainer(BugContainerBase):
+    """A container for ProductBugAssignment"""
+
+    implements(IProductBugAssignmentContainer)
+    table = ProductBugAssignment
+
 def ProductBugAssignmentFactory(context, **kw):
-    pba = ProductBugAssignment(bug=context.context.id, **kw)
+    pba = ProductBugAssignment(bug=context.context.bug, **kw)
     return pba
 
+class SourcepackageBugAssignmentContainer(BugContainerBase):
+    """A container for SourcepackageBugAssignment"""
+
+    implements(ISourcepackageBugAssignmentContainer)
+    table = SourcepackageBugAssignment
+
 def SourcepackageBugAssignmentFactory(context, **kw):
-    sa = SourcepackageBugAssignment(bug=context.context.id,
+    sa = SourcepackageBugAssignment(bug=context.context.bug,
                                     binarypackage=None,
                                     **kw)
     return sa
-
 
 class BugExternalRefContainer(BugContainerBase):
     """A container for BugExternalRef."""
 
     implements(IBugExternalRefContainer)
     table = BugExternalRef
-
-    def __init__(self, bug=None):
-        self.bug = bug
-
-    def __getitem__(self, id):
-       try:
-            return self.table.select(self.table.q.id == id)[0]
-       except IndexError:
-            # Convert IndexError to KeyErrors to get Zope's NotFound page
-            raise KeyError, id
-
-    def __iter__(self):
-        for row in self.table.select(self.table.q.bug == self.bug):
-            yield row
 
 def BugExternalRefFactory(context, **kw):
     bug = context.context.bug
@@ -349,20 +371,6 @@ class BugWatchContainer(BugContainerBase):
     implements(IBugWatchContainer)
     table = BugWatch
 
-    def __init__(self, bug=None):
-        self.bug = bug
-
-    def __getitem__(self, id):
-       try:
-            return self.table.select(self.table.q.id == id)[0]
-       except IndexError:
-            # Convert IndexError to KeyErrors to get Zope's NotFound page
-            raise KeyError, id
-
-    def __iter__(self):
-        for row in self.table.select(self.table.q.bug == self.bug):
-            yield row
-
 def BugWatchFactory(context, **kw):
     bug = context.context.bug
     owner = 1 # XXX: Will be id of logged in user
@@ -372,26 +380,11 @@ def BugWatchFactory(context, **kw):
             lastchecked=now, **kw
             )
 
-
 class BugSubscriptionContainer(BugContainerBase):
     """A container for BugSubscription objects."""
 
     implements(IBugSubscriptionContainer)
     table = BugSubscription
-
-    def __init__(self, bug=None):
-        self.bug = bug
-
-    def __getitem__(self, id):
-       try:
-            return self.table.select(self.table.q.id == id)[0]
-       except IndexError:
-            # Convert IndexError to KeyErrors to get Zope's NotFound page
-            raise KeyError, id
-
-    def __iter__(self):
-        for row in self.table.select(self.table.q.bug == self.bug):
-            yield row
 
     def delete(self, id):
         # BugSubscription.delete(id) raises an error in SQLObject

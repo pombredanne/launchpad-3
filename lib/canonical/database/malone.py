@@ -134,6 +134,7 @@ class Bug(SQLBase):
 
     activity = MultipleJoin('BugActivity', joinColumn='bug')
     messages = MultipleJoin('BugMessage', joinColumn='bug')
+    # TODO: Standardize on pluralization and naming for table relationships
     productassignment = MultipleJoin('ProductBugAssignment', joinColumn='bug')
     sourceassignment = MultipleJoin('SourcepackageBugAssignment',
                                     joinColumn='bug')
@@ -384,8 +385,12 @@ class BugSubscription(SQLBase):
 class IProductBugAssignment(Interface):
     """The status of a bug with regard to a product."""
 
-    bug = Int(title=_('Bug ID'))
-    product = Int(title=_('Product'))
+    id = Int(title=_('ID'), required=True, readonly=True)
+    bug = Int(title=_('Bug ID'), required=True, readonly=True)
+    product = Choice(
+            title=_('Product'), required=True,
+            vocabulary='Product'
+            )
     bugstatus = Choice(title=_('Bug Status'),
                        vocabulary=BugStatusVocabulary)
     priority = Choice(title=_('Priority'),
@@ -417,11 +422,11 @@ class ProductBugAssignment(SQLBase):
 class ISourcepackageBugAssignment(Interface):
     """The status of a bug with regard to a source package."""
 
-    bug = Int(
-            title=_('Bug ID'), required=True,
-            )
-    sourcepackage = Int(
-            title=_('Source Package'), required=True,
+    id = Int(title=_('ID'), required=True, readonly=True)
+    bug = Int(title=_('Bug ID'), required=True, readonly=True)
+    sourcepackage = Choice(
+            title=_('Source Package'), required=True, readonly=True,
+            vocabulary='Sourcepackage'
             )
     bugstatus = Choice(
             title=_('Bug Status'), vocabulary=BugStatusVocabulary,
@@ -435,7 +440,10 @@ class ISourcepackageBugAssignment(Interface):
             title=_('Severity'), vocabulary=BugSeverityVocabulary,
             required=True, default=int(dbschema.BugSeverity.NORMAL),
             )
-    binarypackage = Int(title=_('Binary Package'), required=False,)
+    binarypackage = Choice(
+            title=_('Binary Package'), required=False,
+            vocabulary='Binarypackage'
+            )
 
 class SourcepackageBugAssignment(SQLBase):
     """A relationship between a Sourcepackage and a Bug."""
@@ -516,9 +524,6 @@ class IBugWatch(Interface):
     remotestatus = TextLine(
             title=_('Remote Status'), required=True, readonly=True, default=u''
             )
-    #remotestatus = Choice(
-    #        title=_('Remote Status'), vocabulary=RemoteBugStatusVocabulary,
-    #        required=True, default=int(dbschema.RemoteBugStatus.UNKNOWN))
     lastchanged = Datetime(
             title=_('Last Changed'), required=True, readonly=True
             )

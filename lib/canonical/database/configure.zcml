@@ -44,11 +44,17 @@
 
     <content class="canonical.database.malone.ProductBugAssignment">
         <allow interface="canonical.database.malone.IProductBugAssignment" />
+        <require permission="zope.View"
+            set_schema="canonical.database.malone.IProductBugAssignment" />
     </content>
 
     <content class="canonical.database.malone.SourcepackageBugAssignment">
         <allow 
             interface="canonical.database.malone.ISourcepackageBugAssignment"/>
+        <require
+            permission="zope.View"
+            set_schema="canonical.database.malone.ISourcepackageBugAssignment"
+            />
     </content>
 
     <content class="canonical.database.malone.BugSubscription">

@@ -66,11 +66,13 @@ class ProductVocabulary(TitledTableVocabulary):
 # We cannot refer to a Binarypackage unambiguously by a name, as
 # we have no assurace that a generated name using $BinarypackageName.name
 # and $Binarypackage.version will be unique
+# TODO: The edit sourcepackagebugassignment for does not default its
+# binary package field
 class BinarypackageVocabulary(TitledTableVocabulary):
     _table = Binarypackage
     _orderBy = 'id'
     def _toTerm(self, pkg):
-        return SimpleTerm(pkg.id, pkg.id, pkg.title)
+        return SimpleTerm(pkg.id, str(pkg.id), pkg.title)
 
     def getTermByToken(self, token):
         return self.getTerm(token)

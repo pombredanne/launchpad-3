@@ -3,8 +3,8 @@
 
 DBNAME=launchpad_test
 
-default: .FORCE
-	@echo Use 'make launchpad_test'
+#default: .FORCE
+#	@echo Use 'make launchpad_test'
 
 
 launchpad_test: .FORCE

@@ -215,6 +215,6 @@ INSERT INTO BugWatch (bug, bugsystem, remotebug, remotestatus, owner) VALUES (
     (SELECT id FROM Bug WHERE name='blackhole'),
     (SELECT id FROM BugSystem WHERE name='mozilla.org'),
     '42',
-    99, -- UNKNOWN
+    'FUBAR',
     (SELECT id FROM Person WHERE displayname='Sample Person')
     );

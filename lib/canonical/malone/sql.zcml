@@ -52,6 +52,25 @@
       factory=".browser.BugWatchContainer"
       provides=".interfaces.IBugWatchContainer" />
 
+  <content class=".browser.ProductBugAssignmentContainer">
+      <allow interface=".interfaces.IProductBugAssignmentContainer" />
+      <allow 
+          interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
+  </content>
+
+  <utility
+      factory=".browser.ProductBugAssignmentContainer"
+      provides=".interfaces.IProductBugAssignmentContainer" />
+
+  <content class=".browser.SourcepackageBugAssignmentContainer">
+      <allow interface=".interfaces.ISourcepackageBugAssignmentContainer" />
+      <allow 
+          interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
+  </content>
+
+  <utility
+      factory=".browser.SourcepackageBugAssignmentContainer"
+      provides=".interfaces.ISourcepackageBugAssignmentContainer" />
 
   <content class=".browser.BugSubscriptionContainer">
     <allow interface=".interfaces.IBugSubscriptionContainer" />

@@ -1,0 +1,21 @@
+<div>
+    <table class="listing rowNavigation">
+        <tr>
+            <th>Bug System</th>
+            <th>Remote Bug</th>
+            <th>Remote Status</th>
+        </tr>
+        <tr tal:repeat="watch context/watches"
+            tal:attributes="onclick 
+                string:window.location='watches/${watch/id}/+edit';">
+            <td tal:content="watch/bugsystem/title">$BugSystem.title</td>
+            <td tal:content="watch/remotebug">$BugWatch.remotebug</td>
+            <td tal:content="watch/remotestatus">
+               $BugWatch.remotestatus 
+            </td>
+        </tr>
+    </table>
+    <form action="watches/+new" method="post">
+        <input type="submit" value="New" />
+    </form>
+</div>

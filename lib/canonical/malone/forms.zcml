@@ -108,9 +108,9 @@
         />
 
     <addform
-        name="new-pba"
+        name="+new"
         schema="canonical.database.malone.IProductBugAssignment"
-        for="canonical.database.malone.IBug"
+        for=".interfaces.IProductBugAssignmentContainer"
         label="Add Product Bug Assignment"
         fields="product bugstatus priority severity"
         content_factory=".browser.ProductBugAssignmentFactory"
@@ -118,28 +118,40 @@
         keyword_arguments="product bugstatus priority severity"
         permission="zope.View"
         template="templates/default-addform.pt"
-        lp:url="none" />
+        lp:url="malone/bugs/$Bug.id/productassignments/+new" />
 
-  <!-- <editform
-    name="edit-pba"
-    schema=".interfaces.IProductBugAssignment"
-    label="Edit Product Bug Assignment"
-    permission="zope.View"
-    template="templates/default-editform.pt"
-    lp:url="non" /> -->
+    <editform
+        name="+edit"
+        for="canonical.database.malone.IProductBugAssignment"
+        schema="canonical.database.malone.IProductBugAssignment"
+        fields="bugstatus priority severity"
+        label="Edit Product Bug Assignment"
+        permission="zope.View"
+        template="templates/default-editform.pt"
+        lp:url="malone/bugs/$Bug.id/productassignments/$ProductBugAssignment.id/+edit" />
 
     <addform
-        name="new-sa"
+        name="+new"
         schema="canonical.database.malone.ISourcepackageBugAssignment"
-        for="canonical.database.malone.IBug"
+        for=".interfaces.ISourcepackageBugAssignmentContainer"
         label="Add Sourcepackage Bug Assignment"
-        fields="sourcepackage bugstatus priority severity"
+        fields="sourcepackage bugstatus priority severity binarypackage"
         content_factory=".browser.SourcepackageBugAssignmentFactory"
         arguments=""
         keyword_arguments="sourcepackage bugstatus priority severity"
         permission="zope.View"
         template="templates/default-addform.pt"
-        lp:url="none" />
+        lp:url="malone/bugs/$Bug.id/sourcepackageassignments/+new" />
+
+    <editform
+        name="+edit"
+        for="canonical.database.malone.ISourcepackageBugAssignment"
+        schema="canonical.database.malone.ISourcepackageBugAssignment"
+        fields="bugstatus priority severity binarypackage"
+        label="Edit Sourcepackage Bug Assignment"
+        permission="zope.View"
+        template="templates/default-editform.pt"
+        lp:url="malone/bugs/$Bug.id/sourcepackageassignments/$SourcepackageBugAssignment.id/+edit" />
 
     <addform
         name="+new"
