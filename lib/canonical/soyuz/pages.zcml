@@ -381,10 +381,6 @@
         lp:url="Soyuz/distros/$Distribution.name/$Release.name/source/index.html"
         />
 
-
-
-<!-- UNUSED STUFF YET -->
-
   <pages for="canonical.soyuz.interfaces.IProjects"
          class="canonical.soyuz.browser.ViewProjects"
          permission="zope.Public">
