@@ -8,43 +8,30 @@
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Rosetta style sheet -->
     <style type="text/css" media="screen">@import url(rosetta.css);</style>
+    <title>DOAP Content Review</title>
 </head>
 
 <body>
 
 <div metal:fill-slot="main">
 
-    <h1>DOAP Projects and Products for Review</h1>
+    <h1>DOAP Items Review</h1>
 
     <div class="documentDescription">
-        Please review the following projects and products.
+        Please review the following items.
     </div>
 
-    <div tal:repeat="project context/forReview">
+    <div tal:repeat="item context/forReview">
 
-        <h3>Project: <span tal:replace="project/title">project title</span></h3>
+        <h3 tal:content="item/title">title</h3>
 
-        <p style="margin-left: 20px;">
-            <span tal:content="project/shortdesc">project summary</span>
-            <span tal:condition="not: project/reviewed">
-                [ <a tal:attributes="href string:${project/name}/+review">Review</a> ]
+        <p style="margin-left: 30px;">
+            <span tal:content="item/shortdesc">summary</span>
+            <span tal:condition="not: item/reviewed">
+                [ <a tal:attributes="href string:${item/name}/+review">Review</a> ]
             </span>
         </p>
         
-
-        <div tal:repeat="product project/products">
-        
-            <p style="margin-left: 50px;"
-               tal:condition="not: product/reviewed">
-            <b tal:content="product/title">product title</b>
-            [ <a tal:attributes="href
-            string:${project/name}/${product/name}/+review">Review</a> ]
-            <br />
-            <span tal:replace="product/shortdesc">product summary</span>
-            </p>
-
-        </div>
-
     </div>
 
 </div>

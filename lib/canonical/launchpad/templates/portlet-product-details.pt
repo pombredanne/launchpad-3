@@ -4,6 +4,12 @@
     <div class="portletBody">
         <div class="portletContent even">
 
+        <div tal:condition="context/project" tal:omit-tag>
+        <b>Project:</b><br />
+        <a tal:attributes="href
+        string:/doap/projects/${context/project/name}"
+           tal:content="context/project/title">project title</a>
+        </div>
         <b>Product home page:</b><br />
         <a tal:content="context/homepageurl|default"
            tal:attributes="href context/homepageurl|nothing">(none

@@ -3,6 +3,9 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="launchpad">
 
+    <title metal:fill-slot="title">Malone-Registered Bug Trackers
+    </title>
+
 <body>
 
 <div metal:fill-slot="main">

@@ -16,7 +16,7 @@ _ = MessageIDFactory('launchpad')
 class IProject(Interface):
     """A Project."""
 
-    id = Int(title=_('ID'))
+    id = Int(title=_('ID'), readonly=True)
     owner = Int(title=_('Owner'))
     name = TextLine(title=_('Name'), description=_("""The short name of the
     project. Must be lowercase, and not contain spaces, it will be part of

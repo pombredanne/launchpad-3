@@ -7,11 +7,18 @@ from canonical.database.constants import nowUTC
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
+from zope.app.form.browser.add import AddView
+from zope.app.form.browser import SequenceWidget, ObjectWidget
+from zope.app.form import CustomWidgetFactory
+
+from zope.event import notify
+from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
+
 from zope.component import getUtility
 from zope.i18n.interfaces import IUserPreferredLanguages
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
-from canonical.launchpad.interfaces import IPerson
+from canonical.launchpad.interfaces import IPerson, IProject
 
 from canonical.rosetta.browser import codes_to_languages, request_languages
 
@@ -44,41 +51,6 @@ class ProjectView(object):
 
     trackersPortlet = ViewPageTemplateFile(
         '../templates/portlet-project-trackers.pt')
-
-    def newproduct(self):
-        #
-        # Handle a request to create a new product for this project.
-        # The code needs to extract all the relevant form elements,
-        # then call the Product creation methods.
-        #
-        if not self.form.get("Register", None)=="Register Product":
-            return
-        if not self.request.method == "POST":
-            return
-        # Extract the details from the form
-        name = self.form['name']
-        displayname = self.form['displayname']
-        title = self.form['title']
-        shortdesc = self.form['shortdesc']
-        description = self.form['description']
-        homepageurl = self.form['homepageurl']
-        # XXX Mark Shuttleworth 03/10/04 this check is not yet being done.
-        # check to see if there is an existing product with
-        # this name.
-        # get the launchpad person who is creating this product
-        owner = IPerson(self.request.principal)
-        # Now create a new product in the db
-        product = Product(name=name,
-                          displayname=displayname,
-                          title=title,
-                          shortdesc=shortdesc,
-                          description=description,
-                          project=self.context.id,
-                          owner=owner,
-                          homepageurl=homepageurl,
-                          datecreated=nowUTC)
-        # now redirect to view the page
-        self.request.response.redirect(name)
 
     def edit(self):
         """
@@ -185,6 +157,39 @@ class ProjectView(object):
     def languages(self):
         return [language for language in request_languages(self.request)]
 
+
+class ProjectAddProductView(AddView):
+
+    __used_for__ = IProject
+
+    ow = CustomWidgetFactory(ObjectWidget, Product)
+    sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
+    options_widget = sw
+    
+    def __init__(self, context, request):
+        self.request = request
+        self.context = context
+        self._nextURL = '.'
+        AddView.__init__(self, context, request)
+
+    def createAndAdd(self, data):
+        # add the owner information for the product
+        owner = IPerson(self.request.principal, None)
+        if not owner:
+            raise zope.security.interfaces.Unauthorized, "Need an authenticated bug owner"
+        kw = {}
+        for item in data.items():
+            kw[str(item[0])] = item[1]
+        kw['project'] = self.context.id
+        kw['owner'] = owner
+        # create the prosuct
+        product = Product(**kw)
+        notify(ObjectCreatedEvent(product))
+        return product
+
+    def nextURL(self):
+        return self._nextURL
+ 
 
 
 class ProjectSetView(object):

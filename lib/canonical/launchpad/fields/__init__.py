@@ -7,14 +7,23 @@ import datetime
 
 # Field Interfaces
 
-class ISummary(IText):
-    """A Field that implements a Bug Summary"""
-
 class ITitle(ITextLine):
     """A Field that implements a launchpad Title"""
 
+class ISummary(IText):
+    """A Field that implements a Summary"""
+
+class IDescription(IText):
+    """A Field that implements a Description"""
+
 class ITimeInterval(ITextLine):
     """A field that captures a time interval in days, hours, minutes."""
+
+# Title
+# A field to capture a launchpad object title
+class Title(TextLine):
+    implements(ITitle)
+
 
 # Summary
 # A field capture a Launchpad object summary
@@ -22,10 +31,10 @@ class Summary(Text):
     implements(ISummary)
 
 
-# Title
-# A field to capture a launchpad object title
-class Title(TextLine):
-    implements(ITitle)
+# Description
+# A field capture a Launchpad object description
+class Description(Text):
+    implements(IDescription)
 
 
 # TimeInterval

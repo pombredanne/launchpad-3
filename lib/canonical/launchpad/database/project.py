@@ -115,15 +115,8 @@ class ProjectSet:
                        datecreated = 'now')
 
     def forReview(self):
-        query = """Product.project=Project.id AND
-                 ( Product.reviewed IS FALSE OR
-                   Project.reviewed IS FALSE )"""
-        clauseTables = ['Project', 'Product']
-        results = []
-        for project in Project.select(query, clauseTables=clauseTables):
-            if project not in results:
-                results.append(project)
-        return results
+        return Project.select("reviewed IS FALSE")
+
 
     def forSyncReview(self):
         query = """Product.project=Project.id AND

@@ -52,7 +52,7 @@
     <a href="+filebug">File a new bug</a><br />
     <img src="/++resource++add.gif" alt="+">
     <a href="#"
-       tal:attributes="href string:/doap/projects/${context/project/name}/${context/name}">
+       tal:attributes="href string:/doap/products/${context/name}">
        View <span tal:replace="context/displayname">Product</span>
        Details</a>
     </p>

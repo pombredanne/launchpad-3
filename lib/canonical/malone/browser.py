@@ -41,25 +41,3 @@ class MaloneApplicationView(object):
         self.context = context
         self.request = request
 
-    def update(self):
-        '''XXX Mark Shuttleworth 20/10/04 I suspect this is vestigial and
-           can be excised.
-           Handle request and setup this view the way the templates expect it
-        '''
-        from sqlobject import OR, LIKE, CONTAINSSTRING, AND
-        if self.request.form.has_key('query'):
-            # TODO: Make this case insensitive
-            s = self.request.form['query']
-            self.results = SourcePackage.select(AND(
-                SourcePackage.q.sourcepackagenameID == SourcePackageName.q.id,
-                OR(
-                    CONTAINSSTRING(SourcePackageName.q.name, s),
-                    CONTAINSSTRING(SourcePackage.q.shortdesc, s),
-                    CONTAINSSTRING(SourcePackage.q.description, s)
-                    )
-                ))
-            self.noresults = not self.results
-        else:
-            self.noresults = False
-            self.results = []
-

@@ -20,7 +20,7 @@ from canonical.launchpad.database import Project, Product, SourceSource, \
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-from canonical.launchpad.interfaces import IPerson, IProduct
+from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet
 
 from canonical.launchpad.browser.productrelease import newProductRelease
 
@@ -165,5 +165,76 @@ class ProductFileBugView(AddView):
     def nextURL(self):
         return self._nextURL
  
+
+class ProductSetView:
+
+    __used_for__ = IProductSet
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.form = self.request.form
+        self.soyuz = self.form.get('soyuz', None)
+        self.rosetta = self.form.get('rosetta', None)
+        self.malone = self.form.get('malone', None)
+        self.buttress = self.form.get('buttress', None)
+        self.text = self.form.get('text', None)
+        self.searchrequested = False
+        if (self.text is not None or \
+            self.buttress is not None or \
+            self.malone is not None or \
+            self.rosetta is not None or \
+            self.soyuz is not None):
+            self.searchrequested = True
+        self.results = None
+        self.gotmatches = 0
+
+
+    def searchresults(self):
+        """Use searchtext to find the list of Products that match
+        and then present those as a list. Only do this the first
+        time the method is called, otherwise return previous results.
+        """
+        if self.results is None:
+            self.results = self.context.search(text=self.text,
+                                               buttress=self.buttress,
+                                               malone=self.malone,
+                                               rosetta=self.rosetta,
+                                               soyuz=self.soyuz)
+        self.gotmatches = len(list(self.results))
+        return self.results
+
+
+
+class ProductSetAddView(AddView):
+
+    __used_for__ = IProductSet
+
+    ow = CustomWidgetFactory(ObjectWidget, Bug)
+    sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
+    options_widget = sw
+    
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self._nextURL = '.'
+        AddView.__init__(self, context, request)
+
+    def createAndAdd(self, data):
+        # add the owner information for the product
+        owner = IPerson(self.request.principal, None)
+        if not owner:
+            raise zope.security.interfaces.Unauthorized, "Need an authenticated owner"
+        kw = {}
+        for item in data.items():
+            kw[str(item[0])] = item[1]
+        kw['owner'] = owner
+        product = Product(**kw)
+        notify(ObjectCreatedEvent(product))
+        self._nextURL = kw['name']
+        return product
+
+    def nextURL(self):
+        return self._nextURL
 
 

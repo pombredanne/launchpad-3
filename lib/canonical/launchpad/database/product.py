@@ -19,12 +19,16 @@ from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.pofile import POTemplate
 
-from canonical.launchpad.interfaces import IProduct
+from canonical.launchpad.interfaces import IProduct, IProductSet, \
+    IAuthorization
+
+from sets import Set
+from datetime import datetime
 
 class Product(SQLBase):
     """A Product."""
 
-    implements(IProduct)
+    implements(IProduct, IAuthorization)
 
     _table = 'Product'
 
@@ -32,7 +36,7 @@ class Product(SQLBase):
     # db field names
     #
     project = ForeignKey(foreignKey="Project", dbName="project",
-                         notNull=True)
+                         notNull=False, default=None)
 
     owner = ForeignKey(foreignKey="Person", dbName="owner",
                        notNull=True)
@@ -47,7 +51,8 @@ class Product(SQLBase):
 
     description = StringCol(dbName='description', notNull=True)
 
-    datecreated = DateTimeCol(dbName='datecreated', notNull=True)
+    datecreated = DateTimeCol(dbName='datecreated', notNull=True,
+                              default=datetime.utcnow())
 
     homepageurl = StringCol(dbName='homepageurl', notNull=False,
             default=None)
@@ -67,6 +72,10 @@ class Product(SQLBase):
     active = BoolCol(dbName='active', notNull=True, default=True)
 
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
+
+    freshmeatproject = StringCol(notNull=False, default=None)
+
+    sourceforgeproject = StringCol(notNull=False, default=None)
 
     #
     # useful Joins
@@ -107,6 +116,13 @@ class Product(SQLBase):
             return prod
         else:
             return '%s %s' % (proj, prod)
+
+    def checkPermission(self, principal, permission):
+        if permission == 'launchpad.Edit':
+            if self.id == principal.id:
+                return True
+            else: return False
+        return False
 
     def newseries(self, form):
         # Extract the details from the form
@@ -271,3 +287,52 @@ class Product(SQLBase):
                 statusline.append(bugmatrix[severity][status])
             resultset.append(statusline)
         return resultset
+
+
+
+class ProductSet:
+    implements(IProductSet)
+
+    def __iter__(self):
+        return iter(Product.select())
+
+    def __getitem__(self, name):
+        ret = Product.selectBy(name=name)
+        if ret.count() == 0:
+            raise KeyError, name
+        else:
+            return ret[0]
+
+    def forReview(self):
+        return Product.select("reviewed IS FALSE")
+
+    def search(self, text=None, soyuz=None,
+               rosetta=None, malone=None,
+               buttress=None,
+               show_inactive=False):
+        clauseTables = Set()
+        clauseTables.add('Product')
+        query = '1=1 '
+        if text:
+            text = quote('%' + text + '%')
+            query += """ AND 
+                       ( Product.title ILIKE %s OR
+                         Product.shortdesc ILIKE %s OR
+                         Product.description ILIKE %s )""" % (text,
+                         text, text )
+        if rosetta:
+            clauseTables.add('POTemplate')
+        if malone:
+            clauseTables.add('ProductBugAssignment')
+        if buttress:
+            clauseTables.add('SourceSource')
+        if 'POTemplate' in clauseTables:
+            query += ' AND POTemplate.product=Product.id \n'
+        if 'ProductBugAssignment' in clauseTables:
+            query += ' AND ProductBugAssignment.product=Product.id \n'
+        if 'SourceSource' in clauseTables:
+            query += ' AND SourceSource.product=Product.id \n'
+        if not show_inactive:
+            query += ' AND Product.active IS TRUE \n'
+        return Product.select(query, clauseTables=clauseTables)
+

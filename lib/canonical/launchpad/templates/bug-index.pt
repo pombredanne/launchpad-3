@@ -2,6 +2,11 @@
       lang="en"
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="rosetta">
+
+    <title metal:fill-slot="title">Malone: Bug #<span
+    tal:replace="context/id">1234</span>
+    </title>
+
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">

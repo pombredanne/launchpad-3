@@ -2,16 +2,19 @@
     lang="en"
     metal:use-macro="context/@@malone_template/master"
     i18n:domain="malone">
+
+    <title metal:fill-slot="title">About Malone</title>
+
 <body>
 <div metal:fill-slot="main">
-    <tal:block condition="view/update" />
 
     <h1>Welcome to Malone!</h1>
 
     <ul>
+        <li><a href="+about">About Malone</a></li>
         <li><a href="bugs/+new">Create a new bug report.</a></li>
         <li><a href="packages">See Distro Package Bugs</a></li>
-        <li><a href="projects">See Upstream Bugs</a></li>
+        <li><a href="products">See Upstream Bugs</a></li>
         <li><a href="bugs">See the complete bug list</a></li>
         <li tal:condition="request/lp:person">
           <span tal:define="name request/lp:person/name">
@@ -26,6 +29,7 @@
         <li><a href="bugtrackers">List all known bug trackers</a></li>
         <li><a href="bugtrackers">Register a new bug tracker with Malone</a></li>
     </ul>
+
 </div>
 </body>
 </html>
