@@ -117,5 +117,10 @@ class FormattersAPI:
 
     def nl_to_br(self):
         """Quote HTML characters, then replace newlines with <br /> tags."""
-        return cgi.escape(self._stringtoformat).replace('\n','<br />')
+        return cgi.escape(self._stringtoformat).replace('\n','<br />\n')
+
+    def nice_pre(self):
+        """<pre>, except the browser knows it is allowed to break long lines"""
+        txt = self.nl_to_br().replace(' ','&nbsp;').replace('\t','&nbsp;'*8)
+        return '''<div style="font-family: monospace">%s</div>''' % txt
 

@@ -62,7 +62,8 @@
             $Bug.shortdesc
         </div>
 
-        <div tal:content="structure context/description/fmt:nl_to_br">
+        <div class="boardCommentContent" 
+            tal:content="structure context/description/fmt:nice_pre">
             $Bug.description
         </div>
 
@@ -93,7 +94,7 @@
                 </div>
 
                 <div class="boardCommentContent"
-                    tal:content="structure message/contents/fmt:nl_to_br">
+                    tal:content="structure message/contents/fmt:nice_pre">
                     Comment text.
                 </div>
             </div>
