@@ -2,6 +2,25 @@
 # arch-tag: automatic-ChangeLog--stuart.bishop@canonical.com/launchpad--devel--1
 #
 
+2004-12-28 02:29:46 GMT	Stuart Bishop <stuart.bishop@canonical.com>	patch-45
+
+    Summary:
+      Validate CVE reference numbers
+    Revision:
+      launchpad--devel--1--patch-45
+
+
+    new files:
+     database/schema/.arch-ids/patch-6-22-0.sql.id
+     database/schema/patch-6-22-0.sql
+     lib/canonical/launchpad/validators/.arch-ids/cve.py.id
+     lib/canonical/launchpad/validators/cve.py
+
+    modified files:
+     database/schema/trusted.sql doc/changelog.txt
+     lib/canonical/launchpad/interfaces/cveref.py
+
+
 2004-12-23 12:17:45 GMT	Stuart Bishop <stuart.bishop@canonical.com>	patch-44
 
     Summary:
