@@ -16,19 +16,38 @@
 <body>
 
 <div metal:fill-slot="portlets_one">
-    <label>Quick Reference</label>
+    <div class="portlet">
+        <h4>Quick Reference</h4>
 
-    <ul>
-    <li><span class="po-message-special" style="padding: 0.2em">&#x21b5;</span>
-        &ndash; a new line</li>
-    <li><span class="po-message-special" style="padding: 0.2em">&#x2022;</span>
-        &ndash; a space character</li>
-    </ul>
+        <div class="portletBody">
+            <ul>
+            <li><span class="po-message-special"
+                style="padding: 0.2em">&#x21b5;</span> &ndash; a new line</li>
+            <li><span class="po-message-special"
+                style="padding: 0.2em">&#x2022;</span> &ndash; a space
+                character</li>
+            </ul>
 
-    <p>
-    Check the "needs review" button if you are not sure a translation is
-    correct.
-    </p>
+            <p>
+            Check the "needs review" button if you are not sure a translation
+            is correct.
+            </p>
+        </div>
+    </div>
+
+    <div class="portlet">
+        <h4>PO File Details</h4>
+
+        <div class="portletBody">
+
+            <ul>
+            <li tal:repeat="language view/languages"><a
+                tal:attributes="href language/code"
+                tal:content="language/englishname"
+                >Language</a></li>
+            </ul>
+        </div>
+    </div>
 </div>
 
 <div metal:fill-slot="main">

@@ -2,6 +2,106 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-19 03:22:25 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1214
+
+    Summary:
+      Rosetta refactoring and UI improvements
+    Revision:
+      launchpad--devel--0--patch-1214
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-413
+       Rosetta refactoring and UI improvements
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-414
+       fix typo
+    
+     * daf@canonical.com--2005/launchpad--devel--0--base-0
+       tag of daf@canonical.com--2004/launchpad--devel--0--patch-412
+    
+     * daf@canonical.com--2005/launchpad--devel--0--patch-1
+       make Rosetta doctests visible to the test runner
+    
+     * daf@canonical.com--2005/launchpad--devel--0--patch-2
+       refactor browser code for PO/POT import
+    
+     * daf@canonical.com--2005/launchpad--devel--0--patch-3
+       merge from rocketfuel
+    
+     * daf@canonical.com--2005/launchpad--devel--0--patch-4
+       remove obsolete upload form
+    
+     * daf@canonical.com--2005/launchpad--devel--0--patch-5
+       fix POFile variant lookup SQL
+    
+     * daf@canonical.com--2005/launchpad--devel--0--patch-6
+       merge from rocketfuel
+    
+     * daf@canonical.com--2005/launchpad--devel--0--patch-7
+       code tidying
+    
+     * daf@canonical.com--2005/launchpad--devel--0--patch-8
+       more Rosetta browser code refactoring
+    
+     * daf@canonical.com--2005/launchpad--devel--0--patch-9
+       factor out PO syntax checking code
+    
+     * daf@canonical.com--2005/launchpad--devel--0--patch-10
+       more Rosetta browser code refactoring
+    
+     * daf@canonical.com--2005/launchpad--devel--0--patch-11
+       view class refactoring
+    
+     * daf@canonical.com--2005/launchpad--devel--0--patch-12
+       add and improve docstrings
+    
+     * daf@canonical.com--2005/launchpad--devel--0--patch-13
+       merge from rocketfuel
+    
+     * daf@canonical.com--2005/launchpad--devel--0--patch-14
+       make the template index page link to the translation page as the Rosetta product index page does, rather than the PO file index page
+    
+     * daf@canonical.com--2005/launchpad--devel--0--patch-15
+       add links to PO file index page from translation page in a new portlet
+    
+
+    new files:
+     lib/canonical/rosetta/tests/.arch-ids/test_rundoctests.py.id
+     lib/canonical/rosetta/tests/test_rundoctests.py
+
+    removed files:
+     lib/canonical/launchpad/templates/.arch-ids/potemplate-upload.pt.id
+     lib/canonical/launchpad/templates/potemplate-upload.pt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/templates/potemplate-index.pt
+     lib/canonical/launchpad/templates/potemplate-translate.pt
+     lib/canonical/launchpad/zcml/potemplate.zcml
+     lib/canonical/rosetta/browser.py lib/canonical/rosetta/tar.py
+
+    new patches:
+     daf@canonical.com--2004/launchpad--devel--0--patch-413
+     daf@canonical.com--2004/launchpad--devel--0--patch-414
+     daf@canonical.com--2005/launchpad--devel--0--base-0
+     daf@canonical.com--2005/launchpad--devel--0--patch-1
+     daf@canonical.com--2005/launchpad--devel--0--patch-2
+     daf@canonical.com--2005/launchpad--devel--0--patch-3
+     daf@canonical.com--2005/launchpad--devel--0--patch-4
+     daf@canonical.com--2005/launchpad--devel--0--patch-5
+     daf@canonical.com--2005/launchpad--devel--0--patch-6
+     daf@canonical.com--2005/launchpad--devel--0--patch-7
+     daf@canonical.com--2005/launchpad--devel--0--patch-8
+     daf@canonical.com--2005/launchpad--devel--0--patch-9
+     daf@canonical.com--2005/launchpad--devel--0--patch-10
+     daf@canonical.com--2005/launchpad--devel--0--patch-11
+     daf@canonical.com--2005/launchpad--devel--0--patch-12
+     daf@canonical.com--2005/launchpad--devel--0--patch-13
+     daf@canonical.com--2005/launchpad--devel--0--patch-14
+     daf@canonical.com--2005/launchpad--devel--0--patch-15
+
+
 2005-01-18 18:20:41 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1213
 
     Summary:

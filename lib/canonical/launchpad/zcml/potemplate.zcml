@@ -53,13 +53,4 @@
             lp:url="Rosetta/products/$Product.name/$POTemplate.name/+translate" />
     </browser:pages>
 
-    <browser:pages for="canonical.launchpad.interfaces.IPOTemplate"
-        permission="launchpad.AnyPerson"
-        class="canonical.rosetta.browser.TemplateUpload">
-        <browser:page
-            name="+upload"
-            template="../templates/potemplate-upload.pt"
-            lp:url="Rosetta/products/$Product.name/$POTemplate.name/+upload" />
-    </browser:pages>
-
 </configure>

@@ -372,7 +372,7 @@ class POTemplate(SQLBase, RosettaStats):
         if variant is None:
             variantspec = 'IS NULL'
         elif isinstance(variant, unicode):
-            variantspec = (u'= "%s"' % quote(variant))
+            variantspec = (u'= %s' % quote(variant))
         else:
             raise TypeError('Variant must be None or unicode.')
 
