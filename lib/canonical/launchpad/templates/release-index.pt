@@ -97,9 +97,10 @@
         <fieldset>
         <div>
 	<table>
-	<tr><th tal:content="python:context.release.bugCounter[0]">NEW</th><th>New Bugs</th></tr>
-	<tr><th tal:content="python:context.release.bugCounter[1]">OPEN</th><th>Opened Bugs</th></tr>
-	<tr><th tal:content="python:context.release.bugCounter[2]">CLOSED</th><th>Closed Bugs</th></tr>
+	<tr><th>Total Bugs:</th><th tal:content="python:context.release.bugCounter[0]">TOTAL</th></tr>
+	<tr><th>New Bugs:</th><th tal:content="python:context.release.bugCounter[1]">NEW</th></tr>
+	<tr><th>Opened Bugs:</th><th tal:content="python:context.release.bugCounter[2]">OPEN</th></tr>
+	<tr><th>Closed Bugs:</th><th tal:content="python:context.release.bugCounter[3]">CLOSED</th></tr>
 	</table>
 	</div>
       </td></tr>

@@ -50,6 +50,9 @@ class ISourcePackage(Interface):
 
     distrorelease = Int(title=_("DistroRelease"), required=False)
 
+    def getBugSourcePackages(distrorelease):
+        """Get SourcePackages in a DistroRelease with BugAssignement"""
+
 #
 # Interface provied by a SourcePackageName. This is a tiny
 # table that allows multiple SourcePackage entities to share

@@ -23,7 +23,8 @@ from canonical.launchpad.database import BinaryPackage, \
                                          SourcePackage,  \
                                          DistroRelease, \
                                          Distribution,  \
-                                         DistroReleaseRole
+                                         DistroReleaseRole, \
+                                         SourcePackageInDistro
 
 
 #
@@ -77,6 +78,8 @@ class DistroReleaseApp(object):
     def findBinariesByName(self, pattern):
         return BinaryPackage.findBinariesByName(self.release, pattern)
 
+    def bugSourcePackages(self):
+        return SourcePackageInDistro.getBugSourcePackages(self.release)
 
 class DistroReleasesApp(object):
     def __init__(self, distribution):

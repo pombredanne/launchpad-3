@@ -254,7 +254,8 @@ class DistroRelease(SQLBase):
             query = _query %(self.id, int(severity))
             count = SourcePackageBugAssignment.select(query, clauseTables=clauseTables).count()
             counts.append(count)
-            
+
+        counts.insert(0, sum(counts))
         return counts
 
     bugCounter = property(bugCounter)

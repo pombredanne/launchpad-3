@@ -140,6 +140,7 @@ class SourcePackageInDistro(SourcePackage):
 
     distrorelease = ForeignKey(foreignKey='DistroRelease',
                                dbName='distrorelease')
+
     #
     # Class Methods
     #
@@ -163,6 +164,20 @@ class SourcePackageInDistro(SourcePackage):
         return klass.select(query, orderBy='name')
 
     getReleases = classmethod(getReleases)
+
+    def getBugSourcePackages(klass, distrorelease):
+        """Get SourcePackages in a DistroRelease with BugAssignement"""
+
+        clauseTables=["SourcePackageBugAssignment",]
+        query = ("VSourcePackageInDistro.distrorelease = %i AND "
+                 "VSourcePackageInDistro.id = SourcePackageBugAssignment.sourcepackage AND "
+                 "SourcePackageBugAssignment.bugstatus != %i"
+                 %(distrorelease.id,
+                   int(dbschema.BugAssignmentStatus.CLOSED) ))
+
+        return Set(klass.select(query, clauseTables=clauseTables))
+
+    getBugSourcePackages = classmethod(getBugSourcePackages)
 
     def getByPersonID(klass, personID):
         # XXXkiko: we should allow supplying a distrorelease here and

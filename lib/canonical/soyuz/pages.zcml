@@ -93,6 +93,7 @@
 
    <pages for="canonical.soyuz.distroapp.DistroReleaseApp"
 	  allowed_attributes="results sources binaries"
+	  class="canonical.soyuz.browser.DistroReleaseView"
 	  permission="zope.Public">
 
 	<page  name="index.html"
@@ -103,7 +104,8 @@
           template="../launchpad/templates/release-deliver.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+deliver"
 	/>
-	<page  name="+bugs"
+	<page
+	  name="+bugs"
           template="../launchpad/templates/release-bugs.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+bugs"
 	/>
