@@ -46,7 +46,8 @@ class DatabaseUserDetailsStorage(object):
 
     def authUser(self, loginID, sshaDigestedPassword):
         ri = self.connectionPool.runInteraction
-        return ri(self._authUserInteraction, loginID, sshaDigestedPassword)
+        return ri(self._authUserInteraction, loginID,
+                  sshaDigestedPassword.encode('base64'))
         
     def _authUserInteraction(self, transaction, loginID, sshaDigestedPassword):
         row = self._getPerson(transaction, loginID)
@@ -74,7 +75,8 @@ class DatabaseUserDetailsStorage(object):
         ri = self.connectionPool.runInteraction
         if loginID not in emailAddresses:
             emailAddresses = emailAddresses + [loginID]
-        deferred = ri(self._createUserInteraction, sshaDigestedPassword,
+        deferred = ri(self._createUserInteraction, 
+                      sshaDigestedPassword.encode('base64'),
                       displayName, emailAddresses)
         deferred.addErrback(self._eb_createUser)
         return deferred
@@ -158,7 +160,7 @@ class DatabaseUserDetailsStorage(object):
         row = list(row)
         passwordDigest = row[2]
         if passwordDigest:
-            salt = passwordDigest.decode('base64')[20:]
+            salt = passwordDigest.decode('base64')[20:].encode('base64')
         else:
             salt = ''
 

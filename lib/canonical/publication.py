@@ -169,10 +169,10 @@ class BrowserPublication(BrowserPub):
         # the transaction in which they are instantiated - this is
         # no longer a problem as we are nuking the connection cache,
         # but it is still an issue in SQLOS that needs to be fixed.
-        name = getUtility(IConnectionName).name
-        con = sqlos.connection.getConnection(None, name)
-        t = transaction.get_transaction()
-        t.join(con._dm)
+        #name = getUtility(IConnectionName).name
+        #con = sqlos.connection.getConnection(None, name)
+        #t = transaction.get_transaction()
+        #t.join(con._dm)
 
         # Try to authenticate against our registry
         prin_reg = getUtility(IPlacelessAuthUtility)
