@@ -211,20 +211,29 @@ class ArchiveLocation(DatabaseTestCase):
 class ArchiveLocationRegistry(DatabaseTestCase):
     tests=[]
 
+    def _create_mirror(self, name):
+        import arch
+        default_location = "/tmp/"
+        archive = arch.Archive(name)
+        archive.make_mirror(name + "-MIRROR",
+                            location = default_location + name,
+                            signed=False, listing=True)
+
     def test_instantiate(self):
         """canonical.arch.broker.ArchiveLocationRegistry can be instantiated"""
-        from canonical.arch.broker import Archive, ArchiveLocationRegistry
-        archive = Archive("foo@bar")
-        registry = ArchiveLocationRegistry(archive)
+        from canonical.arch import broker
+        archive = broker.Archive("foo@bar")
+        registry = broker.ArchiveLocationRegistry(archive)
     tests.append('test_instantiate')
 
     def test_insert_location(self):
         """test that we can insert a location and check it exists"""
-        from canonical.arch.broker import Archives, ArchiveLocationRegistry
+        from canonical.arch import broker
         url = "http://blah/"
-        archives = Archives()
+        archives = broker.Archives()
         archive = archives.create("foo@bar")
-        registry = ArchiveLocationRegistry(archive)
+        registry = broker.ArchiveLocationRegistry(archive)
+        self._create_mirror(archive.name)
         location = registry.createMirrorTargetLocation(url)
         self.commit()
         self.failUnless(registry.existsLocation(location))
@@ -232,11 +241,12 @@ class ArchiveLocationRegistry(DatabaseTestCase):
 
     def test_extract_mirrors(self):
         """test that we can extract a list of mirrorarchives"""
-        from canonical.arch.broker import Archive, Archives, ArchiveLocationRegistry
+        from canonical.arch import broker
         url = "http://blah/"
-        archives = Archives()
+        archives = broker.Archives()
         archive = archives.create("foo@bar")
-        registry = ArchiveLocationRegistry(archive)
+        registry = broker.ArchiveLocationRegistry(archive)
+        self._create_mirror(archive.name)
         location = registry.createMirrorTargetLocation(url)
         locations = registry.getMirrorTargetLocations()
         self.failUnless(registry.existsLocation(location))
