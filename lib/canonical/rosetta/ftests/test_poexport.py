@@ -143,14 +143,14 @@ class POExportTestCase(PlacelessSetup, unittest.TestCase):
             product = RosettaProduct.selectBy(projectID = project.id, name = 'evolution')[0]
             poTemplate = RosettaPOTemplate.selectBy(productID = product.id, name='evolution-2.0')[0]
         except IndexError, e:
-            raise IndexError, "Couldn't find record in database, please import populate.sql to do the tests."
+            raise IndexError, "Couldn't find record in database, please import sampledata.sql to do the tests."
         export = POExport(poTemplate)
         dump = export.export('es')
-        print dump
+        #print dump
         import difflib, sys
         if dump != expected:
             for l in difflib.unified_diff(
-                dump.split('\n'), expected.split('\n'),
+                expected.split('\n'), dump.split('\n'),
                 'expected output', 'generated output'):
                 print l
             raise AssertionError, 'output was different from the expected'

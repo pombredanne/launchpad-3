@@ -569,6 +569,31 @@ class RosettaPOFile(SQLBase):
         '''Same as untranslated(), but with COUNT.'''
         return len(self.poTemplate) - self.translatedCount()
 
+    def messageSetsNotInTemplate(self):
+        # this is rather complex because it's actually two queries that
+        # have to be added together - if someone with more sql zen knows
+        # how to do it in one query, feel free to refactor
+        seqzero = RosettaPOMessageSet.select('''
+            poSet.pofile = %d AND
+            poSet.primemsgid = potset.primemsgid AND
+            poSet.potemplate = potset.potemplate AND
+            potSet.pofile IS NULL AND
+            poSet.sequence <> 0 AND
+            potSet.sequence = 0''' % self.id,
+            clauseTables = [
+                'POMsgSet poSet',
+                'POMsgSet potSet',
+                ])
+        notinpot = RosettaPOMessageSet.select('''
+            pofile = %d AND
+            sequence <> 0 AND
+            NOT EXISTS (
+                SELECT * FROM POMsgSet potSet WHERE
+                potSet.pofile IS NULL AND
+                potSet.primemsgid = pomsgset.primemsgid
+            )''' % self.id)
+        return iter(list(seqzero) + list(notinpot))
+
     # IEditPOFile
     def expireAllMessages(self):
         self._connection.query('UPDATE POMsgSet SET sequence = 0'

@@ -124,11 +124,21 @@ class TranslationsList(object):
                                              update=True, fromPOFile=True)
 
 
+_marker = []
+
 class MessageProxy(POMessage):
     implements(IPOMessage)
 
-    def __init__(self, msgset, person=None):
+    def __init__(self, msgset, master_msgset=_marker, person=None):
         self._msgset = msgset
+        self._override_obsolete = False
+        if master_msgset is _marker:
+            self._master_msgset = msgset
+        elif master_msgset is None:
+            self._master_msgset = msgset
+            self._override_obsolete = True
+        else:
+            self._master_msgset = master_msgset
         self._who = person
         self._translations = TranslationsList(msgset, person)
 
@@ -141,7 +151,7 @@ class MessageProxy(POMessage):
     msgid = property(_get_msgid, _set_msgid)
 
     def _get_msgidPlural(self):
-        msgids = self._msgset.messageIDs()
+        msgids = self._master_msgset.messageIDs()
         if msgids.count() >= 2:
             return msgids[1].msgid
         return None
@@ -175,35 +185,57 @@ class MessageProxy(POMessage):
     msgstrPlurals = property(_get_msgstrPlurals, _set_msgstrPlurals)
 
     def _get_commentText(self):
-        return self._msgset.commentText
+        if self._msgset.commentText is None:
+            return None
+        return self._msgset.commentText + '\n'
     def _set_commentText(self, value):
+        if value and value[-1] == '\n':
+            value = value[:-1]
         self._msgset.commentText = value
     commentText = property(_get_commentText, _set_commentText)
 
     def _get_sourceComment(self):
-        return self._msgset.sourceComment
+        if self._master_msgset.sourceComment is None:
+            return None
+        return self._master_msgset.sourceComment + '\n'
     def _set_sourceComment(self, value):
+        if value and value[-1] == '\n':
+            value = value[:-1]
         self._msgset.sourceComment = value
     sourceComment = property(_get_sourceComment, _set_sourceComment)
 
     def _get_fileReferences(self):
-        return self._msgset.fileReferences
+        return self._master_msgset.fileReferences
     def _set_fileReferences(self, value):
         self._msgset.fileReferences = value
     fileReferences = property(_get_fileReferences, _set_fileReferences)
 
     def _get_flags(self):
-        flags = self._msgset.flagsComment or ''
-        return WatchedSet(
-            self._set_flags,
-            [flag.strip() for flag in flags.split(',')]
-            )
+        flags = self._master_msgset.flagsComment or ''
+        if flags:
+            fl = [flag.strip() for flag in flags.split(',')]
+        else:
+            fl = []
+        if self._msgset.fuzzy:
+            fl.append('fuzzy')
+        return WatchedSet(self._set_flags, fl)
     def _set_flags(self, value):
+        value = list(value)
+        if 'fuzzy' in value:
+            value.remove('fuzzy')
+            self._msgset.fuzzy = True
+        else:
+            self._msgset.fuzzy = False
         self._msgset.flagsComment = self.flagsText(value, withHash=False)
     flags = property(_get_flags, _set_flags)
 
     def _get_obsolete(self):
-        return self._msgset.obsolete
+        if self._override_obsolete:
+            return True
+        elif self._msgset is self._master_msgset:
+            return self._msgset.obsolete
+        else:
+            return self._master_msgset.sequence == 0
     def _set_obsolete(self, value):
         self._msgset.obsolete = value
     obsolete = property(_get_obsolete, _set_obsolete)
@@ -241,7 +273,7 @@ class TemplateImporter(object):
                 pass
         self.len += 1
         msgset.sequence = self.len
-        proxy = MessageProxy(msgset, self.person)
+        proxy = MessageProxy(msgset, person=self.person)
         proxy.msgidPlural = kw.get('msgidPlural', '')
         if kw.get('msgstr'):
             raise POInvalidInputError('PO template has msgstrs', 0)
@@ -292,7 +324,7 @@ class POFileImporter(object):
             msgset.getMessageIDSighting(0, allowOld=True).dateLastSeen = "NOW"
         self.len += 1
         msgset.sequence = self.len
-        proxy = MessageProxy(msgset, self.person)
+        proxy = MessageProxy(msgset, person=self.person)
         proxy.msgidPlural = kw.get('msgidPlural', '')
         if kw.get('msgstr'):
             proxy.msgstr = kw['msgstr']

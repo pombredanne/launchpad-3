@@ -323,6 +323,13 @@ class IPOFile(Interface):
         given primary message ID. Note that this will also find old
         (not current) MessageSets"""
 
+    def messageSetsNotInTemplate():
+        """
+        Return an iterator over message sets in this PO file that do not
+        correspond to a message set in the template; eg, the template
+        message set is either absent or has sequence=0.
+        """
+
     def hasMessageID(msgid):
         """Check whether a message set with the given message ID exists within
         this PO file."""
