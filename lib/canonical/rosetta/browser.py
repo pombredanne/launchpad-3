@@ -222,6 +222,7 @@ class ProductView:
         self.multitemplates = False
         self._templangs = None
         self._templates = list(self.context.potemplates)
+        self.status_message = None
 
         self.newpotemplate()
 
@@ -236,29 +237,34 @@ class ProductView:
         if not self.form.get("Register", None) == "Register POTemplate":
             return
         if not self.request.method == "POST":
+            self.status_message='You should post the form'
+            return
+
+        if ('file' not in self.form or
+            'name' not in self.form or
+            'title' not in self.form):
+            self.status_message = 'Please fill all the required fields.'
             return
 
         # Extract the details from the form
         name = self.form['name']
+        if name == '':
+            self.status_message='The name field cannot be empty'
+            return
         title = self.form['title']
+        if title == '':
+            self.status_message='The title field cannot be empty'
+            return
 
-        # XXX Carlos Perello Marin 27/11/04 this check is not yet being done.
-        # check to see if there is an existing product with
-        # this name.
+
         # get the launchpad person who is creating this product
         owner = IPerson(self.request.principal)
 
-        # Now create a new product in the db
-        potemplate = POTemplate(
-            product=self.context.id,
-            name=name,
-            title=title,
-            iscurrent=False,
-            owner=owner)
-
-        self._templates.append(potemplate)
-
         file = self.form['file']
+
+        if file == '':
+            self.status_message = 'Please fill all the required fields.'
+            return
 
         # XXX: Carlos Perello Marin 03/12/2004: Epiphany seems to have an
         # aleatory bug with upload forms (or perhaps it's launchpad because
@@ -267,8 +273,8 @@ class ProductView:
         # in "file". We show an error if we see that behaviour.
         # For more info, look at bug #116
 
-        # XXX: Add some feedback about the error.
         if isinstance(file, unicode):
+            self.status_message = 'There was an unknow error getting the file.'
             return
 
         filename = file.filename
@@ -280,13 +286,36 @@ class ProductView:
 
             parser = POParser()
 
-            parser.write(potfile)
-            parser.finish()
+            try:
+                parser.write(potfile)
+                parser.finish()
+            except:
+                # The file is not correct
+                self.status_message= 'Please, review the po file seems to have a problem'
+
+            # XXX Carlos Perello Marin 27/11/04 this check is not yet being done.
+            # check to see if there is an existing product with
+            # this name.
+            # Now create a new product in the db
+            potemplate = POTemplate(
+                product=self.context.id,
+                name=name,
+                title=title,
+                iscurrent=False,
+                owner=owner)
+
+            self._templates.append(potemplate)
 
             potemplate.rawfile = base64.encodestring(potfile)
             potemplate.daterawimport = UTC_NOW
             potemplate.rawimporter = owner
             potemplate.rawimportstatus = RosettaImportStatus.PENDING.value
+        else:
+            self.status_message = 'You must upload a .pot file'
+            return
+
+        # now redirect to view the potemplate.
+        self.request.response.redirect(potemplate.name)
 
     def templates(self):
         if self._templangs is not None:
@@ -389,6 +418,7 @@ class ViewPOTemplate:
         self.request = request
         self.form = self.request.form
         self.request_languages = request_languages(self.request)
+        self.status_message = None
 
     def num_messages(self):
         N = self.context.messageCount()
@@ -424,10 +454,70 @@ class ViewPOTemplate:
         if not self.form.get("Update", None)=="Update POTemplate":
             return
         if not self.request.method == "POST":
+            self.status_message='You should post the form'    
             return
-        # Extract details from the form and update the POTemplate
-        self.context.name = self.form['name']
-        self.context.title = self.form['title']
+
+        # XXX Carlos Perello Marin 27/11/04 this check is not yet being done.
+        # check to see if there is an existing product with
+        # this name.
+        if 'name' in self.form:
+            name = self.form['name']
+            if name == '':
+                self.status_message='The name field cannot be empty'
+                return
+            self.context.name = name
+        if 'title' in self.form:
+            title = self.form['title']
+            if title == '':
+                self.status_message='The title field cannot be empty'
+                return
+            self.context.title = title
+
+        # get the launchpad person who is creating this product
+        owner = IPerson(self.request.principal)
+
+        file = self.form['file']
+
+        if file == '':
+            # now redirect to view the potemplate. This lets us follow the
+            # template in case the user changed the name
+            self.request.response.redirect('../' + self.context.name)
+            return
+
+        # XXX: Carlos Perello Marin 03/12/2004: Epiphany seems to have an
+        # aleatory bug with upload forms (or perhaps it's launchpad because
+        # I never had problems with bugzilla). The fact is that some uploads
+        # don't work and we get a unicode object instead of a file-like object
+        # in "file". We show an error if we see that behaviour.
+        # For more info, look at bug #116
+
+        if isinstance(file, unicode):
+            self.status_message = 'There was an unknow error getting the file.'
+            return
+
+        filename = file.filename
+
+        if filename.endswith('.pot'):
+            potfile = file.read()
+
+            from canonical.rosetta.pofile import POParser
+
+            parser = POParser()
+
+            try:
+                parser.write(potfile)
+                parser.finish()
+            except:
+                # The file is not correct
+                self.status_message= 'Please, review the pot file seems to have a problem'
+
+            self.context.rawfile = base64.encodestring(potfile)
+            self.context.daterawimport = UTC_NOW
+            self.context.rawimporter = owner
+            self.context.rawimportstatus = RosettaImportStatus.PENDING.value
+        else:
+            self.status_message = 'Unknown file type'
+            return
         
         # now redirect to view the potemplate. This lets us follow the
         # template in case the user changed the name
@@ -438,6 +528,8 @@ class ViewPOFile:
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self.form = self.request.form
+        self.status_message = None
         self.header = POHeader(msgstr=context.header)
         self.header.finish()
 
@@ -460,13 +552,61 @@ class ViewPOFile:
                 self.context.header = self.header.msgstr.encode('utf-8')
                 self.context.pluralforms = int(self.request.form['pluralforms'])
             else:
-                raise RuntimeError("This form must be posted!")
+                self.status_message = 'This form must be posted!'
+                return
 
             self.submitted = True
-            return "Thank you for submitting the form."
-        else:
-            self.submitted = False
-            return ""
+            self.request.response.redirect('./')
+
+        elif "UPLOAD" in self.request.form:
+            if self.request.method == "POST":
+                file = self.form['file']
+
+                if file == '':
+                    self.status_message = 'You forgot the file!'
+                    return
+
+                # XXX: Carlos Perello Marin 03/12/2004: Epiphany seems to have an
+                # aleatory bug with upload forms (or perhaps it's launchpad because
+                # I never had problems with bugzilla). The fact is that some uploads
+                # don't work and we get a unicode object instead of a file-like object
+                # in "file". We show an error if we see that behaviour.
+                # For more info, look at bug #116
+
+                if isinstance(file, unicode):
+                    self.status_message = 'There was an unknow error getting the upload.'
+                    return
+
+                filename = file.filename
+        
+                if filename.endswith('.po'):
+                    pofile = file.read()
+        
+                    from canonical.rosetta.pofile import POParser
+        
+                    parser = POParser()
+                    
+                    try:
+                        parser.write(pofile)
+                        parser.finish()
+                    except:
+                        # The file is not correct
+                        self.status_message = "Please, review the po file seems to have a problem"
+                        return
+
+                    self.context.rawfile = base64.encodestring(file.read())
+                    self.context.daterawimport = UTC_NOW
+                    self.context.rawimporter = IPerson(self.request.principal, None)
+                    self.context.rawimportstatus = RosettaImportStatus.PENDING.value
+                    
+                    self.request.response.redirect('./')
+                    self.submitted = True
+                else:
+                    self.status_message =  'Dunno what this file is.'
+                    return
+            else:
+                self.status_message = 'This form must be posted!'
+                return
 
 
 class TranslatorDashboard:
@@ -1055,7 +1195,8 @@ class ViewImportQueue:
 
                     pofile.doRawImport()
 
-
+# XXX: Carlos Perello Marin 17/12/2004 We are not using this class ATM so I
+# think we could kill it.
 class TemplateUpload:
     def languages(self):
         return getUtility(ILanguageSet)

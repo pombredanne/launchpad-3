@@ -51,18 +51,13 @@
     <div class="portletBody">
 
         <div class="portletContent even">
-
-            <p><img src="/++resource++add.gif"><a href="+upload">Upload a newer
-            version of this PO template</a>.
+            <p><img src="/++resource++edit.gif"><a href="+edit">Edit this
+            template</a>. This will modify the template header information and
+            will let you upload a new PO template version.<br />
             This is an advanced operation, limited to Rosetta
             administrators<span tal:condition="context/owner"> and 
             <span tal:replace="context/owner/browsername" />, the current owner of
             this template in Rosetta</span>.</p>
-
-            <p><img src="/++resource++edit.gif"><a href="+edit">Edit this
-            template</a>. This will modify the template header information.</p>
-
-
         </div>
     </div>
 </div>

@@ -28,6 +28,10 @@
     tal:content="context/name">$POTemplate.name</span>" POTemplate
     Details</h1>
 
+    <div class="portalMessage"
+         tal:condition="view/status_message"
+         tal:content="structure view/status_message">Successful</div>
+
     <div class="documentDescription">
     Please edit the po template details below for <span
     tal:content="context/name">$POTemplate.name</span>.
@@ -37,9 +41,10 @@
 
         <legend>POTemplate Details</legend>
 
-        <form action="+edit" method="post">
+        <form method="POST" enctype="multipart/form-data"
+            tal:attributes="action string: ${request/URL}">
 
-<div class="field">
+        <div class="field">
 
             <label>Name</label>
 
@@ -73,6 +78,18 @@
                 <input type="text" name="title" size="30"
                        value="" tal:attributes="value context/title" />
         </div>
+
+        <div class="field">
+
+            <label>File</label>
+
+            <div class="formHelp">
+            The PO template file we want to upload to translate.
+            </div>
+
+            <input name="file" type="file" />
+        </div>
+
 
         <div class="formControls">
 

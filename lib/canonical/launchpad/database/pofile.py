@@ -536,32 +536,32 @@ class POTemplate(SQLBase, RosettaStats):
     
         try:
             importer.doImport(file)
+
+            # The import has been done, we mark it that way.
+            self.rawimportstatus = RosettaImportStatus.IMPORTED.value
+
+            # XXX: Andrew Bennetts 17/12/2004: Really BIG AND UGLY fix to prevent
+            # a race condition that prevents the statistics to be calculated
+            # correctly. DON'T copy this, ask Andrew first.
+            for object in SQLBase._connection._dm.objects:
+                object.sync()
+    
+            # We update the cached value that tells us the number of msgsets this
+            # .pot file has
+            self.messagecount = self.currentMessageSets().count()
+    
+            # And now, we should update the statistics for all po files this .pot
+            # file has because a number of msgsets could have change.
+            # XXX: Carlos Perello Marin 09/12/2004 We should handle this case
+            # better. The pofile don't get updated the currentcount updated...
+            for pofile in self.poFiles:
+                pofile.updateStatistics()
         except:
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.
             self.rawimportstatus = RosettaImportStatus.FAILED.value
             logging.warning('We got an error importing %s' , self.name,
             exc_info = 1)
-        else:
-            # The import has been done, we mark it that way.
-            self.rawimportstatus = RosettaImportStatus.IMPORTED.value
-
-        # XXX: Andrew Bennetts 17/12/2004: Really BIG AND UGLY fix to prevent
-        # a race condition that prevents the statistics to be calculated
-        # correctly. DON'T copy this, ask Andrew first.
-        for object in SQLBase._connection._dm.objects:
-            object.sync()
-
-        # We update the cached value that tells us the number of msgsets this
-        # .pot file has
-        self.messagecount = self.currentMessageSets().count()
-
-        # And now, we should update the statistics for all po files this .pot
-        # file has because a number of msgsets could have change.
-        # XXX: Carlos Perello Marin 09/12/2004 We should handle this case
-        # better. The pofile don't get updated the currentcount updated...
-        for pofile in self.poFiles:
-            pofile.updateStatistics()
 
 
 class POTMsgSet(SQLBase):
@@ -1067,6 +1067,18 @@ class POFile(SQLBase, RosettaStats):
     
         try:
             importer.doImport(file)
+                
+            self.rawimportstatus = RosettaImportStatus.IMPORTED.value
+    
+            # XXX: Andrew Bennetts 17/12/2004: Really BIG AND UGLY fix to prevent
+            # a race condition that prevents the statistics to be calculated
+            # correctly. DON'T copy this, ask Andrew first.
+            for object in SQLBase._connection._dm.objects:
+                object.sync()
+            
+            # Now we update the statistics after this new import
+            self.updateStatistics(newImport=True)
+
         except:
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.
@@ -1074,17 +1086,6 @@ class POFile(SQLBase, RosettaStats):
             logging.warning(
                 'We got an error importing %s language for %s template' % (
                     self.language.code, self.potemplate.name), exc_info = 1)
-        else:
-            self.rawimportstatus = RosettaImportStatus.IMPORTED.value
-
-        # XXX: Andrew Bennetts 17/12/2004: Really BIG AND UGLY fix to prevent
-        # a race condition that prevents the statistics to be calculated
-        # correctly. DON'T copy this, ask Andrew first.
-        for object in SQLBase._connection._dm.objects:
-            object.sync()
-        
-        # Now we update the statistics after this new import
-        self.updateStatistics(newImport=True)
 
 
 class POMsgSet(SQLBase):
