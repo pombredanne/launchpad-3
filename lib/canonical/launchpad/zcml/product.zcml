@@ -71,7 +71,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"
-        class="canonical.launchpad.browser.ProductView"
+        class="canonical.launchpad.browser.ProductBugsView"
         permission="zope.Public" >
         <browser:page
             name="+malone-index"

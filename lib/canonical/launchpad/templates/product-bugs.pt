@@ -13,36 +13,7 @@
         tal:content="context/shortdesc">$Product.shortdesc
     </div>
 
-    <table class="listing rowNavigation" tal:condition="context/bugs"
-           width="100%">
-        <tr>
-            <th>#</th>
-            <th>Bug</th>
-            <th>Status</th>
-            <th>Severity</th>
-            <th>Priority</th>
-            <th>Assignee</th>
-        </tr> 
-        <tr tal:repeat="bugass context/bugs"
-            tal:attributes="onclick
-                string:window.location='/malone/bugs/${bugass/bug/id}';">
-            <td tal:content="bugass/bug/id">#</td>
-            <td><b><span tal:replace="bugass/bug/title">
-                    $Bug.title</span></b>
-            </td>
-            <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">
-                $ProductBugAssignment.bugstatus
-            </td>
-            <td tal:content="bugass/severity/lp:BugSeverity">
-                $ProductBugAssignment.severity
-            </td>
-            <td tal:content="bugass/priority/lp:BugPriority">
-                $ProductBugAssignment.priority
-            </td>
-            <td tal:content="bugass/assignee/browsername | default">
-            </td>
-        </tr>
-    </table>
+    <div metal:use-macro="context/@@bugassignment_search_listing/buglisting" />
 
     <p tal:condition="not: context/bugs">No bugs filed against
         <span tal:replace="context/displayname">$Product.displayname</span>

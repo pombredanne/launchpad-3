@@ -36,7 +36,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.ISourcePackage"
         permission="zope.Public"
-        class="canonical.launchpad.browser.SourcePackageView">
+        class="canonical.launchpad.browser.packages.SourcePackageBugsView">
         <browser:page
             name="+malone-index"
             template="../templates/package-bugs.pt"
@@ -68,9 +68,11 @@
         layer="canonical.launchpad.layers.MaloneLayer"
         name="+malone-index" />
 
-    <browser:pages for="canonical.launchpad.interfaces.ISourcePackageSet"
+    <browser:pages
+        for="canonical.launchpad.interfaces.ISourcePackageSet"
+        class="canonical.launchpad.browser.packages.SourcePackageBugsView"
         permission="zope.Public">
-        <browser:page 
+        <browser:page
             name="+malone-index"
             template="../templates/packages-bugs.pt"
             lp:url="malone/packages/+malone-index" />

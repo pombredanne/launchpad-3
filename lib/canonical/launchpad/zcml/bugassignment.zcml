@@ -147,4 +147,11 @@
               lp:url="malone/assigned/" />
     </browser:pages>
 
+    <browser:page
+        for="*"
+        name="bugassignment_search_listing"
+        layer="canonical.launchpad.layers.LaunchpadLayer"
+        permission="zope.Public"
+        template="../templates/bugassignment-search-listing.pt"
+        />
 </configure>

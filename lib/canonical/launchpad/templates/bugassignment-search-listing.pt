@@ -1,0 +1,107 @@
+<metal:page define-macro="buglisting">
+  <form action="" method="GET">
+  <table id="ass_listing"
+         class="listing rowNavigation"
+         tal:define="listing_columns view/assignment_columns;
+                     logged_in request/lp:person;">
+    <tr>
+      <th tal:condition="python:'id' in listing_columns">Bug #</th>
+      <th tal:condition="python:'product' in listing_columns">Product</th>
+      <th tal:condition="python:'package' in listing_columns">Package</th>
+      <th tal:condition="python:'title' in listing_columns">Title</th>
+      <th tal:condition="python:'status' in listing_columns">Status</th>
+      <th tal:condition="python:'priority' in listing_columns">Priority</th>
+      <th tal:condition="python:'severity' in listing_columns">Severity</th>
+      <th tal:condition="python:'submittedon' in listing_columns">Submitted On</th>
+      <th tal:condition="python:'submittedby' in listing_columns">Submitted By</th>
+      <th tal:condition="python:'assignedto' in listing_columns">Assigned To</th>
+      <th tal:condition="python:'actions' in listing_columns and logged_in">Take Action</th>
+    </tr>
+    <tr tal:repeat="assignment view/bugassignment_search">
+      <span tal:omit-tag=""
+            tal:define="bugid assignment/bug/id;
+                        assid assignment/id;
+                        product_name assignment/product/name|nothing;
+                        project_name assignment/product/project/name|nothing;
+                        package_name assignment/sourcepackage/sourcepackagename/name|nothing;
+                        collection_name python:(product_name and 'productassignments') or 'packageassignments';
+                        ass_link string:$bugid/$collection_name/$assid/+edit;
+                        ass_owner assignment/owner/name|nothing;
+                        potential_assignee logged_in/displayname|nothing;
+                        status assignment/bugstatus/lp:BugAssignmentStatus;
+                        assignee assignment/assignee/name|python:'';
+                        priority assignment/priority/lp:BugPriority;
+                        severity assignment/severity/lp:BugSeverity;
+                        statusid string:status${repeat/assignment/number};
+                        assigneeid string:assignee${repeat/assignment/number};">
+          <td tal:content="bugid"
+              tal:condition="python:'id' in listing_columns"
+              tal:attributes="onclick string:window.location='${ass_link}';">$Bug.title</td>
+          <td tal:condition="python:('product' in listing_columns) and product_name"
+              tal:content="python: (project_name == product_name) and product_name or (project_name + ' ' + product_name)"
+              tal:attributes="onclick string:window.location='${ass_link}';">product</td>
+          <td tal:condition="python:product_name and ('product' in listing_columns)"
+              tal:attributes="onclick string:window.location='${ass_link}';">-</td>
+          <td tal:content="python:package_name and package_name or '-'"
+              tal:condition="python:'package' in listing_columns"
+              tal:attributes="onclick string:window.location='${ass_link}';">-</td>
+          <td tal:attributes="onclick string:window.location='${ass_link}';"
+              tal:condition="python:'title' in listing_columns"
+              tal:content="assignment/bug/title">
+              title
+          </td>
+          <td tal:content="status"
+              tal:condition="python:'status' in listing_columns"
+              tal:attributes="onclick string:window.location='${ass_link}';
+                              id statusid">New</td>
+          <td tal:content="priority"
+              tal:condition="python:'priority' in listing_columns"
+              tal:attributes="onclick string:window.location='${ass_link}';">High</td>
+          <td tal:content="severity"
+              tal:condition="python:'severity' in listing_columns"
+              tal:attributes="onclick string:window.location='${ass_link}';">Medium</td>
+          <td tal:content="python:assignment.datecreated.strftime('%d %b %y')"
+              tal:condition="python:'submittedon' in listing_columns"
+              tal:attributes="onclick string:window.location='${ass_link}';">date</td>
+          <td tal:content="assignment/owner/displayname|string:-"
+              tal:condition="python:'submittedby' in listing_columns"
+              tal:attributes="onclick string:window.location='${ass_link}';">name</td>
+          <td tal:content="assignment/assignee/displayname|string:-"
+              tal:condition="python:'assignedto' in listing_columns"
+              tal:attributes="onclick string:window.location='${ass_link}';
+                              id assigneeid;">somebody</td>
+          <td tal:condition="python:'actions' in listing_columns and logged_in">
+            <a href=""
+               tal:condition="product_name"
+               tal:attributes="onClick string:return accept('${bugid}/productassignments/${assignment/id}/+edit?field.bugstatus=Accepted&field.priority=$priority&field.severity=$severity&field.product=$product_name&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.assignee=${logged_in/name}&UPDATE_SUBMIT=Change', '$statusid', '$assigneeid', '$potential_assignee');">
+                <small>accept</small>
+            </a>
+            <a href=""
+               tal:condition="package_name"
+               tal:attributes="onClick string:return accept('${bugid}/packageassignments/${assignment/id}/+edit?field.bugstatus=Accepted&field.priority=$priority&field.severity=$severity&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.binarypackagename=&field.assignee=${logged_in/name}&UPDATE_SUBMIT=Change', '$statusid', '$assigneeid', '$potential_assignee');">
+                <small>accept</small>
+            </a>
+            &nbsp;
+            <a href=""
+               tal:condition="product_name"
+               tal:attributes="onClick string:return reject('${bugid}/productassignments/${assignment/id}/+edit?field.bugstatus=Rejected&field.priority=$priority&field.severity=$severity&field.product=$product_name&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>reject</small>
+            </a>
+            <a href=""
+               tal:condition="package_name"
+               tal:attributes="onClick string:return reject('${bugid}/packageassignments/${assignment/id}/+edit?field.bugstatus=Rejected&field.priority=$priority&field.severity=$severity&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.binarypackagename=&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>reject</small>
+            </a>
+            &nbsp;
+            <a href=""
+               tal:condition="product_name"
+               tal:attributes="onClick string:return fixed('${bugid}/productassignments/${assignment/id}/+edit?field.bugstatus=Fixed&field.priority=$priority&field.severity=$severity&field.product=$product_name&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>fixed</small>
+            </a>
+            <a href=""
+               tal:condition="package_name"
+               tal:attributes="onClick string:return fixed('${bugid}/packageassignments/${assignment/id}/+edit?field.bugstatus=Fixed&field.priority=$priority&field.severity=$severity&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.binarypackagename=&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>fixed</small>
+            </a>
+          </td>
+      </span>
+    </tr>
+  </table>
+  </form>
+</metal:page>

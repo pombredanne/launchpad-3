@@ -1,9 +1,6 @@
+# Copyright 2004 Canonical Ltd.  All rights reserved.
 
-
-#
-# Copyright 2004 Canonical Ltd
-#
-#
+__metaclass__ = type
 
 from zope.interface import implements
 from zope.schema import TextLine, Int, Choice
@@ -30,7 +27,6 @@ from zope.app.form import CustomWidgetFactory
 
 import zope.security.interfaces
 
-
 #
 # Traversal functions that help us look up something
 # about a project or product
@@ -46,7 +42,7 @@ def traverseProduct(product, request, name):
 #
 # A View Class for Product
 #
-class ProductView(object):
+class ProductView:
 
     translationsPortlet = ViewPageTemplateFile(
         '../templates/portlet-product-translations.pt')
@@ -139,6 +135,15 @@ class ProductView(object):
         buglist.reverse()
         return buglist
 
+class ProductBugsView:
+    def bugassignment_search(self):
+        return self.context.bugs
+
+    def assignment_columns(self):
+        return [
+            "id", "title", "status", "priority", "severity",
+            "submittedon", "submittedby", "assignedto", "actions"]
+   
 
 class ProductFileBugView(AddView):
 
