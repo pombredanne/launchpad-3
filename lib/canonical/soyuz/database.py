@@ -200,9 +200,13 @@ class SoyuzProduct(SQLBase):
         DateTimeCol('datecreated', dbName='datecreated', notNull=True,
                     default="NOW"),
         StringCol('homepageurl', dbName='homepageurl'),
-        ForeignKey(name='manifest', foreignKey='Manifest', dbName='manifest',
-                   notNull=True),
+        StringCol('screenshotsurl'),
+        StringCol('wikiurl'),
+        StringCol('programminglang'),
+        StringCol('downloadurl'),
+        StringCol('lastdoap'),
         ]
+
         
 
 class SoyuzProject(SQLBase):
