@@ -2,6 +2,39 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-14 10:48:08 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1312
+
+    Summary:
+      reenable dependent package test suites and add manifest field on SourcePackageRelease to the sqlobject definition
+    Revision:
+      launchpad--devel--0--patch-1312
+
+    Patches applied:
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-93
+       enable cscvs and related test suites again
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-94
+       add manifest field on SourcePackageRelease to the sqlobject definition
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-95
+       update the schema in the 10-04-0 schema patch
+    
+
+    new files:
+     database/schema/.arch-ids/patch-10-04-0.sql.id
+     database/schema/patch-10-04-0.sql
+
+    modified files:
+     Makefile doc/changelog.txt
+     lib/canonical/launchpad/database/sourcepackage.py
+
+    new patches:
+     robert.collins@canonical.com/launchpad--devel--0--patch-93
+     robert.collins@canonical.com/launchpad--devel--0--patch-94
+     robert.collins@canonical.com/launchpad--devel--0--patch-95
+
+
 2005-02-13 17:23:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1311
 
     Summary:

@@ -14,8 +14,7 @@ HERE:=$(shell pwd)
 # DO NOT ALTER : this should just build by default
 default: inplace
 
-check:
-	$(MAKE) -C sourcecode build
+check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
 	${PYTHON} -t ./test_on_merge.py canonical
@@ -24,11 +23,6 @@ pagetests:
 	$(MAKE) -C sourcecode build
 	python test.py test_pages
 	
-
-XXXcheck: build
-	$(MAKE) -C sourcecode check
-	PYTHONPATH=$(HERE)/lib ${PYTHON} -t ./test.py
-
 .PHONY: check
 
 # XXX What should the default be?
