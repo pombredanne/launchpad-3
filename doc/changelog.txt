@@ -2,6 +2,44 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-10 16:42:10 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1166
+
+    Summary:
+      Added more info about how to give us missing plural forms information. Fixed the transaction problems after the changes in sqlobject and also done a small improvement to the import daemon and catch an unhandled transaction that breaks the po import
+    Revision:
+      launchpad--devel--0--patch-1166
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-467
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-468
+       Added extra information about plural forms so users could send us it directly instead of repeat how to do that every time.
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-469
+       Catch an exception when the Last-Translator field does not exists in the imported pofile
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-470
+       Fixed a problem that prevents to sync sqlobjects because the list changes while we iterate over it
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-471
+       If we get any error, we abort the transaction so we force a new transaction
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/templates/potemplate-translate.pt
+     lib/canonical/rosetta/scripts/import_daemon.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-467
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-468
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-469
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-470
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-471
+
+
 2005-01-10 16:01:33 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1165
 
     Summary:

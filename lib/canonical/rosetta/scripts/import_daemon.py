@@ -18,6 +18,9 @@ class ImportDaemon:
     def commit(self):
         self._tm.commit()
 
+    def abort(self):
+        self._tm.abort()
+
     def nextImport(self):
         productSet = ProductSet()
         for product in productSet:
@@ -48,8 +51,10 @@ class ImportDaemon:
                     # so it's not lost.
                     self.commit()
             except:
-                # We don't want to die, so we ignore any exception.
+                # We don't want to die, so we catch all exceptions and abort
+                # the transaction.
                 logging.warning('We got an unexpected exception', exc_info = 1)
+                self.abort()
             if not found_any:
                 time.sleep(60)
                 # XXX: force a rollback/begin pair here to reset the
