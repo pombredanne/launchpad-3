@@ -339,11 +339,17 @@ class IRelease(Interface):
     displayname = Attribute("Distrorelease Displayname")
 
 ################################################################
-   
+ 
+#
+# XXX Mark Shuttleworth comments 03/10/04
+#     Please let's get rid of this ISync interface in favour of the
+#     ISourceSource interface to be consistent with the rest of Launchpad
+#     naming conventions.
+#
 class ISync(Interface):
     """A sync job"""
 
-    name = Attribute("the syncs name, not title, no matter how much you think it should be")
+    name = Attribute("the sourcesource name, not title, no matter how much you think it should be")
     title = Attribute("duh")
     description = Attribute("duh")
     cvsroot = Attribute("duh")
@@ -359,9 +365,9 @@ class ISync(Interface):
     archsourcename = Attribute("duh")
     archsourceurl = Attribute("duh")
     def autosync():
-        """enable this sync for automatic syncs"""
+        """enable this sourcesource for automatic syncronisation"""
     def autosyncing():
-        """is the sync enabled for automatic syncs?"""
+        """is the sourcesource enabled for automatic syncronisation?"""
     def canChangeProduct():
         """is this sync allowed to have its product changed?"""
     def changeProduct(product):

@@ -12,6 +12,9 @@
 
 <body>
 
+<p>Please shift to use the DOAP infrastructure. The equivalent page is
+product-new.pt which is accessible through the DOAP pages.</p>
+
 <div metal:fill-slot="main">
 
    <tal:dummy condition="view/handle_submit" />

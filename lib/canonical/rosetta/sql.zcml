@@ -4,11 +4,11 @@
     <allow interface="canonical.launchpad.interfaces.IRosettaProject"/>
   </content>
 
-  <content class="canonical.launchpad.database.RosettaPOTemplate">
+  <content class="canonical.launchpad.database.POTemplate">
     <allow interface="canonical.launchpad.interfaces.IPOTemplate"/>
   </content>
 
-  <content class="canonical.launchpad.database.RosettaPOFile">
+  <content class="canonical.launchpad.database.POFile">
     <require permission="zope.Public"
         interface="canonical.launchpad.interfaces.IEditPOFile"
         set_attributes="header pluralForms"/>
@@ -18,7 +18,7 @@
     <allow interface="canonical.launchpad.interfaces.IEditPOTemplateOrPOFileMessageSet"/>
   </content>
 
-  <content class="canonical.launchpad.database.RosettaPOTranslationSighting">
+  <content class="canonical.launchpad.database.POTranslationSighting">
     <allow interface="canonical.launchpad.interfaces.IPOTranslationSighting"/>
   </content>
 

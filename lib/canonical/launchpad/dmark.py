@@ -12,6 +12,7 @@ from canonical.database.sqlbase import SQLBase, quote
 # canonical imports
 import canonical.launchpad.interfaces as interfaces
 from canonical.launchpad.interfaces import *
+from canonical.launchpad.database import *
 
 class RosettaLanguages(object):
     implements(interfaces.ILanguages)
@@ -49,7 +50,7 @@ class RosettaSchema(SQLBase):
     _table = 'Schema'
 
     _columns = [
-        ForeignKey(name='owner', foreignKey='RosettaPerson',
+        ForeignKey(name='owner', foreignKey='Person',
             dbName='owner', notNull=True),
         StringCol(name='name', dbName='name', notNull=True, alternateID=True),
         StringCol(name='title', dbName='title', notNull=True),
@@ -90,7 +91,7 @@ class RosettaLabel(SQLBase):
         StringCol(name='description', dbName='description', notNull=True),
     ]
 
-    _personsJoin = RelatedJoin('RosettaPerson', joinColumn='label',
+    _personsJoin = RelatedJoin('Person', joinColumn='label',
         otherColumn='person', intermediateTable='PersonLabel')
 
     def persons(self):
@@ -180,7 +181,7 @@ class RosettaTranslationEffort(SQLBase):
     _table = 'TranslationEffort'
 
     _columns = [
-        ForeignKey(name='owner', foreignKey='RosettaPerson', dbName='owner',
+        ForeignKey(name='owner', foreignKey='Person', dbName='owner',
             notNull=True),
         ForeignKey(name='project', foreignKey='Project',
             dbName='project', notNull=True),
@@ -246,18 +247,6 @@ class RosettaTranslationEffortPOTemplate(SQLBase):
         IntCol(name='priority', dbName='priority', notNull=True),
     ]
 
-class RosettaEmailAddress(SQLBase):
-    implements(interfaces.IEmailAddress)
-
-    _table = 'EmailAddress'
-
-    _columns = [
-        ForeignKey(name='person', foreignKey='RosettaPerson', dbName='person',
-            notNull=True),
-        StringCol(name='email', dbName='email', notNull=True, unique=True),
-        IntCol(name='status', dbName='status', notNull=True),
-    ]
-
 class RosettaLanguage(SQLBase):
     implements(interfaces.ILanguage)
 
@@ -284,107 +273,6 @@ class RosettaLanguage(SQLBase):
         return self.translateLabel().persons()
 
 
-class RosettaPerson(SQLBase):
-    implements(IPerson)
-
-    _table = 'Person'
-
-    _columns = [
-        StringCol(name='displayName', dbName='displayname'),
-        StringCol(name='givenName', dbName='givenname'),
-        StringCol(name='familyName', dbName='familyname'),
-        StringCol(name='password', dbName='password'),
-    ]
-
-#    isMaintainer
-#    isTranslator
-#    isContributor
-
-    # Invariant: isMaintainer implies isContributor
-
-    _emailsJoin = MultipleJoin('RosettaEmailAddress', joinColumn='person')
-
-    def emails(self):
-        return iter(self._emailsJoin)
-
-    # XXX: not implemented
-    def maintainedProjects(self):
-        '''SELECT Project.* FROM Project
-            WHERE Project.owner = self.id
-            '''
-
-    # XXX: not implemented
-    def translatedProjects(self):
-        '''SELECT Project.* FROM Project, Product, POTemplate, POFile
-            WHERE
-                POFile.owner = self.id AND
-                POFile.template = POTemplate.id AND
-                POTemplate.product = Product.id AND
-                Product.project = Project.id
-            ORDER BY ???
-            '''
-
-    def translatedTemplates(self):
-        '''
-        SELECT * FROM POTemplate WHERE
-            id IN (SELECT potemplate FROM pomsgset WHERE
-                id IN (SELECT pomsgset FROM POTranslationSighting WHERE
-                    origin = 2
-                ORDER BY datefirstseen DESC))
-        '''
-        return RosettaPOTemplate.select('''
-            id IN (SELECT potemplate FROM pomsgset WHERE
-                id IN (SELECT pomsgset FROM POTranslationSighting WHERE
-                    origin = 2
-                ORDER BY datefirstseen DESC))
-            ''')
-
-    _labelsJoin = RelatedJoin('RosettaLabel', joinColumn='person',
-        otherColumn='label', intermediateTable='PersonLabel')
-
-    def languages(self):
-        languages = getUtility(interfaces.ILanguages)
-        try:
-            schema = RosettaSchema.byName('translation-languages')
-        except SQLObjectNotFound:
-            raise RuntimeError("Launchpad installation is broken, " + \
-                    "the DB is missing essential data.")
-
-        for label in self._labelsJoin:
-            if label.schema == schema:
-                yield languages[label.name]
-
-    def addLanguage(self, language):
-        try:
-            schema = RosettaSchema.byName('translation-languages')
-        except SQLObjectNotFound:
-            raise RuntimeError("Launchpad installation is broken, " + \
-                    "the DB is missing essential data.")
-        label = RosettaLabel.selectBy(schemaID=schema.id, name=language.code)
-        if label.count() < 1:
-            # The label for this language does not exists yet into the
-            # database, we should create it.
-            label = RosettaLabel(
-                        schemaID=schema.id,
-                        name=language.code,
-                        title='Translates into ' + language.englishName,
-                        description='A person with this label says that ' + \
-                                    'knows how to translate into ' + \
-                                    language.englishName)
-        # This method comes from the RelatedJoin
-        self.addRosettaLabel(label)
-
-    def removeLanguage(self, language):
-        try:
-            schema = RosettaSchema.byName('translation-languages')
-        except SQLObjectNotFound:
-            raise RuntimeError("Launchpad installation is broken, " + \
-                    "the DB is missing essential data.")
-        label = RosettaLabel.selectBy(schemaID=schema.id, name=language.code)[0]
-        # This method comes from the RelatedJoin
-        self.removeRosettaLabel(label)
-
-
 class RosettaBranch(SQLBase):
     implements(interfaces.IBranch)
 
@@ -394,424 +282,6 @@ class RosettaBranch(SQLBase):
         StringCol(name='title', dbName='title'),
         StringCol(name='description', dbName='description')
     ]
-
-class RosettaPOTemplate(SQLBase):
-    implements(interfaces.IEditPOTemplate)
-
-    _table = 'POTemplate'
-
-    _columns = [
-        ForeignKey(name='product', foreignKey='Product', dbName='product',
-            notNull=True),
-        ForeignKey(name='owner', foreignKey='RosettaPerson', dbName='owner'),
-        StringCol(name='name', dbName='name', notNull=True, unique=True),
-        StringCol(name='title', dbName='title', notNull=True, unique=True),
-        StringCol(name='description', dbName='description', notNull=True),
-        StringCol(name='path', dbName='path', notNull=True),
-        BoolCol(name='isCurrent', dbName='iscurrent', notNull=True),
-        DateTimeCol(name='dateCreated', dbName='datecreated'),
-        StringCol(name='copyright', dbName='copyright'),
-        ForeignKey(name='branch', foreignKey='RosettaBranch', dbName='branch',
-                   notNull=True),
-        IntCol(name='messageCount', dbName='messagecount', notNull=True),
-        IntCol(name='priority', dbName='priority', notNull=True),
-        # XXX cheating, as we don't yet have classes for these
-        IntCol(name='license', dbName='license', notNull=True),
-    ]
-
-    _poFilesJoin = MultipleJoin('RosettaPOFile', joinColumn='potemplate')
-
-    def poFiles(self):
-        return iter(self._poFilesJoin)
-
-    def languages(self):
-        '''This returns the set of languages for which we have
-        POFiles for this POTemplate. NOTE that variants are simply
-        ignored, if we have three variants for en_GB we will simply
-        return a single record for en_GB.
-
-        XXX NEED DISTINCT=TRUE'''
-        return Set(RosettaLanguage.select('''
-            POFile.language = Language.id AND
-            POFile.potemplate = %d
-            ''' % self.id, clauseTables=('POFile', 'Language')))
-
-    def poFile(self, language_code, variant=None):
-        if variant is None:
-            variantspec = 'IS NULL'
-        else:
-            variantspec = (u'= "%s"' % quote(variant)).encode('utf-8')
-
-        ret = RosettaPOFile.select("""
-            POFile.potemplate = %d AND
-            POFile.language = Language.id AND
-            POFile.variant %s AND
-            Language.code = %s
-            """ % (self.id,
-                   variantspec,
-                   quote(language_code)),
-            clauseTables=('Language',))
-
-        if ret.count() == 0:
-            raise KeyError, language_code
-        else:
-            return ret[0]
-
-    def currentMessageSets(self):
-        return RosettaPOMessageSet.select(
-            '''
-            POMsgSet.potemplate = %d AND
-            POMsgSet.pofile IS NULL AND
-            POMsgSet.sequence > 0
-            '''
-            % self.id, orderBy='sequence')
-
-    def __iter__(self):
-            return iter(self.currentMessageSets())
-
-    def __len__(self):
-        '''Return the number of CURRENT MessageSets in this POTemplate.'''
-        # XXX: Should we use the cached value POTemplate.messageCount instead?
-        return self.currentMessageSets().count()
-
-    def messageSet(self, key, onlyCurrent=False):
-        query = '''potemplate = %d AND pofile is NULL''' % self.id
-        if onlyCurrent:
-            query += ' AND sequence > 0'
-
-        if isinstance(key, slice):
-            return RosettaPOMessageSet.select(query, orderBy='sequence')[key]
-
-        if not isinstance(key, unicode):
-            raise TypeError(
-                "Can't index with type %s. (Must be slice or unicode.)"
-                    % type(key))
-
-        # Find a message ID with the given text.
-        try:
-            messageID = RosettaPOMessageID.byMsgid(key)
-        except SQLObjectNotFound:
-            raise KeyError, key
-
-        # Find a message set with the given message ID.
-
-        results = RosettaPOMessageSet.select(query +
-            (' AND primemsgid = %d' % messageID.id))
-
-        if results.count() == 0:
-            raise KeyError, key
-        else:
-            assert results.count() == 1
-
-            return results[0]
-
-    # XXX: currentCount, updatesCount and rosettaCount should be updated with
-    # a way that let's us query the database instead of use the cached value
-
-    def currentCount(self, language):
-        try:
-            return self.poFile(language).currentCount
-        except KeyError:
-            return 0
-
-    def updatesCount(self, language):
-        try:
-            return self.poFile(language).updatesCount
-        except KeyError:
-            return 0
-
-    def rosettaCount(self, language):
-        try:
-            return self.poFile(language).rosettaCount
-        except KeyError:
-            return 0
-
-    def hasMessageID(self, messageID):
-        results = RosettaPOMessageSet.selectBy(
-            poTemplateID=self.id,
-            poFileID=None,
-            primeMessageID_ID=messageID.id)
-
-        return results.count() > 0
-
-    def hasPluralMessage(self):
-        results = RosettaPOMessageIDSighting.select('''
-            pluralform = 1 AND
-            pomsgset IN (SELECT id FROM POMsgSet WHERE potemplate = %d)
-            ''' % self.id)
-
-        return results.count() > 0
-
-    def __getitem__(self, key):
-        return self.messageSet(key, onlyCurrent=True)
-
-    # IEditPOTemplate
-
-    def expireAllMessages(self):
-        self._connection.query('UPDATE POMsgSet SET sequence = 0'
-                               ' WHERE potemplate = %d AND pofile IS NULL'
-                               % self.id)
-
-    def newPOFile(self, person, language_code, variant=None):
-        try:
-            self.poFile(language_code, variant)
-        except KeyError:
-            pass
-        else:
-            raise KeyError(
-                "This template already has a POFile for %s variant %s" %
-                (language.englishName, variant))
-
-        try:
-            language = RosettaLanguage.byCode(language_code)
-        except SQLObjectNotFound:
-            raise ValueError, "Unknown language code '%s'" % language_code
-
-        now = datetime.now()
-        data = {
-            'year': now.year,
-            'languagename': language.englishName,
-            'languagecode': language_code,
-            'productname': self.product.title,
-            'date': now.isoformat(' '),
-            # XXX: This is not working and I'm not able to fix it easily
-            #'templatedate': self.dateCreated.gmtime().Format('%Y-%m-%d %H:%M+000'),
-            'templatedate': self.dateCreated,
-            'copyright': self.copyright,
-            'nplurals': language.pluralForms or 1,
-            'pluralexpr': language.pluralExpression or '0',
-            }
-
-        return RosettaPOFile(poTemplate=self,
-                             language=language,
-                             headerFuzzy=True,
-                             title='%(languagename)s translation for %(productname)s' % data,
-                             description="", # XXX: fill it
-                             topComment=standardPOFileTopComment % data,
-                             header=standardPOFileHeader % data,
-                             lastTranslator=person,
-                             currentCount=0,
-                             updatesCount=0,
-                             rosettaCount=0,
-                             owner=person,
-                             lastParsed=nowUTC,
-                             pluralForms=data['nplurals'],
-                             variant=variant)
-
-    def createMessageSetFromMessageID(self, messageID):
-        return createMessageSetFromMessageID(self, messageID)
-
-    def createMessageSetFromText(self, text):
-        return createMessageSetFromText(self, text)
-
-
-class RosettaPOFile(SQLBase):
-    implements(interfaces.IEditPOFile)
-
-    _table = 'POFile'
-
-    _columns = [
-        ForeignKey(name='poTemplate', foreignKey='RosettaPOTemplate',
-            dbName='potemplate', notNull=True),
-        ForeignKey(name='language', foreignKey='RosettaLanguage', dbName='language',
-            notNull=True),
-        StringCol(name='variant', dbName='variant'),
-        ForeignKey(name='owner', foreignKey='RosettaPerson', dbName='owner'),
-        StringCol(name='title', dbName='title', notNull=True, unique=True),
-        StringCol(name='description', dbName='description', notNull=True),
-        StringCol(name='topComment', dbName='topcomment', notNull=True),
-        StringCol(name='header', dbName='header', notNull=True),
-        BoolCol(name='headerFuzzy', dbName='fuzzyheader', notNull=True),
-        IntCol(name='currentCount', dbName='currentcount',
-            notNull=True),
-        IntCol(name='updatesCount', dbName='updatescount',
-            notNull=True),
-        IntCol(name='rosettaCount', dbName='rosettacount',
-            notNull=True),
-        IntCol(name='pluralForms', dbName='pluralforms', notNull=True),
-        ForeignKey(name='lastTranslator', foreignKey='RosettaPerson', dbName='lasttranslator'),
-        DateTimeCol(name='lastParsed', dbName='lastparsed'),
-        # XXX: missing fields
-    ]
-
-    messageSets = MultipleJoin('RosettaPOMessageSet', joinColumn='pofile')
-
-    def currentMessageSets(self):
-        return RosettaPOMessageSet.select(
-            '''
-            POMsgSet.pofile = %d AND
-            POMsgSet.sequence > 0
-            '''
-            % self.id, orderBy='sequence')
-
-    def __iter__(self):
-        return iter(self.currentMessageSets())
-
-    def __len__(self):
-        '''Count of __iter__.'''
-        return self.currentMessageSets().count()
-
-    def __getitem__(self, msgid_text):
-        # XXX: This is suspect. First, encoding at this layer is probably
-        # unneccessary. Secondly, I'm not sure whether we should be indexing
-        # by anything other than unicode messages.
-        if isinstance(msgid_text, unicode):
-            msgid_text = msgid_text.encode('utf-8')
-
-        # Find the message ID object for the given text.
-
-        try:
-            msgid = RosettaPOMessageID.byMsgid(msgid_text)
-        except SQLObjectNotFound:
-            raise KeyError, msgid_text
-
-        # Find message sets in the PO file with the found message ID.
-
-        results = RosettaPOMessageSet.select('''
-            pofile = %d AND
-            primemsgid = %d
-            ''' % (self.id, msgid.id))
-
-        if results.count() == 0:
-            raise KeyError, msgid_text
-        elif results.count() == 1:
-            return results[0]
-        else:
-            raise AssertionError("Duplicate message ID in PO file.")
-
-    def translated(self):
-        return iter(RosettaPOMessageSet.select('''
-            POMsgSet.pofile = %d AND
-            POMsgSet.iscomplete=TRUE AND
-            POMsgSet.primemsgid = potset.primemsgid AND
-            POMsgSet.potemplate = potset.potemplate AND
-            potSet.pofile IS NULL AND
-            potSet.sequence <> 0''' % self.id,
-            clauseTables = [
-                'POMsgSet potSet',
-                ]))
-
-    # XXX: This is implemented using the cache, we should add an option to get
-    # the real count.
-    # The number of translated are the ones from the .po file + the ones that
-    # are only translated in Rosetta.
-
-    def translatedCount(self):
-        '''Returns the cached count of translated strings where translations
-        exist in the files or in the database.'''
-        return self.currentCount + self.rosettaCount
-
-    def untranslated(self):
-        '''XXX'''
-        raise NotImplementedError
-
-    # XXX: This is implemented using the cache, we should add an option to get
-    # the real count.
-    # The number of untranslated are the ones from the .pot file - the ones
-    # that we have already translated.
-
-    def untranslatedCount(self):
-        '''Same as untranslated(), but with COUNT.'''
-        return len(self.poTemplate) - self.translatedCount()
-
-    def messageSetsNotInTemplate(self):
-        # This is rather complex because it's actually two queries that
-        # have to be added together - if someone with more sql zen knows
-        # how to do it in one query, feel free to refactor.
-
-        seqzero = RosettaPOMessageSet.select('''
-            POMsgSet.pofile = %d AND
-            POMsgSet.primemsgid = potset.primemsgid AND
-            POMsgSet.potemplate = potset.potemplate AND
-            potSet.pofile IS NULL AND
-            POMsgSet.sequence <> 0 AND
-            potSet.sequence = 0''' % self.id,
-            clauseTables = [
-                'POMsgSet potSet',
-                ])
-        notinpot = RosettaPOMessageSet.select('''
-            pofile = %d AND
-            sequence <> 0 AND
-            NOT EXISTS (
-                SELECT * FROM POMsgSet potSet WHERE
-                potSet.pofile IS NULL AND
-                potSet.primemsgid = pomsgset.primemsgid
-            )''' % self.id)
-
-        return iter(list(seqzero) + list(notinpot))
-
-    # IEditPOFile
-
-    def expireAllMessages(self):
-        self._connection.query(
-            '''UPDATE POMsgSet SET sequence = 0 WHERE pofile = %d'''
-            % self.id)
-
-    def hasMessageID(self, messageID):
-        results = RosettaPOMessageSet.selectBy(
-            poTemplateID=self.poTemplate.id,
-            poFileID=self.id,
-            primeMessageID_ID=messageID.id)
-
-        return results.count() > 0
-
-    def createMessageSetFromMessageID(self, messageID):
-        return createMessageSetFromMessageID(self.poTemplate, messageID, self)
-
-    def createMessageSetFromText(self, text):
-        return createMessageSetFromText(self, text)
-
-    def updateStatistics(self):
-        current = RosettaPOMessageSet.select('''
-            POMsgSet.sequence > 0 AND
-            POMsgSet.fuzzy = FALSE AND
-            PotSet.sequence > 0 AND
-            PotSet.primeMsgID = POMsgSet.primeMsgID AND
-            POMsgSet.pofile = %d AND
-            PotSet.potemplate = POMsgSet.potemplate
-            ''' % self.id, clauseTables=('POMsgSet PotSet',)).count()
-        updates = RosettaPOMessageSet.select('''
-            POMsgSet.sequence > 0 AND
-            POMsgSet.fuzzy = FALSE AND
-            PotSet.sequence > 0 AND
-            PotSet.primeMsgID = POMsgSet.primeMsgID AND
-            POMsgSet.pofile = %d AND
-            PotSet.potemplate = POMsgSet.potemplate AND
-            FileSighting.pomsgset = POMsgSet.id AND
-            RosettaSighting.pomsgset = POMsgSet.id AND
-            FileSighting.inLastRevision = TRUE AND
-            RosettaSighting.inLastRevision = FALSE AND
-            FileSighting.active = TRUE AND
-            RosettaSighting.active = TRUE AND
-            RosettaSighting.dateLastActive > FileSighting.dateLastActive
-            ''' % self.id, clauseTables=(
-                                         'POMsgSet PotSet',
-                                         'POTranslationSighting FileSighting',
-                                         'POTranslationSighting RosettaSighting',
-                                        )).count()
-        rosetta = RosettaPOMessageSet.select('''
-            POMsgSet.fuzzy = FALSE AND
-            PotSet.sequence > 0 AND
-            PotSet.primeMsgID = POMsgSet.primeMsgID AND
-            POMsgSet.pofile = %d AND
-            PotSet.potemplate = POMsgSet.potemplate AND
-            PotSet.pofile IS NULL AND
-            (SELECT COUNT(*) from
-              POTranslationSighting POSighting WHERE
-              POSighting.POMsgSet = POMsgSet.id AND
-              POSighting.active = TRUE AND
-              POSighting.inLastRevision = TRUE) = 0 AND
-            (SELECT COUNT(*) from
-              POTranslationSighting RosettaSighting WHERE
-              RosettaSighting.POMsgSet = POMsgSet.id AND
-              RosettaSighting.active = TRUE) > 0
-            ''' % self.id, clauseTables=(
-                                         'POMsgSet PotSet',
-                                        )).count()
-        self.set(currentCount=current,
-                 updateCount=updates,
-                 rosettaCount=rosetta)
-        return (current, updates, rosetta)
 
 
 class RosettaPOMessageSet(SQLBase):
@@ -1142,21 +612,6 @@ class RosettaPOMessageSet(SQLBase):
         return sighting
 
 
-class RosettaPOMessageIDSighting(SQLBase):
-    implements(interfaces.IPOMessageIDSighting)
-
-    _table = 'POMsgIDSighting'
-
-    _columns = [
-        ForeignKey(name='poMessageSet', foreignKey='RosettaPOMessageSet', dbName='pomsgset', notNull=True),
-        ForeignKey(name='poMessageID_', foreignKey='RosettaPOMessageID', dbName='pomsgid', notNull=True),
-        DateTimeCol(name='dateFirstSeen', dbName='datefirstseen', notNull=True),
-        DateTimeCol(name='dateLastSeen', dbName='datelastseen', notNull=True),
-        BoolCol(name='inLastRevision', dbName='inlastrevision', notNull=True),
-        IntCol(name='pluralForm', dbName='pluralform', notNull=True),
-    ]
-
-
 class RosettaPOMessageID(SQLBase):
     implements(interfaces.IPOMessageID)
 
@@ -1165,30 +620,6 @@ class RosettaPOMessageID(SQLBase):
     _columns = [
         StringCol(name='msgid', dbName='msgid', notNull=True, unique=True,
             alternateID=True)
-    ]
-
-
-class RosettaPOTranslationSighting(SQLBase):
-    implements(interfaces.IPOTranslationSighting)
-
-    _table = 'POTranslationSighting'
-
-    _columns = [
-        ForeignKey(name='poMessageSet', foreignKey='RosettaPOMessageSet',
-            dbName='pomsgset', notNull=True),
-        ForeignKey(name='poTranslation', foreignKey='RosettaPOTranslation',
-            dbName='potranslation', notNull=True),
-        ForeignKey(name='person', foreignKey='RosettaPerson',
-            dbName='person', notNull=True),
-        DateTimeCol(name='dateFirstSeen', dbName='datefirstseen', notNull=True),
-        DateTimeCol(name='dateLastActive', dbName='datelastactive', notNull=True),
-        BoolCol(name='inLastRevision', dbName='inlastrevision', notNull=True),
-        IntCol(name='pluralForm', dbName='pluralform', notNull=True),
-        # See canonical.lp.dbschema.RosettaTranslationOrigin.
-        IntCol(name='origin', dbName='origin', notNull=True),
-        BoolCol(name='active', dbName='active', notNull=True),
-        # XXX cheating, as we don't yet have classes for these
-        IntCol(name='license', dbName='license', notNull=True),
     ]
 
 
@@ -1261,7 +692,7 @@ class SourceSource(SQLBase):
         StringCol('package_files_collapsed', dbName='packagefiles_collapsed',
                 default=None),
 
-        ForeignKey(name='owner', foreignKey='ArchPerson', dbName='owner',
+        ForeignKey(name='owner', foreignKey='Person', dbName='owner',
                    notNull=True),
         StringCol('currentgpgkey', dbName='currentgpgkey', default=None),
     ]
@@ -1281,6 +712,92 @@ class Person(SQLBase):
         IntCol('karma'),
         DateTimeCol('karmatimestamp')
     ]
+
+    _emailsJoin = MultipleJoin('RosettaEmailAddress', joinColumn='person')
+
+    def emails(self):
+        return iter(self._emailsJoin)
+
+    # XXX: not implemented
+    def maintainedProjects(self):
+        '''SELECT Project.* FROM Project
+            WHERE Project.owner = self.id
+            '''
+
+    # XXX: not implemented
+    def translatedProjects(self):
+        '''SELECT Project.* FROM Project, Product, POTemplate, POFile
+            WHERE
+                POFile.owner = self.id AND
+                POFile.template = POTemplate.id AND
+                POTemplate.product = Product.id AND
+                Product.project = Project.id
+            ORDER BY ???
+            '''
+
+    def translatedTemplates(self):
+        '''
+        SELECT * FROM POTemplate WHERE
+            id IN (SELECT potemplate FROM pomsgset WHERE
+                id IN (SELECT pomsgset FROM POTranslationSighting WHERE
+                    origin = 2
+                ORDER BY datefirstseen DESC))
+        '''
+        return POTemplate.select('''
+            id IN (SELECT potemplate FROM pomsgset WHERE
+                id IN (SELECT pomsgset FROM POTranslationSighting WHERE
+                    origin = 2
+                ORDER BY datefirstseen DESC))
+            ''')
+
+    _labelsJoin = RelatedJoin('Label', joinColumn='person',
+        otherColumn='label', intermediateTable='PersonLabel')
+
+    def languages(self):
+        languages = getUtility(interfaces.ILanguages)
+        try:
+            schema = Schema.byName('translation-languages')
+        except SQLObjectNotFound:
+            raise RuntimeError("Launchpad installation is broken, " + \
+                    "the DB is missing essential data.")
+
+        for label in self._labelsJoin:
+            if label.schema == schema:
+                yield languages[label.name]
+
+    def addLanguage(self, language):
+        try:
+            schema = Schema.byName('translation-languages')
+        except SQLObjectNotFound:
+            raise RuntimeError("Launchpad installation is broken, " + \
+                    "the DB is missing essential data.")
+        label = Label.selectBy(schemaID=schema.id, name=language.code)
+        if label.count() < 1:
+            # The label for this language does not exists yet into the
+            # database, we should create it.
+            label = Label(
+                        schemaID=schema.id,
+                        name=language.code,
+                        title='Translates into ' + language.englishName,
+                        description='A person with this label says that ' + \
+                                    'knows how to translate into ' + \
+                                    language.englishName)
+        else:
+            label = label[0]
+        # This method comes from the RelatedJoin
+        self.addLabel(label)
+
+    def removeLanguage(self, language):
+        try:
+            schema = Schema.byName('translation-languages')
+        except SQLObjectNotFound:
+            raise RuntimeError("Launchpad installation is broken, " + \
+                    "the DB is missing essential data.")
+        label = Label.selectBy(schemaID=schema.id, name=language.code)[0]
+        # This method comes from the RelatedJoin
+        self.removeLabel(label)
+
+
 
 def personFromPrincipal(principal):
     """Adapt canonical.lp.placelessauth.interfaces.ILaunchpadPrincipal 
@@ -1321,10 +838,14 @@ class ProjectSet:
         else:
             return ret[0]
 
-    def new(self, name, title, url, description, owner):
+    def new(self, name, displayname, title, homepageurl, shortdesc, 
+            description, owner):
+        #
+        # XXX Mark Shuttleworth 03/10/04 Should the "new" method to create
+        #     a new project be on ProjectSet? or Project?
+        #
         name = name.encode('ascii')
-        # XXX: where did displayName come from?
-        ##displayName = displayName.encode('ascii')
+        displayname = displayname.encode('ascii')
         title = title.encode('ascii')
         if type(url) != NoneType:
             url = url.encode('ascii')
@@ -1333,13 +854,14 @@ class ProjectSet:
         if Project.selectBy(name=name).count():
             raise KeyError, "There is already a project with that name"
 
-        return Project(name=name,
-                       ##displayName=displayName,
-                       title=title,
-                       url=url,
-                       description=description,
-                       owner=owner,
-                       datecreated='now')
+        return Project(name = name,
+                       displayname = displayname,
+                       title = title,
+                       shortdesc = shortdesc,
+                       description = description,
+                       homepageurl = url,
+                       owner = owner,
+                       datecreated = 'now')
 
     def search(self, query):
         query = quote('%%' + query + '%%')
@@ -1396,6 +918,7 @@ class Project(SQLBase):
             raise AssertionError("Too many results.")
 
 
+
 class Product(SQLBase):
     """A Product."""
 
@@ -1426,20 +949,20 @@ class Product(SQLBase):
         StringCol('lastdoap', notNull=False, default=None),
         ]
 
-    _poTemplatesJoin = MultipleJoin('RosettaPOTemplate', joinColumn='product')
+    _poTemplatesJoin = MultipleJoin('POTemplate', joinColumn='product')
 
     bugs = MultipleJoin('ProductBugAssignment', joinColumn='product')
 
-    syncs = MultipleJoin('SourceSource', joinColumn='product')
+    sourcesources = MultipleJoin('SourceSource', joinColumn='product')
 
     def poTemplates(self):
         return iter(self._poTemplatesJoin)
 
     def poTemplate(self, name):
         '''SELECT POTemplate.* FROM POTemplate WHERE
-            POTemplate.product = id AND
-            POTemplate.name = name;'''
-        results = RosettaPOTemplate.select('''
+              POTemplate.product = id AND
+              POTemplate.name = name;'''
+        results = POTemplate.select('''
             POTemplate.product = %d AND
             POTemplate.name = %s''' %
             (self.id, quote(name)))
@@ -1451,11 +974,11 @@ class Product(SQLBase):
 
     def newPOTemplate(self, person, name, title):
         # XXX: we have to fill up a lot of other attributes
-        if RosettaPOTemplate.selectBy(
+        if POTemplate.selectBy(
                 productID=self.id, name=name).count():
             raise KeyError(
                   "This product already has a template named %s" % name)
-        return RosettaPOTemplate(name=name, title=title, product=self)
+        return POTemplate(name=name, title=title, product=self)
 
     def messageCount(self):
         count = 0

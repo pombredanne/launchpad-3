@@ -42,7 +42,7 @@
          permission="zope.Public"
          class="canonical.rosetta.browser.ViewProduct"
          lp:url="Rosetta/projects/$Project.name/$Product.name">
-    <page name="index"
+    <page name="+rosetta-index"
           template="../launchpad/templates/rosetta-product-index.pt"
           lp:url="Rosetta/projects/$Project.name/$Product.name/index" />
   </pages>

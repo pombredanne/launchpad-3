@@ -71,13 +71,15 @@
 
         <div class="field">
             <label>Enabled</label>
-            <div class="formHelp">Is this sync enabled for running at all.</div>
+            <div class="formHelp">Is this source certified for syncronization?
+            </div>
             <input type="checkbox" name="enabled" tal:attributes="checked context/enabled" />
         </div>
 
         <div class="field">
-            <label>Auto syncing Enabled</label>
-            <div class="formHelp">Is this sync enabled for running automatic syncs?.</div>
+            <label>Source Syncing Enabled</label>
+            <div class="formHelp">Is this source source enabled for running
+            automatic syncs?</div>
             <input type="checkbox" name="autosyncenabled" tal:attributes="checked context/autosyncing" />
         </div>
 

@@ -29,7 +29,7 @@
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.IProjectContainer"
-      name="+search" />
+      name="+index" />
 
   <browser:defaultView
       for="canonical.launchpad.database.IProject"

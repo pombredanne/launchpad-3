@@ -45,7 +45,7 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
         except IndexError:
             product = RosettaProduct(project=project,
                                      name='gnome-terminal',
-                                     displayName='Gnome Terminal',
+                                     displayname='Gnome Terminal',
                                      title='GNOME Terminal',
                                      shortDesc='The GNOME terminal emulator',
                                      description='The GNOME terminal emulator',
@@ -112,7 +112,7 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
         except IndexError:
             product = RosettaProduct(project=project,
                                      name='gnome-terminal',
-                                     displayName='Gnome Terminal',
+                                     displayname='Gnome Terminal',
                                      title='GNOME Terminal',
                                      shortDesc='The GNOME terminal emulator',
                                      description='The GNOME terminal emulator',

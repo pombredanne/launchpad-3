@@ -1,6 +1,8 @@
+#
 # Copyright 2004 Canonical Ltd
 #
 # arch-tag: 4863ce15-110a-466d-a1fc-54fa8b17d360
+#
 
 from datetime import datetime
 from email.Utils import make_msgid
@@ -12,47 +14,28 @@ from zope.schema import TextLine, Int, Choice
 from canonical.launchpad.database import Project
 from canonical.launchpad.database import Product
 from canonical.database import sqlbase
+from canonical.database.constants import nowUTC
 
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('doap')
+_ = MessageIDFactory('launchpad')
 
 from canonical.lp import dbschema
-
 from canonical.launchpad.interfaces import *
 
 
-
 class DOAPApplicationView(object):
-    
     def __init__(self, context, request):
         self.context = context
         self.request = request
 
-    def update(self):
-        '''Handle request and setup this view the way the templates expect it
-        '''
-        from sqlobject import OR, LIKE, CONTAINSSTRING, AND
-        if self.request.form.has_key('query'):
-            # TODO: Make this case insensitive
-            s = self.request.form['query']
-            self.results = Project.select(OR(
-                    CONTAINSSTRING(Project.q.name, s),
-                    CONTAINSSTRING(Project.q.displayname, s),
-                    CONTAINSSTRING(Project.q.title, s),
-                    CONTAINSSTRING(Project.q.shortdesc, s),
-                    CONTAINSSTRING(Project.q.description, s)
-                ))
-            self.noresults = not self.results
-        else:
-            self.noresults = False
-            self.results = []
 
 class ProjectContainerView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self.form = self.request.form
         self.searchrequested = False
-        if 'searchtext' in request.form:
+        if 'searchtext' in self.form:
             self.searchrequested = True
         self.results = None
 
@@ -65,24 +48,81 @@ class ProjectContainerView(object):
             self.results = self.context.search(self.request.get('searchtext'))
         return self.results
 
-    def tmp(self):
-        '''Handle request and setup this view the way the templates expect it
-        '''
-        from sqlobject import OR, LIKE, CONTAINSSTRING, AND
-        if self.request.form.has_key('searchtext'):
-            # TODO: Make this case insensitive
-            s = self.request.form['searchtext']
-            self.results = Project.select(OR(
-                    CONTAINSSTRING(Project.q.name, s),
-                    CONTAINSSTRING(Project.q.displayname, s),
-                    CONTAINSSTRING(Project.q.title, s),
-                    CONTAINSSTRING(Project.q.shortdesc, s),
-                    CONTAINSSTRING(Project.q.description, s)
-                ))
-            self.noresults = not self.results
-        else:
-            self.noresults = False
-            self.results = []
+    def newproject(self):
+        #
+        # Create the new Project instance if a form with details
+        # was submitted.
+        #
+        if not self.form.get("Register", None)=="Register":
+            return
+        if not self.request.method == "POST":
+            return
+        # Extract the details from the form
+        name = self.form['name']
+        displayname = self.form['displayname']
+        title = self.form['title']
+        shortdesc = self.form['shortdesc']
+        description = self.form['description']
+        url = self.form['url']
+        # No create a new project in the db
+        project = self.context.new(name,title,description,url)
+        project.shortdesc(shortdesc)
+        project.displayname(displayname)
+        # XXX Mark Shuttleworth 02/10/04 I don't under stand this
+        #     next line. Why do we reset project to None?
+        project = None
+        self.submittedok=True
+        self.request.response.redirect(name)
+
+
+
+#
+# This is a View on a Project object, which is used in the DOAP
+# system.
+#
+class ProjectView(object):
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.form = self.request.form
+
+    def newproduct(self):
+        #
+        # Handle a request to create a new product for this project.
+        # The code needs to extract all the relevant form elements,
+        # then call the Product creation methods.
+        #
+        if not self.form.get("Register", None)=="Register Product":
+            return
+        if not self.request.method == "POST":
+            return
+        # Extract the details from the form
+        name = self.form['name']
+        displayname = self.form['displayname']
+        title = self.form['title']
+        shortdesc = self.form['shortdesc']
+        description = self.form['description']
+        url = self.form['url']
+        # XXX Mark Shuttleworth 03/10/04 this check is not yet being done.
+        # check to see if there is an existing product with
+        # this name.
+        # Now create a new product in the db
+        owner = IPerson(self.request.principal)
+        product = Product(name=name,
+                          displayname=displayname,
+                          title=title,
+                          shortdesc=shortdesc,
+                          description=description,
+                          project=self.context.id,
+                          owner=owner,
+                          homepageurl=url,
+                          datecreated=nowUTC)
+        # XXX Mark Shuttleworth 02/10/04 I don't under stand this
+        #     next line. Why do we reset product to None?
+        product = None
+        self.submittedok=True
+        self.request.response.redirect(name)
+    
 
 
 class ProjectContainer(object):
@@ -117,4 +157,17 @@ class ProjectContainer(object):
                 )
         return Project.select(q)
 
+
+
+#
+# A View Class for Product
+#
+class ProductView(object):
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.form = request.form
+
+    def sourcesources(self):
+        return SourceSource.select(product=self.context.id)
 

@@ -1,0 +1,141 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+   <tal:dummy condition="view/newproduct" />
+    <h1>Register a New Product for: <span
+    tal:content="context/displayname">$Project.displayname</span></h1>
+
+    <div class="documentDescription">
+    Please fill in the details below to register a new Product for the <span
+    tal:content="context/displayname">$Project.displayname</span>.
+    </div>
+
+    <fieldset>
+
+        <legend>Product Details</legend>
+
+        <form action="+newproduct" method="post">
+        <div class="field">
+
+            <label>Name</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+                  <div class="formHelp">
+                    The name of the project is a short name - a unique
+                    name that identifies the product, and is used in 
+                    URLs and references to the product. All lowercase,
+                    no special characters.
+                  </div>
+
+                <input type="text" name="name" size="15"
+                       value="" style="text-transform: lowercase" />
+        </div>
+
+        <div class="field">
+
+            <label>Display Name</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+                  <div class="formHelp">
+                    The "display name" of the product is a short name,
+                    appropriately capitalised, for this product. For
+                    example, if you were referring to this product in a
+                    paragraph of text, you would use this name. Examples:
+                    <i>Apache</i>, <i>Thunderbird</i>, <i>Firefox</i>.
+                  </div>
+
+                <input type="text" name="displayname" size="20"
+                       value="" />
+        </div>
+
+        <div class="field">
+
+            <label>Title</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+                  <div class="formHelp">
+                    This is the full title of the product, can contain
+                    spaces, special characters etc. This is what you would
+                    imagine seeing at the top of a page about the product.
+                    For example, <i>The Apache Web Server</i>, <i>The
+                    Mozilla Firefox Web Browser</i>.
+                  </div>
+
+                <input type="text" name="title" size="30"
+                       value="" />
+        </div>
+
+        <div class="field">
+
+            <label>Short Description</label>
+
+                  <div class="formHelp">
+                    A single paragraph introduction or overview of this
+                    product. For example: <i>Mozilla Firefox is the most
+                    popular open source web browser, with excellent support
+                    for web standards as well as many extensions and
+                    plugins.</i>
+                  </div>
+
+                <textarea cols="40" rows="2" name="shortdesc"></textarea>
+        </div>
+        
+        <div class="field">
+
+            <label>Complete Description</label>
+
+                  <div class="formHelp">
+                    A full description of the project. This should continue
+                    from the short description above, and add more details
+                    of the product highlights and features.
+                  </div>
+
+                <textarea cols="40" rows="7" name="description"></textarea>
+        </div>
+
+        <div class="field">
+
+            <label>URL</label>
+
+                  <div class="formHelp">
+                    The product home page, if it has a distinct one. Itcan
+                    be the same as the overall project home page.
+                  </div>
+
+                <input type="text" name="url" size="30"
+                       value="http://" />
+        </div>
+
+
+        <div class="formControls">
+
+            <input class="context" type="submit"
+                   name="Register"
+                   value="Register Product" />
+
+        </div>
+        </form>
+
+
+    </fieldset>
+
+</div>
+
+</body>
+</html>

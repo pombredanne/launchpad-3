@@ -41,18 +41,41 @@
             template="../launchpad/templates/lp-projects-index.pt"
             lp:url="doap/projects/+index" />
         <page name="+search"
-          template="../launchpad/templates/lp-projects-search.pt"
-          lp:url="malone/projects/+search" />
-  </pages>
+            template="../launchpad/templates/lp-projects-search.pt"
+            lp:url="doap/projects/+search" />
+    </pages>
 
-  <traverse for="canonical.launchpad.interfaces.IProjectContainer"
+    <page for="canonical.launchpad.interfaces.IProjectContainer"
+        name="+new"
+        class="canonical.doap.browser.ProjectContainerView"
+        permission="launchpad.AnyPerson"
+        template="../launchpad/templates/project-new.pt"
+        lp:url="doap/projects/+new" />
+
+    <traverse for="canonical.launchpad.interfaces.IProjectContainer"
             getter="__getitem__" />
 
-  <pages for="canonical.launchpad.interfaces.IProject"
-         permission="zope.Public">
-    <page name="+index"
-          template="../launchpad/templates/lp-project-index.pt"
-          lp:url="doap/projects/$Project.name/+index" />
-  </pages>
+    <pages for="canonical.launchpad.interfaces.IProject"
+        class="canonical.doap.browser.ProjectView"
+        permission="zope.Public" >
+        <page name="+index"
+            template="../launchpad/templates/project-index.pt"
+            lp:url="doap/projects/$Project.name/+index" />
+    </pages>
+
+    <page for="canonical.launchpad.interfaces.IProject"
+        name="+newproduct"
+        class="canonical.doap.browser.ProjectView"
+        permission="launchpad.AnyPerson"
+        template="../launchpad/templates/product-new.pt"
+        lp:url="doap/projects/$Project.name/+newproduct" />
+    
+    <pages for="canonical.launchpad.interfaces.IProduct"
+        permission="zope.Public"
+        class="canonical.doap.browser.ProductView" >
+        <page name="+index"
+            template="../launchpad/templates/product-index.pt"
+            lp:url="doap/projects/$Project.name/$Product.name/" />
+    </pages>
 
 </configure>

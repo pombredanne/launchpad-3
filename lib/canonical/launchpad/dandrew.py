@@ -13,14 +13,19 @@ from canonical.launchpad.interfaces import VersionAlreadyRegistered
 from canonical.launchpad.interfaces import BranchAlreadyRegistered
 from canonical.launchpad.interfaces import CategoryAlreadyRegistered
 
-class ArchPerson(SQLBase):
-
-    # FIXME: This is a gratuitously stupid duplicate.
-    _table = 'Person'
-
-    _columns = [
-        StringCol('name', dbName='displayname', notNull=True),
-        ]
+#
+# Mark Shuttleworth 02/10/04
+# Commented out ArchPerson to see what will break, to 
+# fix the duplication with Person.
+#
+#class ArchPerson(SQLBase):
+#
+#    # FIXME: This is a gratuitously stupid duplicate.
+#    _table = 'Person'
+#
+#    _columns = [
+#        StringCol('name', dbName='displayname', notNull=True),
+#        ]
 
 class Archive(SQLBase):
     """ArchArchive table"""
@@ -45,7 +50,7 @@ class ArchArchive(SQLBase):
         StringCol('title', dbName='title', notNull=True),
         StringCol('description', dbName='description', notNull=True),
         BoolCol('visible', dbName='visible', notNull=True),
-        ForeignKey(name='owner', foreignKey='ArchPerson', dbName='owner'),
+        ForeignKey(name='owner', foreignKey='Person', dbName='owner'),
     ]
 
 class ArchiveLocation(SQLBase):

@@ -70,14 +70,14 @@ class DatabaseUserDetailsStorage(object):
             'salt': salt,
         }
 
-    def createUser(self, loginID, sshaDigestedPassword, displayName,
+    def createUser(self, loginID, sshaDigestedPassword, displayname,
                    emailAddresses):
         ri = self.connectionPool.runInteraction
         if loginID not in emailAddresses:
             emailAddresses = emailAddresses + [loginID]
         deferred = ri(self._createUserInteraction, 
                       sshaDigestedPassword.encode('base64'),
-                      displayName, emailAddresses)
+                      displayname, emailAddresses)
         deferred.addErrback(self._eb_createUser)
         return deferred
 
@@ -90,7 +90,7 @@ class DatabaseUserDetailsStorage(object):
         return {}
 
     def _createUserInteraction(self, transaction, sshaDigestedPassword,
-                               displayName, emailAddresses):
+                               displayname, emailAddresses):
         # Note that any psycopg.DatabaseErrors that occur will be translated
         # into a return value of {} by the _eb_createUser errback.
         # TODO: Catch bad types, e.g. unicode, and raise appropriate exceptions
@@ -99,7 +99,7 @@ class DatabaseUserDetailsStorage(object):
         transaction.execute(
             "INSERT INTO Person (displayname, password) "
             "VALUES ('%s', '%s')"
-            % (displayName.replace("'", "''").encode('utf-8'),
+            % (displayname.replace("'", "''").encode('utf-8'),
               sshaDigestedPassword.replace("'", "''"))
         )
 
@@ -109,7 +109,7 @@ class DatabaseUserDetailsStorage(object):
             "FROM Person "
             "WHERE Person.displayname = '%s' "
             "AND Person.password = '%s'"
-            % (displayName.replace("'", "''").encode('utf-8'),
+            % (displayname.replace("'", "''").encode('utf-8'),
               sshaDigestedPassword.replace("'", "''"))
         )
 
@@ -128,7 +128,7 @@ class DatabaseUserDetailsStorage(object):
 
         return {
             'id': personID,
-            'displayname': displayName,
+            'displayname': displayname,
             'emailaddresses': list(emailAddresses)
         }
                 

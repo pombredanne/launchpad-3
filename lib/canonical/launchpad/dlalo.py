@@ -130,7 +130,7 @@ class POTemplate(SQLBase):
     _columns = [
         ForeignKey(name='product', foreignKey='Product', dbName='product',
             notNull=True),
-        ForeignKey(name='owner', foreignKey='RosettaPerson', dbName='owner'),
+        ForeignKey(name='owner', foreignKey='Person', dbName='owner'),
         StringCol(name='name', dbName='name', notNull=True, unique=True),
         StringCol(name='title', dbName='title', notNull=True, unique=True),
         StringCol(name='description', dbName='description', notNull=True),
@@ -343,7 +343,7 @@ class POFile(SQLBase):
         ForeignKey(name='language', foreignKey='Language', dbName='language',
             notNull=True),
         StringCol(name='variant', dbName='variant'),
-        ForeignKey(name='owner', foreignKey='RosettaPerson', dbName='owner'),
+        ForeignKey(name='owner', foreignKey='Person', dbName='owner'),
         StringCol(name='title', dbName='title', notNull=True, unique=True),
         StringCol(name='description', dbName='description', notNull=True),
         StringCol(name='topComment', dbName='topcomment', notNull=True),
@@ -356,7 +356,7 @@ class POFile(SQLBase):
         IntCol(name='rosettaCount', dbName='rosettacount',
             notNull=True),
         IntCol(name='pluralForms', dbName='pluralforms', notNull=True),
-        ForeignKey(name='lastTranslator', foreignKey='RosettaPerson', dbName='lasttranslator'),
+        ForeignKey(name='lastTranslator', foreignKey='Person', dbName='lasttranslator'),
         DateTimeCol(name='lastParsed', dbName='lastparsed'),
         # XXX: missing fields
     ]
@@ -905,7 +905,7 @@ class POTranslationSighting(SQLBase):
             dbName='pomsgset', notNull=True),
         ForeignKey(name='poTranslation', foreignKey='POTranslation',
             dbName='potranslation', notNull=True),
-        ForeignKey(name='person', foreignKey='RosettaPerson',
+        ForeignKey(name='person', foreignKey='Person',
             dbName='person', notNull=True),
         DateTimeCol(name='dateFirstSeen', dbName='datefirstseen', notNull=True),
         DateTimeCol(name='dateLastActive', dbName='datelastactive', notNull=True),
@@ -972,17 +972,6 @@ class Language(SQLBase):
         return self.translateLabel().persons()
 
 
-class Branch(SQLBase):
-    implements(interfaces.IBranch)
-
-    _table = 'Branch'
-
-    _columns = [
-        StringCol(name='title', dbName='title'),
-        StringCol(name='description', dbName='description')
-    ]
-
-
 def personFromPrincipal(principal):
     from zope.app.security.interfaces import IUnauthenticatedPrincipal
     from canonical.lp.placelessauth.launchpadsourceutility import \
@@ -994,7 +983,7 @@ def personFromPrincipal(principal):
     if not isinstance(principal, LaunchpadPrincipal):
         return None
 
-    return RosettaPerson.get(principal.id)
+    return Person.get(principal.id)
 
 
 class Schemas(object):
@@ -1018,7 +1007,7 @@ class Schema(SQLBase):
     _table = 'Schema'
 
     _columns = [
-        ForeignKey(name='owner', foreignKey='RosettaPerson',
+        ForeignKey(name='owner', foreignKey='Person',
             dbName='owner', notNull=True),
         StringCol(name='name', dbName='name', notNull=True, alternateID=True),
         StringCol(name='title', dbName='title', notNull=True),
@@ -1059,7 +1048,7 @@ class Label(SQLBase):
         StringCol(name='description', dbName='description', notNull=True),
     ]
 
-    _personsJoin = RelatedJoin('RosettaPerson', joinColumn='label',
+    _personsJoin = RelatedJoin('Person', joinColumn='label',
         otherColumn='person', intermediateTable='PersonLabel')
 
     def persons(self):
@@ -1149,7 +1138,7 @@ class TranslationEffort(SQLBase):
     _table = 'TranslationEffort'
 
     _columns = [
-        ForeignKey(name='owner', foreignKey='RosettaPerson', dbName='owner',
+        ForeignKey(name='owner', foreignKey='Person', dbName='owner',
             notNull=True),
         ForeignKey(name='project', foreignKey='Project',
             dbName='project', notNull=True),
@@ -1219,118 +1208,14 @@ class TranslationEffortPOTemplate(SQLBase):
 ################################################################################
 # And now the ones that conflict
 
-class RosettaPerson(SQLBase):
-    implements(interfaces.IPerson)
-
-    _table = 'Person'
-
-    _columns = [
-        StringCol(name='displayName', dbName='displayname'),
-        StringCol(name='givenName', dbName='givenname'),
-        StringCol(name='familyName', dbName='familyname'),
-        StringCol(name='password', dbName='password'),
-    ]
-
-#    isMaintainer
-#    isTranslator
-#    isContributor
-
-    # Invariant: isMaintainer implies isContributor
-
-    _emailsJoin = MultipleJoin('RosettaEmailAddress', joinColumn='person')
-
-    def emails(self):
-        return iter(self._emailsJoin)
-
-    # XXX: not implemented
-    def maintainedProjects(self):
-        '''SELECT Project.* FROM Project
-            WHERE Project.owner = self.id
-            '''
-
-    # XXX: not implemented
-    def translatedProjects(self):
-        '''SELECT Project.* FROM Project, Product, POTemplate, POFile
-            WHERE
-                POFile.owner = self.id AND
-                POFile.template = POTemplate.id AND
-                POTemplate.product = Product.id AND
-                Product.project = Project.id
-            ORDER BY ???
-            '''
-
-    def translatedTemplates(self):
-        '''
-        SELECT * FROM POTemplate WHERE
-            id IN (SELECT potemplate FROM pomsgset WHERE
-                id IN (SELECT pomsgset FROM POTranslationSighting WHERE
-                    origin = 2
-                ORDER BY datefirstseen DESC))
-        '''
-        return POTemplate.select('''
-            id IN (SELECT potemplate FROM pomsgset WHERE
-                id IN (SELECT pomsgset FROM POTranslationSighting WHERE
-                    origin = 2
-                ORDER BY datefirstseen DESC))
-            ''')
-
-    _labelsJoin = RelatedJoin('Label', joinColumn='person',
-        otherColumn='label', intermediateTable='PersonLabel')
-
-    def languages(self):
-        languages = getUtility(interfaces.ILanguages)
-        try:
-            schema = Schema.byName('translation-languages')
-        except SQLObjectNotFound:
-            raise RuntimeError("Launchpad installation is broken, " + \
-                    "the DB is missing essential data.")
-
-        for label in self._labelsJoin:
-            if label.schema == schema:
-                yield languages[label.name]
-
-    def addLanguage(self, language):
-        try:
-            schema = Schema.byName('translation-languages')
-        except SQLObjectNotFound:
-            raise RuntimeError("Launchpad installation is broken, " + \
-                    "the DB is missing essential data.")
-        label = Label.selectBy(schemaID=schema.id, name=language.code)
-        if label.count() < 1:
-            # The label for this language does not exists yet into the
-            # database, we should create it.
-            label = Label(
-                        schemaID=schema.id,
-                        name=language.code,
-                        title='Translates into ' + language.englishName,
-                        description='A person with this label says that ' + \
-                                    'knows how to translate into ' + \
-                                    language.englishName)
-        else:
-            label = label[0]
-        # This method comes from the RelatedJoin
-        self.addLabel(label)
-
-    def removeLanguage(self, language):
-        try:
-            schema = Schema.byName('translation-languages')
-        except SQLObjectNotFound:
-            raise RuntimeError("Launchpad installation is broken, " + \
-                    "the DB is missing essential data.")
-        label = Label.selectBy(schemaID=schema.id, name=language.code)[0]
-        # This method comes from the RelatedJoin
-        self.removeLabel(label)
-
-
 class RosettaEmailAddress(SQLBase):
     implements(interfaces.IEmailAddress)
 
     _table = 'EmailAddress'
 
     _columns = [
-        ForeignKey(name='person', foreignKey='RosettaPerson', dbName='person',
+        ForeignKey(name='person', foreignKey='Person', dbName='person',
             notNull=True),
         StringCol(name='email', dbName='email', notNull=True, unique=True),
         IntCol(name='status', dbName='status', notNull=True),
     ]
-

@@ -39,12 +39,12 @@
             <span tal:content="product/shortdesc">Product short
             description goes here.</span></li>
             <ul tal:repeat="potemplate product/poTemplates">
-                    <li> <span tal:content="potemplate/title" /></li>
+                    <li> Translations: <span tal:content="potemplate/title" /></li>
             </ul>
 	</ul>
     </div>
     <div>
-	<a href="products+new">Add a product</a>
+	<a href="+newproduct">Add a product</a>
 	</div>
 
 </div>

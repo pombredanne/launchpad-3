@@ -15,7 +15,7 @@ from zope.i18n.interfaces import IUserPreferredLanguages
 from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
 from canonical.launchpad.interfaces import ILanguages, IPerson
 from canonical.launchpad.interfaces import IProjectSet
-from canonical.launchpad.database import RosettaLanguage, RosettaPerson
+from canonical.launchpad.database import RosettaLanguage, Person
 
 from canonical.rosetta.poexport import POExport
 from canonical.rosetta.pofile import POHeader
@@ -33,7 +33,7 @@ def count_lines(text):
 def fake_person():
     # XXX: Temporary hack, to be removed as soon as we have the login template
     # working.
-    return RosettaPerson.selectBy(displayName='Foo Bar')[0]
+    return Person.selectBy(displayname='Foo Bar')[0]
 
 def canonicalise_code(code):
     '''Convert a language code to a standard xx_YY form.'''
@@ -107,7 +107,7 @@ class ViewProjects:
                 projects = getUtility(IProjectSet)
                 projects.new(
                     name=self.request.form['name'],
-                    displayName=self.request.form['displayname'],
+                    displayname=self.request.form['displayname'],
                     title=self.request.form['title'],
                     url=self.request.form.get('url', None),
                     description=self.request.form['description'],
@@ -467,8 +467,8 @@ class ViewPreferences:
                     if family and person.familyName != family:
                         person.familyName = family
                     display = self.request.form['display']
-                    if display and person.displayName != display:
-                        person.displayName = display
+                    if display and person.displayname != display:
+                        person.displayname = display
                 else:
                     self.error_msg = "The username or password you entered is not valid."
             else:
@@ -997,6 +997,10 @@ class ViewTranslationEffortCategory:
             for language in person.languages():
                 yield LanguageTemplates(language, self.context.poTemplates())
 
+#
+# XXX Mark Shuttleworth 02/10/04 I've copied this into Doap, maybe Login
+#     needs to be common code in some way?
+#
 class LogIn:
 
     def isSameHost(self, url):

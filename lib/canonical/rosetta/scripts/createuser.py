@@ -29,7 +29,7 @@ def pwgen():
     else:
         raise RuntimeError("There was an unknown error executing pwgen.")
 
-def createUser(givenName, familyName, displayName, email, password=None):
+def createUser(givenName, familyName, displayname, email, password=None):
     if password is None:
         # If we don't get a password from command line, we generate one
         # automaticaly.
@@ -44,7 +44,7 @@ def createUser(givenName, familyName, displayName, email, password=None):
     person = RosettaPerson(
         givenName=givenName,
         familyName=familyName,
-        displayName=displayName,
+        displayname=displayname,
         password=encrypted_password)
 
     email = RosettaEmailAddress(
@@ -57,7 +57,7 @@ def createUser(givenName, familyName, displayName, email, password=None):
 def send_email(person, address, password):
     smtp = smtplib.SMTP('localhost')
     paragraphs = (
-        "Hello %s," % person.displayName,
+        "Hello %s," % person.displayname,
         "A Rosetta account has been created for you. To log in, use the "
         "email address this message was sent to as your username.",
         "Your password is: %s" % password,
@@ -68,7 +68,7 @@ def send_email(person, address, password):
         "From: Rosetta\n"
         "To: %s <%s>\n"
         "Subject: New Rosetta account\n"
-        "\n" % (person.displayName, address)) + body)
+        "\n" % (person.displayname, address)) + body)
     smtp.quit()
 
 if __name__ == '__main__':
@@ -94,7 +94,7 @@ if __name__ == '__main__':
         person, password, encrypted_password = createUser(
             givenName = options.given,
             familyName = options.family,
-            displayName = options.display,
+            displayname = options.display,
             email = options.email,
             password = options.password)
 

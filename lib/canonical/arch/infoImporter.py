@@ -7,7 +7,7 @@ It will create ArchArchive and Branch entries as needed.
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.soyuz.importd import SoyuzProduct
 import canonical.lp
-from canonical.launchpad.database import ArchArchive, ArchPerson, SourceSource
+from canonical.launchpad.database import ArchArchive, Person, SourceSource
 
 from sqlobject import ForeignKey, IntCol, StringCol, DateTimeCol, BoolCol, \
                       EnumCol, connectionForURI
@@ -101,7 +101,7 @@ SourceSource = ImporterSourceSource
 
 
 def make_lifeless():
-    query = ArchPerson.select(ArchPerson.q.name == 'Robert Collins')
+    query = Person.select(Person.q.displayname == 'Robert Collins')
     assert query.count() == 1
     return query[0]
 

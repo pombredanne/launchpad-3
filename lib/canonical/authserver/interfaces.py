@@ -28,7 +28,7 @@ class IUserDetailsStorage(Interface):
         :returns: user dict if authenticated, otherwise empty dict
         """
 
-    def createUser(loginID, sshaDigestedPassword, displayName, emailAddresses):
+    def createUser(loginID, sshaDigestedPassword, displayname, emailAddresses):
         """Create a user
         
         :returns: user dict, or TBD if there is an error such as a database

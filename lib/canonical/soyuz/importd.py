@@ -63,7 +63,7 @@ def getOwner():
 
 class SoyuzProject(object):
     implements (IProject)
-    def __init__(self, dbProject=None,name=None,title=None,url=None,description=None, shortDescription=None, displayName=None):
+    def __init__(self, dbProject=None,name=None,title=None,url=None,description=None, shortDescription=None, displayname=None):
         if dbProject is not None:
             self._project=dbProject
             self.name=self._project.name
@@ -71,7 +71,7 @@ class SoyuzProject(object):
             self.url=self._project.homepageurl
             self.description=self._project.description
             self._shortDescription=self._project.shortdesc
-            self._displayName=self._project.displayname
+            self._displayname=self._project.displayname
         else:
             self._project=None
             self.name=name
@@ -79,16 +79,16 @@ class SoyuzProject(object):
             self.url=url
             self.description=description
             self._shortDescription=shortDescription
-            self._displayName=displayName
+            self._displayname=displayname
             
 
-    def displayName(self, aName=None):
-        """return the projects displayName, setting it if aName is provided"""
+    def displayname(self, aName=None):
+        """return the projects displayname, setting it if aName is provided"""
         if aName is not None:
             # TODO: do we need to check for uniqueness ?
-            self._project.displayName=aName
-            self._displayName=aName
-        return self._displayName
+            self._project.displayname=aName
+            self._displayname=aName
+        return self._displayname
 
     def potFiles(self):
         """Returns an iterator over this project's pot files."""
@@ -153,9 +153,9 @@ class SoyuzProduct(object):
     def branches(self):
         """Iterate over this product's branches."""
 
-    def syncs(self):
-        """iterate over this products syncs"""
-        for sync in infoSourceSource.select("sourcesource.product=%s" % quote(self._product.id)):
+    def sourcesources(self):
+        """iterate over this product's sourcesource entries"""
+        for source in SourceSource.select("sourcesource.product=%s" % quote(self._product.id)):
             yield Sync(self, sync)
     def newSync(self,**kwargs):
         """create a new sync job"""

@@ -482,6 +482,13 @@ def urlTraverseSyncs(product, request, name):
 
 # DONE!
 
+#
+# XXX Mark Shuttleworth 02/10/04 Steve and I far prefer using Views that
+#     inherit from (object), then using an __init__ that has a line like
+#     self.form = request.form 
+#     to make form data more accessible. This would allow us to get rid
+#     of the View class below altogether.
+#
 class View(object):
     def setArg(self, name, kwargs):
         kwargs[name]=self.getField(name)
@@ -501,11 +508,11 @@ class ViewProjects(View):
         description=self.getField('description')
         title=self.getField('title')
         shortDescription=self.getField('shortDescription')
-        displayName=self.getField('displayName')
+        displayname=self.getField('displayname')
 
         project=self.context.new(name,title,description,url)
         project.shortDescription(shortDescription)
-        project.displayName(displayName)
+        project.displayname(displayname)
         project=None
         self.submittedok= True
         self.request.response.redirect(name)
@@ -528,9 +535,13 @@ class ViewProject(View):
         self.context.newProduct(name,title,description,url)
         self.submittedok= True
 
+
+
 class ViewProduct(View):
+
     def syncs(self):
         return iter(self.context.syncs())
+
     def handle_submit(self):
         if not self.request.form.get("Register", None)=="Register":
             return

@@ -12,6 +12,9 @@
 
 <body>
 
+<p>NB! We are going to consolidate the "add a project" code around the DOAP
+infrastructure, see project-new.pt for more details.</p>
+
 <div metal:fill-slot="main">
 
    <tal:dummy condition="view/handle_submit" />
@@ -54,7 +57,7 @@
                     The display name of the project. FIXME: what is this for and how is it different to title and name?
                   </div>
 
-                <input type="text" name="displayName" size="30"
+                <input type="text" name="displayname" size="30"
                        value="" style="text-transform: lowercase" />
         </div>
 

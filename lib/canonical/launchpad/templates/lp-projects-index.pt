@@ -1,7 +1,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="doap">
+      i18n:domain="launchpad">
 
 <head>
     <!-- Plone style sheet -->
@@ -17,10 +17,21 @@
     <h1>Launchpad Projects</h1>
     
     <div class="documentDescription">
-    Launchpad is the collection of systems that allow you to keep track
-    of projects, translate and file bugs on those projects.
+    The Launchpad tracks open source projects. Below is a list of projects
+    registered in The Launchpad. You can also <a href="+search">search for a
+    project</a> directly.
     </div>
 
+    <div>
+    <!--we can repeat inside context, because context here is a
+    ProjectContainer which has an __iter__ method and hence is an iterator
+    -->
+    <ul tal:repeat="project context">
+        <li> <b><span
+        tal:content="project/title">$Project.title</span></b><br>
+        <span tal:content="project/shortdesc">$Project.shortdesc</span></li>
+    </ul>
+    </div>
 </div>
 
 </body>

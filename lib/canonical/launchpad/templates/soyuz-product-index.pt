@@ -12,6 +12,9 @@
 
 <body>
 
+<p>NB - this template is obsolete! Please use the product-index.pt template
+from DOAP!</p>
+
 <div metal:fill-slot="main">
 
     <h1>Product overview: <span tal:replace="context/title">NAME</span></h1>
