@@ -19,7 +19,7 @@ develdb:
 
 testdb: drop create develdb
 	@ echo "* Creating ${TEST_DBNAME} for unittests"
-	@if [ "`psql -l | grep ${TEST_DBNAME} | wc -l`" = '1' ]; \
+	@if [ "$$((`psql -l | grep ${TEST_DBNAME} | wc -l`))" = '1' ]; \
 	    then dropdb ${TEST_DBNAME} ; \
 	fi
 	createdb -E UNICODE --template=${DBNAME} ${TEST_DBNAME}
@@ -32,10 +32,13 @@ create: drop
 	@ echo
 	@ echo
 	@ echo "* Creating database \"$(DBNAME)\" with sample data."
-	@if [ "`psql -l | grep ${DBNAME} | wc -l`" = '0' ]; then createdb -E UNICODE ${DBNAME} ; else echo ${DBNAME} already exists; fi
+	@if [ "$$((`psql -l | grep ${DBNAME} | wc -l`))" = '0' ]; \
+	    then createdb -E UNICODE ${DBNAME}; \
+	    else echo ${DBNAME} already exists; \
+         fi
 	@ echo
 	@ echo "* Installing PL/Python "
-	createlang -d launchpad_test plpythonu
+	# createlang -d launchpad_test plpythonu
 	@ echo
 	@ echo "* Creating functions"
 	psql -d ${DBNAME} -f trusted.sql
@@ -43,7 +46,7 @@ create: drop
 drop: 
 	@ echo "* This will hang if another process is accessing the database"
 	@ echo "* Dropping existing database"
-	@if [ "`psql -l | grep ${DBNAME} | wc -l`" = '1' ]; then dropdb ${DBNAME} ; fi
+	@if [ "$$((`psql -l | grep ${DBNAME} | wc -l`))" = '1' ]; then dropdb ${DBNAME} ; fi
 
 # Confirm that launchpad-3-00-0.sql hasn't been messed with - this file
 # is our baseline telling us what was installed into production
