@@ -206,7 +206,7 @@
 
             </div>
 
-            <div tal:replace="structure view/statusLegend" tal:omit-tag />
+            <div tal:replace="structure view/statusLegend" />
 
         </tal:block> <!-- condition: non-distrorelease-only stuff -->
 

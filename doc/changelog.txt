@@ -2,6 +2,40 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-29 09:44:07 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1512
+
+    Summary:
+      Applied code review changes, fixed a bug that made us store the wrong path in a POTemplate and improved our attach script so it does not breaks with unhandled exceptions
+    Revision:
+      launchpad--devel--0--patch-1512
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-574
+       merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-575
+       Improved the attach script so it does not breaks the complete attach if we get an unexpected exception with a tarball
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-576
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-577
+       Applied code review comments + bug fix for the import
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/scripts/rosetta.py
+     lib/canonical/launchpad/security.py
+     lib/canonical/launchpad/templates/potemplatesubset-index.pt
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-574
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-575
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-576
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-577
+
+
 2005-03-29 04:24:42 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1511
 
     Summary:

@@ -280,18 +280,8 @@ class EditPOTemplateDetails(AuthorizationBase):
         if self.obj.productrelease is not None:
             # It's a PO file from a product, it has no restrictions.
             return True
-        elif ITeam.providedBy(self.obj.owner):
-            # The PO file is owned by a team.
-            if user.inTeam(self.obj.owner):
-                # The user is member of that team.
-                return True
-            else:
-                return False
-        elif self.obj.owner.id == user.id:
-            # The user is directly the owner of the PO file.
-            return True
         else:
-            return False
+            return user.inTeam(self.obj.owner)
 
 
 class EditPOFileDetails(AuthorizationBase):
@@ -304,16 +294,6 @@ class EditPOFileDetails(AuthorizationBase):
         if self.obj.potemplate.productrelease is not None:
             # It's a PO file from a product, it has no restrictions.
             return True
-        elif ITeam.providedBy(self.obj.owner):
-            # The PO file is owned by a team.
-            if user.inTeam(self.obj.owner):
-                # The user is member of that team.
-                return True
-            else:
-                return False
-        elif self.obj.owner.id == user.id:
-            # The user is directly the owner of the PO file.
-            return True
         else:
-            return False
+            return user.inTeam(self.obj.owner)
 
