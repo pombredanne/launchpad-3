@@ -76,6 +76,13 @@
             min(len(context), view.offset + view.count)">10</span>
         of
         <span tal:replace="context/__len__">23</span>.
+        <span tal:repeat="language view/languages">
+            <br />
+            <label class="language-code"
+                   tal:content="language/englishName">pt_BR</label>:
+            <span tal:replace="python:
+                view.completeness[language.code]">0</span>%
+        </span>
     </div>
 
     <!-- Navigation doodads. -->

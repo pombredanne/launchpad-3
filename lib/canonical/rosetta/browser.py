@@ -361,8 +361,8 @@ class ViewPOFile:
         return plural.split(';', 1)[1].split('=',1)[1].split(';', 1)[0].strip();
 
     def completeness(self):
-        return "%d%%" % (
-            float(len(self.context)) / len(self.context.poTemplate) * 100)
+        return "%.2f%%" % (
+            float(self.context.translatedCount()) / len(self.context.poTemplate) * 100)
 
     def untranslated(self):
         return len(self.context.poTemplate) - len(self.context)
@@ -594,8 +594,9 @@ class TranslatePOTemplate:
         else:
             self.languages = request_languages(request)
 
-        # Get plural form information.
+        # Get plural form and completeness information.
 
+        self.completeness = {}
         self.pluralForms = {}
         self.pluralFormsError = False
 
@@ -612,8 +613,12 @@ class TranslatePOTemplate:
                     # We don't have a default plural form for this Language
                     self.pluralForms[language.code] = None
                     self.error = True
+                # As we don't have teh pofile, the completeness is 0
+                self.completeness[language.code] = 0
             else:
                 self.pluralForms[language.code] = pofile.pluralForms
+                self.completeness[language.code] = \
+                    float(pofile.translatedCount()) / len(pofile.poTemplate) * 100
 
         self.badLanguages = [ all_languages[x] for x in self.pluralForms
             if self.pluralForms[x] is None ]
