@@ -8,8 +8,10 @@
 <div metal:fill-slot="column_one">
 </div>
 
-<div metal:fill-slot="main" class="visualPadding">
+<div metal:fill-slot="main" class="visualPadding"
+     tal:define="ass_batch view/batch">
   <h1>Bugs</h1>
+  <small tal:content="python:'displaying bugs ' + str(ass_batch.startNumber()) + ' to ' + str(ass_batch.endNumber()) + ' of ' + str(ass_batch.total())">displaying 1 to 20 of 42</small>
   <table class="listing rowNavigation">
     <tr>
       <th>Bug #</th>
@@ -23,7 +25,7 @@
       <th>Submitted By</th>
       <th>Assigned To</th>
     </tr>
-    <tr tal:repeat="assignment view/batch"
+    <tr tal:repeat="assignment ass_batch"
         tal:attributes="onclick string:window.location='${assignment/bug/id}';">
       <td tal:content="assignment/bug/id">$Bug.title</td>
       <td tal:content="assignment/product/name|nothing">product</td>
@@ -37,13 +39,17 @@
       <td tal:content="assignment/assignee/displayname|string:-">somebody</td>
     </tr>
     <tr class="batchnav">
-      <td class="batchnav" colspan="10">
+      <td class="batchnav" colspan="10" 
+          tal:define="prev_page_url view/batchnav/prevBatchURL;
+                      next_page_url view/batchnav/nextBatchURL">
+          <a tal:condition="prev_page_url" tal:attributes="href prev_page_url">< previous</a>
           <span tal:omit-tag=""
                 tal:repeat="page_url view/batchnav/batchPageURLs">
             <a href=""
                tal:content="python:page_url.keys()[0]"
                tal:attributes="href python:page_url.values()[0]">[1]</a>
           </span>
+          <a tal:condition="next_page_url" tal:attributes="href next_page_url">next ></a>
       </td>
     </tr>
   </table>
