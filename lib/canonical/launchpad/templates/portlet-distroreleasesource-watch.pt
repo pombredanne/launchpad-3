@@ -1,0 +1,34 @@
+<fieldset tal:condition="view/sourcepackageWatch">
+  <legend>Package Tracking System</legend>
+    <div class="dummy">
+     <table>
+     <tr><td>
+        <table>
+          <tr><th>Subscribers Counter</th><td>(1)</td></tr>
+        </table>
+     </td></tr>    
+     <tr><td>
+        <form name="watch" action="" method="POST">
+
+        <div class="field">
+            <label>Action</label>
+        <div class="formHelp">
+	    Select an Action.
+        </div>
+
+	<select class="listing" name="operation">
+	 <option value="subscribe">Subscribe</option>
+	 <option value="unsubscribe">Unsubscribe</option>
+	 <option value="advanced">Advanced mode</option>
+	</select>
+	</div>
+
+	<div class="formControl">
+          <input class="listing" type="submit" name="submit" value="Submit"> 
+	</div>
+
+        </form>
+     </td></tr>
+    </table>
+  </div>
+</fieldset>

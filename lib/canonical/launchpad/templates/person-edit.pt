@@ -29,6 +29,10 @@
         <li id="contentview-view" class="plain">
             <a href="index.html">View</a>
         </li>
+	
+	<li id="contentview-packages" class="plain">
+            <a href="+packages">Packages</a>
+        </li>
 
         <li id="contentview-edit" class="selected">
             <a>Edit</a>
@@ -38,9 +42,6 @@
             <a href="+add">Add</a>
         </li>
 
-	<li id="contentview-packages" class="plain">
-            <a href="+packages">Packages</a>
-        </li>
     </ul>
 
     <div class="documentContent" id="region-content">

@@ -138,6 +138,8 @@ class SourcePackageInDistro(SourcePackage):
     #
     name = StringCol(dbName='name', notNull=True)
 
+    distrorelease = ForeignKey(foreignKey='DistroRelease',
+                               dbName='distrorelease')
     #
     # Class Methods
     #

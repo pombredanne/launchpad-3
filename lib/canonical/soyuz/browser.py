@@ -24,11 +24,15 @@ from canonical.launchpad.database import createTeam
 # interface import
 from canonical.launchpad.database import IPerson
 
+# zope imports
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+
 # app components
 from canonical.soyuz.sql import Distribution, DistroRelease, Person
 from canonical.soyuz.importd import ProjectMapper, ProductMapper
 
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+# Stock View 
+from canonical.rosetta.browser import ViewProduct
 
 ##XXX: (batch_size+global) cprov 20041003
 ## really crap constant definition for BatchPages 
@@ -174,10 +178,25 @@ class TeamAddView(object):
         self.request = request
         self.results = []
         self.error_msg = None
+        self.permission = False
+        self.person = IPerson(self.request.principal, None)
+        
+        if self.person:
+            pid = self.person.id
+            
+            if pid == self.context.person.id:
+                self.permission = True
+
+            if self.context.person.teamowner:
+                if pid == self.context.person.teamowner.id:
+                    self.permission = True
 
 
     def add_action(self):
         enable_added = False
+
+        if not self.permission:
+            return False
     
         displayname = self.request.get("displayname", "")
         teamdescription = self.request.get("teamdescription", "")
@@ -191,10 +210,8 @@ class TeamAddView(object):
                 self.error_msg = 'Password does not match'
                 return enable_added
 
-            person = IPerson(self.request.principal, None)
-            
-            if person:
-                teamowner = person.id
+            if self.person:
+                teamowner = self.person.id
             
             self.results = createTeam(displayname,
                                       teamowner,
@@ -202,10 +219,6 @@ class TeamAddView(object):
                                       password,
                                       email)
             
-
-            ##XXX: (membership) cprov 20041003
-            ## How will be the Membership ? the owner should be always
-            ## the admin ? I supose not !          
             if not self.results:
                 # it happens when generate_nick returns
                 # a nick that already exists
@@ -327,10 +340,13 @@ class PersonEditView(object):
         if self.person:
             pid = self.person.id
             
-            if (pid == self.context.person.id) or \
-               (pid == self.context.person.teamowner.id):
+            if pid == self.context.person.id:
                 self.permission = True
 
+            if self.context.person.teamowner:
+                if pid == self.context.person.teamowner.id:
+                    self.permission = True
+            
     def email_action(self):
 
         if not self.permission:
@@ -711,6 +727,32 @@ class DistrosReleaseBinariesSearchView(object):
         else:
             return None
 
+class DistroReleaseSourceView(object):
+    translationPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-translations-sourcepackage.pt')
+    watchPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-distroreleasesource-watch.pt')
+
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+        self.person = IPerson(self.request.principal, None)
+
+
+    def productTranslations(self):
+        if self.context.sourcepackage.product:
+            return ViewProduct(self.context.sourcepackage.product,
+                               self.request)
+        return None
+
+    def sourcepackageWatch(self):
+        if self.person is not None:            
+            return True
+
+        return False
+    
 
 ##XXX: (old+stuff) cprov 20041003
 ## This Old stuff is unmaintained by Soyuz Team

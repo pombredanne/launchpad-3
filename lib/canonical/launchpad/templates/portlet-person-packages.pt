@@ -1,16 +1,24 @@
-  <div class="dummy">
+  <div>
    <table>
-     <tr><td> XXX: Hardcoded distro & distrorelease link</td></tr>
      <tr tal:condition="not:context/packages">
        <td> No packages available </td>
      </tr>
      <tr tal:repeat="package context/packages">
+         
        <!-- FIXME: distribuiton and distrorelease missed --> 
-       <td><a tal:attributes="href string:../../distros/ubuntu/src/warty/${package/name}"
-         tal:content="string:${package/name}">
-	     PACKAGES
-	   </a>
-       <td>
+       <td tal:define="name package/name; 
+	 distrorelease package/distrorelease/name;
+	 distro package/distrorelease/distribution/name; ">
+	  
+	  <a tal:attributes="href string:../../distros/${distro}"
+             tal:content="package/distrorelease/distribution/title">DISTRO</a>
+           -&gt
+	  <a tal:attributes="href string:../../distros/${distro}/src/${distrorelease}/"
+	     tal:content="package/distrorelease/title">DISTRORELASE</a>
+	  -&gt
+	  <a tal:attributes="href string:../../distros/${distro}/src/${distrorelease}/${name}"
+             tal:content="string:${name}">PACKAGES</a>
+       </td>
      </tr>
    </table>
   </div>

@@ -191,12 +191,19 @@ class Product(SQLBase):
         # FIXME: The database access here could be optimised a lot, probably
         # with a view.  Whether it's worth the hassle remains to be seen...
         #  -- Andrew Bennetts, 2004/11/07
+
+        # cprov 20041110
+        # Added 'Product' in clauseTables but got MANY entries for "Ubuntu".
+        # As it is written in template we expect a link to:
+        #    distribution/distrorelease/sourcepackagename
+        # But now it seems to be unrecheable
+        
         from canonical.launchpad.database import Distribution, DistroRelease
         distros = Distribution.select(
             "Packaging.product = Product.id AND "
             "Packaging.sourcepackage = SourcePackage.id AND "
             "Distribution.id = SourcePackage.distro ",
-            clauseTables=['Packaging', 'SourcePackage'],
+            clauseTables=['Packaging', 'SourcePackage', 'Product'],
             orderBy='title',
         )
         return distros

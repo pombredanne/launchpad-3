@@ -31,6 +31,10 @@
                 <a href=".">View</a>
             </li>
 
+            <li id="contentview-packages" class="plain">
+                <a href="+packages">Packages</a>
+            </li>
+
             <li id="contentview-edit" class="plain">
                 <a href="+edit">Edit</a>
             </li>
@@ -39,9 +43,6 @@
                 <a href="+add">Add</a>
             </li>
 
-            <li id="contentview-packages" class="plain">
-                <a href="+packages">Packages</a>
-            </li>
         </ul>
 
         <div class="documentContent" id="region-content">

@@ -39,13 +39,16 @@ class ISourcePackage(Interface):
     distro = Int(title=_("Distribution"), required=False)
     sourcepackagename = Int(title=_("SourcePackage Name"), required=True)
     bugs = Attribute("bugs")
-    ##XXX: (interface+attr) cprov 20041010
-    ## I'm confused about how to declare new (abstract) attributes as
-    ## following.
     product = Attribute("Product, or None")
     proposed = Attribute("A source package release with upload status of "
                          "PROPOSED, else None")
 
+    ## XXX: cprov 20041110
+    ## Big Big Mistake I suppose SourcePackageinDistro class (PG VIEW)
+    ## uses the ISourcepackage interface, then we have many unimplemented
+    ## attributes !!! we should have ISourcePackageinDistro and move following
+
+    distrorelease = Int(title=_("DistroRelease"), required=False)
 
 #
 # Interface provied by a SourcePackageName. This is a tiny

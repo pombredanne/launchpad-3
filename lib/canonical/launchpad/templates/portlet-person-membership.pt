@@ -20,12 +20,14 @@
 
    </table>
 
-   <div tal:condition="not:view/is_member">
-   <a href="+join">Join This Team</a>
-   </div>
+   <div tal:condition="view/person">
+     <div tal:condition="not:view/is_member">
+       <a href="+join">Join This Team</a>
+     </div>
 
-   <div tal:condition="view/is_member">
-   <a href="+unjoin">Unjoin This Team</a>
+     <div tal:condition="view/is_member">
+       <a href="+unjoin">Unjoin This Team</a>
+     </div>
    </div>
 
  </div>

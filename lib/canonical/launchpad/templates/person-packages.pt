@@ -29,16 +29,16 @@
             <a href="index.html">View</a>
         </li>
 
+	<li id="contentview-packages" class="selected">
+            <a>Packages</a>
+        </li>
+
         <li id="contentview-edit" class="plain">
             <a href="+edit">Edit</a>
         </li>
 
 	<li id="contentview-add" class="plain">
             <a href="+add">Add</a>
-        </li>
-
-	<li id="contentview-packages" class="selected">
-            <a>Packages</a>
         </li>
     </ul>
 
