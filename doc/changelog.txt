@@ -2,6 +2,80 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-01 03:21:26 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1266
+
+    Summary:
+      Merge in database security branch
+    Revision:
+      launchpad--devel--0--patch-1266
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--base-0
+       tag of stuart.bishop@canonical.com/launchpad--devel--1--patch-38
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-1
+       Change ownership of all tables to user postgres
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-2
+       Grant permissions from config file
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-3
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-4
+       Add more tables to db security config
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-5
+       Security definitions ready for testing
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-6
+       Maintain security on sequences
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-7
+       Switch on dbsecurity and make librarian tests connect as the librarian user so they pass
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-8
+       star-merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-9
+       Update security for new tables
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-10
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-11
+       Update security.cfg for membership table rename
+    
+
+    new files:
+     database/schema/.arch-ids/security.cfg.id
+     database/schema/.arch-ids/security.py.id
+     database/schema/security.cfg database/schema/security.py
+
+    modified files:
+     database/schema/Makefile doc/changelog.txt
+     lib/canonical/ftests/pgsql.py
+     lib/canonical/launchpad/ftests/harness.py
+     lib/canonical/librarian/ftests/test_db.py
+     lib/canonical/librarian/ftests/test_storage.py
+     lib/canonical/lp/__init__.py test_on_merge.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--base-0
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-1
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-2
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-3
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-4
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-5
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-6
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-7
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-8
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-9
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-10
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-11
+
+
 2005-01-31 15:26:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1265
 
     Summary:
