@@ -2,6 +2,73 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-18 20:03:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1461
+
+    Summary:
+      Completely nuke database code from launchpad/browser/people.py and then split it into person.py, emailaddress.py, gpgkey.py and sshkey.py
+    Revision:
+      launchpad--devel--0--patch-1461
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-190
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-191
+       Removing database code from launchpad/browser/people.py, take one: No more canonical.launchpad.database.Person.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-192
+       Removing database code from launchpad/browser/people.py, take two: No more canonical.launchpad.database.EmailAddress.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-193
+       Removing database code from launchpad/browser/people.py, take three: No more canonical.launchpad.database at all.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-194
+       Splitting launchpad/browser/people.py into person.py, emailaddress.py, sshkey.py and gpgkey.py. As kiko requested.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-195
+       Must declare IEmailAddress.destroySelf(), as we use it when deleting an email.
+    
+
+    new files:
+     lib/canonical/launchpad/browser/.arch-ids/emailaddress.py.id
+     lib/canonical/launchpad/browser/.arch-ids/gpgkey.py.id
+     lib/canonical/launchpad/browser/.arch-ids/sshkey.py.id
+     lib/canonical/launchpad/browser/emailaddress.py
+     lib/canonical/launchpad/browser/gpgkey.py
+     lib/canonical/launchpad/browser/sshkey.py
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/__init__.py
+     lib/canonical/launchpad/browser/person.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/archuser.py
+     lib/canonical/launchpad/interfaces/irc.py
+     lib/canonical/launchpad/interfaces/jabber.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/interfaces/ssh.py
+     lib/canonical/launchpad/interfaces/wikiname.py
+     lib/canonical/launchpad/zcml/archuserid.zcml
+     lib/canonical/launchpad/zcml/ircid.zcml
+     lib/canonical/launchpad/zcml/jabberid.zcml
+     lib/canonical/launchpad/zcml/sshkey.zcml
+     lib/canonical/launchpad/zcml/wikiname.zcml
+
+    renamed files:
+     lib/canonical/launchpad/browser/.arch-ids/people.py.id
+       ==> lib/canonical/launchpad/browser/.arch-ids/person.py.id
+     lib/canonical/launchpad/browser/people.py
+       ==> lib/canonical/launchpad/browser/person.py
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-190
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-191
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-192
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-193
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-194
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-195
+
+
 2005-03-18 17:07:47 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1460
 
     Summary:

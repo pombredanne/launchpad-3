@@ -17,3 +17,10 @@ class IIrcID(Interface):
     network = TextLine(title=_("IRC network"), required=True)
     nickname = TextLine(title=_("Nickname"), required=True)
 
+
+class IIrcIDSet(Interface):
+    """The set of IrcIDs."""
+
+    def new(personID, network, nickname):
+        """Create a new IrcID pointing to the given Person."""
+

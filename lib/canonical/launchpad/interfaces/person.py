@@ -252,7 +252,22 @@ class IPersonSet(Interface):
         """
     
     def getAll():
-        """Return all People in a database"""
+        """Return all Persons and Teams."""
+
+    def getAllTeams():
+        """Return all Teams."""
+
+    def getAllPersons():
+        """Return all Persons."""
+
+    def findByName(name):
+        """Return all Persons and Teams with name matching."""
+
+    def findPersonByName(name):
+        """Return all Persons with name matching."""
+
+    def findTeamByName(name):
+        """Return all Teams with name matching."""
 
     def getContributorsForPOFile(pofile):
         """Return the list of persons that have an active contribution for a
@@ -264,6 +279,7 @@ class IPersonSet(Interface):
     def getUbuntites():
         """Return a set of person with valid Ubuntite flag."""
 
+
 class IEmailAddress(Interface):
     """The object that stores the IPerson's emails."""
 
@@ -272,6 +288,9 @@ class IEmailAddress(Interface):
     status = Int(title=_('Email Address Status'), required=True, readonly=False)
     person = Int(title=_('Person'), required=True, readonly=False)
     statusname = Attribute("StatusName")
+
+    def destroySelf():
+        """Delete this email from the database."""
 
 
 class IEmailAddressSet(Interface):

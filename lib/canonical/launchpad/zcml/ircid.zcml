@@ -6,4 +6,14 @@
             set_attributes="network nickname" />
     </content>
 
+    <content class="canonical.launchpad.database.IrcIDSet">
+        <allow interface="canonical.launchpad.interfaces.IIrcIDSet" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.IrcIDSet"
+        provides="canonical.launchpad.interfaces.IIrcIDSet">
+        <allow interface="canonical.launchpad.interfaces.IIrcIDSet" />
+    </securedutility>
+
 </configure>

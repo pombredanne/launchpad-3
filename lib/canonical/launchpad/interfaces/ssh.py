@@ -5,7 +5,6 @@ from zope.interface import Interface
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-__all__ = ['ISSHKey']
 
 class ISSHKey(Interface):
     """SSH public key"""
@@ -14,4 +13,17 @@ class ISSHKey(Interface):
     keytype = TextLine(title=_("Key type"), required=True)
     keytext = TextLine(title=_("Key text"), required=True)
     comment = TextLine(title=_("Comment describing this key"), required=True)
+
+
+class ISSHKeySet(Interface):
+    """The set of SSHKeys."""
+
+    def new(personID, keytype, keytext, comment):
+        """Create a new SSHKey pointing to the given Person."""
+
+    def get(id, default=None):
+        """Return the SSHKey object for the given id.
+
+        Return the given default if there's now object with the given id.
+        """
 

@@ -6,4 +6,14 @@
             set_attributes="jabberid" />
     </content>
 
+    <content class="canonical.launchpad.database.JabberIDSet">
+        <allow interface="canonical.launchpad.interfaces.IJabberIDSet" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.JabberIDSet"
+        provides="canonical.launchpad.interfaces.IJabberIDSet">
+        <allow interface="canonical.launchpad.interfaces.IJabberIDSet" />
+    </securedutility>
+
 </configure>

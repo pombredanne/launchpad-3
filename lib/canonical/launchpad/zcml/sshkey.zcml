@@ -12,6 +12,16 @@
             set_attributes="keytext comment" />
     </content>
 
+    <content class="canonical.launchpad.database.SSHKeySet">
+        <allow interface="canonical.launchpad.interfaces.ISSHKeySet" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.SSHKeySet"
+        provides="canonical.launchpad.interfaces.ISSHKeySet">
+        <allow interface="canonical.launchpad.interfaces.ISSHKeySet" />
+    </securedutility>
+
     <browser:pages
         for="canonical.launchpad.interfaces.IPerson"
         permission="zope.Public"

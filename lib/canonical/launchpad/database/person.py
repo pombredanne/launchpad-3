@@ -23,6 +23,9 @@ from canonical.launchpad.interfaces import ITeamParticipationSet
 from canonical.launchpad.interfaces import ITeamMembershipSet
 from canonical.launchpad.interfaces import IEmailAddress, IWikiName
 from canonical.launchpad.interfaces import IIrcID, IArchUserID, IJabberID
+from canonical.launchpad.interfaces import IIrcIDSet, IArchUserIDSet
+from canonical.launchpad.interfaces import ISSHKeySet, IJabberIDSet
+from canonical.launchpad.interfaces import IWikiNameSet
 from canonical.launchpad.interfaces import ISSHKey, IGPGKey, IKarma
 from canonical.launchpad.interfaces import IPasswordEncryptor
 from canonical.launchpad.interfaces import ISourcePackageSet, IEmailAddressSet
@@ -550,6 +553,26 @@ class PersonSet(object):
         else:
             return default
 
+    def getAllPersons(self):
+        return list(Person.select(Person.q.teamownerID==None,
+                                  orderBy='displayname'))
+
+    def getAllTeams(self):
+        return list(Person.select(Person.q.teamownerID!=None,
+                                  orderBy='displayname'))
+
+    def findByName(self, name):
+        query = "fti @@ ftq(%s)" % quote(name)
+        return list(Person.select(query, orderBy='displayname'))
+
+    def findPersonByName(self, name):
+        query = "fti @@ ftq(%s) AND teamowner is NULL" % quote(name)
+        return list(Person.select(query, orderBy='displayname'))
+
+    def findTeamByName(self, name):
+        query = "fti @@ ftq(%s) AND teamowner is not NULL" % quote(name)
+        return list(Person.select(query, orderBy='displayname'))
+
     def get(self, personid, default=None):
         """See IPersonSet."""
         try:
@@ -752,6 +775,20 @@ class SSHKey(SQLBase):
     comment = StringCol(dbName='comment', notNull=True)
 
 
+class SSHKeySet(object):
+    implements(ISSHKeySet)
+
+    def new(self, personID, keytype, keytext, comment):
+        return SSHKey(personID=personID, keytype=keytype, keytext=keytext,
+                      comment=comment)
+
+    def get(self, id, default=None):
+        try:
+            return SSHKey.get(id)
+        except SQLObjectNotFound:
+            return default
+
+
 class ArchUserID(SQLBase):
     implements(IArchUserID)
 
@@ -760,6 +797,13 @@ class ArchUserID(SQLBase):
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     archuserid = StringCol(dbName='archuserid', notNull=True)
     
+
+class ArchUserIDSet(object):
+    implements(IArchUserIDSet)
+
+    def new(self, personID, archuserid):
+        return ArchUserID(personID=personID, archuserid=archuserid)
+
 
 class WikiName(SQLBase):
     implements(IWikiName)
@@ -771,6 +815,13 @@ class WikiName(SQLBase):
     wikiname = StringCol(dbName='wikiname', notNull=True)
 
 
+class WikiNameSet(object):
+    implements(IWikiNameSet)
+
+    def new(self, personID, wiki, wikiname):
+        return WikiName(personID=personID, wiki=wiki, wikiname=wikiname)
+
+
 class JabberID(SQLBase):
     implements(IJabberID)
 
@@ -778,6 +829,13 @@ class JabberID(SQLBase):
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     jabberid = StringCol(dbName='jabberid', notNull=True)
+
+
+class JabberIDSet(object):
+    implements(IJabberIDSet)
+
+    def new(self, personID, jabberid):
+        return JabberID(personID=personID, jabberid=jabberid)
 
 
 class IrcID(SQLBase):
@@ -788,6 +846,13 @@ class IrcID(SQLBase):
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     network = StringCol(dbName='network', notNull=True)
     nickname = StringCol(dbName='nickname', notNull=True)
+
+
+class IrcIDSet(object):
+    implements(IIrcIDSet)
+
+    def new(self, personID, network, nickname):
+        return IrcID(personID=personID, network=network, nickname=nickname)
 
 
 class TeamMembership(SQLBase):
