@@ -627,8 +627,9 @@ class SourceSourceView(object):
         releaseroot = self.form.get('releaseroot', None)
         releaseverstyle = self.form.get('releaseverstyle', None)
         releasefileglob = self.form.get('releasefileglob', None)
-        archarchive = self.form.get('newarchive', None)
+        newarchive = self.form.get('newarchive', None)
         archversion = self.form.get('newbranchcategory', None)
+        newbranchcategory = self.form.get('newbranchcategory', None)
         newbranchbranch = self.form.get('newbranchbranch', None)
         newbranchversion = self.form.get('newbranchversion', None)
         product = self.form.get('product', None)
@@ -642,8 +643,8 @@ class SourceSourceView(object):
         if releaseroot: self.context.releaseroot = releaseroot
         if releaseverstyle: self.context.releaseverstyle = releaseverstyle
         if releasefileglob: self.context.releasefileglob = releasefileglob
-        if archarchive: self.context.archarchive = archarchive
-        if archversion: self.context.archversion = archversion
+        if newarchive: self.context.newarchive = newarchive
+        if newbranchcategory: self.context.newbranchcategory = newbranchcategory
         if newbranchbranch: self.context.newbranchbranch = newbranchbranch
         if newbranchversion: self.context.newbranchversion = newbranchversion
         if self.form.get('syncCertified', None):

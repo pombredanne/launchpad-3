@@ -45,52 +45,15 @@
             <td tal:content="bugass/priority/lp:BugPriority">
                 $SourcepackageBugAssignment.priority
             </td>
-            <td tal:condition="bugass/binarypackagename">
-                <span
-                tal:content="bugass/binarypackage/binarypackagename/name">
-                    $BinarypackageName.name
+            <td>
+                <span tal:condition="bugass/binarypackagename"
+                tal:content="bugass/binarypackagename/name|default">
+                    (not specified)
                 </span>
             </td>
-            <td tal:condition="not:bugass/binarypackagename">
-                (not specified)
-            </td>
         </tr>
     </table>
     
-    <!--
-    <h2>Affected binary packages</h2>
-    
-    <table class="listing">
-        <tr>
-            <th rowspan="2">Package</th>
-            <th colspan="5">Severity</th>
-        </tr>
-        <tr>
-            <th>Critical</th>
-            <th>Major</th>
-            <th>Normal</th>
-            <th>Minor</th>
-            <th>Wishlist</th>
-        </tr>
-        <tal:x repeat="i view/affectedBinaryPackages">
-            <tr tal:define="binarypackage python:i[0]; stats python:i[1]">
-                <td>
-                    <span tal:content="binarypackage/binarypackagename/name">
-                        $BinarypackageName.name
-                    </span>&ndash;<span tal:content="binarypackage/version">
-                        $Binarypackage.version
-                    </span>
-                </td>
-                <td tal:content="stats/CRITICAL">?</td>
-                <td tal:content="stats/MAJOR">?</td>
-                <td tal:content="stats/NORMAL">?</td>
-                <td tal:content="stats/MINOR">?</td>
-                <td tal:content="stats/WISHLIST">?</td>
-            </tr>
-        </tal:x>
-    </table>
-    -->
-
 </div>
 
 </body>
