@@ -21,10 +21,10 @@
         </tr> 
         <tr tal:repeat="bugass context/bugassignments"
             tal:attributes="onclick
-                string:window.location='../../bugs/${bugass/bug/id}';">
+                string:window.location='../bugs/${bugass/bug/id}';">
             <td>
                 <a href="#" 
-                    tal:attributes="href string:../../bugs/${bugass/bug/id}"
+                    tal:attributes="href string:../bugs/${bugass/bug/id}"
                     tal:content="bugass/bug/title">$Bug.title</a>
             </td>
             <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">

@@ -91,6 +91,10 @@
       for=".interfaces.IMaloneBugAttachment"
       function=".browser.traverseBugAttachment" />
 
+  <vocabulary
+      name="Sourcepackage"
+      factory=".vocabulary.SourcepackageVocabulary" />
+
   <include file="pages.zcml" />
   <include file="forms.zcml" />
   <include file="resources.zcml" />

@@ -96,7 +96,10 @@
   <traverse for="canonical.malone.interfaces.ISourcepackageContainer"
       getter="__getitem__" />
 
-  <pages for="canonical.database.doap.ISourcepackage" permission="zope.Public">
+  <pages 
+      for="canonical.database.doap.ISourcepackage" 
+      permission="zope.Public"
+      class=".browser.SourcepackageView">
       <page name="index" template="templates/sourcepackage-index.pt"
           lp:url="malone/sourcepackage/$Sourcepackage.name/index" />
   </pages>

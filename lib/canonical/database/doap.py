@@ -129,6 +129,37 @@ class Sourcepackage(SQLBase):
     bugs = MultipleJoin(
             'SourcepackageBugAssignment', joinColumn='sourcepackage'
             )
+    sourcepackagereleases = MultipleJoin(
+            'SourcepackageRelease', joinColumn='sourcepackage'
+            )
+
+""" Currently unneeded
+class SourcepackageRelease(SQLBase):
+    _table = 'SourcepackageRelease'
+    _columns = [
+        ForeignKey(
+            name='sourcepackage', dbName='sourcepackage',
+            foreignKey='Sourcepackage', notNull=True,
+            ),
+        IntCol(name='srcpackageformat', notNull=True,),
+        ForeignKey(
+            name='creator', dbName='creator',
+            foreignKey='Person', notNull=True,
+            ),
+        StringCol('version', notNull=True),
+        DatetimeCol('dateuploaded', notNull=True),
+        IntCol('urgency', notNull=True),
+        ForeignKey(
+            name='dscsigningkey', dbName='dscsigningkey', notNull=False),
+            )
+        IntCol('component', notNull=False),
+        StringCol('changelog', notNull=False),
+        StringCol('builddepends', notNull=False),
+        StringCol('builddependsindep', notNull=False),
+        StringCol('architecturehintlist', notNull=False),
+        StringCol('dsc', notNull=False),
+        ]
+"""
 
 class IBinarypackage(Interface):
     id = Int(title=_('ID'), required=True)

@@ -6,7 +6,7 @@ from datetime import datetime
 from email.Utils import make_msgid
 from zope.interface import implements
 from zope.app.form.browser.interfaces import IAddFormCustomization
-from zope.schema import TextLine, Int
+from zope.schema import TextLine, Int, Choice
 from canonical.database.doap import Product, Sourcepackage, Binarypackage
 from canonical.database import sqlbase
 
@@ -112,7 +112,10 @@ class IMaloneBugAddForm(IMaloneBug):
     ''' Information we need to create a bug '''
     #email = TextLine(title=_("Your Email Address"))
     product = Int(title=_("Product"), required=False)
-    sourcepackage = Int(title=_("Source Package"), required=False)
+    sourcepackage = Choice(
+            title=_("Source Package"), required=False,
+            vocabulary='Sourcepackage',
+            )
     binarypackage = Int(title=_("Binary Package"), required=False)
 
 
@@ -422,4 +425,23 @@ class BugExternalRefsView(object):
     def nextURL(self):
         return '..'
 
+class SourcepackageView(object):
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
 
+    def affectedBinaryPackages(self):
+        '''Return a list of [Binarypackage, {severity -> count}]'''
+        m = {}
+        sevdef = {}
+        BugSeverity = dbschema.BugSeverity
+        for i in BugSeverity.items:
+            sevdef[i.name] = 0
+        for bugass in self.context.bugs:
+            binarypackage = bugass.binarypackage
+            severity = BugSeverity.items[i].name
+            stats = m.setdefault(binarypackage, sevdef.copy())
+            m[binarypackage][severity] += 1
+        rv = m.items()
+        rv.sort(lambda a,b: cmp(a.id, b.id))
+        return rv

@@ -87,6 +87,26 @@ def docstring_to_title_descr(string):
     descr = '\n'.join([line[indent:] for line in descrlines])
     return title, descr
 
+class OrderedMapping:
+
+    def __init__(self, mapping):
+        self.mapping = mapping
+
+    def __getitem__(self, key):
+        return self.mapping[key]
+
+    def __iter__(self):
+        L = self.mapping.items()
+        L.sort()
+        for k, v in L:
+            yield v
+
+
+class ItemsDescriptor:
+
+    def __get__(self, inst, cls=None):
+        return OrderedMapping(cls._items)
+    
 
 class Item:
     """An item in an enumerated type.
@@ -120,7 +140,6 @@ class Item:
         if not hasattr(cls, '_items'):
             cls._items = {}
         cls._items[self.value] = self
-
         return cls
 
     def __int__(self):
@@ -161,6 +180,8 @@ class DBSchema:
     description = "See body of class's __doc__ docstring."
     title = "See first line of class's __doc__ docstring."
     name = "See lower-cased-spaces-inserted class name."
+    items = ItemsDescriptor()
+
 
 # TODO: Make DBSchema classes provide an interface, so we can adapt IDBSchema
 # to IVocabulary

@@ -43,8 +43,7 @@
             <td>
                 <span tal:content="bugass/binarypackage/binarypackagename/name">
                     $BinarypackageName.name
-                </span>
-                <span tal:content="bugass/binarypackage/version">
+                </span>&ndash;<span tal:content="bugass/binarypackage/version">
                     $Binarypackage.version
                 </span>
             </td>
@@ -53,7 +52,7 @@
 
     <h2>Affected binary packages</h2>
     
-    <table class="listing" xtal:repeat="prod context/products">
+    <table class="listing">
         <tr>
             <th rowspan="2">Package</th>
             <th colspan="5">Severity</th>
@@ -64,18 +63,23 @@
             <th>Normal</th>
             <th>Minor</th>
             <th>Wishlist</th>
-        </tr>  
-        <tr xtal:repeat="bug prod/bugs">
-            <td>
-                <a xtal:attributes="href "
-                   xtal:content="bug/bug/title">Binary Package name</a>
-            </td>
-            <td xtal:content="">1</td>
-            <td xtal:content="">5</td>
-            <td xtal:content="">7</td>
-            <td xtal:content="">1</td>
-            <td xtal:content="">7</td>
         </tr>
+        <tal:x repeat="i view/affectedBinaryPackages">
+            <tr tal:define="binarypackage python:i[0]; stats python:i[1]">
+                <td>
+                    <span tal:content="binarypackage/binarypackagename/name">
+                        $BinarypackageName.name
+                    </span>&ndash;<span tal:content="binarypackage/version">
+                        $Binarypackage.version
+                    </span>
+                </td>
+                <td tal:content="stats/CRITICAL">?</td>
+                <td tal:content="stats/MAJOR">?</td>
+                <td tal:content="stats/NORMAL">?</td>
+                <td tal:content="stats/MINOR">?</td>
+                <td tal:content="stats/WISHLIST">?</td>
+            </tr>
+        </tal:x>
     </table>
 
 </div>
