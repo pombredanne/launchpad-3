@@ -1,7 +1,8 @@
 """
 Calendaring for Zope 3 applications.
 
-SchoolBell is a calendaring library for Zope 3.  Its main features are:
+SchoolBell is a calendaring library for Zope 3.  Its main features are
+(currently most of these features are science fiction):
 
 - It can parse and generate iCalendar files.  Only a subset of the iCalendar
   spec is supported, however it is a sensible subset that should be enough for

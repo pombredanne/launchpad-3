@@ -1,0 +1,33 @@
+Calendars
+=========
+
+Some object in the system have calendars.  Actually, currently only persons
+(and teams) have calendars, but it is planned to add them to products and
+projects, at least.
+
+Calendaring code makes use of the SchoolBell library, which comes from the
+SchoolTool project (www.schooltool.org).  Calendars are stored in PostgreSQL
+database.
+
+Hooking up calendars to objects
+===============================
+
+Objects that have calendars can be adapted to ILaunchpadCalendar.  There is an
+adapter registered for ICalendarOwner that returns the 'calendar' attribute of
+an object, so the simplest thing for adding a calendar to an object is to
+make sure this attribute exists, and declare that the object provides
+ICalendarOwner.
+
+There is a view named 'calendar' registered for ICalendarOwner, so if an object
+(e.g. a person) that has a calendar can be reached at a certain URL, accessing
+the calendar of that object is just a matter of going to URL + '/calendar'.
+
+There is also a view named 'calendar' registered for the root object.  This
+view looks up the calendar of the logged-in user.
+
+  XXX Steve Alexander says using views in this fashion is a bad idea (without
+      detailing that assertion in great detail), so we have to write custom
+      traversers for ICalendarOwners.
+
+There is a set of views available for ICalendar.
+

@@ -279,3 +279,4 @@ class YearView(CalendarView):
         self.nextURL = '../%04d' % (year + 1)
 
         self._setViewURLs(start)
+

@@ -9,6 +9,10 @@
     <allow interface="canonical.launchpad.interfaces.ILaunchpadCalendar" />
   </content>
 
+  <content class="canonical.launchpad.database.CalendarEvent">
+    <allow interface="schoolbell.interfaces.ICalendarEvent" />
+  </content>
+
   <adapter
       for="canonical.launchpad.interfaces.ICalendarOwner"
       provides="schoolbell.interfaces.ICalendar"
@@ -105,5 +109,13 @@
         template="../templates/calendar-view-year.pt"
         name="+index" />
   </browser:pages>
+
+  <browser:page
+      for="schoolbell.interfaces.ICalendar"
+      name="calendar.ics"
+      permission="zope.Public"
+      class="schoolbell.browser.CalendarICalendarView"
+      attribute="show"
+      />
 
 </configure>

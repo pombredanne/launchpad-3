@@ -47,6 +47,10 @@ def test_suite():
     suite.addTest(doctest.DocTestSuite())
     suite.addTest(doctest.DocTestSuite('schoolbell.mixins'))
     suite.addTest(doctest.DocTestSuite('schoolbell.simple'))
+    suite.addTest(doctest.DocTestSuite('schoolbell.icalendar',
+                        optionflags=doctest.ELLIPSIS | doctest.REPORT_UDIFF))
+    suite.addTest(doctest.DocTestSuite('schoolbell.browser',
+                        optionflags=doctest.ELLIPSIS | doctest.REPORT_UDIFF))
     return suite
 
 if __name__ == '__main__':
