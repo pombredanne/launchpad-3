@@ -668,7 +668,7 @@ class RosettaPOMessageIDSighting(SQLBase):
         ForeignKey(name='poMessageID_', foreignKey='RosettaPOMessageID', dbName='pomsgid', notNull=True),
         DateTimeCol(name='dateFirstSeen', dbName='datefirstseen', notNull=True),
         DateTimeCol(name='dateLastSeen', dbName='datelastseen', notNull=True),
-        BoolCol(name='inLatestRevision', dbName='inlatestrevision', notNull=True),
+        BoolCol(name='inLatestRevision', dbName='inlastrevision', notNull=True),
         IntCol(name='pluralForm', dbName='pluralform', notNull=True),
     ]
 
@@ -698,7 +698,7 @@ class RosettaPOTranslationSighting(SQLBase):
         # license
         DateTimeCol(name='dateFirstSeen', dbName='datefirstseen', notNull=True),
         DateTimeCol(name='dateLastActive', dbName='datelastactive', notNull=True),
-        BoolCol(name='inLatestRevision', dbName='inlatestrevision', notNull=True),
+        BoolCol(name='inLatestRevision', dbName='inlastrevision', notNull=True),
         IntCol(name='pluralForm', dbName='pluralform', notNull=True),
         # See canonical.lp.dbschema.RosettaTranslationOrigin.
         IntCol(name='origin', dbName='origin', notNull=True),
