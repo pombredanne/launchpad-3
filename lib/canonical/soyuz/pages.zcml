@@ -257,11 +257,16 @@
 	  allowed_attributes="results"
 	  permission="zope.Public">
 
-	<page  name="+list"
-          template="../launchpad/templates/people-list.pt"
-	  lp:url="Soyuz/people/+list"
-	/>
    </pages>
+
+  <page  for="canonical.soyuz.sql.PeopleApp"
+         permission="zope.Public"
+	 class="canonical.soyuz.browser.PeopleListView"
+	 name="+list"
+         template="../launchpad/templates/people-list.pt"
+	 lp:url="Soyuz/people/+list"
+       />
+
 
   <page for="canonical.soyuz.sql.PeopleApp"
          permission="zope.Public"

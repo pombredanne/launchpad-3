@@ -34,7 +34,7 @@
 	      <a
 	      tal:content="context/sourcepackage/maintainer/displayname" 
 	      tal:attributes="href 
-	      string:../../../../../people/${context/sourcepackage/maintainer/id}"
+	      string:/soyuz/people/${context/sourcepackage/maintainer/id}"
 	      />
 
 	      <p><b>Originating Distribution:   </b> 
@@ -42,22 +42,33 @@
 	      tal:attributes="href string:../../../../${context/sourcepackage/distro/name}"/>
 
 	      <p><b>Project:   </b> 
-	      <tal:dummy tal:condition="context/sourcepackage/product/project">
-	         <a tal:attributes="href string:/doap/projects/${context/sourcepackage/product/project/name}" 
-	      tal:content="context/sourcepackage/product/project/title" />
-	      </tal:dummy>
-	      <tal:dummy tal:condition="not:context/sourcepackage/product/project">
-	         No Project for this Package Available
-	      </tal:dummy>
+                <tal:dummy tal:define="product context/sourcepackage/product">
 
-	      <p><b>Product:   </b> 
-	      <tal:dummy tal:condition="context/sourcepackage/product">
-	         <a tal:attributes="href string:/doap/projects/${context/sourcepackage/product/project/name}/${context/sourcepackage/product/name}" 
-	      tal:content="context/sourcepackage/product/title" />
-	      </tal:dummy>
-	      <tal:dummy tal:condition="not:context/sourcepackage/product">
+	        <tal:dummy tal:condition="product">
+	         <tal:dummy tal:condition="product/project">
+	           <a tal:attributes="href string:/doap/projects/${product/project/name}" 
+	                tal:content="product/project/title" />
+	         </tal:dummy>
+		</tal:dummy>
+
+		<tal:dummy tal:condition="not:product">
+	         No Project for this Package Available
+	        </tal:dummy>
+	        </tal:dummy>
+
+	      <p><b>Product:</b> 
+                <tal:dummy tal:define="product context/sourcepackage/product">
+
+	        <tal:dummy tal:condition="product">
+	         <a tal:attributes="href string:/doap/projects/${product/name}/${product/name}" 
+	            tal:content="product/title" />
+	        </tal:dummy>
+  	        <tal:dummy tal:condition="not:product">
 	         No Product for this Package Available
-	      </tal:dummy>
+	        </tal:dummy>
+
+	        </tal:dummy>
+
 	   </fieldset>
 
 	   <fieldset>

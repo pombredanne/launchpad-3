@@ -20,7 +20,7 @@
 
 <h3><span tal:content="context/release/sourcecount" /> Packages</h3>
 
-<form name="search" method="POST" action="+search">
+<form name="search" method="GET" action="+search">
 Find Source Package by Name: 
 <br>
 <input type="text" name="name" tal:attributes="value request/name|nothing" />

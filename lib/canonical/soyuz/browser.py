@@ -24,6 +24,10 @@ from canonical.soyuz.sql import SoyuzDistribution, Release, SoyuzPerson
 from canonical.soyuz.importd import ProjectMapper, ProductMapper
 
 
+##XXX: (batch_size+global) cprov 20041003
+## really crap constant definition for BatchPages 
+BATCH_SIZE = 40
+
 class DistrosSearchView(object):
     """
     DistroSearchView:
@@ -75,6 +79,22 @@ class DistrosSearchView(object):
 
         return enable_results
 
+class PeopleListView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def viewPeopleBatchNavigator(self):
+        people = list(SoyuzPerson.select())
+        start = int(self.request.get('batch_start', 0))
+        end = int(self.request.get('batch_end', BATCH_SIZE))
+        batch_size = BATCH_SIZE
+        batch = Batch(list = people, start = start,
+                      size = batch_size)
+        return BatchNavigator(batch = batch,
+                              request = self.request)
+    
     
 class PeopleSearchView(object):
 
@@ -84,24 +104,30 @@ class PeopleSearchView(object):
         self.results = []
 
 
-    def search_action(self):
-        enable_results = False       
+    def searchPeopleBatchNavigator(self):
         name = self.request.get("name", "")
 
         if name:
-            name = name.replace('%', '%%')
-            query = quote('%%'+ name.upper() + '%%')
+            people = list(self._findPeopleByName(name))
+            start = int(self.request.get('batch_start', 0))
+            end = int(self.request.get('batch_end', BATCH_SIZE))
+            batch_size = BATCH_SIZE
+            batch = Batch(list = people, start = start,
+                          size = batch_size)
+            return BatchNavigator(batch = batch,
+                                  request = self.request)
+        else:
+            return None
 
-            #XXX: (order) cprov 20041003
-            ##  Order all results alphabetically,
-            ## btw, 'ORDER by displayname' doesn't work properly here 
-            self.results = SoyuzPerson.select('UPPER(displayname) LIKE %s OR \
-            UPPER(teamdescription) LIKE %s'%(query,query))
+    def _findPeopleByName(self, name):
+        name = name.replace('%', '%%')
+        query = quote('%%'+ name.upper() + '%%')
+        #XXX: (order) cprov 20041003
+        ##  Order all results alphabetically,
+        ## btw, 'ORDER by displayname' doesn't work properly here and should
+        ## be moved to Person SQLBASE class
+        return SoyuzPerson.select("""UPPER(displayname) LIKE %s OR UPPER(teamdescription) LIKE %s"""%(query, query))
 
-            self.entries = self.results.count()
-            enable_results = True
-
-        return enable_results
 
 class PeopleAddView(object):
 
@@ -438,9 +464,6 @@ class ReleasesAddView(object):
 ## The two following classes are almost like a duplicated piece
 ## of code. We should look for a better way for use Batching Pages
 class DistroReleaseSourcesView(object):
-
-    BATCH_SIZE = 20
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -448,17 +471,15 @@ class DistroReleaseSourcesView(object):
     def sourcePackagesBatchNavigator(self):
         source_packages = list(self.context)
         start = int(self.request.get('batch_start', 0))
-        end = int(self.request.get('batch_end', self.BATCH_SIZE))
-        batch_size = self.BATCH_SIZE
+        end = int(self.request.get('batch_end', BATCH_SIZE))
+        batch_size = BATCH_SIZE
         batch = Batch(list = source_packages, start = start,
                       size = batch_size)
 
         return BatchNavigator(batch = batch, request = self.request)
 
 class DistroReleaseBinariesView(object):
-
-    BATCH_SIZE = 20
-
+    
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -466,8 +487,8 @@ class DistroReleaseBinariesView(object):
     def binaryPackagesBatchNavigator(self):
         binary_packages = list(self.context)
         start = int(self.request.get('batch_start', 0))
-        end = int(self.request.get('batch_end', self.BATCH_SIZE))
-        batch_size = self.BATCH_SIZE
+        end = int(self.request.get('batch_end', BATCH_SIZE))
+        batch_size = BATCH_SIZE
         batch = Batch(list = binary_packages, start = start,
                       size = batch_size)
 
@@ -524,9 +545,6 @@ class ReleaseSearchView(object):
 ## AGAIN !!!
 
 class DistrosReleaseSourcesSearchView(object):
-
-    BATCH_SIZE = 20
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -538,8 +556,8 @@ class DistrosReleaseSourcesSearchView(object):
         if name:
             binary_packages = list(self.context.findPackagesByName(name))
             start = int(self.request.get('batch_start', 0))
-            end = int(self.request.get('batch_end', self.BATCH_SIZE))
-            batch_size = self.BATCH_SIZE
+            end = int(self.request.get('batch_end', BATCH_SIZE))
+            batch_size = BATCH_SIZE
             batch = Batch(list = binary_packages, start = start,
                           size = batch_size)
             return BatchNavigator(batch = batch,
@@ -547,11 +565,7 @@ class DistrosReleaseSourcesSearchView(object):
         else:
             return None
 
-
 class DistrosReleaseBinariesSearchView(object):
-
-    BATCH_SIZE = 20
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -563,8 +577,8 @@ class DistrosReleaseBinariesSearchView(object):
         if name:
             binary_packages = list(self.context.findPackagesByName(name))
             start = int(self.request.get('batch_start', 0))
-            end = int(self.request.get('batch_end', self.BATCH_SIZE))
-            batch_size = self.BATCH_SIZE
+            end = int(self.request.get('batch_end', BATCH_SIZE))
+            batch_size = BATCH_SIZE
             batch = Batch(list = binary_packages, start = start,
                           size = batch_size)
             return BatchNavigator(batch = batch,

@@ -105,7 +105,7 @@ class DistroReleaseApp(object):
                  % quote('%%' + pattern + '%%')
                  + ' OR SourcePackage.shortdesc ILIKE %s)'
                  % quote('%%' + pattern + '%%'))        
-        return SoyuzSourcePackage.select(query)[:50]
+        return SoyuzSourcePackage.select(query)[:500]
 
     where = (
         'PackagePublishing.binarypackage = BinaryPackage.id AND '
@@ -123,7 +123,7 @@ class DistroReleaseApp(object):
                  % quote('%%' + pattern + '%%'))
         
         ## FIXME: is those unique ?
-        return SoyuzBinaryPackage.select(query)[:50]
+        return SoyuzBinaryPackage.select(query)[:500]
 
 
 class DistroReleasesApp(object):
@@ -300,7 +300,7 @@ class DistroReleaseSourcesApp(object):
                 (' AND SourcePackageName.name ILIKE %s'
                  % quote('%%' + pattern + '%%')
                  )
-        return SoyuzSourcePackage.select(query)[:50]
+        return SoyuzSourcePackage.select(query)[:500]
 
     def __getitem__(self, name):
         # XXX: What about multiple results?
@@ -326,7 +326,7 @@ class DistroReleaseSourcesApp(object):
     def __iter__(self):
         query = self._query()
         return iter(self.table.select(query,
-                                      orderBy='sourcepackagename.name')[:50])
+                                      orderBy='sourcepackagename.name')[:500])
 
 class DistroSourcesApp(object):
     def __init__(self, distribution):
@@ -639,7 +639,7 @@ class DistroReleaseBinariesApp(object):
 
         ## WTF ist That ?? I wonder how many copies of this code we will find !
         ##FIXME: expensive routine
-        selection = Set(SoyuzBinaryPackage.select(query)[:50])
+        selection = Set(SoyuzBinaryPackage.select(query)[:500])
 
         ##FIXME: Dummy solution to avoid a binarypackage to be shown more
         ##   then once
@@ -670,7 +670,7 @@ class DistroReleaseBinariesApp(object):
     def __iter__(self):
         query = self.where % self.release.id
         return iter(SoyuzBinaryPackage.select(query, orderBy=\
-                                              'Binarypackagename.name')[:50])
+                                              'Binarypackagename.name')[:500])
 
 class DistroBinariesApp(object):
     def __init__(self, distribution):

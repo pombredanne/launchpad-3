@@ -64,8 +64,10 @@
 
         <ul tal:repeat="package context/sourcepackages">
 
-            <li><span
-            tal:content="package/name">$Sourcepackage.name</span></li>
+            <li><a tal:content="package/name"
+	           tal:attributes="href string:/soyuz/distros/ubuntu/src/warty/${package/name}">$Sourcepackage.name
+	    </a>
+	    </li>
             
         </ul>
 
