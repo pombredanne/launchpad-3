@@ -34,8 +34,6 @@ def traverseBug(bug, request, name):
         return BugProductInfestationSet(bug=bug.id)
     elif name == 'packageinfestations':
         return BugPackageInfestationSet(bug=bug.id)
-    else:
-       raise KeyError, name
 
 def traverseBugs(bugcontainer, request, name):
     if name == 'assigned':

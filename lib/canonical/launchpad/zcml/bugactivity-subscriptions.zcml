@@ -57,21 +57,22 @@
           canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
      factory="canonical.launchpad.subscribers.bugactivity.record_package_infestation_edited" />
   
+  <subscriber
+     for="canonical.launchpad.interfaces.IBugSubscription
+          zope.app.event.interfaces.IObjectCreatedEvent"
+     factory="canonical.launchpad.subscribers.bugactivity.record_bugwatch_added" />
+  
+  <subscriber
+     for="canonical.launchpad.interfaces.IBugSubscription
+          canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+     factory="canonical.launchpad.subscribers.bugactivity.record_bugwatch_edited" />
+
     <!--
  <subscriber
      for="canonical.launchpad.interfaces.IBugExternalRef
           zope.app.event.interfaces.IObjectCreatedEvent"
      factory="canonical.launchpad.mailnotification.notify_bug_external_ref_added" />
   
-  <subscriber
-     for="canonical.launchpad.interfaces.IBugWatch
-          zope.app.event.interfaces.IObjectCreatedEvent"
-     factory="canonical.launchpad.mailnotification.notify_bug_watch_added" />
-  
-  <subscriber
-     for="canonical.launchpad.interfaces.IBugWatch
-          canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-     factory="canonical.launchpad.mailnotification.notify_bug_watch_modified" />
 -->
 
 </configure>

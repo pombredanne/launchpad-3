@@ -22,6 +22,7 @@
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.IBugSubscription"
+        class="canonical.launchpad.browser.editview.SQLObjectEditView"
         label="Modify Bug Subscription"
         permission="launchpad.AnyPerson"
         template="../templates/bugsubscription-edit.pt"

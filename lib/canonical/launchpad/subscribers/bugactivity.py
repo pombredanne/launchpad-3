@@ -2,9 +2,12 @@ from datetime import datetime
 
 from zope.security.proxy import removeSecurityProxy
 from zope.proxy import isProxy
+from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.database.constants import nowUTC
 from canonical.launchpad.database import Bug, BugActivity, Person, SourcePackageRelease, ProductRelease
+
+vocabulary_registry = getVocabularyRegistry()
 
 def what_changed(sqlobject_modified_event):
     before = sqlobject_modified_event.object_before_modification
@@ -160,3 +163,29 @@ def record_product_infestation_edited(product_infestation_edited, sqlobject_modi
                 oldvalue=changes[changed_field][0],
                 newvalue=changes[changed_field][1],
                 message='XXX: not yet implemented')
+
+def record_bugwatch_added(bugwatch_added, object_created_event):
+    sv = vocabulary_registry.get(None, "Subscription")
+    term = sv.getTerm(bugwatch_added.subscription)
+    BugActivity(
+        bug=bugwatch_added.bug.id,
+        datechanged=datetime.utcnow(),
+        person=bugwatch_added.personID,
+        whatchanged='add subscriber %s (%s)' % (
+            bugwatch_added.person.displayname, term.token))
+
+def record_bugwatch_edited(bugwatch_edited, sqlobject_modified_event):
+    changes = what_changed(sqlobject_modified_event)
+    if changes:
+        right_now = datetime.utcnow()
+        for changed_field in changes.keys():
+            BugActivity(
+                bug=sqlobject_modified_event.object_before_modification.bug.id,
+                datechanged=right_now,
+                person=sqlobject_modified_event.principal.id,
+                whatchanged="subscriber %s" % (
+                    sqlobject_modified_event.object_before_modification.person.displayname),
+                oldvalue=changes[changed_field][0],
+                newvalue=changes[changed_field][1])
+                
+
