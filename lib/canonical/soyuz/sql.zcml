@@ -1,0 +1,109 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:rdb="http://namespaces.zope.org/rdb"
+    >
+
+  <!-- Content directives.  We need to make sure SubURLs and other kinds of
+       traversal work properly.  We also need to make security declarations.-->
+
+  <content class="canonical.soyuz.sql.ReleaseContainer">
+    <allow interface="canonical.soyuz.interfaces.IReleaseContainer"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+  
+  <content class="canonical.soyuz.sql.Release">
+    <allow interface="canonical.soyuz.interfaces.IRelease"/>
+  </content>
+
+  <content class="canonical.soyuz.browser.DistrosApplication">
+    <allow interface="canonical.soyuz.interfaces.IDistributions"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.sql.Distribution">
+    <allow interface="canonical.soyuz.interfaces.IDistribution"/>
+  </content>
+
+	
+  <content class="canonical.soyuz.sql.BinaryPackages">
+    <allow interface="canonical.soyuz.interfaces.IPackageSet"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.sql.BinaryPackage">
+    <allow interface="canonical.soyuz.interfaces.IBinaryPackage"/>
+  </content>
+
+  <content class="canonical.soyuz.sql.SourcePackages">
+    <allow interface="canonical.soyuz.interfaces.IPackageSet"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.sql.SourcePackage">
+    <allow interface="canonical.soyuz.interfaces.ISourcePackage"/>
+  </content>
+
+
+  <content class="canonical.soyuz.sql.SourcePackageRelease">
+    <allow interface="canonical.soyuz.interfaces.ISourcePackageRelease"/>
+  </content>
+
+  <content class="canonical.soyuz.sql.Person">
+    <allow interface="canonical.soyuz.interfaces.IPerson"/>
+  </content>
+
+  <!-- UNUSED STUFF YET -->
+
+  <content class="canonical.soyuz.sql.Projects">
+    <allow interface="canonical.soyuz.interfaces.IProjects"/>
+  </content>
+  <content class="canonical.soyuz.sql.Packages">
+    <allow interface="canonical.soyuz.interfaces.IPackages"/>
+    <!-- implementing IItemContainer allows automatic traversal by name
+         and __getitem__.-->
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+  
+  <content class="canonical.soyuz.sql.Project">
+    <allow interface="canonical.soyuz.interfaces.IProject"/>
+  </content>
+  
+  <content class="canonical.soyuz.sql.Product">
+    <allow interface="canonical.soyuz.interfaces.IProduct"/>
+  </content>
+  
+  <content class="canonical.soyuz.sql.Sync">
+    <allow interface="canonical.soyuz.interfaces.ISync"/>
+  </content>
+
+
+	
+  <!-- This is the collection of packages, found by querying the database.
+
+       IPackages provides an interface to query, iterate over, and modify
+       packages.
+    -->
+  <utility
+      factory="canonical.soyuz.sql.Packages"
+      provides="canonical.soyuz.interfaces.IPackages"
+      />
+
+  <utility
+      factory="canonical.soyuz.sql.BinaryPackages"
+      provides="canonical.soyuz.interfaces.IBinaryPackageSet"
+      />
+
+  <utility
+      factory="canonical.soyuz.sql.SourcePackages"
+      provides="canonical.soyuz.interfaces.ISourcePackageSet"
+      />
+
+  <utility
+      factory="canonical.soyuz.sql.Projects"
+      provides="canonical.soyuz.interfaces.IProjects"
+      />
+
+</configure>
+
+<!-- arch-tag: 306ffdcc-7595-447f-bc43-9c6499f6f4ed -->

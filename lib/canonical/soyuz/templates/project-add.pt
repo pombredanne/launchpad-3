@@ -14,16 +14,20 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Add Product</h1>
+   <tal:dummy condition="view/handle_submit" />
+
+
+
+    <h1>Add project</h1>
 
     <div class="documentDescription">
-    Please fill in the details below to register a Product inside the XXX FIXME Project
+    Please fill in the details below to register a project in the Launchpad system.
     </div>
 
     <fieldset>
 
-        <legend>Product Details</legend>
-
+        <legend>Project Details</legend>
+        <form action="+new" method="post">
         <div class="field">
 
             <label>Name</label>
@@ -32,8 +36,8 @@
 
                   <div class="formHelp">
                     The name of the project is a short name - a unique
-                    name that identifies the product, and is used in 
-                    URLs and references to the product. All lowercase,
+                    name that identifies the project, and is used in 
+                    URLs and references to the project. All lowercase,
                     no special characters.
                   </div>
 
@@ -48,7 +52,7 @@
             <span class="fieldRequired" title="Required">(Required)</span>
 
                   <div class="formHelp">
-                    This is the full name of the product, can contain
+                    This is the full name of the project, can contain
                     spaces, special characters etc.
                   </div>
 
@@ -64,7 +68,7 @@
                     A brief description of the project.
                   </div>
 
-                <textarea cols="40" rows="5"></textarea>
+                <textarea cols="40" rows="5" name="description"></textarea>
         </div>
 
         <div class="field">
@@ -72,10 +76,10 @@
             <label>URL</label>
 
                   <div class="formHelp">
-                    The product home page, if it has a separate one.
+                    The project home page, if it exists.
                   </div>
 
-                <input type="text" name="title" size="30"
+                <input type="text" name="url" size="30"
                        tabindex="3" value="http://" />
         </div>
 
@@ -84,10 +88,11 @@
 
             <input class="context" type="submit"
                    tabindex="5"
-                   name="form.button.Register"
+                   name="Register"
                    value="Register" />
 
         </div>
+        </form>
 
 
     </fieldset>

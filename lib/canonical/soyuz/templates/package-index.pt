@@ -1,0 +1,23 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="soyuz">
+
+<head>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+  <!-- Rosetta style sheet -->
+  <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+  <h1>Package <tal:block tal:replace="context/name" /></h1>
+  </div>
+
+    <li> <a href="packages">Packages</a></li>
+  </body>
+<!-- arch-tag: 7bfd9a7e-3d5a-4643-86ac-b6c28cdff042 -->
+</html>
+ 

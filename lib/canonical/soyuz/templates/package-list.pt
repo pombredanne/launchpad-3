@@ -1,0 +1,33 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="soyuz">
+
+<head>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+  <!-- Rosetta style sheet -->
+  <style type="text/css" media="screen">@import url(rosetta.css);</style>
+
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+<h1>List of packages in Soyuz:</h1>
+<div tal:on-error="python: error.type, error.value.args">
+<ul>
+<tal:block tal:repeat="package context">
+	<li>
+		<a tal:content="package/name"
+		   tal:attributes="href package/name"
+		   >package name</a>
+	</li>
+</tal:block>
+</ul>
+</div>
+</div>
+
+</body>
+<!-- arch-tag: 3a0cc754-ec3d-4658-ab9e-8a18fdfb6f08 -->
+</html>

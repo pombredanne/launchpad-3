@@ -1,0 +1,40 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>Distributions overview: </h1>
+
+<!--<div tal:on-error="python: error.type, error.value.args">-->
+<ul>
+	<li>
+		<a href="+add">Add New</a>
+	</li>
+<tal:block tal:repeat="distribution context">
+	<li>
+		<a tal:content="distribution/name"
+		   tal:attributes="href distribution/name"
+		   >distribution name</a>
+	</li>
+</tal:block>
+</ul>
+<!--</div>-->
+
+
+
+
+</div>
+
+</body>
+</html>
