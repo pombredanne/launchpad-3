@@ -14,32 +14,8 @@ syntax should look familiar.
 
 Let's simulate interacting with the system as an anonymous user:
 
-    >>> import zope.security.management
-    >>> from canonical.launchpad.interfaces import IPerson
-    >>> from canonical.launchpad.database import Person
-    >>> class Principal:
-    ...     def __init__(self, id):
-    ...         self.id = id
-    ...         self.groups = []
-    >>> principal = Principal('launchpad.anonymous')
-
-    >>> class Participation:
-    ...     interaction = None
-    >>> anon_participation = Participation()
-    >>> anon_participation.principal = principal
-
-    >>> zope.security.management.newInteraction(anon_participation)
-
-    >>> from canonical.launchpad.interfaces import ILaunchBag
-    >>> from zope.app.tests import ztapi
-    >>> from zope.interface import implements
-    >>> class MockLaunchBag(object):
-    ...     implements(ILaunchBag)
-    ...     def __init__(self, login=None, user=None):
-    ...         self.login = login
-    ...         self.user = user
-    >>> launchbag = MockLaunchBag()
-    >>> ztapi.provideUtility(ILaunchBag, launchbag)
+    >>> from canonical.launchpad.ftests import login
+    >>> login('launchpad.anonymous')
 
 The IDistributionSet utility is accessed in the usual fashion:
 
@@ -52,8 +28,5 @@ To retrieve a specific distribution, use IDistributionSet.get:
     >>> ubuntu = distroset.get(1)
     >>> print ubuntu.name
     ubuntu
-
-    >>> ztapi.unprovideUtility(ILaunchBag)
-    >>> zope.security.management.endInteraction()
 
 [1] https://wiki.launchpad.canonical.com/DerivationOverview

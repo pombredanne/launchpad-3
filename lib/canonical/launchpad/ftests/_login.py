@@ -9,7 +9,6 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 
-
 class MockLaunchBag(object):
     implements(ILaunchBag)
     def __init__(self, login=None, user=None):

@@ -18,35 +18,13 @@ To demonstrate how to retrieve a specific bug, let's simulate that we're
 interacting with the system as an anonymous user:
 
     >>> import zope.security.management
-    >>> from canonical.launchpad.interfaces import IPerson
-    >>> from canonical.launchpad.database import Person
-    >>> class Principal:
-    ...     def __init__(self, id):
-    ...         self.id = id
-    ...         self.groups = []
-    >>> principal = Principal('launchpad.anonymous')
-
-    >>> class Participation:
-    ...     interaction = None
-    >>> anon_participation = Participation()
-    >>> anon_participation.principal = principal
-
-    >>> zope.security.management.newInteraction(anon_participation)
-
-    >>> from canonical.launchpad.interfaces import ILaunchBag
-    >>> from zope.app.tests import ztapi
-    >>> from zope.interface import implements
-    >>> class MockLaunchBag(object):
-    ...     implements(ILaunchBag)
-    ...     def __init__(self, login=None, user=None):
-    ...         self.login = login
-    ...         self.user = user
-    >>> ztapi.provideUtility(ILaunchBag, MockLaunchBag())
+    >>> from canonical.launchpad.ftests import login
+    >>> login("launchpad.anonymous")
 
 To retrieve a specific Bug, use IBugSet.get:
 
     >>> firefox_crashes = bugset.get(6)
-    >>> print firefox_crashes.title 
+    >>> print firefox_crashes.title
     Firefox crashes when Save As dialog for a nonexistent window is closed
 
 Bug Privacy
@@ -65,20 +43,11 @@ cannot be made private by an anonymous user.
     >>> firefox_crashes.private = True
     Traceback (most recent call last):
       ...
-    Unauthorized: ('private', 'launchpad.AnyPerson') 
+    Unauthorized: ('private', 'launchpad.AnyPerson')
 
 We have to be logged in, so let's do that (or pretend to do that, anyway :):
 
-    >>> from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
-    >>> firefox_maintainer = LaunchpadPrincipal(
-    ...     12, "firefox maintainer",
-    ...     "i can't think of a description to write here")
-    >>> firefox_maintainer_participation = Participation()
-    >>> firefox_maintainer_participation.principal = firefox_maintainer
-    >>> zope.security.management.endInteraction()
-    >>> zope.security.management.newInteraction(firefox_maintainer_participation)
-    >>> ztapi.provideUtility(
-    ...     ILaunchBag, MockLaunchBag("test@canonical.com", firefox_maintainer))
+    >>> login("test@canonical.com")
 
 Now we can toggle the privacy flag on a bug, but before we do, let's note what
 happens to subscriptions on a bug before and after it's marked private. So,
@@ -125,14 +94,7 @@ Filing Public vs. Private Bugs
 For the purposes of illustration, let's pretend we're logged in as the user Foo
 Bar:
 
-    >>> foobar = LaunchpadPrincipal(
-    ...     16, "foo bar", "still can't think of a description")
-    >>> foobar_participation = Participation()
-    >>> foobar_participation.principal = foobar
-    >>> zope.security.management.endInteraction()
-    >>> zope.security.management.newInteraction(foobar_participation)
-    >>> ztapi.provideUtility(
-    ...     ILaunchBag, MockLaunchBag("foo.bar@canonical.com", foobar))
+    >>> login("foo.bar@canonical.com")
 
 When a public bug is filed:
 
@@ -175,6 +137,3 @@ both the submitter and the maintainer are explicitly subscribed:
 
 to ensure that both the submitter and maintainer can actually see the bug that
 was filed!
-
-    >>> ztapi.unprovideUtility(ILaunchBag)
-    >>> zope.security.management.endInteraction()

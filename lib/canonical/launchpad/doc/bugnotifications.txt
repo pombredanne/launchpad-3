@@ -302,6 +302,3 @@ private, and Foo Bar is not an explicit subscriber to the bug, he will
     '...task added'
 
     >>> stub.test_emails = []
-
-    >>> import zope.security.management
-    >>> zope.security.management.endInteraction()

@@ -2,6 +2,44 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-08 16:40:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1385
+
+    Summary:
+      clean up the doctests to use login(). fix the functional doctest
+ cleanup to clean up leftover interactions/test launchbags.
+    Revision:
+      launchpad--devel--0--patch-1385
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-389
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-390
+       clean up the doctests to use login(). fix the functional doctest cleanup to clean up leftover interactions/test launchbags.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/functional.py
+     lib/canonical/launchpad/doc/bug.txt
+     lib/canonical/launchpad/doc/bugnotifications.txt
+     lib/canonical/launchpad/doc/bugsubscription.txt
+     lib/canonical/launchpad/doc/bugtask.txt
+     lib/canonical/launchpad/doc/datehandling.txt
+     lib/canonical/launchpad/doc/distribution.txt
+     lib/canonical/launchpad/doc/distrorelease.txt
+     lib/canonical/launchpad/doc/launchbag.txt
+     lib/canonical/launchpad/doc/milestone.txt
+     lib/canonical/launchpad/doc/sourcepackage.txt
+     lib/canonical/launchpad/doc/upstream.txt
+     lib/canonical/launchpad/ftests/__init__.py
+     lib/canonical/launchpad/ftests/_login.py
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-389
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-390
+
+
 2005-03-08 12:39:12 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1384
 
     Summary:

@@ -69,9 +69,3 @@ currentApproximateAge returns.
     >>> aging_bug.context.datecreated = one_year_ago
     >>> print aging_bug.currentApproximateAge()
     1 year
-
-    >>> import zope.security.management
-    >>> from zope.app.tests import ztapi
-    >>> from canonical.launchpad.interfaces import ILaunchBag
-    >>> ztapi.unprovideUtility(ILaunchBag)
-    >>> zope.security.management.endInteraction()

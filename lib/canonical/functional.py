@@ -27,7 +27,6 @@ import sys
 import traceback
 import unittest
 import urllib
-
 from StringIO import StringIO
 from Cookie import SimpleCookie
 
@@ -43,10 +42,16 @@ import zope.server.interfaces
 from zope.testing import doctest
 from zope.app.debug import Debugger
 from zope.app.publication.http import HTTPPublication
-from canonical.publication import BrowserPublication
 import zope.app.tests.setup
 from zope.app.component.hooks import setSite, getSite
+from zope.app.tests import ztapi
+from zope.component import getUtility
+import zope.security.management
+
+from canonical.launchpad.ftests import MockLaunchBag
+from canonical.publication import BrowserPublication
 from canonical.chunkydiff import elided_source
+from canonical.launchpad.interfaces import ILaunchBag
 
 # XXX: When we've upgraded Zope 3 to a newer version, we'll just import
 #      IHeaderOutput from zope.publisher.interfaces.http.
@@ -567,8 +572,19 @@ def FunctionalDocFileSuite(*paths, **kw):
 
     kwtearDown = kw.get('tearDown')
     def tearDown(test):
+        launchbag = getUtility(ILaunchBag)
+        if isinstance(launchbag, MockLaunchBag):
+            # there was a mock launchbag used in this
+            # test, so clean it up.
+            ztapi.unprovideUtility(ILaunchBag)
+
+        if zope.security.management.queryInteraction():
+            # clean up the leftover interaction
+            zope.security.management.endInteraction()
+
         if kwtearDown is not None:
             kwtearDown(test)
+
         FunctionalTestSetup().tearDown()
     kw['tearDown'] = tearDown
 
