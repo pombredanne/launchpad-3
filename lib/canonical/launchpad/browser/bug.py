@@ -85,8 +85,8 @@ class BugView:
         '../templates/portlet-bug-cve.pt')
     peoplePortlet = BugPortlet(
         '../templates/portlet-bug-people.pt')
-    assignmentsHeadline = BugPortlet(
-        '../templates/portlet-bug-assignments-headline.pt')
+    tasksHeadline = BugPortlet(
+        '../templates/portlet-bug-tasks-headline.pt')
     actionsPortlet = BugPortlet(
         '../templates/portlet-bug-actions.pt')
 

@@ -236,7 +236,7 @@ class BugTasksView:
         return ValidPersonVocabulary(None)
 
     def statuses(self):
-        """Return the list of bug assignment statuses."""
+        """Return the list of bug task statuses."""
         return dbschema.BugTaskStatus.items
 
     def packagenames(self):

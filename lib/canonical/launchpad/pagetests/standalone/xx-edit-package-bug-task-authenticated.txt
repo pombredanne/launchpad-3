@@ -6,7 +6,7 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
-            <h3>Edit SourcePackage Bug Assignment</h3>
+            <h3>Edit SourcePackage Bug Task</h3>
   ...
 
   >>> print http(r"""

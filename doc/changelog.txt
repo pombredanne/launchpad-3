@@ -2,6 +2,58 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-18 18:20:41 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1213
+
+    Summary:
+      rename the remaining references found for 'assignments' to 'tasks' in
+ both *.{pt,py,zcml} files as well as in the filenames themselves
+    Revision:
+      launchpad--devel--0--patch-1213
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-305
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-306
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-307
+       rename the remaining references found for 'assignments' to 'tasks' in both *.{pt,py,zcml} files as well as in the filenames themselves
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/bug.py
+     lib/canonical/launchpad/browser/bugtask.py
+     lib/canonical/launchpad/browser/packages.py
+     lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/interfaces/bugtask.py
+     lib/canonical/launchpad/interfaces/sourcepackage.py
+     lib/canonical/launchpad/mailnotification.py
+     lib/canonical/launchpad/pagetests/standalone/xx-edit-package-bug-task-authenticated.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-view-package-bug-task-anonymous.txt
+     lib/canonical/launchpad/subscribers/bugactivity.py
+     lib/canonical/launchpad/subscribers/karmasubscribers.py
+     lib/canonical/launchpad/templates/bug-index.pt
+     lib/canonical/launchpad/templates/bugs-index.pt
+     lib/canonical/launchpad/templates/bugtask-search-listing.pt
+     lib/canonical/launchpad/templates/portlet-bug-tasks-headline.pt
+     lib/canonical/launchpad/zcml/bugtask.zcml
+     lib/canonical/lp/dbschema.py
+
+    renamed files:
+     lib/canonical/launchpad/templates/.arch-ids/portlet-bug-assignments-headline.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/portlet-bug-tasks-headline.pt.id
+     lib/canonical/launchpad/templates/portlet-bug-assignments-headline.pt
+       ==> lib/canonical/launchpad/templates/portlet-bug-tasks-headline.pt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-305
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-306
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-307
+
+
 2005-01-18 15:52:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1212
 
     Summary:

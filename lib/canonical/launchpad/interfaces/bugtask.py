@@ -42,14 +42,15 @@ class IBugTasksReport(Interface):
 
     user = Attribute(_("The user for whom this report will be generated"))
 
-    minseverity = Attribute(_("""The minimum severity of assignments to
-        display in this report."""))
+    minseverity = Attribute(_(
+        "The minimum severity of tasks to display in this report."))
 
-    minpriority = Attribute(_("""The minimum priority of bug fixing
-        assignments to display in this report."""))
+    minpriority = Attribute(_(
+        "The minimum priority of bug fixing tasks to display in this "
+        "report."))
 
-    showclosed = Attribute(_("""Whether or not to show closed bugs on this
-        report."""))
+    showclosed = Attribute(_(
+        "Whether or not to show closed bugs on this report."))
 
     def maintainedPackageBugs():
         """Return an iterator over the tasks of bugs on distro

@@ -16,7 +16,7 @@ def bug_comment_added(bugmessage, event):
     bugmessage.message.owner.assignKarma(KarmaField.BUG_COMMENT)
 
 
-def bug_assignment_modified(assignment, event):
+def bug_task_modified(task, event):
     person = Person.get(event.principal.id)
     # XXX: Should we give Karma points to users who change priority
     # and severity too?

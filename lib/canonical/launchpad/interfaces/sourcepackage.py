@@ -112,9 +112,9 @@ class ISourcePackageSet(Interface):
         """Iterate through SourcePackages."""
 
     def withBugs():
-        """Return a sequence of SourcePackage, that have bugs assigned to
-        them. In future, we might pass qualifiers to further limit the list
-        that is returned, such as a name filter, or a bug assignment status
+        """Return a sequence of SourcePackage, that have bugs assigned to them
+        (i.e. tasks.) In future, we might pass qualifiers to further limit the
+        list that is returned, such as a name filter, or a bug task status
         filter."""
 
     def getSourcePackages(distroreleaseID):

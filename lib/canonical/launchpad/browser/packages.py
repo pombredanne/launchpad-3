@@ -192,7 +192,7 @@ class SourcePackageBugsView:
     def bugtask_search(self):
         return self.context.bugs
 
-    def assignment_columns(self):
+    def task_columns(self):
         return [
             "id", "title", "status", "priority", "severity",
             "submittedon", "submittedby", "assignedto", "actions"]

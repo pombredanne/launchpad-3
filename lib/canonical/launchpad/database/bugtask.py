@@ -194,7 +194,7 @@ class BugTasksReport(object):
         self._packageAssigneeBugs = None
         self._assignedBugs = None
 
-    # bug assignments on packages maintained by the user
+    # bugs assigned (i.e. tasks) to packages maintained by the user
     def maintainedPackageBugs(self):
         if self._maintainedPackageBugs is not None:
             return self._maintainedPackageBugs
@@ -215,7 +215,7 @@ class BugTasksReport(object):
         clauseTables=clauseTables))
         return self._maintainedPackageBugs
 
-    # bug assignments on products owned by the user
+    # bugs assigned (i.e. tasks) to products owned by the user
     def maintainedProductBugs(self):
         if self._maintainedProductBugs is not None:
             return self._maintainedProductBugs

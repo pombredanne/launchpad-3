@@ -264,7 +264,7 @@ class ProductBugsView:
 
         return BugTask.select(*ba_params)
 
-    def assignment_columns(self):
+    def task_columns(self):
         return [
             "id", "title", "milestone", "status", "submittedby", "assignedto"]
 
@@ -303,7 +303,7 @@ class ProductBugsView:
         return MilestoneVocabulary(context)
 
     def statuses(self):
-        """Return the list of bug assignment statuses."""
+        """Return the list of bug task statuses."""
         return dbschema.BugTaskStatus.items
 
 

@@ -1,8 +1,8 @@
 <!--
-    This is the main bug page assignments portal. It should show only
-    the assignments that are critical to see in the current context.
-    Other assignments, in all their glory, can be displayed on a
-    specialised assignments page.
+    This is the main bug page tasks portal. It should show only
+    the tasks that are critical to see in the current context.
+    Other tasks, in all their glory, can be displayed on a
+    specialised tasks page.
 -->
 
 <div tal:omit-tag="" tal:define="bug_url string:/malone/bugs/${context/id}">
@@ -19,7 +19,7 @@
 
 
     <tbody>
-        <!-- Upstream Assignments -->
+        <!-- Upstream Tasks -->
         <tr tal:repeat="bugtask context/bugtasks"
             tal:attributes="onclick string:window.location='/malone/tasks/${bugtask/id}/+edit';">
            
@@ -28,8 +28,8 @@
                     tal:condition="bugtask/product"
                     tal:attributes="href string:/malone/products/${bugtask/product/name}"
                     >
-                    upstream <span tal:content="bugtask/product/name" />
-                    $Product.name</a>
+                    upstream <span tal:content="bugtask/product/name">$Product.name</span>
+                </a>
                 <a href=""
                     tal:condition="python: bugtask.distribution and bugtask.sourcepackagename"
                     tal:attributes="href string:/malone/distros/${bugtask/distribution/name}/${bugtask/sourcepackagename/name}"
