@@ -140,6 +140,25 @@ class PersonVocabulary(SQLObjectVocabularyBase):
                 obj, obj.id, obj.displayname or '%s %s' % (
                     obj.givenname, obj.familyname))
 
+    def __iter__(self):
+        kw = {}
+        if self._orderBy:
+            kw['orderBy'] = self._orderBy
+        for obj in self._table.select('password IS NOT NULL', **kw):
+            yield self._toTerm(obj)
+
+    def __contains__(self, obj):
+        try:
+            objs = list(self._table.select(self._table.q.id == obj.id))
+            if len(objs) > 0:
+                return True
+        except ValueError:
+            pass
+        return False
+
+
+
+
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
     _table = ProductRelease
     _orderBy = 'product'

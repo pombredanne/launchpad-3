@@ -193,7 +193,7 @@
   ... ------------0xKhTmLbOuNdArY
   ... Content-Disposition: form-data; name="field.assignee"
   ... 
-  ... 11
+  ... 12
   ... ------------0xKhTmLbOuNdArY
   ... Content-Disposition: form-data; name="field.assignee-empty-marker"
   ... 
@@ -216,6 +216,6 @@
   ...
   <option selected="selected" value="Normal">Normal</option>
   ...
-  <option selected="selected" value="11">Steve Alexander</option>
+  <option selected="selected" value="12">Sample Person</option>
   ...
 
