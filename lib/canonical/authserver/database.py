@@ -57,7 +57,7 @@ class DatabaseUserDetailsStorage(object):
             # No-one found
             return {}
 
-        if passwordDigest != sshaDigestedPassword:
+        if passwordDigest.rstrip() != sshaDigestedPassword.rstrip():
             # Wrong password
             return {}
         
@@ -70,14 +70,14 @@ class DatabaseUserDetailsStorage(object):
             'salt': salt,
         }
 
-    def createUser(self, loginID, sshaDigestedPassword, displayName,
+    def createUser(self, loginID, sshaDigestedPassword, displayname,
                    emailAddresses):
         ri = self.connectionPool.runInteraction
         if loginID not in emailAddresses:
             emailAddresses = emailAddresses + [loginID]
         deferred = ri(self._createUserInteraction, 
                       sshaDigestedPassword.encode('base64'),
-                      displayName, emailAddresses)
+                      displayname, emailAddresses)
         deferred.addErrback(self._eb_createUser)
         return deferred
 
@@ -90,17 +90,20 @@ class DatabaseUserDetailsStorage(object):
         return {}
 
     def _createUserInteraction(self, transaction, sshaDigestedPassword,
-                               displayName, emailAddresses):
+                               displayname, emailAddresses):
         # Note that any psycopg.DatabaseErrors that occur will be translated
         # into a return value of {} by the _eb_createUser errback.
+        # TODO: Catch bad types, e.g. unicode, and raise appropriate exceptions
 
         # Create the Person
-        transaction.execute(
-            "INSERT INTO Person (displayname, password) "
-            "VALUES ('%s', '%s')"
-            % (displayName.replace("'", "''"),
-              sshaDigestedPassword.replace("'", "''"))
-        )
+        name = displayname.replace(" ", "")[:8].lower()
+        displayname = displayname.replace("'", "''").encode('utf-8')
+        pw = sshaDigestedPassword.replace("'", "''")
+        sql = (u"""\
+            INSERT INTO Person (name, displayname, password)  VALUES ('%s', '%s', '%s')"""
+            % (name, displayname, pw))
+
+        transaction.execute(sql)
 
         # Get the ID of the new person
         transaction.execute(
@@ -108,7 +111,7 @@ class DatabaseUserDetailsStorage(object):
             "FROM Person "
             "WHERE Person.displayname = '%s' "
             "AND Person.password = '%s'"
-            % (displayName.replace("'", "''"),
+            % (displayname.replace("'", "''").encode('utf-8'),
               sshaDigestedPassword.replace("'", "''"))
         )
 
@@ -127,10 +130,38 @@ class DatabaseUserDetailsStorage(object):
 
         return {
             'id': personID,
-            'displayname': displayName,
+            'displayname': displayname,
             'emailaddresses': list(emailAddresses)
         }
                 
+    def changePassword(self, loginID, sshaDigestedPassword,
+                       newSshaDigestedPassword):
+        ri = self.connectionPool.runInteraction
+        return ri(self._changePasswordInteraction, loginID,
+                  sshaDigestedPassword.encode('base64'), 
+                  newSshaDigestedPassword.encode('base64'))
+
+    def _changePasswordInteraction(self, transaction, loginID,
+                                   sshaDigestedPassword,
+                                   newSshaDigestedPassword):
+        userDict = self._authUserInteraction(transaction, loginID,
+                                             sshaDigestedPassword)
+        if not userDict:
+            return {}
+
+        personID = userDict['id']
+        
+        transaction.execute(
+            "UPDATE Person "
+            "SET password = '%s' "
+            "WHERE Person.id = %d "
+            % (str(newSshaDigestedPassword).replace("'", "''"),
+               personID)
+        )
+        
+        userDict['salt'] = saltFromDigest(newSshaDigestedPassword)
+        return userDict
+
     def _getPerson(self, transaction, loginID):
         transaction.execute(
             "SELECT Person.id, Person.displayname, Person.password "
@@ -160,7 +191,7 @@ class DatabaseUserDetailsStorage(object):
         row = list(row)
         passwordDigest = row[2]
         if passwordDigest:
-            salt = passwordDigest.decode('base64')[20:].encode('base64')
+            salt = saltFromDigest(passwordDigest)
         else:
             salt = ''
 
@@ -174,4 +205,12 @@ class DatabaseUserDetailsStorage(object):
             % (personID,)
         )
         return [row[0] for row in transaction.fetchall()]
+
+
+def saltFromDigest(digest):
+    """Extract the salt from a SSHA digest.
+
+    :param digest: base64-encoded digest
+    """
+    return digest.decode('base64')[20:].encode('base64')
 

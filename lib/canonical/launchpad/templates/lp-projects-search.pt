@@ -1,0 +1,51 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@launchpad_template/master"
+      i18n:domain="doap">
+<body>
+ 
+<div metal:fill-slot="main">
+    <h1>Project Search</h1>
+
+    <form method="post">
+        <fieldset tal:condition="not:view/searchrequested">
+            <legend>Search for a project</legend>
+
+            <div class="field">
+                <label>Search text</label>
+                <div class="formHelp">Enter any part of the project name,
+                title or description.</div>
+                <input name="searchtext" />
+            </div>
+
+            <div class="formControls">
+                <input type="submit" value="Search" />
+            </div>
+
+        </fieldset>
+    </form>
+    <table tal:condition="view/searchrequested"
+         class="listing rowNavigation">
+        <tr>
+        <th>Project</th>
+        <th>Homepage</th>
+        </tr>
+        <tr tal:repeat="project view/searchresults"
+            tal:attributes="onclick string:window.location='${project/name}';">
+            <td>
+                <b><a tal:attributes="href project/name" href="#"
+                    tal:content="project/title">$Project.title</a></b>
+                (<span tal:content="project/name">$Project.name</span>)
+                <br />
+            <span tal:content="project/shortdesc">
+                $Project.shortdesc</span>
+            <td>
+                <a tal:attributes="href project/homepageurl"
+                    tal:content="project/homepageurl">http://www.gnu.org/</a>
+            </td>
+        </tr>
+    </table>
+</div>
+
+</body>
+</html>

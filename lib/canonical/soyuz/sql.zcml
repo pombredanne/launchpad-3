@@ -8,147 +8,194 @@
        traversal work properly.  We also need to make security declarations.-->
 
   <content class="canonical.soyuz.sql.DistroReleaseSourcesApp">
-    <allow interface="canonical.soyuz.interfaces.IDistroReleaseSourcesApp"/>
+    <allow interface="canonical.launchpad.interfaces.IDistroReleaseSourcesApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.sql.DistroReleaseSourceApp">
-    <allow interface="canonical.soyuz.interfaces.IDistroReleaseSourceApp"/>
+    <allow interface="canonical.launchpad.interfaces.IDistroReleaseSourceApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.sql.DistroReleaseSourceReleaseApp">
-    <allow interface="canonical.soyuz.interfaces.IDistroReleaseSourceReleaseApp"/>
+    <allow interface="canonical.launchpad.interfaces.IDistroReleaseSourceReleaseApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.sql.DistroReleaseSourceReleaseBuildApp">
-    <allow interface="canonical.soyuz.interfaces.IDistroReleaseSourceReleaseBuildApp"/>
+    <allow interface="canonical.launchpad.interfaces.IDistroReleaseSourceReleaseBuildApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.sql.DistroReleasesApp">
-    <allow interface="canonical.soyuz.interfaces.IDistroReleasesApp"/>
+    <allow interface="canonical.launchpad.interfaces.IDistroReleasesApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.sql.DistroSourcesApp">
-    <allow interface="canonical.soyuz.interfaces.IDistroSourcesApp"/>
+    <allow interface="canonical.launchpad.interfaces.IDistroSourcesApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.sql.DistroTeamApp">
-    <allow interface="canonical.soyuz.interfaces.IDistroTeamApp"/>
+    <allow interface="canonical.launchpad.interfaces.IDistroTeamApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.sql.DistroReleaseTeamApp">
-    <allow interface="canonical.soyuz.interfaces.IDistroReleaseTeamApp"/>
+    <allow interface="canonical.launchpad.interfaces.IDistroReleaseTeamApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.database.Distribution">
-    <allow interface="canonical.soyuz.interfaces.IDistribution"/>
+  <content class="canonical.launchpad.database.Distribution">
+    <allow interface="canonical.launchpad.interfaces.IDistribution"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.sql.DistributionRole">
-    <allow interface="canonical.soyuz.interfaces.IDistributionRole"/>
+    <allow interface="canonical.launchpad.interfaces.IDistributionRole"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.sql.DistroReleaseRole">
-    <allow interface="canonical.soyuz.interfaces.IDistroReleaseRole"/>
+    <allow interface="canonical.launchpad.interfaces.IDistroReleaseRole"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.sql.PeopleApp">
-    <allow interface="canonical.soyuz.interfaces.IPeopleApp"/>
+    <allow interface="canonical.launchpad.interfaces.IPeopleApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.sql.PersonApp">
-    <allow interface="canonical.soyuz.interfaces.IPersonApp"/>
+    <allow interface="canonical.launchpad.interfaces.IPersonApp"/>
+    <require
+     permission="zope.Public"
+     set_attributes="email wiki irc jabber gpg archuser"
+     />	
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.database.SoyuzEmailAddress">
-    <allow interface="canonical.soyuz.interfaces.ISoyuzEmailAddress"/>
+  <content class="canonical.launchpad.database.SoyuzEmailAddress">
+    <allow interface="canonical.launchpad.interfaces.ISoyuzEmailAddress"/>
+    <require
+     permission="zope.Public"
+     set_attributes="email status"
+     />	
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.database.GPGKey">
-    <allow interface="canonical.soyuz.interfaces.IGPGKey"/>
+  <content class="canonical.launchpad.database.GPGKey">
+    <allow interface="canonical.launchpad.interfaces.IGPGKey"/>
+    <require
+     permission="zope.Public"
+     set_attributes="keyid fingerprint pubkey revoked"
+     />
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.database.ArchUserID">
-    <allow interface="canonical.soyuz.interfaces.IArchUserID"/>
+  <content class="canonical.launchpad.database.ArchUserID">
+    <allow interface="canonical.launchpad.interfaces.IArchUserID"/>
+    <require
+     permission="zope.Public"
+     set_attributes="archuserid"
+     />
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.database.WikiName">
-    <allow interface="canonical.soyuz.interfaces.IWikiName"/>
+  <content class="canonical.launchpad.database.WikiName">
+    <allow interface="canonical.launchpad.interfaces.IWikiName"/>
+    <require
+     permission="zope.Public"
+     set_attributes="wiki wikiname"
+     />
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.database.JabberID">
-    <allow interface="canonical.soyuz.interfaces.IJabberID"/>
+  <content class="canonical.launchpad.database.JabberID">
+    <allow interface="canonical.launchpad.interfaces.IJabberID"/>
+    <require
+     permission="zope.Public"
+     set_attributes="jabberid"
+     />
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.database.IrcID">
-    <allow interface="canonical.soyuz.interfaces.IIrcID"/>
+  <content class="canonical.launchpad.database.IrcID">
+    <allow interface="canonical.launchpad.interfaces.IIrcID"/>
+    <require
+     permission="zope.Public"
+     set_attributes="network nickname"
+     />
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.database.Membership">
-    <allow interface="canonical.soyuz.interfaces.IMembership"/>
+  <content class="canonical.launchpad.database.Membership">
+    <allow interface="canonical.launchpad.interfaces.IMembership"/>
+    <require
+     permission="zope.Public"
+     set_attributes="role status"
+     />
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.database.TeamParticipation">
-    <allow interface="canonical.soyuz.interfaces.ITeamParticipation"/>
+  <content class="canonical.launchpad.database.TeamParticipation">
+    <allow interface="canonical.launchpad.interfaces.ITeamParticipation"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.database.SoyuzBinaryPackage">
-    <allow interface="canonical.soyuz.interfaces.IBinaryPackage"/>
+  <content class="canonical.launchpad.database.SoyuzBinaryPackage">
+    <allow interface="canonical.launchpad.interfaces.IBinaryPackage"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.sql.SoyuzBuild">
-    <allow interface="canonical.soyuz.interfaces.IBuild"/>
+    <allow interface="canonical.launchpad.interfaces.IBuild"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.launchpad.database.SoyuzBuilder">
+    <allow interface="canonical.launchpad.interfaces.IBuilder"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.launchpad.database.SoyuzProcessor">
+    <allow interface="canonical.launchpad.interfaces.IProcessor"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.launchpad.database.SoyuzProcessorFamily">
+    <allow interface="canonical.launchpad.interfaces.IProcessorFamily"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
  <content class="canonical.soyuz.sql.DistroBinariesApp">
-    <allow interface="canonical.soyuz.interfaces.IDistroBinariesApp"/>
+    <allow interface="canonical.launchpad.interfaces.IDistroBinariesApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
  <content class="canonical.soyuz.sql.DistroReleaseBinariesApp">
-    <allow interface="canonical.soyuz.interfaces.IDistroReleaseBinariesApp"/>
+    <allow interface="canonical.launchpad.interfaces.IDistroReleaseBinariesApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
  <content class="canonical.soyuz.sql.DistroReleaseBinaryApp">
-    <allow interface="canonical.soyuz.interfaces.IDistroReleaseBinaryApp"/>
+    <allow interface="canonical.launchpad.interfaces.IDistroReleaseBinaryApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
  <content class="canonical.soyuz.sql.DistroReleaseBinaryReleaseApp">
-    <allow interface="canonical.soyuz.interfaces.IDistroReleaseBinaryReleaseApp"/>
+    <allow interface="canonical.launchpad.interfaces.IDistroReleaseBinaryReleaseApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
  <content class="canonical.soyuz.sql.DistroReleaseBinaryReleaseBuildApp">
-    <allow interface="canonical.soyuz.interfaces.IDistroReleaseBinaryReleaseBuildApp"/>
+    <allow interface="canonical.launchpad.interfaces.IDistroReleaseBinaryReleaseBuildApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.sql.DistroReleaseApp">
-    <allow interface="canonical.soyuz.interfaces.IDistroReleaseApp"/>
+    <allow interface="canonical.launchpad.interfaces.IDistroReleaseApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
     <require
      permission="zope.Public"
@@ -158,7 +205,7 @@
   
 
   <content class="canonical.soyuz.sql.Release">
-    <allow interface="canonical.soyuz.interfaces.IRelease"/>
+    <allow interface="canonical.launchpad.interfaces.IRelease"/>
     <require
      permission="zope.Public"
      set_attributes="distribution name title description version components sections releasestate datereleased owner"
@@ -166,17 +213,17 @@
   </content>
 
   <content class="canonical.soyuz.sql.DistrosApp">
-    <allow interface="canonical.soyuz.interfaces.IDistributions"/>
+    <allow interface="canonical.launchpad.interfaces.IDistributions"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.sql.DistroApp">
-    <allow interface="canonical.soyuz.interfaces.IDistroApp"/>
+    <allow interface="canonical.launchpad.interfaces.IDistroApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.sql.SoyuzDistribution">
-    <allow interface="canonical.soyuz.interfaces.IDistribution"/>
+    <allow interface="canonical.launchpad.interfaces.IDistribution"/>
     <require
      permission="zope.Public"
      set_attributes="name title description"
@@ -184,67 +231,73 @@
   </content>
 	
   <content class="canonical.soyuz.sql.BinaryPackages">
-    <allow interface="canonical.soyuz.interfaces.IPackageSet"/>
+    <allow interface="canonical.launchpad.interfaces.IPackageSet"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.sql.SoyuzBinaryPackageBuild">
-    <allow interface="canonical.soyuz.interfaces.IBinaryPackageBuild"/>
-  </content>
-
   <content class="canonical.soyuz.sql.SourcePackages">
-    <allow interface="canonical.soyuz.interfaces.IPackageSet"/>
+    <allow interface="canonical.launchpad.interfaces.IPackageSet"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.sql.SoyuzSourcePackage">
-    <allow interface="canonical.soyuz.interfaces.ISourcePackage"/>
+    <allow interface="canonical.launchpad.interfaces.ISourcePackage"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
 
   <content class="canonical.soyuz.sql.SoyuzSourcePackageRelease">
-    <allow interface="canonical.soyuz.interfaces.ISourcePackageRelease"/>
+    <allow interface="canonical.launchpad.interfaces.ISourcePackageRelease"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.sql.SoyuzPerson">
-    <allow interface="canonical.soyuz.interfaces.ISoyuzPerson"/>
+    <allow interface="canonical.launchpad.interfaces.ISoyuzPerson"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    <require
+     permission="zope.Public"
+     set_attributes="displayname givenname familyname teamowner
+    teamdescription password karma karmatimestamp"
+    />
   </content>
 
   <content class="canonical.soyuz.sql.builddepsContainer">
-    <allow interface="canonical.soyuz.interfaces.IbuilddepsContainer"/>
+    <allow interface="canonical.launchpad.interfaces.IbuilddepsContainer"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.launchpad.database.SoyuzComponent">
+    <allow interface="canonical.launchpad.interfaces.IComponent"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.launchpad.database.SoyuzSection">
+    <allow interface="canonical.launchpad.interfaces.ISection"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
 
-  <content class="canonical.soyuz.sql.Projects">
-    <allow interface="canonical.soyuz.interfaces.IProjects"/>
+  <content class="canonical.soyuz.importd.Projects">
+    <allow interface="canonical.launchpad.interfaces.IProjectSet"/>
   </content>
   
-  <content class="canonical.soyuz.sql.SoyuzProject">
-    <allow interface="canonical.soyuz.interfaces.IProject"/>
+  <content class="canonical.soyuz.importd.SoyuzProject">
+    <allow interface="canonical.launchpad.interfaces.IProject"/>
   </content>
   
-  <content class="canonical.soyuz.sql.SoyuzProduct">
-    <allow interface="canonical.soyuz.interfaces.IProduct"/>
+  <content class="canonical.soyuz.importd.SoyuzProduct">
+    <allow interface="canonical.launchpad.interfaces.IProduct"/>
   </content>
   
-  <content class="canonical.soyuz.sql.Sync">
-    <allow interface="canonical.soyuz.interfaces.ISync"/>
+  <content class="canonical.soyuz.importd.Sync">
+    <allow interface="canonical.launchpad.interfaces.ISync"/>
   </content>
 
 
 	
-  <utility
-      factory="canonical.soyuz.sql.Projects"
-      provides="canonical.soyuz.interfaces.IProjects"
-      />
-
 <!--DUMMY CONTENT -->
   <content class="canonical.soyuz.sql.CurrentVersion">
-    <allow interface="canonical.soyuz.interfaces.ICurrentVersion"/>
+    <allow interface="canonical.launchpad.interfaces.ICurrentVersion"/>
   </content>
 
 

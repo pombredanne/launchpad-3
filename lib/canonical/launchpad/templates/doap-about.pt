@@ -1,0 +1,17 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en">
+
+<head>
+  <title>About DOAP</title>
+</head>
+
+<body>
+  <h1>About DOAP</h1>
+  <p>
+    Based on Edd Dumbill's DOAP framework for open source project
+    descriptions, this system allows us to keep track of all the open source
+    projects and products that ultimately are packaged in Ubuntu, or
+    translated in Rosetta, or have bugs tracked by Malone.
+  </p>
+</body>
+</html>

@@ -13,13 +13,14 @@ class SSHADigestEncryptor(object):
 
     # Source: http://developer.netscape.com/docs/technote/ldap/pass_sha.html
 
+    saltLength = 20
+    
     def generate_salt(self):
         # Salt can be any length, but not more than about 37 characters
         # because of limitations of the binascii module.
-        # 7 is what Netscape's example used and should be enough.
         # All 256 characters are available.
         salt = ''
-        for n in range(7):
+        for n in range(self.saltLength):
             salt += chr(random.randrange(256))
         return salt
 

@@ -1,18 +1,18 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
 import unittest
-
+import os
 from cStringIO import StringIO
+
 from zope.component import getService, servicenames
 from zope.component.tests.placelesssetup import PlacelessSetup
-from canonical.rosetta.interfaces import ILanguages
-from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
-     RosettaProduct, RosettaLanguages, RosettaPOMessageSet, \
-     RosettaPOMessageIDSighting
+
+from canonical.launchpad.interfaces import ILanguages
+from canonical.launchpad.database import Person, POTemplate, \
+     Product, Languages, POMessageSet, POMessageIDSighting
 from canonical.rosetta.pofile_adapters import MessageProxy, \
      TemplateImporter, POFileImporter
-from canonical.database.doap import DBProject
-import os
+from canonical.launchpad.database import Project
 import canonical.lp
 
 # XXX: not using Person at all, probably should
@@ -27,46 +27,46 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
     def setUp(self):
         super(POImportTestCase, self).setUp()
         utilityService = getService(servicenames.Utilities)
-        utilityService.provideUtility(ILanguages, RosettaLanguages(), '')
+        utilityService.provideUtility(ILanguages, Languages(), '')
         canonical.lp.initZopeless()
         self.pot = file(os.path.join(here, 'gnome-terminal.pot'))
         self.po = file(os.path.join(here, 'gnome-terminal-cy.po'))
 
     def testTemplateImporter(self):
         try:
-            project = DBProject.selectBy(name = 'gnome')[0]
+            project = Project.selectBy(name = 'gnome')[0]
         except (IndexError, KeyError):
             import sys
             t, e, tb = sys.exc_info()
             raise t, "Couldn't find record in database", tb
         try:
-            product = RosettaProduct.selectBy(projectID = project.id, name = 'gnome-terminal')[0]
+            product = Product.selectBy(projectID = project.id, name = 'gnome-terminal')[0]
         except IndexError:
-            product = RosettaProduct(project=project,
-                                     name='gnome-terminal',
-                                     displayName='Gnome Terminal',
-                                     title='GNOME Terminal',
-                                     shortDesc='The GNOME terminal emulator',
-                                     description='The GNOME terminal emulator',
-                                     owner=XXXperson)
+            product = Product(project=project,
+                              name='gnome-terminal',
+                              displayname='Gnome Terminal',
+                              title='GNOME Terminal',
+                              shortDesc='The GNOME terminal emulator',
+                              description='The GNOME terminal emulator',
+                              owner=XXXperson)
         try:
-            poTemplate = RosettaPOTemplate.selectBy(productID = product.id,
+            poTemplate = POTemplate.selectBy(productID = product.id,
                                                     name='gnome-terminal')[0]
         except IndexError:
             # XXX: should use Product.newPOTemplate when it works
-            poTemplate = RosettaPOTemplate(product=product,
-                                           name='gnome-terminal',
-                                           title='GNOME Terminal main template',
-                                           description='GNOME Terminal main template',
-                                           path=self.pot.name,
-                                           isCurrent=True,
-                                           dateCreated='NOW',
-                                           copyright='yes',
-                                           priority=1,
-                                           branch=1,
-                                           license=1,
-                                           messageCount=0,
-                                           owner=XXXperson)
+            poTemplate = POTemplate(product=product,
+                                    name='gnome-terminal',
+                                    title='GNOME Terminal main template',
+                                    description='GNOME Terminal main template',
+                                    path=self.pot.name,
+                                    isCurrent=True,
+                                    dateCreated='NOW',
+                                    copyright='yes',
+                                    priority=1,
+                                    branch=1,
+                                    license=1,
+                                    messageCount=0,
+                                    owner=XXXperson)
         importer = TemplateImporter(poTemplate, XXXperson)
         importer.doImport(self.pot)
         get_transaction().commit()
@@ -74,14 +74,14 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
         self.pot.seek(0)
         importer.doImport(self.pot)
         get_transaction().commit()
-        RosettaPOMessageSet._connection.cache.clear()
-        sets = RosettaPOMessageSet.select('potemplate=%d AND pofile IS NULL' % poTemplate.id)
+        POMessageSet._connection.cache.clear()
+        sets = POMessageSet.select('potemplate=%d AND pofile IS NULL' % poTemplate.id)
         assert sets.count() == 513, '%d message sets instead of 513' % sets.count()
         for msgset in list(sets):
             # All messages should have the sequence > 0
             # XXX: We are assuming you are cleaning up the DB between tests.
             assert msgset.sequence > 0
-            sighting = RosettaPOMessageIDSighting.selectBy(
+            sighting = POMessageIDSighting.selectBy(
                         poMessageSetID=msgset.id,
                         poMessageID_ID=msgset.primeMessageID_.id)[0]
             assert sighting.inLastRevision
@@ -101,39 +101,39 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
 
     def testFileImporter(self):
         try:
-            project = DBProject.selectBy(name = 'gnome')[0]
+            project = Project.selectBy(name = 'gnome')[0]
         except (IndexError, KeyError):
             import sys
             t, e, tb = sys.exc_info()
             raise t, "Couldn't find record in database", tb
         try:
-            product = RosettaProduct.selectBy(projectID = project.id, name = 'gnome-terminal')[0]
+            product = Product.selectBy(projectID = project.id, name = 'gnome-terminal')[0]
         except IndexError:
-            product = RosettaProduct(project=project,
-                                     name='gnome-terminal',
-                                     displayName='Gnome Terminal',
-                                     title='GNOME Terminal',
-                                     shortDesc='The GNOME terminal emulator',
-                                     description='The GNOME terminal emulator',
-                                     owner=XXXperson)
+            product = Product(project=project,
+                              name='gnome-terminal',
+                              displayname='Gnome Terminal',
+                              title='GNOME Terminal',
+                              shortDesc='The GNOME terminal emulator',
+                              description='The GNOME terminal emulator',
+                              owner=XXXperson)
         try:
-            poTemplate = RosettaPOTemplate.selectBy(productID = product.id,
+            poTemplate = POTemplate.selectBy(productID = product.id,
                                                     name='gnome-terminal')[0]
         except IndexError:
             # XXX: should use the TemplateImporter so that we have message sets
-            poTemplate = RosettaPOTemplate(product=product,
-                                           name='gnome-terminal',
-                                           title='GNOME Terminal main template',
-                                           description='GNOME Terminal main template',
-                                           path=self.pot.name,
-                                           isCurrent=True,
-                                           dateCreated='NOW',
-                                           copyright='yes',
-                                           priority=1,
-                                           branch=1,
-                                           license=1,
-                                           messageCount=0,
-                                           owner=XXXperson)
+            poTemplate = POTemplate(product=product,
+                                    name='gnome-terminal',
+                                    title='GNOME Terminal main template',
+                                    description='GNOME Terminal main template',
+                                    path=self.pot.name,
+                                    isCurrent=True,
+                                    dateCreated='NOW',
+                                    copyright='yes',
+                                    priority=1,
+                                    branch=1,
+                                    license=1,
+                                    messageCount=0,
+                                    owner=XXXperson)
         try:
             poFile = poTemplate.poFile('cy')
         except KeyError:
@@ -145,10 +145,10 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
         self.po.seek(0)
         importer.doImport(self.po)
         # check that there aren't duplicates in the db
-        RosettaPOMessageSet._connection.cache.clear()
+        POMessageSet._connection.cache.clear()
         for message in importer.parser.messages:
             msgid = message._msgset.primeMessageID_
-            results = RosettaPOMessageSet.select('''
+            results = POMessageSet.select('''
                 poTemplate = %d AND
                 poFile = %d AND
                 primeMsgID = %d

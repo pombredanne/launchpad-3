@@ -2,11 +2,11 @@
 # Author: Rob Weir <rob.weir@canonical.com>
 # Copyright (C) 2004 Canonical Software
 
+from arch import NameParser
+
 from zope.interface import implements, classProvides
-from canonical.arch.interfaces import *
-import canonical.arch, sys
-canonical.arch.broker = sys.modules['canonical.arch.broker']
-from canonical.arch import database
+from canonical.launchpad.interfaces import *
+from canonical.launchpad import database
 
 default_location = "/tmp/"
 
@@ -15,7 +15,7 @@ default_location = "/tmp/"
 
 class NamespaceObject(object):
     """
-    Implement canonical.arch.interface.INamespaceobject against the
+    Implement canonical.launchpad.interfaces.INamespaceobject against the
     Soyuz database.
     """
 
@@ -350,8 +350,6 @@ class Archive(NamespaceObject, CategoryIterable):
         :type category_name: str
         :rtype: `Category`
         """
-        from arch import NameParser
-        from canonical.arch.interfaces import NamespaceError
         if not NameParser.is_category_name(category_name):
             raise NamespaceError('invalid category name: %s' % category_name)
         category = Category(category_name, self)
@@ -524,7 +522,7 @@ class MissingBranch(Branch):
 
 
 class Version(BranchItem, Package, RevisionIterable):
-    """Implementats canonical.arch.interfaces.IVersion, backed by the db"""
+    """Implementats canonical.launchpad.interfaces.IVersion, backed by the db"""
 
     implements(IVersion)
     _eq_interface = IVersion
@@ -600,7 +598,7 @@ class Revision(VersionItem):
 
     def set_patchlog(self, patchlog):
         self._patchlog = patchlog
-        from canonical.arch.database import RevisionMapper
+        from canonical.database.launchpad import RevisionMapper
         mapper = RevisionMapper()
         mapper.update_log(self, patchlog.summary)
 

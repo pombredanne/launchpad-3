@@ -3,10 +3,11 @@
 It will create ArchArchive and Branch entries as needed.
 """
 
-#from canonical.arch.database import Archive
+#from canonical.launchpad.database import Archive
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.soyuz.database import SoyuzProduct
+from canonical.soyuz.importd import SoyuzProduct
 import canonical.lp
+from canonical.launchpad.database import ArchArchive, Person, SourceSource
 
 from sqlobject import ForeignKey, IntCol, StringCol, DateTimeCol, BoolCol, \
                       EnumCol, connectionForURI
@@ -19,87 +20,8 @@ import importd.Job
 
 import logging
 
-class ArchArchive(SQLBase):
-    """ArchArchive table"""
 
-    _table = 'ArchArchive'
-    _columns = [
-        StringCol('name', dbName='name', notNull=True),
-        StringCol('title', dbName='title', notNull=True),
-        StringCol('description', dbName='description', notNull=True),
-        BoolCol('visible', dbName='visible', notNull=True),
-        ForeignKey(name='owner', foreignKey='ArchPerson', dbName='owner'),
-    ]
-
-
-class RCSTypeEnum:
-    cvs = 1
-    svn = 2
-    arch = 3
-    package = 4
-    bitkeeper = 5
-
-RCSNames = {1: 'cvs', 2: 'svn', 3: 'arch', 4: 'package', 5: 'bitkeeper'}
-
-
-class SourceSource(SQLBase): 
-    #, importd.Job.Job):
-    #from canonical.soyuz.sql import SourcePackage, Branch
-    """SourceSource table!"""
-
-    _table = 'SourceSource'
-    _columns = [
-        StringCol('name', dbName='name', notNull=True),
-        StringCol('title', dbName='title', notNull=True),
-        StringCol('description', dbName='description', notNull=True),
-        ForeignKey(name='product', foreignKey='SoyuzProduct', dbName='product',
-                   default=1),
-        StringCol('cvsroot', dbName='cvsroot', default=None),
-        StringCol('cvsmodule', dbName='cvsmodule', default=None),
-        ForeignKey(name='cvstarfile', foreignKey='LibraryFileAlias',
-                   dbName='cvstarfile', default=None),
-        StringCol('cvstarfileurl', dbName='cvstarfileurl', default=None),
-        StringCol('cvsbranch', dbName='cvsbranch', default=None),
-        StringCol('svnrepository', dbName='svnrepository', default=None),
-        StringCol('releaseroot', dbName='releaseroot', default=None),
-        StringCol('releaseverstyle', dbName='releaseverstyle', default=None),
-        StringCol('releasefileglob', dbName='releasefileglob', default=None),
-        ForeignKey(name='releaseparentbranch', foreignKey='Branch',
-                   dbName='releaseparentbranch', default=None),
-        ForeignKey(name='sourcepackage', foreignKey='SourcePackage',
-                   dbName='sourcepackage', default=None),
-        ForeignKey(name='branch', foreignKey='Branch',
-                   dbName='branch', default=None),
-        DateTimeCol('lastsynced', dbName='lastsynced', default=None),
-        DateTimeCol('frequency', dbName='syncinterval', default=None),
-        # WARNING: syncinterval column type is "interval", not "integer"
-        # WARNING: make sure the data is what buildbot expects
-
-        IntCol('rcstype', dbName='rcstype', default=RCSTypeEnum.cvs,
-               notNull=True),
-
-        StringCol('hosted', dbName='hosted', default=None),
-        StringCol('upstreamname', dbName='upstreamname', default=None),
-        DateTimeCol('processingapproved', dbName='processingapproved',
-                    notNull=False, default=None),
-        DateTimeCol('syncingapproved', dbName='syncingapproved', notNull=False,
-                    default=None),
-
-        # For when Rob approves it
-        StringCol('newarchive', dbName='newarchive'),
-        StringCol('newbranchcategory', dbName='newbranchcategory'),
-        StringCol('newbranchbranch', dbName='newbranchbranch'),
-        StringCol('newbranchversion', dbName='newbranchversion'),
-
-        # Temporary keybuk stuff
-        StringCol('package_distro', dbName='packagedistro', default=None),
-        StringCol('package_files_collapsed', dbName='packagefiles_collapsed',
-                default=None),
-
-        ForeignKey(name='owner', foreignKey='ArchPerson', dbName='owner',
-                   notNull=True),
-        StringCol('currentgpgkey', dbName='currentgpgkey', default=None),
-    ]
+class ImporterSourceSource(SourceSource):
 
     def _get_repository(self):
         if self.rcstype == RCSTypeEnum.cvs:
@@ -174,18 +96,12 @@ class SourceSource(SQLBase):
         job.package_files = self.package_files
         return job
 
-
-class ArchPerson(SQLBase):
-
-    _table = 'Person'
-
-    _columns = [
-        StringCol('name', dbName='displayname', notNull=True),
-        ]
+# XXX: This hack should go away when everything is properly refactored
+SourceSource = ImporterSourceSource
 
 
 def make_lifeless():
-    query = ArchPerson.select(ArchPerson.q.name == 'Robert Collins')
+    query = Person.select(Person.q.displayname == 'Robert Collins')
     assert query.count() == 1
     return query[0]
 

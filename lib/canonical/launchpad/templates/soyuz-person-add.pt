@@ -1,0 +1,69 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+    <h1>New Team on Soyuz</h1>
+
+    <div class="documentDescription">	
+    <p> Here you can create a new Team
+    </div>
+    
+    <div>
+    <form name="add" action="" method="POST">
+    <fieldset>
+    <legend><h3>Create a New team</h3><legend>
+	<table>
+	<tr><td>
+	<div class="field">
+	    <label>Display Name</label>
+	    <span class="fieldRequired" title="Required">(Required)</span>
+	    <div class="formHelp">
+	    Enter the Display Name.
+            </div>
+	    <input type="text" name="displayname"
+	    tal:attributes="value request/displayname|nothing"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
+	    <label>Team Description</label>
+	    <div class="formHelp">
+	    Enter the Team Description.
+            </div>
+            <textarea name="teamdescription" cols="40" rows="4"
+	    tal:content="request/teamdescription|nothing">
+	    </textarea>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="formControls">
+	  <input type="submit" value="Create"/>
+	</div>
+	</td></tr>
+	</table>
+  </form>
+  </div>
+
+  <tla:block tal:condition="view/add_action">
+  <div>
+  <h4><a tal:attributes="href string:../${view/results/id}">
+  <span tal:content="view/results/displayname"/></a> 
+  Team added</h4>
+  </div>
+  </tla:block>
+
+</div>
+
+</body>
+</html>

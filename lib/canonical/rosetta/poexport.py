@@ -7,7 +7,7 @@ import sys, codecs
 
 from cStringIO import StringIO
 from zope.interface import implements
-from canonical.rosetta.interfaces import IPOExport
+from canonical.launchpad.interfaces import IPOExport
 from canonical.rosetta.pofile import POMessage, POHeader
 from canonical.rosetta.pofile_adapters import MessageProxy
 

@@ -1,0 +1,57 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="soyuz">
+
+<head>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+  <!-- Rosetta style sheet -->
+  <style type="text/css" media="screen">@import url(rosetta.css);</style>
+
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+<h1><span tal:content="context/release/distribution/title" />
+    <span tal:content="context/release/title" /> Binary Packages</h1>
+<!-- <div tal:on-error="python: error.type, error.value.args"> -->
+
+<h3><span tal:content="context/release/binarycount" /> Packages</h3>
+
+<form name="search" method="POST" action="+search">
+Find Binary Package by Name: 
+<br>
+<input type="text" name="name" tal:attributes="value request/name|nothing" />
+<input type="submit" value="Search"/>
+</form>
+<br><br>
+
+<!-- XXX: Need section stuff in db. They are in soyuz.dia but  -->
+<!-- the db implementatio is missing -->
+
+<h3> Browse Packages</h3>
+ (XXX:It was supose to show sections)
+
+<table class="listing">
+  <tr>
+    <th> Binary Package </th>
+  </tr>
+   <tr tal:repeat="binpackage context">
+    <td> 
+     <a tal:content="binpackage/name"
+        tal:attributes="href binpackage/name">TITLE</a> : 
+	<span tal:content="binpackage/shortdesc">SHORTDESC</span> 
+    </td>
+  </tr>
+</table>
+
+
+
+<!-- </div> -->
+</div>
+
+</body>
+
+</html>

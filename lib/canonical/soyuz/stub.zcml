@@ -7,11 +7,11 @@
        traversal work properly.  We also need to make security declarations.
     -->
   <content class="canonical.soyuz.stub.Packages">
-    <allow interface="canonical.soyuz.interfaces.IPackages"/>
+    <allow interface="canonical.launchpad.interfaces.IPackages"/>
   </content>
 
   <content class="canonical.soyuz.stub.BinaryPackages">
-    <allow interface="canonical.soyuz.interfaces.IBinaryPackageSet"/>
+    <allow interface="canonical.launchpad.interfaces.IBinaryPackageSet"/>
     <!-- implementing IItemContainer allows automatic traversal by name
          and __getitem__.
       -->
@@ -19,22 +19,22 @@
   </content>
 
   <content class="canonical.soyuz.stub.BinaryPackage">
-    <allow interface="canonical.soyuz.interfaces.IBinaryPackage"/>
+    <allow interface="canonical.launchpad.interfaces.IBinaryPackage"/>
   </content>
   
   <content class="canonical.soyuz.stub.Projects">
-    <allow interface="canonical.soyuz.interfaces.IProjects"/>
+    <allow interface="canonical.launchpad.interfaces.IProjects"/>
   </content>
   
   <content class="canonical.soyuz.stub.Project">
-    <allow interface="canonical.soyuz.interfaces.IProject"/>
+    <allow interface="canonical.launchpad.interfaces.IProject"/>
   </content>
 
   <content class="canonical.soyuz.stub.Product">
-    <allow interface="canonical.soyuz.interfaces.IProduct"/>
+    <allow interface="canonical.launchpad.interfaces.IProduct"/>
   </content>
   <content class="canonical.soyuz.stub.Sync">
-    <allow interface="canonical.soyuz.interfaces.ISync"/>
+    <allow interface="canonical.launchpad.interfaces.ISync"/>
   </content>
 
   <!-- This is the collection of packages.  For now, stubbed out.
@@ -47,21 +47,21 @@
     -->
   <utility
       factory="canonical.soyuz.stub.Packages"
-      provides="canonical.soyuz.interfaces.IPackages"
+      provides="canonical.launchpad.interfaces.IPackages"
       />
 
   <utility
       factory="canonical.soyuz.stub.BinaryPackages"
-      provides="canonical.soyuz.interfaces.IBinaryPackageSet"
+      provides="canonical.launchpad.interfaces.IBinaryPackageSet"
       />
   <utility
       factory="canonical.soyuz.stub.Projects"
-      provides="canonical.soyuz.interfaces.IProjects"
+      provides="canonical.launchpad.interfaces.IProjects"
       />
       <!--
   <utility
       factory="canonical.soyuz.stub.Project"
-      provides="canonical.soyuz.interfaces.IProject"
+      provides="canonical.launchpad.interfaces.IProject"
       />
       -->
 

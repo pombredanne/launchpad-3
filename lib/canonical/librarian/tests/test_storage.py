@@ -226,6 +226,9 @@ def test_suite():
     suite = unittest.TestSuite()
     #def addTests(klass): suite.addTests(map(klass, klass.tests))
     #addTests(FatSamTests)
-    suite.addTest(unittest.makeSuite(FatSamStorageTests))
+   
+    # Disabled - tests are doing initZopeless and don't play well with the
+    # z3 test harness (Bug 2077). 
+    #suite.addTest(unittest.makeSuite(FatSamStorageTests))
     return suite
 

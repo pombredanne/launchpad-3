@@ -7,9 +7,10 @@ __metaclass__ = type
 import unittest
 from zope.testing.doctestunit import DocTestSuite
 
-from canonical.rosetta.interfaces import ILanguages, IPerson
+from canonical.launchpad.interfaces import ILanguages, IPerson
 from zope.interface import implements
 from zope.app.security.interfaces import IPrincipal
+from zope.publisher.interfaces.browser import IBrowserRequest
 
 class DummyLanguage:
     def __init__(self, code, pluralForms):
@@ -38,16 +39,28 @@ class DummyPrincipal:
 class DummyPerson:
     implements(IPerson)
 
+    def __init__(self, codes):
+        self.codes = codes
+
     def languages(self):
-        return [DummyLanguages()['es']]
+        languages = DummyLanguages()
+        return [ languages[code] for code in self.codes ]
 
 
-def dummyPersonFromPrincipal(principal):
-    return DummyPerson()
+def adaptPrincipalToPerson(principal):
+    return DummyPerson(('es',))
 
+def adaptPrincipalToNoLanguagePerson(principal):
+    return DummyPerson([])
 
 class DummyPOFile:
     pluralForms = 4
+
+    def __init__(self, template):
+        self.poTemplate = template
+
+    def translatedCount(self):
+        return 3
 
 
 class DummyMessageID:
@@ -61,6 +74,9 @@ class DummyPOMessageSet:
     commentText = 'commentText'
     sourceComment = 'sourceComment'
 
+    def flags(self):
+        return []
+
     def messageIDs(self):
         return [DummyMessageID()]
 
@@ -73,7 +89,7 @@ class DummyPOTemplate:
         self.language_code = language_code
 
         if language_code in ('ja', 'es'):
-            return DummyPOFile()
+            return DummyPOFile(self)
         else:
             raise KeyError
 
@@ -85,10 +101,23 @@ class DummyPOTemplate:
 
 
 class DummyRequest:
+    implements(IBrowserRequest)
+
     def __init__(self, **form_data):
         self.principal = DummyPrincipal()
         self.form = form_data
         self.URL = "http://this.is.a/fake/url"
+
+    def get(self, key, default):
+        raise key
+
+def adaptRequestToLanguages(request):
+    return DummyPreferredLanguages()
+
+
+class DummyPreferredLanguages:
+    def getPreferredLanguages(self):
+        return ('ja',)
 
 
 def test_count_lines():
@@ -114,6 +143,93 @@ def test_count_lines():
     3
     '''
 
+def test_canonicalise_code():
+    '''
+    >>> from canonical.rosetta.browser import canonicalise_code
+    >>> canonicalise_code('cy')
+    'cy'
+    >>> canonicalise_code('cy-gb')
+    'cy_GB'
+    >>> canonicalise_code('cy_GB')
+    'cy_GB'
+    '''
+
+def test_codes_to_languages():
+    '''
+    Some boilerplate to allow us to use utilities.
+
+    >>> from zope.app.tests.placelesssetup import setUp, tearDown
+    >>> from zope.app.tests import ztapi
+
+    >>> setUp()
+    >>> ztapi.provideUtility(ILanguages, DummyLanguages())
+
+    >>> from canonical.rosetta.browser import codes_to_languages
+    >>> languages = codes_to_languages(('es', '!!!'))
+    >>> len(languages)
+    1
+    >>> languages[0].code
+    'es'
+
+    >>> tearDown()
+    '''
+
+def test_request_languages():
+    '''
+    >>> from zope.app.tests.placelesssetup import setUp, tearDown
+    >>> from zope.app.tests import ztapi
+    >>> from zope.i18n.interfaces import IUserPreferredLanguages
+
+    >>> from canonical.rosetta.browser import request_languages
+
+    Frist, test with a preson who has a single preferred language.
+
+    >>> setUp()
+    >>> ztapi.provideUtility(ILanguages, DummyLanguages())
+    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
+    >>> #ztapi.provideAdapter(IUserPreferredLanguages)
+
+    >>> languages = request_languages(DummyRequest())
+    >>> len(languages)
+    1
+    >>> languages[0].code
+    'es'
+
+    >>> tearDown()
+
+    Then test with a person who has no preferred language.
+
+    >>> setUp()
+    >>> ztapi.provideUtility(ILanguages, DummyLanguages())
+    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToNoLanguagePerson)
+    >>> ztapi.provideAdapter(IBrowserRequest, IUserPreferredLanguages, adaptRequestToLanguages)
+
+    >>> languages = request_languages(DummyRequest())
+    >>> len(languages)
+    1
+    >>> languages[0].code
+    'ja'
+
+    >>> tearDown()
+    '''
+
+def test_parse_cformat_string():
+    '''
+    >>> from canonical.rosetta.browser import parse_cformat_string
+    >>> parse_cformat_string('')
+    ()
+    >>> parse_cformat_string('foo')
+    (('string', 'foo'),)
+    >>> parse_cformat_string('blah %d blah')
+    (('string', 'blah '), ('interpolation', '%d'), ('string', ' blah'))
+    >>> parse_cformat_string('%sfoo%%bar%s')
+    (('interpolation', '%s'), ('string', 'foo%%bar'), ('interpolation', '%s'))
+    >>> parse_cformat_string('%')
+    Traceback (most recent call last):
+    ...
+    ValueError: %
+    '''
+
 def test_TranslatePOTemplate_init():
     '''
     Some boilerplate to allow us to use utilities.
@@ -124,7 +240,7 @@ def test_TranslatePOTemplate_init():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguages, DummyLanguages())
-    >>> ztapi.provideAdapter(IPrincipal, IPerson, dummyPersonFromPrincipal)
+    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
 
     First, test the initialisation.
 
@@ -236,7 +352,6 @@ def test_TranslatePOTemplate_init():
     8
 
     >>> tearDown()
-
     '''
 
 def test_TranslatePOTemplate_atBeginning_atEnd():
@@ -249,7 +364,7 @@ def test_TranslatePOTemplate_atBeginning_atEnd():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguages, DummyLanguages())
-    >>> ztapi.provideAdapter(IPrincipal, IPerson, dummyPersonFromPrincipal)
+    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
 
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest()
@@ -291,7 +406,7 @@ def test_TranslatePOTemplate_URLs():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguages, DummyLanguages())
-    >>> ztapi.provideAdapter(IPrincipal, IPerson, dummyPersonFromPrincipal)
+    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
 
     Test with no parameters.
 
@@ -352,7 +467,7 @@ def test_TranslatePOTemplate_messageSets():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguages, DummyLanguages())
-    >>> ztapi.provideAdapter(IPrincipal, IPerson, dummyPersonFromPrincipal)
+    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
 
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest()
@@ -391,7 +506,7 @@ def test_TranslatePOemplate_mungeMessageID():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguages, DummyLanguages())
-    >>> ztapi.provideAdapter(IPrincipal, IPerson, dummyPersonFromPrincipal)
+    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
 
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest()
@@ -399,26 +514,26 @@ def test_TranslatePOemplate_mungeMessageID():
 
     First, do no harm.
 
-    >>> t._mungeMessageID(u'foo bar')
+    >>> t._mungeMessageID(u'foo bar', [])
     u'foo bar'
 
     Test replacement of leading and trailing spaces.
 
-    >>> t._mungeMessageID(u' foo bar')
+    >>> t._mungeMessageID(u' foo bar', [])
     u'\u2423foo bar'
-    >>> t._mungeMessageID(u'foo bar ')
+    >>> t._mungeMessageID(u'foo bar ', [])
     u'foo bar\u2423'
-    >>> t._mungeMessageID(u'  foo bar  ')
+    >>> t._mungeMessageID(u'  foo bar  ', [])
     u'\u2423\u2423foo bar\u2423\u2423'
 
     Test replacement of newlines.
 
-    >>> t._mungeMessageID(u'foo\\nbar')
+    >>> t._mungeMessageID(u'foo\\nbar', [])
     u'foo\u21b5<br/>\\nbar'
 
     And both together.
 
-    >>> t._mungeMessageID(u'foo \\nbar')
+    >>> t._mungeMessageID(u'foo \\nbar', [])
     u'foo\u2423\u21b5<br/>\\nbar'
 
     >>> tearDown()

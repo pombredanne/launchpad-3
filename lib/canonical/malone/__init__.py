@@ -8,7 +8,7 @@ from zope.interface import implements
 from zope.app.container.interfaces import IContained
 #from zope.app.form.browser.interfaces import IAddFormCustomization
 
-from canonical.malone.interfaces import IMaloneApplication
+from canonical.launchpad.interfaces import IMaloneApplication
 from canonical.publication import rootObject
 
 class MaloneApplication(object):

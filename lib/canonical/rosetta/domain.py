@@ -7,11 +7,11 @@ __metaclass__ = type
 from zope.interface import implements
 from canonical.lp import decorates
 
-from canonical.rosetta.interfaces import IRosettaProject
-from canonical.database.doap import IProject, IProjects
+from canonical.launchpad.interfaces import IRosettaProject
+from canonical.launchpad.interfaces import IProject, IProjectSet
 
-class RosettaProjects:
-    decorates(IProjects)
+class RosettaProjectSet:
+    decorates(IProjectSet)
 
     def __init__(self, context):
         self.context = context

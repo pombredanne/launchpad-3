@@ -1,0 +1,7 @@
+<configure
+    xmlns="http://namespaces.zope.org/browser"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:zope="http://namespaces.zope.org/zope"
+    xmlns:lp="http://launchpad.canonical.com">
+
+</configure>

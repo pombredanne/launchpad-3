@@ -7,7 +7,7 @@
        traversal work properly.  We also need to make security declarations.
     -->
   <content class="canonical.rosetta.RosettaApplication">
-    <allow interface=".interfaces.IRosettaApplication" />
+    <allow interface="canonical.launchpad.interfaces.IRosettaApplication" />
     <implements interface="canonical.publication.IHasSuburls"/>
   </content>
 
@@ -17,6 +17,13 @@
       for="canonical.publication.RootObject"
       class="canonical.rosetta.RosettaApplication"
       name="rosetta"
+      newskin="canonical.launchpad.skins.rosetta"
+      />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IProduct"
+      layer="canonical.launchpad.skins.rosetta"
+      name="+rosetta-index"
       />
 
   <!-- This view registers 'projects' as a suburl of IRosettaApplication.
@@ -27,49 +34,55 @@
        objects, just by changing configuration.
     -->
   <browser:suburl
-      for="canonical.rosetta.interfaces.IRosettaApplication"
-      utility="canonical.database.doap.IProjects"
+      for="canonical.launchpad.interfaces.IRosettaApplication"
+      utility="canonical.launchpad.interfaces.IProjectSet"
       name="projects"
-      adaptwith="canonical.rosetta.domain.RosettaProjects"
+      adaptwith="canonical.rosetta.domain.RosettaProjectSet"
       />
 
 
-  <content class="canonical.rosetta.domain.RosettaProjects">
-    <allow interface="canonical.database.doap.IProjects" />
+  <content class="canonical.rosetta.domain.RosettaProjectSet">
+    <allow interface="canonical.launchpad.interfaces.IProjectSet" />
   </content>
 
   <!-- Set the default view for the rosetta application, for projects and
        for project.
     -->
   <browser:defaultView
-      for="canonical.rosetta.interfaces.IRosettaApplication"
+      for="canonical.launchpad.interfaces.IRosettaApplication"
       name="index"
       />
   <browser:defaultView
-      for="canonical.rosetta.domain.RosettaProjects"
+      for="canonical.rosetta.domain.RosettaProjectSet"
       name="index"
       />
   <browser:defaultView
       for="canonical.rosetta.domain.RosettaProject"
       name="index"
       />
+  <!--
+  XXX Mark Shuttleworth comments 03/10/04:
+  This needs to specify the default view in the Rosetta
+  skin for IProduct as being name="+rosetta-index". Daf,
+  talk to Steve for details.
   <browser:defaultView
-      for="canonical.rosetta.interfaces.IProduct"
+      for="canonical.launchpad.interfaces.IProduct"
+      name="index"
+      />
+  -->
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IPOTemplate"
       name="index"
       />
   <browser:defaultView
-      for="canonical.rosetta.interfaces.IPOTemplate"
-      name="index"
-      />
-  <browser:defaultView
-      for="canonical.rosetta.interfaces.IPOFile"
+      for="canonical.launchpad.interfaces.IPOFile"
       name="index"
       />
 
 <!--
   <adapter
       for="canonical.rosetta.poexport.POExporter"
-      provides="canonical.rosetta.interfaces.IPOExport"
+      provides="canonical.launchpad.interfaces.IPOExport"
       />
 -->
 

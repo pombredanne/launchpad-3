@@ -1,13 +1,20 @@
+
+import sets
+
+from zope.interface import implements
+
 from canonical.rosetta.ipofile import IPOHeader, IPOMessage
 from canonical.rosetta.pofile import POHeader, POMessage, POParser, POInvalidInputError
-from canonical.rosetta.interfaces import IPOTemplate, IPOFile
-from zope.interface import implements
-import sets
+from canonical.launchpad.interfaces import IPOTemplate, IPOFile
 
 class DatabaseConstraintError(Exception):
     pass
 class UnknownUserError(Exception):
     pass
+
+
+SINGULAR = 0
+PLURAL = 1
 
 
 # XXX: if you *modify* the adapted pofile "object", it assumes you're updating
@@ -121,7 +128,7 @@ class TranslationsList(object):
 
         # value is not empty; there is actually a translation
         # check that the plural form index makes sense
-        if index > self._nplurals:
+        if index >= self._nplurals:
             raise IndexError, index
         # if we're a template set, we can't have translations
         if self._msgset.poFile is None:
@@ -211,24 +218,24 @@ class MessageProxy(POMessage):
     msgid = property(_get_msgid, _set_msgid)
 
     # property: msgidPlural
-    # in rosetta: messageIDs()[1] points to it
+    # in rosetta: messageIDs()[PLURAL] points to it
     def _get_msgidPlural(self):
         msgids = self._master_msgset.messageIDs()
         if len(list(msgids)) >= 2:
-            return msgids[1].msgid
+            return msgids[PLURAL].msgid
         return None
     def _set_msgidPlural(self, value):
         # do we already have one?
         old_plural = self.msgidPlural
         if old_plural is not None:
             # yes; outdate it
-            old_plural = self._msgset.getMessageIDSighting(1)
+            old_plural = self._msgset.getMessageIDSighting(PLURAL)
             old_plural.inPOFile = False
         # if value is empty or None, we don't need a sighting
         if value:
             # value is not empty; make a sighting for it
             # (or update an existing old sighting)
-            self._msgset.makeMessageIDSighting(value, 1, update=True)
+            self._msgset.makeMessageIDSighting(value, PLURAL, update=True)
     msgidPlural = property(_get_msgidPlural, _set_msgidPlural)
 
     # property: msgstr (pofile.py only uses that when it's not plural)
@@ -238,23 +245,22 @@ class MessageProxy(POMessage):
             return None
         translations = list(self._msgset.translations())
         if len(translations) == 1:
-            return translations[0]
+            return translations[SINGULAR]
     def _set_msgstr(self, value):
         # let's avoid duplication of code; TranslationsList has
         # all the code necessary to do this
-        self._translations[0] = value
+        self._translations[SINGULAR] = value
     msgstr = property(_get_msgstr, _set_msgstr)
 
     # property: msgstrPlurals (a list)
     # in rosetta: set of translations sightings that point back here
     # we use the helper class TranslationsList for both reading and writing
     def _get_msgstrPlurals(self):
-        if self._msgset.poFile is None:
-            return None
-        translations = list(self._msgset.translations())
-        if len(translations) > 1:
+        if len(list(self._master_msgset.messageIDs())) > 1:
             # test is necessary because the interface says when
-            # there are no plurals, msgstrPlurals is None
+            # message is not plural, msgstrPlurals is None
+            if self._msgset.poFile is None:
+                return ('', '')
             return self._translations
     def _set_msgstrPlurals(self, value):
         for index, item in enumerate(value):
@@ -370,14 +376,10 @@ class TemplateImporter(object):
             msgset = self.potemplate.createMessageSetFromText(msgid)
         else:
             # it was in the db - update the timestamp
-            msgset.getMessageIDSighting(0, allowOld=True).dateLastSeen = "NOW"
+            msgset.getMessageIDSighting(SINGULAR, allowOld=True).dateLastSeen = "NOW"
         # set sequence
         self.len += 1
         msgset.sequence = self.len
-        # set inLastRevision for the primary msgid
-        # (the primary msgid is such an special case that we can't trust
-        # that task to the proxy)
-        msgset.getMessageIDSighting(0, allowOld=True).inLastRevision = True
         # create the proxy
         proxy = MessageProxy(msgset, person=self.person)
         # capture all exceptions - we want (do we?) our IndexError, KeyError,
@@ -403,14 +405,10 @@ class TemplateImporter(object):
             proxy.msgstrPlurals = plurals
             # set obsolete
             proxy.obsolete = kw.get('obsolete', False)
-        except:
-            # if we are to mask the original exception, we want to
-            # give a chance for the user to see it when debugging
-            from canonical.rosetta.pofile import DEBUG
-            if DEBUG:
-                import traceback
-                traceback.print_exc()
-            raise POInvalidInputError
+        except (KeyError, IndexError), e:
+            raise POInvalidInputError(
+                msg='Po file: invalid input on entry at line %d: %s'
+                % (kw['_lineno'], str(e)))
         # Mao; return the results of our work
         return proxy
 
@@ -428,15 +426,27 @@ class POFileImporter(object):
 
     def store_header(self):
         "Store the info about the header in the database"
+        header = self.parser.header
         # if it's already stored, or not yet parsed, never mind
-        if self.header_stored or not self.parser.header:
+        if self.header_stored or not header:
             return
+        # check that the plural forms info is valid
+        if not header.nplurals:
+            if self.pofile.pluralForms:
+                # first attempt: check if the database already knows it
+                old_header = POHeader(msgstr=self.pofile.header)
+                old_header.finish()
+                header['plural-forms'] = old_header['plural-forms']
+            else:
+                # we absolutely don't know it; only complain if
+                # a plural translation is present
+                header.pluralForms = 1
         # store it; use a single db operation
         self.pofile.set(
-            topComment=self.parser.header.commentText.encode('utf-8'),
-            header=self.parser.header.msgstr.encode('utf-8'),
-            headerFuzzy='fuzzy' in self.parser.header.flags,
-            pluralForms=self.parser.header.nplurals)
+            topComment=header.commentText.encode('utf-8'),
+            header=header.msgstr.encode('utf-8'),
+            headerFuzzy='fuzzy' in header.flags,
+            pluralForms=header.nplurals)
         # state that we've done so, or someone might give us a card
         self.header_stored = True
 
@@ -455,6 +465,7 @@ class POFileImporter(object):
         self.store_header()
         if not self.header_stored:
             raise POInvalidInputError('PO file has no header', 0)
+        self.pofile.updateStatistics()
 
     def __call__(self, msgid, **kw):
         "Instantiate a single message/messageset"
@@ -471,14 +482,10 @@ class POFileImporter(object):
             msgset = self.pofile.createMessageSetFromText(msgid)
         else:
             # it was in the db - update the timestamp
-            msgset.getMessageIDSighting(0, allowOld=True).dateLastSeen = "NOW"
+            msgset.getMessageIDSighting(SINGULAR, allowOld=True).dateLastSeen = "NOW"
         # set sequence
         self.len += 1
         msgset.sequence = self.len
-        # set inLastRevision for the primary msgid
-        # (the primary msgid is such an special case that we can't trust
-        # that task to the proxy)
-        msgset.getMessageIDSighting(0, allowOld=True).inLastRevision = True
         # create the proxy
         proxy = MessageProxy(msgset, person=self.person)
         # capture all exceptions - we want (do we?) our IndexError, KeyError,
@@ -487,10 +494,10 @@ class POFileImporter(object):
             # set (or unset) msgidPlural
             proxy.msgidPlural = kw.get('msgidPlural', None)
             # if we got msgstr, then it's a singular; store it
-            if kw.get('msgstr'):
+            if 'msgstr' in kw:
                 proxy.msgstr = kw['msgstr']
             # or was it plural?  In fact, store them all!
-            elif kw.get('msgstrPlurals'):
+            elif 'msgstrPlurals' in kw:
                 proxy.msgstrPlurals = kw['msgstrPlurals']
             # store comments
             proxy.commentText = kw.get('commentText', '')
@@ -499,13 +506,9 @@ class POFileImporter(object):
             proxy.flags = kw.get('flags', ())
             # store obsolete
             proxy.obsolete = kw.get('obsolete', False)
-        except:
-            # if we are to mask the original exception, we want to
-            # give a chance for the user to see it when debugging
-            from canonical.rosetta.pofile import DEBUG
-            if DEBUG:
-                import traceback
-                traceback.print_exc()
-            raise POInvalidInputError
+        except (KeyError, IndexError), e:
+            raise POInvalidInputError(
+                msg='Po file: invalid input on entry at line %d: %s'
+                % (kw['_lineno'], str(e)))
         # Mao; return the results of our work
         return proxy

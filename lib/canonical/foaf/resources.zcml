@@ -1,0 +1,6 @@
+<configure xmlns="http://namespaces.zope.org/browser">
+
+    <resource name="foaf.png" file="images/foaf.png" />
+
+</configure>
+<!-- arch-tag: D7F9D281-1136-11D9-8D71-000A95954466-->

@@ -52,7 +52,7 @@ def verifySQLObject(interface, implementation):
 """
 
 if mode == 'object':
-    print "from canonical.rosetta.sql import RosettaPOMessageSet, RosettaLanguage"
+    print "from canonical.launchpad.database import RosettaPOMessageSet, RosettaLanguage"
     print "import canonical.lp"
     print
     print "canonical.lp.initZopeless()"
@@ -63,8 +63,8 @@ for t in tests:
 
     print "def test_verify_sql_%s():" % interface[1:].lower()
     print "    '''"
-    print "    >>> from canonical.rosetta.interfaces import %s" % interface
-    print "    >>> from canonical.rosetta.sql import %s" % implementation
+    print "    >>> from canonical.launchpad.interfaces import %s" % interface
+    print "    >>> from canonical.launchpad.database import %s" % implementation
 
     if mode == 'object':
         print "    >>> verifySQLObject(%s, %s)" % (interface, implementation)

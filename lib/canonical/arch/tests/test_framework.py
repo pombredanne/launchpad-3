@@ -12,15 +12,22 @@ import sys
 import os
 import shutil
 from zope.interface.verify import verifyClass, verifyObject
-from canonical.arch.database import dbname, nuke
 import psycopg
 import tempfile
 import arch
 
+def _connect():
+    from sqlobject import connectionForURI
+    from canonical.database.sqlbase import SQLBase
+    conn = connectionForURI('postgres:///launchpad_test')
+    SQLBase.initZopeless(conn)
+    return conn.getConnection()
+
 class DatabaseTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.__db_handle = psycopg.connect(dbname())
+        self.__db_handle = _connect()
+
         self.flushArchiveData(self.cursor())
         self._archive = None
         self._category = None
@@ -39,17 +46,25 @@ class DatabaseTestCase(unittest.TestCase):
 
     def flushArchiveData(self, cursor):
         """Remove all ArchArchive and ArchArchiveLocation entries"""
-        nuke()
-#         cursor.execute("DELETE FROM Changeset")
-#         cursor.execute("DELETE FROM ArchArchiveLocation")
-#         cursor.execute("DELETE FROM Branch")
-#         cursor.execute("DELETE FROM ArchArchive")
+        cursor.execute("DELETE FROM ChangesetFileHash")    
+        cursor.execute("DELETE FROM ChangesetFile")
+        cursor.execute("DELETE FROM ChangesetFileName")
+        cursor.execute("DELETE FROM Changeset")
+        cursor.execute("DELETE FROM POTranslationSighting")
+        cursor.execute("DELETE FROM POMsgIDSighting")
+        cursor.execute("DELETE FROM POMsgSet")
+        cursor.execute("DELETE FROM POFile")
+        cursor.execute("DELETE FROM POTemplate")
+        cursor.execute("DELETE FROM Branch")
+        cursor.execute("DELETE FROM ArchNamespace")
+        cursor.execute("DELETE FROM ArchArchiveLocation")
+        cursor.execute("DELETE FROM ArchArchive")
         self.commit()
 
     def _getTestArchive(self):
         """Insert a test archive into the db and return it"""
         from canonical.arch.broker import Archive
-        from canonical.arch.database import ArchiveMapper
+        from canonical.launchpad.database import ArchiveMapper
         archive = Archive("foo@bar")
         archiveMapper = ArchiveMapper()
         archiveMapper.insert(archive)
@@ -63,7 +78,7 @@ class DatabaseTestCase(unittest.TestCase):
 
     def _getTestCategory(self):
         """Insert a test category into the db and return it"""
-        from canonical.arch.database import CategoryMapper
+        from canonical.launchpad.database import CategoryMapper
         from canonical.arch.broker import Category
         category = Category("bah", self.getTestArchive())
         categoryMapper = CategoryMapper()
@@ -78,7 +93,7 @@ class DatabaseTestCase(unittest.TestCase):
 
     def _getTestBranch(self, name="meh"):
         """Insert a test branch into the db and return it"""
-        from canonical.arch.database import BranchMapper
+        from canonical.launchpad.database import BranchMapper
         from canonical.arch.broker import Branch
         branch = Branch(name, self.getTestCategory())
         branchMapper = BranchMapper()
@@ -93,7 +108,7 @@ class DatabaseTestCase(unittest.TestCase):
 
     def _getTestVersion(self):
         """Insert a test version into the db and return it"""
-        from canonical.arch.database import VersionMapper
+        from canonical.launchpad.database import VersionMapper
         from canonical.arch.broker import Version
         version = Version("0", self.getTestBranch())
         versionMapper = VersionMapper()
@@ -108,7 +123,7 @@ class DatabaseTestCase(unittest.TestCase):
 
     def _getTestRevision(self):
         """Insert a test revision into the db and return it"""
-        from canonical.arch.database import RevisionMapper
+        from canonical.launchpad.database import RevisionMapper
         from canonical.arch.broker import Revision
         revision = Revision("base-0", self.getTestVersion())
         revisionMapper = RevisionMapper()
@@ -169,7 +184,7 @@ class TestFramework(unittest.TestCase):
     def test_flushArchiveData(self):
         """test that flushArchiveData works"""
 
-        DBHandle = psycopg.connect(dbname())
+        DBHandle = _connect()
         cursor = DBHandle.cursor()
         cursor.execute("INSERT INTO ArchArchive (name, title, description, visible) VALUES ('%s', 'a title', 'a description', true)" % "bah@bleh")
         DBHandle.commit()
@@ -180,7 +195,7 @@ class TestFramework(unittest.TestCase):
         framework = DatabaseTestCase("commit")
         framework.setUp() 
 
-        DBHandle = psycopg.connect(dbname())
+        DBHandle = _connect()
         cursor = DBHandle.cursor()
         
         cursor.execute("SELECT * FROM ArchArchive")

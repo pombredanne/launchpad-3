@@ -36,8 +36,8 @@ class Imports(unittest.TestCase):
     tests.append('import_zope_interface')
 
     def import_canonical_arch_interfaces(self):
-        """Import canonical.arch.interfaces."""
-        import canonical.arch.interfaces
+        """Import canonical.launchpad.interfaces."""
+        import canonical.launchpad.interfaces
     tests.append('import_canonical_arch_interfaces')
 
 def test_suite():

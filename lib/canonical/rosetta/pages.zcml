@@ -7,172 +7,172 @@
   -->
 
   <!-- pages for the collection of projects -->
-  <pages for="canonical.rosetta.domain.RosettaProjects"
+  <pages for="canonical.rosetta.domain.RosettaProjectSet"
          permission="zope.Public"
          class="canonical.rosetta.browser.ViewProjects"
          lp:url="Rosetta/projects">
     <page name="index"
-          template="templates/projects-index.pt"
+          template="../launchpad/templates/rosetta-projects-index.pt"
           lp:url="Rosetta/projects" />
     <page name="+request"
-          template="templates/projects-request.pt"
+          template="../launchpad/templates/projects-request.pt"
           lp:url="Rosetta/projects/+request" />
   </pages>
 
-  <traverse for="canonical.rosetta.domain.RosettaProjects"
+  <traverse for="canonical.rosetta.domain.RosettaProjectSet"
             getter="__getitem__"
             adaptwith="canonical.rosetta.domain.RosettaProject" />
 
   <!-- pages for a project -->
-  <pages for="canonical.rosetta.interfaces.IRosettaProject"
+  <pages for="canonical.launchpad.interfaces.IRosettaProject"
          permission="zope.Public"
          class="canonical.rosetta.browser.ViewProject"
          lp:url="Rosetta/projects/$Project.name">
     <page name="index"
-          template="templates/project-index.pt"
+          template="../launchpad/templates/rosetta-project-index.pt"
           lp:url="Rosetta/projects/$Project.name/index" />
   </pages>
 
-  <traverse for="canonical.rosetta.interfaces.IRosettaProject"
+  <traverse for="canonical.launchpad.interfaces.IRosettaProject"
             getter="product" />
 
 
   <!-- pages for a product -->
-  <pages for="canonical.rosetta.interfaces.IProduct"
+  <pages for="canonical.launchpad.interfaces.IProduct"
          permission="zope.Public"
          class="canonical.rosetta.browser.ViewProduct"
          lp:url="Rosetta/projects/$Project.name/$Product.name">
-    <page name="index"
-          template="templates/product-index.pt"
+    <page name="+rosetta-index"
+          template="../launchpad/templates/rosetta-product-index.pt"
           lp:url="Rosetta/projects/$Project.name/$Product.name/index" />
   </pages>
 
-  <traverse for="canonical.rosetta.interfaces.IProduct" getter="poTemplate" />
+  <traverse for="canonical.launchpad.interfaces.IProduct" getter="poTemplate" />
 
   <!-- pages for a POTemplate -->
-  <pages for="canonical.rosetta.interfaces.IPOTemplate"
+  <pages for="canonical.launchpad.interfaces.IPOTemplate"
          permission="zope.Public"
          class="canonical.rosetta.browser.ViewPOTemplate"
          lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name">
     <page name="index"
-          template="templates/potemplate-index.pt"
+          template="../launchpad/templates/potemplate-index.pt"
           lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/index" />
     <page name="upload"
-          template="templates/potemplate-upload.pt"
+          template="../launchpad/templates/potemplate-upload.pt"
           lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/upload" />
   </pages>
 
-  <pages for="canonical.rosetta.interfaces.IPOTemplate"
+  <pages for="canonical.launchpad.interfaces.IPOTemplate"
          permission="launchpad.AnyPerson"
          class="canonical.rosetta.browser.TranslatePOTemplate"
          lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name">
     <page name="translate"
-          template="templates/potemplate-translate.pt"
+          template="../launchpad/templates/potemplate-translate.pt"
           lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/translate" />
   </pages>
 
-  <traverse for="canonical.rosetta.interfaces.IPOTemplate"
+  <traverse for="canonical.launchpad.interfaces.IPOTemplate"
             function="canonical.rosetta.browser.traverseIPOTemplate" />
 
   <!-- pages for a POFile -->
-  <pages for="canonical.rosetta.interfaces.IPOFile"
+  <pages for="canonical.launchpad.interfaces.IPOFile"
          permission="zope.Public"
          class="canonical.rosetta.browser.ViewPOFile"
          lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language">
     <page name="index"
-          template="templates/pofile-index.pt"
+          template="../launchpad/templates/pofile-index.pt"
           lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language"/>
   </pages>
 
   <page name="+edit"
         permission="launchpad.AnyPerson"
         class="canonical.rosetta.browser.ViewPOFile"
-        for="canonical.rosetta.interfaces.IPOFile"
-        template="templates/pofile-edit.pt"
+        for="canonical.launchpad.interfaces.IPOFile"
+        template="../launchpad/templates/pofile-edit.pt"
         lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language/+edit" />
 
   <page name="po"
-        for="canonical.rosetta.interfaces.IPOFile"
+        for="canonical.launchpad.interfaces.IPOFile"
         permission="zope.Public"
         class="canonical.rosetta.browser.ViewPOExport"
         attribute="__call__"
         lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$Language.code/po" />
 
   <page name="mo"
-        for="canonical.rosetta.interfaces.IPOFile"
+        for="canonical.launchpad.interfaces.IPOFile"
         permission="zope.Public"
         class="canonical.rosetta.browser.ViewMOExport"
         attribute="__call__"
         lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$Language.code/mo" />
 
   <!-- pages for the rosetta application -->
-  <pages for="canonical.rosetta.interfaces.IRosettaApplication"
+  <pages for="canonical.launchpad.interfaces.IRosettaApplication"
          permission="zope.Public"
          lp:url="Rosetta">
     <page name="index"
-          template="templates/rosetta-index.pt"
+          template="../launchpad/templates/rosetta-index.pt"
           lp:url="Rosetta/index" />
   </pages>
 
   <!-- pages that limi put in without knowing which interface they should
        be bound to - feel free to move around as required -->
-  <pages for="canonical.rosetta.interfaces.IRosettaApplication"
+  <pages for="canonical.launchpad.interfaces.IRosettaApplication"
          permission="zope.Public"
          lp:url="Rosetta">
     <page name="about"
-          template="templates/about.pt"
+          template="../launchpad/templates/about.pt"
           lp:url="Rosetta/about" />
     <page name="search"
-          template="templates/search.pt"
+          template="../launchpad/templates/search.pt"
           lp:url="Rosetta/search" />
     <page name="interest"
-          template="templates/project-interest.pt"
+          template="../launchpad/templates/project-interest.pt"
           lp:url="Rosetta/project/+interest" />
     <page name="sitemap"
-          template="templates/sitemap.pt"
+          template="../launchpad/templates/sitemap.pt"
           lp:url="Rosetta/sitemap" />
     <page name="legal"
-          template="templates/legal.pt"
+          template="../launchpad/templates/legal.pt"
           lp:url="Rosetta/legal" />
     <page name="sendto"
-          template="templates/sendto.pt"
+          template="../launchpad/templates/sendto.pt"
           lp:url="Rosetta/sendto" />
   </pages>
 
-  <page for="canonical.rosetta.interfaces.IRosettaApplication"
+  <page for="canonical.launchpad.interfaces.IRosettaApplication"
         permission="launchpad.AnyPerson"
         name="maintainer"
-        template="templates/dashboard-maintainer.pt"
+        template="../launchpad/templates/dashboard-maintainer.pt"
         lp:url="Rosetta/maintainer" />
 
-  <pages for="canonical.rosetta.interfaces.IRosettaApplication"
+  <pages for="canonical.launchpad.interfaces.IRosettaApplication"
          permission="launchpad.AnyPerson"
          class="canonical.rosetta.browser.TranslatorDashboard"
          >
     <page name="translator"
-          template="templates/dashboard-translator.pt"
+          template="../launchpad/templates/dashboard-translator.pt"
           lp:url="Rosetta/translator" />
   </pages>
 
-  <pages for="canonical.rosetta.interfaces.IRosettaApplication"
+  <pages for="canonical.launchpad.interfaces.IRosettaApplication"
          permission="launchpad.AnyPerson"
          class="canonical.rosetta.browser.ViewPreferences"
          >
     <page name="prefs"
-          template="templates/rosetta-preferences.pt"
+          template="../launchpad/templates/rosetta-preferences.pt"
           lp:url="Rosetta/prefs" />
   </pages>
 
-  <pages for="canonical.rosetta.interfaces.IRosettaApplication"
+  <pages for="canonical.launchpad.interfaces.IRosettaApplication"
          permission="zope.Public"
          class="canonical.rosetta.browser.ViewSearchResults"
          >
     <page name="search-results"
-          template="templates/search-results.pt"
+          template="../launchpad/templates/rosetta-search-results.pt"
           lp:url="Rosetta/search-results" />
   </pages>
 
-  <page for="canonical.rosetta.interfaces.IRosettaApplication"
+  <page for="canonical.launchpad.interfaces.IRosettaApplication"
         class="canonical.rosetta.browser.LogIn"
         permission="launchpad.AnyPerson"
         name="+login"

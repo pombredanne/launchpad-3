@@ -7,33 +7,41 @@
   -->
 
     <content class=".browser.MaloneBugAttachment">
-        <allow interface=".interfaces.IMaloneBugAttachment" />
-        <require permission="zope.View" set_schema=".interfaces.IMaloneBug" />
+        <allow interface="canonical.launchpad.interfaces.IMaloneBugAttachment" />
+        <require permission="zope.View" set_schema="canonical.launchpad.interfaces.IMaloneBug" />
     </content>
 
     <content class=".browser.MaloneBug">
-        <allow interface=".interfaces.IMaloneBug" />
-        <require permission="zope.View" set_schema=".interfaces.IMaloneBug" />
+        <allow interface="canonical.launchpad.interfaces.IMaloneBug" />
+        <require permission="zope.View" set_schema="canonical.launchpad.interfaces.IMaloneBug" />
     </content>
 
     <content class=".browser.BugContainer">
-        <allow interface=".interfaces.IBugContainer" />
+        <allow interface="canonical.launchpad.interfaces.IBugContainer" />
+    </content>
+
+    <content class="canonical.launchpad.database.BugSystemSet">
+        <allow interface="canonical.launchpad.interfaces.IBugSystemSet" />
     </content>
 
     <utility
+        factory="canonical.launchpad.database.BugSystemSet"
+        provides="canonical.launchpad.interfaces.IBugSystemSet" />
+    
+    <utility
         factory=".browser.BugContainer"
-        provides=".interfaces.IBugContainer" />
+        provides="canonical.launchpad.interfaces.IBugContainer" />
 
     <content class=".browser.BugAttachmentContainer">
-        <allow interface=".interfaces.IBugAttachmentContainer" />
+        <allow interface="canonical.launchpad.interfaces.IBugAttachmentContainer" />
     </content>
 
     <utility
         factory=".browser.BugAttachmentContainer"
-        provides=".interfaces.IBugAttachmentContainer" />
+        provides="canonical.launchpad.interfaces.IBugAttachmentContainer" />
 
     <content class=".browser.BugExternalRefContainer">
-        <allow interface=".interfaces.IBugExternalRefContainer" />
+        <allow interface="canonical.launchpad.interfaces.IBugExternalRefContainer" />
         <allow 
             interface="zope.app.form.browser.interfaces.IAddFormCustomization"
             />
@@ -41,10 +49,10 @@
 
     <utility
         factory=".browser.BugExternalRefContainer"
-        provides=".interfaces.IBugExternalRefContainer" />
+        provides="canonical.launchpad.interfaces.IBugExternalRefContainer" />
 
     <content class=".browser.BugWatchContainer">
-        <allow interface=".interfaces.IBugWatchContainer" />
+        <allow interface="canonical.launchpad.interfaces.IBugWatchContainer" />
         <allow 
             interface="zope.app.form.browser.interfaces.IAddFormCustomization" 
             />
@@ -52,10 +60,10 @@
 
     <utility
         factory=".browser.BugWatchContainer"
-        provides=".interfaces.IBugWatchContainer" />
+        provides="canonical.launchpad.interfaces.IBugWatchContainer" />
 
     <content class=".browser.ProductBugAssignmentContainer">
-        <allow interface=".interfaces.IProductBugAssignmentContainer" />
+        <allow interface="canonical.launchpad.interfaces.IProductBugAssignmentContainer" />
         <allow 
             interface="zope.app.form.browser.interfaces.IAddFormCustomization" 
             />
@@ -63,10 +71,10 @@
 
     <utility
         factory=".browser.ProductBugAssignmentContainer"
-        provides=".interfaces.IProductBugAssignmentContainer" />
+        provides="canonical.launchpad.interfaces.IProductBugAssignmentContainer" />
 
     <content class=".browser.SourcepackageBugAssignmentContainer">
-        <allow interface=".interfaces.ISourcepackageBugAssignmentContainer" />
+        <allow interface="canonical.launchpad.interfaces.ISourcepackageBugAssignmentContainer" />
         <allow 
             interface="zope.app.form.browser.interfaces.IAddFormCustomization" 
             />
@@ -74,10 +82,10 @@
 
     <utility
         factory=".browser.SourcepackageBugAssignmentContainer"
-        provides=".interfaces.ISourcepackageBugAssignmentContainer" />
+        provides="canonical.launchpad.interfaces.ISourcepackageBugAssignmentContainer" />
 
     <content class=".browser.BugSubscriptionContainer">
-        <allow interface=".interfaces.IBugSubscriptionContainer" />
+        <allow interface="canonical.launchpad.interfaces.IBugSubscriptionContainer" />
         <allow 
             interface="zope.app.form.browser.interfaces.IAddFormCustomization"
             />
@@ -85,22 +93,14 @@
 
     <utility
         factory=".browser.BugSubscriptionContainer"
-        provides=".interfaces.IBugSubscriptionContainer" />
-
-    <content class=".browser.ProjectContainer">
-        <allow interface=".interfaces.IProjectContainer" />
-    </content>
-
-    <utility
-        factory=".browser.ProjectContainer"
-        provides=".interfaces.IProjectContainer" />
+        provides="canonical.launchpad.interfaces.IBugSubscriptionContainer" />
 
     <content class=".browser.SourcepackageContainer">
-        <allow interface=".interfaces.ISourcepackageContainer" />
+        <allow interface="canonical.launchpad.interfaces.ISourcepackageContainer" />
     </content>
 
     <utility
         factory=".browser.SourcepackageContainer"
-        provides=".interfaces.ISourcepackageContainer" />
+        provides="canonical.launchpad.interfaces.ISourcepackageContainer" />
 
 </configure>

@@ -1,0 +1,82 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+
+<div metal:fill-slot="main">
+
+    <h1>Soyuz Distribution Search</h1>
+
+    <div class="documentDescription">
+    <p> Total of <span tal:content="context/entries">xx</span>
+    Distributions hosted by Soyuz
+    </div>
+
+    <form name="search" action="" method="POST">
+    <fieldset>
+    	<legend><h3>Search Distribution</h3></legend>
+	<table>
+	<tr><td>
+	<div class="field">
+	    <label>Name</label>
+	    <div class="formHelp">
+	    Enter the Distribution Name.
+            </div>
+	    <input type="text" name="name"
+	    tal:attributes="value request/name|nothing" />
+	 </div>
+	 </td></tr>
+	 <tr><td>
+	<div class="field">
+	    <label>Title</label>
+	    <div class="formHelp">
+	    Enter the Distribution Title.
+            </div>
+	    <input type="text" name="title"
+	    tal:attributes="value request/title|nothing" />
+	 </div>
+	 </td></tr>
+	 <tr><td>
+	<div class="field">
+	    <label>Description</label>
+	    <div class="formHelp">
+	    Enter the Distribution Description.
+            </div>
+	    <input type="text" name="description"
+	    tal:attributes="value request/description|nothing" />
+	 </div>
+	 </td></tr>
+	 <tr><td>
+	 <div class="formControls">
+	    <input type="submit" value="Search"/>
+	 </div>
+	 </td></tr>
+	 </table>
+    </form>
+
+    <div tal:condition="view/search_action">
+    <h3>Results</h3>
+    <h4><span tal:content="view/entries"/> entries found</h4> 
+    <ul>
+        <li tal:repeat="distro view/results"> 
+	<a tal:attributes="href distro/name" tal:content="distro/title"></a>
+        </li>
+    </ul>
+    </div>
+
+    </div>
+
+
+
+</body>
+</html>

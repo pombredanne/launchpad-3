@@ -27,7 +27,7 @@ class UserDetailsResource(xmlrpc.XMLRPC):
         return self.storage.authUser(loginID,
                                      sshaDigestedPassword.decode('base64'))
 
-    def xmlrpc_createUser(self, loginID, sshaDigestedPassword, displayName,
+    def xmlrpc_createUser(self, loginID, sshaDigestedPassword, displayname,
                           emailAddresses):
         """Create a user
         
@@ -36,9 +36,19 @@ class UserDetailsResource(xmlrpc.XMLRPC):
         """
         if self.debug:
             print ("createUser(%r, %r, %r, %r)"
-                   % (loginID, sshaDigestedPassword, displayName,
+                   % (loginID, sshaDigestedPassword, displayname,
                       emailAddresses))
         return self.storage.createUser(loginID,
                                        sshaDigestedPassword.decode('base64'), 
-                                       displayName, emailAddresses)
+                                       displayname, emailAddresses)
+
+    def xmlrpc_changePassword(self, loginID, sshaDigestedPassword,
+                              newSshaDigestedPassword):
+        if self.debug:
+            print ("changePassword(%r, %r, %r)"
+                   % (loginID, sshaDigestedPassword, newSshaDigestedPassword))
+        return self.storage.changePassword(
+            loginID, sshaDigestedPassword.decode('base64'),
+            newSshaDigestedPassword.decode('base64')
+        )
 

@@ -6,9 +6,10 @@ from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
 
-from canonical.database.foaf import Person
-from canonical.database.doap import Sourcepackage, Product, Binarypackage
-from canonical.database.malone import BugSystem
+from canonical.launchpad.database import Person
+from canonical.launchpad.database import Sourcepackage, Binarypackage
+from canonical.launchpad.database import Product
+from canonical.launchpad.database import BugSystem
 
 __metaclass__ = type
 
@@ -62,6 +63,13 @@ class TitledTableVocabulary(object):
 
 class SourcepackageVocabulary(TitledTableVocabulary):
     _table = Sourcepackage
+    _orderBy = 'id'
+    def _toTerm(self, pkg):
+        name = pkg.sourcepackagename.name
+        return SimpleTerm(pkg.id, str(pkg.id), name)
+    def getTermByToken(self, token):
+        return self.getTerm(token)
+
 
 class ProductVocabulary(TitledTableVocabulary):
     _table = Product

@@ -1,0 +1,183 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@malone_template/master"
+      i18n:domain="rosetta">
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure view/peoplePortlet" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/referencePortlet" />
+    <div tal:replace="structure view/watchPortlet" />
+</metal:rightportlets>
+
+
+<div metal:fill-slot="main">
+
+
+<div id="content" class="documentEditable">
+    <ul class="contentViews">
+        <li id="contentview-view" class="selected">
+            <a>View</a>
+        </li>
+    
+        <li id="contentview-edit" class="plain">
+            <a href="+edit">Edit</a>
+        </li>
+    
+        <li id="contentview-edit" class="plain">
+            <a href="activity">History</a>
+        </li>
+    </ul>
+
+    <div class="contentActions">
+        &nbsp;
+    </div>
+
+    <div class="documentContent" id="region-content">
+  
+        <h1>
+            <span tal:replace="context/title" />
+        </h1>
+  
+        <div class="discreet">
+            <!--<span class="bug-confirmed" 
+                title="Bug status">Confirmed</span>-->
+            <span tal:condition="context/name">
+                Bugname: <a href="" tal:content="context/name">$Bug.name</a>,
+            </span>
+            Created
+            <span tal:replace="python:context.datecreated.strftime(
+                '%d %b %y %H:%M')">13 Sep 04 12:15</span>.
+        </div>
+
+        <div class="documentDescription" tal:content="context/shortdesc">
+            $Bug.shortdesc
+        </div>
+  
+        <div tal:content="context/description">
+            $Bug.description
+        </div>
+    
+        <h2>Product assignment</h2>
+
+        <div tal:replace="structure view/productAssignmentPortlet" />
+
+        <h2>Source package assigmnent</h2>
+
+        <div tal:replace="structure view/sourcepackageAssignmentPortlet" />
+  
+        <h2>Comments</h2>
+  
+        <div class="boardComment" tal:repeat="message context/messages">
+            
+            <div class="boardCommentDetails">
+                <strong tal:content="message/title">$Bugmessage.title</strong>
+
+                Posted by <span 
+                tal:replace="message/personmsg/displayname|string:(none)">
+                $Person.displayname
+                </span> 
+                at <span tal:replace="python:message.datecreated.strftime(
+                    '%d %b %y %H:%M')">Thursday 13:21</span>
+            </div>
+
+            <div class="boardCommentBody">
+                <div tal:repeat="attachment message/attachments" 
+                    class="portrait"> 
+                    <!-- TODO: Attachment URL when Librarian is available -->
+                    <a href="#">                    
+                        <div tal:content="attachment/name">
+                            $BugAttachment.name
+                        </div>
+                    </a>
+                </div>
+            
+                <div class="boardCommentContent" tal:content="message/contents">
+                    Comment text.
+                </div>
+            </div>
+                
+        <fieldset class="collapsible collapsed">
+            <legend>Follow-up</legend>
+      
+            <!--
+            <div class="field">
+                <label>Current status</label>
+                <div class="formHelp">
+                Change status, if necessary
+                </div>
+                <select>
+                    <option>No change</option>
+                    <option>Resolve</option>
+                    <option>Reject</option>
+                    <option>Re-open</option>
+                </select>
+            </div>
+            -->
+      
+            <div class="field">
+                <form action="messages/+new" method="post">
+                    <label>Comment</label>
+                    <div class="formHelp">
+                        If you have additional relevant information, 
+                        enter it below.
+                    </div>
+                    <input name="field.title" type="text" /><br />
+                    <textarea name="field.contents"></textarea>
+                    <input type="submit" name="UPDATE_SUBMIT" value="Add" />
+                </form>
+            </div>
+        </fieldset>
+            <div class="visualClear"></div>
+
+            <!--
+            <div class="boardCommentActions" >
+                <form method="post" tal:attributes="action
+                    string:messages/${message/id}/+reply">
+                    <input class="standalone" type="submit"
+                        value="Reply to this" />
+                </form>
+            </div>
+            -->
+        </div>
+  
+        <fieldset>
+            <legend>Follow-up</legend>
+      
+            <!--
+            <div class="field">
+                <label>Current status</label>
+                <div class="formHelp">
+                Change status, if necessary
+                </div>
+                <select>
+                    <option>No change</option>
+                    <option>Resolve</option>
+                    <option>Reject</option>
+                    <option>Re-open</option>
+                </select>
+            </div>
+            -->
+      
+            <div class="field">
+                <form action="messages/+new" method="post">
+                    <label>Comment</label>
+                    <div class="formHelp">
+                        If you have additional relevant information, 
+                        enter it below.
+                    </div>
+                    <input name="field.title" type="text" /><br />
+                    <textarea name="field.contents"></textarea>
+                    <input type="submit" name="UPDATE_SUBMIT" value="Add" />
+                </form>
+            </div>
+        </fieldset>
+
+    </div>
+</div>
+
+</div></body>
+</html>

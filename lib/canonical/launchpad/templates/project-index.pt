@@ -1,0 +1,58 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@launchpad_template/master"
+      i18n:domain="doap">
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1 tal:content="context/title">Project Title</h1>
+
+    <div class="documentDescription" tal:content="context/shortdesc">
+        This is the project Short Description, which should be no
+        longer than 72 characters, although it might be.
+    </div>
+
+    <div tal:content="context/description">
+    This is the Project Description,
+    which is a much more substantial description of the project. It should
+    be several paragraphs long, and give you a very clear insight into the
+    work of the Project, and the people behind it. It should describe the
+    project history, and organisation.
+    
+    The Project Description should also mention the major product or
+    products from that project. For example, the Apache Project description
+    would highlight its work on the Apache Server, and mention other
+    products such as APR.
+    </div>
+    <div>
+        [ <a href="+edit">Edit</a> ]
+    </div>
+
+    <h2>Products</h2>
+
+    <p>This project has the following products:</p>
+
+    <div>
+	<ul tal:repeat="product context/products">
+		<li><a href="" tal:attributes="href product/name" 
+                tal:content="product/title">Product title</a>
+            <span tal:condition="exists:product/homepageurl"> [
+            <span tal:content="product/homepageurl">homepage</span>
+            ] </span>
+            <br />
+            <span tal:content="product/shortdesc">Product short
+            description goes here.</span></li>
+            <ul tal:repeat="potemplate product/poTemplates">
+                    <li> Translations: <span tal:content="potemplate/title" /></li>
+            </ul>
+	</ul>
+    </div>
+    <div>
+	<a href="+newproduct">Add a product</a>
+	</div>
+
+</div>
+
+</body>
+</html>

@@ -17,7 +17,7 @@ class ConWrapper:
     def __init__(self, con):
         self.__dict__['_con'] = con
         self.__dict__['_curs'] = []
-    
+
     def cursor(self):
         c = self._con.cursor()
         self._curs.append(c)
@@ -42,9 +42,9 @@ class ConWrapper:
 
 
 class PgTestCase(unittest.TestCase):
-    """This test harness will create and destroy a database named 
+    """This test harness will create and destroy a database named
        launchpad_test in the setUp and tearDown methods
-    
+
     """
     # This database must already exist
     dbname = 'launchpad_unittest'
@@ -74,9 +74,9 @@ class PgTestCase(unittest.TestCase):
         con = self.connect()
         cur = con.cursor()
         full_sql = '''
-            select c.relname, relkind from pg_class c, pg_namespace n 
-            where n.oid = c.relnamespace 
-            and n.nspname not in ('pg_catalog','pg_toast') 
+            select c.relname, relkind from pg_class c, pg_namespace n
+            where n.oid = c.relnamespace
+            and n.nspname not in ('pg_catalog','pg_toast')
             and pg_table_is_visible(c.oid)
             '''
         type_sql = full_sql + 'and c.relkind = %(kind)s'
@@ -128,7 +128,7 @@ class LaunchpadSchemaTestCase(PgTestCase):
         con = self.connect()
         cur = con.cursor()
         try:
-            schema = self._getSQL('launchpad.sql')
+            schema = self._getSQL('sampledata/current.sql')
             for sql in schema:
                 cur.execute(sql)
             con.commit()

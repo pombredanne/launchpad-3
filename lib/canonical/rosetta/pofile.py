@@ -8,8 +8,6 @@ import sys, sets, warnings, textwrap, codecs
 from canonical.rosetta.ipofile import IPOMessage, IPOHeader, IPOParser
 from zope.interface import implements
 
-DEBUG=False
-
 # Exceptions and warnings
 
 class POSyntaxError(Exception):
@@ -18,10 +16,10 @@ class POSyntaxError(Exception):
         self.lno = lno
 
     def __str__(self):
-        if self.lno:
-            return 'Po file: syntax error on or before line %d' % self.lno
+        if self.lno is None:
+            return 'PO file: syntax error on an unknown line'
         else:
-            return 'Po file: syntax error in the header entry'
+            return 'PO file: syntax error on entry at line %d' % self.lno
 
 class POInvalidInputError(Exception):
     """ Syntax error in a po file """
@@ -32,10 +30,10 @@ class POInvalidInputError(Exception):
     def __str__(self):
         if self.msg:
             return self.msg
-        elif self.lno:
-            return 'Po file: invalid input on or before line %d' % self.lno
+        elif self.lno is None:
+            return 'PO file: invalid input on unknown line'
         else:
-            return 'Po file: invalid input in the header entry'
+            return 'PO file: invalid input on entry at line %d' % self.lno
 
 class POSyntaxWarning(Warning):
     """ Syntax warning in a po file """
@@ -46,10 +44,10 @@ class POSyntaxWarning(Warning):
     def __str__(self):
         if self.msg:
             return self.msg
-        elif self.lno:
-            return 'Po file: syntax warning on or before line %d' % self.lno
+        elif self.lno is None:
+            return 'PO file: syntax warning on unknown line'
         else:
-            return 'Po file: syntax warning in the header entry'
+            return 'Po file: syntax warning on entry at line %d' % self.lno
 
 
 # classes
@@ -108,7 +106,7 @@ class POMessage(object):
         def wrap(self, text):
             return [self.initial_indent + text]
 
-    def __unicode__(self, wrap=80):
+    def __unicode__(self, wrap=78):
         r'''
         Text representation of the message.  Should wrap correctly.
         For some of these examples to work (the ones with plural forms),
@@ -142,7 +140,7 @@ class POMessage(object):
         '(this single-quote is here to appease emacs)
         '''
         if wrap:
-            wrapper = textwrap.TextWrapper(wrap-1, subsequent_indent=u'"',
+            wrapper = textwrap.TextWrapper(wrap - 1, subsequent_indent=u'"',
                                            break_long_words=False)
             wrapper.initial_indent = wrapper.subsequent_indent
         else:
@@ -436,7 +434,7 @@ class POParser(object):
         self.header = None
         self.messages = []
         self._pending_line = ''
-        self._lineno = 1
+        self._lineno = 0
         self._make_dataholder()
         self._section = None
         self._plural_case = None
@@ -467,15 +465,14 @@ class POParser(object):
             for message in self.messages:
                 if message.msgid == self._partial_transl['msgid']:
                     raise POInvalidInputError('Po file: duplicate msgid ending on line %d'
-                                              % self._lineno)
+                                              % self._partial_transl['_lineno'])
             try:
                 transl = self.translation_factory(header=self.header,
                                                   **self._partial_transl)
-            except POInvalidInputError:
-                if DEBUG:
-                    import traceback
-                    traceback.print_exc()
-                raise POInvalidInputError(self._lineno)
+            except (POSyntaxError, POInvalidInputError), e:
+                if e.lno is None:
+                    e.lno = self._partial_transl['_lineno']
+                raise
             self.messages.append(transl)
         self._partial_transl = None
 
@@ -483,11 +480,10 @@ class POParser(object):
         try:
             self.header = self.header_factory(messages=self.messages, **self._partial_transl)
             self.header.finish()
-        except POSyntaxError:
-            if DEBUG:
-                import traceback
-                traceback.print_exc()
-            raise POSyntaxError(self._lineno)
+        except (POSyntaxError, POInvalidInputError), e:
+            if e.lno is None:
+                e.lno = self._partial_transl['_lineno']
+            raise
         if self.messages:
             warnings.warn(POSyntaxWarning(self._lineno,
                                           'Header entry is not first entry'))
@@ -733,9 +729,6 @@ if __name__ == '__main__':
             from cStringIO import StringIO
             do_diff = True
             out_f = StringIO()
-            del sys.argv[2]
-        if sys.argv[2] == '--debug':
-            DEBUG = True
             del sys.argv[2]
         else:
             out_f = file(sys.argv[2], 'w')

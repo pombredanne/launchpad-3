@@ -1,8 +1,38 @@
 from sqlos import SQLOS
 from sqlobject.sqlbuilder import sqlrepr
+from sqlobject.styles import Style
 from datetime import datetime, date, time
 
 __all__ = ['SQLBase', 'quote', 'quote_like']
+
+class LaunchpadStyle(Style):
+    """A SQLObject style for launchpad. 
+    
+    Python attributes and database columns are lowercase.
+    Class names and database tables are MixedCase. Using this style should
+    simplify SQLBase class definitions since more defaults will be correct.
+    """
+
+    def pythonAttrToDBColumn(self, attr):
+        return attr
+
+    def dbColumnToPythonAttr(self, col):
+        return col
+
+    def pythonClassToDBTable(self, className):
+        return className
+
+    def dbTableToPythonClass(self, table):
+        raise NotImplementedError, \
+                "Our naming convention prohibits converting table to class"
+        return table
+
+    def idForTable(self, table):
+        return 'id'
+
+    def pythonClassToAttr(self, className):
+        return className.lower()
+
 
 class SQLBase(SQLOS):
     """Base class to use instead of SQLObject/SQLOS.
@@ -16,6 +46,7 @@ class SQLBase(SQLOS):
     method is called, it will use the connection you pass to it, and disable 
     all the tricksy per-thread connection stuff that SQLOS does.
     """
+    _style = LaunchpadStyle()
     
     zope = True     # Default to behaving like SQLOS
 
@@ -110,4 +141,6 @@ def quote_like(x):
     if not isinstance(x, basestring):
         raise TypeError, 'Not a string (%s)' % type(x)
     return quote(x).replace('%', r'\\%').replace('_', r'\\_')
+
+
 

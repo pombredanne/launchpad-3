@@ -1,0 +1,152 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="soyuz">
+
+<head>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+  <!-- Rosetta style sheet -->
+  <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <h1>
+    <span tal:content="context/build/sourcepackagerelease/sourcepackage/name">
+      TITLE
+    </span>
+    (<span tal:content="context/build/sourcepackagerelease/version" />)
+  </h1>
+
+ <fieldset>
+   <legend>
+     Source Package Release Information
+   </legend>
+   <p><b>Package name:</b> 
+      <a tal:content="context/build/sourcepackagerelease/sourcepackage/name"
+      tal:attributes="href
+      string:../../${context/build/sourcepackagerelease/sourcepackage/name}" />
+
+    <p><b>Package Creator:</b> 
+       <a
+       tal:content="context/build/sourcepackagerelease/creator/displayname" 
+       tal:attributes="href 
+       string:../../../../../../people/${context/build/sourcepackagerelease/creator/id}"
+       />
+
+    <p><b>Upload Date (UTC):</b> 
+       <span tal:content="context/build/sourcepackagerelease/dateuploaded">
+       UPLOADDATE</span>
+
+    <p><b>Urgency Level:</b>
+       <span tal:content="context/build/sourcepackagerelease/pkgurgency">
+       URGENCY</span>
+
+    <p><b>Component:</b>
+       <span tal:content="context/build/sourcepackagerelease/component/name">
+       Component</span>
+
+    <p><b>Binary Packages:</b> 
+       <ul>
+         <li tal:repeat="binary context/build/sourcepackagerelease/binaries" >
+          <a tal:content="binary/name"
+	  tal:attributes="href 
+	  string:../../../../bin/${context/distroreleasename}/${binary/name}/${binary/version}"
+	  /> : <span tal:content="binary/shortdesc"/>
+         </li>
+       </ul>
+
+    <div align="right">
+      <i>
+      <tal:dummy tal:condition="context/build/sourcepackagerelease/changelog">
+        <a href="+changelog">
+	  Changelog
+	</a>
+      </tal:dummy>
+      <tal:dummy tal:condition="not:context/build/sourcepackagerelease/changelog">
+      	  No Changelog for this Source Release
+      </tal:dummy>
+      </i> 
+    </div>
+
+  </fieldset>
+
+  <table>
+    <tr>
+      <td width="50%" valign="top">
+        <h4>Build Package Dependences</h4>
+
+	<div class="dummy">
+	(XXX: Some links can be broken for sample data reasons. warty/mozilla-firefox works)
+	</div	 >
+ 
+        <tal:dummy condition="context/builddepends">
+	  <ul>
+	    <span tal:repeat="builddepends context/builddepends">
+	      <li>
+	        <a tal:content="builddepends/name" tal:attributes="href
+		string:../../../../bin/${context/distroreleasename}/${builddepends/name}"/> 
+		<tal:dummy condition="builddepends/signal">
+		  <span tal:content="builddepends/signal" /> 
+		  <a tal:content="builddepends/version" 
+		  tal:attributes="href 
+		  string:../../../../bin/${context/distroreleasename}/${builddepends/name}/${builddepends/version}"/> )
+		</tal:dummy>
+	      </li>
+	    </span>
+	  </ul>
+	</tal:dummy>
+      </td>
+
+      <td width="50%" valign="top">
+
+        <h4>Build Package DependencesIndep</h4>
+
+	<div class="dummy">
+	  (XXX: Some links can be broken for sample data
+	  reasons. warty/kiwi works)
+	</div>
+	<tal:dummy condition="context/builddependsindep">
+	  <ul>
+	    <span
+	    tal:repeat="builddepends context/builddependsindep">
+	      <li>
+	        <a tal:content="builddepends/name" tal:attributes="href
+		string:../../../../bin/${context/distroreleasename}/${builddepends/name}"/>
+		<tal:dummy condition="builddepends/signal">
+		  <span tal:content="builddepends/signal" />
+		  <a tal:content="builddepends/version"
+		  tal:attributes="href
+		  string:../../../../bin/${context/distroreleasename}/${builddepends/name}/${builddepends/version}"/> )
+		</tal:dummy>
+	      </li>
+	    </span>
+	  </ul>
+	</tal:dummy>
+      </td>
+    </tr>
+  </table>
+
+  <p><h4>Package Bugs:</h4> 
+    <div class="dummy">
+      <span>#1, #2, #3</span>
+    </div>
+
+  <p><h4>Builds:</h4> 
+   <tal:dummy tal:condition="not:context/archs">
+     <i> No Builds Available</i>
+   </tal:dummy>
+
+   <tal:block tal:repeat="arch context/archs">
+     [
+       <a tal:content="arch" tal:attributes="href arch">ARCH</a>
+     ]    
+   </tal:block>
+
+</div>
+</body>
+</html>
+ 

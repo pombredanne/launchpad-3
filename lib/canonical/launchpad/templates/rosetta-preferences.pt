@@ -1,0 +1,87 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <title metal:fill-slot="title">Rosetta: Preferences</title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main"
+     tal:define="languages view/languages">
+
+    <h1>Personal preferences</h1>
+    
+    
+    <h2>My Languages</h2>
+    
+    <p class="formHelp">
+    Add or remove languages in your language list by double clicking the entries or using the labeled buttons. Use <code>Ctrl</code> to select multiple elements. 
+    </p>
+
+    <div tal:content="view/submit" />
+
+    <form action="translator" method="post" 
+          onsubmit="selectAllWords();return false;">
+    
+        <div style="float: left;">
+            <label>Available languages</label>
+            <br />
+            <!-- These are the available languages. -->
+            <select id="prefs-available-languages" 
+                    name="availablelanguages" 
+                    size="10"
+                    style="width: 20em;"
+                    multiple="multiple" 
+                    ondblclick="javascript:addSelectedKeywords('prefs-available-languages','prefs-selected-languages');return false;">
+
+                    <option tal:repeat="language languages"
+                            tal:content="language/englishName"
+                            tal:attributes="name language/code" />
+
+            </select>
+        </div>
+        
+        <div style="float: left; padding-top: 5em;">
+            <input type="submit" 
+                   name="add" 
+                   value="Add to my languages &raquo;" 
+                   onclick="javascript:addSelectedKeywords('prefs-available-languages','prefs-selected-languages');return false;"
+                   />
+        </div>
+        
+        <div style="float: left;">
+              <label>My languages</label>
+              <br />
+              <!--  These are the selected languages. -->
+              <select id="prefs-selected-languages" 
+                      name="selectedlanguages" 
+                      size="10" 
+                      style="width: 20em;"
+                      multiple="multiple" 
+                      ondblclick="javascript:removeWords('prefs-selected-languages');return false;">
+                      <option>Dummy</option>
+              
+              </select>
+              <br />
+              <input type="submit" 
+                     name="remove" 
+                     value="&laquo; Remove selected languages" 
+                     onclick="javascript:removeWords('prefs-selected-languages');return false;">
+        </div>    
+    
+        <div class="formControls">
+            <input type="submit" name="LANGUAGES" value="Save" />
+        </div>
+    </form>
+    
+</div>
+
+</body>
+</html>

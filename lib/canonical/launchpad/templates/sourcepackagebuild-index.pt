@@ -1,0 +1,89 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="soyuz">
+
+<head>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+  <!-- Rosetta style sheet -->
+  <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+
+    <h1> 
+     <span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">
+	TITLE </span>
+     <span tal:content="context/sourcepackagerelease/version">
+	Version</span>-
+     <span tal:content="context/arch">
+	Arch</span>
+    </h1>
+
+
+    <fieldset>
+      <legend>
+        Source Package Build Data
+      </legend>
+    <p> <b>Datecreate: </b> 
+           <span tal:content="context/build/datecreated" />
+
+    <p> <b>Processor: </b>
+           <span tal:content="context/build/processor/title" />
+
+    <p> <b>Buildstate: </b>
+           <span tal:content="context/build/buildstate" />
+
+    <p> <b>Datebuilt: </b> 
+           <span tal:condition="not:context/build/datebuilt">
+	     <i> Information not Available </i>
+	   </span>
+           <span tal:content="context/build/datebuilt" />
+
+    <p> <b>Buildduration: </b>
+           <span tal:condition="not:context/build/buildduration">
+	     <i> Information not Available </i>
+	   </span>
+           <span tal:content="context/build/buildduration" />
+
+    <p> <b>Buildlog: </b>
+           <span tal:condition="not:context/build/buildlog">
+	     <i> Information not Available </i>
+	   </span>
+	   <a tal:condition="context/build/buildlog" href="+buildlog"> 
+	     <i> Build log </i> 
+	   </a>	   
+	   	   
+
+    <p> <b>Builder: </b>
+           <span tal:condition="not:context/build/builder">
+	     <i> Information not Available </i>
+	   </span>
+           <span tal:condition="context/build/builder" 
+	   tal:content="context/build/builder/title" />
+
+    <p> <b>Gpgsigningkey Fingerprint: </b>
+           <span tal:condition="not:context/build/gpgsigningkey">
+	     <i> Information not Available </i>
+	   </span>
+	   <span tal:condition="context/build/gpgsigningkey"
+	   tal:content="context/build/gpgsigningkey/fingerprint" />
+
+    <p> <b>Changes: </b> 
+           <span tal:condition="not:context/build/changes">
+	     <i> Information not Available </i>
+	   </span>
+           <a tal:condition="context/build/changes" href="+changes">
+	     <i> Changes </i> 
+	   </a>
+
+    </fieldset>    
+
+</div>
+</body>
+</html>
+ 

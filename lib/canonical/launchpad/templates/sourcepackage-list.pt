@@ -1,0 +1,79 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="soyuz">
+
+<head>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+  <!-- Rosetta style sheet -->
+  <style type="text/css" media="screen">@import url(rosetta.css);</style>
+
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+<h1><span tal:content="context/release/distribution/title" />
+<span tal:content="context/release/title" /> Source Packages</h1>
+<!-- <div tal:on-error="python: error.type, error.value.args"> -->
+
+<h3><span tal:content="context/release/sourcecount" /> Packages</h3>
+
+<form name="search" method="POST" action="+search">
+Find Source Package by Name: 
+<br>
+<input type="text" name="name" tal:attributes="value request/name|nothing" />
+<input type="submit" value="Search"/>
+</form>
+<br><br>
+
+<!-- XXX: Need section stuff in db. They are in soyuz.dia but  -->
+<!-- the db implementatio is missing -->
+
+<h3> Browse Packages</h3>
+  <tal:block tal:define="bn view/sourcePackagesBatchNavigator;
+                         prev_url bn/prevBatchURL;
+                         next_url bn/nextBatchURL;">
+
+  <table>
+    <tr>
+      <th>Packages</th>
+    </tr>
+
+    <tr tal:repeat="release python:list(bn.currentBatch())">      
+      <tal:dummy tal:define="package release/sourcepackage">
+      <td><a tal:content="string: ${package/name} : ${package/shortdesc}"
+             tal:attributes="href package/name">PACKAGE</a>
+      </td>
+      </tal:dummy>
+    </tr>    
+
+    <tr>
+	  <table class="listing">
+	  <tr>
+	  <!-- <th condition="not: prev_url"><< prev</th> -->
+          <th><a tal:condition="prev_url" 
+	         tal:attributes="href prev_url"><< prev</a>
+	  </th>
+          <th tal:repeat="page_link bn/batchPageURLs">
+	     <a tal:attributes="href python:page_link.values()[0]"
+                tal:content="python:page_link.keys()[0]"></a>
+	  </th>
+          <th><a tal:condition="next_url" 
+	         tal:attributes="href next_url">next >></a>
+          </th>
+          <!-- <th condition="not: next_url">next >></th> -->
+          </tr>
+	  </table>
+    </tr>
+  </table>
+  </tal:block>
+
+
+<!-- </div> -->
+</div>
+
+</body>
+
+</html>

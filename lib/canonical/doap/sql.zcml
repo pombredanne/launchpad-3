@@ -1,0 +1,33 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser">
+
+    <!--
+    XXX Mark Shuttleworth 03/10/04 I think these need to be
+        edited in database.configure.zcml not here.
+    <content class="canonical.launchpad.database.Product">
+        <allow interface="canonical.launchpad.interfaces.IProduct" />
+    </content>
+
+    <content class="canonical.launchpad.database.Project">
+        <allow interface="canonical.launchpad.interfaces.IProject" />
+    </content>
+
+    <utility
+        factory="canonical.launchpad.database.Product"
+        provides="canonical.launchpad.interfaces.IProduct" />
+
+    <utility
+        factory="canonical.launchpad.database.Project"
+        provides="canonical.launchpad.interfaces.IProject" />
+    -->
+
+    <content class="canonical.launchpad.database.ProjectContainer">
+        <allow interface="canonical.launchpad.interfaces.IProjectContainer" />
+    </content>
+
+    <utility
+        factory="canonical.launchpad.database.ProjectContainer"
+        provides="canonical.launchpad.interfaces.IProjectContainer" />
+
+</configure>

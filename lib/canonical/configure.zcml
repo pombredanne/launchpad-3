@@ -1,8 +1,17 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
-    xmlns:browser="http://namespaces.zope.org/browser">
+    xmlns:browser="http://namespaces.zope.org/browser"
+    i18n_domain="canonical.launchpad">
 
   <include file="meta.zcml" />
+
+  <browser:skin name="launchpad"
+                interface="canonical.launchpad.skins.launchpad"/>
+  <browser:skin name="rosetta"
+                interface="canonical.launchpad.skins.rosetta"/>
+  <browser:skin name="ubuntulinux"
+                interface="canonical.launchpad.skins.ubuntulinux"/>
+  <browser:defaultSkin name="launchpad" />
 
   <!-- This needs to be included early on because it defines permissions. -->
   <include package="canonical.lp" />
@@ -53,7 +62,7 @@
   <browser:page
       for="canonical.publication.RootObject"
       name="index.html"
-      template="root-index.pt"
+      template="launchpad/templates/root-index.pt"
       permission="zope.Public"
       />
 
@@ -67,6 +76,7 @@
   <include file="browser-exception.zcml" />
   <include package="canonical.widgets" />
   <include package="canonical.database" />
+  <include package="canonical.auth" />
 
 </configure>
 <!-- arch-tag: 55275af7-7bbe-4d25-9596-0df3cb6c4a1f -->

@@ -1,0 +1,31 @@
+<div class="portlet">
+    <h6>People</h6>
+
+    <div class="portletBody">
+        <div class="portletContent odd"
+             tal:repeat="sub context/subscriptions">
+            
+            <a tal:condition="sub/person/displayname" 
+               tal:content="sub/person/displayname">
+               $Person.displayname
+            </a>
+            
+            <a tal:condition="not:sub/person/displayname"
+               tal:content="string: ${sub/person/givenname} ${sub/person/familyname}">
+               $Person.givenname $Person.familyname
+            </a>
+            
+            <div class="portletDetails"
+                 tal:content="sub/subscription/lp:BugSubscription">
+                $BugSubscription.subscription
+            </div>
+
+        </div>
+        
+        <div class="portletContent even">
+            <form action="people/+new" method="post">
+                <input type="submit" value="Add Person" />
+            </form>
+        </div> 
+    </div>
+</div>

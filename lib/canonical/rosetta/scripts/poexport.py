@@ -8,7 +8,7 @@ import sys, psycopg, codecs, canonical.rosetta.pofile
 from cStringIO import StringIO
 from zope.component import getUtility
 from zope.interface import implements
-from canonical.rosetta.interfaces import IPOExport
+from canonical.launchpad.interfaces import IPOExport
 from canonical.rosetta.pofile import POMessage
 
 

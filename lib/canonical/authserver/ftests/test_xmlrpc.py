@@ -2,7 +2,8 @@
 
 # TODO:
 #  - exercise a bit more of the authUser interface
-#  - test createUser
+#  - test createUser (which really requires being able to rollback the changes
+#    it makes)
 
 import unittest
 import os

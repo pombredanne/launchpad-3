@@ -1,0 +1,34 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@malone_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <h1>Known Bug Tracking Systems</h1>
+
+  <div class="documentDescription">
+  This page lists the bug tracking systems that have been registered with
+  The Launchpad.
+  </div>
+
+  <table class="listing rowNavigation">
+    <tr>
+      <th>Bug System</th>
+    </tr>
+    <tr tal:repeat="bugsystem context" tal:attributes="onclick
+        string:window.location='${bugsystem/name}';">
+      <td tal:content="bugsystem/name">$BugSystem.name</td>
+    </tr>
+  </table>
+
+  <div>
+  [ <a href="+newbugtracker">Register Your Bug Tracker</a> ]
+  </div>
+
+</div>
+
+</body>
+</html>

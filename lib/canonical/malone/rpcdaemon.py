@@ -6,10 +6,11 @@ To run the server, just run this file ("rpcdaemon.py").
 """
 
 from twisted.web import xmlrpc
-from sqlobject import connectionForURI
+import sqlobject, optparse
+
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.database.malone import Bug
-import xmlrpclib, sqlobject, optparse
+
+from canonical.launchpad.database import Bug
 
 class OptionHelpException(optparse.OptParseError):
     """
@@ -71,7 +72,8 @@ class RPCDaemon(xmlrpc.XMLRPC):
     
     def __init__(self):
         xmlrpc.XMLRPC.__init__(self)
-        SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))
+        uri = 'postgres:///launchpad_test'
+        SQLBase.initZopeless(sqlobject.connectionForURI(uri))
         self.debug=1
 
     def xmlrpc_runcommand(self, cmd, locale, packedargs):

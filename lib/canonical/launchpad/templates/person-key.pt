@@ -1,0 +1,44 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="soyuz">
+
+<head>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+  <!-- Rosetta style sheet -->
+  <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1 tal:content="context/person/displayname">PERSON</h1> 
+    
+    <fieldset>
+    <legend>GPG Key Infromation </legend>
+    <div>
+    <table>
+    <tr><td>Key ID : </td>
+    <td tal:content="string:${context/gpg/keysize}${context/gpg/algorithmname}/${context/gpg/keyid}"></td>
+    <tr><td>Fingerprint :</td>
+        <td tal:content="context/gpg/fingerprint">FINGERPRINT</td></tr>
+    <tr><td>Revoked : </td>
+        <td tal:condition="context/gpg/revoked">YES</td>
+        <td tal:condition="not:context/gpg/revoked">NO</td></tr>
+    </table>
+    </div>
+    </fieldset>
+
+    <pre>
+      <span tal:content="context/gpg/pubkey" />
+    </pre>
+
+    <h3>Back to 
+    <a href="./" tal:content="context/person/displayname">PERSON</a>
+    </h3>
+
+</div>
+</body>
+</html>

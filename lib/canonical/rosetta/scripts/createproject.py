@@ -4,13 +4,14 @@
 # arch-tag: b9019fba-02b5-4d42-87e4-39b4754da09b
 
 import os, popen2
-
-from zope.component.tests.placelesssetup import PlacelessSetup
-import canonical.lp
-from canonical.database.doap import DBProject
-from canonical.rosetta.sql import RosettaPerson
 from optparse import OptionParser
 from datetime import datetime
+
+from zope.component.tests.placelesssetup import PlacelessSetup
+
+import canonical.lp
+from canonical.launchpad.database import Project
+from canonical.launchpad.database import RosettaPerson
 
 if __name__ == '__main__':
     parser = OptionParser()
@@ -46,7 +47,7 @@ if __name__ == '__main__':
         raise RuntimeError("The person %s does not exists." % options.owner)
 
     # XXX: https://bugzilla.warthogs.hbd.com/bugzilla/show_bug.cgi?id=1968
-    project = DBProject(owner=int(options.owner), name=options.name,
+    project = Project(owner=int(options.owner), name=options.name,
                         displayname=options.display, title=options.title,
                         shortdesc=options.short,
                         description=options.description,

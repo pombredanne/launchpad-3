@@ -5,7 +5,7 @@
   <page 
       for="zope.interface.common.interfaces.IException"
       name="index.html"
-      template="default-error.pt"
+      template="launchpad/templates/default-error.pt"
       permission="zope.Public"
       />
 
@@ -13,7 +13,7 @@
       for="zope.exceptions.IUnauthorized"
       name="index.html"
       permission="zope.Public"
-      template="unauthorized.pt"
+      template="launchpad/templates/unauthorized.pt"
       class="zope.app.exception.browser.unauthorized.Unauthorized" 
       />
 
@@ -21,7 +21,7 @@
       for="zope.app.exception.interfaces.IUserError"
       name="index.html"
       permission="zope.Public"
-      template="user-error.pt"
+      template="launchpad/templates/user-error.pt"
       class="zope.app.exception.browser.user.UserErrorView" 
       />
 
@@ -29,7 +29,7 @@
       for="zope.publisher.interfaces.NotFound"
       name="index.html"
       permission="zope.Public"
-      template="notfound.pt"
+      template="launchpad/templates/notfound.pt"
       />
 
 </zope:configure>

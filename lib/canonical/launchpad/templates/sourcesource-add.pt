@@ -1,0 +1,228 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+   <tal:dummy condition="view/handle_submit" />
+    <h1>Add Source Import</h1>
+
+    <div class="documentDescription">
+    Please fill in the details below to register a source that can be 
+    imported into the Product.
+    </div>
+
+    <form action="sources+new" method="post">
+    
+    <fieldset>
+
+        <legend>Source Import Details</legend>
+
+        <div class="field">
+
+            <label>Name</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+                  <div class="formHelp">
+                    A short name for the import (job name)
+                  </div>
+
+                <input type="text" name="name" size="30"
+                       value="" style="text-transform: lowercase" />
+        </div>
+
+        <div class="field">
+
+            <label>Title</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+                  <div class="formHelp">
+                    A descriptive title for the Source Import.
+                  </div>
+
+                <input type="text" name="title" size="30"
+                       value="" />
+        </div>
+
+        <div class="field">
+
+            <label>Description</label>
+
+                  <div class="formHelp">
+                    Additional details, if needed.
+                  </div>
+
+                <textarea cols="40" rows="5" name="description"></textarea>
+        </div>
+
+
+    </fieldset>
+
+    <fieldset style="width: 45%; float: right">
+        <legend><input type="radio" /> CVS details</legend>
+
+        <div class="field">
+
+            <label>CVS root</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+                <input type="text" name="cvsroot" size="30"
+                       value="" />
+        </div>
+        
+        <div class="field">
+
+            <label>CVS module</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+                <input type="text" name="module" size="30"
+                       value="" />
+        </div>
+
+        <div class="field">
+
+            <label>CVS tar file url</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+                <input type="text" name="cvstarfile" size="30"
+                       value="" />
+        </div>
+
+        <div class="field">
+
+            <label>CVS branch name</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+                <input type="text" name="branchfrom" size="30"
+                       value="MAIN" />
+        </div>
+
+    </fieldset>
+
+    <fieldset style="width: 45%; float: right">
+        <legend><input type="radio" /> SVN details</legend>
+        
+        <div class="field">
+
+            <label>SVN repository</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+                  <div class="formHelp">
+                    Address for the SVN repository, either in svn:// or http(s):// form.
+                  </div>
+
+                <input type="text" name="svnrepository" size="30"
+                       value="" />
+        </div>
+
+    </fieldset>
+
+    <div class="visualClear"></div>
+
+    <fieldset>
+        <legend>Arch target</legend>
+        
+        <div class="field">
+
+            <label>Arch category</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+            <input type="text" name="category" size="30"
+                   value="" />
+        </div>
+
+        <div class="field">
+
+            <label>Arch branch</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+            <input type="text" name="branchto" size="30"
+                   value="" />
+        </div>
+
+        <div class="field">
+
+            <label>Arch version</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+            <input type="text" name="archversion" size="30"
+                   value="" />
+        </div>
+
+    </fieldset>
+
+    <fieldset>
+        <legend>Arch source</legend>
+        
+        <p class="discreet">
+        If you fill out this, the CVS/SVN/Arch stuff above isn't required.
+        This will be governed by JS in the later versions.
+        </p>
+        
+        <div class="field">
+
+            <label>GPG Key ID</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+            <input type="text" name="archsourcegpgkeyid" size="30"
+                   value="" />
+        </div>
+
+        <div class="field">
+
+            <label>Arch Archive Name</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+            <input type="text" name="archsourcename" size="30"
+                   value="" />
+        </div>
+
+        <div class="field">
+
+            <label>URL</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+            <input type="text" name="archsourceurl" size="30"
+                   value="" />
+        </div>
+
+    </fieldset>
+
+    <div class="formControls">
+
+        <input class="context" type="submit"
+               tabindex="5"
+               name="Register"
+               value="Register" />
+
+    </div>
+
+    </form>
+
+</div>
+
+</body>
+</html>

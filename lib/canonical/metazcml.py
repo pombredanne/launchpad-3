@@ -10,6 +10,8 @@ from zope.interface import Interface, implements
 from zope.schema import TextLine
 from zope.configuration.fields import GlobalObject, PythonIdentifier
 from zope.app.security.fields import Permission
+from zope.app.component.fields import LayerField
+from canonical.launchpad.skins import setAdditionalSkin
 
 from zope.component import queryView, getDefaultViewName, getUtility
 from zope.app.component.metaconfigure import view, PublicPermission
@@ -17,9 +19,23 @@ from zope.security.checker import CheckerPublic
 from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces import NotFound
-
+import zope.app.publisher.browser.metadirectives
 from canonical.publication import ISubURLDispatch
 
+from zope.app import zapi
+from zope.component.interfaces import IDefaultViewName
+
+from zope.app.component.metaconfigure import handler
+from zope.app.component.interface import provideInterface
+
+
+class IDefaultViewDirective(
+    zope.app.publisher.browser.metadirectives.IDefaultViewDirective):
+
+    layer = LayerField(
+        title=u"The layer to declare this default view for",
+        required=False
+        )
 
 class ISubURLDirective(Interface):
 
@@ -50,6 +66,11 @@ class ISubURLDirective(Interface):
 
     adaptwith = GlobalObject(
         title=u"Adapter factory to use",
+        required=False
+        )
+
+    newskin = LayerField(
+        title=u"New skin to use beneath this URL",
         required=False
         )
 
@@ -86,24 +107,28 @@ class ITraverseDirective(Interface):
 class SubURLDispatcher:
     implements(ISubURLDispatch)
 
+    newskin = None
+
     def __init__(self, context, request):
-        # We're not bothered about giving the app-level component any
-        # context or request information.
         # In future, we may use the context to provide a __parent__ for
         # the app-level component.
         # Perhaps the zcml directive will allow us to specify an app-level
         # name too. yagni for now.
-        pass
+        self.context = context
+        self.request = request
 
     def __call__(self):
         raise NotImplementedError
 
 def suburl(_context, for_, name, permission=None, utility=None, class_=None,
-           adaptwith=None):
+           adaptwith=None, newskin=None):
     if utility is None and class_ is None:
         raise TypeError("Cannot specify both utility and class.")
 
     # XXX check that for_ implements IHasSuburls
+
+    # TODO: Move skin-setting into a handler for the BeforeTraverse event
+    #       because that's actually what we want to handle.
 
     if class_ is not None:
         class Dispatcher(SubURLDispatcher):
@@ -111,6 +136,9 @@ def suburl(_context, for_, name, permission=None, utility=None, class_=None,
                 val = class_()
                 if adaptwith is not None:
                     val = adaptwith(val)
+                # Note that `newskin` is bound from the containing context.
+                if newskin is not None:
+                    setAdditionalSkin(self.request, newskin)
                 return val
 
     if utility is not None:
@@ -119,6 +147,9 @@ def suburl(_context, for_, name, permission=None, utility=None, class_=None,
                 val = getUtility(utility)
                 if adaptwith is not None:
                     val = adaptwith(val)
+                # Note that `newskin` is bound from the containing context.
+                if newskin is not None:
+                    setAdditionalSkin(self.request, newskin)
                 return val
 
     factory = [Dispatcher]
@@ -223,3 +254,25 @@ def traverse(_context, for_, getter=None, function=None, permission=None,
 
     return view(_context, factory, type, name, [for_], permission=permission,
                 provides=provides)
+
+
+
+# This is pretty much copied from the browser publisher's metaconfigure
+# module, but with the `layer` as an argument rather than hard-coded.
+# When zope has the same change, we can remove this code, and the related
+# override-include.
+def defaultView(_context, name, for_=None, layer=IBrowserRequest):
+
+    _context.action(
+        discriminator = ('defaultViewName', for_, layer, name),
+        callable = handler,
+        args = (zapi.servicenames.Adapters, 'register',
+                (for_, layer), IDefaultViewName, '', name, _context.info)
+        )
+
+    if for_ is not None:
+        _context.action(
+            discriminator = None,
+            callable = provideInterface,
+            args = ('', for_)
+            )

@@ -7,14 +7,18 @@ import re, os, popen2
 from math import ceil
 import smtplib
 import sys
+from xml.sax.saxutils import escape as xml_escape
 
 from zope.component import getUtility
-from canonical.rosetta.interfaces import ILanguages, IPerson
-from canonical.database.doap import IProjects
-from canonical.rosetta.sql import RosettaLanguage, RosettaPerson
+from zope.i18n.interfaces import IUserPreferredLanguages
+
+from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
+from canonical.launchpad.interfaces import ILanguages, IPerson
+from canonical.launchpad.interfaces import IProjectSet
+from canonical.launchpad.database import Language, Person
+
 from canonical.rosetta.poexport import POExport
 from canonical.rosetta.pofile import POHeader
-from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
 
 charactersPerLine = 50
 
@@ -29,17 +33,81 @@ def count_lines(text):
 def fake_person():
     # XXX: Temporary hack, to be removed as soon as we have the login template
     # working.
-    return RosettaPerson.selectBy(displayName='Foo Bar')[0]
+    return Person.selectBy(displayname='Foo Bar')[0]
+
+def canonicalise_code(code):
+    '''Convert a language code to a standard xx_YY form.'''
+
+    if '-' in code:
+        language, country = code.split('-', 1)
+
+        return "%s_%s" % (language, country.upper())
+    else:
+        return code
+
+def codes_to_languages(codes):
+    '''Convert a list of ISO language codes to language objects.'''
+
+    languages = []
+    all_languages = getUtility(ILanguages)
+
+    for code in codes:
+        try:
+            languages.append(all_languages[canonicalise_code(code)])
+        except KeyError:
+            pass
+
+    return languages
+
+def request_languages(request):
+    '''Turn a request into a list of languages to show.'''
+
+    person = IPerson(request.principal, None)
+
+    # If the user is authenticated, try seeing if they have any languages set.
+
+    if person is not None:
+        languages = list(person.languages())
+
+        if languages:
+            return languages
+
+    # If the user is not authenticated, or they are authenticated but have no
+    # languages set, try looking at the HTTP headers for clues.
+
+    codes = IUserPreferredLanguages(request).getPreferredLanguages()
+
+    return codes_to_languages(codes)
+
+def parse_cformat_string(s):
+    '''Parse a printf()-style format string into a sequence of interpolations
+    and non-interpolations.'''
+    if s == '':
+        return ()
+
+    match = re.match('(%%|[^%])+', s)
+
+    if match:
+        t = match.group(0)
+        return (('string', t),) + parse_cformat_string(s[len(t):])
+
+    match = re.match('%[^diouxXeEfFgGcspn]*[diouxXeEfFgGcspn]', s)
+
+    if match:
+        t = match.group(0)
+        return (('interpolation', t),) + parse_cformat_string(s[len(t):])
+
+    raise ValueError(s)
 
 
 class ViewProjects:
     def newProjectSubmit(self):
         if "SUBMIT" in self.request.form:
             if self.request.method == "POST":
-                projects = getUtility(IProjects)
+                projects = getUtility(IProjectSet)
                 projects.new(
                     name=self.request.form['name'],
-                    displayName=self.request.form['displayname'],
+                    displayname=self.request.form['displayname'],
                     title=self.request.form['title'],
                     url=self.request.form.get('url', None),
                     description=self.request.form['description'],
@@ -63,21 +131,33 @@ class ViewProjects:
         if not self.request.method == "POST":
             return False
 
-        request_email = 'daf@muse.19inch.net'
+        from_email = 'Rosetta <launchpad@canonical.com>'
+        to_email = 'Dafydd Harries <daf@muse.19inch.net>'
 
         try:
             smtp = smtplib.SMTP('localhost')
-            smtp.sendmail('launchpad@canonical.com', request_email,
-                "From: rosetta\n"
+            smtp.sendmail(from_email, to_email,
+                "From: %s\n"
                 "To: %s\n"
                 "Subject: Rosetta project request: %s\n"
                 "\n"
-                "Name: %s\n"
-                "Description:\n"
-                "%s" % (
-                    request_email,
+                "Name: %s\n\n"
+                "Homepage: %s\n\n"
+                "Download page: %s\n\n"
+                "Description\n"
+                "-----------\n\n"
+                "%s\n\n"
+                "Revision Control Information\n"
+                "----------------------------\n\n"
+                "%s\n"
+                % (
+                    from_email,
+                    to_email,
                     self.request.form['name'],
                     self.request.form['name'],
+                    self.request.form['homepage'],
+                    self.request.form['download-page'],
+                    self.request.form['revision-control-info'],
                     self.request.form['description']))
         except smtplib.SMTPException, e:
             self.error = e
@@ -101,7 +181,7 @@ class ViewProject:
             currentCount = 0
             rosettaCount = 0
             updatesCount = 0
-            for language in person.languages():
+            for language in request_languages(self.request):
                 total += product.messageCount()
                 currentCount += product.currentCount(language.code)
                 rosettaCount += product.rosettaCount(language.code)
@@ -158,18 +238,18 @@ class ViewProduct:
         self.context = context
         self.request = request
 
-        self.person = IPerson(self.request.principal, None)
+        self.languages = request_languages(self.request)
 
     def thereAreTemplates(self):
         return len(list(self.context.poTemplates())) > 0
 
     def languageTemplates(self):
-        if self.person is not None:
-            for language in self.person.languages():
+        if self.languages:
+            for language in self.languages:
                 yield LanguageTemplates(language, self.context.poTemplates())
         else:
             raise RuntimeError(
-                "Can't generate LanguageTemplates unless authenticated.")
+                "Can't generate LanguageTemplates without languages.")
 
 
 class LanguageTemplates:
@@ -258,6 +338,11 @@ class ViewPOTemplate:
         else:
             return False
 
+    def languages(self):
+        languages = list(self.context.languages())
+        languages.sort(lambda a, b: cmp(a.englishName, b.englishName))
+        return languages
+
 
 def traverseIPOTemplate(potemplate, request, name):
     try:
@@ -278,8 +363,8 @@ class ViewPOFile:
         return plural.split(';', 1)[1].split('=',1)[1].split(';', 1)[0].strip();
 
     def completeness(self):
-        return "%d%%" % (
-            float(len(self.context)) / len(self.context.poTemplate) * 100)
+        return "%.2f%%" % (
+            float(self.context.translatedCount()) / len(self.context.poTemplate) * 100)
 
     def untranslated(self):
         return len(self.context.poTemplate) - len(self.context)
@@ -310,7 +395,7 @@ class TranslatorDashboard:
         self.person = IPerson(self.request.principal, None)
 
     def projects(self):
-        return getUtility(IProjects)
+        return getUtility(IProjectSet)
 
 
 class ViewPreferences:
@@ -376,14 +461,14 @@ class ViewPreferences:
                             "The two passwords you entered did not match."
 
                     given = self.request.form['given']
-                    if given and person.givenName != given:
-                        person.givenName = given
+                    if given and person.givenname != given:
+                        person.givenname = given
                     family = self.request.form['family']
-                    if family and person.familyName != family:
-                        person.familyName = family
+                    if family and person.familyname != family:
+                        person.familyname = family
                     display = self.request.form['display']
-                    if display and person.displayName != display:
-                        person.displayName = display
+                    if display and person.displayname != display:
+                        person.displayname = display
                 else:
                     self.error_msg = "The username or password you entered is not valid."
             else:
@@ -397,7 +482,7 @@ class ViewSearchResults:
         self.context = context
         self.request = request
 
-        self.projects = getUtility(IProjects)
+        self.projects = getUtility(IProjectSet)
         self.queryProvided = 'q' in request.form and \
             request.form.get('q')
         self.query = request.form.get('q')
@@ -492,9 +577,9 @@ class TranslatePOTemplate:
         # No initialisation if performed if the request's principal is not
         # authenticated.
 
-        person = IPerson(request.principal, None)
+        self.person = IPerson(request.principal, None)
 
-        if person is None:
+        if self.person is None:
             return
 
         self.context = context
@@ -506,23 +591,18 @@ class TranslatePOTemplate:
 
         # Turn language codes into language objects.
 
-        all_languages = getUtility(ILanguages)
-
         if self.codes:
-            self.languages = []
-
-            for code in self.codes.split(','):
-                try:
-                    self.languages.append(all_languages[code])
-                except KeyError:
-                    pass
+            self.languages = codes_to_languages(self.codes.split(','))
         else:
-            self.languages = list(person.languages())
+            self.languages = request_languages(request)
 
-        # Get plural form information.
+        # Get plural form and completeness information.
 
+        self.completeness = {}
         self.pluralForms = {}
         self.pluralFormsError = False
+
+        all_languages = getUtility(ILanguages)
 
         for language in self.languages:
             try:
@@ -535,8 +615,12 @@ class TranslatePOTemplate:
                     # We don't have a default plural form for this Language
                     self.pluralForms[language.code] = None
                     self.error = True
+                # As we don't have teh pofile, the completeness is 0
+                self.completeness[language.code] = 0
             else:
                 self.pluralForms[language.code] = pofile.pluralForms
+                self.completeness[language.code] = \
+                    float(pofile.translatedCount()) / len(pofile.poTemplate) * 100
 
         self.badLanguages = [ all_languages[x] for x in self.pluralForms
             if self.pluralForms[x] is None ]
@@ -615,12 +699,12 @@ class TranslatePOTemplate:
         else:
             return self._makeURL(offset = self.offset + self.count)
 
-    def _mungeMessageID(self, text):
+    def _mungeMessageID(self, text, flags):
         # Convert leading and trailing spaces on each line to open boxes.
 
         lines = []
 
-        for line in text.split('\n'):
+        for line in xml_escape(text).split('\n'):
             match = re.match('^( *)((?: *[^ ]+)*)( *)$', line)
 
             if match:
@@ -632,24 +716,39 @@ class TranslatePOTemplate:
                 raise AssertionError(
                     "Regular expression that should always match didn't.")
 
+        for i in range(len(lines)):
+            if 'c-format' in flags:
+                line = ''
+
+                for segment in parse_cformat_string(lines[i]):
+                    type, content = segment
+
+                    if type == 'interpolation':
+                        line += ('<span class="interpolation">%s</span>'
+                            % content)
+                    elif type == 'string':
+                        line += content
+
+                lines[i] = line
+
         # Insert arrows and HTML line breaks at newlines.
 
         return '\n'.join(lines).replace('\n', u'\u21b5<br/>\n')
 
-    def _messageID(self, messageID):
+    def _messageID(self, messageID, flags):
         lines = count_lines(messageID.msgid)
 
         return {
             'lines' : lines,
             'isMultiline' : lines > 1,
             'text' : messageID.msgid,
-            'displayText' : self._mungeMessageID(messageID.msgid)
+            'displayText' : self._mungeMessageID(messageID.msgid, flags)
         }
 
     def _messageSet(self, set):
         messageIDs = set.messageIDs()
         isPlural = len(list(messageIDs)) > 1
-        messageID = self._messageID(messageIDs[0])
+        messageID = self._messageID(messageIDs[0], set.flags())
         translations = {}
 
         for language in self.languages:
@@ -658,7 +757,7 @@ class TranslatePOTemplate:
                 set.translationsForLanguage(language.code)
 
         if isPlural:
-            messageIDPlural = self._messageID(messageIDs[1])
+            messageIDPlural = self._messageID(messageIDs[1], set.flags())
         else:
             messageIDPlural = None
 
@@ -731,17 +830,12 @@ class TranslatePOTemplate:
 
         pofiles = {}
 
-        person = IPerson(self.request.principal, None)
-
-        if person is None:
-            person = fake_person()
-
         for language in self.languages:
             try:
                 pofiles[language.code] = self.context.poFile(language.code)
             except KeyError:
                 pofiles[language.code] = self.context.newPOFile(
-                    person, language.code)
+                    self.person, language.code)
 
         # Put the translations in the database.
 
@@ -791,7 +885,7 @@ class TranslatePOTemplate:
                             new_translations[index] !=
                             old_translations[index]):
                         po_set.makeTranslationSighting(
-                            person = person,
+                            person = self.person,
                             text = new_translations[index],
                             pluralForm = index,
                             update = True,
@@ -811,12 +905,14 @@ class ViewTranslationEffort:
     def languageTranslationEffortCategories(self):
         person = IPerson(self.request.principal, None)
         if person is not None:
+            # XXX: Use request_languages().
             for language in person.languages():
                 yield LanguageTranslationEffortCategories(language,
                     self.context.categories())
         else:
             # XXX
             person = fake_person()
+            # XXX: Use request_languages().
             for language in person.languages():
                 yield LanguageTranslationEffortCategories(language,
                     self.context.categories())
@@ -891,14 +987,20 @@ class ViewTranslationEffortCategory:
     def languageTemplates(self):
         person = IPerson(self.request.principal, None)
         if person is not None:
+            # XXX: Use request_languages().
             for language in person.languages():
                 yield LanguageTemplates(language, self.context.poTemplates())
         else:
             # XXX
             person = fake_person()
+            # XXX: Use request_languages().
             for language in person.languages():
                 yield LanguageTemplates(language, self.context.poTemplates())
 
+#
+# XXX Mark Shuttleworth 02/10/04 I've copied this into Doap, maybe Login
+#     needs to be common code in some way?
+#
 class LogIn:
 
     def isSameHost(self, url):

@@ -1,0 +1,48 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    i18n_domain="doap"
+    xmlns:i18n="http://namespaces.zope.org/i18n">
+
+  <!-- Content directives.  We need to make sure SubURLs and other kinds of
+       traversal work properly.  We also need to make security declarations.
+    -->
+  <content class="canonical.doap.DOAPApplication">
+    <implements interface="canonical.publication.IHasSuburls" />
+  </content>
+
+  <!-- This view registers 'doap' as a suburl of RootObject. -->
+  <browser:suburl
+      for="canonical.publication.RootObject"
+      class="canonical.doap.DOAPApplication"
+      name="doap" />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IDOAPApplication"
+      name="+index" />
+
+  <browser:suburl
+      for="canonical.launchpad.interfaces.IDOAPApplication"
+      utility="canonical.launchpad.interfaces.IProjectContainer"
+      permission="zope.Public"
+      name="projects" />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IProjectContainer"
+      name="+index" />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IProject"
+      name="+index" />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IProduct"
+      name="+index" />
+
+  <include file="pages.zcml" />
+  <include file="forms.zcml" />
+  <include file="resources.zcml" />
+  <include file="vocabulary.zcml" />
+  <include file="sql.zcml" />
+
+</configure>

@@ -17,90 +17,96 @@
       class="canonical.malone.MaloneApplication"
       name="malone" />
 
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IMaloneApplication"
+      name="index" />
+
   <browser:suburl
       for="canonical.malone.IMaloneApplication"
-      utility="canonical.malone.interfaces.IBugContainer"
+      utility="canonical.launchpad.interfaces.IBugContainer"
       permission="zope.Public"
       name="bugs" />
 
   <browser:suburl
       for="canonical.malone.IMaloneApplication"
-      utility="canonical.malone.interfaces.IProjectContainer"
+      utility="canonical.launchpad.interfaces.IProjectContainer"
       permission="zope.Public"
       name="projects" />
 
   <browser:suburl
       for="canonical.malone.IMaloneApplication"
-      utility="canonical.malone.interfaces.ISourcepackageContainer"
+      utility="canonical.launchpad.interfaces.ISourcepackageContainer"
       permission="zope.Public"
-      name="sourcepackages" />
+      name="sourcepackage" />
+  
+  <browser:suburl
+      for="canonical.malone.IMaloneApplication"
+      utility="canonical.launchpad.interfaces.IBugSystemSet"
+      permission="zope.Public"
+      name="bugsystems" />
 
   <browser:defaultView
-      for="canonical.malone.interfaces.IMaloneApplication"
+      for="canonical.launchpad.interfaces.IBugSystemSet"
+      name="+index" />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IBugSystem"
+      name="+index" />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.ISourcepackageContainer"
       name="index" />
 
   <browser:defaultView
-      for="canonical.malone.interfaces.IBugContainer"
+      for="canonical.launchpad.interfaces.IBugContainer"
       name="index" />
 
   <browser:defaultView
-      for=".interfaces.IMaloneBug"
-      name="index" />
-
-  <browser:defaultView
-      for="canonical.malone.interfaces.IBugAttachmentContainer"
-      name="index" />
-
-  <browser:defaultView
-      for=".interfaces.IMaloneBugAttachment"
-      name="index" />
-
-  <browser:defaultView
-      for="canonical.malone.interfaces.IProjectContainer"
-      name="+search" />
-
-  <browser:defaultView
-      for="canonical.malone.interfaces.ISourcepackageContainer"
-      name="index" />
-
-  <browser:defaultView
-      for="canonical.database.doap.IProject"
-      name="index" />
-
-  <browser:defaultView
-      for="canonical.database.doap.ISourcepackage"
-      name="index" />
-
-  <browser:defaultView
-      for="canonical.malone.interfaces.IBugExternalRefContainer"
-      name="index" />
-
-  <browser:defaultView
-      for="canonical.database.malone.IBugExternalRef"
-      name="index" />
-
-  <browser:defaultView
-      for="canonical.malone.interfaces.IBugWatchContainer"
-      name="index" />
-
-  <browser:defaultView
-      for="canonical.malone.interfaces.IProductBugAssignmentContainer"
-      name="index" />
-
-  <browser:defaultView
-      for="canonical.malone.interfaces.ISourcepackageBugAssignmentContainer"
-      name="index" />
-
-  <browser:defaultView
-      for="canonical.malone.interfaces.IBugSubscriptionContainer"
+      for="canonical.launchpad.interfaces.IMaloneBug"
       name="index" />
 
   <browser:traverse
-      for="canonical.malone.interfaces.IMaloneBug"
+      for="canonical.launchpad.interfaces.IMaloneBug"
       function="canonical.malone.browser.traverseBug" />
 
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IBugAttachmentContainer"
+      name="index" />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IMaloneBugAttachment"
+      name="index" />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.ISourcepackage"
+      name="+malone-index" />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IBugExternalRefContainer"
+      name="index" />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IBugExternalRef"
+      name="index" />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IBugWatchContainer"
+      name="index" />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IProductBugAssignmentContainer"
+      name="index" />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.ISourcepackageBugAssignmentContainer"
+      name="index" />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IBugSubscriptionContainer"
+      name="index" />
+
   <browser:traverse
-      for=".interfaces.IMaloneBugAttachment"
+      for="canonical.launchpad.interfaces.IMaloneBugAttachment"
       function=".browser.traverseBugAttachment" />
 
   <include file="pages.zcml" />

@@ -5,44 +5,44 @@
     xmlns:lp="http://launchpad.canonical.com">
 
     <!-- Registration form -->
+    <!--
     <addform
         name="register"
-        for=".interfaces.IMaloneApplication"
-        schema="canonical.database.foaf.IPerson"
+        for="canonical.launchpad.interfaces.IMaloneApplication"
+        schema="canonical.launchpad.interfaces.IPerson"
         label="Register"
         fields="displayname givenname familyname password"
         content_factory=".browser.PersonFactory"
         arguments=""
         keyword_arguments="displayname givenname familyname password"
         permission="zope.View"
-        template="templates/default-addform.pt"
+        template="../launchpad/templates/default-addform.pt"
         lp:url="malone/register" />
+    -->
 
     <!-- Bug forms -->
 
-    <!-- XXX: permission="zope.Public" triggers a problem with our setup
-        and security proxies -->
     <addform
         name="+new"
-        for=".interfaces.IBugContainer"
+        for="canonical.launchpad.interfaces.IBugContainer"
         schema=".browser.IMaloneBugAddForm"
         label="Add a Bug"
-        fields="title shortdesc description product sourcepackage binarypackage"
+        fields="title shortdesc description sourcepackage owner"
         content_factory=".browser.MaloneBugAddForm"
         arguments=""
-        keyword_arguments="title shortdesc description 
-            product sourcepackage binarypackage"
-        permission="zope.View"
-        template="templates/default-addform.pt"
-        lp:url="malone/bugs/+new"
-        />
+        keyword_arguments="title shortdesc description sourcepackage owner"
+        permission="launchpad.AnyPerson"
+        template="../launchpad/templates/default-addform.pt"
+        lp:url="malone/bugs/+new">
+        <widget field="owner" class="canonical.widgets.OwnerWidget" />
+    </addform>
 
     <editform
         name="+edit"
-        schema="canonical.database.malone.IBug"
+        schema="canonical.launchpad.interfaces.IBug"
         label="Change Bug Information"
-        permission="zope.View"
-        template="templates/bug-edit.pt"
+        permission="launchpad.AnyPerson"
+        template="../launchpad/templates/bug-edit.pt"
         fields="name title shortdesc description"
         lp:url="malone/bugs/$Bug.id/+edit">
         <!--
@@ -53,169 +53,169 @@
     <!-- BugAttachment forms -->
     <addform
         name="+new"
-        schema=".interfaces.IMaloneBugAttachment"
+        schema="canonical.launchpad.interfaces.IMaloneBugAttachment"
         for=".browser.IBugAttachmentContainer"
         label="Add a Bug Attachment"
         fields="name description libraryfile"
         content_factory=".browser.BugAttachmentFactory"
         arguments=""
         keyword_arguments="name description libraryfile"
-        permission="zope.View"
-        template="templates/default-addform.pt"
+        permission="launchpad.AnyPerson"
+        template="../launchpad/templates/default-addform.pt"
         lp:url="malone/bugs/$Bug.id/attachments/+new"
         />
 
     <editform
-        schema=".interfaces.IMaloneBugAttachment"
+        schema="canonical.launchpad.interfaces.IMaloneBugAttachment"
         label="Change Bug Attachment Information"
         name="+edit"
-        permission="zope.View"
+        permission="launchpad.AnyPerson"
         fields="name description"
-        template="templates/default-editform.pt"
+        template="../launchpad/templates/default-editform.pt"
         lp:url="malone/bugs/$Bug.id/attachments/$BugAttachment.id/+edit"
         />
 
     <!-- IBugMessage -->
     <view
-        for="canonical.database.malone.IBug"
+        for="canonical.launchpad.interfaces.IBug"
         name="messages"
         class=".browser.BugMessagesView"
-        permission="zope.View"
-        provides=".interfaces.IBugMessagesView"
+        permission="zope.Public"
+        provides="canonical.launchpad.interfaces.IBugMessagesView"
         lp:url="malone/projects/$Bug.id/messages">
         <defaultPage name="index" />
     </view>
 
     <page
         name="index"
-        for=".interfaces.IBugMessagesView"
-        template="templates/messages-index.pt"
+        for="canonical.launchpad.interfaces.IBugMessagesView"
+        template="../launchpad/templates/messages-index.pt"
         permission="zope.Public"
         lp:url="malone/projects/$Bug.id/messages/index" />
 
     <addform
         name="+new"
-        schema="canonical.database.malone.IBugMessage"
-        for=".interfaces.IBugMessagesView"
+        schema="canonical.launchpad.interfaces.IBugMessage"
+        for="canonical.launchpad.interfaces.IBugMessagesView"
         label="Add a Comment"
         fields="title contents"
         content_factory=".browser.BugMessageFactory"
         arguments=""
         keyword_arguments="title contents"
-        permission="zope.View"
-        template="templates/default-addform.pt"
+        permission="launchpad.AnyPerson"
+        template="../launchpad/templates/default-addform.pt"
         lp:url="malone/bugs/$Bug.id/messages/+new"
         />
 
     <addform
         name="+new"
-        schema="canonical.database.malone.IProductBugAssignment"
-        for=".interfaces.IProductBugAssignmentContainer"
+        schema="canonical.launchpad.interfaces.IProductBugAssignment"
+        for="canonical.launchpad.interfaces.IProductBugAssignmentContainer"
         label="Add Product Bug Assignment"
-        fields="product bugstatus priority severity"
+        fields="product bugstatus priority severity assignee"
         content_factory=".browser.ProductBugAssignmentFactory"
         arguments=""
         keyword_arguments="product bugstatus priority severity"
-        permission="zope.View"
-        template="templates/default-addform.pt"
+        permission="launchpad.AnyPerson"
+        template="../launchpad/templates/default-addform.pt"
         lp:url="malone/bugs/$Bug.id/productassignments/+new" />
 
     <editform
         name="+edit"
-        for="canonical.database.malone.IProductBugAssignment"
-        schema="canonical.database.malone.IProductBugAssignment"
-        fields="bugstatus priority severity"
+        for="canonical.launchpad.interfaces.IProductBugAssignment"
+        schema="canonical.launchpad.interfaces.IProductBugAssignment"
+        fields="bugstatus priority severity assignee"
         label="Edit Product Bug Assignment"
-        permission="zope.View"
-        template="templates/default-editform.pt"
+        permission="launchpad.AnyPerson"
+        template="../launchpad/templates/default-editform.pt"
         lp:url="malone/bugs/$Bug.id/productassignments/$ProductBugAssignment.id/+edit" />
 
     <addform
         name="+new"
-        schema="canonical.database.malone.ISourcepackageBugAssignment"
-        for=".interfaces.ISourcepackageBugAssignmentContainer"
+        schema="canonical.launchpad.interfaces.ISourcepackageBugAssignment"
+        for="canonical.launchpad.interfaces.ISourcepackageBugAssignmentContainer"
         label="Add Sourcepackage Bug Assignment"
-        fields="sourcepackage bugstatus priority severity binarypackage"
+        fields="sourcepackage bugstatus priority severity binarypackage assignee"
         content_factory=".browser.SourcepackageBugAssignmentFactory"
         arguments=""
         keyword_arguments="sourcepackage bugstatus priority severity"
-        permission="zope.View"
-        template="templates/default-addform.pt"
+        permission="launchpad.AnyPerson"
+        template="../launchpad/templates/default-addform.pt"
         lp:url="malone/bugs/$Bug.id/sourcepackageassignments/+new" />
 
     <editform
         name="+edit"
-        for="canonical.database.malone.ISourcepackageBugAssignment"
-        schema="canonical.database.malone.ISourcepackageBugAssignment"
-        fields="bugstatus priority severity binarypackage"
+        for="canonical.launchpad.interfaces.ISourcepackageBugAssignment"
+        schema="canonical.launchpad.interfaces.ISourcepackageBugAssignment"
+        fields="bugstatus priority severity binarypackage assignee"
         label="Edit Sourcepackage Bug Assignment"
-        permission="zope.View"
-        template="templates/default-editform.pt"
+        permission="launchpad.AnyPerson"
+        template="../launchpad/templates/default-editform.pt"
         lp:url="malone/bugs/$Bug.id/sourcepackageassignments/$SourcepackageBugAssignment.id/+edit" />
 
     <addform
         name="+new"
-        schema="canonical.database.malone.IBugExternalRef"
+        schema="canonical.launchpad.interfaces.IBugExternalRef"
         for=".browser.IBugExternalRefContainer"
         label="Add External Reference"
         fields="bugreftype data description"
         content_factory=".browser.BugExternalRefFactory"
         arguments=""
         keyword_arguments="bugreftype data description"
-        permission="zope.View"
-        template="templates/default-addform.pt"
+        permission="launchpad.AnyPerson"
+        template="../launchpad/templates/default-addform.pt"
         lp:url="malone/bugs/$Bugs.id/references/+new" />
 
     <editform
         name="+edit"
-        schema="canonical.database.malone.IBugExternalRef"
+        schema="canonical.launchpad.interfaces.IBugExternalRef"
         label="Change Bug External Reference"
-        permission="zope.View"
-        template="templates/default-editform.pt"
+        permission="launchpad.AnyPerson"
+        template="../launchpad/templates/default-editform.pt"
         fields="bugreftype data description"
         lp:url="malone/bugs/$Bug.id/references/$Reference.id/+edit" />
 
     <addform
         name="+new"
-        schema="canonical.database.malone.IBugWatch"
+        schema="canonical.launchpad.interfaces.IBugWatch"
         for=".browser.IBugWatchContainer"
         label="Add Watch"
         fields="bugsystem remotebug"
         content_factory=".browser.BugWatchFactory"
         arguments=""
         keyword_arguments="bugsystem remotebug"
-        permission="zope.View"
-        template="templates/default-addform.pt"
+        permission="launchpad.AnyPerson"
+        template="../launchpad/templates/default-addform.pt"
         lp:url="malone/bugs/$Bugs.id/watches/+new" />
 
     <editform
         name="+edit"
-        schema="canonical.database.malone.IBugWatch"
+        schema="canonical.launchpad.interfaces.IBugWatch"
         label="Change Bug Watch"
-        permission="zope.View"
-        template="templates/default-editform.pt"
+        permission="launchpad.AnyPerson"
+        template="../launchpad/templates/default-editform.pt"
         fields="bugsystem remotebug"
         lp:url="malone/bugs/$Bug.id/watches/$Watch.id/+edit" />
 
     <addform
         name="+new"
-        schema="canonical.database.malone.IBugSubscription"
+        schema="canonical.launchpad.interfaces.IBugSubscription"
         for=".browser.IBugSubscriptionContainer"
         label="Add Person"
         fields="subscription person"
         content_factory=".browser.BugSubscriptionFactory"
         arguments=""
         keyword_arguments="subscription person"
-        permission="zope.View"
-        template="templates/default-addform.pt"
+        permission="launchpad.AnyPerson"
+        template="../launchpad/templates/default-addform.pt"
         lp:url="malone/bugs/$Bug.id/people/+new" />
 
     <editform
         name="+edit"
-        schema="canonical.database.malone.IBugSubscription"
+        schema="canonical.launchpad.interfaces.IBugSubscription"
         label="Change Bug Subscription"
-        permission="zope.View"
-        template="templates/default-editform.pt"
+        permission="launchpad.AnyPerson"
+        template="../launchpad/templates/default-editform.pt"
         fields="subscription"
         lp:url="malone/bugs/$Bug.id/people/$BugSubscription.id/+edit" />
 

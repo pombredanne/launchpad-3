@@ -5,7 +5,7 @@ from zope.app.rdb.interfaces import IZopeConnection, IZopeCursor
 def confirmEncoding(*args,**kw):
     rdb = zapi.getUtility(IZopeDatabaseAdapter, 'launchpad')
     dsn = rdb.getDSN()
-    dbname = str(dsn.split('//')[1])
+    dbname = str(dsn.split('/')[-1])
     con = IZopeConnection(rdb())
     cur = IZopeCursor(con.cursor())
     cur.execute(

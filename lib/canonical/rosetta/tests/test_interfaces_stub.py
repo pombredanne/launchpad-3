@@ -10,7 +10,7 @@ from zope.testing.doctestunit import DocTestSuite
 
 def test_projects():
     """
-    >>> from canonical.rosetta.interfaces import IProjects
+    >>> from canonical.launchpad.interfaces import IProjects
     >>> from canonical.rosetta.stub import Projects, Project
 
     >>> projects = Projects()
@@ -36,7 +36,7 @@ def test_product():
 
 def test_verify_stub():
     """
-    >>> from canonical.rosetta.interfaces import IProjects, IProject, IPOTemplate
+    >>> from canonical.launchpad.interfaces import IProjects, IProject, IPOTemplate
     >>> from canonical.rosetta.stub import Projects, Project, Product, POTemplate
 
     >>> projects = Projects()

@@ -14,7 +14,7 @@ class StubUserDetailsStorage(object):
     def authUser(self, loginID, sshaDigestedPassword):
         return {}
 
-    def createUser(self, loginID, sshaDigestedPassword, displayName,
+    def createUser(self, loginID, sshaDigestedPassword, displayname,
                    emailAddresses):
         return 'STUB'
 

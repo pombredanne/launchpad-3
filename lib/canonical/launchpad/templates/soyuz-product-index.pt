@@ -1,0 +1,47 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<p>NB - this template is obsolete! Please use the product-index.pt template
+from DOAP!</p>
+
+<div metal:fill-slot="main">
+
+    <h1>Product overview: <span tal:replace="context/title">NAME</span></h1>
+
+    <div style="float: right; clear: both; margin-top: 0.25em;">
+    Product home page:
+    <a tal:content="context/url|default"
+       tal:attributes="href context/url|nothing">(None supplied)</a>
+    </div>
+
+    <p class="documentDescription" tal:content="context/description">
+        Firefox is a web browser.
+    </p>
+
+
+        <h2>Source imports</h2>
+
+        <form action="syncs+new">
+            <input type="submit" value="Add Source Import" />
+        </form>
+
+        <dl tal:repeat="sync view/syncs">
+            <dt><a tal:attributes="href sync/name" tal:content="sync/title">Sync Title</a>&nbsp;<a tal:condition="sync/canChangeProduct" tal:attributes="href sync/name">Assign to product</a></dt>
+            <dd tal:content="sync/description"></dd>
+        </dl>
+        
+</div>
+
+</body>
+</html>

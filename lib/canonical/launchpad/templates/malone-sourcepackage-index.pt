@@ -1,0 +1,99 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@malone_template/master"
+      i18n:domain="malone">
+<body>
+
+<div metal:fill-slot="main">
+    <h1>Bugs Assigned To Source Package: 
+        <span tal:content="context/name">$Sourcepackage.title</span>
+    </h1>
+    <div class="documentDescription"
+        tal:content="context/shortdesc">$Sourcepackage.shortdesc
+    </div>
+    <div tal:content="context/description">$Sourcepackage.description
+    </div>
+
+    <h2>Bugs assigned to this package</h2>
+    
+    <table class="listing rowNavigation">
+        <tr>
+            <th>#</th>
+            <th>Bug</th>
+            <th>Status</th>
+            <th>Severity</th>
+            <th>Priority</th>
+            <th>(Binary Package)</th>
+            <th>Assignee</th>
+        </tr> 
+        <tr tal:repeat="bugass context/bugs"
+            tal:attributes="onclick
+                string:window.location='../../bugs/${bugass/bug/id}';">
+            <td tal:content="bugass/bug/id">xxx
+            </td>
+            <td>
+                <a href="#" 
+                    tal:attributes="href string:../../bugs/${bugass/bug/id}"
+                    tal:content="bugass/bug/title">
+                    $Bug.title</a>
+            </td>
+            <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">
+                $SourcepackageBugAssignment.bugstatus
+            </td>
+            <td tal:content="bugass/severity/lp:BugSeverity">
+                $SourcepackageBugAssignment.severity
+            </td>
+            <td tal:content="bugass/priority/lp:BugPriority">
+                $SourcepackageBugAssignment.priority
+            </td>
+            <td tal:condition="bugass/binarypackage">
+                <span tal:content="bugass/binarypackage/binarypackagename/name">
+                    $BinarypackageName.name
+                </span>&ndash;<span tal:content="bugass/binarypackage/version">
+                    $Binarypackage.version
+                </span>
+            </td>
+            <td tal:condition="not:bugass/binarypackage">
+                (none)
+            </td>
+        </tr>
+    </table>
+    
+    <!--
+    <h2>Affected binary packages</h2>
+    
+    <table class="listing">
+        <tr>
+            <th rowspan="2">Package</th>
+            <th colspan="5">Severity</th>
+        </tr>
+        <tr>
+            <th>Critical</th>
+            <th>Major</th>
+            <th>Normal</th>
+            <th>Minor</th>
+            <th>Wishlist</th>
+        </tr>
+        <tal:x repeat="i view/affectedBinaryPackages">
+            <tr tal:define="binarypackage python:i[0]; stats python:i[1]">
+                <td>
+                    <span tal:content="binarypackage/binarypackagename/name">
+                        $BinarypackageName.name
+                    </span>&ndash;<span tal:content="binarypackage/version">
+                        $Binarypackage.version
+                    </span>
+                </td>
+                <td tal:content="stats/CRITICAL">?</td>
+                <td tal:content="stats/MAJOR">?</td>
+                <td tal:content="stats/NORMAL">?</td>
+                <td tal:content="stats/MINOR">?</td>
+                <td tal:content="stats/WISHLIST">?</td>
+            </tr>
+        </tal:x>
+    </table>
+    -->
+
+</div>
+
+</body>
+</html>

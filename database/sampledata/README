@@ -1,0 +1,55 @@
+
+README for Launchpad Sample Data
+
+To update the sample data:
+
+  # go to the db schema directory
+  cd database/schema
+  # make a database with the current sample data
+  make
+  # connect to the db, and then do any INSERT or UPDATE commands you need
+  psql launchpad_test
+  # you could also run a script which updates the data in the way you want
+  # now dump a copy of that data to new-sampledata.sql
+  # nb this excludes the language, spokenin and country tables which
+  # are managed separately in language.sql
+  make newsampledata
+  # now inspect the new sample data
+  less new-sampledata.sql
+  # if you like it, make it the current sampledata
+  cp new-sampledata.sql current.sql
+  # commit your changes
+  tla commit -s "updated sample data to include..." (add your comments)
+  
+
+Creating sample data is tedious. Very. So to simplify our lives, please
+just use the following core items in your sample data. In other words,
+only record new sample data that references the following KEY OBJECTS:
+
+  Person:
+    12  Sample Person
+    17  Ubuntu Team
+
+In other words, we have an example of a person (12) and a team (17).
+Please use one or other of these Person's for any new sample data
+you create.
+
+  Project:
+    1   Ubuntu
+    4   Mozilla
+    5   GNOME
+
+
+  Product:
+    5   Evolution (in the GNOME Project 5)
+    6   Gnome Terminal (in the GNOME Project 5)
+    4   Firefox (project 4)
+    4   Thunderbird (project 4)
+
+
+  Sourcepackage:
+    1   Firefox
+    2   Thunderbird
+    8   Evolution
+
+

@@ -8,7 +8,7 @@ from zope.testing.doctestunit import DocTestSuite
 def test_requestapi():
     """
     >>> from canonical.lp.tales import IRequestAPI, RequestAPI
-    >>> from canonical.rosetta.interfaces import IPerson
+    >>> from canonical.launchpad.interfaces import IPerson
     >>> from zope.interface.verify import verifyObject
 
     >>> class FakePrincipal:

@@ -1,0 +1,49 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <title metal:fill-slot="title">Rosetta:
+        <span tal:replace="context/title">Some PO template or other</span></title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1 tal:content="context/title">Some PO template or other</h1>
+
+    <p>
+    This file contains <span tal:replace="view/num_messages">N
+    messages</span>.
+    </p>
+
+    <p><a href="translate">Translate this template</a>.</p>
+
+    <p><a href="upload">Update this template's data</a>.</p>
+
+    <h2>Translations</h2>
+
+    <ul>
+        <li tal:repeat="language view/languages">
+            <a tal:attributes="href language/code"
+                tal:content="language/englishName">Language, in English</a>
+            <span tal:condition="python:
+                    language.nativeName != language.englishName and
+                    language.nativeName">
+                (<span tal:content="language/nativeName">Language, in the
+                    language</span>)
+            </span>
+            <br/>
+        </li>
+    </ul>
+
+</div>
+
+</body>
+</html>

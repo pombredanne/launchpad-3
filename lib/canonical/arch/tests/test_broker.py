@@ -12,8 +12,17 @@ import operator
 import sys
 import unittest
 from zope.interface.verify import verifyClass, verifyObject
+
 from canonical.arch.tests.test_framework import DatabaseTestCase
 from canonical.arch.tests.test_framework import DatabaseAndArchiveTestCase
+
+from canonical.launchpad.interfaces import NamespaceError
+from canonical.launchpad.interfaces import IArchive
+from canonical.launchpad.interfaces import IArchiveLocation
+from canonical.launchpad.interfaces import NamespaceError
+from canonical.launchpad.interfaces import NamespaceError
+from canonical.launchpad.interfaces import IArchiveCollection
+
 
 
 class NamespaceObject(unittest.TestCase):
@@ -73,14 +82,11 @@ class Archives(DatabaseTestCase):
     def test_implements(self):
         """canonical.arch.broker.Archives implement IArchiveCollection"""
         from canonical.arch.broker import Archives
-        from canonical.arch.interfaces import IArchiveCollection
         self.failUnless(verifyClass(IArchiveCollection, Archives))
     tests.append('test_implements')
 
     def _help_test_keys(self, names):
         from canonical.arch.broker import Archives
-        from canonical.arch.database import connect
-        connect()
         for name in names: Archives().create(name)
         self.assertEqual(Archives().keys(), list(names))
 
@@ -102,9 +108,8 @@ class Archives(DatabaseTestCase):
     def test_create(self):
         """Archives.create("foo@bar") works"""
         from canonical.arch.broker import Archives, Archive
-        from canonical.arch.database import _archive_purge, ArchiveMapper
-        from canonical.arch.database import connect
-        connect()
+        from canonical.launchpad.database import ArchiveMapper
+        from canonical.arch.tests.test_database import _archive_purge
         name="foo@bar"
         mapper=ArchiveMapper()
         self.failIf(mapper.findByName(name).exists())
@@ -117,7 +122,6 @@ class Archives(DatabaseTestCase):
     def test_create_invalid(self):
         """Archives.create raises NamespaceError on invalid archive name"""
         from canonical.arch.broker import Archives
-        from canonical.arch.interfaces import NamespaceError
         name="foo%ouch@bar"
         def thunk(): Archives().create(name)
         self.assertRaises(NamespaceError, thunk)
@@ -126,7 +130,7 @@ class Archives(DatabaseTestCase):
     def test_create_one_location(self):
         """Archives.create also creates a single location."""
         from canonical.arch.broker import Archives, Archive
-        from canonical.arch.database import ArchiveMapper
+        from canonical.launchpad.database import ArchiveMapper
         name, location ="foo@bar", "http://example.com/archives/foo@bar"
         mapper=ArchiveMapper()
         self.failIf(mapper.findByName(name).exists())
@@ -158,7 +162,6 @@ class Archives(DatabaseTestCase):
     def test_getitem_invalid_raises(self):
         """Archives.__getitem__ raises NamespaceError on invalid name"""
         from canonical.arch.broker import Archives
-        from canonical.arch.interfaces import NamespaceError
         name="foo%ouch@bar"
         def thunk(): Archives()[name]
         self.assertRaises(NamespaceError, thunk)
@@ -167,8 +170,6 @@ class Archives(DatabaseTestCase):
     def test_getitem(self):
         """Archives.__getitem__ works"""
         from canonical.arch.broker import Archives, MissingArchive, Archive
-        from canonical.arch.database import connect
-        connect()
         name = 'foo@bar'
         archives = Archives()
         missing_archive = archives[name]
@@ -187,7 +188,6 @@ class ArchiveLocation(DatabaseTestCase):
     def test_implements(self):
         """canonical.arch.broker.ArchiveLocation implement IArchiveLocation"""
         from canonical.arch.broker import ArchiveLocation
-        from canonical.arch.interfaces import IArchiveLocation
         self.failUnless(verifyClass(IArchiveLocation, ArchiveLocation))
     tests.append('test_implements')
 
@@ -214,8 +214,6 @@ class ArchiveLocationRegistry(DatabaseTestCase):
     def test_instantiate(self):
         """canonical.arch.broker.ArchiveLocationRegistry can be instantiated"""
         from canonical.arch.broker import Archive, ArchiveLocationRegistry
-        from canonical.arch.database import connect
-        connect()
         archive = Archive("foo@bar")
         registry = ArchiveLocationRegistry(archive)
     tests.append('test_instantiate')
@@ -225,8 +223,6 @@ class ArchiveLocationRegistry(DatabaseTestCase):
         from canonical.arch.broker import Archives, ArchiveLocationRegistry
         url = "http://blah/"
         archives = Archives()
-        from canonical.arch.database import connect
-        connect()
         archive = archives.create("foo@bar")
         registry = ArchiveLocationRegistry(archive)
         location = registry.createMirrorTargetLocation(url)
@@ -239,8 +235,6 @@ class ArchiveLocationRegistry(DatabaseTestCase):
         from canonical.arch.broker import Archive, Archives, ArchiveLocationRegistry
         url = "http://blah/"
         archives = Archives()
-        from canonical.arch.database import connect
-        connect()
         archive = archives.create("foo@bar")
         registry = ArchiveLocationRegistry(archive)
         location = registry.createMirrorTargetLocation(url)
@@ -250,12 +244,12 @@ class ArchiveLocationRegistry(DatabaseTestCase):
         self.assertEqual(location.archive, archive)
     tests.append('test_extract_mirrors')
 
+
 class NamespaceTestCase(DatabaseTestCase):
     def _help_test_implements(self, concrete, interface, fullname):
         import canonical.arch.broker
-        import canonical.arch.interfaces
         concrete_class = getattr(canonical.arch.broker, concrete)
-        interface_class = getattr(canonical.arch.interfaces, interface)
+        interface_class = getattr(canonical.launchpad.interfaces, interface)
         concrete_object = concrete_class(fullname)
         self.failUnless(verifyClass(interface_class, concrete_class))
         self.failUnless(verifyObject(interface_class, concrete_object))
@@ -330,13 +324,13 @@ class NamespaceTestCase(DatabaseTestCase):
         instance2 = klass(fullname2, *args)
         self.assertNotEqual(instance1, instance2)
 
-
 class Archive(NamespaceTestCase):
     tests = []
                
     def test_imports(self):
-        """canonical.arch.interfaces is importable."""
+        """canonical.launchpad.interfaces is importable."""
         from canonical.arch.broker import Archive
+        import canonical.launchpad.interfaces
     tests.append('test_imports')
 
     def test_construct(self):
@@ -348,7 +342,6 @@ class Archive(NamespaceTestCase):
     def test_implements(self):
         """canonical.arch.broker.Archive implements Archive"""
         from canonical.arch.broker import Archive
-        from canonical.arch.interfaces import IArchive
         self.failUnless(verifyClass(IArchive, Archive))
     tests.append('test_implements')
 
@@ -381,7 +374,6 @@ class Archive(NamespaceTestCase):
     def test_getitem_invalid_raises(self):
         """Archive.__getitem__ raises NamespaceError on invalid category"""
         from canonical.arch.broker import Archive
-        from canonical.arch.interfaces import NamespaceError
         name = "foo@bar"
         archive = Archive(name)
         def thunk(): archive['break/me']
@@ -436,8 +428,6 @@ class Archive(NamespaceTestCase):
         """Test we can tell we're unregistered"""
         from canonical.arch.broker import Archives
         archives = Archives()
-        from canonical.arch.database import connect
-        connect()
 
         archive = archives.create("foo@bar")
         self.failIf(archive.is_registered())
@@ -447,8 +437,6 @@ class Archive(NamespaceTestCase):
         """Test we call tell when we're registered"""
         from canonical.arch.broker import Archives
         archives = Archives()
-        from canonical.arch.database import connect
-        connect()
 
         archive = archives.create("foo@bar")
         self.failIf(archive.is_registered())
@@ -458,13 +446,11 @@ class Archive(NamespaceTestCase):
 
     def test_insert_category(self):
         """Test we can insert a category into the db"""
-        from canonical.arch.database import connect
-        connect()
 
         archive = self.getTestArchive()
         name = "cat"
         category = archive.create_category(name)
-        from canonical.arch.database import CategoryMapper
+        from canonical.launchpad.database import CategoryMapper
         mapper = CategoryMapper()
         self.commit()
         self.failUnless(mapper.exists(category))
@@ -486,58 +472,42 @@ class Category(NamespaceTestCase):
     
     def test_implements(self):
         """instances of canonical.arch.broker.Category implements ICategory"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_implements(self.classname, self.interfacename, self.fullname)
 #    tests.append('test_implements')
 
     def test_create(self):
         """Category can be instantiated with a fullname"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_create_new(self.klass(), self.name, self.getTestArchive())
     tests.append('test_create')
 
     def test_name(self):
         """Test it stores it's name correctly"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_name_new(self.klass(), self.name, self.getTestArchive())
     tests.append('test_name')
 
     def test_null_equality(self):
         """Test equality of a Category against itself"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_null_equality_new(self.klass(), self.name, self.getTestArchive())
     tests.append('test_null_equality')
 
     def test_simple_equality(self):
         """Test equality of two identical Category"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_simple_equality_new(self.klass(), self.fullname, self.getTestArchive())
     tests.append('test_simple_equality')
 
     def test_None_inequality(self):
         """Compare a Category against None"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_none_inequality_new(self.klass(), self.fullname, self.getTestArchive())
     tests.append('test_None_inequality')
 
     def test_named_inequality(self):
         """Differing fullnames make Category unequal"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_named_inequality_new(self.klass(), self.fullname, self.other_fullname, self.getTestArchive())
     tests.append('test_named_inequality')
 
     def test_getitem(self):
         """Category.__getitem__ works"""
         from canonical.arch.broker import Category, Branch
-        from canonical.arch.database import connect
-        connect()
         archive = self.getTestArchive()
         category = Category("baz", archive)
         branch = category["bork"]
@@ -548,8 +518,6 @@ class Category(NamespaceTestCase):
     def test_always_exists(self):
         """Categories always exist"""
         from canonical.arch.broker import Category
-        from canonical.arch.database import connect
-        connect()
         archive = self.getTestArchive()
         category = Category("bang", archive)
         self.assertEqual(category.exists(), True)
@@ -558,8 +526,6 @@ class Category(NamespaceTestCase):
     def test_can_setup(self):
         """Test we can setup a Category"""
         from canonical.arch.broker import Category
-        from canonical.arch.database import connect
-        connect()
         archive = self.getTestArchive()
         category = Category("bang", archive)
         category.setup()
@@ -570,8 +536,6 @@ class Category(NamespaceTestCase):
     def test_nonarch_name(self):
         """Test Category.nonarch returns the correct string"""
         from canonical.arch.broker import Category
-        from canonical.arch.database import connect
-        connect()
         archive = self.getTestArchive()
         category = Category(self.name, archive)
         self.assertEqual(category.nonarch, self.name)
@@ -580,8 +544,6 @@ class Category(NamespaceTestCase):
     def test_get_archive(self):
         """Test we can get the archive out of a Category correctly"""
         from canonical.arch.broker import Category
-        from canonical.arch.database import connect
-        connect()
         archive = self.getTestArchive()
         category = Category(self.name, archive)
         self.assertEqual(category.archive, archive)
@@ -590,8 +552,6 @@ class Category(NamespaceTestCase):
     def test_get_fullname(self):
         """Test Category sets it's .fullname correctly"""
         from canonical.arch.broker import Category
-        from canonical.arch.database import connect
-        connect()
         archive = self.getTestArchive()
         name = "bah"
         category = Category(name, archive)
@@ -618,59 +578,43 @@ class Branch(NamespaceTestCase):
 
     def test_create(self):
         """Branch can be instantiated with a fullname"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_create_new(self.klass(), self.name, self.getTestCategory())
     tests.append('test_create')
 
     def test_name(self):
         """Test it stores it's name correctly"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_name_new(self.klass(), self.name, self.getTestCategory())
     tests.append('test_name')
 
     def test_null_equality(self):
         """Test equality of a Branch against itself"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_null_equality_new(self.klass(), self.name, self.getTestCategory())
     tests.append('test_null_equality')
 
     def test_simple_equality(self):
         """Test equality of two identical Branches"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_simple_equality_new(self.klass(), self.name, self.getTestCategory())
     tests.append('test_simple_equality')
 
     def test_None_inequality(self):
         """Compare a Branch against None"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_none_inequality_new(self.klass(), self.name, self.getTestCategory())
     tests.append('test_None_inequality')
 
     def test_named_inequality(self):
         """Differing fullnames make Branches unequal"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_named_inequality_new(self.klass(), self.name, self.other_name, self.getTestCategory())
     tests.append('test_named_inequality')
 
     def test_get_category(self):
         """Test we can get our parent category"""
         from canonical.arch.broker import Branch
-        from canonical.arch.database import connect
-        connect()
         self.assertEqual(self.getTestBranch().category, self.getTestCategory())
     tests.append('test_get_category')
 
     def test_get_fullname(self):
         """Test Branch sets it's .fullname correctly"""
         from canonical.arch.broker import Branch
-        from canonical.arch.database import connect
-        connect()
         
         category = self.getTestCategory()
         name = "bah"
@@ -699,51 +643,37 @@ class Version(NamespaceTestCase):
 
     def test_create(self):
         """Version can be instantiated with a fullname"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_create_new(self.klass(), self.fullname, self.getTestBranch())
     tests.append('test_create')
 
     def test_name(self):
         """Test it stores it's name correctly"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_name_new(self.klass(), self.fullname, self.getTestBranch())
     tests.append('test_name')
 
     def test_null_equality(self):
         """Test equality of a Version against itself"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_null_equality_new(self.klass(), self.fullname, self.getTestBranch())
     tests.append('test_null_equality')
 
     def test_simple_equality(self):
         """Test equality of two identical Versions"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_simple_equality_new(self.klass(), self.fullname, self.getTestBranch())
     tests.append('test_simple_equality')
 
     def test_None_inequality(self):
         """Compare Version against None"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_none_inequality_new(self.klass(), self.fullname, self.getTestBranch())
     tests.append('test_None_inequality')
 
     def test_named_inequality(self):
         """Differing fullnames make Versions unequal"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_named_inequality_new(self.klass(), self.fullname, self.other_fullname, self.getTestBranch())
     tests.append('test_named_inequality')
 
     def test_get_fullname(self):
         """Test Version sets it's .fullname correctly"""
         from canonical.arch.broker import Version
-        from canonical.arch.database import connect
-        connect()
         
         branch = self.getTestBranch()
         name = "bah"
@@ -772,50 +702,36 @@ class Revision(NamespaceTestCase):
 
     def test_create(self):
         """Revision can be instantiated with a name"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_create_new(self.klass(), self.name, self.getTestVersion())
     tests.append('test_create')
 
     def test_name(self):
         """Tests that it stores it's name"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_name_new(self.klass(), self.name, self.getTestVersion())
     tests.append('test_name')
 
     def test_null_equality(self):
         """Test equality of a Revision against itself"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_null_equality_new(self.klass(), self.name, self.getTestVersion())
     tests.append('test_null_equality')
 
     def test_simple_equality(self):
         """Test equality of two identical Revisiones"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_simple_equality_new(self.klass(), self.name, self.getTestVersion())
     tests.append('test_simple_equality')
 
     def test_None_inequality(self):
         """Compare Revision against None"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_none_inequality_new(self.klass(), self.name, self.getTestVersion())
     tests.append('test_None_inequality')
 
     def test_named_inequality(self):
         """Differing fullnames make Revisions unequal"""
-        from canonical.arch.database import connect
-        connect()
         self._help_test_named_inequality_new(self.klass(), self.name, self.other_name, self.getTestVersion())
     tests.append('test_named_inequality')
 
     def test_parents(self):
         """Test we can access our parents correctly."""
-        from canonical.arch.database import connect
-        connect()
         revision = self.getTestRevision()
         self.assertEqual(revision, self.getTestRevision())
         self.assertEqual(revision.version, self.getTestVersion())
@@ -865,9 +781,9 @@ class RevisionImport(DatabaseAndArchiveTestCase):
         arch_rev = arch_vsn['base-0']
         db_rev.clone_files(arch_rev.iter_files())
         # Now, let's check that the data looks correct.
-        from canonical.arch.database import ChangesetFile
-        from canonical.arch.database import ChangesetFileName
-        from canonical.arch.database import ChangesetFileHash
+        from canonical.launchpad.database import ChangesetFile
+        from canonical.launchpad.database import ChangesetFileName
+        from canonical.launchpad.database import ChangesetFileHash
         db_cset = db_rev.changeset
         db_files = list(ChangesetFile.select("changeset = '%s'" % db_cset.id))
         db_names = [F.changesetfilename.filename for F in db_files]

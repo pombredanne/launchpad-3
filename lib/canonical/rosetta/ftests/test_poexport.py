@@ -8,10 +8,10 @@ import unittest
 
 from zope.component import getService, servicenames
 from zope.component.tests.placelesssetup import PlacelessSetup
-from canonical.rosetta.interfaces import ILanguages
-from canonical.database.doap import DBProject
-from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
-    RosettaProduct, RosettaLanguages
+from canonical.launchpad.interfaces import ILanguages
+from canonical.launchpad.database import Project
+from canonical.launchpad.database import Person, POTemplate, \
+    Product, Languages
 from canonical.rosetta.poexport import POExport
 import canonical.lp
 
@@ -87,8 +87,8 @@ msgstr ""
 #. addressbook:ldap-init secondary
 #: addressbook/addressbook-errors.xml.h:4
 msgid ""
-"This addressbook server might unreachable or the server name may be misspelled "
-"or your network connection could be down."
+"This addressbook server might unreachable or the server name may be "
+"misspelled or your network connection could be down."
 msgstr ""
 
 #. addressbook:ldap-auth primary
@@ -99,9 +99,9 @@ msgstr ""
 #. addressbook:ldap-auth secondary
 #: addressbook/addressbook-errors.xml.h:8
 msgid ""
-"Check to make sure your password is spelled correctly and that you are using a "
-"supported login method. Remember that many passwords are case sensitive; your "
-"caps lock might be on."
+"Check to make sure your password is spelled correctly and that you are using "
+"a supported login method. Remember that many passwords are case sensitive; "
+"your caps lock might be on."
 msgstr ""
 
 #: addressbook/gui/component/addressbook-migrate.c:124
@@ -113,13 +113,13 @@ msgstr ""
 # This is an example of commenttext for a multiline msgset
 #: addressbook/gui/component/addressbook-migrate.c:1123
 msgid ""
-"The location and hierarchy of the Evolution contact folders has changed since "
-"Evolution 1.x.\\n"
+"The location and hierarchy of the Evolution contact folders has changed "
+"since Evolution 1.x.\\n"
 "\\n"
 "Please be patient while Evolution migrates your folders..."
 msgstr ""
-"La ubicaci\xc3\xb3n y jerarqu\xc3\xada de las carpetas de contactos de Evolution ha cambiado "
-"desde Evolution 1.x.\\n"
+"La ubicaci\xc3\xb3n y jerarqu\xc3\xada de las carpetas de contactos de Evolution ha "
+"cambiado desde Evolution 1.x.\\n"
 "\\n"
 "Tenga paciencia mientras Evolution migra sus carpetas..."
 
@@ -154,14 +154,14 @@ class POExportTestCase(PlacelessSetup, unittest.TestCase):
     def setUp(self):
         super(POExportTestCase, self).setUp()
         utilityService = getService(servicenames.Utilities)
-        utilityService.provideUtility(ILanguages, RosettaLanguages(), '')
+        utilityService.provideUtility(ILanguages, Languages(), '')
         canonical.lp.initZopeless()
 
     def testPoExportAdapter(self):
         try:
-            project = DBProject.selectBy(name = 'gnome')[0]
-            product = RosettaProduct.selectBy(projectID = project.id, name = 'evolution')[0]
-            poTemplate = RosettaPOTemplate.selectBy(productID = product.id, name='evolution-2.0')[0]
+            project = Project.selectBy(name = 'gnome')[0]
+            product = Product.selectBy(projectID = project.id, name = 'evolution')[0]
+            poTemplate = POTemplate.selectBy(productID = product.id, name='evolution-2.0')[0]
         except IndexError, e:
             raise IndexError, "Couldn't find record in database, please import sampledata.sql to do the tests."
         export = POExport(poTemplate)

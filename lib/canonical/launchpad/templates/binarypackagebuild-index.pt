@@ -1,0 +1,201 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="soyuz">
+
+<head>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+  <!-- Rosetta style sheet -->
+  <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+<h1><span tal:content="context/binarypackagerelease/shortdesc">
+     TITLE </span>
+    <span tal:content="context/version">Version</span>-
+    <span tal:content="context/arch">Arch</span>
+</h1>
+
+<fieldset>
+  <legend>
+    Binary Package Info
+  </legend>
+<p><b>Installed Size:</b> <span
+tal:content="context/binarypackagerelease/installedsize" /> Kbytes
+
+<p><b>Package Format:</b> <span tal:content="context/pkgformat" />
+
+<p><b>Essential:</b> <span tal:content="context/binarypackagerelease/essential" />
+
+</fieldset>
+
+<fieldset>
+  <legend>
+    Package Build Informations
+  <legend>
+<p><b>Build Created Date: </b> <span tal:content="context/binarypackagerelease/build/datecreated" />
+
+<p><b>Build State:</b> <span tal:content="context/binarypackagerelease/build/buildstate" />
+
+<p><b>Build Date: </b><span tal:content="context/binarypackagerelease/build/datebuilt" />
+
+<p><b>Build Duration: </b><span tal:content="context/binarypackagerelease/build/buildduration" />
+
+</fieldset>
+
+
+<fieldset>
+  <table width="100%">
+
+    <tr>
+
+      <td width="50%" valign="top">
+        <div align="center">
+	  <h4>Package Dependences</h4>
+	</div>
+	  <ul>
+	    <i tal:condition="not:context/binarypackagerelease/depends"> 
+	      Not Available
+	    </i>
+	    <span tal:repeat="bindepends context/depends">
+	      <li>
+	        <a tal:content="bindepends/name"
+		tal:attributes="href string:../../../${bindepends/name}"/> 
+		<tal:dummy condition="bindepends/signal">
+		  <span tal:content="bindepends/signal" /> 
+		  <span tal:content="bindepends/version" />)
+<!-- 		  <a tal:content="bindepends/version" -->
+<!-- 		  tal:attributes="href string:../../../${bindepends/name}/${bindepends/version}" /> ) -->
+		</tal:dummy> 
+	      </li> 
+	    </span> 
+	  </ul> 
+      </td>
+
+      <td width="50%" valign="top">
+        <div align="center">
+          <h4>Package Recommends</h4>
+	</div>
+	  <ul>
+	    <i tal:condition="not:context/binarypackagerelease/recommends"> 
+	      Not Available
+	    </i>
+	    <span tal:repeat="binrecommends context/recommends">
+	      <li>
+	        <a tal:content="binrecommends/name"
+		tal:attributes="href string:../../../${binrecommends/name}"/> 
+		<tal:dummy condition="binrecommends/signal">
+		  <span tal:content="binrecommends/signal" /> 
+		  <span tal:content="binrecommends/version" /> )
+		</tal:dummy> 
+	      </li> 
+	    </span> 
+	  </ul> 
+      </td>
+
+    </tr>
+
+
+    <tr>
+
+      <td width="50%" valign="top">
+        <div align="center">
+          <h4>Package Conflicts</h4>
+	</div>
+	  <ul>
+	    <i tal:condition="not:context/binarypackagerelease/conflicts"> 
+	      Not Available
+	    </i>
+	    <span tal:repeat="binconflicts context/conflicts">
+	      <li>
+	        <a tal:content="binconflicts/name"
+		tal:attributes="href string:../../../${binconflicts/name}"/> 
+		<tal:dummy condition="binconflicts/signal">
+		  <span tal:content="binconflicts/signal" /> 
+		  <span tal:content="binconflicts/version" /> )
+		</tal:dummy> 
+	      </li> 
+	    </span> 
+	  </ul> 
+      </td>
+
+      <td width="50%" valign="top">
+        <div align="center">
+          <h4>Package Replaces</h4>
+	</div>
+	  <ul>
+	    <i tal:condition="not:context/binarypackagerelease/replaces"> 
+	      Not Available
+	    </i>
+	    <span tal:repeat="binreplaces context/replaces">
+	      <li>
+	        <a tal:content="binreplaces/name"
+		tal:attributes="href string:../../../${binreplaces/name}"/>  
+		<tal:dummy condition="binreplaces/signal">
+		  <span tal:content="binreplaces/signal" /> 
+		  <span tal:content="binreplaces/version" /> )
+		</tal:dummy> 
+	      </li> 
+	    </span> 
+	  </ul> 
+      </td>
+
+    </tr>
+
+    <tr>
+
+      <td width="50%" valign="top">
+        <div align="center">
+          <h4>Package Suggests</h4>
+	</div>
+	  <ul>
+	    <i tal:condition="not:context/binarypackagerelease/suggests"> 
+	      Not Available
+	    </i>
+	    <span tal:repeat="binsuggests context/suggests">
+	      <li>
+	        <a tal:content="binsuggests/name"
+		tal:attributes="href string:../../../${binsuggests/name}"/>  
+		<tal:dummy condition="binsuggests/signal">
+		  <span tal:content="binsuggests/signal" />
+		  <span tal:content="binsuggests/version" /> )
+		</tal:dummy>
+	      </li>
+	    </span>
+	  </ul>
+      </td>
+
+      <td width="50%" valign="top">
+        <div align="center">
+	   <h4>Package Provides</h4>
+	</div>
+	  <ul>
+	    <i tal:condition="not:context/binarypackagerelease/provides"> 
+	      Not Available
+	    </i>
+	    <span tal:repeat="binprovides context/provides">
+	     <li>
+	      <span tal:content="binprovides/name" />
+		<tal:dummy condition="binprovides/signal">
+		  <span tal:content="binprovides/signal" />
+		  <span tal:content="binprovides/version" /> )
+		</tal:dummy>
+	      </li>
+	    </span>
+	  </ul>
+      </td>
+
+    </tr>
+
+   </table>
+</fieldset>
+
+
+</div>
+</body>
+</html>
+ 
