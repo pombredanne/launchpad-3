@@ -138,7 +138,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
             p = plpy.prepare("SELECT to_tsquery(\'%s\', $1) AS x", ["text"])
             q = plpy.execute(p, [q], 1)[0]["x"]
             return q or None
-        ' LANGUAGE plpythonu
+        ' LANGUAGE plpythonu IMMUTABLE
         """ % configuration)
 
     execute(con,
