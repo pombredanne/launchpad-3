@@ -189,7 +189,16 @@ def escape_msgid(s):
     return s.replace('\\', '\\\\').replace('\n', '\\n').replace('\t', '\\t')
 
 def unescape_msgid(s):
-    return s.replace('\\t', '\t').replace('\\n', '\n').replace('\\\\', '\\')
+    escapes = (('\\t', '\t'), ('\\n', '\n'), ('\\\\', '\\'))
+
+    if s == "":
+        return ""
+    else:
+        for original, replacement in escapes:
+            if s.startswith(original):
+                return replacement + unescape_msgid(s[len(original):])
+
+        return s[0] + unescape_msgid(s[1:])
 
 def msgid_html(text, flags, space=SPACE_CHAR, newline=NEWLINE_CHAR):
     '''Convert a message ID to a HTML representation.'''

@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-11 13:30:56 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1174
+
+    Summary:
+      fix unescape_msgid for '\\n' and similar
+    Revision:
+      launchpad--devel--0--patch-1174
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-410
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-411
+       make message IDs containing \n and similar be properly unescaped
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/rosetta/browser.py
+     lib/canonical/rosetta/tests/test_browser.py
+
+    new patches:
+     daf@canonical.com--2004/launchpad--devel--0--patch-410
+     daf@canonical.com--2004/launchpad--devel--0--patch-411
+
+
 2005-01-11 13:19:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1173
 
     Summary:
