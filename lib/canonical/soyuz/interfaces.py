@@ -97,6 +97,7 @@ class IDistroReleaseSourceReleaseApp(Interface):
     sourcepackagerelease = Attribute("SourcePackageRelease")
     archs = Attribute("Builded archs")
     builddepends = Attribute("Builddepends for this sourcepackagerelease")
+    builddependsindep = Attribute("BuilddependsIndep for this sourcepackagerelease")
     distroreleasename = Attribute("The Distro Release name need to make links to bin packages")
 
     def __getitem__(name):
@@ -468,6 +469,7 @@ class ISourcePackage(Interface):
     name = Attribute("A string")
     title = Attribute("Package Title")
     description = Attribute("Package Description")
+    distro = Attribute("Package Distribution")
     ##releases = Attribute("List of ISourcePackageRelease objects")
     proposed = Attribute("A source package release with upload status of "
                          "PROPOSED, else None")
@@ -477,10 +479,16 @@ class ISourcePackageRelease(Interface):
     """A source package release, e.g. apache-utils 2.0.48-3"""
     # See the SourcePackageRelease table
 
-    version = Attribute("A version string")
-    creator = Attribute("Person that created this release")
     sourcepackage = Attribute("The source package this is a release for")
-
+    srcpackageformat = Attribute("Source Package Format")
+    creator = Attribute("Person that created this release")
+    version = Attribute("A version string")
+    dateuploaded = Attribute("Date of Upload")
+    urgency = Attribute("Source Package Urgency")
+    dscsigningkey = Attribute("DSC Signing Key")
+    component = Attribute("Source Package Component")
+    changelog = Attribute("Source Package Change Log")
+    
     def branches():
         """Return the list of branches in a source package release"""
 

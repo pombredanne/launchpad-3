@@ -627,7 +627,6 @@ VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename =
 
 UPDATE sourcepackagerelease set builddepends = 
 	'mozilla-firefox (>= 0.9.0-9), mozilla-thunderbird, arch'
---	'fontconfig, psmisc, libatk1.0-0 (>= 1.6.0), libc6 (>= 2.3.2.ds1-4), libfontconfig1 (>= 2.2.1)' 
 	where sourcepackage = 
 	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox'))
@@ -635,7 +634,6 @@ UPDATE sourcepackagerelease set builddepends =
 
 UPDATE sourcepackagerelease set builddepends = 
 	'mozilla-firefox (>= 0.9.0-9), mozilla-thunderbird, arch'
---	'libatk1.0-0 (>= 1.4.1), libc6 (>= 2.3.2.ds1-4), libfontconfig1 (>= 2.2.1), libfreetype6 (>= 2.1.5-1)' 
 	where sourcepackage = 
 	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-thunderbird'))
@@ -643,7 +641,6 @@ UPDATE sourcepackagerelease set builddepends =
 
 UPDATE sourcepackagerelease set builddepends = 
 	'mozilla-firefox (>= 0.9.0-9), mozilla-thunderbird, arch'
---	'python2.3, python2.3-twisted-bin' 
 	where sourcepackage = 
 	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'python-twisted'))
@@ -651,7 +648,6 @@ UPDATE sourcepackagerelease set builddepends =
 
 UPDATE sourcepackagerelease set builddepends = 
 	'mozilla-firefox  (>= 0.9.0-9), mozilla-thunderbird, arch'
---	'apache (>=1.9.2), perl (>=1.0.0)' 
 	where sourcepackage = 
 	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'bugzilla'))
@@ -659,7 +655,6 @@ UPDATE sourcepackagerelease set builddepends =
 
 UPDATE sourcepackagerelease set builddepends = 
 	'mozilla-firefox  (>= 0.9.0-9), mozilla-thunderbird, arch'
---	'libc6 (>= 2.3.2.ds1-4), libg2c0 (>= 1:3.3.3-1), debconf (>= 0.5) | debconf-2.0' 
 	where sourcepackage = 
 	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'arch'))
@@ -667,7 +662,6 @@ UPDATE sourcepackagerelease set builddepends =
 
 UPDATE sourcepackagerelease set builddepends = 
 	'mozilla-firefox  (>= 0.9.0-9), mozilla-thunderbird, arch'
---	'python2.3, python2.3-gtk2, python2.3-glade' 
 	where sourcepackage = 
 	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'kiwi2'))
@@ -675,7 +669,6 @@ UPDATE sourcepackagerelease set builddepends =
 
 UPDATE sourcepackagerelease set builddepends = 
 	'mozilla-firefox  (>= 0.9.0-9), mozilla-thunderbird, arch'
---	'python2.3, zopex3' 
 	where sourcepackage = 
 	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'plone'))
@@ -683,7 +676,62 @@ UPDATE sourcepackagerelease set builddepends =
 
 UPDATE sourcepackagerelease set builddepends = 
 	'mozilla-firefox  (>= 0.9.0-9), mozilla-thunderbird, arch'
---	'gtkhtml3.0 (>= 3.0.10), libart-2.0-2 (>= 2.3.16), libasn1-6-heimdal (>= 0.6.2), libatk1.0-0 (>= 1.6.0)' 
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'evolution'))
+	;
+
+UPDATE sourcepackagerelease set builddependsindep = 
+	'kiwi (>= 2.0),python-twisted , bugzilla, plone'
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox'))
+	;
+
+UPDATE sourcepackagerelease set builddependsindep = 
+	'kiwi (>= 2.0),python-twisted , bugzilla, plone'
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-thunderbird'))
+	;
+
+UPDATE sourcepackagerelease set builddependsindep = 
+	'kiwi (>= 2.0),python-twisted , bugzilla, plone'
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'python-twisted'))
+	;
+
+UPDATE sourcepackagerelease set builddependsindep = 
+	'kiwi (>= 2.0),python-twisted , bugzilla, plone'
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'bugzilla'))
+	;
+
+UPDATE sourcepackagerelease set builddependsindep = 
+	'kiwi (>= 2.0),python-twisted , bugzilla, plone'
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'arch'))
+	;
+
+UPDATE sourcepackagerelease set builddependsindep = 
+	'kiwi (>= 2.0),python-twisted , bugzilla, plone'
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'kiwi2'))
+	;
+
+UPDATE sourcepackagerelease set builddependsindep = 
+	'kiwi (>= 2.0),python-twisted , bugzilla, plone'
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'plone'))
+	;
+
+UPDATE sourcepackagerelease set builddependsindep = 
+	'kiwi (>= 2.0),python-twisted , bugzilla, plone'
 	where sourcepackage = 
 	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'evolution'))
@@ -1404,3 +1452,6 @@ VALUES ((SELECT id FROM Distrorelease WHERE name = 'grumpy'),
 	(SELECT id FROM Sourcepackagename WHERE name = 'arch'))),
 	1);
 
+UPDATE SourcePackage SET distro = 3 WHERE id < 4;
+
+UPDATE SourcePackage SET distro = 1 WHERE id >= 4;

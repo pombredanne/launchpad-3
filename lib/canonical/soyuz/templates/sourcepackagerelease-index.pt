@@ -14,62 +14,117 @@
 
 <div metal:fill-slot="main">
 
-<h1>
-<spam tal:content="context/sourcepackagerelease/sourcepackage/title">
-TITLE
-</spam>
-(<spam tal:content="context/sourcepackagerelease/version" />)
-</h1>
+  <h1>
+    <spam tal:content="context/sourcepackagerelease/sourcepackage/title">
+      TITLE
+    </spam>
+    (<spam tal:content="context/sourcepackagerelease/version" />)
+  </h1>
 
- <p><h4>Package name:</h4> 
-    <span tal:content="context/sourcepackagerelease/sourcepackage/name">
-    NAME</span>
+ <fieldset>
+   <legend>
+     Source Package Release Information
+   </legend>
+   <p><b>Package name:</b> 
+      <a tal:content="context/sourcepackagerelease/sourcepackage/name"
+      tal:attributes="href
+      string:../../${context/sourcepackagerelease/sourcepackage/name}" />
 
- <p><h4>Package Description:</h4> 
-    <span tal:content="context/sourcepackagerelease/sourcepackage/description">
-    DESCRIPTION</span>
-
- <p><h4>Package Maintainer:</h4> 
-     <span 
-     tal:content="context/sourcepackagerelease/sourcepackage/maintainer/displayname">
-     MAINTAINER</span>
-
- <p><h4>Package Creator:</h4> 
-     <span tal:content="context/sourcepackagerelease/creator/displayname">
-      CREATORNAME</span>
-
- <p><h4>Build Package Dependences:</h4>
- <div class="dummy">(XXX: Some links can be broken for sample data
- reasons. warty/mozilla-firefox works)
- </div>
- <tal:dummy condition="context/builddepends">
-  <ul>
-   <span
-   tal:repeat="builddepends context/builddepends">
-    <li>
-     <a tal:content="builddepends/name" tal:attributes="href
-      string:../../../../bin/${context/distroreleasename}/${builddepends/name}"/> 
-      <tal:dummy condition="builddepends/signal">
-       <span tal:content="builddepends/signal" /> 
-       <a tal:content="builddepends/version" 
+    <p><b>Package Creator:</b> 
+       <a
+       tal:content="context/sourcepackagerelease/creator/displayname" 
        tal:attributes="href 
-       string:../../../../bin/${context/distroreleasename}/${builddepends/name}/${builddepends/version}"/> )
-      </tal:dummy>
-    </li>
-   </span>
-  </ul>
- </tal:dummy>
+       string:../../../../../../people/${context/sourcepackagerelease/creator/id}"
+       />
 
- <p><h4>Package Bugs:</h4> 
+    <p><b>Upload Date (UTC):</b> 
+       <span tal:content="context/sourcepackagerelease/dateuploaded">
+       UPLOADDATE</span>
+
+    <p><b>Urgency Level:</b>
+       <span tal:content="context/sourcepackagerelease/urgency">
+       URGENCY</span>
+
+    <p><b>Component:</b>
+       <span tal:content="context/sourcepackagerelease/urgency">
+       Component</span>
+    
+    <div align="right">
+      <i>
+        <a tal:attributes="href string:+changelog-(no-url-yet)">
+	  Changelog
+	</a>
+      </i> 
+    </div>
+
+  </fieldset>
+
+  <table>
+    <tr>
+      <td width="50%" valign="top">
+        <h4>Build Package Dependences</h4>
+
+	<div class="dummy">
+	(XXX: Some links can be broken for sample data reasons. warty/mozilla-firefox works)
+	</div	 >
+ 
+        <tal:dummy condition="context/builddepends">
+	  <ul>
+	    <span tal:repeat="builddepends context/builddepends">
+	      <li>
+	        <a tal:content="builddepends/name" tal:attributes="href
+		string:../../../../bin/${context/distroreleasename}/${builddepends/name}"/> 
+		<tal:dummy condition="builddepends/signal">
+		  <span tal:content="builddepends/signal" /> 
+		  <a tal:content="builddepends/version" 
+		  tal:attributes="href 
+		  string:../../../../bin/${context/distroreleasename}/${builddepends/name}/${builddepends/version}"/> )
+		</tal:dummy>
+	      </li>
+	    </span>
+	  </ul>
+	</tal:dummy>
+      </td>
+
+      <td width="50%" valign="top">
+
+        <h4>Build Package DependencesIndep</h4>
+
+	<div class="dummy">
+	  (XXX: Some links can be broken for sample data
+	  reasons. warty/kiwi works)
+	</div>
+	<tal:dummy condition="context/builddependsindep">
+	  <ul>
+	    <span
+	    tal:repeat="builddepends context/builddependsindep">
+	      <li>
+	        <a tal:content="builddepends/name" tal:attributes="href
+		string:../../../../bin/${context/distroreleasename}/${builddepends/name}"/>
+		<tal:dummy condition="builddepends/signal">
+		  <span tal:content="builddepends/signal" />
+		  <a tal:content="builddepends/version"
+		  tal:attributes="href
+		  string:../../../../bin/${context/distroreleasename}/${builddepends/name}/${builddepends/version}"/> )
+		</tal:dummy>
+	      </li>
+	    </span>
+	  </ul>
+	</tal:dummy>
+      </td>
+    </tr>
+  </table>
+
+  <p><h4>Package Bugs:</h4> 
     <div class="dummy">
       <span>#1, #2, #3</span>
     </div>
 
- <p><h4>Builds:</h4> 
+  <p><h4>Builds:</h4> 
    <tal:block tal:repeat="arch context/archs">
-    [
-     <a tal:content="arch" tal:attributes="href arch">ARCH</a>
-    ]  
+     [
+       <a class="dummy" tal:content="arch" tal:attributes="href arch">ARCH</a>
+     ]    
    </tal:block>
 
 </div>

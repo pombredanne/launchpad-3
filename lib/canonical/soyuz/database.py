@@ -14,6 +14,7 @@ from canonical.soyuz.interfaces import IBranch, IChangeset
 from canonical.soyuz.interfaces import ISourcePackage, ISoyuzPerson
 from canonical.soyuz.interfaces import IBinaryPackage
 from canonical.soyuz.interfaces import IDistributionRole, IDistroReleaseRole
+from canonical.soyuz.interfaces import IDistribution
 
 
 class DistributionRole(SQLBase):
@@ -194,6 +195,7 @@ class SoyuzSourcePackage(SQLBase):
         StringCol('description', dbName='description', notNull=True),
         ForeignKey(name='manifest', foreignKey='Manifest', dbName='manifest', 
                    default=None),
+        ForeignKey(name='distro', foreignKey='Distribution', dbName='distro'),
     ]
     releases = MultipleJoin('SoyuzSourcePackageRelease',
                             joinColumn='sourcepackage')

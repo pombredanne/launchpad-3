@@ -189,6 +189,16 @@ class DistroReleaseSourceReleaseApp(object):
         else:
             self.builddepends = None
 
+
+        if self.sourcepackagerelease.builddependsindep:
+            self.builddependsindep = []
+            builddependsindep = split(self.sourcepackagerelease.builddependsindep, ',')
+            for pack in builddependsindep:
+                tmp = split(pack)
+                self.builddependsindep.append( builddepsContainer( tmp[0],join(tmp[1:]) ) )
+        else:
+            self.builddependsindep = None
+
     def __getitem__(self, arch):
         return DistroReleaseSourceReleaseBuildApp(self.sourcepackagerelease,
                                                   arch)
@@ -202,17 +212,6 @@ class DistroReleaseSourceApp(object):
     def __init__(self, release, sourcepackage):
         self.release = release
         self.sourcepackage = sourcepackage
-        # FIXME: stub
-        #         self.lastversions = ['1.2.3-4',
-        #                              '1.2.3-5',
-        #                              '1.2.3-6',
-        #                              '1.2.4-0',
-        #                              '1.2.4-1']
-
-        #self.currentversions = [CurrentVersion('1.2.4-0',['i386', 'AMD64']),
-        #                        CurrentVersion('1.2.3-6',['PPC'])
-        #                        ]
-                                
 
     def __getitem__(self, version):
         return DistroReleaseSourceReleaseApp(self.sourcepackage, version, self.release.name)
