@@ -19,6 +19,7 @@ from canonical.launchpad.interfaces import IPerson, IPersonSet, IEmailAddress
 from canonical.launchpad.interfaces import ILanguageSet
 from canonical.launchpad.interfaces import IPasswordEncryptor
 from canonical.launchpad.database.pofile import POTemplate
+from canonical.lp.dbschema import KarmaField
 from canonical.lp import dbschema
 from canonical.foaf import nickname
 
@@ -104,9 +105,17 @@ class Person(SQLBase):
                             ORDER BY datefirstseen DESC)))
             ''')
 
-    def assignKarma(self, karmafield, points):
-        if karmafield not in dbschema.KarmaField.items:
+    def assignKarma(self, karmafield, points=None):
+        if karmafield not in KarmaField.items:
             raise TypeError('"%s" is not a valid KarmaField value')
+        if points is None:
+            try:
+                points = KARMA_POINTS[karmafield]
+            except KeyError:
+                # What about defining a default number of points?
+                points = 0
+                # Print a warning here, cause someone forgot to add the
+                # karmafield to KARMA_POINTS.
         Karma(person=self, karmafield=karmafield.value, points=points)
         # XXX: I think we should recalculate the karma here.
         self.karma += points
@@ -395,9 +404,18 @@ class Karma(SQLBase):
 
     def _karmafieldname(self):
         try:
-            return dbschema.KarmaField.items[self.karmafield].title
+            return KarmaField.items[self.karmafield].title
         except KeyError:
             return 'Unknown (%d)' % self.karmafield
 
     karmafieldname = property(_karmafieldname)
+
+
+# XXX: These points are totally *CRAP*.
+KARMA_POINTS = {KarmaField.BUG_REPORT: 10,
+                KarmaField.BUG_FIX: 20,
+                KarmaField.BUG_COMMENT: 5,
+                KarmaField.WIKI_EDIT: 2,
+                KarmaField.WIKI_CREATE: 3,
+                KarmaField.PACKAGE_UPLOAD: 10}
 

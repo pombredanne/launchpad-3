@@ -8,3 +8,4 @@ class ISQLObjectModifiedEvent(IObjectModifiedEvent):
     edited_fields = Attribute("""\
         The list of fields that were edited (though not necessarily all
         modified, of course.)""")
+    principal = Attribute("The principal for this event.")

@@ -1716,6 +1716,10 @@ class RosettaImportStatus(DBSchema):
 
 
 class KarmaField(DBSchema):
+    # If you add a new Item here, please remember to add it to 
+    # canonical.launchpad.database.person.KARMA_POINTS too. 
+    # XXX: This KarmaField is a good candidate for leaving dbschema and
+    # get into the database.
     """Karma Field
 
     This schema documents the different kinds of Karma that can be
@@ -1723,31 +1727,37 @@ class KarmaField(DBSchema):
     each of these Karmas have a KarmaField.
     """
 
-    BUG_REPORT = Item(1, """
-        Bug Report
-
-        User reported a new bug.
-    """)
-
-    BUG_FIX = Item(2, """
-        Bug Fix
-
-        User provided a patch to fix a bug.
-    """)
-
-    WIKI_EDIT = Item(3, """
+    WIKI_EDIT = Item(1, """
         Wiki Page Edited
 
         User edited a Wiki page.
     """)
 
-    WIKI_CREATE = Item(4, """
+    WIKI_CREATE = Item(2, """
         New Wiki Page
 
         User created a new page in the Wiki.
     """)
 
-    PACKAGE_UPLOAD = Item(5, """
+    BUG_COMMENT = Item(3, """
+        New Comment on Bug
+
+        User posted a comment on the bug's discussion forum.
+    """)
+
+    BUG_REPORT = Item(4, """
+        Bug Report
+
+        User reported a new bug.
+    """)
+
+    BUG_FIX = Item(5, """
+        Bug Fix
+
+        User provided a patch to fix a bug.
+    """)
+
+    PACKAGE_UPLOAD = Item(6, """
         Package Uploaded
 
         User uploaded a new package to the system.

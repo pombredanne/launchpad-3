@@ -46,7 +46,8 @@ class SQLObjectEditView(EditView):
                 # That's the adapter's job.
                 if changed and self.context is self.adapted:
                     notify(SQLObjectModifiedEvent(
-                        content, content_before_modification, self.fieldNames))
+                        content, content_before_modification,
+                        self.fieldNames, self.request.principal))
             except WidgetsError, errors:
                 self.errors = errors
                 status = _("An error occured.")
