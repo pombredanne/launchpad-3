@@ -15,6 +15,5 @@
 
     <include file="sql.zcml" package="canonical.lp" />
     <include file="sql.zcml" package="canonical.rosetta" />
-    <include file="sql.zcml" package="canonical.soyuz" />
 
 </configure>

@@ -14,7 +14,7 @@
   <!-- This view registers 'distros' as a suburl of RootObject/soyuz/. -->
   <browser:suburl
       for="canonical.soyuz.SoyuzApplication"
-      class="canonical.soyuz.sql.DistrosApp"
+      class="canonical.soyuz.distroapp.DistrosApp"
       permission="zope.Public"
       name="distros"
       />
@@ -22,7 +22,7 @@
   <!-- This view registers 'people' as a suburl of RootObject/soyuz/. -->
   <browser:suburl
       for="canonical.soyuz.SoyuzApplication"
-      class="canonical.soyuz.sql.PeopleApp"
+      class="canonical.soyuz.personapp.PeopleApp"
       permission="zope.Public"
       name="people"
       />
@@ -70,6 +70,12 @@
 
   <include file="pages.zcml" />
   <include file="resources.zcml" />
+  <include file="sourcepackageapp.zcml" />
+  <include file="binarypackageapp.zcml" />
+  <include file="personapp.zcml" />
+  <include file="distroapp.zcml" />
+  <include file="importd.zcml" />
+  <include file="generalapp.zcml" />
 
 </configure>
 <!-- arch-tag: 49ae2d27-b8d1-40f1-a5f3-358c696b767f -->

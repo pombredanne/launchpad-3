@@ -28,7 +28,7 @@ from canonical.launchpad.database import IPerson
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 # app components
-from canonical.soyuz.sql import Distribution, DistroRelease, Person
+from canonical.launchpad.database import Distribution, DistroRelease, Person
 from canonical.soyuz.importd import ProjectMapper, ProductMapper
 
 # Stock View 

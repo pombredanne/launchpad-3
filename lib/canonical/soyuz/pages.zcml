@@ -12,8 +12,8 @@
 
   <!-- This view registers 'distros' RootObject/soyuz/distros/. -->
 
-  <traverse for="canonical.soyuz.sql.DistrosApp" getter="__getitem__" />
-  <pages for="canonical.soyuz.sql.DistrosApp"
+  <traverse for="canonical.soyuz.distroapp.DistrosApp" getter="__getitem__" />
+  <pages for="canonical.soyuz.distroapp.DistrosApp"
          permission="zope.Public"
 	 allowed_attributes="results">
     <page name="index.html"
@@ -22,7 +22,7 @@
           />
   </pages>
 
-  <page for="canonical.soyuz.sql.DistrosApp"
+  <page for="canonical.soyuz.distroapp.DistrosApp"
          permission="zope.Public"
 	 class="canonical.soyuz.browser.DistrosSearchView"
 	 template="../launchpad/templates/distro-search.pt"
@@ -30,7 +30,7 @@
 	 name="+search"
        />
 
-  <page for="canonical.soyuz.sql.DistrosApp"
+  <page for="canonical.soyuz.distroapp.DistrosApp"
          permission="launchpad.AnyPerson"
 	 class="canonical.soyuz.browser.DistrosAddView"
 	 template="../launchpad/templates/distro-add.pt"
@@ -41,8 +41,8 @@
 
   <!-- This view registers 'releases' as 'traverse' of
 	        	     RootObject/soyuz/distros/$Distribution.name/. -->
-  <traverse for="canonical.soyuz.sql.DistroApp" getter="getReleaseContainer" />
-   <pages for="canonical.soyuz.sql.DistroApp"
+  <traverse for="canonical.soyuz.distroapp.DistroApp" getter="getReleaseContainer" />
+   <pages for="canonical.soyuz.distroapp.DistroApp"
 	  permission="zope.Public"
 	  allowed_attributes="results context">
 
@@ -60,7 +60,7 @@
 	/>
   </pages>
 
-  <page for="canonical.soyuz.sql.DistroApp"
+  <page for="canonical.soyuz.distroapp.DistroApp"
          permission="launchpad.AnyPerson"
 	 class="canonical.soyuz.browser.DistrosEditView"
 	 name="+edit"
@@ -69,9 +69,9 @@
 	/>
 
 
-  <traverse for="canonical.soyuz.sql.DistroReleasesApp" getter="__getitem__" />
+  <traverse for="canonical.soyuz.distroapp.DistroReleasesApp" getter="__getitem__" />
 
-   <pages for="canonical.soyuz.sql.DistroReleasesApp"
+   <pages for="canonical.soyuz.distroapp.DistroReleasesApp"
 	  allowed_attributes="results"
 	  permission="zope.Public">
 
@@ -81,7 +81,7 @@
 	/>
   </pages>
 
-	<page for="canonical.soyuz.sql.DistroReleasesApp"
+	<page for="canonical.soyuz.distroapp.DistroReleasesApp"
 	  permission="zope.Public"
 	  class="canonical.soyuz.browser.ReleasesAddView"
 	  name="+new"
@@ -91,7 +91,7 @@
 
 
 
-   <pages for="canonical.soyuz.sql.DistroReleaseApp"
+   <pages for="canonical.soyuz.distroapp.DistroReleaseApp"
 	  allowed_attributes="results sources binaries"
 	  permission="zope.Public">
 
@@ -113,7 +113,7 @@
 	/>
   </pages>
 
-	<page for="canonical.soyuz.sql.DistroReleaseApp"
+	<page for="canonical.soyuz.distroapp.DistroReleaseApp"
 	  permission="launchpad.AnyPerson"
 	  class="canonical.soyuz.browser.ReleaseEditView"
 	  name="+edit"
@@ -121,7 +121,7 @@
 	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+edit"
 	/>
 
-	<page for="canonical.soyuz.sql.DistroReleaseApp"
+	<page for="canonical.soyuz.distroapp.DistroReleaseApp"
 	  permission="zope.Public"
 	  class="canonical.soyuz.browser.ReleaseSearchView"
 	  name="+search"
@@ -131,9 +131,9 @@
 
 
 
-<traverse for="canonical.soyuz.sql.DistroSourcesApp" getter="__getitem__" />
+<traverse for="canonical.soyuz.sourcepackageapp.DistroSourcesApp" getter="__getitem__" />
 
-   <pages for="canonical.soyuz.sql.DistroSourcesApp"
+   <pages for="canonical.soyuz.sourcepackageapp.DistroSourcesApp"
 	  allowed_attributes="results"
 	  permission="zope.Public">
 
@@ -143,9 +143,9 @@
 	/>
    </pages>
 
-<traverse for="canonical.soyuz.sql.DistroReleaseSourcesApp"
+<traverse for="canonical.soyuz.sourcepackageapp.DistroReleaseSourcesApp"
                                           getter="__getitem__" />
-   <pages for="canonical.soyuz.sql.DistroReleaseSourcesApp"
+   <pages for="canonical.soyuz.sourcepackageapp.DistroReleaseSourcesApp"
 	  allowed_attributes="results"
           class="canonical.soyuz.browser.DistroReleaseSourcesView"
 	  permission="zope.Public">
@@ -156,7 +156,7 @@
 	/>
    </pages>
 
-  <page for="canonical.soyuz.sql.DistroReleaseSourcesApp"
+  <page for="canonical.soyuz.sourcepackageapp.DistroReleaseSourcesApp"
          permission="zope.Public"
 	 class="canonical.soyuz.browser.DistrosReleaseSourcesSearchView"
 	 template="../launchpad/templates/sourcepackage-search.pt"
@@ -164,9 +164,9 @@
 	 name="+search"
        />
 
-<traverse for="canonical.soyuz.sql.DistroReleaseSourceApp"
+<traverse for="canonical.soyuz.sourcepackageapp.DistroReleaseSourceApp"
                                           getter="__getitem__" />
-   <pages for="canonical.soyuz.sql.DistroReleaseSourceApp"
+   <pages for="canonical.soyuz.sourcepackageapp.DistroReleaseSourceApp"
 	  allowed_attributes="results"
 	  class="canonical.soyuz.browser.DistroReleaseSourceView"
 	  permission="launchpad.AnyPerson">
@@ -183,10 +183,10 @@
    </pages>
 
 
-<traverse for="canonical.soyuz.sql.DistroReleaseSourceReleaseApp"
+<traverse for="canonical.soyuz.sourcepackageapp.DistroReleaseSourceReleaseApp"
 					  getter="__getitem__" />
 
-   <pages for="canonical.soyuz.sql.DistroReleaseSourceReleaseApp"
+   <pages for="canonical.soyuz.sourcepackageapp.DistroReleaseSourceReleaseApp"
 	  allowed_attributes="results"
 	  permission="zope.Public">
 
@@ -208,7 +208,7 @@
    </pages>
 
 
-   <pages for="canonical.soyuz.sql.DistroReleaseSourceReleaseBuildApp"
+   <pages for="canonical.soyuz.sourcepackageapp.DistroReleaseSourceReleaseBuildApp"
 	  allowed_attributes="results"
 	  permission="zope.Public">
 
@@ -229,9 +229,9 @@
    </pages>
 
 
-<traverse for="canonical.soyuz.sql.DistroTeamApp" getter="__getitem__" />
+<traverse for="canonical.soyuz.distroapp.DistroTeamApp" getter="__getitem__" />
 
-   <pages for="canonical.soyuz.sql.DistroTeamApp"
+   <pages for="canonical.soyuz.distroapp.DistroTeamApp"
 	  allowed_attributes="results"
 	  permission="zope.Public">
 
@@ -242,7 +242,7 @@
    </pages>
 
 
-   <pages for="canonical.soyuz.sql.DistroReleaseTeamApp"
+   <pages for="canonical.soyuz.distroapp.DistroReleaseTeamApp"
 	  allowed_attributes="results"
 	  permission="zope.Public">
 
@@ -252,15 +252,15 @@
 	/>
    </pages>
 
-<traverse for="canonical.soyuz.sql.PeopleApp" getter="__getitem__"/>
+<traverse for="canonical.soyuz.personapp.PeopleApp" getter="__getitem__"/>
 
-   <pages for="canonical.soyuz.sql.PeopleApp"
+   <pages for="canonical.soyuz.personapp.PeopleApp"
 	  allowed_attributes="results"
 	  permission="zope.Public">
 
    </pages>
 
-  <page  for="canonical.soyuz.sql.PeopleApp"
+  <page  for="canonical.soyuz.personapp.PeopleApp"
          permission="zope.Public"
 	 class="canonical.soyuz.browser.PeopleListView"
 	 name="+list"
@@ -269,7 +269,7 @@
        />
 
 
-  <page for="canonical.soyuz.sql.PeopleApp"
+  <page for="canonical.soyuz.personapp.PeopleApp"
          permission="zope.Public"
 	 class="canonical.soyuz.browser.PeopleSearchView"
 	 template="../launchpad/templates/soyuz-people-index.pt"
@@ -277,7 +277,7 @@
 	 name="index.html"
        />
 
-  <page for="canonical.soyuz.sql.PeopleApp"
+  <page for="canonical.soyuz.personapp.PeopleApp"
          permission="launchpad.AnyPerson"
 	 class="canonical.soyuz.browser.PeopleAddView"
 	 template="../launchpad/templates/people-add.pt"
@@ -286,7 +286,7 @@
        />
 
 
-   <pages for="canonical.soyuz.sql.PersonApp"
+   <pages for="canonical.soyuz.personapp.PersonApp"
 	  allowed_attributes="results context"
 	  permission="zope.Public">
 
@@ -297,7 +297,7 @@
    </pages>
 
 
-   <page for="canonical.soyuz.sql.PersonApp"
+   <page for="canonical.soyuz.personapp.PersonApp"
 	 permission="launchpad.AnyPerson"
 	 name="index.html"
 	 class="canonical.soyuz.browser.PersonView"
@@ -306,7 +306,7 @@
 	/>
 
 
-   <page for="canonical.soyuz.sql.PersonApp"
+   <page for="canonical.soyuz.personapp.PersonApp"
 	 permission="zope.Public"
 	 name="+packages"
 	 class="canonical.soyuz.browser.PersonPackagesView"
@@ -315,7 +315,7 @@
 	/>
 
 
-  <page for="canonical.soyuz.sql.PersonApp"
+  <page for="canonical.soyuz.personapp.PersonApp"
         permission="launchpad.AnyPerson"
 	class="canonical.soyuz.browser.TeamAddView"
 	template="../launchpad/templates/soyuz-person-add.pt"
@@ -323,7 +323,7 @@
 	name="+add"
        />
 
-  <page for="canonical.soyuz.sql.PersonApp"
+  <page for="canonical.soyuz.personapp.PersonApp"
         permission="launchpad.AnyPerson"
 	class="canonical.soyuz.browser.PersonEditView"
 	template="../launchpad/templates/person-edit.pt"
@@ -331,7 +331,7 @@
 	name="+edit"
        />
 
-  <page for="canonical.soyuz.sql.PersonApp"
+  <page for="canonical.soyuz.personapp.PersonApp"
         permission="launchpad.AnyPerson"
 	class="canonical.soyuz.browser.TeamJoinView"
 	template="../launchpad/templates/person-join.pt"
@@ -339,7 +339,7 @@
 	name="+join"
        />
 
-  <page for="canonical.soyuz.sql.PersonApp"
+  <page for="canonical.soyuz.personapp.PersonApp"
         permission="launchpad.AnyPerson"
 	class="canonical.soyuz.browser.TeamUnjoinView"
 	template="../launchpad/templates/person-unjoin.pt"
@@ -348,10 +348,10 @@
        />
 
 
-<traverse for="canonical.soyuz.sql.DistroBinariesApp" 
+<traverse for="canonical.soyuz.binarypackageapp.DistroBinariesApp" 
 	  getter="__getitem__" />
 
-   <pages for="canonical.soyuz.sql.DistroBinariesApp"
+   <pages for="canonical.soyuz.binarypackageapp.DistroBinariesApp"
 	  allowed_attributes="results"
 	  permission="zope.Public">
 
@@ -362,10 +362,10 @@
    </pages>
 
 
-<traverse for="canonical.soyuz.sql.DistroReleaseBinariesApp" 
+<traverse for="canonical.soyuz.binarypackageapp.DistroReleaseBinariesApp" 
           getter="__getitem__" />
 
-   <page for="canonical.soyuz.sql.DistroReleaseBinariesApp"
+   <page for="canonical.soyuz.binarypackageapp.DistroReleaseBinariesApp"
 	  allowed_attributes="results"
 	  permission="zope.Public"
 	  name="index.html"
@@ -374,7 +374,7 @@
 	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$BinaryPackage.name/index.html"
 	/>
 
-  <page for="canonical.soyuz.sql.DistroReleaseBinariesApp"
+  <page for="canonical.soyuz.binarypackageapp.DistroReleaseBinariesApp"
          permission="zope.Public"
 	 class="canonical.soyuz.browser.DistrosReleaseBinariesSearchView"
 	 template="../launchpad/templates/binarypackage-search.pt"
@@ -383,9 +383,9 @@
        />
 
 
-<traverse for="canonical.soyuz.sql.DistroReleaseBinaryApp" getter="__getitem__" />
+<traverse for="canonical.soyuz.binarypackageapp.DistroReleaseBinaryApp" getter="__getitem__" />
 
-   <pages for="canonical.soyuz.sql.DistroReleaseBinaryApp"
+   <pages for="canonical.soyuz.binarypackageapp.DistroReleaseBinaryApp"
 	  allowed_attributes="results"
 	  permission="zope.Public">
 
@@ -395,9 +395,9 @@
 	/>
    </pages>
 
-<traverse for="canonical.soyuz.sql.DistroReleaseBinaryReleaseApp" getter="__getitem__" />
+<traverse for="canonical.soyuz.binarypackageapp.DistroReleaseBinaryReleaseApp" getter="__getitem__" />
 
-   <pages for="canonical.soyuz.sql.DistroReleaseBinaryReleaseApp"
+   <pages for="canonical.soyuz.binarypackageapp.DistroReleaseBinaryReleaseApp"
 	  allowed_attributes="results"
 	  permission="zope.Public">
 
@@ -412,7 +412,7 @@
 	/>
    </pages>
 
-   <pages for="canonical.soyuz.sql.DistroReleaseBinaryReleaseBuildApp"
+   <pages for="canonical.soyuz.binarypackageapp.DistroReleaseBinaryReleaseBuildApp"
 	  allowed_attributes="results"
 	  permission="zope.Public">
 

@@ -24,6 +24,10 @@
     <include file="bugattachment.zcml" />
     <include file="bugmessage.zcml" />
     <include file="bounty.zcml" />
+    <include file="build.zcml" />
+    <include file="distro.zcml" />
+    <include file="person.zcml" />
+    <include file="processor.zcml" />
 
     <include file="widgets.zcml" />
     <include file="resources.zcml" />

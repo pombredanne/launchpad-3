@@ -6,13 +6,13 @@
     i18n_domain="launchpad">
 
     <!-- This is class SourcePackageRelease -->
-    <content class="canonical.soyuz.sql.SourcePackageRelease">
+    <content class="canonical.launchpad.database.SourcePackageRelease">
       <allow interface="canonical.launchpad.interfaces.ISourcePackageRelease"/>
       <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
 
     <!-- This is class VSourcePackageReleasePublishing -->
-    <content class="canonical.soyuz.sql.VSourcePackageReleasePublishing">
+    <content class="canonical.launchpad.database.VSourcePackageReleasePublishing">
       <allow interface="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"/>
       <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>

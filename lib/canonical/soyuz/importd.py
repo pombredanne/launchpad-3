@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import IProjectSet, IProduct, IProject
 from canonical.launchpad.database import Project as dbProject, Product \
      as dbProduct
 
-from canonical.soyuz.sql import RCSTypeEnum
+from canonical.launchpad.database import RCSTypeEnum
 
 
 class Projects(object):

@@ -1,0 +1,33 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:rdb="http://namespaces.zope.org/rdb"
+    >
+
+ <content class="canonical.soyuz.binarypackageapp.DistroBinariesApp">
+    <allow interface="canonical.launchpad.interfaces.IDistroBinariesApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+ <content class="canonical.soyuz.binarypackageapp.DistroReleaseBinariesApp">
+    <allow interface="canonical.launchpad.interfaces.IDistroReleaseBinariesApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+ <content class="canonical.soyuz.binarypackageapp.DistroReleaseBinaryApp">
+    <allow interface="canonical.launchpad.interfaces.IDistroReleaseBinaryApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+ <content class="canonical.soyuz.binarypackageapp.DistroReleaseBinaryReleaseApp">
+    <allow interface="canonical.launchpad.interfaces.IDistroReleaseBinaryReleaseApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+ <content class="canonical.soyuz.binarypackageapp.DistroReleaseBinaryReleaseBuildApp">
+    <allow interface="canonical.launchpad.interfaces.IDistroReleaseBinaryReleaseBuildApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+</configure>
+
