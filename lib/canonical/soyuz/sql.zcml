@@ -224,11 +224,6 @@
      set_attributes="name title description"
      />
   </content>
-	
-  <content class="canonical.soyuz.sql.SoyuzSourcePackageRelease">
-    <allow interface="canonical.launchpad.interfaces.ISourcePackageRelease"/>
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
 
   <content class="canonical.soyuz.sql.Person">
     <allow interface="canonical.launchpad.interfaces.IPerson"/>

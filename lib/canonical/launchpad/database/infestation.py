@@ -23,12 +23,14 @@ class BugProductInfestation(SQLBase):
     # field names
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     explicit = IntCol(notNull=True, default=False)
-    productrelease = ForeignKey(dbName="productrelease", foreignKey='ProductRelease', notNull=False, default=None)
+    productrelease = ForeignKey(
+        dbName="productrelease", foreignKey='ProductRelease', notNull=False, default=None)
     infestationstatus = IntCol(notNull=False, default=None)
     datecreated = DateTimeCol(notNull=True)
     creator = ForeignKey(dbName="creator", foreignKey='Person', notNull=True)
     dateverified = DateTimeCol(notNull=False)
-    verifiedby = ForeignKey(dbName="verifiedby", foreignKey='Person', notNull=False, default=None)
+    verifiedby = ForeignKey(
+        dbName="verifiedby", foreignKey='Person', notNull=False, default=None)
     lastmodified = DateTimeCol(notNull=True)
     lastmodifiedby = ForeignKey(dbName="lastmodifiedby", foreignKey='Person', notNull=True)
 
@@ -40,14 +42,12 @@ class BugPackageInfestation(SQLBase):
     # field names
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     explicit = IntCol(dbName='explicit', notNull=True, default=False)
-    sourcepackagerelease = ForeignKey(dbName='sourcepackagerelease',
-        foreignKey='SourcePackageRelease', notNull=True)
-    infestationstatus = ForeignKey(dbName='infestationstatus', foreignKey='BugInfestationType', notNull=True)
+    sourcepackagerelease = ForeignKey(
+        dbName='sourcepackagerelease', foreignKey='SourcePackageRelease', notNull=True)
+    infestationstatus = IntCol(dbName='infestationstatus', notNull=True)
     datecreated = DateTimeCol(dbName='datecreated', notNull=True)
     creator = ForeignKey(dbName='creator', foreignKey='Person', notNull=True)
     dateverified = DateTimeCol(dbName='dateverified')
     verifiedby = ForeignKey(dbName='verifiedby', foreignKey='Person')
     lastmodified = DateTimeCol(dbName='lastmodified')
     lastmodifiedby = ForeignKey(dbName='lastmodifiedby', foreignKey='Person')
-
-

@@ -92,7 +92,7 @@ class Binarypackage(SQLBase):
         return self.build.sourcepackagerelease.sourcepackage.current(distroRelease)
 
     def lastversions(self, distroRelease):
-        last = list(SoyuzSourcePackageRelease.select(
+        last = list(SourcePackageRelease.select(
             'SourcepackagePublishing.sourcepackagerelease=SourcepackageRelease.id'
             ' AND SourcepackagePublishing.distrorelease = %d'
             ' AND SourcePackageRelease.sourcepackage = %d'
@@ -145,12 +145,12 @@ class SoyuzBuild(SQLBase):
                    foreignKey='GPGKey'),
         StringCol('changes', dbName='changes'),
         ForeignKey(name='sourcepackagerelease', dbName='sourcepackagerelease',
-                   foreignKey='SoyuzSourcePackageRelease', notNull=True),
+                   foreignKey='SourcePackageRelease', notNull=True),
 
     ]
 
 
-class SoyuzSourcePackageRelease(SQLBase):
+class SourcePackageRelease(SQLBase):
     """A source package release, e.g. apache 2.0.48-3"""
     
     implements(ISourcePackageRelease)
@@ -237,7 +237,7 @@ class Sourcepackage(SQLBase):
                           default=None)
     distro = ForeignKey(foreignKey='Distribution', dbName='distro')
 
-    releases = MultipleJoin('SoyuzSourcePackageRelease',
+    releases = MultipleJoin('SourcePackageRelease',
                             joinColumn='sourcepackage')
 
     # Got from the old SourcePackage class
@@ -270,10 +270,10 @@ class Sourcepackage(SQLBase):
         return self.manifest
 
     def getRelease(self, version):
-        return SoyuzSourcePackageRelease.selectBy(version=version)[0]
+        return SourcePackageRelease.selectBy(version=version)[0]
 
     def uploadsByStatus(self, distroRelease, status):
-        uploads = list(SoyuzSourcePackageRelease.select(
+        uploads = list(SourcePackageRelease.select(
             'SourcepackagePublishing.sourcepackagerelease=SourcepackageRelease.id'
             ' AND SourcepackagePublishing.distrorelease = %d'
             ' AND SourcePackageRelease.sourcepackage = %d'
@@ -295,7 +295,7 @@ class Sourcepackage(SQLBase):
         
         :returns: iterable of SourcePackageReleases
         """
-        sourcepackagereleases = SoyuzSourcePackageRelease.select(
+        sourcepackagereleases = SourcePackageRelease.select(
             'SourcepackagePublishing.sourcepackagerelease=SourcepackageRelease.id'
             ' AND SourcepackagePublishing.distrorelease = %d'
             ' AND SourcepackageRelease.sourcepackage = %d'
@@ -306,7 +306,7 @@ class Sourcepackage(SQLBase):
         return sourcepackagereleases
 
     def lastversions(self, distroRelease):
-        last = list(SoyuzSourcePackageRelease.select(
+        last = list(SourcePackageRelease.select(
             'SourcepackagePublishing.sourcepackagerelease=SourcepackageRelease.id'
             ' AND SourcepackagePublishing.distrorelease = %d'
             ' AND SourcePackageRelease.sourcepackage = %d'

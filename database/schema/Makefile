@@ -82,7 +82,7 @@ newsample-soyuz:
 	pg_dump -d ${DBNAME} -a -D -O --table=potemplate | grep -v "\(SET \| TOC \)" > ../sampledata/new-rosetta.sql
 
 newsampledata:
-	pg_dump -d ${DBNAME} -a -D -O | grep -v "\(\SET \| TOC \|INSERT INTO \"language\" \|INSERT INTO spokenin \|INSERT INTO country \|language_id_seq\|country_id_seq\|^--\)" > ../sampledata/newsampledata.sql
+	pg_dump -a -D -O -d ${DBNAME} | grep -v "\(\SET \| TOC \|INSERT INTO \"language\" \|INSERT INTO spokenin \|INSERT INTO country \|language_id_seq\|country_id_seq\|^--\)" > ../sampledata/newsampledata.sql
 
 .PHONY: default base all
 

@@ -162,20 +162,6 @@
             lp:url="malone/bugs/$Bug.id/bugproductinfestations/index" />
     </pages>
 
-<!--
-    <pages
-        for="canonical.launchpad.interfaces.IBugPackageInfestationContainer"
-        permission="zope.Public">
-        <page name="index"
-            template="../launchpad/templates/sourcepackagebugassignments-index.pt"
-            lp:url="malone/bugs/$Bug.id/sourcepackageassignments/index" />
-    </pages>
--->
-
-    <traverse
-        for="canonical.launchpad.interfaces.IBugPackageInfestationContainer"
-        getter="__getitem__" />
-
     <pages
         for="canonical.launchpad.interfaces.IBugWatchContainer"
         permission="zope.Public">

@@ -23,7 +23,7 @@ from canonical.launchpad.database import \
         BugTracker, BugsAssignedReport, BugWatch, Product, Person, EmailAddress, \
         Bug, BugAttachment, BugExternalRef, BugSubscription, BugMessage, \
         ProductBugAssignment, SourcepackageBugAssignment, \
-        BugProductInfestation
+        BugProductInfestation, BugPackageInfestation
 from canonical.database import sqlbase
 
 #
@@ -44,7 +44,7 @@ from canonical.launchpad.interfaces import \
         IBugSubscriptionContainer, ISourcepackageContainer, \
         IBugWatchContainer, IProductBugAssignmentContainer, \
         ISourcepackageBugAssignmentContainer, IBugProductInfestationContainer, \
-        IPerson
+        IBugPackageInfestationContainer, IPerson
 
 
 def traverseBug(bug, request, name):
@@ -62,6 +62,8 @@ def traverseBug(bug, request, name):
         return SourcepackageBugAssignmentContainer(bug=bug.id)
     elif name == 'productinfestations':
         return BugProductInfestationContainer(bug=bug.id)
+    elif name == 'packageinfestations':
+        return BugPackageInfestationContainer(bug=bug.id)
     else:
        raise KeyError, name
 
@@ -232,7 +234,7 @@ class MaloneBugView(object):
         '../launchpad/templates/portlet-bug-sourcepackageassignment.pt')
     productInfestationPortlet = ViewPageTemplateFile(
         '../launchpad/templates/portlet-bug-productinfestation.pt')
-    sourcepackageInfestationPortlet = ViewPageTemplateFile(
+    packageInfestationPortlet = ViewPageTemplateFile(
         '../launchpad/templates/portlet-bug-sourcepackageinfestation.pt')
     referencePortlet = ViewPageTemplateFile(
             '../launchpad/templates/portlet-bug-reference.pt'
@@ -286,7 +288,7 @@ class BugContainer(BugContainerBase):
     def __iter__(self):
         for row in self.table.select():
             yield row
-    
+
     def add(self, ob):
         '''Add a bug from an IMaloneBugAddForm'''
         kw = {}
@@ -303,7 +305,7 @@ class BugContainer(BugContainerBase):
             product = Product.get(productid)
             pba = ProductBugAssignment(bug=bug, product=product)
 
-        # If the user has specified a sourcepackage, create the 
+        # If the user has specified a sourcepackage, create the
         # SourcepackageBugAssignment. This might also link to the
         # binary package if it was specified.
         sourcepkgid = getattr(ob, 'sourcepackage', None)
@@ -341,7 +343,7 @@ def BugAdder(object):
             product = Product.get(productid)
             pba = ProductBugAssignment(bug=bug, product=product)
 
-        # If the user has specified a sourcepackage, create the 
+        # If the user has specified a sourcepackage, create the
         # SourcepackageBugAssignment. This might also link to the
         # binary package if it was specified.
         sourcepkgid = getattr(ob, 'sourcepackage', None)
@@ -395,20 +397,20 @@ def MaloneBugFactory(context, **kw):
 
 class BugAttachmentContainer(BugContainerBase):
     """A container for bug attachments."""
- 
+
     implements(IBugAttachmentContainer)
     table = MaloneBugAttachment
- 
+
     def __init__(self, bug=None):
         self.bug = bug
- 
+
     def __getitem__(self, id):
         try:
             return self.table.select(self.table.q.id == id)[0]
         except IndexError:
             # Convert IndexError to KeyErrors to get Zope's NotFound page
             raise KeyError, id
- 
+
     def __iter__(self):
         for row in self.table.select(self.table.q.bug == self.bug):
             yield row
@@ -474,7 +476,7 @@ class BugProductInfestationContainer(BugContainerBase):
         except IndexError:
             # Convert IndexError to KeyErrors to get Zope's NotFound page
             raise KeyError, id
- 
+
     def __iter__(self):
         for row in self.table.select(self.table.q.bugID == self.bug):
             yield row
@@ -486,6 +488,36 @@ def BugProductInfestationFactory(context, **kw):
         explicit=True,
         datecreated=now,
         creatorID=1, # XXX: (2004-10-08) Brad Bollenbach: Should be the real owner ID
+        dateverified=now,
+        verifiedbyID=1,
+        lastmodified=now,
+        lastmodifiedbyID=1,
+        **kw)
+    return bpi
+
+class BugPackageInfestationContainer(BugContainerBase):
+    """A container for BugPackageInfestation."""
+    implements(IBugPackageInfestationContainer)
+    table = BugPackageInfestation
+
+    def __getitem__(self, id):
+        try:
+            return self.table.select(self.table.q.id == id)[0]
+        except IndexError:
+            # Convert IndexError to KeyErrors to get Zope's NotFound page
+            raise KeyError, id
+
+    def __iter__(self):
+        for row in self.table.select(self.table.q.bugID == self.bug):
+            yield row
+
+def BugPackageInfestationFactory(context, **kw):
+    now = datetime.utcnow()
+    bpi = BugPackageInfestation(
+        bug=context.context.bug,
+        explicit=True,
+        datecreated=now,
+        creatorID=1, # XXX: (2004-10-11) Brad Bollenbach: Should be the real owner ID
         dateverified=now,
         verifiedbyID=1,
         lastmodified=now,
@@ -550,7 +582,7 @@ class BugSubscriptionContainer(BugContainerBase):
         conn = BugSubscription._connection
         # I want an exception raised if id can't be converted to an int
         conn.query('DELETE FROM BugSubscription WHERE id=%d' % int(id))
-  
+
 
 class SourcepackageContainer(object):
     """A container for Sourcepackage objects."""
@@ -629,7 +661,7 @@ class BugTrackerSetView(object):
         self.context = context
         self.request = request
         self.form = request.form
-        
+
     def newBugTracker(self):
         """This method is triggered by a tal:dummy element in the page
         template, so it is run even when the page is first displayed. It

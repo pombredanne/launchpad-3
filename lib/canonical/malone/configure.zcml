@@ -32,13 +32,13 @@
       utility="canonical.launchpad.interfaces.IProjectContainer"
       permission="zope.Public"
       name="projects" />
-  
+
   <browser:suburl
       for="canonical.malone.IMaloneApplication"
       utility="canonical.launchpad.interfaces.ISourcepackageContainer"
       permission="zope.Public"
       name="sourcepackage" />
-  
+
   <browser:suburl
       for="canonical.malone.IMaloneApplication"
       utility="canonical.launchpad.interfaces.IBugTrackerSet"
@@ -99,10 +99,6 @@
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.IBugProductInfestationContainer"
-      name="index" />
-
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IBugPackageInfestationContainer"
       name="index" />
 
   <browser:defaultView

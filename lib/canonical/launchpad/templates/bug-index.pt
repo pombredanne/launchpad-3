@@ -75,7 +75,7 @@
 
         <h2>Source package release infestations</h2>
 
-        <div tal:replace="structure view/sourcepackageInfestationPortlet" />
+        <div tal:replace="structure view/packageInfestationPortlet" />
 
         <h2>Comments</h2>
 

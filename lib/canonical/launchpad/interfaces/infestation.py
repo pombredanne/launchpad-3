@@ -40,8 +40,10 @@ class IBugPackageInfestation(Interface):
     "infestation" is given by the infestationstatus field, which takes on
     values documented in dbschema.BugInfestationStatus."""
 
+    id = Int(title=_("Bug Package Infestation ID"), required=True, readonly=True)
     bug = Int(title=_('Bug ID'))
-    sourcepackagerelease = Int(title=_('Source Package Release'))
+    sourcepackagerelease = Choice(title=_('Package Release'),
+                                  vocabulary='PackageRelease')
     explicit = Bool(title=_('Explicitly Created by a Human'))
     infestationstatus = Choice(title=_('Infestation Status'),
                          vocabulary='InfestationStatus')

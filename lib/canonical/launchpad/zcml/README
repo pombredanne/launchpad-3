@@ -1,0 +1,3 @@
+This directory contains ZCML configuration files for Launchpad content
+and its views. That is, if you have a Product sqlobject class, it is
+described by IProduct and configured with product.zcml.

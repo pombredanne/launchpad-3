@@ -1,27 +1,17 @@
 <div>
     <table class="listing rowNavigation">
         <tr>
-            <th>Source Package Release</th>
+            <th>Source Package</th>
             <th>Infestation</th>
-            <th>Date Created</th>
-            <th>Explicit?</th>
         </tr>
-<!--
-        <tr tal:repeat="bugass context/productassignment"
+        <tr tal:repeat="pkginfest context/packageinfestations"
             tal:attributes="onclick
-            string:window.location='productassignments/${bugass/id}/+edit';">
-            <td tal:content="bugass/product/title">$Product.title</td>
-            <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">
+            string:window.location='packageinfestations/${pkginfest/id}/+edit';">
+            <td tal:content="pkginfest/sourcepackagerelease/version">$Product.title</td>
+            <td tal:content="pkginfest/infestationstatus/lp:BugInfestationStatus">
                 $ProductBugAssignment.bugstatus
             </td>
-            <td tal:content="bugass/priority/lp:BugPriority">
-                $ProductBugAssignment.priority
-            </td>
-            <td tal:content="bugass/severity/lp:BugSeverity">
-                $ProductBugAssignment.severity
-            </td>
         </tr>
--->
     </table>
-    [ <a href="sourcepackageinfestations/+new">Add an Infested Source Package Release</a> ]
+    [ <a href="packageinfestations/+new">Add an Infested Source Package Release</a> ]
 </div>

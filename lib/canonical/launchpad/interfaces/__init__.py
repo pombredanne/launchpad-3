@@ -12,6 +12,7 @@ from canonical.launchpad.interfaces.product import *
 from canonical.launchpad.interfaces.productseries import *
 from canonical.launchpad.interfaces.productrelease import *
 from canonical.launchpad.interfaces.sourcesource import *
+from canonical.launchpad.interfaces.sourcepackage import *
 from canonical.launchpad.interfaces.bug import *
 from canonical.launchpad.interfaces.bugassignment import *
 from canonical.launchpad.interfaces.schema import *

@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces import IBinaryPackage,IBinaryPackageBuild,\
 from canonical.launchpad.database import Binarypackage, SoyuzBuild, \
                                          Sourcepackage, Manifest, \
                                          ManifestEntry, Release, \
-                                         SoyuzSourcePackageRelease, \
+                                         SourcePackageRelease, \
                                          SoyuzDistroArchRelease, \
                                          SoyuzDistribution, Person, \
                                          EmailAddress, GPGKey, \
@@ -169,7 +169,7 @@ class builddepsContainer(object):
 class DistroReleaseSourceReleaseApp(object):
     def __init__(self, sourcepackage, version, distrorelease):
         self.distroreleasename = distrorelease.name
-        results = SoyuzSourcePackageRelease.selectBy(
+        results = SourcePackageRelease.selectBy(
                 sourcepackageID=sourcepackage.id, version=version)
         if results.count() == 0:
             raise ValueError, 'No such version ' + repr(version)
@@ -181,7 +181,7 @@ class DistroReleaseSourceReleaseApp(object):
         query = sourceReleases.clause + \
                 ' AND SourcePackageRelease.version = %s' %quote(version)
 
-        sourceReleases = SoyuzSourcePackageRelease.select(query)
+        sourceReleases = SourcePackageRelease.select(query)
 
         self.archs = None
 
@@ -279,7 +279,7 @@ class DistroReleaseSourcesApp(object):
     """
     # FIXME:docstring says this contains SourcePackage objects, but it seems to
     # contain releases.  Is this a bug or is the docstring wrong?
-    table = SoyuzSourcePackageRelease
+    table = SourcePackageRelease
     clauseTables = ('Sourcepackage', 'SourcepackagePublishing')
 
     def __init__(self, release):
@@ -481,7 +481,7 @@ class PersonApp(object):
                  %self.id)
         
 ##FIXME: ORDER by Sourcepackagename !!!
-        return Set(SoyuzSourcePackageRelease.select(query))
+        return Set(SourcePackageRelease.select(query))
     
 
 
@@ -562,7 +562,7 @@ class DistroReleaseBinaryReleaseApp(object):
                  ' AND BinaryPackage.version = %s' %quote(version)
                 )
 
-        binaryReleases = SoyuzSourcePackageRelease.select(query)
+        binaryReleases = SourcePackageRelease.select(query)
 
         self.archs = None
 
@@ -693,7 +693,7 @@ class SourcePackages(object):
     """
     implements(ISourcePackageSet)
 
-    table = SoyuzSourcePackageRelease
+    table = SourcePackageRelease
     clauseTables = ('SourcePackage', 'SourcepackagePublishing',)
 
     def __init__(self, release):
