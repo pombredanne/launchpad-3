@@ -185,7 +185,7 @@ COPY "language" (id, code, englishname, nativename, pluralforms, pluralexpressio
 192	iro	Iroquoian languages	\N	\N	\N
 148	gl	Gallegan	Galego	\N	\N
 194	jv	Javanese	\N	\N	\N
-195	jbo	Lojban	\N	\N	\N
+195	jbo	Lojban	\N	0	0
 178	is	Icelandic	Íslenska	\N	\N
 197	jpr	Judeo-Persian	\N	\N	\N
 198	jrb	Judeo-Arabic	\N	\N	\N
@@ -476,7 +476,7 @@ COPY "language" (id, code, englishname, nativename, pluralforms, pluralexpressio
 511	om_KE	Oromo from Kenya	\N	\N	\N
 512	ar_IQ	Arabic from Iraq	\N	\N	\N
 513	fr_BE	French from Belgium	\N	\N	\N
-514	pt_BR	Portuguese from Brazil	\N	\N	\N
+514	pt_BR	Portuguese from Brazil	\N	2	n > 1
 515	es_PR	Spanish (Castilian) from Puerto Rico	\N	\N	\N
 516	gu_IN	Gujarati from India	\N	\N	\N
 517	sid_ET	Sidamo from Ethiopia	\N	\N	\N
