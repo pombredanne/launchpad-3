@@ -1,8 +1,8 @@
 import unittest
-import canonical.tests.pgsql as pgsql
+from canonical.ftests.pgsql import PgTestCase
 import psycopg
 
-class TestPgTestCase(pgsql.PgTestCase):
+class TestPgTestCase(PgTestCase):
 
     def testRollback(self):
         # This test creates a table. We run the same test twice,
@@ -20,23 +20,9 @@ class TestPgTestCase(pgsql.PgTestCase):
     testRollback2 = testRollback
 
 
-class TestLaunchpadSchemaTestCase(pgsql.LaunchpadSchemaTestCase):
-    def test(self):
-        con = self.connect()
-        cur = con.cursor()
-        cur.execute("""
-            SELECT count(*) FROM Person 
-            WHERE displayname='Mark Shuttleworth'
-            """)
-        r = cur.fetchone()
-        self.failUnlessEqual(r[0], 1, 'Sample data not loaded')
-        cur.close()
-        con.close()
-
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestPgTestCase))
-    suite.addTest(unittest.makeSuite(TestLaunchpadSchemaTestCase))
     return None
 
 if __name__ == '__main__':

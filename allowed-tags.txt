@@ -1,7 +1,6 @@
 COPYING 9a630d4f-fb62-4451-a402-1dc3332063a0
 Makefile c5c98418-056f-41e0-896a-6714a77439a8
 README 8b5febee-46cf-445f-8a2a-8ebcb4c23bd8
-database/Makefile 6773f9cf-f527-48bb-8521-7a103f106633
 database/default.sql 72b5bbef-19d6-4a07-b434-60f2a121ade2
 database/sampledata/rosetta-alpha.sql c7271ec2-c8e7-4bd0-a78c-6337e9111989
 database/sampledata/rosetta.sql 5734820d-754e-4297-bb54-fbe33b88af4c
@@ -20,11 +19,9 @@ lib/canonical/arch/tests/test_framework.py 7dec9a9d-a8c2-465e-8843-7b2204c1f85c
 lib/canonical/arch/tests/test_interfaces.py d7be3bf8-9f05-401c-9ffc-06f4dd19af48
 lib/canonical/auth/__init__.py fb47064d-e0cd-45d2-b552-f92e803aae71
 lib/canonical/browser-exception.zcml 0e25fabf-8d8b-4f3d-a88a-de12fc152573_-->
-lib/canonical/configure.zcml 55275af7-7bbe-4d25-9596-0df3cb6c4a1f_-->
 lib/canonical/database/constants.py 10b21ab8-0009-4efd-af07-ba17c593c752
 lib/canonical/doap/browser.py 4863ce15-110a-466d-a1fc-54fa8b17d360
 lib/canonical/foaf/resources.zcml D7F9D281-1136-11D9-8D71-000A95954466-->
-lib/canonical/functional.py 2867d2c1-667a-472c-befa-1c27f79698dd
 lib/canonical/launchpad/database/translation_effort.py 0a0b2b6c-e563-460a-93a7-a5d4b5384d55
 lib/canonical/launchpad/iandrew.py f6bfc192-208c-4e7f-afd6-7526697b4c79
 lib/canonical/launchpad/interfaces/bug.py 2C926820-E0AE-11D8-A7D9-000D9329A36C

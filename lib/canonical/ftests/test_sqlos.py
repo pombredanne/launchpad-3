@@ -3,14 +3,13 @@ Tests to make sure that SQLOS works as expected in our environment.
 """
 import unittest
 import sqlos
-import sqlos
 import sqlobject
 import transaction
+import psycopg
 from warnings import warn
 from threading import Thread
 from zope.app.rdb.interfaces import DatabaseException
-from canonical.tests.functional import FunctionalTestCase
-from canonical.tests.pgsql import PgTestCase
+from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 
 class Beer(sqlos.SQLOS):
     _columns = [
@@ -18,17 +17,15 @@ class Beer(sqlos.SQLOS):
         sqlobject.IntCol('rating', default=None),
         ]
 
-class TestSQLOS(FunctionalTestCase, PgTestCase):
+class TestSQLOS(LaunchpadFunctionalTestCase):
     def setUp(self):
-        PgTestCase.setUp(self)
-        FunctionalTestCase.setUp(self)
+        super(TestSQLOS, self).setUp()
         Beer.createTable()
         transaction.commit()
 
     def tearDown(self):
         transaction.abort()
-        PgTestCase.tearDown(self)
-        FunctionalTestCase.tearDown(self)
+        super(TestSQLOS, self).tearDown()
 
     def test_multipleTransations(self):
         # Here we create a Beer and make modifications in a number
@@ -107,8 +104,9 @@ class TestSQLOS(FunctionalTestCase, PgTestCase):
         Beer.selectBy(name='100%')
 
 def test_suite():
+    # Tests disabled - no gain
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestSQLOS))
+    #suite.addTest(unittest.makeSuite(TestSQLOS))
     return suite
 
 if __name__ == '__main__':

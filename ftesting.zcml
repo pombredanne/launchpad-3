@@ -9,32 +9,11 @@
     <include package="canonical" />
 
     <include files="package-includes/*-meta.zcml" />
+
     <include files="package-includes/*-configure.zcml" />
-    <!-- Don't want overrides - tests should run in a predictable environment
-    -->
-    <!-- <includeOverrides file="override-meta.zcml" /> -->
-    <!-- <includeOverrides file="override-configure.zcml" /> -->
-    <!-- <includeOverrides file="overrides.zcml" /> -->
-
-    <!-- This should be the only place the database is defined, and it
-        should always be referenced by the symbolic name 'launchpad'.
-        Code that explicitly connects to the launchpad_test is broken
-        -->
-    <rdb:provideConnection
-        name="launchpad"
-        component="psycopgda.adapter.PsycopgAdapter"
-        dsn="dbi://launchpad_test" />
-
-    <sqlos:connectionName name="launchpad" />
-
-    <include file="sql.zcml" package="canonical.lp" />
-    <include file="sql.zcml" package="canonical.rosetta" />
-    <!--<include file="sql.zcml" package="canonical.soyuz" />-->
+    <include files="package-includes/*-configure-testing.zcml" />
 
     <include file="securitypolicy.zcml" />
     <include file="principals.zcml" />
-
-    <!-- Configuration of components, configured for the test suite -->
-    <include files="package-includes/*-configure-testing.zcml" />
 
 </configure>

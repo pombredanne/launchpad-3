@@ -22,6 +22,12 @@ def main():
     if not checkarchtag.is_tree_good():
         return 1
 
+    here = os.path.dirname(os.path.realpath(__file__))
+    schema_dir = os.path.join(here, 'database', 'schema')
+    if os.system('cd %s; make test > /dev/null 2>&1' % schema_dir) != 0:
+        print 'Failed to create database'
+        return 1
+
     org_stdout = sys.stdout
     sys.stdout = StringIO()
     tabnanny.check(os.path.join(here, 'lib', 'canonical'))

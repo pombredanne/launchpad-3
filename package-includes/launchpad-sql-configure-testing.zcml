@@ -1,0 +1,20 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:sqlos="http://namespaces.sqlobject.org/sqlos"
+    xmlns:rdb="http://namespaces.zope.org/rdb">
+
+    <!-- Note that the launchpad_ftest is created from the
+    launchpad_ftest_template database by the test harnesses
+    -->
+    <rdb:provideConnection
+        name="launchpad"
+        component="psycopgda.adapter.PsycopgAdapter"
+        dsn="dbi://launchpad_ftest" />
+
+    <sqlos:connectionName name="launchpad" />
+
+    <include file="sql.zcml" package="canonical.lp" />
+    <include file="sql.zcml" package="canonical.rosetta" />
+    <include file="sql.zcml" package="canonical.soyuz" />
+
+</configure>

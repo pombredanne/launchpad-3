@@ -1,6 +1,6 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
-  <!-- TODO: Consider splitting this into multiple files, matching the .py -->
+    <!-- TODO: Consider splitting this into multiple files, matching the .py -->
 
     <content class="canonical.launchpad.database.Bug">
         <allow interface="canonical.launchpad.interfaces.IBug" />

@@ -97,7 +97,12 @@ class PgTestCase(unittest.TestCase):
             except psycopg.InterfaceError:
                 pass # Already closed
         for i in range(0,100):
-            con = psycopg.connect('dbname=%s' % self.template)
+            try:
+                con = psycopg.connect('dbname=%s' % self.template)
+            except psycopg.OperationalError, x:
+                if 'does not exist' in x:
+                    return
+                raise
             cur = con.cursor()
             cur.execute('ABORT TRANSACTION')
             try:
@@ -110,81 +115,3 @@ class PgTestCase(unittest.TestCase):
                 if 'does not exist' not in str(x):
                     raise
 
-
-class LaunchpadSchemaTestCase(PgTestCase):
-    dbname = 'launchpad_unittest'
-    template = 'launchpad_unittest_template'
-
-"""
-    def resetDatabase(self):
-        con = self.connect()
-        cur = con.cursor()
-        full_sql = '''
-            select c.relname, relkind from pg_class c, pg_namespace n
-            where n.oid = c.relnamespace
-            and n.nspname not in ('pg_catalog','pg_toast')
-            and pg_table_is_visible(c.oid)
-            '''
-        type_sql = full_sql + 'and c.relkind = %(kind)s'
-        cur.execute(type_sql, {'kind': 'r'})
-        def quote_table(t):
-            t = psycopg.QuotedString(t)
-            t = '"' + str(t)[1:-1] + '"'
-            return t
-        tables = [quote_table(r[0]) for r in cur.fetchall()]
-        for table in tables:
-            cur.execute('END TRANSACTION')
-            try:
-                cur.execute('DROP TABLE %s CASCADE' % table)
-            except psycopg.ProgrammingError, x:
-                if 'does not exist' in str(x):
-                    pass
-                else:
-                    raise
-
-        # Confirm they are all deleted, or warn
-        cur.execute(type_sql, {'kind': 'r'})
-        tables = [r[0] for r in cur.fetchall()]
-        for table in tables:
-            warn('Table %r not dropped' % (table,))
-"""
-
-
-'''
-class LaunchpadSchemaTestCase(PgTestCase):
-    """A test harness that creates the launchpad database schema and populates
-    it with the current sample data
-
-    """
-    def _getSQL(self, fname):
-        path = os.path.join(
-                os.path.dirname(__file__),
-                os.pardir, os.pardir, os.pardir, 'database', fname
-                )
-        raw = open(path, 'r').read()
-        stripper = re.compile(r"/\*.*?\*/", re.MULTILINE | re.DOTALL)
-        m = stripper.subn('', raw)[0]
-        stripper = re.compile(r"--.*$", re.MULTILINE)
-        m = stripper.subn('', m)[0]
-        splitter = re.compile(r"^(.+?);\s*$", re.MULTILINE | re.DOTALL)
-        m = [cmd.strip() for cmd in splitter.findall(m) if cmd.strip()]
-        m = [m for m in m if not m.startswith('DROP TABLE')]
-        return m
-
-    def setUp(self):
-        PgTestCase.setUp(self)
-        con = self.connect()
-        cur = con.cursor()
-        try:
-            schema = self._getSQL('sampledata/current.sql')
-            for sql in schema:
-                cur.execute(sql)
-            con.commit()
-            schema = self._getSQL('default.sql')
-            for sql in schema:
-                cur.execute(sql)
-            con.commit()
-        finally:
-            cur.close()
-            con.close()
-'''
