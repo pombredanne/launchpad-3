@@ -96,6 +96,7 @@ class IDistroReleaseSourceReleaseApp(Interface):
     """A SourcePackageRelease Proxy """
     sourcepackagerelease = Attribute("SourcePackageRelease")
     archs = Attribute("Builded archs")
+    builddepends = Attribute("Builddepends for this sourcepackagerelease")
 
     def __getitem__(name):
         """Retrieve a package release build by arch."""

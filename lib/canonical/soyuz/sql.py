@@ -167,6 +167,12 @@ class DistroReleaseSourceReleaseApp(object):
         # FIXME: stub
         self.archs = ['i386','AMD64']
         
+        from string import split
+        if self.sourcepackagerelease.builddepends:
+            self.builddepends = split(self.sourcepackagerelease.builddepends, ',')
+        else:
+            self.builddepends = None
+
     def __getitem__(self, arch):
         return DistroReleaseSourceReleaseBuildApp(self.sourcepackagerelease,
                                                   arch)

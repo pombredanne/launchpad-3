@@ -239,6 +239,8 @@ class SoyuzSourcePackageRelease(SQLBase):
         DateTimeCol('dateuploaded', dbName='dateuploaded', notNull=True,
                     default='NOW'),
         IntCol('urgency', dbName='urgency', notNull=True),
+        StringCol('builddepends', dbName='builddepends'),
+        StringCol('builddependsindep', dbName='builddependsindep'),
     ]
 
     builds = MultipleJoin('SoyuzBuild', joinColumn='sourcepackagerelease')

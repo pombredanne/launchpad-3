@@ -37,6 +37,16 @@ TITLE</spam>
      <span tal:content="context/sourcepackagerelease/creator/displayname">
       CREATORNAME</span>
 
+ <p><h4>Build Package Dependences:</h4>
+ <tal:dummy condition="context/builddepends">
+  <ul>
+   <span
+   tal:repeat="builddepends context/builddepends">
+    <li><tal:block tal:content="builddepends"/></li>
+   </span>
+  </ul>
+ </tal:dummy>
+
  <p><h4>Package Bugs:</h4> 
     <div class="dummy">
       <span>#1, #2, #3</span>
