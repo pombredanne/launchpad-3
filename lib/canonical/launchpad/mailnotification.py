@@ -12,7 +12,7 @@ from canonical.lp.dbschema import BugAssignmentStatus, BugPriority, \
 from canonical.launchpad.vocabularies import BugTrackerVocabulary
 
 FROM_ADDR = "noreply@bbnet.ca"
-GLOBAL_NOTIFICATION_EMAIL_ADDR = "global@bbnet.ca"
+GLOBAL_NOTIFICATION_EMAIL_ADDRS = ("global@bbnet.ca", "dilys@muse.19inch.net")
 CC = "CC"
 
 def send_edit_notification(from_addr, to_addrs, subject, edit_header_line,
@@ -34,7 +34,7 @@ def get_cc_list(bug):
     subscribers = [
         s.person for s in bug.subscriptions
         if BugSubscription.items[s.subscription].title == CC]
-    emails = [GLOBAL_NOTIFICATION_EMAIL_ADDR]
+    emails = list(GLOBAL_NOTIFICATION_EMAIL_ADDRS)
     for s in subscribers:
         emails.append(
             EmailAddress.select(EmailAddress.q.personID == s.id)[0].email)
@@ -67,19 +67,27 @@ def notify_bug_added(bug, event):
     """Notify the owner and the global notification list that a bug
     was added."""
     owner = "(no owner)"
+    spname = "(none)"
+    pname = "(none)"
     if bug.owner:
         owner = bug.owner.displayname
+    if bug.sourcepackage:
+        spname = bug.sourcepackage.sourcepackagename.name
+    if bug.product:
+        pname = bug.product.displayname
 
     msg = """\
 Title: %(title)s
 Short Description: %(short_desc)s
 Description: %(description)s
 Source Package: %(source_package)s
+Product: %(product)s
 Owner: %(owner)s
 """ % {'title' : bug.title,
        'short_desc' : bug.shortdesc,
        'description' : bug.description,
-       'source_package' : bug.sourcepackage.sourcepackagename.name,
+       'source_package' : spname,
+       'product' : pname,
        'owner' : owner}
 
     if bug.owner:
@@ -141,7 +149,7 @@ def notify_bug_assigned_product_modified(modified_product_assignment, event):
             ("bugstatus", lambda v: BugAssignmentStatus.items[v].title),
             ("priority", lambda v: BugPriority.items[v].title),
             ("severity", lambda v: BugSeverity.items[v].title),
-            ("assignee", lambda v: v.displayname)))
+            ("assignee", lambda v: (v and v.displayname) or "(not assigned)")))
 
     send_edit_notification(
         from_addr = FROM_ADDR,
@@ -190,8 +198,8 @@ def notify_bug_assigned_package_modified(modified_package_assignment, event):
             ("bugstatus", lambda v: BugAssignmentStatus.items[v].title),
             ("priority", lambda v: BugPriority.items[v].title),
             ("severity", lambda v: BugSeverity.items[v].title),
-            ("binarypackagename", lambda v: v.name),
-            ("assignee", lambda v: v.displayname)))
+            ("binarypackagename", lambda v: (v and v.name) or "(none)"),
+            ("assignee", lambda v: (v and v.displayname) or "(not assigned)")))
 
     send_edit_notification(
         from_addr = FROM_ADDR,

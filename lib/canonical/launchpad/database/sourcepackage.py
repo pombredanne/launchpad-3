@@ -222,40 +222,22 @@ class SourcePackageName(SQLBase):
 
 class SourcePackageRelease(SQLBase):
     implements(ISourcePackageRelease)
-    _table = 'VSourcePackageReleasePublishing'
-  
-    #
-    # Columns
-    #
-    # XXXkiko: IDs in this table are *NOT* unique!
-    # XXXkiko: clean up notNulls
-    status = IntCol(dbName='publishingstatus', notNull=True)
-    urgency = IntCol(dbName='urgency', notNull=True)
+    _table = 'SourcePackageRelease'
 
-    name              = StringCol(dbName='name', notNull=True)
-    # XXXkiko: move to property
-    changelog         = StringCol(dbName='changelog')
-    shortdesc         = StringCol(dbName='shortdesc', notNull=True)
-    description       = StringCol(dbName='description', notNull=True)
-    version           = StringCol(dbName='version', notNull=True)
-    componentname     = StringCol(dbName='componentname', notNull=True)
-    componenttitle    = StringCol(dbName='componenttitle', notNull=True)
-    componentdesc     = StringCol(dbName='componentdesc', notNull=True)
-    builddepends      = StringCol(dbName='builddepends')
-    builddependsindep = StringCol(dbName='builddependsindep')
-
-    dateuploaded   = DateTimeCol(dbName='dateuploaded', notNull=True,
-                                 default='NOW')
-
-    creator       = ForeignKey(foreignKey='Person', dbName='creator')
-    maintainer    = ForeignKey(foreignKey='Person', dbName='maintainer')
-    # XXXkiko: remove in lieu of expanded crap
-    component     = ForeignKey(foreignKey='Component', dbName='component')
-    section       = ForeignKey(foreignKey='Section', dbName='section')
-    distrorelease = ForeignKey(foreignKey='DistroRelease', dbName='distrorelease')
     sourcepackage = ForeignKey(foreignKey='SourcePackage', dbName='sourcepackage')
-
-    builds = MultipleJoin('Build', joinColumn='sourcepackagerelease')
+    creator = ForeignKey(foreignKey='Person', dbName='creator')
+    version = StringCol(dbName='version', notNull=True)
+    dateuploaded = DateTimeCol(
+        dbName='dateuploaded', notNull=True, default='NOW')
+    urgency = IntCol(dbName='urgency', notNull=True)
+    dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
+    component = ForeignKey(foreignKey='Component', dbName='component')
+    changelog = StringCol(dbName='changelog')
+    builddepends = StringCol(dbName='builddepends')
+    builddependsindep = StringCol(dbName='builddependsindep')
+    architecturehintlist = StringCol(dbName='architecturehintlist')
+    dsc = StringCol(dbName='dsc')
+    section = ForeignKey(foreignKey='Section', dbName='section')
 
     #
     # Properties
@@ -268,13 +250,13 @@ class SourcePackageRelease(SQLBase):
 
     def binaries(self):
         clauseTables = ('SourcePackageRelease', 'BinaryPackage', 'Build')
-        
+
         query = ('SourcePackageRelease.id = Build.sourcepackagerelease'
                  ' AND BinaryPackage.build = Build.id '
                  ' AND Build.sourcepackagerelease = %i' % self.id)
 
         return BinaryPackage.select(query, clauseTables=clauseTables)
-        
+
     binaries = property(binaries)
 
     pkgurgency = property(_urgency)

@@ -120,10 +120,10 @@
         for="canonical.launchpad.interfaces.IBugContainer"
         schema="canonical.launchpad.interfaces.IMaloneBugAddForm"
         label="Create A New Bug Record"
-        fields="title shortdesc description sourcepackage owner"
+        fields="title shortdesc description sourcepackage product owner"
         content_factory="canonical.launchpad.database.MaloneBugAddForm"
         arguments=""
-        keyword_arguments="title shortdesc description sourcepackage owner"
+        keyword_arguments="title shortdesc description sourcepackage product owner"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
         lp:url="malone/bugs/+new">

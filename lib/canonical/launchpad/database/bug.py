@@ -176,13 +176,12 @@ class BugContainer(BugContainerBase):
         bug = MaloneBug(**kw)
 
         # If the user has specified a product, create the ProductBugAssignment
-        productid = getattr(ob, 'product', None)
-        if productid:
-            product = Product.get(productid)
+        product = getattr(ob, 'product', None)
+        if product:
             pba = ProductBugAssignment(bug=bug, product=product)
 
         sourcepkg = getattr(ob, 'sourcepackage', None)
-        if sourcepackage:
+        if sourcepkg:
             sba = SourcePackageBugAssignment(
                 bug=bug, sourcepackage=sourcepkg, binarypackagename=None)
 

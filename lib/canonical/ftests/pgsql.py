@@ -1,7 +1,18 @@
-import unittest, os, os.path, re, time
-import psycopg
-from warnings import warn
+import unittest
+import os, os.path
+import re
 import time
+from warnings import warn
+
+import psycopg
+
+from zope.app import zapi
+from zope.component.exceptions import ComponentLookupError
+from zope.component.servicenames import Utilities
+from zope.component import getService
+from zope.app.rdb.interfaces import IZopeDatabaseAdapter
+from sqlos.interfaces import IConnectionName
+
 
 class ConWrapper:
     """A wrapper around the real connection that ensures all cursors
@@ -42,11 +53,9 @@ class ConWrapper:
 
 
 class PgTestCase(unittest.TestCase):
-    """This test harness will create and destroy a database 
-       in the setUp and tearDown methods
+    """This test harness will create and destroy a database
+    in the setUp and tearDown methods."""
 
-    """
-    # This database must already exist
     _cons = None
     dbname = 'unittest_tmp'
     template = 'template1'
@@ -54,11 +63,22 @@ class PgTestCase(unittest.TestCase):
     def connect(self):
         """Get an open DB-API Connection object to a temporary database"""
         con = psycopg.connect('dbname=%s' % self.dbname)
-        #con = ConWrapper(con)
         self._cons.append(con)
         return con
 
     def setUp(self):
+        db_adapter = None
+        try:
+            name = zapi.getUtility(IConnectionName).name
+            db_adapter = zapi.getUtility(IZopeDatabaseAdapter, name)
+            if db_adapter.isConnected():
+                # we have to disconnect long enough to drop
+                # and recreate the DB
+                db_adapter.disconnect()
+        except ComponentLookupError, err:
+            # configuration not yet loaded, no worries
+            pass
+
         self._cons = []
         con = psycopg.connect('dbname=%s' % self.template)
         try:
@@ -73,9 +93,7 @@ class PgTestCase(unittest.TestCase):
                 try:
                     cur.execute(
                         "CREATE DATABASE %s TEMPLATE=%s ENCODING='UNICODE'" % (
-                            self.dbname, self.template
-                            )
-                        )
+                            self.dbname, self.template))
                     break
                 except psycopg.ProgrammingError, x:
                     x = str(x)
@@ -84,10 +102,14 @@ class PgTestCase(unittest.TestCase):
                 time.sleep(0.1)
         finally:
             try:
+                if db_adapter and not db_adapter.isConnected():
+                    # the dirty deed is done, time to reconnect
+                    db_adapter.connect()
+
                 con.close()
             except psycopg.Error:
                 pass
- 
+
     def tearDown(self):
         # Close any unclosed connections if our tests are being lazy
         for con in self._cons:
@@ -114,4 +136,3 @@ class PgTestCase(unittest.TestCase):
                     continue
                 if 'does not exist' not in str(x):
                     raise
-

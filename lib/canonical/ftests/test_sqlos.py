@@ -2,13 +2,15 @@
 Tests to make sure that SQLOS works as expected in our environment.
 """
 import unittest
+from warnings import warn
+from threading import Thread
+
 import sqlos
 import sqlobject
 import transaction
 import psycopg
-from warnings import warn
-from threading import Thread
 from zope.app.rdb.interfaces import DatabaseException
+
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 
 class Beer(sqlos.SQLOS):
