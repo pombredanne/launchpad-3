@@ -242,45 +242,6 @@
    </pages>
 
 
-<traverse for="canonical.soyuz.distroapp.DistroTeamApp" getter="__getitem__" />
-
-   <pages for="canonical.soyuz.distroapp.DistroTeamApp"
-	  allowed_attributes="results"
-	  permission="zope.Public">
-
-	<page  name="index.html"
-          template="../launchpad/templates/team-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/team/index.html"
-	/>	
-   </pages>
-   
-   <page  for="canonical.soyuz.distroapp.DistroTeamApp"
-          permission="zope.Public"
-          name="+new"
-	  class="canonical.launchpad.browser.DistroTeamAddView"
-	  template="../launchpad/templates/team-newrole.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/team/+new"
-	/>   
-
-   <pages for="canonical.soyuz.distroapp.DistroReleaseTeamApp"
-	  allowed_attributes="results"
-	  permission="zope.Public">
-
-	<page  name="index.html"
-          template="../launchpad/templates/releaseteam-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/team/$Release.name/index.html"
-	/>
-   </pages>
-
-   <page  for="canonical.soyuz.distroapp.DistroReleaseTeamApp"
-          permission="zope.Public"
-          name="+new"
-	  class="canonical.launchpad.browser.DistroReleaseTeamAddView"
-	  template="../launchpad/templates/releaseteam-newrole.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/team/$release/+new"
-	/>   
-
-
 <traverse for="canonical.soyuz.binarypackageapp.DistroBinariesApp" 
 	  getter="__getitem__" />
 

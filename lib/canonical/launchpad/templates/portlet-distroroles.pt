@@ -1,13 +1,61 @@
 <div>
+    <div tal:condition="view/is_owner"> 
+
+    <div tal:omit-tag="" 
+         tal:condition="view/add_role"/>
+
+    <form name="add" action="" method="POST">
+
+    <legend><h3>Submit a New Role</h3><legend>
+ 	<table>
+	<tr><td>
+	<div class="field">
+	    <label>Person</label>
+	    <span class="fieldRequired" title="Required">(Required)</span>
+	    <div class="formHelp">
+	    Select a Person Name.
+            </div>
+	    <select class="listing" name="person">
+	      <option tal:repeat="person view/people"
+	              tal:content="person/displayname"
+	              tal:attributes="value person/id">DISPLAYNAME</option>
+            </select>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
+	    <label>Role</label>
+	    <span class="fieldRequired" title="Required">(Required)</span>
+	    <div class="formHelp">
+	    Select a Role
+            </div>
+	    <select class="listing" name="role">
+	      <option value="">None</option>
+	      <option tal:repeat="role view/roles"
+	              tal:content="role/title"
+	              tal:attributes="value role/value">ROLE</option>
+            </select>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="formControls">
+	  <input class="listing" type="submit" value="Submit"/>
+	</div>
+	</td></tr>
+	</table>
+  </form>
+  </div>
+
+
   <h3>Roles</h3>
 
-  <div tal:condition="not:view/team">
+  <div tal:condition="not:view/get_roles">
   <p>No Member Yet
   </div>
 
-  <table class="listing" tal:condition="view/team">	
+  <table class="listing" tal:condition="view/get_roles">	
     <tr> <th> Name</th> <th> Role</th> </tr>
-    <tr tal:repeat="team view/team">
+    <tr tal:repeat="team view/get_roles">
        <td><a tal:attributes="href string:/foaf/people/${team/person/name}"
 	   tal:content="team/person/displayname">Displayname</a></td>
        <td><span tal:content="team/rolename">ROLENAME</span></td>
@@ -15,4 +63,3 @@
   </table>
 
 </div>
-

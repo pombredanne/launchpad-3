@@ -25,8 +25,6 @@ from canonical.launchpad.interfaces import IDistribution, \
                                            IDistroApp, \
                                            IDistroReleaseApp, \
                                            IDistroReleasesApp, \
-                                           IDistroReleaseTeamApp, \
-                                           IDistroTeamApp,\
                                            IAuthorization, IDistrosSet,\
                                            ISourcePackageSet,\
                                            IBinaryPackageSet   
@@ -72,7 +70,6 @@ class DistroApp(object):
             'releases': DistroReleasesApp,
             'src'     : DistroSourcesApp,
             'bin'     : DistroBinariesApp,
-            'team'    : DistroTeamApp
         }
         if container.has_key(name):
             return container[name](self.distribution)
@@ -133,32 +130,3 @@ class DistroReleasesApp(object):
 
     def __iter__(self):
         return iter(self.distribution.releases)
-
-
-##XXX: cprov 20041207
-## Throw this Apps away soon (don't forget their templates and Zope Views)!!! 
-
-class DistroReleaseTeamApp(object):
-    implements(IDistroReleaseTeamApp)
-
-    def __init__(self, release):
-        self.release = release
-
-        self.team=DistroReleaseRole.selectBy(distroreleaseID=
-                                             self.release.id)
-        
-
-class DistroTeamApp(object):
-    implements(IDistroTeamApp)
-
-    def __init__(self, distribution):
-        self.distribution = distribution
-        self.team = self.distribution.roles
-
-    def __getitem__(self, name):
-        return DistroReleaseTeamApp(self.distribution.getRelease(name))
-
-    def __iter__(self):
-        return iter(self.distribution.releases)
-
-

@@ -19,7 +19,7 @@
 
 
 <metal:rightportlets fill-slot="portlets_two">
-<div tal:replace="structure view/addrolePortlet" />
+<!-- <div tal:replace="structure view/addrolePortlet" /> -->
 </metal:rightportlets>
 
 
@@ -104,11 +104,6 @@
      <div>
      </div>   
    </td></tr>
-   <tr><th align="right">
-   <a
-   tal:attributes="href string:../../team/${context/release/name}">
-   More <span tal:content="context/release/title"/> Teams</a>   
-   </th></tr>
    <tr><td>
       <table>
       <legend><h4><span tal:content="context/release/title"/>

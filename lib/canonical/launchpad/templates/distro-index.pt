@@ -21,7 +21,7 @@
 
 
 <metal:rightportlets fill-slot="portlets_two">
-<div tal:replace="structure view/addrolePortlet" />
+
 </metal:rightportlets>
 
 
@@ -42,7 +42,7 @@
              tal:attributes="href string:/foaf/people/${context/distribution/owner/name}">
            OWNER</a>
    </td></tr>
-   <tr><th albgign="right"><a href="+edit">Edit Information</a></th></tr>  
+   <tr><th align="right"><a href="+edit">Edit Information</a></th></tr>  
    <!--Conditional block -->
    <tr tal:condition="context/enable_releases"><td>
    <table  width="100%" class="listing">

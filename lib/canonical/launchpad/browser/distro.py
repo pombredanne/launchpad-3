@@ -244,17 +244,12 @@ class ReleaseSearchView(object):
 
 
 class AddDistroRoleView(object):
-    addrolePortlet = ViewPageTemplateFile(
-        '../templates/portlet-addrole.pt')
     rolesPortlet = ViewPageTemplateFile(
         '../templates/portlet-distroroles.pt')
     
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.team = self.context.distribution.roles
-        self.people = Person.select(orderBy='displayname')
-        self.roles = dbschema.DistributionRole.items
 
     def is_owner(self):
         person = IPerson(self.request.principal, None)
@@ -267,6 +262,9 @@ class AddDistroRoleView(object):
         return False
 
     def add_role(self):
+        self.people = Person.select(orderBy='displayname')
+        self.roles = dbschema.DistributionRole.items
+
         self.person = self.request.get("person", "")
         self.role = self.request.get("role", "")
 
@@ -279,20 +277,16 @@ class AddDistroRoleView(object):
 
         return False
 
+    def get_roles(self):
+        return self.context.distribution.roles
 
 class AddDistroReleaseRoleView(object):
-    addrolePortlet = ViewPageTemplateFile(
-        '../templates/portlet-addrole.pt')
     rolesPortlet = ViewPageTemplateFile(
         '../templates/portlet-distroroles.pt')
     
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.team = DistroReleaseRole.selectBy(distroreleaseID=\
-                                               self.context.release.id)        
-        self.people = Person.select(orderBy='displayname')
-        self.roles = dbschema.DistributionRole.items
 
     def is_owner(self):
         person = IPerson(self.request.principal, None)
@@ -305,6 +299,9 @@ class AddDistroReleaseRoleView(object):
         return False
 
     def add_role(self):
+        self.people = Person.select(orderBy='displayname')
+        self.roles = dbschema.DistributionRole.items
+
         self.person = self.request.get("person", "")
         self.role = self.request.get("role", "")
 
@@ -317,57 +314,9 @@ class AddDistroReleaseRoleView(object):
 
         return False
 
+    def get_roles(self):
+        return DistroReleaseRole.selectBy(distroreleaseID=\
+                                          self.context.release.id)        
 
 
-class DistroTeamAddView(object):
-    addrolePortlet = ViewPageTemplateFile(
-        '../templates/portlet-addrole.pt')
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        ##XXX: cprov 20041206
-        ## Missed Permission Check
-        self.permission = True
-        self.people = Person.select(orderBy='displayname')
-        self.roles = dbschema.DistributionRole.items
-
-    def add_role(self):
-        self.person = self.request.get("person", "")
-        self.role = self.request.get("role", "")
-
-        if self.person and self.role:
-            res = DistributionRole(distribution=self.context.distribution.id,
-                                   personID=self.person,
-                                   role=self.role)
-
-            return res
-
-        return False
-
-
-class DistroReleaseTeamAddView(object):
-    addrolePortlet = ViewPageTemplateFile(
-        '../templates/portlet-addrole.pt')
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        ##XXX: cprov 20041206
-        ## Missed Permission Check
-        self.permission = True
-        self.people = Person.select(orderBy='displayname')
-        self.roles = dbschema.DistributionRole.items
-
-    def add_role(self):
-        self.person = self.request.get("person", "")
-        self.role = self.request.get("role", "")
-
-        if self.person and self.role:
-            res = DistroReleaseRole(distrorelease=self.context.release.id,
-                                    personID=self.person,
-                                    role=self.role)
-
-            return res
-
-        return False
