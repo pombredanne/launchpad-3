@@ -2,6 +2,68 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-15 12:23:13 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1437
+
+    Summary:
+      move nicole code into lib/canonical/not-used/
+    Revision:
+      launchpad--devel--0--patch-1437
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-322
+       moved nicole to lib/canonical/not-used/
+    
+
+    new files:
+     lib/canonical/not-used/.arch-ids/=id
+     lib/canonical/not-used/.arch-ids/README.txt.id
+     lib/canonical/not-used/README.txt
+
+    modified files:
+     doc/changelog.txt
+
+    renamed files:
+     lib/canonical/launchpad/scripts/nicole/.arch-ids/=id
+       ==> lib/canonical/not-used/nicole/.arch-ids/=id
+     lib/canonical/launchpad/scripts/nicole/.arch-ids/BeautifulSoup.py.id
+       ==> lib/canonical/not-used/nicole/.arch-ids/BeautifulSoup.py.id
+     lib/canonical/launchpad/scripts/nicole/.arch-ids/Changelog.id
+       ==> lib/canonical/not-used/nicole/.arch-ids/Changelog.id
+     lib/canonical/launchpad/scripts/nicole/.arch-ids/README.id
+       ==> lib/canonical/not-used/nicole/.arch-ids/README.id
+     lib/canonical/launchpad/scripts/nicole/.arch-ids/__init__.py.id
+       ==> lib/canonical/not-used/nicole/.arch-ids/__init__.py.id
+     lib/canonical/launchpad/scripts/nicole/.arch-ids/database.py.id
+       ==> lib/canonical/not-used/nicole/.arch-ids/database.py.id
+     lib/canonical/launchpad/scripts/nicole/.arch-ids/emailfinder.py.id
+       ==> lib/canonical/not-used/nicole/.arch-ids/emailfinder.py.id
+     lib/canonical/launchpad/scripts/nicole/.arch-ids/fetchrdf.sh.id
+       ==> lib/canonical/not-used/nicole/.arch-ids/fetchrdf.sh.id
+     lib/canonical/launchpad/scripts/nicole/.arch-ids/nicole.py.id
+       ==> lib/canonical/not-used/nicole/.arch-ids/nicole.py.id
+     lib/canonical/launchpad/scripts/nicole/.arch-ids/rdfproj.py.id
+       ==> lib/canonical/not-used/nicole/.arch-ids/rdfproj.py.id
+     lib/canonical/launchpad/scripts/nicole/.arch-ids/rdfsplit.py.id
+       ==> lib/canonical/not-used/nicole/.arch-ids/rdfsplit.py.id
+     lib/canonical/launchpad/scripts/nicole/.arch-ids/sourceforge.py.id
+       ==> lib/canonical/not-used/nicole/.arch-ids/sourceforge.py.id
+
+    new directories:
+     lib/canonical/not-used lib/canonical/not-used/.arch-ids
+     lib/canonical/not-used/nicole/.arch-ids
+
+    removed directories:
+     lib/canonical/launchpad/scripts/nicole/.arch-ids
+
+    renamed directories:
+     lib/canonical/launchpad/scripts/nicole
+       ==> lib/canonical/not-used/nicole
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--devel--0--patch-322
+
+
 2005-03-15 12:03:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1436
 
     Summary:
