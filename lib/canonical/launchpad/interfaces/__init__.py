@@ -9,6 +9,8 @@ from persistent import IPersistent
 
 from canonical.launchpad.interfaces.project import *
 from canonical.launchpad.interfaces.product import *
+from canonical.launchpad.interfaces.productseries import *
+from canonical.launchpad.interfaces.productrelease import *
 from canonical.launchpad.interfaces.sourcesource import *
 from canonical.launchpad.interfaces.bug import *
 from canonical.launchpad.interfaces.bugassignment import *

@@ -27,7 +27,7 @@
     <!--TRAVERSALS-->
     <browser:traverse
         for="canonical.launchpad.interfaces.IProduct"
-        function="canonical.doap.browser.traverseProduct" />
+        function="canonical.launchpad.browser.traverseProduct" />
 
     
     <!--BROWSER DEFAULTVIEWS-->
@@ -38,35 +38,30 @@
     <!--PAGE DECLARATIONS-->
     <browser:pages for="canonical.launchpad.interfaces.IProduct"
         permission="zope.Public"
-        class="canonical.doap.browser.ProductView" >
+        class="canonical.launchpad.browser.ProductView" >
         <browser:page name="+index"
             template="../templates/product-index.pt"
             lp:url="doap/projects/$Project.name/$Product.name/" />
     </browser:pages>
 
     <browser:pages for="canonical.launchpad.interfaces.IProduct"
-        class="canonical.doap.browser.ProductView"
+        class="canonical.launchpad.browser.ProductView"
         permission="launchpad.AnyPerson" >
-        <browser:page name="+edit"
+        <browser:page
+            name="+edit"
             template="../templates/product-edit.pt"
             lp:url="doap/projects/$Project.name/$Product.name/+edit" />
-        <browser:page name="+addsources"
+        <browser:page
+            name="+addsources"
             template="../templates/sourcesource-add.pt"
             lp:url="doap/projects/$Project.name/$Product.name/+addsources"
             />
-    </browser:pages>
-
-    <!--XXX Mark Shuttleworth 09/10/04 I think this is a hangover from
-    before the revolution -->
-    <browser:pages for="canonical.launchpad.interfaces.IProduct"
-        class="canonical.doap.browser.ProductView"
-        permission="zope.Public">
-        <browser:page name="+soyuz-index"
-            template="../templates/soyuz-product-index.pt"
-            lp:url="soyuz/projects/$Project.name/$Product.name/+soyuz-index"
+        <browser:page
+            name="+addseries"
+            template="../templates/series-new.pt"
+            lp:url="doap/projects/$Project.name/$Product.name/+addseries"
             />
     </browser:pages>
-
 
     <!--FORMS-->
 

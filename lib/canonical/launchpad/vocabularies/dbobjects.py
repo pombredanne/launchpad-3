@@ -6,7 +6,8 @@ from zope.schema.vocabulary import SimpleTerm
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.package import Sourcepackage, Binarypackage, \
                                          BinarypackageName
-from canonical.launchpad.database.product import Product, ProductRelease
+from canonical.launchpad.database.product import Product
+from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bug import BugTracker
 
 __metaclass__ = type

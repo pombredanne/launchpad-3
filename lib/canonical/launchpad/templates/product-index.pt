@@ -35,12 +35,13 @@
         which we have not yet determined (HTML, reStructuredText or
         something else, for example).
     </div>
+
     <div>
-        [ <a href="+edit">Edit</a> ]
+        [ <a href="+edit">Edit Product Details</a> ]
     </div>
 
 
-    <div>
+    <div tal:condition="context/sourcesources">
         <h2>Revision Control System</h2>
 
         <dl tal:repeat="source context/sourcesources">
@@ -51,10 +52,13 @@
             <dd tal:content="source/description"></dd>
         </dl>
 
-        [ <a href="+addsources">Add SourceSource</a> ]
     </div>
 
     <div>
+        [ <a href="+addsources">Add Revision Control System</a> ]
+    </div>
+
+    <div tal:condition="context/sourcepackages">
 
         <h2>Distro Packages</h2>
 
@@ -72,6 +76,32 @@
         </ul>
 
     </div>
+
+    <div>
+        [ TODO: link to packages ]
+    </div>
+
+    <div tal:condition="context/serieslist">
+
+        <h2>Release Series</h2>
+
+        <p>Most open source projects issue releases as part of a "series".
+        For example, some releases are from their "unstable" or "head" or
+        "cvs" or "dev" series. Some are from a versioned series, like the "2.0"
+        series might have releases numbered "2.0.0", "2.0.1" and
+        "2.0.2".</p>
+
+        <ul tal:repeat="series context/serieslist">
+
+            <li><a
+                tal:content="series/name"
+	            tal:attributes="href python:string('+series/'+series.name)">$Series.name
+	            </a></li>
+            
+        </ul>
+    </div>
+
+    [ <a href="+addseries">Add a Release Series</a> ]
 
 </div>
 

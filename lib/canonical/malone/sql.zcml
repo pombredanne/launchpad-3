@@ -90,13 +90,6 @@
         <require permission="zope.View" set_schema="canonical.launchpad.interfaces.IBugProductInfestation" />
     </content>
 
-    <content class="canonical.launchpad.database.product.ProductRelease">
-        <allow interface="canonical.launchpad.interfaces.IProductRelease" />
-        <allow
-            interface="zope.app.form.browser.interfaces.IAddFormCustomization"
-            />
-    </content>
-
 <!--
     <utility
         factory=".browser.BugProductInfestation"

@@ -12,6 +12,11 @@ class IProduct(Interface):
     For example, the Mozilla Project has Firefox, Thunderbird and The
     Mozilla App Suite as Products, among others."""
     
+    # XXX Mark Shuttleworth comments: lets get rid of ID's in interfaces
+    # unless we really need them. BradB says he can remove the need for them
+    # in SQLObject soon. 12/10/04
+    id = Int(title=_('The Product ID'))
+    
     project = Int(title=_('The Project that is responsible for this product.'))
     
     owner = Int(title=_('Owner'))
@@ -47,6 +52,9 @@ class IProduct(Interface):
     bugs = Attribute(
         """A list of ProductBugAssignments for this Product.""")
 
+    serieslist = Attribute(_("""An iterator over the ProductSeries for this
+        product"""))
+
     def poTemplates():
         """Returns an iterator over this product's PO templates."""
 
@@ -60,6 +68,9 @@ class IProduct(Interface):
 
         Raises an KeyError if a PO template with that name already exists.
         """
+
+    def newseries(form):
+        """Creates a new ProductSeries for this series."""
 
     def newSourceSource(form):
         """Creates a new SourceSource entry for upstream code sync."""
@@ -83,23 +94,3 @@ class IProduct(Interface):
         where we have a translation in Rosetta but there was no translation
         in the PO file for this language when we last parsed it."""
 
-class IProductRelease(Interface):
-    """A specific release (i.e. has a version) of a product. For example,
-    Mozilla 1.7.2 or Apache 2.0.48."""
-    id = Int(title=_('ID'), required=True, readonly=True)
-    product = Choice(
-        title=_('Product'), required=True, vocabulary='Product')
-    datereleased = Datetime(
-        title=_('Date Released'), required=True, readonly=True)
-    version = TextLine(
-        title=_('Version'), required=True, readonly=True)
-    title = TextLine(
-        title=_('Title'), required=True, readonly=True)
-    description = Text(
-        title=_("Description"), required=True)
-    changelog = Text(
-        title=_('Changelog'), required=True)
-    ownerID = Int(
-        title=_('Owner'), required=True, readonly=True)
-    owner = Attribute("The owner's IPerson")
-    

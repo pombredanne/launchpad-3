@@ -6,6 +6,8 @@
     
     <include file="project.zcml" />
     <include file="product.zcml" />
+    <include file="productseries.zcml" />
+    <include file="productrelease.zcml" />
     <include file="package.zcml" />
     <include file="sourcesource.zcml" />
 

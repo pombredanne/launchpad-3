@@ -16,8 +16,8 @@ from canonical.launchpad.interfaces import *
 # XXX Mark Shuttleworth 06/10/06 till we sort out database locations and
 #     import sequence
 from canonical.launchpad.database.sourcesource import SourceSource
+from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.interfaces.product import IProductRelease
 
 class Product(SQLBase):
     """A Product."""
@@ -72,6 +72,21 @@ class Product(SQLBase):
                            otherColumn='sourcepackage',
                            intermediateTable='Packaging')
 
+    serieslist = MultipleJoin('ProductSeries', joinColumn='product')
+
+
+
+    def newseries(self, form):
+        # Extract the details from the form
+        name = form['name']
+        displayname = form['displayname']
+        shortdesc = form['shortdesc']
+        # Now create a new series in the db
+        series = ProductSeries(name=name,
+                          displayname=displayname,
+                          shortdesc=shortdesc,
+                          product=self.id)
+        return series
 
 
     def newSourceSource(self, form, owner):
@@ -164,16 +179,3 @@ class Product(SQLBase):
             count += t.rosettaCount(language)
         return count
 
-
-class ProductRelease(SQLBase):
-    """A release of a product."""
-    implements(IProductRelease)
-    _table = 'ProductRelease'
-
-    product = ForeignKey(dbName='product', foreignKey="Product", notNull=True)
-    datereleased = DateTimeCol(notNull=True)
-    version = StringCol(notNull=True)
-    title = StringCol(notNull=True)
-    description = StringCol(notNull=True)
-    changelog = StringCol(notNull=True)
-    owner = ForeignKey(dbName="owner", foreignKey="Person", notNull=True)

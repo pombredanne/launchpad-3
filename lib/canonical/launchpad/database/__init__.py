@@ -3,6 +3,8 @@
 #
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.product import *
+from canonical.launchpad.database.productseries import *
+from canonical.launchpad.database.productrelease import *
 from canonical.launchpad.database.project import *
 from canonical.launchpad.database.bug import *
 from canonical.launchpad.database.bugassignment import *

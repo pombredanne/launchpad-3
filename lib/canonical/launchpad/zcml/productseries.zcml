@@ -1,0 +1,54 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:zope="http://namespaces.zope.org/zope"
+    xmlns:lp="http://launchpad.canonical.com"
+    i18n_domain="launchpad">
+    
+    <!-- This is class ProductSeries -->
+    <content class="canonical.launchpad.database.ProductSeries">
+        <allow interface="canonical.launchpad.interfaces.IProductSeries" />
+        <require
+            permission="zope.View"
+            set_schema="canonical.launchpad.interfaces.IProductSeries"
+        />
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProductSeries"
+        name="+index" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProductSeries"
+        permission="zope.Public">
+        <browser:page
+            name="+index"
+            template="../templates/series.pt"
+            lp:url="doap/projects/$Project.name/$Product.name/+series/$ProductSeries.name/" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProductSeries"
+        class="canonical.launchpad.browser.ProductSeriesView"
+        permission="launchpad.AnyPerson">
+        <browser:page
+            name="+edit"
+            template="../templates/series-edit.pt"
+            lp:url="doap/projects/$Project.name/$Product.name/+series/$ProductSeries.name/+edit" />
+    </browser:pages>
+
+    <!-- ProductSeriesSet -->
+    <content class="canonical.launchpad.database.ProductSeriesSet">
+        <allow interface="canonical.launchpad.interfaces.IProductSeriesSet" />
+        <require
+            permission="zope.View"
+            set_schema="canonical.launchpad.interfaces.IProductSeriesSet"
+        />
+    </content>
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IProductSeriesSet"
+        getter="__getitem__" />
+
+</configure>

@@ -1180,13 +1180,7 @@ class BugInfestationStatus(DBSchema):
     in a coderelease.
     """
 
-    UNKNOWN = Item(1, '''
-        Unknown
-
-        We don't know if this bug infests that coderelease.
-        ''')
-
-    AFFECTED = Item(2, '''
+    AFFECTED = Item(60, '''
         Affected
 
         It is believed that this bug affects that coderelease. The
@@ -1194,28 +1188,14 @@ class BugInfestationStatus(DBSchema):
         by a package maintainer.
         ''')
 
-    DORMANT = Item(3, '''
+    DORMANT = Item(50, '''
         Dormant
 
         The bug exists in the code of this coderelease, but it is dormant
         because that codepath is unused in this release.
         ''')
 
-    UNAFFECTED = Item(4, '''
-        Unaffected
-
-        It is believed that this bug does not infest this release of code.
-        ''')
-
-    FIXED = Item(5, '''
-        Fixed
-
-        It is believed that the bug is actually fixed in this release of code.
-        Setting the "fixed" flag allows us to generate lists of bugs fixed
-        in a release.
-        ''')
-
-    VICTIMIZED = Item(6, '''
+    VICTIMIZED = Item(40, '''
         Victimized
 
         This code release does not actually contain the buggy code, but
@@ -1223,6 +1203,26 @@ class BugInfestationStatus(DBSchema):
         interacts with the products or packages that are actually buggy.
         Often users will report a bug against the package which displays
         the symptoms when the bug itself lies elsewhere.
+        ''')
+
+    FIXED = Item(30, '''
+        Fixed
+
+        It is believed that the bug is actually fixed in this release of code.
+        Setting the "fixed" flag allows us to generate lists of bugs fixed
+        in a release.
+        ''')
+
+    UNAFFECTED = Item(20, '''
+        Unaffected
+
+        It is believed that this bug does not infest this release of code.
+        ''')
+
+    UNKNOWN = Item(10, '''
+        Unknown
+
+        We don't know if this bug infests that coderelease.
         ''')
 
 
@@ -1300,25 +1300,25 @@ class BugPriority(DBSchema):
     to fix the bug. This schema documents the priorities Malone allows.
     """
 
-    HIGH = Item(1, '''
+    HIGH = Item(40, '''
         High
 
         This is a high priority bug for the maintainer.
         ''')
 
-    MEDIUM = Item(2, '''
+    MEDIUM = Item(30, '''
         Medium
 
         This is a medium priority bug for the maintainer.
         ''')
 
-    LOW = Item(3, '''
+    LOW = Item(20, '''
         Low
 
         This is a low priority bug for the maintainer.
         ''')
 
-    WONTFIX = Item(4, '''
+    WONTFIX = Item(10, '''
         Won't Fix
 
         The maintainer does not intend to fix this bug.
@@ -1333,7 +1333,7 @@ class BugSeverity(DBSchema):
     the distribution.
     """
 
-    CRITICAL = Item(1, '''
+    CRITICAL = Item(50, '''
         Critical Severity
 
         This bug is essential to fix as soon as possible. It affects
@@ -1341,21 +1341,21 @@ class BugSeverity(DBSchema):
         security.
         ''')
 
-    MAJOR = Item(2, '''
+    MAJOR = Item(40, '''
         Major Severity
 
         This bug needs urgent attention from the maintainer or
         upstream. It affects local system security or data integrity.
         ''')
 
-    NORMAL = Item(3, '''
+    NORMAL = Item(30, '''
         Normal Severity
 
         This bug warrants an upload just to fix it, but can be put
         off until other major or critical bugs have been fixed.
         ''')
 
-    MINOR = Item(4, '''
+    MINOR = Item(20, '''
         Minor Severity
 
         This bug does not warrant an upload just to fix it, but 
@@ -1363,7 +1363,7 @@ class BugSeverity(DBSchema):
         upload. For example, it might be a typo in a document.
         ''')
 
-    WISHLIST = Item(5, '''
+    WISHLIST = Item(10, '''
         Wishlist
 
         This is not a bug, but is a request for an enhancement or
