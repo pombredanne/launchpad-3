@@ -2,7 +2,7 @@
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
 PYTHON=python2.3
-PYTHONPATH=$(shell pwd)/lib 
+PYTHONPATH:=$(shell pwd)/lib:${PYTHONPATH}
 CONFFILE=launchpad.conf
 STARTSCRIPT=runlaunchpad.py
 TESTFLAGS=-p -v

@@ -26,7 +26,7 @@ try:
     from canonical.arch.infoImporter import SourceSource as infoSourceSource,\
          RCSTypeEnum
 except ImportError:
-    pass
+    raise
 
 
 from canonical.arch.sqlbase import quote
@@ -289,12 +289,12 @@ class SoyuzProject(object):
 
     def newProduct(self,name, title, description, url):
         """make a new product"""
-        return Product(infoProduct(project=self._project, ownerID=getOwner(), name=name, title=title, description=description, homepageurl=url))
+        return SoyuzProduct(infoProduct(project=self._project, ownerID=getOwner(), name=name, title=title, description=description, homepageurl=url))
         # FIXME, limi needs to do a find-an-owner wizard
 
     def getProduct(self,name):
         """blah"""
-        return Product(dbProduct.select("product.project=%s and product.name = %s" % (quote(self._project.id),quote(name)))[0])
+        return SoyuzProduct(dbProduct.select("product.project=%s and product.name = %s" % (quote(self._project.id),quote(name)))[0])
 
 class SoyuzProduct(object):
     implements (IProduct)
