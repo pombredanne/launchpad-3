@@ -557,7 +557,8 @@ class RosettaPOMessageSet(SQLBase):
     def messageIDs(self):
         return RosettaPOMessageID.select('''
             POMsgIDSighting.pomsgset = %d AND
-            POMsgIDSighting.pomsgid = POMsgID.id
+            POMsgIDSighting.pomsgid = POMsgID.id AND
+            POMsgIDSighting.inlastrevision = TRUE
             ''' % self.id, clauseTables=('POMsgIDSighting',))
 
     def getMessageIDSighting(self, plural_form, allowOld=False):
@@ -574,6 +575,30 @@ class RosettaPOMessageSet(SQLBase):
             raise KeyError, plural_form
         else:
             return ret[0]
+
+    def nplurals(self):
+        if self.poFile is None:
+            potset = self
+        else:
+            potset = RosettaPOMessageSet.select('''
+                poTemplate = %d AND
+                poFile IS NULL AND
+                primemsgid = %d
+                ''' % (self.poTemplate.id, self.primeMessageID_.id))
+            if potset.count() == 0:
+                # obsolete... try to get the count from self, although
+                # that's not 100% reliable
+                potset = self
+            else:
+                assert potset.count() == 1
+                potset = potset[0]
+        if potset.messageIDs().count() > 1:
+            # has plurals
+            if self.poFile is None:
+                return 2
+            return self.poFile.pluralForms
+        else:
+            return 1
 
     def translations(self):
         return RosettaPOTranslation.select('''

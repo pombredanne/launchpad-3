@@ -74,14 +74,8 @@ class WatchedSet(sets.Set):
 class TranslationsList(object):
     def __init__(self, messageset):
         self._msgset = messageset
-        if self._msgset.messageIDs().count() >= 2:
-            if self._msgset.poFile is None:
-                # template
-                self._nplurals = 2
-            else:
-                self._nplurals = self._msgset.poFile.pluralForms
-        else:
-            self._nplurals = 1
+        # cache, as we use that value a lot
+        self._nplurals = messageset.nplurals()
 
     # FIXME: this list implementation is incomplete.  Dude, if you want to do
     # del foo.msgstrs[2]

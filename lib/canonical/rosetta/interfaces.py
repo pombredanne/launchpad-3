@@ -368,6 +368,10 @@ class IPOMessageSet(Interface):
     # The primary message ID is the same as the message ID with plural
     # form 0 -- i.e. it's redundant. However, it acts as a cached value.
 
+    def nplurals():
+        """Number of message IDs that have to point to this message set
+        for it to be complete."""
+
     def translations():
         """Return an iterator over this set's translations."""
 
