@@ -2,6 +2,47 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-16 19:06:05 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1324
+
+    Summary:
+      Fix EmailAddressEditView by using flushUpdates() and add a new pagetest for it.
+    Revision:
+      launchpad--devel--0--patch-1324
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-121
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-122
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-123
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-124
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-125
+       Fix EmailAddressEditView by using flushUpdates() and add a new pagetest for it.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-126
+       Fix on person-emails pagetest. Wasn't passing on rf make check
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/people.py
+     lib/canonical/launchpad/pagetests/standalone/xx-foaf-person-emails.txt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-121
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-122
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-123
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-124
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-125
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-126
+
+
 2005-02-16 14:19:10 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1323
 
     Summary:
