@@ -1,0 +1,18 @@
+#!/bin/sh
+# Written by Daniel Silverstone
+# arch-tag: 3988b1f6-a7a9-4ca9-a97b-b31b034156ca
+
+THISTREE=`tla tree-version | cut -d/ -f1`
+
+if [ "x$THISTREE" = "x" ]; then
+  echo "Not inside an arch tree; aborting"
+  exit 1
+fi
+
+tla changes
+
+if [ "$?" != "0" ]; then
+  echo "You have uncommitted changes here too; the mirror may be incomplete"
+fi
+
+exec tla archive-mirror $THISTREE

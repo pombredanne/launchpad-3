@@ -1,0 +1,35 @@
+#!/bin/sh
+# Written by Daniel Silverstone
+# arch-tag: fac7876b-1c2e-416a-afbb-5994503d2296
+
+ROOT=$(tla tree-root)
+UPSTREAM="$ROOT/{arch}/+upstream"
+
+if [ ! -r $UPSTREAM ]; then
+  echo "No {arch}/+upstream found in $ROOT"
+  exit 1
+fi
+
+UPSTREAM=`cat $UPSTREAM`
+
+tla tree-lint --strict
+
+if [ "$?" != "0" ]; then
+  echo "Tree lint exited non-zero; giving up"
+  exit 1
+fi
+
+tla changes
+
+if [ "$?" != "0" ]; then
+  tla undo -o ++undo-before-merge
+fi
+
+tla star-merge $UPSTREAM
+
+tla commit -s "Merge from $UPSTREAM"
+
+if [ -d ++undo-before-merge ]; then
+  tla redo ++undo-before-merge
+fi
+
