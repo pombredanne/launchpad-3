@@ -4,8 +4,6 @@
 import sys
 
 tests = [
-    ('IProjects', 'RosettaProjects'),
-    ('IProject', 'RosettaProject'),
     ('IProduct', 'RosettaProduct'),
     ('IEditPOTemplate', 'RosettaPOTemplate'),
     ('IEditPOFile', 'RosettaPOFile'),

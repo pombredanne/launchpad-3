@@ -5,7 +5,7 @@
 
 <head>
     <title metal:fill-slot="title">Rosetta: Translating
-        <span tal:replace="context/title">POT file title</span></title>
+        <span tal:replace="context/title">PO template title</span></title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Rosetta style sheet -->
@@ -89,7 +89,7 @@
                 <div class="field">
                     <label class="language-code">English (Source)</label>:
                     <div class="messageSourceString"
-                         tal:content="structure set/messageID/text">text</div>
+                         tal:content="structure set/messageID/displayText">text</div>
                 </div>
 
                 <div class="field" tal:repeat="language view/languages">
@@ -119,13 +119,13 @@
                 <div class="field">
                     <label class="language-code">English Singular</label>:
                     <div class="messageSourceString"
-                        tal:content="structure set/messageID/text">singular</div>
+                        tal:content="structure set/messageID/displayText">singular</div>
                 </div>
 
                 <div class="field">
                     <label class="language-code">English Plural</label>:
                     <div class="messageSourceString"
-                        tal:content="structure set/messageIDPlural/text">plural</div>
+                        tal:content="structure set/messageIDPlural/displayText">plural</div>
                 </div>
 
                 <div tal:repeat="language view/languages">

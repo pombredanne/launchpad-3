@@ -315,6 +315,8 @@ def test_TranslatePOTemplate_messageSets():
     >>> x['sequence']
     1
     >>> x['messageID']['text']
+    'foo'
+    >>> x['messageID']['displayText']
     u'foo'
     >>> x['messageID']['lines']
     1

@@ -66,7 +66,7 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
                                            license=1,
                                            messageCount=0,
                                            owner=XXXperson)
-        importer = TemplateImporter(poTemplate, None, XXXperson)
+        importer = TemplateImporter(poTemplate, XXXperson)
         importer.doImport(self.pot)
         get_transaction().commit()
         # try a second time to see if it breaks
@@ -124,7 +124,7 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
             poFile = poTemplate.poFile('cy')
         except KeyError:
             poFile = poTemplate.newPOFile(XXXperson, 'cy')
-        importer = POFileImporter(poFile, None, XXXperson)
+        importer = POFileImporter(poFile, XXXperson)
         importer.doImport(self.po)
         get_transaction().commit()
         # try a second time to see if it breaks

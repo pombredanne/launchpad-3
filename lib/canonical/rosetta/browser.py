@@ -57,6 +57,7 @@ class ViewProject:
             for language in person.languages():
                 yield LanguageProducts(language, self.context.products)
 
+
 class LanguageProducts:
     def __init__(self, language, products):
         self.language = language
@@ -88,7 +89,7 @@ class LanguageProducts:
                 nonUpdatesPercent = 0
                 translatedPercent = 0
                 untranslatedPercent = 100
-           
+
             # NOTE: To get a 100% value:
             # 1.- currentPercent + rosettaPercent + untranslatedPercent
             # 2.- translatedPercent + untranslatedPercent 
@@ -113,6 +114,7 @@ class LanguageProducts:
             }
 
             yield retdict
+
 
 class ViewProduct:
     def thereAreTemplates(self):
@@ -293,6 +295,7 @@ class ViewSearchResults:
             self.results = []
             self.resultCount = 0
 
+
 class ViewPOExport:
 
     def __call__(self):
@@ -419,7 +422,7 @@ class TranslatePOTemplate:
         length = len(self.context)
 
         if length % self.count == 0:
-            offset = length - count
+            offset = length - self.count
         else:
             offset = length - (length % self.count)
 
@@ -449,7 +452,8 @@ class TranslatePOTemplate:
         return {
             'lines' : lines,
             'isMultiline' : lines > 1,
-            'text' : self._munge(messageID.msgid)
+            'text' : messageID.msgid,
+            'displayText' : self._munge(messageID.msgid)
         }
 
     def _messageSet(self, set):

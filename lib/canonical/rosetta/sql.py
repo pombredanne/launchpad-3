@@ -254,7 +254,7 @@ def createMessageSetFromMessageID(poTemplate, messageID, poFile=None):
     Returns that message set.
     """
     messageSet = RosettaPOMessageSet(
-        poTemplateID=potemplate.id,
+        poTemplateID=poTemplate.id,
         poFile=poFile,
         primeMessageID_=messageID,
         sequence=0,
@@ -392,19 +392,19 @@ class RosettaPOTemplate(SQLBase):
         results = RosettaPOMessageID.selectBy(msgid=text)
 
         if results.count() == 0:
-            raise KeyError, msgid
+            raise KeyError, text
 
         messageID = results[0]
 
-        sets = RosettaPOMessageSet.select('''
+        results = RosettaPOMessageSet.select('''
             potemplate = %d AND
             pofile IS NULL AND
             primemsgid = %d AND
             sequence > 0
-            ''' % (self.id, msgid_obj.id))
+            ''' % (self.id, messageID.id))
 
-        if sets.count() == 0:
-            raise KeyError, msgid
+        if results.count() == 0:
+            raise KeyError, text
         else:
             return sets[0]
 
@@ -756,8 +756,8 @@ class RosettaPOMessageSet(SQLBase):
             sequence > 0
         '''
 
-        results = RosettaPOMessageSet.select('''pofile = %d AND primemsgid = %d AND
-            sequence > 0''' % (pofile.id, self.primeMessageID_.id))
+        results = RosettaPOMessageSet.select('''pofile = %d AND primemsgid = %d'''
+            % (pofile.id, self.primeMessageID_.id))
 
         assert 0 <= results.count() <= 1
 
@@ -838,8 +838,6 @@ class RosettaPOMessageSet(SQLBase):
     def makeTranslationSighting(self, person, text, plural_form,
                               update=False, fromPOFile=False):
         """Return a new translation sighting that points back to us."""
-        if type(text) is unicode:
-            text = text.encode('utf-8')
         translations = RosettaPOTranslation.selectBy(translation=text)
         if translations.count() == 0:
             translation = RosettaPOTranslation(translation=text)
