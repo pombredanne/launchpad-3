@@ -19,7 +19,7 @@ from canonical.database.sqlbase import SQLBase, quote
 # Why RCSTypeEnum is inside launchpad.interfaces?
 from canonical.launchpad.interfaces import ISourceSource, \
     ISourceSourceAdmin, ISourceSourceSet, \
-    RCSTypeEnum, RCSNames, IProductSet
+    RCSTypeEnum, IProductSet
 
 from canonical.lp.dbschema import EnumCol
 from canonical.lp.dbschema import ImportTestStatus
@@ -178,6 +178,11 @@ class SourceSource(SQLBase):
         name = _job_name_munger.translate(self.name)
         # XXX end
         job.name = name
+        RCSNames = {RevisionControlSystems.CVS: 'cvs',
+                    RevisionControlSystems.SVN: 'svn',
+                    RevisionControlSystems.ARCH: 'arch',
+                    RevisionControlSystems.PACKAGE: 'package',
+                    RevisionControlSystems.BITKEEPER: 'bitkeeper'}
         job.RCS = RCSNames[self.rcstype]
         job.svnrepository = self.svnrepository
         job.module = str(self.cvsmodule)
