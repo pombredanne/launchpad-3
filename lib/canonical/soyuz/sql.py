@@ -236,12 +236,13 @@ class DistroReleaseSourcesApp(object):
             'SourcePackageUpload.sourcepackagerelease=SourcePackageRelease.id '
             'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
             'AND SourcePackageUpload.distrorelease = %d '
+            'AND SourcePackage.sourcepackagename = SourcePackageName.id'
             % (self.release.id))
         
     def findPackagesByName(self, pattern):
         query = self._query()
         pattern = pattern.replace('%', '%%')
-        query += ' AND name LIKE %s' % quote('%%' + pattern + '%%')
+        query += ' AND SourcePackageName.name LIKE %s' % quote('%%' + pattern + '%%')
         from sets import Set
         return Set(SoyuzSourcePackage.select(query))
 
@@ -250,7 +251,7 @@ class DistroReleaseSourcesApp(object):
         #      (which shouldn't happen here...)
 
         query = self._query()
-        query += ' AND name = %s ORDER BY dateuploaded DESC' % quote(name)
+        query += ' AND SourcePackageName.name = %s ORDER BY dateuploaded DESC' % quote(name)
         try:
             release = self.table.select(query,
                                         clauseTables=self.clauseTables)[0]
