@@ -51,9 +51,9 @@ class BugView(object):
     watchPortlet = ViewPageTemplateFile(
         '../templates/portlet-bug-watch.pt')
     productAssignmentPortlet = ViewPageTemplateFile(
-        '../templates/portlet-bug-productassignment.pt')
+        '../templates/portlet-bug-productassignments.pt')
     sourcepackageAssignmentPortlet = ViewPageTemplateFile(
-        '../templates/portlet-bug-sourcepackageassignment.pt')
+        '../templates/portlet-bug-packageassignments.pt')
     productInfestationPortlet = ViewPageTemplateFile(
         '../templates/portlet-bug-productinfestation.pt')
     packageInfestationPortlet = ViewPageTemplateFile(

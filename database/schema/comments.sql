@@ -273,3 +273,11 @@ COMMENT ON COLUMN Bounty.owner IS 'The person who created the bounty. The owner 
 -- SourceSource
 COMMENT ON COLUMN SourceSource.branchpoint IS 'The source specification for an import job to branch from.'
 
+-- Messaging subsytem
+COMMENT ON TABLE BugMessage IS 'This table maps a message to a bug. In other words, it shows that a particular message is associated with a particular bug.';
+COMMENT ON TABLE Message IS 'This table stores a single RFC822-style message. Messages can be threaded (using the parent field). These messages can then be referenced from elsewhere in the system, such as the BugMessage table, integrating messageboard facilities with the rest of The Launchpad.';
+COMMENT ON COLUMN Message.parent IS 'A "parent message". This allows for some level of threading in Messages.';
+COMMENT ON COLUMN Message.title IS 'The title text of the message, or the subject if it was an email.';
+COMMENT ON COLUMN Message.contents IS 'The complete message. If this was an email message then this would include all the headers.';
+COMMENT ON COLUMN Message.distribution IS 'The distribution in which this message originated, if we know it.';
+

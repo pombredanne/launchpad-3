@@ -83,9 +83,9 @@ class IBug(Interface):
             )
 
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
-    messages = Attribute('SQLObject.Multijoin of IBugMessages')
-    productassignment = Attribute('SQLObject.Multijoin of IProductBugAssigment')
-    packageassignment = Attribute(
+    messages = Attribute('SQLObject.RelatedJoin of IMessages')
+    productassignments = Attribute('SQLObject.Multijoin of IProductBugAssigment')
+    packageassignments = Attribute(
             'SQLObject.Multijoin of ISourcePackageBugAssignment'
             )
     productinfestations = Attribute('List of product release infestations.')

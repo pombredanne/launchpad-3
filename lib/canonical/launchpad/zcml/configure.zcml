@@ -22,7 +22,7 @@
     <include file="bugextref.zcml" />
     <include file="bugtracker.zcml" />
     <include file="bugattachment.zcml" />
-    <include file="bugmessage.zcml" />
+    <include file="message.zcml" />
     <include file="bounty.zcml" />
     <include file="build.zcml" />
     <include file="distro.zcml" />

@@ -14,7 +14,8 @@ INSERT INTO BugTrackerType (name, title, description, homepage, owner) VALUES
 INSERT INTO Bugtracker ( bugtrackertype, name, title, shortdesc, baseurl, owner ) VALUES
     ( (SELECT id FROM BugTrackerType WHERE name='debbugs'), 'debbugs', 'Debian Bug tracker', 'Bug tracker for debian project.', 'http://bugs.debian.org', 1);
 SET client_min_messages TO ERROR;
-
+  
 DELETE FROM LaunchpadDatabaseRevision;
 INSERT INTO  LaunchpadDatabaseRevision VALUES (4, 9, 0);
+  
 

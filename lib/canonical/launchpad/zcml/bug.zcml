@@ -51,9 +51,9 @@
     <browser:view
         for="canonical.launchpad.interfaces.IBug"
         name="+messages"
-        class="canonical.launchpad.browser.BugMessagesView"
+        class="canonical.launchpad.browser.MessagesView"
+        provides="canonical.launchpad.interfaces.IMessagesView"
         permission="zope.Public"
-        provides="canonical.launchpad.interfaces.IBugMessagesView"
         lp:url="malone/projects/$Bug.id/+messages">
         <defaultPage name="+index" />
     </browser:view>

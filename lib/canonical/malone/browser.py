@@ -14,7 +14,7 @@ from zope.event import notify
 from canonical.launchpad.database import \
         SourcePackage, SourcePackageName, BinaryPackage, \
         BugTracker, BugsAssignedReport, BugWatch, Product, Person, EmailAddress, \
-        Bug, BugAttachment, BugExternalRef, BugSubscription, BugMessage, \
+        Bug, BugAttachment, BugExternalRef, BugSubscription, \
         ProductBugAssignment, SourcePackageBugAssignment, \
         BugProductInfestation, BugPackageInfestation, BugContainerBase
 
@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces import \
         IBugWatchContainer, IProductBugAssignmentContainer, \
         ISourcePackageBugAssignmentContainer, IBugProductInfestationContainer, \
         IBugPackageInfestationContainer, IPerson, \
-        IBugMessagesView, IBugExternalRefsView
+        IBugExternalRefsView
 
 class MaloneApplicationView(object):
     def __init__(self, context, request):

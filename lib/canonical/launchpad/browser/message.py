@@ -1,10 +1,10 @@
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import IBugMessagesView
+from canonical.launchpad.interfaces import IMessagesView
 
-class BugMessagesView(object):
-    implements(IBugMessagesView)
+class MessagesView(object):
+    implements(IMessagesView)
     def __init__(self, context, request):
         self.context = context
         self.request = request

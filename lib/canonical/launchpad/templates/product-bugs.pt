@@ -48,8 +48,14 @@
         <span tal:replace="context/displayname">$Product.displayname</span>
     </p>
 
-    <p style="float: right;"><a href="+filebug"><img src="++resource++add.gif" alt="+">File a
-    new bug</a></p>
+    <p style="float: right;"><img src="++resource++add.gif" alt="+">
+    <a href="+filebug">File a new bug</a><br />
+    <img src="++resource++add.gif" alt="+">
+    <a href="#"
+       tal:attributes="href string:/doap/projects/${context/project/name}/${context/name}">
+       View <span tal:replace="context/displayname">Product</span>
+       Details</a>
+    </p>
     
 </div>
 

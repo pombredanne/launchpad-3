@@ -65,7 +65,6 @@ class BountySet(object):
     def add(self, ob):
         '''Add a new Bounty. This method is called by the addform. ob will
         be a thing that looks like an IBounty'''
-        import pdb; pdb.set_trace()
         kw = {}
         attrs = ['name', 'title', 'summary', 'description']
         for a in attrs:

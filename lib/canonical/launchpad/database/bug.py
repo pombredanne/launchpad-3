@@ -55,10 +55,11 @@ class Bug(SQLBase):
     
     # useful Joins
     activity = MultipleJoin('BugActivity', joinColumn='bug')
-    messages = MultipleJoin('BugMessage', joinColumn='bug')
-    # TODO: Standardize on pluralization and naming for table relationships
-    productassignment = MultipleJoin('ProductBugAssignment', joinColumn='bug')
-    packageassignment = MultipleJoin('SourcePackageBugAssignment',
+    messages = RelatedJoin('Message', joinColumn='bug',
+                           otherColumn='message',
+                           intermediateTable='BugMessage')
+    productassignments = MultipleJoin('ProductBugAssignment', joinColumn='bug')
+    packageassignments = MultipleJoin('SourcePackageBugAssignment',
                                     joinColumn='bug')
     productinfestations = MultipleJoin('BugProductInfestation', joinColumn='bug')
     packageinfestations = MultipleJoin('BugPackageInfestation', joinColumn='bug')

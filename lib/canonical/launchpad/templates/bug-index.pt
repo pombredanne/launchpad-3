@@ -69,6 +69,27 @@
 
         <h2>Comments</h2>
 
+        <div class="boardComment">
+            <fieldset class="collapsible collapsed">
+                <legend>New comment on this bug</legend>
+    
+                <div class="field">
+                    <form action="+messages/+new" method="post">
+                        <label>Comment</label>
+                        <div class="formHelp">
+                            If you have additional relevant information,
+                            enter it below.
+                        </div>
+                        <b>Subject:</b>
+                        <input name="field.title" type="text" size="50" /><br />
+                        <b>Comment:</b> <textarea name="field.contents" rows="10"></textarea>
+                        <input type="submit" name="UPDATE_SUBMIT" value="Add" />
+                    </form>
+                </div>
+    
+            </fieldset>
+        </div>
+
         <div class="boardComment" tal:repeat="message context/messages">
 
             <div class="boardCommentDetails">
@@ -103,13 +124,17 @@
                 <legend>Follow-up on this comment</legend>
 
                 <div class="field">
-                    <form action="messages/+new" method="post">
+                    <form action="+messages/+new" method="post">
                         <label>Comment</label>
                         <div class="formHelp">
                             If you have additional relevant information,
                             enter it below.
                         </div>
-                        <input name="field.title" type="text" /><br />
+                        <b>Title:</b>
+                        <input name="field.title"
+                               type="text" size="50"
+                               value=""
+                               tal:attributes="value message/followup_title" /><br />
                         <textarea name="field.contents"></textarea>
                         <input type="submit" name="UPDATE_SUBMIT" value="Add" />
                     </form>
@@ -117,21 +142,6 @@
             </fieldset>
             <div class="visualClear"></div>
 
-        </div>
-
-        <div>
-            <fieldset>
-                <legend>New comment on this bug</legend>
-
-                <div class="field">
-                    <form action="+messages/+new" method="post">
-                      <b>Subject:</b> <input name="field.title" type="text" size="50"/><br />
-                      <b>Comment:</b> <textarea name="field.contents" rows="10"></textarea>
-                      <input type="submit" name="UPDATE_SUBMIT" value="Add" />
-                    </form>
-                </div>
-
-            </fieldset>
         </div>
 
     </div>

@@ -25,7 +25,7 @@
 
     <tbody>
         <!-- Upstream Assignments -->
-        <tr tal:repeat="bugass context/productassignment"
+        <tr tal:repeat="bugass context/productassignments"
             tal:attributes="onclick string:window.location='productassignments/${bugass/id}/+edit';">
            
             <td>
@@ -80,7 +80,7 @@ This bug is essential to fix as soon as possible. It affects system stability, d
 
 
         <!-- Distribution Package Assignments -->
-        <tr tal:repeat="bugass context/packageassignment"
+        <tr tal:repeat="bugass context/packageassignments"
             tal:attributes="onclick string:window.location='packageassignments/${bugass/id}/+edit';">
            
             <td>

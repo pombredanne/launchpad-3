@@ -28,7 +28,7 @@
 
     <tbody>
         <!-- Upstream Assignments -->
-        <tr tal:repeat="bugass context/productassignment">
+        <tr tal:repeat="bugass context/productassignments">
            
             <td tal:attributes="class string:packageName severity${bugass/severity/lp:BugSeverity}Row">
                 <img src="++resource++product_icon.gif" 
@@ -71,7 +71,7 @@ This bug is essential to fix as soon as possible. It affects system stability, d
 
 
         <!-- Distribution Package Assignments -->
-        <tr tal:repeat="bugass context/packageassignment">
+        <tr tal:repeat="bugass context/packageassignments">
            
             <td tal:attributes="class string:packageName severity${bugass/severity/lp:BugSeverity}Row">
                 <img src="++resource++product_icon.gif" 

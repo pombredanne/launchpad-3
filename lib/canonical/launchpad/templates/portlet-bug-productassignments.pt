@@ -7,7 +7,7 @@
             <th>Severity</th>
             <th>Assignee</th>
         </tr>
-        <tr tal:repeat="bugass context/productassignment"
+        <tr tal:repeat="bugass context/productassignments"
             tal:attributes="onclick 
             string:window.location='productassignments/${bugass/id}/+edit';">
             <td tal:content="bugass/product/title">$Product.title</td>

@@ -4,8 +4,8 @@
     <div class="portletBody">
         <div class="portletContent even"
              tal:define="subscriptions context/subscriptions;
-                         productass context/productassignment;
-                         packageass context/packageassignment">
+                         productass context/productassignments;
+                         packageass context/packageassignments">
 
             <h5>submitted by:</h5>
             <ul class="people">

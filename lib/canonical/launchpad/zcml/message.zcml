@@ -5,18 +5,25 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
-    <!-- BugMessage -->
+    <content class="canonical.launchpad.database.Message">
+        <allow interface="canonical.launchpad.interfaces.IMessage" />
+        <require
+            permission="zope.View"
+            set_schema="canonical.launchpad.interfaces.IMessage" />
+    </content>
+
+    <!-- Message -->
     <browser:page
         name="+index"
-        for="canonical.launchpad.interfaces.IBugMessagesView"
+        for="canonical.launchpad.interfaces.IMessagesView"
         template="../templates/messages-index.pt"
         permission="zope.Public"
         lp:url="malone/projects/$Bug.id/messages/index" />
         
     <browser:addform
         name="+new"
-        schema="canonical.launchpad.interfaces.IBugMessage"
-        for="canonical.launchpad.interfaces.IBugMessagesView"
+        schema="canonical.launchpad.interfaces.IMessage"
+        for="canonical.launchpad.interfaces.IMessagesView"
         label="Add a Comment"
         fields="title contents"
         content_factory="canonical.launchpad.database.BugMessageFactory"

@@ -5,12 +5,17 @@
 
     <!-- Javascript -->
     <resource name="launchpad.js" file="../templates/launchpad.js" />
-
+  
+    <!-- header images -->
+    <resource name="malone.png" file="../images/malone.png" />
+  
     <!-- Images -->
     <resource name="green-bar.png" file="../images/green-bar.png" />
     <resource name="blue-bar.png" file="../images/blue-bar.png" />
     <resource name="red-bar.png" file="../images/red-bar.png" />
     <resource name="dwelled-bar.png" file="../images/dwelled-bar.png" />
+    <resource name="bullet.gif" file="../images/bullet.gif" />
+    <resource name="required.gif" file="../images/required.gif" />
 
     <resource name="info.gif" file="../images/info.gif" />
     <resource name="info.png" file="../images/info.png" />
@@ -28,6 +33,7 @@
 
     <resource name="languages.gif" file="../images/languages.gif" />
     <resource name="add.gif" file="../images/add.gif" />
+    <resource name="edit.gif" file="../images/edit.gif" />
     <resource name="user.gif" file="../images/user.gif" />
     <resource name="lock_icon.gif" file="../images/lock_icon.gif" />
     <resource name="link_icon.gif" file="../images/link_icon.gif" />

@@ -298,21 +298,21 @@ def notify_bug_package_infestation_modified(modified_package_infestation, event)
             event.object_before_modification.sourcepackagerelease.version),
         changes = changes)
 
-def notify_bug_comment_added(comment, event):
-    """Notify CC'd list that a comment was added to this bug."""
+def notify_bug_comment_added(bugmessage, event):
+    """Notify CC'd list that a message was added to this bug."""
     msg = """\
 %s said:
 
 %s
 
-%s""" % (comment.owner.displayname,
-         comment.title,
-         comment.contents)
+%s""" % (bugmessage.message.owner.displayname,
+         bugmessage.message.title,
+         bugmessage.message.contents)
 
     send_edit_notification_simple(
-        comment.bug,
-        FROM_ADDR, get_cc_list(comment.bug),
-        '"%s" comment added' % comment.bug.title, msg)
+        bugmessage.bug,
+        FROM_ADDR, get_cc_list(bugmessage.bug),
+        '"%s" comment added' % bugmessage.bug.title, msg)
 
 def notify_bug_external_ref_added(ext_ref, event):
     """Notify CC'd list that a new external reference has
