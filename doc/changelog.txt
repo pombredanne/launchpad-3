@@ -2,6 +2,71 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-25 01:54:52 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1246
+
+    Summary:
+      authserver/sftp work: Make getSSHKeys useful for the pushmirror, and add a Twisted client for the authserver
+    Revision:
+      launchpad--devel--0--patch-1246
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/launchpad--sftp--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1135
+    
+     * andrew.bennetts@canonical.com/launchpad--sftp--0--patch-1
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--sftp--0--patch-2
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--sftp--0--patch-3
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--sftp--0--patch-4
+       Make getSSHKeys more useful
+    
+     * andrew.bennetts@canonical.com/launchpad--sftp--0--patch-5
+       Twisted XML-RPC client for the authserver
+    
+     * andrew.bennetts@canonical.com/launchpad--sftp--0--patch-6
+       This comment really should be a docstring
+    
+     * andrew.bennetts@canonical.com/launchpad--sftp--0--patch-7
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--sftp--0--patch-8
+       Update test for getSSHKeys
+    
+
+    new files:
+     lib/canonical/authserver/client/.arch-ids/=id
+     lib/canonical/authserver/client/.arch-ids/__init__.py.id
+     lib/canonical/authserver/client/.arch-ids/twistedclient.py.id
+     lib/canonical/authserver/client/__init__.py
+     lib/canonical/authserver/client/twistedclient.py
+
+    modified files:
+     doc/changelog.txt lib/canonical/authserver/database.py
+     lib/canonical/authserver/ftests/test_database.py
+     lib/canonical/authserver/interfaces.py
+
+    new directories:
+     lib/canonical/authserver/client
+     lib/canonical/authserver/client/.arch-ids
+
+    new patches:
+     andrew.bennetts@canonical.com/launchpad--sftp--0--base-0
+     andrew.bennetts@canonical.com/launchpad--sftp--0--patch-1
+     andrew.bennetts@canonical.com/launchpad--sftp--0--patch-2
+     andrew.bennetts@canonical.com/launchpad--sftp--0--patch-3
+     andrew.bennetts@canonical.com/launchpad--sftp--0--patch-4
+     andrew.bennetts@canonical.com/launchpad--sftp--0--patch-5
+     andrew.bennetts@canonical.com/launchpad--sftp--0--patch-6
+     andrew.bennetts@canonical.com/launchpad--sftp--0--patch-7
+     andrew.bennetts@canonical.com/launchpad--sftp--0--patch-8
+
+
 2005-01-24 18:52:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1245
 
     Summary:
