@@ -72,7 +72,7 @@ class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
     txn = None
     def setUp(self):
         super(LaunchpadZopelessTestSetup, self).setUp()
-        LaunchpadZopelessTestSetup.txn = initZopeless()
+        LaunchpadZopelessTestSetup.txn = initZopeless(dbname=self.dbname)
 
     def tearDown(self):
         LaunchpadZopelessTestSetup.txn.uninstall()

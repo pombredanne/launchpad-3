@@ -2,6 +2,96 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-17 12:16:59 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1207
+
+    Summary:
+      Re-enable Librarian tests (closes #2077).  Also move DB access out of the event loop thread
+    Revision:
+      launchpad--devel--0--patch-1207
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-312
+       Make librarian tests pass again (but still leave disabled for now), and do a little bit of tidying.
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-313
+       Re-enable librarian tests -- the zopeless transaction manager is uninstalled in the tests' tearDown
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-314
+       Rearrange and improve tests a little
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-315
+       Comment more test code, to make it clear what's going on
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-316
+       Finish tidying and commenting test code
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-317
+       Remove print statements
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-318
+       (currently untested) start moving database access in web processing out of the reactor's thread
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-319
+       Add missing import
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-320
+       Actually use deferToThread! :)
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-321
+       Move more database access out of the reactor thread
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-322
+       Move last of database access out of the reactor's thread, and handle bad /byalias queries better
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-323
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-324
+       Use the LaunchpadZopelessTestSetup harness to avoid 'launchpad_ftest database not dropped' assertions
+    
+
+    new files:
+     lib/canonical/librarian/ftests/.arch-ids/=id
+     lib/canonical/librarian/ftests/.arch-ids/__init__.py.id
+     lib/canonical/librarian/ftests/.arch-ids/test_storage.py.id
+     lib/canonical/librarian/ftests/__init__.py
+     lib/canonical/librarian/ftests/test_storage.py
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/ftests/harness.py
+     lib/canonical/librarian/db.py
+     lib/canonical/librarian/ftests/test_db.py
+     lib/canonical/librarian/storage.py
+     lib/canonical/librarian/tests/test_storage.py
+     lib/canonical/librarian/web.py
+
+    renamed files:
+     lib/canonical/librarian/tests/.arch-ids/test_db.py.id
+       ==> lib/canonical/librarian/ftests/.arch-ids/test_db.py.id
+     lib/canonical/librarian/tests/test_db.py
+       ==> lib/canonical/librarian/ftests/test_db.py
+
+    new directories:
+     lib/canonical/librarian/ftests
+     lib/canonical/librarian/ftests/.arch-ids
+
+    new patches:
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-312
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-313
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-314
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-315
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-316
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-317
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-318
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-319
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-320
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-321
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-322
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-323
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-324
+
+
 2005-01-17 12:07:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1206
 
     Summary:

@@ -11,6 +11,7 @@ import tempfile
 
 from canonical.librarian import db
 
+__all__ = ['DigestMismatchError', 'FatSamStorage', 'FatSamFile']
 
 class DigestMismatchError(Exception):
     """The given digest doesn't match the SHA-1 digest of the file"""
@@ -37,12 +38,8 @@ class FatSamStorage:
     def hasFile(self, fileid):
         return os.access(self._fileLocation(fileid), os.F_OK)
     
-    def _relFileLocation(self, fileid):
-        h = "%08x" % int(fileid)
-        return '%s/%s/%s/%s' % (h[:2],h[2:4],h[4:6],h[6:])
-    
     def _fileLocation(self, fileid):
-        return os.path.join(self.directory, self._relFileLocation(str(fileid)))
+        return os.path.join(self.directory, _relFileLocation(str(fileid)))
 
     def startAddFile(self, filename, size):
         return FatSamFile(self, filename, size)
@@ -82,13 +79,13 @@ class FatSamFile(object):
         # Find potentially matching files
         similarFiles = self.storage.library.lookupBySHA1(dstDigest)
         newFile = True
-        txn = self.storage.library.getTransaction()
+        txn = self.storage.library.makeAddTransaction()
         if len(similarFiles) == 0:
             fileID = self.storage.library.add(dstDigest, self.size, txn)
         else:
             for candidate in similarFiles:
                 candidatePath = self.storage._fileLocation(candidate)
-                if sameFile(candidatePath, self.tmpfilepath):
+                if _sameFile(candidatePath, self.tmpfilepath):
                     # Found a file with the same content
                     fileID = candidate
                     newFile = False
@@ -143,7 +140,7 @@ class FatSamFile(object):
                 raise
         os.rename(self.tmpfilepath, location)
 
-def sameFile(path1, path2):
+def _sameFile(path1, path2):
     file1 = open(path1, 'rb')
     file2 = open(path2, 'rb')
 
@@ -153,3 +150,8 @@ def sameFile(path1, path2):
             return False
     return True
 
+
+def _relFileLocation(fileid):
+    h = "%08x" % int(fileid)
+    return '%s/%s/%s/%s' % (h[:2],h[2:4],h[4:6],h[6:])
+    
