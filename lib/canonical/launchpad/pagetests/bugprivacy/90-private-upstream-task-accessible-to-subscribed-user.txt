@@ -1,0 +1,14 @@
+
+
+  >>> print http(r"""
+  ... GET /malone/tasks/16/+edit HTTP/1.1
+  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Cookie: LASTORDER=relevance%20desc; BUGLIST=1; Bugzilla_login=1; VERSION-AroundTheHouse=unspecified; DEFAULTFORMAT=advanced; Bugzilla_logincookie=6; launchpad=8gGzonZtWfX9JmGUjVmx1feOcDIw388XUvnv1OwDCmGt6NJYXNy1fI
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+              <label>Bug Title</label>
+  ...
+                  <div>this is a private bug</div>
+  ...

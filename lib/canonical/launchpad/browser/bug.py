@@ -8,13 +8,14 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile, \
 from zope.app.form.browser.add import AddView
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import IPerson, ILaunchBag
+from canonical.launchpad.interfaces import IPerson, ILaunchBag, \
+     IBugSet, IBugTaskSet
 from canonical.lp import dbschema
 from canonical.launchpad.database import BugAttachmentSet, \
         BugExternalRefSet, BugSubscriptionSet, \
         BugWatchSet, BugProductInfestationSet, \
         BugPackageInfestationSet, Person, Bug, \
-        BugTasksReport, BugSet, BugTaskSet, CVERefSet
+        BugTasksReport, CVERefSet
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 def traverseBug(bug, request, name):
@@ -29,7 +30,7 @@ def traverseBug(bug, request, name):
     elif name == 'watches':
         return BugWatchSet(bug=bug.id)
     elif name == 'tasks':
-        return BugTaskSet(bug=bug.id)
+        return getUtility(IBugTaskSet).get(bug.id)
     elif name == 'productinfestations':
         return BugProductInfestationSet(bug=bug.id)
     elif name == 'packageinfestations':
@@ -39,7 +40,7 @@ def traverseBugs(bugcontainer, request, name):
     if name == 'assigned':
         return BugTasksReport()
     else:
-        return BugSet()[int(name)]
+        return getUtility(IBugSet).get(int(name))
 
 # TODO: Steve will be hacking on a more general portlet mechanism today
 # (2004-12-09)
