@@ -91,16 +91,27 @@ class SourcePackageReleasePublishingView(object):
     def binaries(self):
         """Format binary packeges into binarypackagename and archtags"""
 
+        all_arch = [] # all archtag in this distrorelease
+        for arch in self.bag.distrorelease.architectures:
+            all_arch.append(arch.architecturetag)
+        all_arch.sort()
+
         bins = self.context.binaries
 
         results = {}
 
         for bin in bins:
             if bin.name not in results.keys():
-                results[bin.name] = [bin.build.distroarchrelease.architecturetag]
+                if not bin.architecturespecific:
+                    results[bin.name] = all_arch
+                else:
+                    results[bin.name] = \
+                             [bin.build.distroarchrelease.architecturetag]
             else:
-                results[bin.name].append(\
-                    bin.build.distroarchrelease.architecturetag)
+                if bin.architecturespecific:
+                    results[bin.name].append(\
+                                bin.build.distroarchrelease.architecturetag)
+                    results[bin.name].sort()
 
         return results
                 

@@ -2,6 +2,50 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-25 21:24:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1252
+
+    Summary:
+      Soyuz DownloadPackages feature implemented using librarian; Right binarypackage compiled with no architecturespecific links in sourcepackagerelease page. Before this patch, binarypackages with architecturespecific=False were been shown as compiled only for i386.
+    Revision:
+      launchpad--devel--0--patch-1252
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-427
+       star-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-428
+       Soyuz DownloadPackages feature implemented using librarian.
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-429
+       Right binarypackage compiled with no architecturespecific links in sourcepackagerelease page. Before this patch, binarypackages with architecturespecific=False were been shown as compiled only for i386.
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-430
+       star-merge from rocketfuel
+    
+
+    new files:
+     lib/canonical/launchpad/zcml/.arch-ids/files.zcml.id
+     lib/canonical/launchpad/zcml/files.zcml
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/sourcepackage.py
+     lib/canonical/launchpad/database/binarypackage.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/interfaces/binarypackage.py
+     lib/canonical/launchpad/interfaces/sourcepackage.py
+     lib/canonical/launchpad/templates/sourcepackagerelease-index.pt
+     lib/canonical/launchpad/zcml/configure.zcml
+     lib/canonical/launchpad/zcml/package.zcml
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-427
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-428
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-429
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-430
+
+
 2005-01-25 19:38:30 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1251
 
     Summary:

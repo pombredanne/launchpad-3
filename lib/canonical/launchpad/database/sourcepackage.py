@@ -1,5 +1,7 @@
 # Python imports
+import os
 from sets import Set
+from urllib2 import URLError
 
 # Zope imports
 from zope.interface import implements
@@ -9,6 +11,7 @@ from zope.component import getUtility
 from sqlobject import MultipleJoin
 from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, DateTimeCol
 
+from canonical.librarian.client import FileDownloadClient
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.lp import dbschema
 
@@ -20,11 +23,11 @@ from canonical.launchpad.interfaces import ISourcePackageRelease, \
                                            ISourcePackageNameSet, \
                                            ISourcePackageSet, \
                                            ISourcePackageInDistroSet, \
-                                           ISourcePackageUtility
+                                           ISourcePackageUtility, \
+                                           IDownloadURL
 
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.binarypackage import BinaryPackage
-
 
 class SourcePackage(SQLBase):
     """A source package, e.g. apache2."""
@@ -328,6 +331,8 @@ class SourcePackageRelease(SQLBase):
 
     builds = MultipleJoin('Build', joinColumn='sourcepackagerelease')
 
+    files = MultipleJoin('SourcePackageReleaseFile',
+                         joinColumn='sourcepackagerelease')
     #
     # Properties
     #
@@ -346,10 +351,36 @@ class SourcePackageRelease(SQLBase):
 
         return BinaryPackage.select(query, clauseTables=clauseTables)
 
+    def files_url(self):
+        # XXX: Daniel Debonzi 20050125
+        # Get librarian host and librarian download port from
+        # invironment variables until we have it configurable
+        # somewhere.
+        librarian_host = os.environ.get('LB_HOST', 'localhost')
+        librarian_port = int(os.environ.get('LB_DPORT', '8000'))
+
+        downloader = FileDownloadClient(librarian_host, librarian_port)
+
+        urls = []
+
+        for _file in self.files:
+            try:
+                url = downloader.getURLForAlias(_file.libraryfile.id)
+            except URLError:
+                # librarian not runnig or file not avaiable
+                pass
+            else:
+                name = _file.libraryfile.filename
+            
+                urls.append(DownloadURL(name, url))
+
+        return urls
+
     binaries = property(binaries)
 
     pkgurgency = property(_urgency)
 
+    files_url = property(files_url)
     #
     # Methods
     #
@@ -407,3 +438,10 @@ def createSourcePackage(name, maintainer=0):
         description='', # FIXME
     )
 
+
+class DownloadURL(object):
+    implements(IDownloadURL)
+
+    def __init__(self, filename, fileurl):
+        self.filename = filename
+        self.fileurl = fileurl

@@ -44,6 +44,7 @@ class BinaryPackage(SQLBase):
     installedsize = IntCol(dbName='installedsize')
     copyright = StringCol(dbName='copyright')
     licence = StringCol(dbName='licence')
+    architecturespecific = BoolCol(dbName='architecturespecific')
 
     def _title(self):
         return '%s-%s' % (self.binarypackagename.name, self.version)

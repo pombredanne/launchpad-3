@@ -36,6 +36,7 @@ class IBinaryPackage(Interface):
     installedsize = Int(required=False)
     copyright = Text(required=False)
     licence = Text(required=False)
+    architecturespecific = Bool(required=True)
 
     title = TextLine(required=True, readonly=True)
     name = Attribute("Binary Package Name")

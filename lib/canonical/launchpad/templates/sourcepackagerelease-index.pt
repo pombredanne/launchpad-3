@@ -36,16 +36,16 @@
 
       <ul>
 
-	<li tal:define="cversion view/currentversion">
-	   <b>Current Version:</b> 
-	     <a tal:condition="python:cversion != view.context.version"
-	        tal:content="view/currentversion"
-	        tal:attributes="href string:.." />
+        <li tal:define="cversion view/currentversion">
+           <b>Current Version:</b> 
+             <a tal:condition="python:cversion != view.context.version"
+                tal:content="view/currentversion"
+                tal:attributes="href string:.." />
 
-	     <span tal:condition="python:cversion == view.context.version"
-	           tal:replace="view/currentversion" />
+             <span tal:condition="python:cversion == view.context.version"
+                   tal:replace="view/currentversion" />
 
-	</li>
+        </li>
 
         <li><b>Upload Date:</b> 
            <span tal:content="context/dateuploaded">
@@ -60,31 +60,46 @@
            Component</span>
 
         <li><b>Project:</b>
-	   <tal:block tal:condition="context/sourcepackage/product">
-	     <tal:block tal:condition="context/sourcepackage/product/project">
+           <tal:block tal:condition="context/sourcepackage/product">
+             <tal:block tal:condition="context/sourcepackage/product/project">
                <a tal:define="project context/sourcepackage/product/project"
-	        tal:content="project/displayname"
-	        tal:attributes="href string:/doap/projects/${project/name}">
+                tal:content="project/displayname"
+                tal:attributes="href string:/doap/projects/${project/name}">
                 Project</a>
-	     </tal:block>
-	     <i tal:condition="not:context/sourcepackage/product/project">
-	        No project available for this sourcepackage
-	     </i>
+             </tal:block>
+             <i tal:condition="not:context/sourcepackage/product/project">
+                No project available for this sourcepackage
+             </i>
            </tal:block>
-	   <i tal:condition="not:context/sourcepackage/product">
-	     No project available for this sourcepackage
-	   </i>
+           <i tal:condition="not:context/sourcepackage/product">
+             No project available for this sourcepackage
+          </i>
 
         <li><b>Product:</b>
            <a tal:condition="context/sourcepackage/product"
-	      tal:define="product context/sourcepackage/product"
-	      tal:content="product/displayname"
-	      tal:attributes="href string:/doap/products/${product/name}">
+              tal:define="product context/sourcepackage/product"
+              tal:content="product/displayname"
+              tal:attributes="href string:/doap/products/${product/name}">
            Product</a>
-	   <i tal:condition="not:context/sourcepackage/product">
-	     No product available for this sourcepackage
-	   </i>
+           <i tal:condition="not:context/sourcepackage/product">
+             No product available for this sourcepackage
+           </i>
 
+
+        <li>
+           <b>Download Packages</b>
+             <div  tal:define="files context/files_url">
+               <ul tal:condition="files">
+                  <li tal:repeat="file files">
+                    <a 
+                      tal:content="file/filename"
+                      tal:attributes="href file/fileurl" /> 
+                  </li>
+               </ul>
+               <i tal:condition="not:files">
+                 No files available for download.
+               </i>
+             </div>
 
         <li><b>Binary Packages</b> 
              (<a tal:condition="context/changelog"
@@ -93,18 +108,19 @@
                No Changelog for this Source Release )
            </tal:dummy>
 
+
         <ul tal:define="binaries view/binaries">
-	    <li tal:condition="not:binaries">
-	      <i>No binaries generated for this
-	      SourcePackageRelease</i>
-	    </li>
-	    <li tal:repeat="bin binaries" >
-	      <span tal:replace="bin" /> 
-	        <span tal:repeat="archtag python:binaries[bin]">
-		  (<a tal:content="archtag" tal:attributes="href 
-		      string:../../${archtag}/${bin}" />) 
-		</span>
-	    </li>
+            <li tal:condition="not:binaries">
+              <i>No binaries generated for this
+              SourcePackageRelease</i>
+            </li>
+            <li tal:repeat="bin binaries" >
+              <span tal:replace="bin" /> 
+                <span tal:repeat="archtag python:binaries[bin]">
+                  (<a tal:content="archtag" tal:attributes="href 
+                      string:../../${archtag}/${bin}" />) 
+                </span>
+            </li>
         </ul>
 
 
@@ -117,10 +133,10 @@
        <table>
         <tr tal:condition="not:view/builddepends"><td>No Dependencies</td></tr>
         <tr tal:repeat="dep view/builddepends">
-	 <td> <a tal:content="dep/name" tal:attributes="href
+         <td> <a tal:content="dep/name" tal:attributes="href
            string:../../i386/${dep/name}"/>
-	   <span tal:condition="dep/signal"
-	         tal:content="string:(${dep/signal} ${dep/version})"/>
+           <span tal:condition="dep/signal"
+                 tal:content="string:(${dep/signal} ${dep/version})"/>
          </td>
         </tr>
       </table>
@@ -131,10 +147,10 @@
         <tr tal:condition="not:view/builddependsindep"><td>No
        Platform Independent Dependencies</td></tr>
         <tr tal:repeat="dep view/builddependsindep">
-	 <td> <a tal:content="dep/name" tal:attributes="href
+         <td> <a tal:content="dep/name" tal:attributes="href
            string:../../i386/${dep/name}"/>
-	   <span tal:condition="dep/signal"
-	         tal:content="string:(${dep/signal} ${dep/version})"/>
+           <span tal:condition="dep/signal"
+                 tal:content="string:(${dep/signal} ${dep/version})"/>
          </td>
         </tr>
        </table>
