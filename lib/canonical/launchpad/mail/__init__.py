@@ -16,8 +16,15 @@ __all__ = ['sendmail', 'simple_sendmail', 'raw_sendmail']
 from email.Utils import make_msgid, formatdate
 from email.Message import Message
 from email.MIMEText import MIMEText
+#from email.Charset import Charset, QP
+from email import Charset
 from zope.app import zapi
 from zope.app.mail.interfaces import IMailDelivery
+
+# email package by default ends up encoding UTF8 messages using base64,
+# which sucks as they look like spam to stupid spam filters. We define
+# our own custom charset definition to force quoted printable.
+Charset.add_charset('utf8', Charset.QP, Charset.QP, 'utf8')
 
 def simple_sendmail(from_addr, to_addrs, subject, body):
     """Construct an email.Message.Message and pass it to sendmail
@@ -54,8 +61,9 @@ def sendmail(message):
     assert 'subject' in message, 'No Subject: header'
 
     from_addr = message['from']
-    to_addrs = (message['to'] or '').split(',') \
-            + (message['cc'] or '').split(',')
+    to_addrs = message['to'].split(',')
+    if message['cc']:
+        to_addrs = to_addrs + message['cc'].split(',')
 
     # Add a Message-Id: header if it isn't already there
     if 'message-id' not in message:

@@ -2,11 +2,11 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:mail="http://namespaces.zope.org/mail"
     i18n_domain="zope">
+
     <include package="zope.app.mail"/>
 
     <mail:stubMailer 
-        name="stub" 
-        from_addr="root@localhost" to_addr="root@localhost"
+        name="stub" from_addr="root@localhost" to_addr="root@localhost"
         />
 
     <!-- Production should use this in its 
@@ -17,7 +17,7 @@
     -->
 
     <!-- Development configuration to avoid spamming innocent people -->
-    <mail:queuedDelivery permission="zope.SendMail"
+    <mail:queuedDelivery name="Mail" permission="zope.SendMail"
         queuePath="/var/tmp/launchpad_mailqueue" mailer="stub" />
 
     <!-- For developers, to redirect emails to you create a file

@@ -2,7 +2,7 @@ from zope.app.component.metaconfigure import handler
 from zope.app.mail.interfaces import IMailer
 from zope.app.mail.metadirectives import IMailerDirective
 from zope.schema import ASCII
-from stub import StubMailer
+from stub import StubMailer, TestMailer
 
 class IStubMailerDirective(IMailerDirective):
     from_addr = ASCII(
@@ -27,3 +27,14 @@ def stubMailerHandler(_context, name, from_addr, to_addr):
                )
            )
 
+class ITestMailerDirective(IMailerDirective):
+    pass
+
+def testMailerHandler(_context, name):
+    _context.action(
+            discriminator = ('utility', IMailer, name),
+            callable = handler,
+            args = (
+                'Utilities', 'provideUtility', IMailer, TestMailer(), name,
+                )
+            )

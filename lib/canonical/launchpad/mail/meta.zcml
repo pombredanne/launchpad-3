@@ -6,5 +6,13 @@
       namespace="http://namespaces.zope.org/mail"
       name="stubMailer" 
       schema=".meta.IStubMailerDirective"
-      handler=".meta.stubMailerHandler" />
+      handler=".meta.stubMailerHandler"
+      />
+
+  <meta:directive
+      namespace="http://namespaces.zope.org/mail"
+      name="testMailer"
+      schema=".meta.ITestMailerDirective"
+      handler=".meta.testMailerHandler"
+      />
 </configure>

@@ -44,6 +44,8 @@ create: drop
 	@ echo "* Creating functions"
 	psql -d ${DBNAME} -f trusted.sql
 
+clean: drop
+
 drop: 
 	@ echo "* This will hang if another process is accessing the database"
 	@ echo "* Dropping existing database"

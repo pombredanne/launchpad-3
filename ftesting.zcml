@@ -1,35 +1,40 @@
-<configure xmlns="http://namespaces.zope.org/zope"
-  xmlns:rdb="http://namespaces.zope.org/rdb"
-  xmlns:sqlos="http://namespaces.sqlobject.org/sqlos">
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:rdb="http://namespaces.zope.org/rdb"
+    xmlns:mail="http://namespaces.zope.org/mail"
+    xmlns:sqlos="http://namespaces.sqlobject.org/sqlos">
 
-  <include file="zopeapp.zcml" />
+    <include file="zopeapp.zcml" />
 
-  <include package="canonical" />
+    <include package="canonical" />
 
-  <include files="package-includes/*-meta.zcml" />
-  <include files="package-includes/*-configure.zcml" />
-  <!-- Don't want overrides - tests should run in a predictable environment -->
-  <!-- <includeOverrides file="override-meta.zcml" /> -->
-  <!-- <includeOverrides file="override-configure.zcml" /> -->
-  <!-- <includeOverrides file="overrides.zcml" /> -->
-
-  <!-- This should be the only place the database is defined, and it
-       should always be referenced by the symbolic name 'launchpad'.
-       Code that explicitly connects to the launchpad_test is broken
+    <include files="package-includes/*-meta.zcml" />
+    <include files="package-includes/*-configure.zcml" />
+    <!-- Don't want overrides - tests should run in a predictable environment
     -->
-  <rdb:provideConnection
-      name="launchpad"
-      component="psycopgda.adapter.PsycopgAdapter"
-      dsn="dbi://launchpad_test" />
+    <!-- <includeOverrides file="override-meta.zcml" /> -->
+    <!-- <includeOverrides file="override-configure.zcml" /> -->
+    <!-- <includeOverrides file="overrides.zcml" /> -->
 
-  <sqlos:connectionName name="launchpad" />
+    <!-- This should be the only place the database is defined, and it
+        should always be referenced by the symbolic name 'launchpad'.
+        Code that explicitly connects to the launchpad_test is broken
+        -->
+    <rdb:provideConnection
+        name="launchpad"
+        component="psycopgda.adapter.PsycopgAdapter"
+        dsn="dbi://launchpad_test" />
 
-  <include file="sql.zcml" package="canonical.lp" />
-  <include file="sql.zcml" package="canonical.rosetta" />
-  <!--<include file="sql.zcml" package="canonical.soyuz" />-->
+    <sqlos:connectionName name="launchpad" />
 
-  <include file="securitypolicy.zcml" />
-  <include file="principals.zcml" />
+    <include file="sql.zcml" package="canonical.lp" />
+    <include file="sql.zcml" package="canonical.rosetta" />
+    <!--<include file="sql.zcml" package="canonical.soyuz" />-->
+
+    <include file="securitypolicy.zcml" />
+    <include file="principals.zcml" />
+
+    <!-- Configuration of components, configured for the test suite -->
+    <include files="package-includes/*-configure-testing.zcml" />
 
 </configure>
-<!-- arch-tag: 25fbfebd-e1cf-41e1-a051-1c7ac3a72a78 -->
