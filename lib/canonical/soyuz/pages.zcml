@@ -182,26 +182,49 @@
    </pages>
 
 
-<traverse for="canonical.soyuz.sql.DistroPeopleApp" getter="__getitem__" />
+<traverse for="canonical.soyuz.sql.DistroTeamApp" getter="__getitem__" />
 
-   <pages for="canonical.soyuz.sql.DistroPeopleApp"
+   <pages for="canonical.soyuz.sql.DistroTeamApp"
 	  allowed_attributes="results"	 
 	  permission="zope.Public"> 
-	
+
 	<page  name="index.html"
-          template="templates/people-index.pt"	
-	  lp:url="Soyuz/distros/$Distribution.name/people/index.html"
+          template="templates/team-index.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/team/index.html"
 	/>
    </pages>
 
 
-   <pages for="canonical.soyuz.sql.DistroReleasePeopleApp"
+   <pages for="canonical.soyuz.sql.DistroReleaseTeamApp"
 	  allowed_attributes="results"	 
 	  permission="zope.Public"> 
 	
 	<page  name="index.html"
-          template="templates/releasepeople-index.pt"	
-	  lp:url="Soyuz/distros/$Distribution.name/people/$Release.name/index.html"
+          template="templates/releaseteam-index.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/team/$Release.name/index.html"
+	/>
+   </pages>
+
+<traverse for="canonical.soyuz.sql.PeopleApp" getter="__getitem__"/>
+
+   <pages for="canonical.soyuz.sql.PeopleApp"
+	  allowed_attributes="results"	 
+	  permission="zope.Public"> 
+
+	<page  name="index.html"
+          template="templates/people-index.pt"	
+	  lp:url="Soyuz/people/index.html"
+	/>
+   </pages>
+
+
+   <pages for="canonical.soyuz.sql.PersonApp"
+	  allowed_attributes="results"	 
+	  permission="zope.Public"> 
+
+	<page  name="index.html"
+          template="templates/person-index.pt"	
+	  lp:url="Soyuz/people/$person.id/index.html"
 	/>
    </pages>
 

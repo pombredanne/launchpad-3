@@ -162,32 +162,31 @@ class IDistroSourcesApp(Interface):
     def __iter__():
         """retrieve an iterator"""
      
-class IDistroPeopleApp(Interface):
-    """A Distribution People Tag """
+class IDistroTeamApp(Interface):
+    """A Distribution Team Tag """
     distribution = Attribute("Distribution")
-    people = Attribute("People")
+    team = Attribute("Team")
 
     def __getitem__(release):
-        """retrieve people by release"""
+        """retrieve team by release"""
 
     def __iter__():
         """retrieve an iterator"""
 
-class IDistroReleasePeopleApp(Interface):
+class IDistroReleaseTeamApp(Interface):
     """A DistroRelease People Tag """
     release= Attribute("Release")
-    people = Attribute("People")
+    team = Attribute("Team")
 
 
 # it is deprecated BTW !!!
-class IPeople(Interface):
-     """auxiliar object to receive STUB persons"""
+class ITeam(Interface):
+     """auxiliar object to receive STUB person"""
      displayname = Attribute("name")
      role = Attribute("role")
 
 
 # they didn't work as expected. spiv: help :)
-
 class IDistroReleaseRole(Interface):
     """A DistroReleaseRole Object """
     release= Attribute("Release")
@@ -199,7 +198,25 @@ class IDistributionRole(Interface):
     distribution = Attribute("Distribution")
     person = Attribute("Person")
     role = Attribute("Role")
-    
+
+#########################################
+
+class IPeopleApp(Interface):
+    """A People Tag """
+
+    def __getitem__(release):
+        """retrieve personal by name"""
+
+    def __iter__():
+        """retrieve an iterator"""
+
+
+class IPersonApp(Interface):
+    """A Person Tag """
+    person = Attribute("Person entry")
+    id = Attribute("Person entry")
+
+
 ###########################################        
 
 class IRelease(Interface):
@@ -389,6 +406,8 @@ class ISourcePackageRelease(Interface):
 
 class ISoyuzPerson(Interface):
     """A person"""
+    # use id instead unique name
+    id = Attribute("ID for a person")
     givenname = Attribute("Given name")
     familyname = Attribute("Family name")
     displayname = Attribute("Display name")

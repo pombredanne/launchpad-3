@@ -14,59 +14,22 @@
 
 <div metal:fill-slot="main">
 
-  <h1><span tal:content="context/distribution/title" /> Staff Overview</h1>
+  <h1>People Overview</h1>
 
-
-  <div>
-  <h3><span tal:content="context/distribution/title" /> Description </h3>
-  <p> <span tal:content="context/distribution/description" />
-  </div>
-
-  <table width="50%">
-   <tr>
+  <table class="listing">
+    <tr>
+      <th>Displayname</th>
+    </tr>
+    <tr tal:repeat="person context">
       <td>
-      <h4><span tal:content="context/distribution/title" /> Staff</h4>
-      </td>
-      <td>
-      <h4>Releases</h4>
-      </td>
-  </tr>
-  <tr>
-  <td>
-  <table class="listing">	
-   <tr> <th> Name</th> <th> Role</th> </tr>
-    <tal:block tal:repeat="people context/people">
-      <tr><td><span tal:content="people/displayname">Displayname</span></td>
-	<td><span tal:content="people/role">ROLE</span></td></tr>
-    </tal:block>
-  </table>
-  </td>
-  <td>
-    <li tal:repeat="release context">
-        <a tal:content="release/name"
-	   tal:attributes="href release/name">
-	  distribution title
+        <a tal:content="person/displayname" 
+	   tal:attributes="href person/id">
+	  displayname
 	</a>
-      </li>
-  </td>
-  </table>
+      </td>
+    </tr>
+  </table>    
 
-  <h3>Package Maintainers for <span tal:content="context/distribution/title" /></h3>
-
-    <form name="add" action="" method="POST">
-    	<table>
-
-	<tr><td>Maintainer</td> 
-	<td><input type="text" name="name"/></td>
-	<td> <input type="submit" value="Search"/></td>
-	<td> <table>
-	     <tr><td><a href="">View List</a></td></tr>
-	     <tr><td> (350 entries)</td></tr>
-	     </table>
-	</td> 
-	</tr>
-	</table>
-    </form>
 
 
 </div>

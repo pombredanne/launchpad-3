@@ -307,46 +307,77 @@ VALUES ((SELECT id FROM ProcessorFamily WHERE name = 'x86'),
 
 -- Distribution
 INSERT INTO Distribution (name, title, description, domainname, owner) 
-	values ('ubuntu', 'Ubuntu Distribution', 'text ...', 'domain', 1);
+	values ('ubuntu', 'Ubuntu', 
+	'Ubuntu is a new concept of GNU/Linux Distribution based on Debian GNU/Linux.', 
+	'domain', 1);
 
 INSERT INTO Distribution (name, title, description, domainname, owner) 
-	values ('redhat', 'Redhat Advanced Server', 'some text', 'domain', 1);
+	values ('redhat', 'Redhat Advanced Server', 
+	'Red Hat is a commercial distribution of GNU/Linux Operating System.', 
+	'domain', 1);
 
 INSERT INTO Distribution (name, title, description, domainname, owner) 
-	values ('debian', 'Debian Crazy-Unstable', 'text ...', 'domain', 1);
+	values ('debian', 'Debian GNU/Linux', 
+	'Debian GNU/Linux is a non commercial distribution of a GNU/Linux Operating System for many platforms.', 
+	'domain', 1);
 
 INSERT INTO Distribution (name, title, description, domainname, owner) 
-	values ('gentoo', 'The Gentoo bits', 'another ...', 'domain', 1);
+	values ('gentoo', 'The Gentoo Linux', 
+	'Gentoo is a very customizeable GNU/Linux Distribution', 
+	'domain', 1);
 
 INSERT INTO Distribution (name, title, description, domainname, owner) 
-	values ('porkypigpolka', 'Porky Pig Polka Distribution', 'blabla',
+	values ('porkypigpolka', 'Porky Pig Polka Distribution', 
+	'Should be near the Spork concept of GNU/Linux Distribution',
 	'domain', 1);
 
 
 
 -- Distrorelease
 INSERT INTO Distrorelease (name, title, description, distribution, version, 
-	components, sections, releasestate, owner) 
+	datereleased, components, sections, releasestate, owner) 
 	values 
-	('warty', 'Warty', 'text ...', 1, 'PONG', 1, 1, 0, 1);
-
-INSERT INTO Distrorelease (name, title, description, distribution, version, 
-	components, sections, releasestate, owner) 
-	values 
-	('6.0', 'Six Six Six', 'some text', 2, '12321.XX', 1, 1, 0, 1);
-
-INSERT INTO Distrorelease (name, title, description, distribution, version, 
-	components, sections, releasestate, owner) 
-	values ('hoary', 'Hoary Crazy-Unstable', 'text ...', 1, 'EWEpp##', 
+	('warty', 'Warty', 'This is the first stable release of Ubuntu', 
+	(SELECT id FROM Distribution WHERE name = 'ubuntu'), 
+	'1.0.0', 
+	'2004-08-20',
 	1, 1, 0, 1);
 
 INSERT INTO Distrorelease (name, title, description, distribution, version, 
-	components, sections, releasestate, owner) 
-	values ('7.0', 'Seven', 'another ...', 2, 'ACK ACK', 1, 1, 0, 1);
+	datereleased, components, sections, releasestate, owner) 
+	values 
+	('six', 'Six Six Six', 
+	'some text to describe the whole 666 release of RH', 
+	(SELECT id FROM Distribution WHERE name = 'redhat'), 
+	'6.0.1', 
+	'2004-03-21',
+	1, 1, 0, 1);
 
 INSERT INTO Distrorelease (name, title, description, distribution, version, 
-	components, sections, releasestate, owner) 
-	values ('grumpy', 'G-R-U-M-P-Y', 'blabla', 1, 'PINKPY POLLY', 
+	datereleased, components, sections, releasestate, owner) 
+	values ('hoary', 'Hoary Crazy-Unstable', 
+	'Hoary is the next release of Ubuntu', 
+	(SELECT id FROM Distribution WHERE name = 'ubuntu'), 
+	'0.0.1',
+	'2004-08-25', 
+	1, 1, 0, 1);
+
+INSERT INTO Distrorelease (name, title, description, distribution, version, 
+	datereleased, components, sections, releasestate, owner) 
+	values ('7.0', 'Seven', 
+	'The release that we would not expect', 
+	(SELECT id FROM Distribution WHERE name = 'redhat'), 
+	'7.0.1', 
+	'2004-04-01',
+	1, 1, 0, 1);
+
+INSERT INTO Distrorelease (name, title, description, distribution, version, 
+	datereleased, components, sections, releasestate, owner) 
+	values ('grumpy', 'G-R-U-M-P-Y', 
+	'Grumpy is far far away, but should be the third release of Ubuntu', 
+	(SELECT id FROM Distribution WHERE name = 'ubuntu'),
+	'-0.0.1', 
+	'2004-08-29',
 	1, 1, 0, 1);
 
 --Distroreleaserole

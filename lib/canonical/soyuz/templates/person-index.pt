@@ -1,0 +1,68 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <h1>Personal Page for NONOONO</h1>
+
+   <p><span tal:content="context/id">context</span>
+
+ <table width="80%">
+ <tr><td color="#00000">
+  <h3>Personal Information</h3>
+  </td><td>
+  <h3>NONO Roles</h3>
+  </td></tr>
+  <tr><td>
+  <table>
+   <tr><td>Name</td><td>NONO NONO</td></tr>
+   <tr><td>Home</td><td>http://www.nononono.com</td></tr>
+   <tr><td>UIN</td><td>nono@jabber.org(<i>Jabber</i>), NONONOO(IRC)</td></tr>
+   <tr><td>Phone</td><td>+55 16 33612331</td></tr>
+   <tr><td></td><td><a href="">Edit Info</a></td></tr>
+   </table></td>
+  <td> 
+  <ul>
+  <li>Release manager for <a href="">Warty</a></li>
+  <li>Release manager for <a href="">Hoary</a></li>
+  <li>Security Team for <a href="">Ubuntu</a></li>
+  </ul></td>
+  </tr>     
+  <tr>
+  <td><h3>Bugs Board</h3></td>
+  <td><h3>Packages Maintained by NONO</h3></td>
+  </tr>
+  <tr>
+  <td><table>
+  <tr><td><b>ASSIGNED</b></td><th>221</th></tr>
+  <tr><td><b>OPEN</b></td><th>22</th></tr>
+  <tr><td><b>RESOLVED</b></td><th>199</th></tr>
+  <tr><td><b>SUBMITED</b></td><th>139</th></tr>
+  <tr><td></td><td><a href="">More Bugs</a></td></tr>   
+  </table></td>
+  <td><ul>
+  <li><a href="">Apt</a></li>
+  <li><a href="">Dselect</a></li>
+  <li><a href="">Dpkg</a></li>
+  <li><a href="">Lintian</a></li>
+  <li><a href="">Deb-helper</a></li>
+  </ul></td>
+  </tr>
+  </table>
+
+
+</div>
+
+</body>
+</html>

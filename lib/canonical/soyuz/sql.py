@@ -232,7 +232,7 @@ class DistroSourcesApp(object):
 # end of distrosource app component
 ###########################################################
 
-# People app component (people)
+# Team app component (team)
 class DistributionRole(SQLBase):
 
     implements(IDistributionRole)
@@ -262,41 +262,34 @@ class DistroReleaseRole(SQLBase):
         IntCol('role', dbName='role')
         ]
 
-class People(object):
+class Team(object):
     def __init__(self, displayname, role):
         self.displayname = displayname
         self.role = role
 
 
-class DistroReleasePeopleApp(object):
+class DistroReleaseTeamApp(object):
     def __init__(self, release):
         self.release = release
 
-        # FIXME: stub
-#        self.people = DistroReleaseRole.selectBy(distrorelease=release.id)
-
-        self.people = [People('Matt Zimmerman', 'Maintainer'),
-                       People('Robert Collins', 'Translator'),
-                       People('Lalo Martins', 'Contribuitors')
+        self.team = [Team('Matt Zimmerman', 'Maintainer'),
+                       Team('Robert Collins', 'Translator'),
+                       Team('Lalo Martins', 'Contribuitors')
                        ]
         
 
-class DistroPeopleApp(object):
+class DistroTeamApp(object):
     def __init__(self, distribution):
         self.distribution = distribution
-
-        # FIXME: stub
-#        self.people = DistributionRole.select(DistributionRole.q.\
-#                                                 distribution==self.\
-#                                                 distribution.id)
-
-        self.people = [People('Mark Shuttleworth', 'Maintainer'),
-                       People('James Blackwell', 'Translator'),
-                       People('Steve Alexander', 'Contribuitors')
-                       ]
+        
+#self.team = DistributionRole.select(distributionID=self.distribution.id)
+        self.team = [Team('Mark Shuttleworth', 'Maintainer'),
+                     Team('James Blackwell', 'Translator'),
+                     Team('Steve Alexander', 'Contribuitors')
+                     ]
 
     def __getitem__(self, name):
-        return DistroReleasePeopleApp(Release.selectBy(distributionID=\
+        return DistroReleaseTeamApp(Release.selectBy(distributionID=\
                                                        self.distribution.id,
                                                        # XXX ascii bogus needs
                                                        # to be revisited
@@ -305,7 +298,24 @@ class DistroPeopleApp(object):
 
     def __iter__(self):
     	return iter(Release.selectBy(distributionID=self.distribution.id))
-#end of DistroPeople app component
+#end of DistroTeam app component
+
+# new People Branch
+class PeopleApp(object):
+    def __init__(self):
+        pass
+
+    def __getitem__(self, id):
+        return PersonApp(id)
+
+    def __iter__(self):
+        return iter(SoyuzPerson.select())
+
+class PersonApp(object):
+    def __init__(self, id):
+        self.id = id
+#        self.person = SoyuzPerson.selectBy(id=id)
+        
 
 ################################################################
 
@@ -498,7 +508,9 @@ class SoyuzDistribution(SQLBase):
         if name == 'src':
             return DistroSourcesApp(self)
         if name == 'bin':
-            return DistroBinariesApp(self)
+            return DistroBinariesApp(self) 
+        if name == 'team':
+            return DistroTeamApp(self)
         if name == 'people':
             return DistroPeopleApp(self)
         else:

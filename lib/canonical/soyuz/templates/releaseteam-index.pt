@@ -14,7 +14,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1><span tal:content="context/release/title" /> Staff Overview</h1>
+  <h1><span tal:content="context/release/title" /> Team Overview</h1>
 
   <div>
   <h3><span tal:content="context/release/title" /> Description </h3>
@@ -32,16 +32,16 @@
   <table width="50%">
    <tr>
       <td>
-      <h4><span tal:content="context/release/title" /> Staff</h4>
+      <h4><span tal:content="context/release/title" /> Team</h4>
       </td>
   </tr>
   <tr>
   <td>
   <table class="listing">	
    <tr> <th> Name</th> <th> Role</th> </tr>
-    <tal:block tal:repeat="people context/people">
-      <tr><td><span tal:content="people/displayname">Displayname</span></td>
-	<td><span tal:content="people/role">ROLE</span></td></tr>
+    <tal:block tal:repeat="team context/team">
+      <tr><td><span tal:content="team/displayname">Displayname</span></td>
+	<td><span tal:content="team/role">ROLE</span></td></tr>
     </tal:block>
   </table>
   </td>

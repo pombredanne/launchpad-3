@@ -14,26 +14,71 @@
 
 <div metal:fill-slot="main">
 
-    <h1><span tal:content="context/title">TITLE</span> Overview</h1>
+    <h1><span tal:content="context/title">TITLE</span> Distribution 
+	Overview</h1>
 
-    <table class="listing">
-      <tr>
-        <th>
-	  <a href="+edit"> EDIT </a>
-	</th>
-        <th>
-	  <a href="releases/+new"> NEW </a>
-	</th>
-        <th>
-	  <a href="releases"> RELEASES </a>
-	</th>
-      </tr>
+   <table width="80%">
+   <tr> 
+   <td>
+     <h4>Latest Posts</h4>
+   </td>
+   <td>
+     <h4>Related Links</h4>
+   </td>
+   </tr>
+   <tr>
+   <td>
+    <ul> <b><a href="">Hello World</a> by <a href="">Lamont</a></b></ul>
+    <ul> <b><a href="">Soyuz Rocks</a> by <a href="">Cprov</a></b></ul>
+    <ul> <b><a href="">Launchpad burns</a> by <a href="">Kiko</a></b></ul>
+   </td>
+   <td>
+   <ul> <a href="src"><span tal:content="context/title">TITLE</span>
+         Sourcepackages</a> </ul> 
+   <ul> <a href="bin"><span tal:content="context/title">TITLE</span>
+         Binarypackages</a> </ul> 
+   <ul> <a href="team"><span
+   tal:content="context/title">TITLE</span> 
+   Team </a> </ul> 
+   </td>
+   </tr>
+   <tr>
+   <td>
+   <h3><span tal:content="context/title">TITLE</span> Distribution
+      Description</h3> 
+   </td>
+   </tr>
+   <tr>
+   <td>
+   <div>
+   <p><span tal:content="context/description">DESCRIPTION</span>
+   </div>
+   </td>
+   <td>
+       <table>
+        <tr>
+         <th>
+	  <a href="+edit">Edit <span tal:content="context/title">TITLE</span>
+	     Information</a>   
+         </th>
+        </tr>
+        <tr>
+         <th>
+	  <a href="releases/+new">Create a new <span
+	     tal:content="context/title">TITLE</span> Release</a> 
+	 </th>
+        </tr>
+        <tr>
+         <th>
+	  <a href="releases">See Current <span
+	     tal:content="context/title">TITLE</span> Releases</a> 
+	 </th>
+	</tr>
+       </table>
+    </td>
+    </tr>
     </table>
-
-
-<p> <a href="src">SRC</a>
-<p> <a href="bin">BIN</a>
-<p> <a href="people">PEOPLE</a>
+ 
 </div>
 
 </body>

@@ -37,13 +37,13 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.sql.DistroPeopleApp">
-    <allow interface="canonical.soyuz.interfaces.IDistroPeopleApp"/>
+  <content class="canonical.soyuz.sql.DistroTeamApp">
+    <allow interface="canonical.soyuz.interfaces.IDistroTeamApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.sql.DistroReleasePeopleApp">
-    <allow interface="canonical.soyuz.interfaces.IDistroReleasePeopleApp"/>
+  <content class="canonical.soyuz.sql.DistroReleaseTeamApp">
+    <allow interface="canonical.soyuz.interfaces.IDistroReleaseTeamApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
@@ -57,8 +57,18 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.sql.People">
-    <allow interface="canonical.soyuz.interfaces.IPeople"/>
+  <content class="canonical.soyuz.sql.Team">
+    <allow interface="canonical.soyuz.interfaces.ITeam"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.sql.PeopleApp">
+    <allow interface="canonical.soyuz.interfaces.IPeopleApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.sql.PersonApp">
+    <allow interface="canonical.soyuz.interfaces.IPersonApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
@@ -66,8 +76,6 @@
     <allow interface="canonical.soyuz.interfaces.IBinaryPackage"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
-
-
 
  <content class="canonical.soyuz.sql.DistroBinariesApp">
     <allow interface="canonical.soyuz.interfaces.IDistroBinariesApp"/>
