@@ -8,6 +8,7 @@ with this email address within <author_email> tags."""
 
 import os
 import sys
+import time
 import string
 import pickle
 import urllib2
@@ -40,6 +41,7 @@ def find_email(filename):
     an_email = extract_tag(rdf, 'author_email')
     if an_email:
         email_file_hits = email_file_hits + 1
+        print '   File Hit - already done'
         return
 
     # Get author page
@@ -50,14 +52,17 @@ def find_email(filename):
         if email_cache.has_key(url):
             an_email = email_cache[url]
             email_cache_hits = email_cache_hits + 1
-            print '   *',
+            print '   (found in cache)',
         else:
+            time.sleep(WAIT)
             html = get_html(url)
             email_cache_misses = email_cache_misses + 1
             # Extract email address
             an_email = get_email(html)
             # Quick sanity check - throw away if we can't use
-            if an_email and ' ' in an_email: an_email = None
+            if an_email and ' ' in an_email:
+                print '   BAD EMAIL: ' + an_email
+                an_email = None
         if an_email:
             break
 
@@ -126,10 +131,12 @@ def get_email(html):
     user page.
     Example: <b>Email:</b><br>
     <a>kiko (at) async (dot) com (dot) br</a><p>"""
+    if type(html) <> type('asd'): return None
     start = string.find(html, '<b>Email:</b>')
     if start == -1: return None
     start = start + 22
     end = string.find(html, '</a>', start)
+    if end == -1: return None
     email = html[start:end]
     # unobfuscate email address
     email = unobfuscate_fm_email(email)
@@ -152,11 +159,19 @@ if __name__=='__main__':
                       help="Cache file",
                       metavar="CACHE")
 
+    ## Web search interval avoiding to be blocked by high threshould
+    ## of requests reached by second
+    parser.add_option("-w", "--wait", dest="wait",
+                      help="Interval in seconds",
+                      metavar="TIME",
+                      default="10")
+
     (options,args) = parser.parse_args()
     
     DIR = options.directory
     FILE = options.filename
     CACHE = options.cache
+    WAIT = int(options.wait)
 
     if CACHE:
         try:
@@ -166,7 +181,6 @@ if __name__=='__main__':
             print 'Cache loaded'
         except:
             email_cache = {}
-            
 
     if FILE:
         print 'Processing one file: '+FILE
@@ -174,7 +188,7 @@ if __name__=='__main__':
         find_email(xml_file)
     else:
         # Process all files in DIR
-        print 'Processing directory...'
+        print 'Processing directory '+DIR
         files = os.listdir(DIR)
         for xml_file in files:
             if xml_file[-4:] == '.xml':
