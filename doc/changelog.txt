@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-10 10:42:31 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1301
+
+    Summary:
+      fix bug dogfood bug #232 (tar exports as attachments) (r=SteveA)
+    Revision:
+      launchpad--devel--0--patch-1301
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--dogfood-bug-232--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1276
+    
+     * daf@canonical.com--2004/launchpad--dogfood-bug-232--0--patch-1
+       add Content-Disposition and remove Content-Endoding for tar exports
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/rosetta/browser.py
+
+    new patches:
+     daf@canonical.com--2004/launchpad--dogfood-bug-232--0--base-0
+     daf@canonical.com--2004/launchpad--dogfood-bug-232--0--patch-1
+
+
 2005-02-10 10:24:41 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1300
 
     Summary:

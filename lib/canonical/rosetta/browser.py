@@ -1448,8 +1448,9 @@ class POTemplateTarExport:
 
         self.request.response.setStatus(200)
         self.request.response.setHeader('Content-Type', 'application/x-tar')
-        self.request.response.setHeader('Content-Encoding', 'gzip')
         self.request.response.setHeader('Content-Length', len(body))
+        self.request.response.setHeader('Content-Disposition',
+            'attachment; filename="%s.tar.gz"' % self.context.name)
 
         return body
 
