@@ -12,6 +12,7 @@ usage: emailfinder.py [options]
 options:
   -h, --help            show this help message and exit
   -f FILE, --file=FILE  Single project XML file
+  -l LIST, --list=LIST  List of products
   -d DIR, --dir=DIR     XML directory
   -c CACHE, --cachefile=CACHE
                         Cache file
@@ -45,11 +46,12 @@ def find_email(filename):
     global email_file_hits
     global email_failures
     
-    if not os.access(filename, os.F_OK):
+    try:
+        rdf = open(filename).read()
+    except IOError:
         print '   FILE NOT FOUND'
         return
     
-    rdf = open(filename).read()
     files_processed = files_processed + 1
 
     # if no email continue else break
@@ -123,6 +125,7 @@ def extract_tags(rdf, tag, max_occurrences=0):
     - use 0 for unlimited.
 
     """
+    
     start = 0
     end = 0
     result = []
@@ -147,9 +150,12 @@ def get_html(url):
         urlobj = urllib2.urlopen(url)
     except (urllib2.HTTPError, urllib2.URLError):
         return None
-    html = urlobj.read()
-    urlobj.close()
-    return html
+    if urlobj is not None:
+        html = urlobj.read()
+        urlobj.close()
+        return html
+    else:
+        return None
 
 
 def get_email(html):
@@ -201,7 +207,6 @@ def get_files(options):
         dirfiles = os.listdir(options.directory)
         for filename in dirfiles:
             if filename.endswith('.xml'):
-                print filename
                 path = os.path.join(options.directory, filename)
                 files.append(path)
     else:
