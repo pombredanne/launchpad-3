@@ -2,6 +2,35 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-01 13:31:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1267
+
+    Summary:
+      emailfinder code improvements after reviews
+    Revision:
+      launchpad--devel--0--patch-1267
+
+    Patches applied:
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-23
+       merge rocketfuel
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-24
+       emailfinder: use BeautifulSoup for tag soup parsing
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-25
+       merge rocketfuel
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/scripts/nicole/emailfinder.py
+
+    new patches:
+     morgan.collett@canonical.com/launchpad--devel--0--patch-23
+     morgan.collett@canonical.com/launchpad--devel--0--patch-24
+     morgan.collett@canonical.com/launchpad--devel--0--patch-25
+
+
 2005-02-01 03:21:26 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1266
 
     Summary:
