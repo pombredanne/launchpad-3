@@ -1,27 +1,25 @@
+# Copyright 2004 Canonical Ltd.  All rights reserved.
 
+__metaclass__ = type
 
 # Zope interfaces
 from zope.interface import implements
-from zope.component import ComponentLookupError
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
 # SQL imports
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
+from sqlobject import MultipleJoin, RelatedJoin
 from canonical.database.sqlbase import SQLBase, quote
 
 # canonical imports
 from canonical.lp.dbschema import BugSeverity, BugAssignmentStatus
-from canonical.lp.dbschema import RosettaImportStatus
+from canonical.lp.dbschema import RosettaImportStatus, RevisionControlSystems
 
 from canonical.launchpad.database.sourcesource import SourceSource
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.pofile import POTemplate
 
-# XXX: Daniel Debonzi 2004-11-25
-# Why RCSTypeEnum is inside launchpad.interfaces?
-from canonical.launchpad.interfaces import IProduct, RCSTypeEnum
+from canonical.launchpad.interfaces import IProduct
 
 class Product(SQLBase):
     """A Product."""
@@ -35,7 +33,7 @@ class Product(SQLBase):
     #
     project = ForeignKey(foreignKey="Project", dbName="project",
                          notNull=True)
-                         
+
     owner = ForeignKey(foreignKey="Person", dbName="owner",
                        notNull=True)
 
@@ -53,17 +51,17 @@ class Product(SQLBase):
 
     homepageurl = StringCol(dbName='homepageurl', notNull=False,
             default=None)
-    
+
     screenshotsurl = StringCol(dbName='screenshotsurl', notNull=False,
             default=None)
-    
+
     wikiurl =  StringCol(dbName='wikiurl', notNull=False, default=None)
 
     programminglang = StringCol(dbName='programminglang', notNull=False,
             default=None)
-    
+
     downloadurl = StringCol(dbName='downloadurl', notNull=False, default=None)
-    
+
     lastdoap = StringCol(dbName='lastdoap', notNull=False, default=None)
 
     active = BoolCol(dbName='active', notNull=True, default=True)
@@ -91,9 +89,18 @@ class Product(SQLBase):
                              orderBy='-datereleased')
 
     def fullname(self):
-        '''Products cannot be identified uniquely by name - use this helper
-            to generate a unique name based on product name and project name
-        '''
+        """Helper to generate a unique name based on product and project name.
+
+        Products cannot be identified uniquely by name, so use this helper
+        to generate a unique name based on product name and project name.
+        """
+        # XXX: This is clearly wrong.
+        #      1. use full variable names, not abbreviations like "prod"
+        #         except when the name would be very long.
+        #         Let's use "productname" instead of "prod".
+        #      2. This will always return self.name.  That's the bit that
+        #         is clearly wrong.
+        # - Steve Alexander, Tue Nov 30 16:46:36 UTC 2004
         prod = self.name
         proj = self.name
         if prod == proj:
@@ -101,24 +108,21 @@ class Product(SQLBase):
         else:
             return '%s %s' % (proj, prod)
 
-
     def newseries(self, form):
         # Extract the details from the form
         name = form['name']
         displayname = form['displayname']
         shortdesc = form['shortdesc']
         # Now create a new series in the db
-        series = ProductSeries(name=name,
-                          displayname=displayname,
-                          shortdesc=shortdesc,
-                          product=self.id)
-        return series
-
+        return ProductSeries(name=name,
+                             displayname=displayname,
+                             shortdesc=shortdesc,
+                             product=self.id)
 
     def newSourceSource(self, form, owner):
-        rcstype=RCSTypeEnum.cvs
+        rcstype = RevisionControlSystems.CVS.value
         if form['svnrepository']:
-            rcstype=RCSTypeEnum.svn
+            rcstype = RevisionControlSystems.SVN.value
         # XXX Robert Collins 05/10/04 need to handle arch too
         ss = SourceSource(name=form['name'],
             title=form['title'],
@@ -131,8 +135,10 @@ class Product(SQLBase):
             cvsbranch=form['branchfrom'],
             svnrepository=form['svnrepository'],
             #StringCol('releaseroot', dbName='releaseroot', default=None),
-            #StringCol('releaseverstyle', dbName='releaseverstyle', default=None),
-            #StringCol('releasefileglob', dbName='releasefileglob', default=None),
+            #StringCol('releaseverstyle', dbName='releaseverstyle',
+            #          default=None),
+            #StringCol('releasefileglob', dbName='releasefileglob',
+            #          default=None),
             #ForeignKey(name='releaseparentbranch', foreignKey='Branch',
             #       dbName='releaseparentbranch', default=None),
             #ForeignKey(name='sourcepackage', foreignKey='SourcePackage',
@@ -153,9 +159,11 @@ class Product(SQLBase):
 
     def getSourceSource(self,name):
         """get a sync"""
-        return SourceSource(self, SourceSource.select("name=%s and sourcesource.product=%s" % (quote(name), self._product.id)  )[0])
+        return SourceSource(self,
+            SourceSource.select("name=%s and sourcesource.product=%s" %
+                                (quote(name), self._product.id)
+                                )[0])
 
-        
     def poTemplates(self):
         return iter(self._poTemplatesJoin)
 
@@ -216,6 +224,7 @@ class Product(SQLBase):
     def packagedInDistros(self):
         # XXX: This function-local import is so we avoid a circular import
         #   --Andrew Bennetts, 2004/11/07
+        from canonical.launchpad.database import Distribution, DistroRelease
 
         # FIXME: The database access here could be optimised a lot, probably
         # with a view.  Whether it's worth the hassle remains to be seen...
@@ -225,21 +234,25 @@ class Product(SQLBase):
         # Added 'Product' in clauseTables but got MANY entries for "Ubuntu".
         # As it is written in template we expect a link to:
         #    distribution/distrorelease/sourcepackagename
-        # But now it seems to be unrecheable
-        
-        from canonical.launchpad.database import Distribution, DistroRelease
+        # But now it seems to be unrecheable.
+
         distros = Distribution.select(
             "Packaging.product = Product.id AND "
             "Packaging.sourcepackage = SourcePackage.id AND "
             "Distribution.id = SourcePackage.distro ",
             clauseTables=['Packaging', 'SourcePackage', 'Product'],
             orderBy='title',
-        )
+            )
         return distros
 
     def bugsummary(self):
-        """Return a matrix of the number of bugs for each status and
-        severity"""
+        """Return a matrix of the number of bugs for each status and severity.
+        """
+        # XXX: This needs a comment that gives an example of the structure
+        #      within a typical dict that is returned.
+        #      The code is hard to read when you can't picture exactly
+        #      what it is doing.
+        # - Steve Alexander, Tue Nov 30 16:49:40 UTC 2004
         bugmatrix = {}
         for severity in BugSeverity.items:
             bugmatrix[severity] = {}
@@ -247,15 +260,14 @@ class Product(SQLBase):
                 bugmatrix[severity][status] = 0
         for bugass in self.bugs:
             bugmatrix[bugass.severity][bugass.bugstatus] += 1
-        resultset = [ [ '', ] ]
+        resultset = [['']]
         for status in BugAssignmentStatus.items:
             resultset[0].append(status.title)
         severities = BugSeverity.items
         for severity in severities:
             statuses = BugAssignmentStatus.items
-            statusline = [ severity.title, ]
+            statusline = [severity.title]
             for status in statuses:
                 statusline.append(bugmatrix[severity][status])
             resultset.append(statusline)
         return resultset
-
