@@ -75,7 +75,8 @@ class BinaryPackage(SQLBase):
         # The import is here to avoid a circular import. See top of module.
         from canonical.launchpad.database.sourcepackage import \
              SourcePackageRelease
-
+        clauseTables = ('SourcePackagePublishing', 'SourcepackageRelease')
+        
         last = list(SourcePackageRelease.select(
             'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id'
             ' AND SourcePackagePublishing.distrorelease = %d'
@@ -84,8 +85,8 @@ class BinaryPackage(SQLBase):
             ' ORDER BY sourcePackageRelease.dateuploaded DESC'
             % (distroRelease.id,
                self.build.sourcepackagerelease.sourcepackage.id,
-               dbschema.PackagePublishingStatus.SUPERCEDED)
-        ))
+               dbschema.PackagePublishingStatus.SUPERCEDED),
+            clauseTables=clauseTables))
         if last:
             return last
         else:
@@ -105,6 +106,9 @@ class BinaryPackage(SQLBase):
 
     def findBinariesByName(klass, distrorelease, pattern):
         pattern = pattern.replace('%', '%%')
+
+        clauseTables = ('PackagePublishing', 'DistroArchRelease',
+                        'BinaryPackage', 'BinaryPackageName')
 
         query = (
         'PackagePublishing.binarypackage = BinaryPackage.id AND '
@@ -126,10 +130,13 @@ class BinaryPackage(SQLBase):
         # presents a very slow result.
         # Is those unique ?
         return klass.select(query,
-                            orderBy='BinaryPackageName.name')[:500]
+                            clauseTables=clauseTables,
+                            orderBy='BinaryPackageName.name')
     findBinariesByName = classmethod(findBinariesByName)
 
     def getBinariesByName(klass, distrorelease, name):
+        clauseTables = ('PackagePublishing', 'DistroArchRelease',
+                        'BinaryPackage', 'BinaryPackageName')
 
         query = (
             'PackagePublishing.binarypackage = BinaryPackage.id AND '
@@ -139,7 +146,7 @@ class BinaryPackage(SQLBase):
             'AND BinaryPackageName.name = %s '
             %(distrorelease.id, quote(name))
             )
-        return klass.select(query)
+        return klass.select(query, clauseTables=clauseTables)
     getBinariesByName = classmethod(getBinariesByName)
     
     def getBinaries(klass, distrorelease):

@@ -71,7 +71,7 @@
 
     <tr tal:repeat="person python:list(bn.currentBatch())">      
      <td><a tal:content="person/displayname"
-	    tal:attributes="href person/id"/>
+	    tal:attributes="href person/name"/>
      </td>
     </tr>    
 

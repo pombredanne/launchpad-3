@@ -80,11 +80,10 @@ class SourcePackage(SQLBase):
 
     def product(self):
         try:
-            return Product.select(
-                "Product.id = Packaging.product AND "
-                "Packaging.sourcepackage = %d"
-                % self.id
-            )[0]
+            clauseTables = ('Packaging', 'Product')
+            return Product.select("Product.id = Packaging.product AND "
+                                  "Packaging.sourcepackage = %d"
+                                  % self.id, clauseTables=clauseTables)[0]
         except IndexError:
             # No corresponding product
             return None
@@ -97,13 +96,13 @@ class SourcePackage(SQLBase):
         return SourcePackageRelease.selectBy(version=version)[0]
 
     def uploadsByStatus(self, distroRelease, status):
+        clauseTables = ('SourcePackagePublishing', 'SourcePackageRelease')
         uploads = list(SourcePackageRelease.select(
             'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id'
             ' AND SourcePackagePublishing.distrorelease = %d'
             ' AND SourcePackageRelease.sourcepackage = %d'
             ' AND SourcePackagePublishing.status = %d'
-            % (distroRelease.id, self.id, status)
-        ))
+            % (distroRelease.id, self.id, status), clauseTables=clauseTables))
 
         if uploads:
             return uploads[0]
@@ -119,17 +118,20 @@ class SourcePackage(SQLBase):
         
         :returns: iterable of SourcePackageReleases
         """
+        clauseTables = ('SourcePackagePublishing', 'SourcePackageRelease')
         sourcepackagereleases = SourcePackageRelease.select(
             'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id'
             ' AND SourcePackagePublishing.distrorelease = %d'
             ' AND SourcePackageRelease.sourcepackage = %d'
             ' AND SourcePackagePublishing.status = %d'
-            % (distroRelease.id, self.id, dbschema.PackagePublishingStatus.PUBLISHED)
-        )
+            % (distroRelease.id, self.id, dbschema.PackagePublishingStatus.PUBLISHED),
+            clauseTables=clauseTables)
 
         return sourcepackagereleases
 
     def lastversions(self, distroRelease):
+        clauseTables=('SourcePackagePublishing', 'SourcePackageRelease')
+
         last = list(SourcePackageRelease.select(
             'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id'
             ' AND SourcePackagePublishing.distrorelease = %d'
@@ -137,7 +139,7 @@ class SourcePackage(SQLBase):
             ' AND SourcePackagePublishing.status = %d'
             ' ORDER BY sourcePackageRelease.dateuploaded DESC'
             % (distroRelease.id, self.id,dbschema.PackagePublishingStatus.SUPERCEDED)
-        ))
+        , clauseTables=clauseTables))
 
         if last:
             return last
@@ -149,8 +151,9 @@ class SourcePackage(SQLBase):
     #
 
     def findSourcesByName(klass, distrorelease, pattern):
-        """Search for SourcePackages in a distrorelease that matches a pattern"""
-
+        """Search for SourcePackages in a distrorelease that matches"""
+        clauseTables=('SourcePackagePublishing', 'SourcePackage',
+                      'SourcePackageName', 'SourcePackageRelease')
         pattern = pattern.replace('%', '%%')
         query = ('SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
                   'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
@@ -166,7 +169,8 @@ class SourcePackage(SQLBase):
         # Returning limited results until
         # sql performanse issues been solved
         return klass.select(query,
-                            orderBy='sourcepackagename.name')[:500]
+                            clauseTables=clauseTables,
+                            orderBy='sourcepackagename.name')
 
     findSourcesByName = classmethod(findSourcesByName)
 
@@ -185,6 +189,7 @@ class SourcePackageContainer(object):
     # the same name.
     #
     def __getitem__(self, name):
+        clauseTables = ('SourcePackageName', 'SourcePackage')
         return self.table.select("SourcePackage.sourcepackagename = \
         SourcePackageName.id AND SourcePackageName.name = %s" %     \
         quote(name))[0]
@@ -240,15 +245,16 @@ class SourcePackageRelease(SQLBase):
     def architecturesReleased(self, distroRelease):
         # The import is here to avoid a circular import. See top of module.
         from canonical.launchpad.database.distro import DistroArchRelease
-
+        clauseTables = ('PackagePublishing', 'BinaryPackage', 'Build')
+        
         archReleases = Set(DistroArchRelease.select(
             'PackagePublishing.distroarchrelease = DistroArchRelease.id '
             'AND DistroArchRelease.distrorelease = %d '
             'AND PackagePublishing.binarypackage = BinaryPackage.id '
             'AND BinaryPackage.build = Build.id '
             'AND Build.sourcepackagerelease = %d'
-            % (distroRelease.id, self.id)
-        ))
+            % (distroRelease.id, self.id),
+            clauseTables=clauseTables))
         return archReleases
 
     def _urgency(self):
@@ -258,13 +264,14 @@ class SourcePackageRelease(SQLBase):
         return 'Unknown (%d)' %self.urgency
 
     def binaries(self):
+        clauseTables = ('SourcePackageRelease', 'BinaryPackage', 'Build')
+        
         query = ('SourcePackageRelease.id = Build.sourcepackagerelease'
                  ' AND BinaryPackage.build = Build.id '
                  ' AND Build.sourcepackagerelease = %i'
-                 %self.id 
-                 )
+                 %self.id)
 
-        return BinaryPackage.select(query)
+        return BinaryPackage.select(query, clauseTables=clauseTables)
         
     binaries = property(binaries)
 
@@ -277,7 +284,8 @@ class SourcePackageRelease(SQLBase):
     
     def getByName(klass, distrorelease, name):
         """Get A SourcePackageRelease in a distrorelease by its name"""
-        clauseTables = ('SourcePackage', 'SourcePackagePublishing')
+        clauseTables = ('SourcePackage', 'SourcePackagePublishing',
+                        'SourcePackageName')
 
         # XXX: (mult_results) Daniel Debonzi 2004-10-13
         # What about multiple results?
@@ -290,12 +298,13 @@ class SourcePackageRelease(SQLBase):
                  % (distrorelease.id, quote(name))  )
 
 
-        return klass.select(query,
-                            clauseTables=clauseTables)[0]
+        return klass.select(query, clauseTables=clauseTables)[0]
     getByName = classmethod(getByName)
 
     def getReleases(klass, distrorelease):
         """Get SourcePackageReleases in a distrorelease"""
+        clauseTables = ('SourcePackagePublishing', 'Sourcepackage',
+                        'SourcePackageName')
 
         query = ('SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
                  'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
@@ -313,7 +322,8 @@ class SourcePackageRelease(SQLBase):
         # for all the related things available on the database which
         # presents a very slow result.
         return klass.select(query,
-                            orderBy='sourcepackagename.name')[:500]
+                            clauseTables=clauseTables,
+                            orderBy='sourcepackagename.name')
     getReleases = classmethod(getReleases)
 
 
@@ -329,7 +339,8 @@ class SourcePackageRelease(SQLBase):
     def selectByBinaryVersion(klass, sourcereleases, version):
         """Select from SourcePackageRelease.SelectResult that have
         BinaryPackage.version=version"""
-
+        clauseTables = ('BinaryPackage', 'Build')
+        
         query = sourcereleases.clause + \
                 (' AND Build.id = BinaryPackage.build'
                  ' AND Build.sourcepackagerelease = SourcePackageRelease.id'
@@ -342,6 +353,8 @@ class SourcePackageRelease(SQLBase):
 
 
     def getByPersonID(klass, personID):
+        clauseTables = ('SourcePackagePublishing', 'SourcePackageName',
+                        'SourcePackage')
         query = ('''SourcePackagePublishing.sourcepackagerelease = 
                         SourcePackageRelease.id 
                     AND SourcePackageName.id = SourcePackage.sourcepackagename
@@ -352,6 +365,7 @@ class SourcePackageRelease(SQLBase):
         # The result should be ordered by SourcePackageName
         # but seems that is it not possible
         return klass.select(query,
+                            clauseTables=clauseTables,
                             orderBy='sourcepackagename.name')
     getByPersonID = classmethod(getByPersonID)
         

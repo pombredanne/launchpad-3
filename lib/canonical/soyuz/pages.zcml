@@ -150,6 +150,7 @@
 	  allowed_attributes="results"
           class="canonical.soyuz.browser.DistroReleaseSourcesView"
 	  permission="zope.Public">
+
 	<page  name="index.html"
           template="../launchpad/templates/sourcepackage-list.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/index.html"

@@ -46,10 +46,10 @@
 
   <tla:block tal:condition="view/join_action">
   <div>
-  <h4><a tal:attributes="href string:../${context/person/id}"
+  <h4><a tal:attributes="href string:../${context/person/name}"
          tal:content="context/person/displayname">
          TEAM</a> was Joined by 
-	 <a tal:attributes="href string:../${view/person/id}"
+	 <a tal:attributes="href string:../${view/person/name}"
          tal:content="view/person/displayname"></a></h4>
   </div>
   </tla:block>

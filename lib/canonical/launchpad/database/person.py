@@ -242,11 +242,13 @@ class TeamParticipation(SQLBase):
     #
 
     def getSubTeams(klass, teamID):
+        clauseTables = ('person', 'person')
         query = ("team = %d "
                  "AND Person.id = TeamParticipation.person "
-                 "AND Person.teamowner IS NOT NULL" %teamID)
+                 "AND Person.teamowner IS NOT NULL" % teamID)
 
-        return klass.select(query)
+        return klass.select(query,
+                            clauseTables=clauseTables)
     getSubTeams = classmethod(getSubTeams)
     
         

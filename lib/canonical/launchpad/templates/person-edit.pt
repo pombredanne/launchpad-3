@@ -164,7 +164,7 @@
 
   <tla:block tal:condition="view/edit_action">
   <div>
-  <h4><a tal:attributes="href string:../${context/id}"
+  <h4><a tal:attributes="href string:../${context/name}"
          tal:content="context/person/displayname">PERSON</a>
     Modified</h4>
   </div>

@@ -316,12 +316,9 @@ class PeopleApp(object):
         self.p_entries = Person.select('teamowner IS NULL').count()
         self.t_entries = Person.select('teamowner IS NOT NULL').count()
 
-    # FIXME: (person_traverse) Daniel Debonzi - 2004-10-13
-    # The Person page still traversing person by id.
-    # Now it should be traversed by name
-    def __getitem__(self, id):
+    def __getitem__(self, name):
         try:
-            return PersonApp(int(id))
+            return PersonApp(name)
         except Exception, e:
             print e.__class__, e
             raise
@@ -330,10 +327,10 @@ class PeopleApp(object):
         return iter(Person.select(orderBy='displayname'))
 
 class PersonApp(object):
-    def __init__(self, id):
-        self.id = id
-        self.person = Person.get(self.id)
-
+    def __init__(self, name):
+        self.person = Person.selectBy(name=name)[0]
+        self.id = self.person.id
+        
         self.packages = self._getsourcesByPerson()
 
         self.roleset = []
@@ -425,7 +422,7 @@ class PersonApp(object):
             self.gpg = None
 
     def _getsourcesByPerson(self):
-        return Set(SourcePackageRelease.getByPersonID(self.id))
+        return SourcePackageRelease.getByPersonID(self.id)
     
 
 
@@ -571,7 +568,7 @@ class DistroReleaseBinariesApp(object):
 
     def findPackagesByName(self, pattern):
         selection = Set(BinaryPackage.findBinariesByName(self.release,
-                                                                  pattern))
+                                                         pattern))
 
         # FIXME: (distinct_query) Daniel Debonzi 2004-10-13
         # expensive routine

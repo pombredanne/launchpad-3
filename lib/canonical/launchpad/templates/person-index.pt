@@ -133,7 +133,7 @@
       <th>Name</th><th>Role</th><th>Status</th></tr>
 
    <tr tal:repeat="member context/members">
-       <td><a tal:attributes="href string:../${member/person/id}"
+       <td><a tal:attributes="href string:../${member/person/name}"
 	      tal:content="member/person/displayname">MEMBER</a></td>
        <td tal:content="member/rolename">ROLE</td>
        <td tal:content="member/statusname">STATUS</td>
@@ -151,7 +151,7 @@
       <td>This Team has no Sub teams yet</td></tr>
 
    <tr tal:repeat="team context/subteams">
-       <td><a tal:attributes="href string:../${team/person/id}"
+       <td><a tal:attributes="href string:../${team/person/name}"
 	      tal:content="team/person/displayname">SUBTEAM</a></td>
    </tr>
    </table>
@@ -167,7 +167,7 @@
    <table>
    <legend><h3>My Teams</h3></legend>
    <tr tal:repeat="team context/teams">
-       <td><a tal:attributes="href string:../${team/team/id}"
+       <td><a tal:attributes="href string:../${team/team/name}"
 	      tal:content="team/team/displayname">MEMBER</a></td>
    </tr>
    </table>

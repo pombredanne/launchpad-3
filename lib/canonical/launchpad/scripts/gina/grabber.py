@@ -6,14 +6,15 @@ from database import Launchpad, Katie
 from library import attachLibrarian
 
 #
-package_root = "/srv/archive.ubuntu.com/"
+package_root = "/srv/archive.ubuntu.com/ubuntu/"
+keyrings_root = "keyrings/"
 distrorelease = "warty"
-components = ["main", "universe", "restricted"]
-#components = ["main", "restricted"]
+#components = ["main", "universe", "restricted"]
+components = ["main", "restricted"]
 #components = ["restricted"]
 arch = "i386"
 
-LPDB = "launchpad_test"
+LPDB = "launchpad_dev"
 KTDB = "katie"
 
 LIBRHOST = "localhost"
@@ -79,7 +80,7 @@ if __name__ == "__main__":
     attachLibrarian( LIBRHOST, LIBRPORT )
 
     keyrings = ""
-    for keyring in os.listdir("keyrings"):
+    for keyring in os.listdir(keyrings_root):
           keyrings += " --keyring=./keyrings/%s" % keyring
     if not keyrings:
         raise AttributeError, "Keyrings not found in ./keyrings/"
