@@ -2,6 +2,18 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-01 13:53:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1540
+
+    Summary:
+      RequireProductSeries implementation
+    Revision:
+      launchpad--devel--0--patch-1540
+
+
+    modified files:
+     doc/changelog.txt
+
+
 2005-04-01 13:44:06 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1539
 
     Summary:
