@@ -156,6 +156,22 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.ILaunchpadApplication"
+        template="../templates/launchpad-join.pt"
+        class="canonical.launchpad.webapp.login.JoinLaunchpadView"
+        permission="zope.Public"
+        name="+register"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadApplication"
+        template="../templates/launchpad-forgottenpassword.pt"
+        class="canonical.launchpad.webapp.login.ForgottenPasswordPage"
+        permission="zope.Public"
+        name="+forgottenpassword"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadApplication"
         template="../templates/launchpad-logout.pt"
         class="canonical.launchpad.webapp.login.CookieLogoutPage"
         permission="zope.Public"

@@ -2,6 +2,90 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-20 15:11:23 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1221
+
+    Summary:
+      Adding the Forgotten Password page. Moving LoginToken-related Views to browser/logintoken.py. Moving JoinLaunchpadView to launchpad/webapp/login.py. Lots of small fixes.
+    Revision:
+      launchpad--devel--0--patch-1221
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-85
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-86
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-87
+       Quick fix on CookieLoginPage: errortext wasn't being set when login failed.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-88
+       Adding forgotten password functionality and some small fixes.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-89
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-90
+       Creating browser/logintoken.py and put logintoken Views there.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-91
+       Small fix to direct users trying to login to the Forgotten Password page when the email is already registered.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-92
+       Do not hardcode the Application URL in emails for email address validation.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-93
+       Moving JoinLaunchpadView to launchpad/webapp/login.py and some fixes for URLs we send by email.
+    
+
+    new files:
+     lib/canonical/launchpad/browser/.arch-ids/logintoken.py.id
+     lib/canonical/launchpad/browser/logintoken.py
+     lib/canonical/launchpad/templates/.arch-ids/foaf-resetpassword.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/launchpad-forgottenpassword.pt.id
+     lib/canonical/launchpad/templates/foaf-resetpassword.pt
+     lib/canonical/launchpad/templates/launchpad-forgottenpassword.pt
+     lib/canonical/launchpad/webapp/.arch-ids/forgottenpassword.txt.id
+     lib/canonical/launchpad/webapp/forgottenpassword.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/foaf/validate-email.txt
+     lib/canonical/launchpad/browser/__init__.py
+     lib/canonical/launchpad/browser/people.py
+     lib/canonical/launchpad/database/logintoken.py
+     lib/canonical/launchpad/interfaces/logintoken.py
+     lib/canonical/launchpad/templates/foaf-newaccount.pt
+     lib/canonical/launchpad/templates/launchpad-join.pt
+     lib/canonical/launchpad/templates/launchpad-login.pt
+     lib/canonical/launchpad/webapp/configure.zcml
+     lib/canonical/launchpad/webapp/login.py
+     lib/canonical/launchpad/webapp/newuser-email.txt
+     lib/canonical/launchpad/zcml/logintoken.zcml
+     lib/canonical/launchpad/zcml/person.zcml
+
+    renamed files:
+     lib/canonical/foaf/.arch-ids/newuser-email.txt.id
+       ==> lib/canonical/launchpad/webapp/.arch-ids/newuser-email.txt.id
+     lib/canonical/foaf/newuser-email.txt
+       ==> lib/canonical/launchpad/webapp/newuser-email.txt
+     lib/canonical/launchpad/templates/.arch-ids/foaf-join.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/launchpad-join.pt.id
+     lib/canonical/launchpad/templates/foaf-join.pt
+       ==> lib/canonical/launchpad/templates/launchpad-join.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-85
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-86
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-87
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-88
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-89
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-90
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-91
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-92
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-93
+
+
 2005-01-19 18:37:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1220
 
     Summary:

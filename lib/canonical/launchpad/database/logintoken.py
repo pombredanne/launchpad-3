@@ -31,6 +31,15 @@ class LoginToken(SQLBase):
 class LoginTokenSet(object):
     implements(ILoginTokenSet)
 
+    def new(self, requester, requesteremail, email, tokentype):
+        """See ILoginTokenSet"""
+        characters = '0123456789bcdfghjklmnpqrstvwxz'
+        length = 40
+        token = ''.join([random.choice(characters) for count in range(length)])
+        return LoginToken(requester=requester, requesteremail=requesteremail,
+                          email=email, token=token, tokentype=int(tokentype),
+                          created=datetime.utcnow())
+
     def __getitem__(self, tokentext):
         results = LoginToken.selectBy(token=tokentext)
         if results.count() > 0:
@@ -38,25 +47,4 @@ class LoginTokenSet(object):
             return results[0]
         else:
             raise KeyError, tokentext
-
-
-def newLoginToken(requester, requesteremail, email, tokentype):
-    """ Create a new LoginToken object. Parameters must be:
-    requester: a Person object or None (in case of a new account)
-
-    requesteremail: the email address used to login on the system. Can
-    also be None in case of a new account
-    
-    email: the email address that this request will be sent to
-    
-    tokentype: the type of the request, according to
-    dbschema.LoginTokenType
-    """
-
-    characters = '0123456789bcdfghjklmnpqrstvwxz'
-    length = 40
-    token = ''.join([random.choice(characters) for count in range(length)])
-    return LoginToken(requester=requester, requesteremail=requesteremail,
-                      email=email, token=token, tokentype=int(tokentype),
-                      created=datetime.utcnow())
 

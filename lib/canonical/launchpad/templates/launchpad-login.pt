@@ -43,6 +43,10 @@
         <input type="submit" name="SUBMIT" value="Log in" />
       </div>
     </form>
+
+    <div>
+      <p>[ <a href="+forgottenpassword">Forgot your password?</a> ]</p>
+    </div>
   </div>
 </div>
 

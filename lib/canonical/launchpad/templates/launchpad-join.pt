@@ -32,13 +32,13 @@
     <div class="documentContent" id="region-content">
       <br />
       <div class="portalMessage" tal:condition="view/errormessage"
-           tal:content="view/errormessage">
+           tal:content="structure view/errormessage">
       </div>
       <form name="join" action="" method="POST">
       <table>
         <tr>
           <td>Email:</td>
-          <td><input type="text" name="email"
+          <td><input type="text" name="email" size="40"
                      tal:attributes="value view/email|nothing" /></td>
         </tr>
         <tr>

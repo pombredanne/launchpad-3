@@ -23,6 +23,10 @@
             <p class="portalMessage">Your password and confirmation did
             not match. Please try again.</p>
           </div>
+
+          <div tal:condition="request/nullpassword|nothing">
+            <p class="portalMessage">Your password cannot be empty.</p>
+          </div>
         </div>
 
         <legend metal:fill-slot="addform_legend">
