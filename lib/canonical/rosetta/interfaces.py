@@ -1,7 +1,7 @@
 from zope.interface import Interface, Attribute
 
-# Note: When creating a new interface here, the test generation script should
-# also be updated.
+# Note: When creating a new interface here, the test generation script
+# (scripts/generate_sql_tests.py) should also be updated.
 
 class IRosettaApplication(Interface):
     """Rosetta application class."""
@@ -43,8 +43,10 @@ class IProject(Interface):
 
     owner = Attribute("The Person who owns this project.")
 
-    # XXX: This will go away once we move to project->product->potemplate
-    # traversal rather than project->potemplate traversal.
+    # XXX: poTemplate() will go away once we move to
+    # project->product->potemplate traversal rather than project->potemplate
+    # traversal.
+
     def poTemplate(name):
         """Returns the PO template with the given name."""
 
@@ -74,6 +76,7 @@ class IProject(Interface):
         """Returns the number of msgsets where we have a translation in rosetta
         but there was no translation in the PO file for this language when we
         last parsed it."""
+
 
 class IProduct(Interface):
     """A Product.  For example 'firefox' in the 'mozilla' project."""
@@ -182,13 +185,7 @@ class IPOTemplate(Interface):
 
         Raises KeyError if there is no such POFile."""
 
-    def newPOFile(language, variant=None):
-        """Creates a new PO file of the given language and (potentially)
-        variant.
-
-        Raises KeyError if there is already such POFile."""
-
-    def newPOFile(language, variant=None):
+    def newPOFile(language, person, variant=None):
         """Creates a new PO file of the given language and (potentially)
         variant.
 
@@ -213,23 +210,6 @@ class IPOTemplate(Interface):
         """Check whether a message set with the given message ID exists within
         this PO file."""
 
-    def createMessageSetFromMessageID(msgid):
-        """Creates in the database a new message set.
-
-        As a side-effect, creates a message ID sighting in the database for the
-        new set's prime message ID.
-
-        Returns the newly created message set.
-        """
-    def createMessageSetFromText(text):
-        """Creates in the database a new message set.
-
-        Similar to createMessageSetFromMessageID, but takes a text object
-        (unicode or string) rather than a message ID.
-
-        Returns the newly created message set.
-        """
-
     # TODO provide a way to look through non-current message ids.
 
 
@@ -249,6 +229,24 @@ class IEditPOTemplate(IPOTemplate):
         variant is optional.
 
         Raises an KeyError if a po file of that language already exists.
+        """
+
+    def createMessageSetFromMessageID(msgid):
+        """Creates in the database a new message set.
+
+        As a side-effect, creates a message ID sighting in the database for the
+        new set's prime message ID.
+
+        Returns the newly created message set.
+        """
+
+    def createMessageSetFromText(text):
+        """Creates in the database a new message set.
+
+        Similar to createMessageSetFromMessageID, but takes a text object
+        (unicode or string) rather than a message ID.
+
+        Returns the newly created message set.
         """
 
 class IPOFile(Interface):
@@ -343,6 +341,11 @@ class IEditPOFile(IPOFile):
     def expireAllMessages():
         """Mark our of our message sets as not current (sequence=0)"""
 
+    def createMessageSetFromMessageID(self, messageID):
+        """See IEditPOTemplate."""
+
+    def createMessageSetFromText(self, text):
+        """See IEditPOTemplate."""
 
 class IPOMessageSet(Interface):
     """A collection of message IDs and possibly translations."""
@@ -386,7 +389,9 @@ class IPOTemplateMessageSet(IPOMessageSet):
         XXX: This is quite UI-oriented. Refactor?
         """
 
+
 # No IEditPOTemplateMessageSet.
+
 
 class IPOFileMessageSet(IPOMessageSet):
     poFile = Attribute("""The PO file this set is associated with, if it's

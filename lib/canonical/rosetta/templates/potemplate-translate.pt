@@ -73,103 +73,106 @@
     <!-- The translation form. -->
 
     <form method="post" tal:attributes="action request/URL">
-        <tal:msgstring repeat="set view/messageSets">
-            <fieldset class="message-strings">
-                <input type="hidden"
-                    tal:attributes="
-                        name string:set_${set/id}_msgid;
-                        value set/messageID/text
-                        " />
+        <fieldset class="message-strings" tal:repeat="set view/messageSets">
+            <input type="hidden"
+                tal:attributes="
+                    name string:set_${set/id}_msgid;
+                    value set/messageID/text
+                    " />
 
-                <legend>String #<span tal:replace="set/sequence">120</span></legend>
+            <legend>String #<span tal:replace="set/sequence">120</span></legend>
 
-                <!-- Simple message. -->
-                <tal:simple-message condition="not:set/isPlural">
-                    <div class="field">
-                        <label class="language-code">English (Source)</label>:
-                        <div class="messageSourceString"
-                             xtal:condition="set/messageID/isMultiline"
-                             tal:content="structure set/messageID/text">text</div>
-                    </div>
+            <!-- Simple message. -->
+            <tal:simple-message condition="not:set/isPlural">
+                <div class="field">
+                    <label class="language-code">English (Source)</label>:
+                    <div class="messageSourceString"
+                         tal:content="structure set/messageID/text">text</div>
+                </div>
 
-                    <div class="field" tal:repeat="language view/languages">
+                <div class="field" tal:repeat="language view/languages">
+                    <label class="language-code"
+                        tal:content="language/englishName">pt_BR</label>:
+
+                    <br/>
+
+                    <input type="text"
+                        tal:condition="not:set/messageID/isMultiline"
+                        tal:attributes="
+                            name string:set_${set/id}_translation_${language/code};
+                            value python:set['translations'][language][0];
+                            " />
+                    <textarea
+                        tal:condition="set/messageID/isMultiline"
+                        tal:attributes="
+                            name string:set_${set/id}_translation_${language/code};
+                            rows set/messageID/lines"
+                        tal:content="python:set['translations'][language][0]
+                        "></textarea>
+                </div>
+            </tal:simple-message>
+
+            <!-- Plural message. -->
+            <tal:plural-message condition="set/isPlural">
+                <div class="field">
+                    <label class="language-code">English Singular</label>:
+                    <div class="messageSourceString"
+                        tal:content="structure set/messageID/text">singular</div>
+                </div>
+
+                <div class="field">
+                    <label class="language-code">English Plural</label>:
+                    <div class="messageSourceString"
+                        tal:content="structure set/messageIDPlural/text">plural</div>
+                </div>
+
+                <div tal:repeat="language view/languages">
                         <label class="language-code"
-                            tal:content="language/englishName">pt_BR</label>:
+                            tal:content="language/englishName">pt_BR[0]</label>:
 
-                        <br/>
+                    <div class="field" tal:repeat="i python:
+                            range(view.pluralForms[language.code])">
 
                         <input type="text"
                             tal:condition="not:set/messageID/isMultiline"
                             tal:attributes="
-                                name string:set_${set/id}_translation_${language/code};
-                                value python:set['translations'][language][0];
+                                name string:set_${set/id}_translation_${language/code}_${i};
+                                value python:set['translations'][language][i];
                                 " />
                         <textarea
                             tal:condition="set/messageID/isMultiline"
                             tal:attributes="
-                                name string:set_${set/id}_translation_${language/code};
+                                name string:set_${set/id}_translation_${language/code}_${i};
                                 rows set/messageID/lines"
-                            tal:content="python:set['translations'][language][0]
+                            tal:content="python:set['translations'][language][i]
                             "></textarea>
-                    </div>
-                </tal:simple-message>
-
-                <!-- Plural message. -->
-                <tal:plural-message condition="set/isPlural">
-                    <div class="field">
-                        <label class="language-code">English Singular</label>:
-                        <span tal:content="set/messageID/text">singular</span>
+                        <!--
+                        <img src="++resource++info.gif" title="Example: 1 dead horse." />
+                        -->
                     </div>
 
-                    <div class="field">
-                        <label class="language-code">English Plural</label>:
-                        <span tal:content="set/messageIDPlural/text">plural</span>
-                    </div>
-
-                    <div tal:repeat="language view/languages">
-                            <label class="language-code"
-                                tal:content="language/englishName">pt_BR[0]</label>:
-
-                        <div class="field" tal:repeat="i python:
-                                range(view.pluralForms[language.code])">
-
-                            <input type="text"
-                                tal:attributes="
-                                    name
-                                    string:set_${set/id}_translation_${language/code}_${i};
-                                    value
-                                    python:set['translations'][language][i];
-                                    " />
-                            <!--
-                            <img src="++resource++info.gif" title="Example: 1 dead horse." />
-                            -->
-                        </div>
-
-                    </div>
-                </tal:plural-message>
-
-                <div class="field" tal:condition="set/commentText">
-                    <label>Comment</label>
-                    <img src="++resource++arrowDown.gif" />
-                    <div class="discreet" tal:content="set/commentText">This refers to the content type.</div>
                 </div>
+            </tal:plural-message>
 
-                <fieldset class="collapsible collapsed">
-                    <legend>Located in</legend>
-                    <pre tal:content="set/fileReferences"
-                        >./plone_forms/discussion_reply_form.pt</pre>
-                </fieldset>
+            <div class="field" tal:condition="set/commentText">
+                <label>Comment</label>
+                <img src="++resource++arrowDown.gif" />
+                <div class="discreet" tal:content="set/commentText">This refers to the content type.</div>
+            </div>
 
-                <!--
-                <div class="field">
-                    <label>Code reference</label>
-                    <img src="++resource++arrowRight.gif" />
-                </div>
-                -->
+            <fieldset class="collapsible collapsed">
+                <legend>Located in</legend>
+                <pre tal:content="set/fileReferences"
+                    >./plone_forms/discussion_reply_form.pt</pre>
             </fieldset>
 
-            <div class="visualClear"></div>
-        </tal:msgstring>
+            <!--
+            <div class="field">
+                <label>Code reference</label>
+                <img src="++resource++arrowRight.gif" />
+            </div>
+            -->
+        </fieldset>
 
         <!-- Offset of next page, if not at end. -->
         <input type="hidden" name="offset"

@@ -235,22 +235,40 @@ class ViewPOExport:
 
 
 class TranslatePOTemplate:
-    defaultCount = 5
+    DEFAULT_COUNT = 5
 
     def __init__(self, context, request):
+        # This sets up the following instance variables:
+        #
+        # context:
+        #   The context PO template object.
+        # request:
+        #   The request from the browser.
+        # codes:
+        #   A list of codes for the langauges to translate into.
+        # languages:
+        #   A list of languages to translate into.
+        # pluralForms:
+        #   A dictionary by language code of plural form counts.
+        # offset:
+        #   The offset into the template of the first message being
+        #   translated.
+        # count:
+        #   The number of messages being translated.
+
         self.context = context
         self.request = request
 
         self.codes = request.form.get('languages')
 
-        languages = getUtility(ILanguages)
+        all_languages = getUtility(ILanguages)
 
         if self.codes:
             self.languages = []
 
             for code in self.codes.split(','):
                 try:
-                    self.languages.append(languages[code])
+                    self.languages.append(all_languages[code])
                 except KeyError:
                     pass
         else:
@@ -261,15 +279,18 @@ class TranslatePOTemplate:
         for language in self.languages:
             try:
                 pofile = context.poFile(language.code)
-                self.pluralForms[language.code] = pofile.pluralForms
             except KeyError:
-                if languages[language.code].pluralForms is not None:
+                if all_languages[language.code].pluralForms is not None:
                     self.pluralForms[language.code] = \
-                        languages[language.code].pluralForms
+                        all_languages[language.code].pluralForms
                 else:
                     # We don't have a default plural form for this Language
                     # XXX: We need to implement something here
-                    raise RuntimeError, "Eeek!"
+                    raise RuntimeError(
+                        "No information on plural forms for this language!",
+                        language)
+            else:
+                self.pluralForms[language.code] = pofile.pluralForms
 
         if 'offset' in request.form:
             self.offset = int(request.form.get('offset'))
@@ -279,7 +300,7 @@ class TranslatePOTemplate:
         if 'count' in request.form:
             self.count = int(request.form.get('count'))
         else:
-            self.count = self.defaultCount
+            self.count = self.DEFAULT_COUNT
 
     def atBeginning(self):
         return self.offset == 0
@@ -302,15 +323,34 @@ class TranslatePOTemplate:
             if name in kw:
                 parameters[name] = kw[name]
 
-        return str(self.request.URL) + '?' + '&'.join(map(
-            lambda x: x + '=' + str(parameters[x]), parameters))
+        if parameters:
+            #return str(self.request.URL) + '?' + '&'.join(map(
+                #lambda x: x + '=' + str(parameters[x]), parameters))
+            keys = parameters.keys()
+            keys.sort()
+            return str(self.request.URL) + '?' + '&'.join(
+                [ x + '=' + str(parameters[x]) for x in keys ])
+        else:
+            return str(self.request.URL)
 
     def beginningURL(self):
         return self._makeURL()
 
     def endURL(self):
-        return self._makeURL(offset =
-            (len(self.context) - self.count) / self.count * self.count)
+        # The largest offset less than the length of the template x that is a
+        # multiple of self.count.
+
+        length = len(self.context)
+
+        if length % self.count == 0:
+            offset = length - count
+        else:
+            offset = length - (length % self.count)
+
+        if offset == 0:
+            return self._makeURL()
+        else:
+            return self._makeURL(offset = offset)
 
     def previousURL(self):
         if self.offset - self.count <= 0:
@@ -325,7 +365,6 @@ class TranslatePOTemplate:
             return self._makeURL(offset = self.offset + self.count)
 
     def _munge(self, text):
-        #return text.replace(' ', u'\u2423\u200b').replace('\n', u'\u21b5<br/>\n')
         return text.replace('\n', u'\u21b5<br/>\n')
 
     def _messageID(self, messageID):
@@ -351,7 +390,7 @@ class TranslatePOTemplate:
         if isPlural:
             messageIDPlural = self._messageID(messageIDs[1])
         else:
-            messageIDPlural = False
+            messageIDPlural = None
 
         return {
             'id' : set.id,
@@ -361,6 +400,7 @@ class TranslatePOTemplate:
             'sequence' : set.sequence,
             'fileReferences': set.fileReferences,
             'commentText' : set.commentText,
+            'sourceComment' : set.sourceComment,
             'translations' : translations,
         }
 
