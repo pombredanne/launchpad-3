@@ -11,7 +11,7 @@
             </tr>
         </table>
 
-        <a tal:attributes="href string:/buttress/projects/${context/project/name}/${context/name}"
+        <a tal:attributes="href string:/buttress/upstream/${context/project/name}/${context/name}"
             style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
             title="See all branches for this product">
             <img src="/++resource++add.gif" alt="+" />
