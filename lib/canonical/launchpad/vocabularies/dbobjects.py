@@ -17,7 +17,9 @@ from canonical.launchpad.database.binarypackage import BinaryPackage, \
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bugtracker import BugTracker
-from canonical.database.sqlbase import SQLBase, quote_like
+from canonical.database.sqlbase import SQLBase, quote_like, quote
+
+from sqlobject import AND, OR
 
 
 class IHugeVocabulary(IVocabulary):
@@ -89,7 +91,6 @@ class SQLObjectVocabularyBase(object):
         try:
             int(value)
         except:
-            import pdb; pdb.set_trace()
             raise RuntimeError, 'Got a %r' % (value,)
 
         try:
@@ -159,14 +160,26 @@ class ProductVocabulary(SQLObjectVocabularyBase):
     _table = Product
 
     def _toTerm(self, obj):
-        return SimpleTerm(obj, obj.name, obj.title)
+        product = obj.name
+        project = obj.project.name
+        if product == project:
+            token = product
+        else:
+            token = '%s %s' % (project, product)
+        return SimpleTerm(obj, token, obj.title)
 
     def getTermByToken(self, token):
-        tab = self._table
         try:
-            objs = list(tab.select(tab.q.name == token))
+            project, product = token.split(None,1)
         except ValueError:
-            objs = ()
+            project = product = token # If no project, assume it eq product
+        tab = self._table
+        objs = list(tab.select('''
+            product.project = project.id
+            AND product.name = %s AND project.name = %s
+            ''' % (quote(product), quote(project)),
+            ['Product', 'Project']
+            ))
         if len(objs) != 1:
             raise LookupError, token
         return self._toTerm(objs[0])
@@ -181,9 +194,17 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         '''
         if not query:
             return []
+        query = quote_like(query.lower())
         t = self._table
         objs = [self._toTerm(r)
-            for r in t.select(t.q.name.startswith(query.lower()))
+            for r in t.select('''
+                product.project = project.id
+                AND (product.name  like %s || '%%'
+                    OR project.name like %s || '%%'
+                    )
+                ''' % (query, query),
+                ['Product', 'Project']
+                )
             ]
         return objs
 

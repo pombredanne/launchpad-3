@@ -81,7 +81,7 @@ class ISinglePopupView(Interface):
 class SinglePopupView(object):
     implements(ISinglePopupView)
 
-    batchsize = 2
+    batchsize = 15
 
     def title(self):
         return _(u'Select %s' % self.request.form['vocabulary'])
