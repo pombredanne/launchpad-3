@@ -9,7 +9,7 @@ from math import ceil
 from zope.component import getUtility
 from canonical.rosetta.interfaces import ILanguages, IPerson
 from canonical.database.doap import IProjects
-from canonical.rosetta.sql import RosettaLanguage
+from canonical.rosetta.sql import RosettaLanguage, RosettaPerson
 from canonical.rosetta.poexport import POExport
 from canonical.rosetta.pofile import POHeader
 
@@ -54,6 +54,13 @@ class ViewProject:
     def languageProducts(self):
         person = IPerson(self.request.principal, None)
         if person is not None:
+            for language in person.languages():
+                yield LanguageProducts(language, self.context.products)
+        else:
+            # XXX: Temporal hack, to be removed as soon as we have the login
+            # template working. The code duplication is just to be easier to
+            # remove this hack when is not needed anymore.
+            person = RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
             for language in person.languages():
                 yield LanguageProducts(language, self.context.products)
 
@@ -121,8 +128,17 @@ class ViewProduct:
         return len(list(self.context.poTemplates())) > 0
 
     def languageTemplates(self):
-        for language in IPerson(self.request.principal).languages():
-            yield LanguageTemplates(language, self.context.poTemplates())
+        person = IPerson(self.request.principal, None)
+        if person is not None:
+            for language in person.languages():
+                yield LanguageTemplates(language, self.context.poTemplates())
+        else:
+            # XXX: Temporal hack, to be removed as soon as we have the login
+            # template working. The code duplication is just to be easier to
+            # remove this hack when is not needed anymore.
+            person = RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
+            for language in person.languages():
+                yield LanguageTemplates(language, self.context.poTemplates())
 
 
 class LanguageTemplates:
@@ -260,11 +276,20 @@ class TranslatorDashboard:
         return getUtility(IProjects)
 
     def languages(self):
-        all_languages = getUtility(ILanguages)
-        interestedLanguages = list(IPerson(self.request.principal).languages())
+        # XXX: This method is slow. We should look here when
+        # we start the optimization phase.
+        allLanguages = getUtility(ILanguages)
+        person = IPerson(self.request.principal, None)
+        if person is None:
+            # XXX: Temporal hack, to be removed as soon as we have the login
+            # template working. The code duplication is just to be easier to
+            # remove this hack when is not needed anymore.
+            person = RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
 
-        for code in all_languages.keys():
-            if all_languages[code] in interestedLanguages:
+        interestedLanguages = list(person.languages())
+
+        for code in allLanguages.keys():
+            if allLanguages[code] in interestedLanguages:
                 selected = True
             else:
                 selected = False
@@ -273,10 +298,45 @@ class TranslatorDashboard:
             retdict = {
                 'selected': selected,
                 'code': code,
-                'name': unicode(all_languages[code].englishName, 'UTF-8'),
+                'name': allLanguages[code].englishName,
             }
 
             yield retdict
+
+    def submit(self):
+        # XXX: This method is slow. We should look here when
+        # we start the optimization phase.
+        if "LANGUAGES" in self.request.form:
+            if self.request.method == "POST":
+                allLanguages = getUtility(ILanguages)
+                person = IPerson(self.request.principal, None)
+                if person is None:
+                    # XXX: Temporal hack, to be removed as soon as we have the login
+                    # template working. The code duplication is just to be easier to
+                    # remove this hack when is not needed anymore.
+                    person = RosettaPerson.selectBy(
+                        displayName='Dafydd Harries')[0]
+
+                oldInterest = list(person.languages())
+                newInterest = []
+                for code in allLanguages.keys():
+                    if code in self.request.form:
+                        newInterest.append(allLanguages[code])
+                for language in oldInterest:
+                    if language not in newInterest:
+                        person.removeLanguage(language)
+                for language in newInterest:
+                    if language not in oldInterest:
+                        person.addLanguage(language)
+            else:
+                raise RuntimeError("must post this form!")
+
+            self.submitted = True
+            return "Thank you for submitting the form."
+        else:
+            self.submitted = False
+            return ""
+
 
 class ViewSearchResults:
     def __init__(self, context, request):
@@ -351,7 +411,15 @@ class TranslatePOTemplate:
                 except KeyError:
                     pass
         else:
-            self.languages = list(IPerson(request.principal).languages())
+            person = IPerson(request.principal, None)
+            if person is None:
+                # XXX: Temporal hack, to be removed as soon as we have the login
+                # template working. The code duplication is just to be easier to
+                # remove this hack when is not needed anymore.
+                person = RosettaPerson.selectBy(
+                    displayName='Dafydd Harries')[0]
+
+            self.languages = list(person.languages())
 
         self.pluralForms = {}
 
@@ -554,9 +622,20 @@ class ViewTranslationEffort:
         return len(list(self.context.categories())) > 0
 
     def languageTranslationEffortCategories(self):
-        for language in IPerson(self.request.principal).languages():
-            yield LanguageTranslationEffortCategories(language,
-                self.context.categories())
+        person = IPerson(self.request.principal, None)
+        if person is not None:
+            for language in person.languages():
+                yield LanguageTranslationEffortCategories(language,
+                    self.context.categories())
+        else:
+            # XXX: Temporal hack, to be removed as soon as we have the login
+            # template working. The code duplication is just to be easier to
+            # remove this hack when is not needed anymore.
+            person = RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
+            for language in person.languages():
+                yield LanguageTranslationEffortCategories(language,
+                    self.context.categories())
+
 
 class LanguageTranslationEffortCategories:
     def __init__(self, language, translationEffortCategories):
@@ -625,6 +704,15 @@ class ViewTranslationEffortCategory:
         return len(list(self.context.poTemplates())) > 0
 
     def languageTemplates(self):
-        for language in IPerson(self.request.principal).languages():
-            yield LanguageTemplates(language, self.context.poTemplates())
+        person = IPerson(self.request.principal, None)
+        if person is not None:
+            for language in person.languages():
+                yield LanguageTemplates(language, self.context.poTemplates())
+        else:
+            # XXX: Temporal hack, to be removed as soon as we have the login
+            # template working. The code duplication is just to be easier to
+            # remove this hack when is not needed anymore.
+            person = RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
+            for language in person.languages():
+                yield LanguageTemplates(language, self.context.poTemplates())
 

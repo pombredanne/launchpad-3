@@ -542,6 +542,12 @@ class IPerson(Interface):
     def languages():
         """The languages a person has expressed interest in."""
 
+    def addLanguage(language):
+        """Adds the language to its list of interested languages."""
+
+    def removeLanguage(language):
+        """Removes the language from the list on interested ones."""
+
 
 class ILanguage(Interface):
     """A Language."""
@@ -556,6 +562,13 @@ class ILanguage(Interface):
 
     pluralExpression = Attribute("""The expression that relates a number of
         items to the appropriate plural form.""")
+
+    # XXX: Review. Do you think this method is good for the interface?.
+    def translateLabel():
+        """The ILabel used to say that some is interested on ILanguage"""
+
+    def translators():
+        """The Persons that are interested on translate into this language."""
 
 
 class ILanguages(Interface):
@@ -573,6 +586,17 @@ class IPOExport(Interface):
 
     def export(language):
         """Exports the .po file for the specific language"""
+
+
+
+class ISchemas(Interface):
+    """The collection of schemas."""
+
+    def __getitem__(name):
+        """Get a schema by its name."""
+
+    def keys():
+        """Return an iterator over the schemas names."""
 
 
 class ISchema(Interface):
@@ -603,6 +627,9 @@ class ILabel(Interface):
     title = Attribute("The title of this schema.")
 
     description = Attribute("The description of this schema.")
+
+    def persons():
+        """Returns an iterator over all persons associated with this Label."""
 
 
 class ICategory(ILabel):
@@ -704,7 +731,7 @@ class ITranslationEffort(Interface):
 
 # XXX: I think we could hide this object from the Interface
 class ITranslationEffortPOTemplate(Interface):
-    """The object that relations a POTemplate with a Translation Effort."""
+    """The object that relates a POTemplate with a Translation Effort."""
 
     poTemplate = Attribute("The POTemplate we are refering.")
 
@@ -713,4 +740,3 @@ class ITranslationEffortPOTemplate(Interface):
     priority = Attribute("The priority for this poTemplate")
 
     translationEffort = Attribute("The category's translation effort.")
-

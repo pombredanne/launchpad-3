@@ -16,6 +16,7 @@ tests = [
     ('IPerson', 'RosettaPerson'),
     ('ILanguage', 'RosettaLanguage'),
     ('ILanguages', 'RosettaLanguages'),
+    ('ISchemas', 'RosettaSchemas'),
     ('ISchema', 'RosettaSchema'),
     ('ILabel', 'RosettaLabel'),
     ('ICategory', 'RosettaCategory'),

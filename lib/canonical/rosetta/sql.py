@@ -976,11 +976,12 @@ class RosettaLanguage(SQLBase):
         StringCol(name='pluralExpression', dbName='pluralexpression'),
     ]
 
-    def translators(self):
+    def translateLabel(self):
         schema = RosettaSchema.selectBy(name='translation-languages')
-        translatableLanguage = RosettaTranslatesLanguage.selectBy(schema=schema,
-                                                                  name=self.code)
-        return translatableLanguage.persons()
+        return RosettaLabel.selectBy(schemaID=schema.id, name=self.code)
+
+    def translators(self):
+        return self.translateLabel().persons()
 
 
 class RosettaPerson(SQLBase):
@@ -1026,7 +1027,18 @@ class RosettaPerson(SQLBase):
             if label.schema == schema:
                 yield languages[label.name]
 
+    def addLanguage(self, language):
+        schema = RosettaSchema.selectBy(name='translation-languages')[0]
+        label = RosettaLabel.selectBy(schemaID=schema.id, name=language.code)[0]
+        # This method comes from the RelatedJoin
+        self.addRosettaLabel(label)
 
+    def removeLanguage(self, language):
+        schema = RosettaSchema.selectBy(name='translation-languages')[0]
+        label = RosettaLabel.selectBy(schemaID=schema.id, name=language.code)[0]
+        # This method comes from the RelatedJoin
+        self.removeRosettaLabel(label)
+    
 class RosettaBranch(SQLBase):
     implements(IBranch)
 
@@ -1050,6 +1062,21 @@ def personFromPrincipal(principal):
             raise KeyError, principal
         else:
             return ret[0]
+
+class RosettaSchemas(object):
+    implements(ISchemas)
+
+    def __getitem__(self, name):
+        results = RosettaSchema.selectBy(name=name)
+
+        if results.count() == 0:
+            raise KeyError, name
+        else:
+            return results[0]
+
+    def keys(self):
+        return [schema.name for schema in RosettaSchema.select()]
+
 
 class RosettaSchema(SQLBase):
     implements(ISchema)
@@ -1252,3 +1279,4 @@ class RosettaTranslationEffortPOTemplate(SQLBase):
             dbName='category', notNull=False),
         IntCol(name='priority', dbName='priority', notNull=True),
     ]
+

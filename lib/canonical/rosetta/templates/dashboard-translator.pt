@@ -46,6 +46,8 @@
     <div class="rosettaDashboardElement">
         <h2>My prefered languages</h2>
 
+        <div tal:content="view/submit" />
+        <form action="translator" method="POST">
         <table class="listing">
             <thead>
                 <tr>
@@ -70,7 +72,8 @@
             </tbody>
 
         </table>
-        <input type="submit" value="Update my prefered languages" />
+        <input type="submit" name="LANGUAGES" value="Update my prefered languages" />
+	</form>
     </div>
 
     <div class="rosettaDashboardElement">
