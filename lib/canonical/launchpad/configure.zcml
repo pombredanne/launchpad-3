@@ -32,6 +32,20 @@
 
   <browser:suburl
     for="canonical.publication.RootObject"
+    name="sourcepackagenames"
+    utility="canonical.launchpad.interfaces.ISourcePackageNameSet"
+    permission="zope.Public"
+    />
+
+  <browser:suburl
+    for="canonical.publication.RootObject"
+    name="binarypackagenames"
+    utility="canonical.launchpad.interfaces.IBinaryPackageNameSet"
+    permission="zope.Public"
+    />
+
+  <browser:suburl
+    for="canonical.publication.RootObject"
     name="projects"
     utility="canonical.launchpad.interfaces.IProjectSet"
     permission="zope.Public"

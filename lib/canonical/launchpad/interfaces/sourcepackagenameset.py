@@ -11,7 +11,7 @@ class ISourcePackageNameSet(Interface):
     """A set of SourcePackageName."""
 
     def __getitem__(name):
-        """Retrieve a sourcepackage by name."""
+        """Retrieve a sourcepackagename by name."""
 
     def __iter__():
         """Iterate over names"""
@@ -23,3 +23,5 @@ class ISourcePackageNameSet(Interface):
         will be raised.
         """
 
+    def findByName(name):
+        """Find sourcepackagenames by its name or part of it"""

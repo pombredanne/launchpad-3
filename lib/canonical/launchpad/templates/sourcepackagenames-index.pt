@@ -1,0 +1,88 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+  <title metal:fill-slot="title">
+   Source package name set
+  </title>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+  <!-- Soyuz style sheet -->
+  <style type="text/css" media="screen">@import url(soyuz.css);</style>
+</head>
+
+<body>
+
+  <metal:leftportlets fill-slot="portlets_one">
+  </metal:leftportlets>
+
+  <metal:rightportlets fill-slot="portlets_two">
+  </metal:rightportlets>
+
+  <div metal:fill-slot="main" id="content" class="documentEditable">
+    <div class="documentContent" id="region-content">
+
+      <h1>Source Package Names</h1>
+
+      <form name="search" method="GET">
+        Find Source Package Names: 
+        <br>
+        <input type="text" name="name" tal:attributes="value request/name|nothing" />
+        <input type="submit" value="Search"/>
+      </form>
+      <br><br>
+      
+  <tal:block tal:define="bn view/sourcePackagenamesBatchNavigator;
+                         prev_url bn/prevBatchURL;
+                         next_url bn/nextBatchURL;">
+
+
+      <table width="100%"
+             tal:define="currentBatch python:list(bn.currentBatch())">
+        <tr>
+          <th tal:condition="currentBatch">
+            <span tal:condition="request/name|nothing">
+	      Source package names found
+            </span>
+          </th>
+          <th tal:condition="not:currentBatch">
+            <i>No Source package names found</i>
+          </th>
+       </tr>
+       <tr tal:repeat="spname currentBatch">
+           <td tal:content="spname/name">
+	     SOURCEPACKAGENAME
+           </td>
+       </tr>
+       <tr>
+         <td align="center">
+         <fieldset tal:condition="python:prev_url or next_url">
+         <div>
+    	   <table>
+	   <tr>
+             <th tal:condition="prev_url">
+	       <a tal:attributes="href prev_url"><b><< Prev</b></a>
+	     </th>
+             <th tal:repeat="page_link bn/batchPageURLs">
+	       <a tal:attributes="href python:page_link.values()[0]"
+                  tal:content="python:page_link.keys()[0]"></a>
+	     </th>
+             <th tal:condition="next_url" >
+	       <a tal:attributes="href next_url"><b>Next >></b></a>
+             </th>
+          </tr>
+	  </table>
+        </div>
+        </fieldset>
+        </td>
+      </tr>
+    </table>
+    </tal:block>
+
+    </div>
+  </div>
+</body>
+</html>
+ 

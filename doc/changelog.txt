@@ -2,6 +2,43 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-10 05:18:33 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1403
+
+    Summary:
+      /sourcepackagenames and /binarypackagename pages implemented. +new still need to be done
+    Revision:
+      launchpad--devel--0--patch-1403
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-459
+       /sourcepackagenames and /binarypackagename pages implemented. +new still need to be done
+    
+
+    new files:
+     lib/canonical/launchpad/browser/.arch-ids/binarypackagenameset.py.id
+     lib/canonical/launchpad/browser/.arch-ids/sourcepackagenameset.py.id
+     lib/canonical/launchpad/browser/binarypackagenameset.py
+     lib/canonical/launchpad/browser/sourcepackagenameset.py
+     lib/canonical/launchpad/templates/.arch-ids/binarypackagenames-index.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/sourcepackagenames-index.pt.id
+     lib/canonical/launchpad/templates/binarypackagenames-index.pt
+     lib/canonical/launchpad/templates/sourcepackagenames-index.pt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/__init__.py
+     lib/canonical/launchpad/configure.zcml
+     lib/canonical/launchpad/database/binarypackagenameset.py
+     lib/canonical/launchpad/database/sourcepackagenameset.py
+     lib/canonical/launchpad/interfaces/binarypackagenameset.py
+     lib/canonical/launchpad/interfaces/sourcepackagenameset.py
+     lib/canonical/launchpad/zcml/binarypackagenameset.zcml
+     lib/canonical/launchpad/zcml/sourcepackagenameset.zcml
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-459
+
+
 2005-03-10 02:39:36 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1402
 
     Summary:

@@ -7,7 +7,10 @@ from zope.exceptions import NotFoundError
 from sqlobject import SQLObjectNotFound
 from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol
 
-# interfaces and database 
+# LP imports
+from canonical.database.sqlbase import quote
+
+# launchpad interfaces and database 
 from canonical.launchpad.interfaces import ISourcePackageNameSet
 from canonical.launchpad.database.sourcepackagename import SourcePackageName
 #
@@ -36,4 +39,9 @@ class SourcePackageNameSet(object):
         except SQLObjectNotFound:
             raise NotFoundError(sourcepackagenameid)
 
-
+    def findByName(self, name):
+        """Find sourcepackagenames by its name or part of it"""
+        name = name.replace('%', '%%')
+        query = ('name ILIKE %s'
+                 %quote('%%' +name+ '%%'))
+        return SourcePackageName.select(query)
