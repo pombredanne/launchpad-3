@@ -36,13 +36,13 @@ def newProductRelease(form, product, owner, series=None):
     shortdesc = form['shortdesc']
     description = form['description']
     releaseurl = form['releaseurl']
-    # series may be passed in arguments, or in the form, or be NULL
+    # series may be passed in arguments, or in the form
     if not series:
         if form.has_key('series'):
             series = int(form['series'])
     # Create the new ProductRelease
     productrelease = ProductRelease(
-                          product=product.id,
+                          #product=product.id,
                           version=version,
                           title=title,
                           shortdesc=shortdesc,

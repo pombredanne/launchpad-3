@@ -22,7 +22,7 @@ First of all, create some teams:
 
 >>> o = TeamSubscriptionPolicy.OPEN
 >>> m = TeamSubscriptionPolicy.MODERATED
->>> expires = datetime(2005, 12, 01)
+>>> expires = datetime(2010, 12, 01)
 
 >>> p = Person.byName('name16')
 >>> t1 = Person(subscriptionpolicy=o, name='t1', displayname='t1', teamowner=p)
@@ -79,6 +79,15 @@ to addMember() it.
 >>> t4.addMember(t5)
 >>> [m.displayname for m in _getAllMembers(t4)]
 [u'Foo Bar', u't2', u't3', u't5']
+
+XXX: There appears to be some nasty SQLObject bug hiding in here.
+In Person.leave, it queries TeamParticipation and it is not seeing
+the results that have  just been entered unless we flush all pending
+SQLObject updates first. This appears to be intermitant.
+-- StuartBishop 20050401
+
+>>> from canonical.database.sqlbase import flush_database_updates
+>>> flush_database_updates()
 
 
 Now let's remove some members to see what happens:

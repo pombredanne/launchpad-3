@@ -18,7 +18,6 @@ class ProductRelease(SQLBase):
     implements(IProductRelease)
     _table = 'ProductRelease'
 
-    product = ForeignKey(dbName='product', foreignKey="Product", notNull=True)
     datereleased = DateTimeCol(notNull=True, default=nowUTC)
     version = StringCol(notNull=True)
     title = StringCol(notNull=False, default=None)
@@ -27,14 +26,21 @@ class ProductRelease(SQLBase):
     changelog = StringCol(notNull=False, default=None)
     owner = ForeignKey(dbName="owner", foreignKey="Person", notNull=True)
     productseries = ForeignKey(dbName='productseries',
-                               foreignKey='ProductSeries', default=None)
-    manifest = ForeignKey(dbName='manifest', foreignKey='Manifest', default=None)
+                               foreignKey='ProductSeries', notNull=True)
+    manifest = ForeignKey(dbName='manifest', foreignKey='Manifest',
+            default=None)
+
+    files = MultipleJoin('ProductReleaseFile', joinColumn='productrelease')
 
     # joins
     files = MultipleJoin('ProductReleaseFile', joinColumn='productrelease')
     potemplates = MultipleJoin('POTemplate', joinColumn='productrelease')
 
     # properties
+    def product(self):
+        return self.productseries.product
+    product = property(product)
+
     def displayname(self):
         return self.productseries.product.displayname + ' ' + self.version
     displayname = property(displayname)
@@ -82,7 +88,6 @@ class ProductRelease(SQLBase):
         for t in self.potemplates:
             count += t.rosettaCount(language)
         return count
-
 
 
 class ProductReleaseFile(SQLBase):

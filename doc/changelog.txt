@@ -2,6 +2,110 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-01 13:44:06 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1539
+
+    Summary:
+      RequireProductSeries
+    Revision:
+      launchpad--devel--0--patch-1539
+
+    Patches applied:
+    
+     * morgan.collett@canonical.com/launchpad--requireProductSeries--1--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1417
+    
+     * morgan.collett@canonical.com/launchpad--requireProductSeries--1--patch-1
+       First attempt at SQLObject changes
+    
+     * morgan.collett@canonical.com/launchpad--requireProductSeries--1--patch-2
+       Get product and productrelease linkage through series
+    
+     * morgan.collett@canonical.com/launchpad--requireProductSeries--1--patch-3
+       make fileimporter.py aware of product series - first try
+    
+     * morgan.collett@canonical.com/launchpad--requireProductSeries--1--patch-4
+       Changed sampledata the proper way to put all releases in a series
+    
+     * stuart.bishop@canonical.com/launchpad--requireproductseries--0--base-0
+       tag of morgan.collett@canonical.com/launchpad--requireProductSeries--1--patch-4
+    
+     * stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-1
+       Merge from Rocketfuel and resolve conflicts
+    
+     * stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-2
+       Add migration code to RequireProductSeries DB patch and update sampledata
+    
+     * stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-3
+       Fix upstream.txt doctest
+    
+     * stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-4
+       Extend upstream.txt doctest to show navigation from product via productseries to productrelease
+    
+     * stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-5
+       Sort releases by default since they are small lists and the DB will be using the index anyway
+    
+     * stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-6
+       Fix Product traversal
+    
+     * stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-7
+       Fix helpers.requestCountry so it works if we find an IP address
+    
+     * stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-8
+       Fix Product.translatables
+    
+     * stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-9
+       Fix ProductReleaseImporter._ensureProductRelease
+    
+     * stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-10
+       Work around SQLObject bug in count()
+    
+     * stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-11
+       Move DB patch into place
+    
+     * stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-12
+       Make dummy ProductSeries.name HEAD
+    
+     * stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-13
+       Tweak teamparticipation.txt to get it passing, and comment about this workaround for a possible lurking SQLObject bug
+    
+
+    new files:
+     database/schema/.arch-ids/patch-11-16-0.sql.id
+     database/schema/patch-11-16-0.sql
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/doap/fileimporter.py
+     lib/canonical/launchpad/browser/productrelease.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/database/productrelease.py
+     lib/canonical/launchpad/database/productseries.py
+     lib/canonical/launchpad/doc/teamparticipation.txt
+     lib/canonical/launchpad/doc/upstream.txt
+     lib/canonical/launchpad/helpers.py
+
+    new patches:
+     morgan.collett@canonical.com/launchpad--requireProductSeries--1--base-0
+     morgan.collett@canonical.com/launchpad--requireProductSeries--1--patch-1
+     morgan.collett@canonical.com/launchpad--requireProductSeries--1--patch-2
+     morgan.collett@canonical.com/launchpad--requireProductSeries--1--patch-3
+     morgan.collett@canonical.com/launchpad--requireProductSeries--1--patch-4
+     stuart.bishop@canonical.com/launchpad--requireproductseries--0--base-0
+     stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-1
+     stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-2
+     stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-3
+     stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-4
+     stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-5
+     stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-6
+     stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-7
+     stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-8
+     stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-9
+     stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-10
+     stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-11
+     stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-12
+     stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-13
+
+
 2005-04-01 12:05:45 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1538
 
     Summary:

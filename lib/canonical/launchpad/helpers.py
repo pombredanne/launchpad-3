@@ -234,7 +234,7 @@ def requestCountry(request):
         ipaddress = request.get('REMOTE_ADDR')
     if ipaddress is None:
         return None
-    return getUtility(IGeoIP).country_by_addr(ip)
+    return getUtility(IGeoIP).country_by_addr(ipaddress)
 
 def browserLanguages(request):
     """Return a list of Language objects based on the browser preferences."""

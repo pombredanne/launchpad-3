@@ -5,6 +5,7 @@ import urllib2
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import quote, SQLBase
 from canonical.launchpad.database import ProductReleaseFile, ProductRelease
+from canonical.launchpad.database import ProductSeries
 from canonical.librarian.client import FileUploadClient
 from canonical.lp import dbschema
 
@@ -46,17 +47,35 @@ class ProductReleaseImporter:
     def _ensureProductRelease(self, filename):
         from hct.util.path import split_version, name
         version = split_version(name(filename))[1]
-        existingReleases = ProductRelease.selectBy(productID=self.product.id,
-                                                   version=version)
-        if existingReleases.count() == 0:
-            # Yep, we do need to create a product release.
-            # FIXME: We probably ought to use the last-modified-time reported by
-            # the download, rather than just UTC_NOW.
-            pr = ProductRelease(productID=self.product.id, datereleased=UTC_NOW,
+        series = version.split('.')[0]
+        ###existingReleases = ProductRelease.selectBy(productID=self.product.id,
+        ###                                           version=version)
+        existingSeries = ProductSeries.selectBy(productID=self.product.id,
+                                                name=version)
+        if existingSeries.count() == 0:
+            ps = ProductSeries(productID=self.product.id, name=version,
+                               displayname=version, shortdesc=version)
+            pr = ProductRelease(productseriesID=ps.id, datereleased=UTC_NOW,
                                 version=version, ownerID=self.product.owner.id)
         else:
-            # The db schema guarantees there cannot be more than one result
-            pr = existingReleases[0]
+            ps = existingSeries[0]
+            existingReleases = ProductRelease.selectBy(
+                    productseriesID=ps.id, version=version)
+            if existingReleases.count() == 0:
+                pr = ProductRelease(productID=self.product.id, datereleased=UTC_NOW,
+                                    version=version, ownerID=self.product.owner.id)
+            else:
+                pr = existingReleases[0]
+        ### XXX REMOVE BELOW EXCEPT RETURN
+        ###if existingReleases.count() == 0:
+        ###    # Yep, we do need to create a product release.
+        ###    # FIXME: We probably ought to use the last-modified-time reported by
+        ###    # the download, rather than just UTC_NOW.
+        ###    pr = ProductRelease(productID=self.product.id, datereleased=UTC_NOW,
+        ###                        version=version, ownerID=self.product.owner.id)
+        ###else:
+        ###    # The db schema guarantees there cannot be more than one result
+        ###    pr = existingReleases[0]
         return pr
 
     def _downloadIntoLibrarian(self, url, filename):

@@ -14,6 +14,7 @@ from zope.exceptions import NotFoundError
 from sqlobject import DateTimeCol, ForeignKey, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
 from sqlobject import SQLObjectNotFound
+from sqlobject import AND
 
 import canonical.sourcerer.deb.version
 
@@ -96,8 +97,19 @@ class Product(SQLBase):
 
     serieslist = MultipleJoin('ProductSeries', joinColumn='product')
 
-    releases = MultipleJoin('ProductRelease', joinColumn='product',
-                             orderBy='-datereleased')
+    # XXX MorganCollett 2005-03-14 We now need to join through
+    #     ProductSeries
+    #releases = MultipleJoin('ProductRelease', joinColumn='product',
+    #                         orderBy='-datereleased')
+
+    def releases(self):
+        return ProductRelease.select(
+                AND(ProductRelease.q.productseriesID == ProductSeries.q.id,
+                    ProductSeries.q.productID == self.id),
+                clauseTables=['ProductSeries'],
+                orderBy=['version']
+        )
+    releases = property(releases)
 
     milestones = MultipleJoin('Milestone', joinColumn = 'product')
 
@@ -121,9 +133,10 @@ class Product(SQLBase):
                         clauseTables=['POTemplate', 'ProductRelease',
                                       'ProductSeries'],
                         orderBy='-datereleased', distinct=True)
-        if releases.count() > 0:
+        try:
             return releases[0]
-        return None
+        except IndexError:
+            return None
 
     def newseries(self, form):
         # Extract the details from the form
@@ -218,10 +231,10 @@ class Product(SQLBase):
             clauseTables=['ProductSeries', 'ProductRelease',
                           'POTemplateName'])
 
-        if results.count() == 0:
-            raise KeyError, name
-        else:
+        try:
             return results[0]
+        except IndexError:
+            raise KeyError, name
 
     def newPOTemplate(self, name, title, person=None):
         if POTemplate.selectBy(
@@ -261,7 +274,12 @@ class Product(SQLBase):
         return count
 
     def getRelease(self, version):
-        return ProductRelease.selectBy(productID=self.id, version=version)[0]
+        #return ProductRelease.selectBy(productID=self.id, version=version)[0]
+        return ProductRelease.select(
+                    AND(ProductRelease.q.productseriesID == ProductSeries.q.id,
+                        ProductSeries.q.productID == self.id,
+                        ProductRelease.q.version == version),
+                    clauseTables=['ProductSeries'])[0]
 
     def packagedInDistros(self):
         # This function-local import is so we avoid a circular import
@@ -328,10 +346,10 @@ class ProductSet:
     def __getitem__(self, name):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         ret = Product.selectBy(name=name)
-        if ret.count() == 0:
-            raise KeyError, name
-        else:
+        try:
             return ret[0]
+        except IndexError:
+            raise KeyError, name
 
     def get(self, productid):
         """See canonical.launchpad.interfaces.product.IProductSet."""
@@ -398,11 +416,13 @@ class ProductSet:
         This will give a list of the translatables in the given Translation
         Project. For the moment it just returns every translatable product.
         """
-        clauseTables = ['Product', 'ProductRelease', 'POTemplate']
-        query = ("POTemplate.productrelease=ProductRelease.id AND"
-                 " ProductRelease.product=Product.id")
-        return Product.select(query, distinct=True,
-                              clauseTables=clauseTables)
+        return Product.select('''
+            Product.id = ProductSeries.product
+            AND ProductSeries.id = ProductRelease.productseries
+            AND POTemplate.productrelease = ProductRelease.id
+            ''',
+            clauseTables=['ProductRelease', 'ProductSeries', 'POTemplate']
+            )
 
     def count_all(self):
         return Product.select().count()
@@ -411,16 +431,21 @@ class ProductSet:
         return self.translatables().count()
 
     def count_reviewed(self):
-        return Product.select("reviewed IS TRUE and active IS TRUE").count()
+        return Product.selectBy(reviewed=True, active=True).count()
 
     def count_bounties(self):
-        return Product.select("ProductBounty.product=Product.id",
+        # XXX: This should be using .count(), but it doesn't work with
+        # distinct=True at the moment -- StuartBishop 20050401
+        return len(list(Product.select("ProductBounty.product=Product.id",
                               distinct=True,
-                              clauseTables=['ProductBounty']).count()
+                              clauseTables=['ProductBounty'])))
 
     def count_buggy(self):
-        return Product.select("BugTask.product=Product.id",
-                              distinct=True,
-                              clauseTables=['BugTask']).count()
+        # XXX: This should be using .count(), but it doesn't work with
+        # distinct=True at the moment -- StuartBishop 20050401
+        return len(list(Product.select(
+                "BugTask.product=Product.id", distinct=True,
+                clauseTables=['BugTask'],
+                )))
 
 
