@@ -50,7 +50,7 @@ follows::
  |                                                                          |
  |            LIBRARIES      { Python standard library                      |
  |                           { Other libraries                              |
- |            ------------------------------------------------- Interfaces  |
+ |                                                                          |
  |  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~   |
  |                                                                          |
  |  DATABASE     relations, fields, constraints                             |
@@ -196,6 +196,30 @@ the "rosetta" path segment at the root.
   The rosetta application
 
 
+Development iterations
+----------------------
+
+<SteveA> there's also the larger process:
+<SteveA> 1. list total functionality, divide it into iterations
+<SteveA> 2. pick next iteration, go through 5 step process
+<SteveA> 3. review / refactor spec for previous iterations, based on what we learned this iteration
+<SteveA> 4. refactor web app to match
+
+- I want the teams to organise their URL tables into a number
+  of small milestones.  For each set of URLs and functionality,
+  I want the process to be
+  1. Write URLs into table
+  2. Document required functionality
+  3. Produce page template mock-ups
+  4. Implement functionality with stubs in soyuz
+  5. Connect functionality to the real database
+
+  I need to produce a second document explaining all this in
+  detail, to avoid the "communicating the big picture"
+  problem.
+
+
+
 Glossary
 --------
 
@@ -252,6 +276,23 @@ Browser presentation:
 Non-published {view,resource}:
     A {view,resource} that is used by other presentation components, but
     that is not itself addressable by a URL.
+
+
+Advice
+------
+
+Plan to have URLs in all lower-case letters and numbers, and -.
+
+Avoid _, capital letters, other symbols.
+
+Use "+" in a name if it really is part of a package name, like "gtk+"
+
+Consider using simply "+" to add new things.
+
+
+If you have a collection of things, such as people, use a plural noun for
+that part of the URL, not the singular.
+
 
 
 # arch-tag: cf2cb34d-52a5-4615-b135-439d70f43f36
