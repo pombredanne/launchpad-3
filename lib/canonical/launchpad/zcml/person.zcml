@@ -12,7 +12,7 @@
   <content class="canonical.launchpad.database.Person">
       <allow interface="canonical.launchpad.interfaces.IPerson" />
       <require 
-          permission="zope.Public"
+          permission="launchpad.Edit"
           set_schema="canonical.launchpad.interfaces.IPerson" />
   </content>
 

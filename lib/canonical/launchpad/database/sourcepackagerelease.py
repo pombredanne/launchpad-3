@@ -13,7 +13,7 @@ from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, DateTimeCol
 
 from canonical.librarian.client import FileDownloadClient
 from canonical.database.sqlbase import SQLBase
-from canonical.lp import dbschema
+from canonical.lp.dbschema import EnumCol, SourcePackageUrgency
 
 # interfaces and database 
 from canonical.launchpad.interfaces import ISourcePackageRelease
@@ -41,7 +41,8 @@ class SourcePackageRelease(SQLBase):
     dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
     manifest = ForeignKey(foreignKey='Manifest', dbName='manifest')
 
-    urgency = IntCol(dbName='urgency', notNull=True)
+    urgency = EnumCol(dbName='urgency', schema=SourcePackageUrgency,
+                      notNull=True)
     dateuploaded = DateTimeCol(dbName='dateuploaded', notNull=True,
                                default='NOW')
 
@@ -63,12 +64,6 @@ class SourcePackageRelease(SQLBase):
         return self.sourcepackage.sourcepackagename.name
     name = property(_name)
 
-    def _urgency(self):
-        for urgency in dbschema.SourcePackageUrgency.items:
-            if urgency.value == self.urgency:
-                return urgency.title
-        return 'Unknown (%d)' %self.urgency
-
     def binaries(self):
         clauseTables = ('SourcePackageRelease', 'BinaryPackage', 'Build')
 
@@ -77,6 +72,7 @@ class SourcePackageRelease(SQLBase):
                  ' AND Build.sourcepackagerelease = %i' % self.id)
 
         return BinaryPackage.select(query, clauseTables=clauseTables)
+    binaries = property(binaries)
 
     def files_url(self):
         # XXX: Daniel Debonzi 20050125
@@ -102,12 +98,8 @@ class SourcePackageRelease(SQLBase):
                 urls.append(DownloadURL(name, url))
 
         return urls
-
-    binaries = property(binaries)
-
-    pkgurgency = property(_urgency)
-
     files_url = property(files_url)
+
     #
     # Methods
     #

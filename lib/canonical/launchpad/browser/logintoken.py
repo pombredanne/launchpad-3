@@ -86,15 +86,24 @@ class ResetPasswordView(object):
         flushUpdates()
 
         person = emailaddress.person
+
+        # XXX: Steve Alexander, 2005-03-18
+        #      Local import, because I don't want this import copied elsewhere!
+        #      This code is to be removed when the UpgradeToBusinessClass
+        #      specification is implemented.
+        from zope.security.proxy import removeSecurityProxy
+        naked_person = removeSecurityProxy(person)
+        #      end of evil code.
+
         if (person.preferredemail is None and 
             len(person.validatedemails) == 1):
             # This user have no preferred email set and this is the only
             # validated email he owns. We must set it as the preferred one.
-            person.preferredemail = emailaddress
+            naked_person.preferredemail = emailaddress
 
         encryptor = getUtility(IPasswordEncryptor)
         password = encryptor.encrypt(password)
-        person.password = password
+        naked_person.password = password
         self.formProcessed = True
         self.context.destroySelf()
 

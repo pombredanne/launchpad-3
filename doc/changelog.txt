@@ -2,6 +2,91 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-23 18:31:52 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1484
+
+    Summary:
+      Require launchpad.Edit to change a Person.  Use removeSecurityProxy() in logintoken to make that work.  Change SourcePackageRelease.urgency to an EnumCol and remove .pkgurgency, for great justice.  Move property(method) lines to underneath the methods they apply to.  Improve __getitem__ from VSourcePackageReleasePublishing.  Add some unfinished debug code to web publication component.
+    Revision:
+      launchpad--devel--0--patch-1484
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-325
+       merge from rf
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-326
+       moved malone rpcdarmon.py to not-used
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-327
+       refuel
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-328
+       explicitly set PYTHONPATH to nothing before executing twistd and mktab using os.system.  the environment is passed through to these commands, including PYTHONPATH.  this means that if the tests are running as python2.3, but twistd runs with python2.4, and /usr/lib/python2.3 and/or site-packages is in the PYTHONPATH, bad things will happen.  a similar effect can be observed by typing 'cd /usr/lib/python2.3;vim' on a hoary box.  in this case, vim uses python2.4.  the overall bug is that python uses the PYTHONPATH and the current working directory in preference to where its system libraries are installed.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-329
+       change permission to edit a Person to launchpad.Edit.  Use evil removeSecurityProxy with XXX comment in logintoken.py to accommodate, temporarily, until we can UpgradeToBusinessClass.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-330
+       merge from rf
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-331
+       simplify _urgency from SourcePackageRelease.  remove maintainer from VSourcePackageReleasePublishing, to work around an sqlobject bug in supporting subclasses.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-332
+       simplification of property in sourcepackagerelease
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-333
+       merge from RF
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-334
+       make SourcePackageRelease.urgency an EnumCol.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-335
+       remove pkgurgency from SourcePackageRelease.  it is not needed now that urgency is an EnumCol.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-336
+       added some preliminary debugging support to the publisher.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-337
+       From VSourcePackageReleasePublishing, made __getitem__ better.  Removed a too-wide try-except.  Now raises NotFoundError rather than KeyError.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-338
+       merge from rf
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/logintoken.py
+     lib/canonical/launchpad/database/sourcepackagerelease.py
+     lib/canonical/launchpad/database/vsourcepackagereleasepublishing.py
+     lib/canonical/launchpad/interfaces/sourcepackagerelease.py
+     lib/canonical/launchpad/templates/sourcepackagerelease-index.pt
+     lib/canonical/launchpad/zcml/person.zcml
+     lib/canonical/publication.py
+
+    renamed files:
+     lib/canonical/malone/.arch-ids/rpcdaemon.py.id
+       ==> lib/canonical/not-used/.arch-ids/malone-rpc-daemon.py.id
+     lib/canonical/malone/rpcdaemon.py
+       ==> lib/canonical/not-used/malone-rpc-daemon.py
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--devel--0--patch-325
+     steve.alexander@canonical.com/launchpad--devel--0--patch-326
+     steve.alexander@canonical.com/launchpad--devel--0--patch-327
+     steve.alexander@canonical.com/launchpad--devel--0--patch-328
+     steve.alexander@canonical.com/launchpad--devel--0--patch-329
+     steve.alexander@canonical.com/launchpad--devel--0--patch-330
+     steve.alexander@canonical.com/launchpad--devel--0--patch-331
+     steve.alexander@canonical.com/launchpad--devel--0--patch-332
+     steve.alexander@canonical.com/launchpad--devel--0--patch-333
+     steve.alexander@canonical.com/launchpad--devel--0--patch-334
+     steve.alexander@canonical.com/launchpad--devel--0--patch-335
+     steve.alexander@canonical.com/launchpad--devel--0--patch-336
+     steve.alexander@canonical.com/launchpad--devel--0--patch-337
+     steve.alexander@canonical.com/launchpad--devel--0--patch-338
+
+
 2005-03-23 17:24:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1483
 
     Summary:

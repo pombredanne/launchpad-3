@@ -1,6 +1,7 @@
 # Zope imports
 from zope.interface import implements
 from zope.component import getUtility
+from zope.exceptions import NotFoundError
 
 # SQLObject/SQLBase
 from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol
@@ -25,7 +26,7 @@ class VSourcePackageReleasePublishing(SourcePackageRelease):
     # XXXkiko: IDs in this table are *NOT* unique!
     name = StringCol(dbName='name')
     shortdesc = StringCol(dbName='shortdesc')
-    maintainer = ForeignKey(foreignKey='Person', dbName='maintainer')
+    #maintainer = ForeignKey(foreignKey='Person', dbName='maintainer')
     description = StringCol(dbName='description')
     publishingstatus = IntCol(dbName='publishingstatus')
     datepublished = DateTimeCol(dbName='datepublished')
@@ -49,12 +50,13 @@ class VSourcePackageReleasePublishing(SourcePackageRelease):
 
     def __getitem__(self, version):
         """Get a  SourcePackageRelease"""
-        table = VSourcePackageReleasePublishing 
-        try:            
-            return table.select("sourcepackage = %d AND version = %s"
-                                % (self.sourcepackage.id, quote(version)))[0]
-        except IndexError:
-            raise KeyError, 'Version Not Found'
+        results = VSourcePackageReleasePublishing.select(
+            "sourcepackage = %d AND version = %s"
+            % (self.sourcepackage.id, quote(version)))
+        if results.count() == 0:
+            raise NotFoundError, version
+        else:
+            return results[0]
 
     def traverse(self, name):
         """See ISourcePackageReleasePublishing."""

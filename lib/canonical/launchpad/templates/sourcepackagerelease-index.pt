@@ -52,7 +52,7 @@
            UPLOADDATE</span> UTC
 
         <li><b>Urgency:</b>
-           <span tal:content="context/pkgurgency">
+           <span tal:content="context/urgency/title">
            URGENCY</span>
 
         <li><b>Component:</b>
