@@ -110,19 +110,38 @@ class DBSchemaAPI:
 
 
 class DateTimeFormatterAPI:
-    """Adapter from datetime objects to a formatted string."""
+    """Adapter from datetime objects to a formatted string.
+
+    If the datetime object is None, for example from a NULL column in
+    the database, then the methods that would return a formatted
+    string instead return None.
+
+    This allows you to say::
+
+      <span tal:content="some_datetime/fmt:date | default">Not known</span>
+
+    """
 
     def __init__(self, datetimeobject):
         self._datetime = datetimeobject
 
     def time(self):
-        return self._datetime.strftime('%T')
+        if self._datetime is None:
+            return None
+        else:
+            return self._datetime.strftime('%T')
 
     def date(self):
-        return self._datetime.strftime('%Y-%m-%d')
+        if self._datetime is None:
+            return None
+        else:
+            return self._datetime.strftime('%Y-%m-%d')
 
     def datetime(self):
-        return "%s %s" % (self.date(), self.time())
+        if self._datetime is None:
+            return None
+        else:
+            return "%s %s" % (self.date(), self.time())
 
 
 class FormattersAPI:
