@@ -57,17 +57,16 @@ class TagStanza(object):
         """Allows for k,v in foo.items()"""
         return [ (k,self.stanza[k]) for k in self.stanza.keys() ]
 
-class ChangesParseError(Exception):
+class TagFileParseError(Exception):
     """This exception is raised if parse_changes encounters nastiness"""
     pass
 
 re_single_line_field = re.compile(r"^(\S*)\s*:\s*(.*)");
 re_multi_line_field = re.compile(r"^\s(.*)");
 
-def parse_changes(filename, dsc_whitespace_rules=0):
-    """Parses a changes file and returns a dictionary where each field is a
-    key.  The mandatory first argument is the filename of the .changes
-    file.
+def parse_tagfile(filename, dsc_whitespace_rules=0):
+    """Parses a tag file and returns a dictionary where each field is a
+    key.  The mandatory first argument is the filename of the tag file.
 
     dsc_whitespace_rules is an optional boolean argument which defaults
     to off.  If true, it turns on strict format checking to avoid
@@ -89,7 +88,7 @@ def parse_changes(filename, dsc_whitespace_rules=0):
     lines = changes_in.readlines()
 
     if not lines:
-	raise ChangesParseError( "%s: empty file" % filename )
+	raise TagFileParseError( "%s: empty file" % filename )
 
     # Reindex by line number so we can easily verify the format of
     # .dsc files...
@@ -111,10 +110,10 @@ def parse_changes(filename, dsc_whitespace_rules=0):
             if dsc_whitespace_rules:
                 index += 1
                 if index > num_of_lines:
-                    raise ChangesParseError("%s: invalid .dsc file at line %d" % (filename, index))
+                    raise TagFileParseError("%s: invalid .dsc file at line %d" % (filename, index))
                 line = indexed_lines[index]
                 if not line.startswith("-----BEGIN PGP SIGNATURE"):
-                    raise ChangesParseError("%s: invalid .dsc file at line %d -- expected PGP signature; got '%s'" % (filename, index,line))
+                    raise TagFileParseError("%s: invalid .dsc file at line %d -- expected PGP signature; got '%s'" % (filename, index,line))
                 inside_signature = 0
                 break
             else:
@@ -143,7 +142,7 @@ def parse_changes(filename, dsc_whitespace_rules=0):
         mlf = re_multi_line_field.match(line)
         if mlf:
             if first == -1:
-                raise ChangesParseError("%s: could not parse .changes file line %d: '%s'\n [Multi-line field continuing on from nothing?]" % (filename, index,line))
+                raise TagFileParseError("%s: could not parse .changes file line %d: '%s'\n [Multi-line field continuing on from nothing?]" % (filename, index,line))
             if first == 1 and changes[field] != "":
                 changes[field] += '\n'
             first = 0
@@ -152,12 +151,12 @@ def parse_changes(filename, dsc_whitespace_rules=0):
 	error += line
 
     if dsc_whitespace_rules and inside_signature:
-        raise ChangesParseError("%s: invalid .dsc format at line %d" % (filename, index))
+        raise TagFileParseError("%s: invalid .dsc format at line %d" % (filename, index))
 
     changes_in.close()
     changes["filecontents"] = "".join(lines)
 
     if error:
-	raise ChangesParseError("%s: unable to parse .changes file: %s" % (filename, error))
+	raise TagFileParseError("%s: unable to parse .changes file: %s" % (filename, error))
 
     return changes

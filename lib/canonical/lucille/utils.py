@@ -24,7 +24,7 @@ def extract_component_from_section(section, default_component = "main"):
 
     return (section,component)
 
-from canonical.lucille.TagFiles import ChangesParseError
+from canonical.lucille.TagFiles import TagFileParseError
 
 def build_file_list(tagfile, is_dsc = False, default_component = "main" ):
     files = {}
@@ -53,7 +53,7 @@ def build_file_list(tagfile, is_dsc = False, default_component = "main" ):
             else:
                 (md5, size, section, priority, name) = tokens
         except ValueError:
-            raise ChangesParseError(line)
+            raise TagFileParseError(line)
 
         if section == "":
             section = "-"
