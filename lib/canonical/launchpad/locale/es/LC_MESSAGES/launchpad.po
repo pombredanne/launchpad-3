@@ -1,0 +1,1433 @@
+##############################################################################
+#
+# Copyright (c) 2003-2004 Zope Corporation and Contributors.
+# All Rights Reserved.
+#
+# This software is subject to the provisions of the Zope Public License,
+# Version 2.1 (ZPL).  A copy of the ZPL should accompany this distribution.
+# THIS SOFTWARE IS PROVIDED "AS IS" AND ANY AND ALL EXPRESS OR IMPLIED
+# WARRANTIES ARE DISCLAIMED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF TITLE, MERCHANTABILITY, AGAINST INFRINGEMENT, AND FITNESS
+# FOR A PARTICULAR PURPOSE.
+#
+##############################################################################
+msgid ""
+msgstr ""
+"Project-Id-Version: Development/Unknown\n"
+"POT-Creation-Date: Mon Dec 13 17:35:30 2004\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Zope 3 Developers <zope3-dev@zope.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: zope/app/locales/extract.py\n"
+
+#: b/canonical/launchpad/browser/editview.py:53
+msgid "An error occured."
+msgstr ""
+
+#: b/canonical/launchpad/browser/editview.py:62
+msgid "Updated on ${date_time}"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/binarypackage.py:17
+#: b/canonical/launchpad/interfaces/binarypackage.py:48
+#: b/canonical/launchpad/interfaces/bugassignment.py:17
+#: b/canonical/launchpad/interfaces/bugassignment.py:57
+#: b/canonical/launchpad/interfaces/bugattachment.py:13
+#: b/canonical/launchpad/interfaces/bugextref.py:17
+#: b/canonical/launchpad/interfaces/bugsubscription.py:9
+#: b/canonical/launchpad/interfaces/bugtracker.py:11
+#: b/canonical/launchpad/interfaces/bugtracker.py:22
+#: b/canonical/launchpad/interfaces/bugwatch.py:11
+#: b/canonical/launchpad/interfaces/cveref.py:16
+#: b/canonical/launchpad/interfaces/files.py:12
+#: b/canonical/launchpad/interfaces/files.py:32
+#: b/canonical/launchpad/interfaces/message.py:18
+#: b/canonical/launchpad/interfaces/person.py:12
+#: b/canonical/launchpad/interfaces/productrelease.py:12
+#: b/canonical/launchpad/interfaces/productseries.py:15
+#: b/canonical/launchpad/interfaces/project.py:19
+#: b/canonical/launchpad/interfaces/project.py:131
+#: b/canonical/launchpad/interfaces/publishing.py:12
+#: b/canonical/launchpad/interfaces/publishing.py:47
+#: b/canonical/launchpad/interfaces/queue.py:12
+#: b/canonical/launchpad/interfaces/queue.py:27
+#: b/canonical/launchpad/interfaces/queue.py:44
+#: b/canonical/launchpad/interfaces/sourcepackage.py:29
+#: b/canonical/launchpad/interfaces/sourcepackage.py:47
+#: b/canonical/launchpad/interfaces/sourcepackage.py:76
+#: b/canonical/launchpad/interfaces/sourcepackage.py:160
+msgid "ID"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/binarypackage.py:49
+#: b/canonical/launchpad/interfaces/bugattachment.py:20
+#: b/canonical/launchpad/interfaces/bugtracker.py:12
+#: b/canonical/launchpad/interfaces/bugtracker.py:24
+#: b/canonical/launchpad/interfaces/distribution.py:13
+#: b/canonical/launchpad/interfaces/distrorelease.py:14
+#: b/canonical/launchpad/interfaces/product.py:26
+#: b/canonical/launchpad/interfaces/productseries.py:19
+#: b/canonical/launchpad/interfaces/project.py:21
+#: b/canonical/launchpad/interfaces/sourcepackage.py:30
+#: b/canonical/launchpad/interfaces/sourcepackage.py:48
+#: b/canonical/launchpad/interfaces/sourcepackage.py:77
+msgid "Name"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bounty.py:19
+msgid "Bounty ID"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bounty.py:22
+msgid "Bounty name"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bounty.py:23
+msgid ""
+"A short and unique name for this bounty. \n"
+"                This allows us to refer to the bounty directly in a url,\n"
+"                so it needs to be destinct and descriptive. For example:\n"
+"                mozilla-type-ahead-find and\n"
+"                postgres-smart-serial."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bounty.py:31
+msgid "Bounty title"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bounty.py:32
+msgid ""
+"The title of the bounty should be no more than 70\n"
+"            characters long, and is displayed in every list or report of bounties. It\n"
+"            should be as clear as possible in the space allotted what the\n"
+"            bounty is for."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bounty.py:38
+#: b/canonical/launchpad/interfaces/bug.py:41
+#: b/canonical/launchpad/interfaces/distribution.py:19
+#: b/canonical/launchpad/interfaces/distrorelease.py:21
+#: b/canonical/launchpad/interfaces/product.py:37
+msgid "Summary"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bounty.py:39
+msgid ""
+"The bounty summary is a single paragraph\n"
+"            description of the bounty. This will also be desplayed in most\n"
+"            bounty listings."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bounty.py:44
+#: b/canonical/launchpad/interfaces/bug.py:47
+#: b/canonical/launchpad/interfaces/bugattachment.py:23
+#: b/canonical/launchpad/interfaces/bugtracker.py:14
+#: b/canonical/launchpad/interfaces/country.py:32
+#: b/canonical/launchpad/interfaces/distribution.py:22
+#: b/canonical/launchpad/interfaces/distrorelease.py:25
+#: b/canonical/launchpad/interfaces/product.py:40
+#: b/canonical/launchpad/interfaces/productrelease.py:20
+#: b/canonical/launchpad/interfaces/project.py:35
+#: b/canonical/launchpad/interfaces/sourcepackage.py:33
+#: b/canonical/launchpad/interfaces/sourcepackage.py:34
+#: b/canonical/launchpad/interfaces/sourcepackage.py:52
+#: b/canonical/launchpad/interfaces/sourcepackage.py:53
+msgid "Description"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bounty.py:45
+msgid ""
+"The bounty description should be a detailed\n"
+"            description of the bounty, aimed ad specifying the exact results\n"
+"            that will be acceptable to the bounty owner and reviewer."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bounty.py:50
+msgid "Estimated USD Value"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bounty.py:51
+msgid ""
+"The value of this bounty, in\n"
+"            USD. Note that in some cases the bounty may have been offered in\n"
+"            a variety of currencies, so this USD value is an estimate based\n"
+"            on recent currency rates."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bounty.py:57
+msgid "Difficulty"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bounty.py:58
+msgid ""
+"The difficulty of this bounty,\n"
+"            rated from 1 to 100 where 100 is most difficult. An example of\n"
+"            an extremely difficult bounty would be something that requires\n"
+"            extensive and rare knowledge, such as a kernel memory management\n"
+"            subsystem."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bounty.py:65
+msgid "Duration"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bounty.py:66
+msgid ""
+"The expected time required to\n"
+"            complete this bounty work, given the necessary skills."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bounty.py:70
+msgid "Reviewer"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bounty.py:72
+#: b/canonical/launchpad/interfaces/bug.py:22
+#: b/canonical/launchpad/interfaces/bugassignment.py:28
+#: b/canonical/launchpad/interfaces/bugassignment.py:81
+#: b/canonical/launchpad/interfaces/bugextref.py:33
+#: b/canonical/launchpad/interfaces/bugwatch.py:20
+#: b/canonical/launchpad/interfaces/cveref.py:32
+#: b/canonical/launchpad/interfaces/infestation.py:28
+#: b/canonical/launchpad/interfaces/infestation.py:49
+#: b/canonical/launchpad/interfaces/manifest.py:19
+#: b/canonical/launchpad/interfaces/message.py:21
+msgid "Date Created"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bounty.py:75
+#: b/canonical/launchpad/interfaces/bug.py:54
+#: b/canonical/launchpad/interfaces/bug.py:117
+#: b/canonical/launchpad/interfaces/bugassignment.py:31
+#: b/canonical/launchpad/interfaces/bugassignment.py:35
+#: b/canonical/launchpad/interfaces/bugassignment.py:84
+#: b/canonical/launchpad/interfaces/bugassignment.py:88
+#: b/canonical/launchpad/interfaces/bugextref.py:36
+#: b/canonical/launchpad/interfaces/bugtracker.py:16
+#: b/canonical/launchpad/interfaces/bugtracker.py:28
+#: b/canonical/launchpad/interfaces/bugwatch.py:22
+#: b/canonical/launchpad/interfaces/cveref.py:35
+#: b/canonical/launchpad/interfaces/distribution.py:26
+#: b/canonical/launchpad/interfaces/product.py:24
+#: b/canonical/launchpad/interfaces/productrelease.py:22
+#: b/canonical/launchpad/interfaces/project.py:20
+#: b/canonical/launchpad/interfaces/project.py:132
+msgid "Owner"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bug.py:100
+msgid "Bug #"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bug.py:102
+#: b/canonical/launchpad/interfaces/bugassignment.py:19
+#: b/canonical/launchpad/interfaces/productrelease.py:13
+#: b/canonical/launchpad/interfaces/productseries.py:17
+msgid "Product"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bug.py:106
+#: b/canonical/launchpad/interfaces/bugassignment.py:60
+msgid "Source Package"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bug.py:107
+msgid ""
+"The distro package in which this bug exists and\n"
+"            needs to be fixed. Bugs might be related to distribution\n"
+"            packaging of the upstream software, or they might be upstream\n"
+"            bugs that affect that source package."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bug.py:114
+msgid "Binary Package"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bug.py:19
+#: b/canonical/launchpad/interfaces/bugactivity.py:12
+#: b/canonical/launchpad/interfaces/bugassignment.py:18
+#: b/canonical/launchpad/interfaces/bugassignment.py:58
+#: b/canonical/launchpad/interfaces/bugextref.py:20
+#: b/canonical/launchpad/interfaces/bugmessage.py:12
+#: b/canonical/launchpad/interfaces/bugsubscription.py:14
+#: b/canonical/launchpad/interfaces/bugwatch.py:12
+#: b/canonical/launchpad/interfaces/cveref.py:19
+#: b/canonical/launchpad/interfaces/infestation.py:22
+#: b/canonical/launchpad/interfaces/infestation.py:43
+msgid "Bug ID"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bug.py:25
+msgid "Nickname"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bug.py:26
+msgid ""
+"A short and unique name for this bug. Very few\n"
+"                bugs have a nickname, they are just bugs that are so\n"
+"                significant that people will actually remember the\n"
+"                name. Please don't set a nickname for the bug unless you\n"
+"                are certain that this is the sort of bug that the entire\n"
+"                community, upstream and all distro's, will phear."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bug.py:35
+msgid "Bug Title"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bug.py:36
+msgid ""
+"The title of the bug should be no more than 70\n"
+"            characters, and is displayed in every bug list or report. It\n"
+"            should be as clear as possible in the space allotted."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bug.py:42
+msgid ""
+"The bug summary is a single paragraph\n"
+"            description that should capture the essence of the bug, where it\n"
+"            has been observed, and what triggers it."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bug.py:48
+msgid ""
+"The bug description should be a detailed\n"
+"            description of this bug, including the steps required to\n"
+"            reproduce the bug if it is reproducable, and the platforms on which\n"
+"            it is found if it is platform specific."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bug.py:58
+msgid "Duplicate Of"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bug.py:61
+msgid "Community Score"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bug.py:65
+msgid "Community Timestamp"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bug.py:69
+msgid "Hits"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bug.py:73
+msgid "Hits Timestamp"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bug.py:77
+msgid "Activity Score"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bug.py:81
+msgid "Activity Timestamp"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugactivity.py:13
+msgid "Date Changed"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugactivity.py:14
+#: b/canonical/launchpad/interfaces/message.py:30
+#: b/canonical/launchpad/interfaces/person.py:97
+msgid "Person"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugactivity.py:15
+msgid "What Changed"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugactivity.py:16
+msgid "Old Value"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugactivity.py:17
+msgid "New Value"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugactivity.py:18
+msgid "Message"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugassignment.py:111
+msgid "The user for whom this report will be generated"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugassignment.py:113
+msgid ""
+"The minimum severity of assignments to\n"
+"        display in this report."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugassignment.py:116
+msgid ""
+"The minimum priority of bug fixing\n"
+"        assignments to display in this report."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugassignment.py:119
+msgid ""
+"Whether or not to show closed bugs on this\n"
+"        report."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugassignment.py:20
+#: b/canonical/launchpad/interfaces/bugassignment.py:64
+msgid "Bug Status"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugassignment.py:22
+#: b/canonical/launchpad/interfaces/bugassignment.py:68
+#: b/canonical/launchpad/interfaces/publishing.py:198
+msgid "Priority"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugassignment.py:24
+#: b/canonical/launchpad/interfaces/bugassignment.py:72
+msgid "Severity"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugassignment.py:26
+#: b/canonical/launchpad/interfaces/bugassignment.py:79
+msgid "Assignee"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugassignment.py:42
+#: b/canonical/launchpad/interfaces/bugassignment.py:95
+#: b/canonical/launchpad/interfaces/bugattachment.py:35
+#: b/canonical/launchpad/interfaces/bugextref.py:43
+#: b/canonical/launchpad/interfaces/bugsubscription.py:30
+#: b/canonical/launchpad/interfaces/bugwatch.py:28
+#: b/canonical/launchpad/interfaces/cveref.py:46
+#: b/canonical/launchpad/interfaces/infestation.py:60
+#: b/canonical/launchpad/interfaces/infestation.py:71
+msgid "Bug id"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugassignment.py:76
+msgid "Binary PackageName"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugattachment.py:16
+msgid "Bug Message ID"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugattachment.py:26
+msgid "Library File"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugattachment.py:29
+msgid "Date deactivated"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugextref.py:23
+msgid "URL"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugextref.py:24
+msgid ""
+"The url of the content that is related to\n"
+"            this bug."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugextref.py:28
+#: b/canonical/launchpad/interfaces/bugtracker.py:13
+#: b/canonical/launchpad/interfaces/bugtracker.py:25
+#: b/canonical/launchpad/interfaces/cveref.py:27
+#: b/canonical/launchpad/interfaces/distribution.py:17
+#: b/canonical/launchpad/interfaces/distrorelease.py:18
+#: b/canonical/launchpad/interfaces/message.py:24
+#: b/canonical/launchpad/interfaces/product.py:34
+#: b/canonical/launchpad/interfaces/productrelease.py:18
+#: b/canonical/launchpad/interfaces/project.py:29
+#: b/canonical/launchpad/interfaces/sourcepackage.py:32
+#: b/canonical/launchpad/interfaces/sourcepackage.py:51
+msgid "Title"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugextref.py:29
+msgid ""
+"A brief description of the content that is\n"
+"            being linked to."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugmessage.py:15
+msgid "Message ID"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugsubscription.py:11
+msgid "Person ID"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugsubscription.py:16
+msgid "Subscription"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugsubscription.py:17
+msgid ""
+"Your subscription to a bug can be one of\n"
+"            \"watch\", \"cc\" or \"ignore\". If you \"watch\" a bug then it will\n"
+"            show up on your reports, but you won't normally receive bug\n"
+"            mail. If you \"cc\" yourself on a bug you will receive a copy of\n"
+"            all bug update notifications by email. If you \"ignore\" a bug\n"
+"            then you will not receive notifications from that bug even if\n"
+"            they are directly addressed to you as a maintainer or assignee."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugtracker.py:15
+msgid "Homepage"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugtracker.py:23
+msgid "Bug System Type"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugtracker.py:26
+#: b/canonical/launchpad/interfaces/productrelease.py:19
+#: b/canonical/launchpad/interfaces/productseries.py:21
+msgid "Short Description"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugtracker.py:27
+msgid "Base URL"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugtracker.py:29
+msgid "Contact details"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugtracker.py:30
+msgid "The remote watches on this bug tracker."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugwatch.py:13
+msgid "Bug System"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugwatch.py:15
+msgid "Remote Bug"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugwatch.py:16
+msgid "Remote Status"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugwatch.py:17
+msgid "Last Changed"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/bugwatch.py:18
+msgid "Last Checked"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/country.py:18
+msgid "Country ID"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/country.py:20
+msgid "iso3166code2"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/country.py:22
+msgid "iso3166code3"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/country.py:25
+msgid "Country name"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/country.py:29
+msgid "Country title"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/cveref.py:22
+msgid "CVE Reference"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/cveref.py:23
+msgid "The CVE reference number related to this bug."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/cveref.py:28
+msgid "A brief description of the content that is being linked to."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/distribution.py:13
+msgid ""
+"(The distro's\n"
+"        name."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/distribution.py:15
+#: b/canonical/launchpad/interfaces/person.py:18
+#: b/canonical/launchpad/interfaces/product.py:30
+#: b/canonical/launchpad/interfaces/productseries.py:20
+#: b/canonical/launchpad/interfaces/project.py:24
+msgid "Display Name"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/distribution.py:16
+msgid "The displayable name of the distribution."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/distribution.py:18
+msgid "The distro's title."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/distribution.py:20
+msgid "The distribution summary. A short paragraphdescribing the goals and highlights of the distro."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/distribution.py:23
+msgid "The distro's description."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/distribution.py:24
+msgid "Domain name"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/distribution.py:25
+msgid "The distro's domain name."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/distribution.py:27
+msgid "The distro's owner."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/distrorelease.py:15
+msgid "The name of this distribution release."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/distrorelease.py:16
+msgid "Display name"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/distrorelease.py:17
+msgid "The release's displayname."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/distrorelease.py:19
+msgid ""
+"The title of this release. It should be distinctive \n"
+"                      and designed to look good at the top of a page."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/distrorelease.py:22
+msgid "A brief summary of the highlights of this release. It should be no longer than a single paragraph, up to 200 words."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/distrorelease.py:26
+msgid "A detailed description of this release, with information on the architectures covered, the availability of security updates and any other relevant information."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/distrorelease.py:30
+#: b/canonical/launchpad/interfaces/productrelease.py:17
+msgid "Version"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/distrorelease.py:31
+msgid "The version string for this release."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/distrorelease.py:32
+#: b/canonical/launchpad/interfaces/message.py:36
+#: b/canonical/launchpad/interfaces/publishing.py:82
+#: b/canonical/launchpad/interfaces/publishing.py:119
+#: b/canonical/launchpad/interfaces/sourcepackage.py:36
+#: b/canonical/launchpad/interfaces/sourcepackage.py:55
+msgid "Distribution"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/distrorelease.py:33
+msgid "The distribution for which this is a release."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/files.py:15
+#: b/canonical/launchpad/interfaces/publishing.py:15
+msgid "The binary package being published"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/files.py:20
+msgid "The library file alias for this .deb"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/files.py:25
+#: b/canonical/launchpad/interfaces/files.py:45
+msgid "The type of this file"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/files.py:35
+msgid "The sourcepackagerelease being published"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/files.py:40
+msgid "The library file alias for this file"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/infestation.py:21
+msgid "Bug Product Infestation ID"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/infestation.py:23
+#: b/canonical/launchpad/interfaces/infestation.py:46
+msgid "Explicitly Created by a Human"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/infestation.py:24
+msgid "Product Release"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/infestation.py:26
+#: b/canonical/launchpad/interfaces/infestation.py:47
+msgid "Infestation Status"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/infestation.py:29
+#: b/canonical/launchpad/interfaces/infestation.py:50
+msgid "Creator"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/infestation.py:30
+#: b/canonical/launchpad/interfaces/infestation.py:51
+msgid "Date Verified"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/infestation.py:31
+#: b/canonical/launchpad/interfaces/infestation.py:52
+msgid "Verified By"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/infestation.py:32
+#: b/canonical/launchpad/interfaces/infestation.py:53
+msgid "Last Modified"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/infestation.py:33
+#: b/canonical/launchpad/interfaces/infestation.py:54
+msgid "Last Modified By"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/infestation.py:42
+msgid "Bug Package Infestation ID"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/infestation.py:44
+msgid "Package Release"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/manifest.py:17
+msgid "Manifest ID"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/manifest.py:19
+msgid ""
+"The\n"
+"        date this manifest was created."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/manifest.py:22
+msgid ""
+"The person who\n"
+"        created this manifest entry."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/manifest.py:22
+msgid "Manifest owner"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/manifest.py:25
+msgid "Universally Unique ID"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/manifest.py:25
+msgid ""
+"A UUID that is\n"
+"        guaranteed to identify this manifest uniquely."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/message.py:27
+msgid "Contents"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/message.py:33
+msgid "Parent"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/message.py:39
+msgid "RFC822 Msg ID"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/message.py:42
+msgid "Bug List"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/person.py:15
+msgid "Unique Launchpad Name"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/person.py:21
+msgid "Given Name"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/person.py:24
+msgid "Family Name"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/person.py:27
+msgid "Password"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/person.py:30
+msgid "Team Owner"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/person.py:33
+msgid "Team Description"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/person.py:37
+msgid "Karma"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/person.py:41
+msgid "Karma Timestamp"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/person.py:43
+msgid "List of know languages by this person"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/person.py:91
+msgid "Email Address"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/person.py:94
+msgid "Email Address Status"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:20
+msgid "The Product ID"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:22
+msgid "Project ID."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:26
+msgid ""
+"The short name of this\n"
+"        product, which must be unique among all the products from the same\n"
+"        project."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:30
+msgid ""
+"The\n"
+"        display name of this product is the name of this product as it\n"
+"        would appear in a paragraph of text."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:34
+msgid ""
+"The product\n"
+"    title. Should be just a few words."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:37
+msgid ""
+"The summary should\n"
+"        be a single short paragraph."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:40
+msgid ""
+"The product\n"
+"        description, may be several paragraphs of text, giving the product\n"
+"        highlights and details."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:44
+#: b/canonical/launchpad/interfaces/project.py:39
+msgid "Homepage URL"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:46
+#: b/canonical/launchpad/interfaces/project.py:41
+msgid "Wiki URL"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:48
+msgid "Screenshots URL"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:50
+msgid "Download URL"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:52
+msgid "Programming Language"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:55
+msgid "Sourceforge Project"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:58
+msgid "Freshmeat Project"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:61
+#: b/canonical/launchpad/interfaces/sourcepackage.py:35
+#: b/canonical/launchpad/interfaces/sourcepackage.py:54
+msgid "Manifest"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:63
+msgid ""
+"Whether or not\n"
+"        this product is considered active."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:63
+#: b/canonical/launchpad/interfaces/project.py:59
+msgid "Active"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:66
+msgid ""
+"Whether or not\n"
+"        this product has been reviewed."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:66
+#: b/canonical/launchpad/interfaces/project.py:61
+msgid "Reviewed"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:69
+msgid "Sources of source code. These are         pointers to the revision control system for that product, along         with status information about our ability to publish that         source in Arch."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:74
+msgid "List of distribution packages for this         product"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:77
+msgid "SourcePackages related to a Product"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:82
+msgid ""
+"An iterator over the ProductSeries for this\n"
+"        product"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:85
+msgid ""
+"An iterator over the ProductReleases for this\n"
+"        product."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:88
+msgid ""
+"Returns an iterator over this\n"
+"        product's PO templates."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:91
+msgid ""
+"A matrix by bug severity and status of the\n"
+"        number of bugs of that severity and status assigned to this\n"
+"        product."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/product.py:95
+msgid ""
+"An iterator over the Bazaar branches that are\n"
+"    related to this product."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/productrelease.py:15
+msgid "Date Released"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/productrelease.py:21
+msgid "Changelog"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/productrelease.py:24
+msgid "Product Series"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/productseries.py:23
+msgid "An iterator over the releases in this                                   Series."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/project.py:133
+msgid "Bug Tracker"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/project.py:21
+msgid ""
+"The short name of the\n"
+"    project. Must be lowercase, and not contain spaces, it will be part of\n"
+"    the url to this project in the Launchpad."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/project.py:24
+msgid ""
+"The\n"
+"        display name of the project is a short name, appropriately\n"
+"        capitalised, for this product. For example, if you were referring to\n"
+"        this project in a paragraph of text, you would use this name. Examples:\n"
+"        the Apache Project, the Mozilla Project, the GIMP Project."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/project.py:29
+msgid ""
+"This is the full\n"
+"        title of the project, can contain spaces, special characters etc. This\n"
+"        is what you would imagine seeing at the top of a page about the project.\n"
+"        For example, The Apache Project, The Mozilla Project."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/project.py:33
+msgid ""
+"A summary\n"
+"        of the project, in a single short paragraph."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/project.py:33
+msgid "Project Summary"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/project.py:35
+msgid ""
+"A couple of\n"
+"        paragraphs describing the project in more detail, from the history of\n"
+"        the project to current organisational structure, goals and release\n"
+"        strategy."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/project.py:39
+msgid ""
+"The\n"
+"        project home page."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/project.py:42
+msgid ""
+"The URL of this project's wiki, if\n"
+"                       it has one."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/project.py:44
+msgid "Last-parsed DOAP fragment"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/project.py:45
+msgid ""
+"The last DOAP fragment for this\n"
+"                        entity that we received and parsed, or\n"
+"                        generated."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/project.py:49
+msgid "SourceForge Project Name"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/project.py:50
+msgid ""
+"The SourceForge project\n"
+"                                  name for this project, if it is in\n"
+"                                  sourceforge."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/project.py:54
+msgid "Freshmeat Project Name"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/project.py:55
+msgid ""
+"The Freshmeat project\n"
+"                                  name for this project, if it is in\n"
+"                                  freshmeat."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/project.py:59
+msgid ""
+"Whether\n"
+"        or not this project is considered active."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/project.py:61
+msgid ""
+"Whether\n"
+"        or not this project has been reviewed."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/publishing.py:100
+#: b/canonical/launchpad/interfaces/publishing.py:137
+#: b/canonical/launchpad/interfaces/publishing.py:167
+#: b/canonical/launchpad/interfaces/publishing.py:191
+msgid "Component name"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/publishing.py:104
+#: b/canonical/launchpad/interfaces/publishing.py:141
+msgid "Source package name"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/publishing.py:108
+#: b/canonical/launchpad/interfaces/publishing.py:145
+msgid "Distribution release name"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/publishing.py:112
+#: b/canonical/launchpad/interfaces/publishing.py:149
+#: b/canonical/launchpad/interfaces/publishing.py:178
+#: b/canonical/launchpad/interfaces/publishing.py:206
+msgid "Package publishing status"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/publishing.py:123
+msgid "Package publishing record id"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/publishing.py:128
+msgid "Binarypackage file alias"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/publishing.py:153
+msgid "Architecture tag. As per dpkg's use"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/publishing.py:161
+#: b/canonical/launchpad/interfaces/publishing.py:185
+msgid "Distro Release name"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/publishing.py:164
+#: b/canonical/launchpad/interfaces/publishing.py:188
+msgid "Binary package name"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/publishing.py:170
+#: b/canonical/launchpad/interfaces/publishing.py:194
+msgid "Section name"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/publishing.py:174
+#: b/canonical/launchpad/interfaces/publishing.py:202
+msgid "Distribution ID"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/publishing.py:19
+msgid "The distroarchrelease being published into"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/publishing.py:23
+#: b/canonical/launchpad/interfaces/publishing.py:62
+msgid "The component being published into"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/publishing.py:27
+#: b/canonical/launchpad/interfaces/publishing.py:66
+msgid "The section being published into"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/publishing.py:31
+msgid "The priority being published into"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/publishing.py:35
+#: b/canonical/launchpad/interfaces/publishing.py:74
+msgid "The date on which this record is scheduled for deletion"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/publishing.py:39
+#: b/canonical/launchpad/interfaces/publishing.py:54
+msgid "The status of this publishing record"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/publishing.py:50
+msgid "The source package release being published"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/publishing.py:58
+msgid "The distrorelease being published into"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/publishing.py:70
+msgid "The date on which this record was published"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/publishing.py:86
+msgid "Sourcepackage publishing record id"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/publishing.py:91
+msgid "Sourcepackage release file alias"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/publishing.py:96
+#: b/canonical/launchpad/interfaces/publishing.py:133
+msgid "File name"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/pyarch.py:495
+msgid "The database identifier for this branch."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/pyarch.py:497
+msgid "Branch Title"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/pyarch.py:498
+msgid ""
+"The title of the Branch. This will be\n"
+"                  displayed on any report listing different branches. It\n"
+"                  should be a very brief (one line, less than 70 characters)\n"
+"                  title describing the purpose of the branch."
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/pyarch.py:502
+msgid "The ArchNameSpace object for this branch"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/queue.py:16
+msgid "Queue status"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/queue.py:20
+msgid "Distribution release"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/queue.py:32
+#: b/canonical/launchpad/interfaces/queue.py:49
+msgid "Distribution release queue"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/queue.py:37
+msgid "The related build"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/queue.py:54
+msgid "The related source package release"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/sourcepackage.py:31
+#: b/canonical/launchpad/interfaces/sourcepackage.py:50
+msgid "Maintainer"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/sourcepackage.py:37
+#: b/canonical/launchpad/interfaces/sourcepackage.py:56
+msgid "SourcePackage Name"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/sourcepackage.py:49
+msgid "DistroRelease"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/spokenin.py:18
+msgid "SpokenInID"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/spokenin.py:21
+msgid "Country"
+msgstr ""
+
+#: b/canonical/launchpad/interfaces/spokenin.py:23
+msgid "Language"
+msgstr ""
+
+#: b/canonical/launchpad/permissions.zcml:3
+msgid "Any Authenticated Person"
+msgstr ""
+
+#: b/canonical/launchpad/permissions.zcml:5
+msgid "Editing something"
+msgstr ""
+
+#: b/canonical/launchpad/permissions.zcml:7
+msgid "Administer something"
+msgstr ""
+
+#: b/canonical/launchpad/templates/default-addform.pt:29
+#: b/canonical/launchpad/templates/launchpad-addform.pt:45
+#: b/canonical/launchpad/templates/launchpad-editform.pt:41
+#: b/canonical/launchpad/templates/default-editform.pt:28
+msgid "There are ${num_errors} input errors."
+msgstr ""
+
+#: b/canonical/launchpad/templates/default-addform.pt:61
+# Default: "Refresh"
+msgid "refresh-button"
+msgstr ""
+
+#: b/canonical/launchpad/templates/default-addform.pt:63
+#: b/canonical/launchpad/templates/launchpad-addform.pt:77
+# Default: "Add"
+msgid "add-button"
+msgstr ""
+
+#: b/canonical/launchpad/templates/launchpad-editform.pt:81
+#: b/canonical/launchpad/templates/default-editform.pt:60
+# Default: "Change"
+msgid "submit-button"
+msgstr ""
+
+#: b/canonical/launchpad/templates/product-translations.pt:32
+msgid "This is just a test"
+msgstr "Esto solo es una prueba"
+
+#: b/canonical/launchpad/templates/product-translations.pt:9
+msgid "Rosetta Translations:"
+msgstr "Traducciones de Rosetta:"
+
+#: b/canonical/launchpad/zcml/bounty.zcml:36
+msgid "Modify Bounty:"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/bounty.zcml:65
+msgid "Create A New Bounty"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/bug.zcml:36
+msgid "Change Bug Information"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/bug.zcml:80
+msgid "Create A New Bug Record"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/bugassignment.zcml:108
+msgid "Add SourcePackage Bug Assignment"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/bugassignment.zcml:123
+msgid "Edit SourcePackage Bug Assignment"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/bugassignment.zcml:46
+msgid "Add Product Bug Assignment"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/bugassignment.zcml:61
+msgid "Edit Product Bug Assignment"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/bugattachment.zcml:29
+msgid "Add a Bug Attachment"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/bugattachment.zcml:43
+msgid "Change Bug Attachment Information"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/bugextref.zcml:21
+msgid "Add External Reference"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/bugextref.zcml:39
+msgid "Modify Web Reference"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/buginfestation.zcml:17
+msgid "Add Infested Product Release"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/buginfestation.zcml:30
+msgid "Edit Infested Product Release"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/bugpackageinfestation.zcml:54
+msgid "Add Infested Package Release"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/bugpackageinfestation.zcml:67
+msgid "Edit Infested Package Release"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/bugsubscription.zcml:22
+msgid "Modify Bug Subscription"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/bugsubscription.zcml:9
+msgid "Add Person"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/bugwatch.zcml:22
+msgid "Change Bug Watch"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/bugwatch.zcml:9
+msgid "Add Watch"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/cveref.zcml:28
+msgid "Add CVE Reference"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/cveref.zcml:46
+msgid "Modify CVE Reference"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/distribution.zcml:101
+msgid "Create a New Distribution in Soyuz"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/message.zcml:23
+msgid "Add a Comment"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/product.zcml:103
+msgid "Edit Upstream Product Details:"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/product.zcml:116
+msgid "Review Upstream Product Details:"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/product.zcml:130
+msgid "Report Bug on Upstream Product"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/product.zcml:194
+msgid "Register an Open Source (Upstream) Product"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/project.zcml:102
+msgid "Add a Product to this Project"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/project.zcml:77
+msgid "Edit Open Source Project Details:"
+msgstr ""
+
+#: b/canonical/launchpad/zcml/project.zcml:89
+msgid "Review Upstream Project Details:"
+msgstr ""
+
+#: b/canonical/widgets/date.py:27
+msgid "Minimum Year"
+msgstr ""
+
+#: b/canonical/widgets/date.py:28
+msgid "Maximum Year"
+msgstr ""
+
+#: b/canonical/widgets/popup.py:123
+msgid "Select %svocabulary"
+msgstr ""
+
+#: b/sqlos/container/__init__.py:150
+msgid "You must select the type of object to add."
+msgstr ""
+
