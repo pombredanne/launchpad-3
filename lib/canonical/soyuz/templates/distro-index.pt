@@ -14,12 +14,21 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Distribution overview: <span tal:content="context/title">TITLE</span> </h1>
+    <h1><span tal:content="context/title">TITLE</span> Overview</h1>
 
-
-    <li> <a href="+edit"> EDIT </a></li>
-    <li> <a href="releases/+new">NEW </a></li>
-    <li> <a href="releases/"> RELEASES </a></li>
+    <table class="listing">
+      <tr>
+        <th>
+	  <a href="+edit"> EDIT </a>
+	</th>
+        <th>
+	  <a href="releases/+new"> NEW </a>
+	</th>
+        <th>
+	  <a href="releases"> RELEASES </a>
+	</th>
+      </tr>
+    </table>
 
 </div>
 

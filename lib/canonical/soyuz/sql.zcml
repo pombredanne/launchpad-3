@@ -10,19 +10,32 @@
   <content class="canonical.soyuz.sql.ReleaseContainer">
     <allow interface="canonical.soyuz.interfaces.IReleaseContainer"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    <require
+     permission="zope.Public"
+     set_attributes="name title description"
+     />
   </content>
   
   <content class="canonical.soyuz.sql.Release">
     <allow interface="canonical.soyuz.interfaces.IRelease"/>
+    <require
+     permission="zope.Public"
+     set_attributes="distribution name title description version components sections releasestate datereleased owner"
+     />
   </content>
 
   <content class="canonical.soyuz.browser.DistrosApplication">
     <allow interface="canonical.soyuz.interfaces.IDistributions"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
+
   </content>
 
   <content class="canonical.soyuz.sql.SoyuzDistribution">
     <allow interface="canonical.soyuz.interfaces.IDistribution"/>
+    <require
+     permission="zope.Public"
+     set_attributes="name title description"
+     />
   </content>
 
 	

@@ -62,6 +62,8 @@ class BinaryPackage(SQLBase):
     _table = 'BinaryPackage'
     _columns = [
         StringCol('name', dbName='Name'),
+        StringCol('title', dbName='Title'),
+        StringCol('description', dbName='Description'),        
     ]
     releases = MultipleJoin('BinaryPackageRelease', joinColumn='binarypackage')
 
@@ -103,6 +105,7 @@ class SoyuzDistribution(SQLBase):
         StringCol('name', dbName='name'),
         StringCol('title', dbName='title'),
         StringCol('description', dbName='description'),
+        StringCol('domainname', dbName='domainname'),
         StringCol('owner', dbName='owner'),
         ]
 
@@ -125,8 +128,10 @@ class Release(SQLBase):
         StringCol('description', dbName='description'),
         StringCol('version', dbName='version'),
         StringCol('components', dbName='components'),
+        StringCol('sections', dbName='sections'),
         StringCol('releasestate', dbName='releasestate'),
-        StringCol('daterelease', dbName='datereleased'),
+        StringCol('datereleased', dbName='datereleased'),
+        StringCol('owner', dbName='owner'),
         ]
 
     def getPackageContainer(self, name):
@@ -185,16 +190,14 @@ class BinaryPackages(GenericPackages):
 
     table = BinaryPackage
 
-
 class SourcePackages(GenericPackages):
-    """Container of BinaryPackage objects.
+    """Container of SourcePackage objects.
 
     Used for web UI.
     """
     implements(ISourcePackageSet)
 
     table = SourcePackage
-
 
 ###########################################################################
 

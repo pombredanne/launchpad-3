@@ -28,10 +28,12 @@ class IDistributions(Interface):
         """
 class IDistribution(Interface):
     """A Distribution Object"""
+    id = Attribute("The distro's unique number.")
     name = Attribute("The distro's name.")
     title = Attribute("The distro's title.")
-    owner = Attribute("The distro's owner.")
     description = Attribute("The distro's description.")
+    domainname = Attribute("The distro's domain name.")
+    owner = Attribute("The distro's owner.")
 
     def getReleaseContainer(name):
         """Returns an associated IReleaseContainer"""
@@ -189,7 +191,9 @@ class IBinaryPackage(Interface):
     # See the BinaryPackage table
 
     name = Attribute("A string")
-    releases = Attribute("List of IBinaryPackageRelease objects")
+    title = Attribute("Package Title")
+    description = Attribute("Package Description")
+    ##releases = Attribute("List of IBinaryPackageRelease objects")
 
 
 class IBinaryPackageRelease(Interface):
@@ -206,7 +210,9 @@ class ISourcePackage(Interface):
     # See the SourcePackage table
 
     name = Attribute("A string")
-    releases = Attribute("List of ISourcePackageRelease objects")
+    title = Attribute("Package Title")
+    description = Attribute("Package Description")
+    ##releases = Attribute("List of ISourcePackageRelease objects")
 
 
 class ISourcePackageRelease(Interface):

@@ -16,20 +16,16 @@
     <h1>Create a new distribution</h1>
 
     <form name="add" action="" method="POST">
-    Name: <input type="text" name="name" 
-        tal:attributes="value request/name|nothing" />
-    Title: <input type="text" name="title" 
-        tal:attributes="value request/title|nothing" />
-    Description: <input type="text" name="description" 
-        tal:attributes="value request/description|nothing" />
-    <input type="submit" value="shoot"/>
+    <table>
+    <tr><th>Name</th><th><input type="text" name="name" 
+        tal:attributes="value request/name|nothing"/></th></tr>
+    <tr><th>Title</th><th><input type="text" name="title" 
+        tal:attributes="value request/title|nothing"/></th></tr>
+    <tr><th>Description</th><th><input type="text" name="description" 
+        tal:attributes="value request/description|nothing"/></th></tr>
+    <tr><th></th><th><input type="submit" value="shoot"/></th></tr>
     </form>
 
-    <ul>
-    <li tal:repeat="distro view/results">  <a tal:attributes="href distro/name" tal:content="distro/name"></a></li>
-    </ul>
-
-<script type="text/javascript">document.forms['search'].name.focus()</script>
 </div>
 
 </body>

@@ -1,4 +1,4 @@
-from canonical.soyuz.sql import SoyuzDistribution
+from canonical.soyuz.sql import SoyuzDistribution, Release
 from sqlobject import LIKE, OR, AND
 
 
@@ -44,9 +44,47 @@ class DistrosAddView(object):
             #YAPS: the owner is hardcodes to Mark !!!!
             #How will we handler Security/Authentication Issues ?!?!
             SoyuzDistribution(name=name, title=title, description=description,\
-                         owner=1)
+                         domainname='domain', owner=1)
                 
-    
+
+class DistrosEditView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.results = []
+
+        name = self.request.get("name", "").encode("ascii")
+        title = self.request.get("title", "").encode("ascii")            
+        description = self.request.get("description", "").encode("ascii")
+
+        if name or title or description:
+            #YAPS: the owner is hardcodes to Mark !!!!
+            #How will we handler Security/Authentication Issues ?!?!
+            self.context.name = name
+            self.context.title = title
+            self.context.description = description
+
+
+
+class ReleasesAddView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.results = []
+
+        name = self.request.get("name", "").encode("ascii")
+        title = self.request.get("title", "").encode("ascii")            
+        description = self.request.get("description", "").encode("ascii")
+        version = self.request.get("version", "").encode("ascii")
+
+        if name or title or description:
+            Release(distribution=self.context.distribution.id, name=name,\
+                    title=title, description=description,version=version,\
+                    components=1, releasestate=1,sections=1,\
+                    datereleased='2004-08-15 10:00', owner=1)
+            
 ################################################################
 
 # these are here because there is a bug in sqlobject that stub is fixing,

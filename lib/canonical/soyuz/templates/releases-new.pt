@@ -14,7 +14,27 @@
 
 <div metal:fill-slot="main">
 
-   <h1>Creating a new <span tal:content="context/distribution/name">Distro</span> Release.....</h1>
+   <h1>Creating a new <span tal:content="context/distribution/name">Distro</span> Release</h1>
+
+    <form name="add" action="" method="POST">
+	<table>
+
+	<tr><th>Name</th> <th><input type="text" name="name" 
+	tal:attributes="value request/name|nothing" /></th></tr>
+
+	<tr><th>Title</th> <th><input type="text" name="title" 
+	tal:attributes="value request/title|nothing" /></th></tr>
+
+    	<tr><th> Description</th> <th><input type="text" name="description" 
+	tal:attributes="value request/description|nothing" /></th></tr>
+
+	<tr><th>Version</th> <th><input type="text" name="version" 
+        tal:attributes="value request/value|nothing" /> </th> </tr>
+
+	<tr><th></th><th><input type="submit" value="shoot"/></th></tr>
+
+	</table>
+    </form>
 
 </div>
 

@@ -14,18 +14,29 @@
 <body>
 
 <div metal:fill-slot="main">
-<h1>List of packages in Soyuz:</h1>
-<div tal:on-error="python: error.type, error.value.args">
-<ul>
-<tal:block tal:repeat="package context">
-	<li>
-		<a tal:content="package/name"
-		   tal:attributes="href package/name"
-		   >package name</a>
-	</li>
-</tal:block>
-</ul>
-</div>
+<h1>Packages</h1>
+<!-- <div tal:on-error="python: error.type, error.value.args"> -->
+
+  <table class="listing">
+    <tr>
+      <th>Title</th>
+      <th>Description</th>
+    </tr>
+    <tr tal:repeat="package context">
+      <td>
+        <a tal:content="package/title"
+	   tal:attributes="href package/name">
+	  distribution name
+	</a>
+      </td>
+      <td tal:content="package/description">
+        description
+      </td>
+    </tr>
+
+  </table>    
+
+<!-- </div> -->
 </div>
 
 </body>

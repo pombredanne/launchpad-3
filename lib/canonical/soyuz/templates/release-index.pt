@@ -14,18 +14,34 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Releases overview: <span tal:content="context/name">name</span> </h1>
+    <h1><span tal:content="context/name">name</span> Release overview</h1>
     <h3><span tal:content="context/title">TITLE</span> </h3>
 
 
-    <li> <a href="+edit">Edit this Release </a></li>
-    <li> <a href="+bugs">Bugs of this Release</a></li>
-    <li> <a href="+deliver"> Deliver this Release </a></li>
-    <li> <a href="+translations"> Translations of this Release</a></li>
+    <table class="listing">
 
-
-    <li> <a href="source/"> Sources Packages of this Release</a></li>
-    <li> <a href="binary/"> Binaries Packages of this Release</a></li>
+    <tr>
+       <th>
+         <a href="+edit">Edit this Release </a>
+       </th>
+       <th>
+         <a href="+bugs">Bugs of this Release</a>
+       </th>
+       <th>
+         <a href="+translations"> Translations of this Release</a>
+       </th>
+    </tr>
+    <tr>
+       <th>
+         <a href="+deliver"> Deliver this Release </a>
+       </th> 
+       <th>
+         <a href="source/"> Sources Packages of this Release</a>
+       </th> 
+       <th>
+         <a href="binary/"> Binaries Packages of this Release</a>
+       </th> 
+    </tr>
 </div>
 
 </body>

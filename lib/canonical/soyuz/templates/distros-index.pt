@@ -17,17 +17,28 @@
     <h1>Distributions overview: </h1>
 
 <!--<div tal:on-error="python: error.type, error.value.args">-->
-<ul>
-<tal:block tal:repeat="distribution context">
-	<li>
-		<a tal:content="distribution/name"
-		   tal:attributes="href distribution/name"
-		   >distribution name</a>
-	</li>
-</tal:block>
-</ul>
 
-<h4> <a href="+add">Add New</a> </h4>
+  <table class="listing">
+    <tr>
+      <th>Title</th>
+      <th>Description</th>
+    </tr>
+    <tr tal:repeat="distribution context">
+      <td>
+        <a tal:content="distribution/title" 
+	   tal:attributes="href distribution/name">
+	  distribution name
+	</a>
+      </td>
+      <td tal:content="distribution/description">
+        description
+      </td>
+    </tr>
+
+  </table>    
+
+<input type="submit" value="Add"
+         onclick="window.open('+add', '_top')" />
 
 <!--</div>-->
 

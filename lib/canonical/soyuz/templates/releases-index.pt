@@ -14,15 +14,36 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Releases overview: <span tal:content="context/distribution/name" />  </h1>
+  <h1><span tal:content="context/distribution/title" />  Releases Overview</h1>
 
-<tal:block tal:repeat="release context">
-	<li>
-		<a tal:content="release/name"
-		   tal:attributes="href release/name"
-		   >release name</a>
-	</li>
-</tal:block>
+  <table class="listing">
+    <tr>
+      <th>Name</th>
+      <th>Title</th>
+      <th>Description</th>
+      <th>Version</th>
+    </tr>
+    <tr tal:repeat="release context">
+      <td>
+        <a tal:content="release/name"
+	   tal:attributes="href release/name">
+	  distribution name
+	</a>
+      </td>
+      <td tal:content="release/title">
+        description
+      </td>
+      <td tal:content="release/description">
+        description
+      </td>
+      <td tal:content="release/version">
+        description
+      </td>
+    </tr>
+
+  </table>    
+
+
 </div>
 
 </body>

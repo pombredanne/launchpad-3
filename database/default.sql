@@ -77,33 +77,33 @@ INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VA
 -- Sourcepackage
 INSERT INTO Sourcepackage (maintainer, name, title, description)
 VALUES ((SELECT id FROM Person WHERE presentationname = 'Mark Shuttleworth'),
-         'mozilla-firefox', 'Ubuntu Mozilla Firefox Source Package', 
+         'mozilla-firefox', 'Ubuntu Mozilla Firefox', 
          'text');
 
 INSERT INTO Sourcepackage (maintainer, name, title, description)
 VALUES ((SELECT id FROM Person WHERE presentationname = 'Steve Alexander'),
-         'mozilla-thunderbird', 'Ubuntu Mozilla Thunderbird Source Package', 
+         'mozilla-thunderbird', 'Ubuntu Mozilla Thunderbird', 
          'text');
 
 INSERT INTO Sourcepackage (maintainer, name, title, description)
 VALUES ((SELECT id FROM Person WHERE presentationname = 'Andrew Bennetts'),
-         'python-twisted', 'Python Twisted Source Package', 
+         'python-twisted', 'Python Twisted', 
          'text');
 INSERT INTO Sourcepackage (maintainer, name, title, description)
 VALUES ((SELECT id FROM Person WHERE presentationname = 'Dave Miller'),
-         'bugzila', 'Bugzila Source Package', 
+         'bugzilla', 'Bugzilla', 
          'text');
 INSERT INTO Sourcepackage (maintainer, name, title, description)
 VALUES ((SELECT id FROM Person WHERE presentationname = 'James Blackwell'),
-         'tla-arch', 'Arch tla Source Package', 
+         'arch', 'Arch(TLA)', 
          'text');
 INSERT INTO Sourcepackage (maintainer, name, title, description)
 VALUES ((SELECT id FROM Person WHERE presentationname = 'Christian Reis'),
-         'kiwi2', 'Kiwi2 Source Package', 
+         'kiwi2', 'Kiwi2', 
          'text');
 INSERT INTO Sourcepackage (maintainer, name, title, description)
 VALUES ((SELECT id FROM Person WHERE presentationname = 'Alexander Limi'),
-         'plone', 'Plone Source Package', 
+         'plone', 'Plone', 
          'text');
 
 
@@ -137,7 +137,7 @@ VALUES ((SELECT id FROM Sourcepackage WHERE name = 'python-twisted'),
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
-VALUES ((SELECT id FROM Sourcepackage WHERE name = 'bugzila'),
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'bugzilla'),
  	1,
         (SELECT id FROM Person WHERE presentationname = 'Dave Miller'),
         '0.9.1-4',
@@ -146,7 +146,7 @@ VALUES ((SELECT id FROM Sourcepackage WHERE name = 'bugzila'),
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
-VALUES ((SELECT id FROM Sourcepackage WHERE name = 'tla-arch'),
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'arch'),
  	1,
         (SELECT id FROM Person WHERE presentationname = 'James Blackwell'),
         '0.9.1-5',

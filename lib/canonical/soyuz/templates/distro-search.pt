@@ -31,8 +31,6 @@
     <li tal:repeat="distro view/results">  <a tal:attributes="href distro/name" tal:content="distro/name"></a></li>
     </ul>
 
-<script type="text/javascript">document.forms['search'].name.focus()</script>
-
 </div>
 
 

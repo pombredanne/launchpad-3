@@ -43,15 +43,12 @@
 	        	     RootObject/soyuz/distros/$Distribution.name/. -->
   <traverse for="canonical.soyuz.sql.SoyuzDistribution" getter="getReleaseContainer" />	
    <pages for="canonical.soyuz.sql.SoyuzDistribution"
-	  permission="zope.Public"> 
+	  permission="zope.Public"
+	  allowed_attributes="results context">
 	
 	<page  name="index.html"
           template="templates/distro-index.pt"	
 	  lp:url="Soyuz/distros/$Distribution.name/index.html"	
-	/>
-	<page  name="+edit"
-          template="templates/distro-edit.pt"	
-	  lp:url="Soyuz/distros/$Distribution.name/+edit"	
 	/>
 	<page  name="+bugs"
           template="templates/distro-bugs.pt"	
@@ -63,23 +60,37 @@
 	/>
   </pages>
 
+  <page for="canonical.soyuz.sql.SoyuzDistribution"
+         permission="zope.Public"
+	 class="canonical.soyuz.browser.DistrosEditView"
+	 name="+edit"
+	 template="templates/distro-edit.pt"	
+	 lp:url="Soyuz/distros/$Distribution.name/+edit"	
+	/>
+
+
   <traverse for="canonical.soyuz.sql.ReleaseContainer" getter="__getitem__" />
    <pages for="canonical.soyuz.sql.ReleaseContainer"
+	  allowed_attributes="results"	 
 	  permission="zope.Public"> 
 	
 	<page  name="index.html"
           template="templates/releases-index.pt"	
 	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/index.html"
 	/>
-	<page  name="+new"
+  </pages>
+
+	<page for="canonical.soyuz.sql.ReleaseContainer"
+	  permission="zope.Public"
+	  class="canonical.soyuz.browser.ReleasesAddView"
+	  name="+new"
           template="templates/releases-new.pt"	
 	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+new"
 	/>
-  </pages>
-
 
 <traverse for="canonical.soyuz.sql.Release" getter="getPackageContainer" />
    <pages for="canonical.soyuz.sql.Release"
+	  allowed_attributes="results"	 
 	  permission="zope.Public"> 
 	
 	<page  name="index.html"
@@ -105,11 +116,6 @@
   </pages>
 
 
-
-
-
-
-
 <!--  packages stuff --> 
 	
   <page for="canonical.soyuz.interfaces.IPackages"
@@ -123,21 +129,21 @@
         permission="zope.Public"
         name="index.html"
         template="templates/package-list.pt"
-        lp:url="Soyuz/packages/$packagetype/$Package.id/index.html"
+        lp:url="Soyuz/distros/$Distribution.name/$Release.name/packages/$package_type/$Package.id/index.html"
         />
 
   <page for="canonical.soyuz.interfaces.IBinaryPackage"
         permission="zope.Public"
         name="index.html"
         template="templates/package-index.pt"
-        lp:url="Soyuz/distros/$Distribution.name/$Release.name/packages/binary/index.html"
+        lp:url="Soyuz/distros/$Distribution.name/$Release.name/packages/$packages_type/index.html"
         />
 
   <page for="canonical.soyuz.interfaces.ISourcePackage"
         permission="zope.Public"
         name="index.html"
         template="templates/package-index.pt"
-        lp:url="Soyuz/distros/$Distribution.name/$Release.name/packages/source/index.html"
+        lp:url="Soyuz/distros/$Distribution.name/$Release.name/packages/$packages_type/source/index.html"
         />
 
 
