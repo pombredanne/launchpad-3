@@ -54,22 +54,19 @@
 
     <table class="listing rowNavigation" id="packages-list">
         <thead>
-            <th>Package name</th>
-            <th>Title</th>
+            <th>Package</th>
             <th>Description</th>
         </thead>
 
         <tbody>
             <tr tal:attributes="onclick string:window.location='projects/gnome/gnome-panel';">
-                <td><a href="projects/gnome/gnome-panel">gnome-panel</a></td>
-                <td>GNOME Panel</td>
+                <td><a href="projects/gnome/gnome-panel">GNOME Panel</a></td>
                 <td>Launch and/or dock GNOME applications</td>
             </tr>
 
             <tr class="even"
                 tal:attributes="onclick string:window.location='projects/gnome/gnome-applets';">
-                <td><a href="projects/gnome/gnome-applets">gnome-applets</a></td>
-                <td>GNOME Applets</td>
+                <td><a href="projects/gnome/gnome-applets">GNOME Applets</a></td>
                 <td>Various applets for GNOME panel</td>
             </tr>
         </tbody>

@@ -116,7 +116,7 @@
                             product template/product/name;
                             "
                         tal:attributes="href string: projects/${project}/${product}/${template/name}"
-                        tal:content="template/name">foo template</a>
+                        tal:content="template/title">foo template</a>
                 </li>
             </ul>
         </tal:block>

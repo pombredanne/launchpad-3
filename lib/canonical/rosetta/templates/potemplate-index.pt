@@ -19,7 +19,8 @@
     <h1 tal:content="context/title">Some PO template or other</h1>
 
     <p>
-    This file contains <i tal:content="view/num_messages">N messages</i>
+    This file contains <span tal:replace="view/num_messages">N
+    messages</span>.
     </p>
 
     <p><a href="translate">Translate this template</a>.</p>
@@ -29,11 +30,12 @@
     <h2>Translations</h2>
 
     <ul>
-        <li tal:repeat="language context/languages">
+        <li tal:repeat="language view/languages">
             <a tal:attributes="href language/code"
                 tal:content="language/englishName">Language, in English</a>
             <span tal:condition="python:
-                    language.englishName != language.nativeName">
+                    language.nativeName != language.englishName and
+                    language.nativeName">
                 (<span tal:content="language/nativeName">Language, in the
                     language</span>)
             </span>

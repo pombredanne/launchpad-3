@@ -259,6 +259,11 @@ class ViewPOTemplate:
         else:
             return False
 
+    def languages(self):
+        languages = list(self.context.languages())
+        languages.sort(lambda a, b: cmp(a.englishName, b.englishName))
+        return languages
+
 
 def traverseIPOTemplate(potemplate, request, name):
     try:
