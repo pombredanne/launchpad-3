@@ -9,6 +9,7 @@ from zope.component import getUtility
 
 # SQLObject/SQLBase
 from sqlobject import MultipleJoin
+from sqlobject import SQLObjectNotFound
 from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
                       DateTimeCol
 
@@ -331,7 +332,8 @@ class BinaryPackageName(SQLBase):
 
     implements(IBinaryPackageName)
     _table = 'BinaryPackageName'
-    name = StringCol(dbName='name', notNull=True)
+    name = StringCol(dbName='name', notNull=True, unique=True,
+                     alternateID=True)
 
     binarypackages = MultipleJoin(
             'BinaryPackage', joinColumn='binarypackagename'
@@ -339,6 +341,14 @@ class BinaryPackageName(SQLBase):
 
     def __unicode__(self):
         return self.name
+
+    def _ensure(klass, name):
+        try:
+            return klass.byName(name)
+        except SQLObjectNotFound:
+            return klass(name=name)
+        
+    ensure = classmethod(_ensure)
 
 class BinaryPackageNameSet:
     implements(IBinaryPackageNameSet)

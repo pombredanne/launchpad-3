@@ -2,6 +2,36 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-09 04:32:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1393
+
+    Summary:
+      Script to import Sourcepackage and Binarypackage names implemented
+    Revision:
+      launchpad--devel--0--patch-1393
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-451
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-452
+       Script to import Sourcepackage and Binarypackage names implemented
+    
+
+    new files:
+     scripts/.arch-ids/import-packagenames.py.id
+     scripts/import-packagenames.py
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/binarypackage.py
+     lib/canonical/launchpad/database/sourcepackage.py
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-451
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-452
+
+
 2005-03-08 22:52:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1392
 
     Summary:

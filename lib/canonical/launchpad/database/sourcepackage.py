@@ -10,6 +10,7 @@ from zope.exceptions import NotFoundError
 
 # SQLObject/SQLBase
 from sqlobject import MultipleJoin
+from sqlobject import SQLObjectNotFound
 from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, DateTimeCol
 
 from canonical.librarian.client import FileDownloadClient
@@ -289,6 +290,13 @@ class SourcePackageName(SQLBase):
     def __unicode__(self):
         return self.name
 
+    def _ensure(klass, name):
+        try:
+            return klass.byName(name)
+        except SQLObjectNotFound:
+            return klass(name=name)
+
+    ensure = classmethod(_ensure)
 
 class SourcePackageNameSet(object):
     implements(ISourcePackageNameSet)
