@@ -68,8 +68,9 @@
 <h3>Source Packages</h3>
 <ul>
   <li tal:repeat="source view/sources">
-    <a tal:attributes="href string: ../../src/${context/release/name}/${source/name}">
-    <span tal:content="source/shortdesc"/></a>
+    <a tal:attributes="href string:../../src/${context/release/name}/${source/name}"
+    tal:content="source/name">SOURCE</a> : 
+    <span tal:content="source/shortdesc"/>
   </li> 
 </ul>
 </div>
@@ -81,8 +82,9 @@
 <h3>Binary Packages</h3>
 <ul>
   <li tal:repeat="binary view/binaries">
-    <a tal:attributes="href string: ../../bin/${context/release/name}/${binary/name}">
-    <span tal:content="binary/shortdesc"/></a>
+    <a tal:attributes="href string:../../bin/${context/release/name}/${binary/name}" 
+    tal:content="binary/name">BIN</a>  : 
+    <span tal:content="binary/shortdesc"/>
   </li> 
 </ul>
 </div>

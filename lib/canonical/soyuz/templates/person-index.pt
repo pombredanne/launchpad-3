@@ -22,9 +22,9 @@
     <div>
     <table>
        <legend><h3>Private Information</h3></legend>
-       <tr><td>Name:</td><td><span
-         tal:content="context/person/displayname">
-         context</span> </td></tr>
+       <tr><td>Name:</td><td 
+	tal:content="string:${context/person/displayname}(${context/person/name})">
+	DISPLAYNAME(NICK)</td></tr>
 
        <tr tal:condition="context/person/teamowner">
        <td>Owner:</td>
@@ -63,6 +63,7 @@
 
        <tr tal:condition="context/gpg">
        <td>GPG:</td><td tal:content="context/gpg/keyid"></td>
+       <th><a href="+key">Pub Key</a></th>
        </tr>
 
        <tr><td></td><td align="right"><a href="+edit">
@@ -178,8 +179,9 @@
        <td> No package available </td>
      </tr>
      <tr tal:repeat="package context/packages">
-       <td><a href=""
-           tal:content="string:${package/sourcepackage/name}-${package/version}">
+       <!-- FIXME: distribuiton and distrorelease missed --> 
+       <td><a tal:attributes="href string:../../distros/ubuntu/src/warty/${package/sourcepackage/name}"
+         tal:content="string:${package/sourcepackage/name}-${package/version}">
 	     PACKAGES
 	   </a>
        <td>

@@ -197,76 +197,84 @@ class PersonEditView(object):
                 self.context.email.email = email
                 self.enable_edited = True
             else:
-                try:
-                    self.context.email = Soyuz.EmailAddress(personID=self.context.person.id,
-                                                            email=email,
-                                                            status=int(dbschema.EmailAddressStatus.NEW))
-                except:
-                    pass
+                if email:
+                    status = int(dbschema.EmailAddressStatus.NEW)
+                    person = self.context.person.id
+                    self.context.email = \
+                         Soyuz.EmailAddress(personID=person,
+                                            email=email, status=status)
+                else:
+                    self.context.email = None
             #WikiName
             if self.context.wiki:
                 self.context.wiki.wiki = wiki
                 self.context.wiki.wikiname = wikiname
                 self.enable_edited = True
             else:
-                try:
-                    self.context.wiki = WikiName(personID=self.context.person.id,
+                if wiki or wikiname:
+                    self.context.person.id
+                    self.context.wiki = WikiName(personID=person,
                                                  wiki=wiki,
                                                  wikiname=wikiname)
-                except:
-                    pass                
+                else:
+                    self.context.wiki = None
+
             #IrcID
             if self.context.irc:
                 self.context.irc.network = network
                 self.context.irc.nickname = nickname
                 self.enable_edited = True
             else:
-                try:
-                    self.context.irc = IrcID(personID=self.context.person.id,
+                if network or nickname:
+                    person = self.context.person.id
+                    self.context.irc = IrcID(personID=person,
                                              network=network,
                                              nickname=nickname)
-                except IndexError:
-                    pass
+                else:
+                    self.context.irc = None
+                    
             #JabberID    
             if self.context.jabber:
                 self.context.jabber.jabberid = jabberid
                 self.enable_edited = True
             else:
-                try:
-                    self.context.jabber = JabberID(personID=self.context.person.id,
+                if jabberid:
+                    person = self.context.person.id                    
+                    self.context.jabber = JabberID(personID=person,
                                                    jabberid=jabberid)
-                except IndexError:
-                    pass               
+                else:
+                    self.context.jabber = None
+                    
             #ArchUserID
             if self.context.archuser:
                 self.context.archuser.archuserid = archuserid
                 self.enable_edited = True
             else:
-                try:
-                    self.context.archuser = ArchUserID(personID=self.context.person.id,
-                                                   archuserid=archuserid)
-                except IndexError:
-                    pass               
+                if archuserid:
+                    person = self.context.person.id                    
+                    self.context.archuser = ArchUserID(personID=person,
+                                                       archuserid=archuserid)
+                else:
+                    self.context.archuser = None
 
-
-
-            #GPGKey
-            if self.context.gpg:
-                self.context.gpg.keyid = gpgid
-                self.enable_edited = True
-            else:
-                try:
-                    #FIXME: lazy unique fingerprint and pubkey
-                    fingerprint = 'sample%d'%self.context.id
-                    pubkey = fingerprint
-                    
-                    self.context.gpg = GPGKey(personID=self.context.person.id,
-                                              keyid=gpgid,
-                                              fingerprint=fingerprint,
-                                              pubkey=pubkey,
-                                              revoked=False)
-                except IndexError:
-                    pass
+#             #GPGKey
+#             if self.context.gpg:
+#                 self.context.gpg.keyid = gpgid
+#                 self.context.gpg.fingerprint = fingerprint
+#                 self.enable_edited = True
+#             else:
+#                 #FIXME: more fields ...
+#                 if gpgid:
+#                     #FIXME: lazy unique fingerprint and pubkey
+#                     pubkey = 'sample%d'%self.context.id
+#                     person = self.context.person.id
+#                     self.context.gpg = GPGKey(personID=person,
+#                                               keyid=gpgid,
+#                                               fingerprint=fingerprint,
+#                                               pubkey=pubkey,
+#                                               revoked=False)
+#                 else:
+#                     self.context.gpg = None
         
 class DistrosAddView(object):
 

@@ -37,7 +37,7 @@
 	      string:../../../../../people/${context/sourcepackage/maintainer/id}"
 	      />
 
-	      <p><b>Distribution:   </b> 
+	      <p><b>Originating Distribution:   </b> 
 	      <a tal:content="context/sourcepackage/distro/title" 
 	      tal:attributes="href string:../../../../${context/sourcepackage/distro/name}"/>
 

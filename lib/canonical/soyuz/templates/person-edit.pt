@@ -157,17 +157,9 @@
 	</td></tr>
 
 
-	<tr><td>
-	<div class="field">
-	    <label>GPG ID</label>
-	    <div class="formHelp">
-	    Enter the GPG ID.
-            </div>
-	    <input type="text" name="gpgid"
-	    tal:attributes="value context/gpg/keyid|nothing"/>
-	</div>
+	<tr><td class="dummy">	
+	PUB KEY IMPORT ENGINE ????
 	</td></tr>
-
 
 	<tr><td>
 	<div class="formControls">

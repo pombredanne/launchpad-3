@@ -114,9 +114,9 @@ class DistroReleaseApp(object):
     def findSourcesByName(self, pattern):
         pattern = pattern.replace('%', '%%')
         query = (self._sourcequery() +
-                 ' AND UPPER(SourcePackageName.name) LIKE UPPER(%s)'
-                 % quote('%%' + pattern + '%%') +
-                 ' OR UPPER(SourcePackage.shortdesc) LIKE UPPER(%s)'
+                 ' AND ( UPPER(SourcePackageName.name) LIKE UPPER(%s)'
+                 % quote('%%' + pattern + '%%')
+                 + ' OR UPPER(SourcePackage.shortdesc) LIKE UPPER(%s))'
                  % quote('%%' + pattern + '%%'))
         
         from sets import Set
@@ -125,18 +125,17 @@ class DistroReleaseApp(object):
     where = (
         'PackagePublishing.binarypackage = BinaryPackage.id AND '
         'PackagePublishing.distroarchrelease = DistroArchRelease.id AND '
-        'DistroArchRelease.distrorelease = %d '
+        'DistroArchRelease.distrorelease = %d AND '
+        'BinaryPackage.binarypackagename = BinaryPackageName.id '
         )
 
     def findBinariesByName(self, pattern):
         pattern = pattern.replace('%', '%%')
         query = (self.where % self.release.id +
-                 'AND  BinaryPackage.binarypackagename=BinarypackageName.id '+
-                 'AND  UPPER(BinarypackageName.name) LIKE UPPER(%s) '
-                 % quote('%%' + pattern + '%%') +
-                 'OR UPPER(Binarypackage.shortdesc) LIKE UPPER(%s)'
+                 'AND (UPPER(BinarypackageName.name) LIKE UPPER(%s) '
+                 % quote('%%' + pattern + '%%')
+                 + 'OR UPPER(Binarypackage.shortdesc) LIKE UPPER(%s))'
                  % quote('%%' + pattern + '%%'))
-        
 
         from sets import Set
         return Set(SoyuzBinaryPackage.select(query))
@@ -507,27 +506,6 @@ class PersonApp(object):
 
 ################################################################
 
-# FIXME: deprecated, old DB layout (spiv: please help!!)
-class SoyuzBinaryPackageBuild(SQLBase):
-    implements(IBinaryPackageBuild)
-
-    _table = 'BinarypackageBuild'
-    _columns = [
-        ForeignKey(name='sourcePackageRelease', 
-                   foreignKey='SoyuzSourcePackageRelease', 
-                   dbName='sourcepackagerelease', notNull=True),
-        ForeignKey(name='binaryPackage', foreignKey='BinaryPackage', 
-                   dbName='binarypackage', notNull=True),
-        ForeignKey(name='processor', foreignKey='Processor', 
-                   dbName='processor', notNull=True),
-        IntCol('binpackageformat', dbName='binpackageformat', notNull=True),
-        StringCol('version', dbName='Version', notNull=True),
-        DateTimeCol('datebuilt', dbName='datebuilt', notNull=True),
-        # TODO: More columns
-    ]
-
-    def _get_sourcepackage(self):
-        return self.sourcePackageRelease.sourcepackage
 
 class SoyuzBuild(SQLBase):
     _table = 'Build'
@@ -546,6 +524,9 @@ class SoyuzBuild(SQLBase):
                    foreignKey='Builder'),
         ForeignKey(name='gpgsigningkey', dbName='gpgsigningkey',
                    foreignKey='GPGKey'),
+        ForeignKey(name='sourcepackagerelease', dbName='sourcepackagerelease',
+                   foreignKey='SoyuzSourcePackageRelease', notNull=True),
+
     ]
         
 ##########################################################
@@ -567,14 +548,17 @@ class DistroReleaseBinaryReleaseApp(object):
 
         query = ('SourcePackageUpload.distrorelease = DistroRelease.id '
                  'AND SourcePackageUpload.sourcepackagerelease = %i '
-                 %(self.binarypackagerelease.sourcepackagerelease.id))
+                 %(self.binarypackagerelease.build.sourcepackagerelease.id))
+
+
         self.sourcedistrorelease = Release.select(query)[0]
 
 
         binaryReleases = self.binarypackagerelease.current(distrorelease)
 
         query = binaryReleases.clause + \
-                (' AND BinaryPackage.sourcepackagerelease = SourcepackageRelease.id'
+                (' AND Build.id = Binarypackage.build'
+                 ' AND Build.sourcepackagerelease = SourcepackageRelease.id'
                  ' AND BinaryPackage.version = %s' %quote(version)
                 )
 
@@ -707,6 +691,7 @@ class SoyuzPerson(SQLBase):
         StringCol('familyname', dbName='familyname'),
         StringCol('displayname', dbName='displayname'),
         StringCol('password', dbName='password'),
+        StringCol('name', dbName='name', notNull=True),
         ForeignKey(name='teamowner', dbName='teamowner',
                    foreignKey='SoyuzPerson'),
         StringCol('teamdescription', dbName='teamdescription'),
@@ -778,32 +763,38 @@ class Release(SQLBase):
     state = property(state)
 
     def sourcecount(self):
-        query = ('SourcePackageUpload.sourcepackagerelease=SourcePackageRelease.id '
-                 'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
-                 'AND SourcePackageUpload.distrorelease = %d '
-                 % (self.id))
+        q =  """SELECT COUNT (DISTINCT sourcepackagename.name)
+                FROM sourcepackagename, Sourcepackage,
+                SourcepackageRelease, SourcepackageUpload
+                WHERE sourcepackagename.id = sourcepackage.sourcepackagename
+                AND SourcePackageUpload.sourcepackagerelease=
+                                                  SourcePackageRelease.id
+                AND SourcePackageRelease.sourcepackage = SourcePackage.id
+                AND SourcePackageUpload.distrorelease = %s;""" % (self.id)
 
-        return len(Set(SoyuzSourcePackage.select(query)))
+        db = SoyuzSourcePackage._connection._connection
+        db_cursor = db.cursor()
+        db_cursor.execute(q)        
+        return db_cursor.fetchall()[0][0]
+
     sourcecount = property(sourcecount)
 
     def binarycount(self):
-        query = ('PackagePublishing.binarypackage = BinaryPackage.id AND '
-                 'PackagePublishing.distroarchrelease = DistroArchRelease.id AND '
-                 'DistroArchRelease.distrorelease = %d '
-                 % self.id)
+        q = """SELECT COUNT (DISTINCT binarypackagename.name) FROM
+               binarypackagename, packagepublishing, binarypackage,
+               distroarchrelease WHERE PackagePublishing.binarypackage =
+               BinaryPackage.id AND PackagePublishing.distroarchrelease =
+               DistroArchRelease.id AND DistroArchRelease.distrorelease = %s
+               AND binarypackagename.id = binarypackage.binarypackagename;
+               """ % (self.id)
 
-        ##XXX: Binary packages with the same binarypackagename should
-        ##be counted just once. A distinct select using binarypackagename
-        ##would be better, but it is not available up to now
-        count = 0
-        ready = []
-        for i in SoyuzBinaryPackage.select(query):
-            if i.binarypackagename not in ready:
-                count += 1
-                ready.append(i.binarypackagename)
-        return count
-##         return SoyuzBinaryPackage.select(query).count()
-
+        #import pdb
+        #pdb.set_trace()
+        db = SoyuzBinaryPackage._connection._connection
+        db_cursor = db.cursor()
+        db_cursor.execute(q)
+        return db_cursor.fetchall()[0][0]
+                
     binarycount = property(binarycount)
 
 class SourcePackages(object):
@@ -855,7 +846,6 @@ class BinaryPackages(object):
     """
     implements(IBinaryPackageSet)
 
-    table = SoyuzBinaryPackageBuild
     clauseTables = ('BinaryPackageUpload', 'DistroArchRelease')
 
     def __init__(self, release):

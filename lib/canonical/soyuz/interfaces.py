@@ -474,6 +474,7 @@ class ISoyuzPerson(Interface):
     karma = Attribute("Karma")
     karmatimestamp = Attribute("Karma Time stamp")
     password = Attribute("Password")
+    name = Attribute("Login or Nick")
     
 class IManifestEntry(Interface):
     """"""

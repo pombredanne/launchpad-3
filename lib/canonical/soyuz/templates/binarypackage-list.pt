@@ -40,7 +40,9 @@ Find Binary Package by Name:
   </tr>
    <tr tal:repeat="binpackage context">
     <td> 
-     <a tal:content="binpackage/shortdesc" tal:attributes="href binpackage/name">TITLE</a> 
+     <a tal:content="binpackage/name"
+        tal:attributes="href binpackage/name">TITLE</a> : 
+	<span tal:content="binpackage/shortdesc">SHORTDESC</span> 
     </td>
   </tr>
 </table>

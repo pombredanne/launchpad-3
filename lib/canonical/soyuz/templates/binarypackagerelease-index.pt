@@ -14,8 +14,7 @@
 
 <div metal:fill-slot="main">
 
-<h1><span
-tal:content="context/binarypackagerelease/shortdesc">TITLE</span> 
+<h1><span tal:content="context/binarypackagerelease/name">TITLE</span> 
 (<span tal:content="context/version" />)
 </h1>
 
@@ -28,29 +27,27 @@ tal:content="context/binarypackagerelease/shortdesc">TITLE</span>
     <a tal:content="context/binarypackagerelease/name" 
     tal:attributes="href string:../../${context/binarypackagerelease/name}"/>
 
+    <div class="dummy">
     <p><b>Source Package Release:</b>
-    <a
-    tal:define="sourcerelease
-    context/binarypackagerelease/sourcepackagerelease"
-    tal:content="sourcerelease/sourcepackage/name"
-    tal:attributes="href
-    string:../../../../src/${context/sourcedistrorelease/name}/${sourcerelease/sourcepackage/name}/${sourcerelease/version}"
+<!--    
+    <a tal:define="sourcerelease context/binarypackagerelease/build/sourcepackagerelease"
+       tal:content="sourcerelease/sourcepackage/name"
+       tal:attributes="href string:../../../../src/${context/sourcedistrorelease/name}/${sourcerelease/sourcepackage/name}/${sourcerelease/version}"
     /> 
-
+--> 
+    </div>
     <p><b>Component:</b>
-    <a tal:content="context/binarypackagerelease/component/name" 
-    tal:attributes="href string:no-link-yet"/> 
+    <a href=""
+       tal:content="context/binarypackagerelease/component/name"/> 
 
     <p><b>Section:</b>
-    <a tal:content="context/binarypackagerelease/section/name" 
-    tal:attributes="href string:no-link-yet" /> 
+    <a href=""
+       tal:content="context/binarypackagerelease/section/name"/> 
 
     <p><b>Priority:</b>
     <span tal:content="context/binarypackagerelease/pkgpriority"/>
 
-    <p><b>Licence:</b>
-    <a tal:content="context/binarypackagerelease/licence" 
-    tal:attributes="href string:no-link-yet"/>
+    <p><a href="+license"><b>License</b></a>
 
  </fieldset>
 

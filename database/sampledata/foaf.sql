@@ -4,26 +4,26 @@
 */
 
 -- Person
-INSERT INTO Person ( displayname, givenname, familyname ) VALUES 
-	( 'Dave Miller', 'Dave', 'Miller' );                  -- 2
-INSERT INTO Person ( displayname, givenname, familyname ) VALUES 
-	( 'Colin Watson', 'Colin', 'Watson' );                 -- 3
-INSERT INTO Person ( displayname, givenname, familyname ) VALUES 
-	( 'Scott James Remnant', 'Scott James', 'Remnant' );   -- 4
-INSERT INTO Person ( displayname, givenname, familyname ) VALUES 
-	( 'Jeff Waugh', 'Jeff', 'Waugh' );                     -- 6
-INSERT INTO Person ( displayname, givenname, familyname ) VALUES 
-	( 'Andrew Bennetts', 'Andrew', 'Bennetts' );           -- 7
-INSERT INTO Person ( displayname, givenname, familyname ) VALUES 
-	( 'James Blackwell', 'James', 'Blackwell' );           -- 8
-INSERT INTO Person ( displayname, givenname, familyname ) VALUES 
-	( 'Christian Reis', 'Christian', 'Reis' );             -- 9
-INSERT INTO Person ( displayname, givenname, familyname ) VALUES 
-	( 'Alexander Limi', 'Alexander', 'Limi' );             -- 10
-INSERT INTO Person ( displayname, givenname, familyname ) VALUES 
-	( 'Steve Alexander', 'Steve', 'Alexander' );           -- 11
-INSERT INTO Person ( displayname, givenname, familyname ) VALUES
-        ( 'Sample Person', 'Sample', 'Person' );               -- 12
+INSERT INTO Person ( displayname, givenname, familyname, name) VALUES 
+	( 'Dave Miller', 'Dave', 'Miller', 'name2' );           
+INSERT INTO Person ( displayname, givenname, familyname, name) VALUES 
+	( 'Colin Watson', 'Colin', 'Watson', 'name3' );                 
+INSERT INTO Person ( displayname, givenname, familyname, name) VALUES 
+	( 'Scott James Remnant', 'Scott James', 'Remnant', 'name4' );   
+INSERT INTO Person ( displayname, givenname, familyname, name) VALUES 
+	( 'Jeff Waugh', 'Jeff', 'Waugh', 'name5' );                     
+INSERT INTO Person ( displayname, givenname, familyname, name) VALUES 
+	( 'Andrew Bennetts', 'Andrew', 'Bennetts', 'name6' );           
+INSERT INTO Person ( displayname, givenname, familyname, name) VALUES 
+	( 'James Blackwell', 'James', 'Blackwell', 'name7' );           
+INSERT INTO Person ( displayname, givenname, familyname, name) VALUES 
+	( 'Christian Reis', 'Christian', 'Reis', 'name8' );            
+INSERT INTO Person ( displayname, givenname, familyname, name) VALUES 
+	( 'Alexander Limi', 'Alexander', 'Limi', 'name9' );            
+INSERT INTO Person ( displayname, givenname, familyname, name) VALUES 
+	( 'Steve Alexander', 'Steve', 'Alexander', 'name10' );          
+INSERT INTO Person ( displayname, givenname, familyname, name) VALUES
+        ( 'Sample Person', 'Sample', 'Person', 'name11' );              
 
 /*
   These sample people came from the Rosetta team. They all have password "test"

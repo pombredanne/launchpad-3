@@ -37,6 +37,10 @@ INSERT INTO Schema (name, title, description, owner, extensible) VALUES
 	('enema', 'ENHEMA', 'description', 
 	(SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'), 
 	TRUE);
+
+
+/*
+
 -- Sourcepackagename
 INSERT INTO Sourcepackagename (name)
 	VALUES('mozilla-firefox'); 
@@ -137,118 +141,128 @@ VALUES ((SELECT id FROM Person WHERE displayname = 'Jeff Waugh'),
 
 --SourcepackageRelease
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
-                                  version, dateuploaded, urgency)
+                                  version, dateuploaded, urgency, component)
 VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM SOurcepackagename WHERE name = 'mozilla-firefox')),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
         '0.9.0-6',
         timestamp '2004-06-17 00:00',
+	1,
 	1);
 
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
-                                  version, dateuploaded, urgency)
+                                  version, dateuploaded, urgency, component)
 VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox')),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
         '0.9.0-7',
         timestamp '2004-06-18 00:00',
+	1,
 	1);
 
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
-                                  version, dateuploaded, urgency)
+                                  version, dateuploaded, urgency, component)
 VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox')),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
         '0.9.0-8',
         timestamp '2004-06-19 00:00',
+	1,
 	1);
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
-                                  version, dateuploaded, urgency)
+                                  version, dateuploaded, urgency, component)
 VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox')),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
         '0.9.0-9',
         timestamp '2004-06-20 00:00',
+	1,
 	1);
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
-                                  version, dateuploaded, urgency)
+                                  version, dateuploaded, urgency, component)
 VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox')),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
         '0.9.1-1',
         timestamp '2004-06-29 00:00',
+	1,
 	1);
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
-                                  version, dateuploaded, urgency)
+                                  version, dateuploaded, urgency, component)
 VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-thunderbird')),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
         '0.9.1-2',
         timestamp '2004-06-30 00:00',
+	1,
 	1);
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
-                                  version, dateuploaded, urgency)
+                                  version, dateuploaded, urgency, component)
 VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM SOurcepackagename WHERE name = 'python-twisted')),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
         '0.9.1-3',
         timestamp '2004-07-01 00:00',
+	1,
 	1);
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
-                                  version, dateuploaded, urgency)
+                                  version, dateuploaded, urgency, component)
 VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'bugzilla')),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Dave Miller'),
         '0.9.1-4',
         timestamp '2004-07-02 00:00',
+	1,
 	1);
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
-                                  version, dateuploaded, urgency)
+                                  version, dateuploaded, urgency, component)
 VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'arch')),
  	1,
         (SELECT id FROM Person WHERE displayname = 'James Blackwell'),
         '0.9.1-5',
         timestamp '2004-07-03 00:00',
+	1,
 	1);
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
-                                  version, dateuploaded, urgency)
+                                  version, dateuploaded, urgency, component)
 VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'kiwi2')),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Christian Reis'),
         '0.9.1-6',
         timestamp '2004-07-04 00:00',
+	1,
 	1);
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
-                                  version, dateuploaded, urgency)
+                                  version, dateuploaded, urgency, component)
 VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'plone')),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
         '0.9.1-7',
         timestamp '2004-07-05 00:00',
+	1,
 	1);
 
-UPDATE sourcepackagerelease set component = 1;
 
 UPDATE sourcepackagerelease set builddepends = 
 	'mozilla-firefox (>= 0.9.0-9), mozilla-thunderbird, arch'
@@ -483,8 +497,7 @@ WHERE  sourcepackage = (SELECT id from sourcepackage where sourcepackagename =
 	(select id from sourcepackagename where name = 'mozilla-firefox')
 	);
 
-
-
+*/
 
 --Manifest
 INSERT INTO Manifest (datecreated, owner)
@@ -523,6 +536,7 @@ VALUES (timestamp '2004-07-05 00:00',
  );
 
 
+/*
 --CodeRelease
 INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
 VALUES ((SELECT id FROM SourcepackageRelease WHERE 
@@ -642,6 +656,7 @@ VALUES ((SELECT id FROM ArchArchive WHERE name = 'plone'),
         'Plone 0.9.1', 'text',
  (SELECT id FROM Person WHERE displayname = 'Alexander Limi'));
 
+*/
 
  -- Label
 INSERT INTO Label (schema, name, title, description)
@@ -895,6 +910,8 @@ INSERT INTO Build (datecreated, processor, distroarchrelease, buildstate)
 	1, -- hardcoded ?!?! use query instead
 	1  -- ??
 	);	
+
+/*
 
 --Binarypackagename
 INSERT INTO Binarypackagename(name) VALUES ('mozilla-firefox');
@@ -1347,3 +1364,5 @@ VALUES ((SELECT id FROM Distrorelease WHERE name = 'grumpy'),
 UPDATE SourcePackage SET distro = 3 WHERE id < 4;
 
 UPDATE SourcePackage SET distro = 1 WHERE id >= 4;
+
+*/

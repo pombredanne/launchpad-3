@@ -130,8 +130,6 @@ class SoyuzBinaryPackage(SQLBase):
     implements(IBinaryPackage)
     _table = 'BinaryPackage'
     _columns = [
-        ForeignKey(name='sourcepackagerelease', dbName='sourcepackagerelease',
-                   foreignKey='SoyuzSourcePackageRelease', notNull=True),
         ForeignKey(name='binarypackagename', dbName='binarypackagename', 
                    foreignKey='SoyuzBinaryPackageName', notNull=True),
         StringCol('version', dbName='version', notNull=True),
@@ -174,7 +172,7 @@ class SoyuzBinaryPackage(SQLBase):
         
         :returns: iterable of SourcePackageReleases
         """
-        return self.sourcepackagerelease.sourcepackage.current(distroRelease)
+        return self.build.sourcepackagerelease.sourcepackage.current(distroRelease)
 
     def lastversions(self, distroRelease):
         last = list(SoyuzSourcePackageRelease.select(
@@ -183,7 +181,7 @@ class SoyuzBinaryPackage(SQLBase):
             ' AND SourcePackageRelease.sourcepackage = %d'
             ' AND SourcePackageUpload.uploadstatus = %d'
             ' ORDER BY sourcePackageRelease.dateuploaded DESC'
-            % (distroRelease.id, self.sourcepackagerelease.sourcepackage.id,dbschema.SourceUploadStatus.SUPERCEDED)
+            % (distroRelease.id, self.build.sourcepackagerelease.sourcepackage.id,dbschema.SourceUploadStatus.SUPERCEDED)
         ))
         if last:
             return last
@@ -326,13 +324,15 @@ class SoyuzSourcePackageRelease(SQLBase):
     builds = MultipleJoin('SoyuzBuild', joinColumn='sourcepackagerelease')
 
     def architecturesReleased(self, distroRelease):
-        archReleases = SoyuzDistroArchRelease.select(
+        from sets import Set
+        archReleases = Set(SoyuzDistroArchRelease.select(
             'PackagePublishing.distroarchrelease = DistroArchRelease.id '
             'AND DistroArchRelease.distrorelease = %d '
             'AND PackagePublishing.binarypackage = BinaryPackage.id '
-            'AND BinaryPackage.sourcepackagerelease = %d'
+            'AND BinaryPackage.build = Build.id '
+            'AND Build.sourcepackagerelease = %d'
             % (distroRelease.id, self.id)
-        )
+        ))
         return archReleases
 
     def _urgency(self):
@@ -342,9 +342,10 @@ class SoyuzSourcePackageRelease(SQLBase):
         return 'Unknown (%d)' %self.urgency
 
     def binaries(self):
-        query = ('SourcePackageRelease.id = BinaryPackage.sourcepackagerelease'
-                 ' AND BinaryPackage.sourcepackagerelease = %i'
-                 %self.id
+        query = ('SourcePackageRelease.id = Build.sourcepackagerelease'
+                 ' AND BinaryPackage.build = Build.id '
+                 ' AND Build.sourcepackagerelease = %i'
+                 %self.id 
                  )
 
         return SoyuzBinaryPackage.select(query)

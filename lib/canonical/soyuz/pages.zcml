@@ -266,6 +266,11 @@
           template="templates/person-index.pt"	
 	  lp:url="Soyuz/people/$person.id/index.html"
 	/>
+
+	<page  name="+key"
+          template="templates/person-key.pt"	
+	  lp:url="Soyuz/people/$person.id/+key"
+	/>
    </pages>
 
   <page for="canonical.soyuz.sql.PersonApp"
@@ -283,7 +288,7 @@
          lp:url="Soyuz/people/$person.id/+edit"
 	 name="+edit"
        />
-<!--
+
   <page for="canonical.soyuz.sql.PersonApp"
          permission="zope.Public"
 	 class="canonical.soyuz.browser.TeamJoinView"
@@ -291,7 +296,7 @@
          lp:url="Soyuz/people/$person.id/+join"
 	 name="+join"
        />
--->
+
 
 <traverse for="canonical.soyuz.sql.DistroBinariesApp" getter="__getitem__" />
 
@@ -349,7 +354,13 @@
           template="templates/binarypackagerelease-index.pt"	
 	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/$version/index.html"
 	/>
+
+	<page  name="+license"
+          template="templates/binarypackagerelease-license.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/$version/+license"
+	/>
    </pages>
+
 
    <pages for="canonical.soyuz.sql.DistroReleaseBinaryReleaseBuildApp"
 	  allowed_attributes="results"	 
