@@ -2,6 +2,41 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-23 17:24:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1483
+
+    Summary:
+      Add pyme to lib/
+    Revision:
+      launchpad--devel--0--patch-1483
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-19
+       star-merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-20
+       Manual merge of 1318-1426 of rocketfuel
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-21
+       star-merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-22
+       Add pyme symlink
+    
+
+    new files:
+     lib/.arch-ids/pyme.id lib/pyme
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-19
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-20
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-21
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-22
+
+
 2005-03-23 17:16:25 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1482
 
     Summary:
