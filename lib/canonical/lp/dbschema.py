@@ -21,16 +21,19 @@ __metaclass__ = type
 # work properly, and the thing/lp:SchemaClass will not work properly.
 
 __all__ = ('ManifestEntryType', 'Packaging', 'BranchRelationships',
-'EmailAddressStatus', 'MembershipRole', 'MembershipStatus', 'HashAlgorithms',
-'ProjectRelationship', 'DistributionReleaseState', 'UpstreamFileType',
-'SourcePackageFormat', 'SourcePackageUrgency', 'SourcePackageFileType',
-'TranslationPriority', 'SourceUploadStatus', 'SourcePackageRelationships',
-'BinaryPackageFormat', 'BinaryPackagePriority', 'BinaryPackageFileType',
-'CodereleaseRelationships', 'BugInfestationStatus', 'BugAssignmentStatus',
-'BugPriority', 'BugSeverity', 'BugExternalReferenceType', 'BugRelationship',
-'UpstreamReleaseVersionStyle', 'RevisionControlSystems', 'ArchArchiveType',
-'BugSubscription', 'RosettaTranslationOrigin', 'DistributionRole',
-'DOAPRole')
+'EmailAddressStatus', 'MembershipRole', 'MembershipStatus',
+'HashAlgorithms', 'ProjectRelationship', 'DistributionReleaseState',
+'UpstreamFileType', 'SourcePackageFormat', 'SourcePackageUrgency',
+'SourcePackageFileType', 'TranslationPriority',
+'PackagePublishingStatus', 'PackagePublishingPriority',
+'SourcePackageRelationships', 'BinaryPackageFormat',
+'BinaryPackagePriority', 'BinaryPackageFileType',
+'CodereleaseRelationships', 'BugInfestationStatus',
+'BugAssignmentStatus', 'BugPriority', 'BugSeverity',
+'BugExternalReferenceType', 'BugRelationship',
+'UpstreamReleaseVersionStyle', 'RevisionControlSystems',
+'ArchArchiveType', 'BugSubscription', 'RosettaTranslationOrigin',
+'DistributionRole', 'DOAPRole')
 
 from zope.interface.advice import addClassAdvisor
 from zope.schema.vocabulary import SimpleVocabulary
@@ -802,74 +805,176 @@ class TranslationPriority(DBSchema):
         search or complete listing is requested by the user.
         ''')
 
+class DistroReleaseQueueStatus(DBSchema):
+    """Distro Release Queue Status
 
-class SourceUploadStatus(DBSchema):
-    """Source Upload Status
+    An upload has various stages it must pass through before becoming
+    part of a DistroRelease. These are managed via the DistroReleaseQueue
+    table and related tables and eventually (assuming a successful upload
+    into the DistroRelease) the effects are published via the PackagePublishing
+    and SourcepackagePublishing tables.
+    """
 
-     A source package has a lifecycle in a distrorelease. This schema
-     documents the possible values for the status of a source package in a
-     distrorelease at any time.
-     """
+    UNCHECKED = Item(1, '''
+        Unchecked
 
-    PROPOSED = Item(1, '''
-        Proposed
-
-        This source package has been proposed for the distrorelease. This is
-        the status used for new source packages which have been uploaded but
-        not yet approved or checked in any way.
+        This upload has been checked enough to get it into the database but
+        has yet to be checked for new binary packages, mismatched overrides
+        or similar.
         ''')
-  
+
     NEW = Item(2, '''
         New
 
-        A source package with a "new" upload status has passed some initial
-        tests (for example, linting or basic format and digital signature
-        verification) but has not yet been accepted by the archive
-        maintainer team. Typically, source packages which are first
-        uploaded to the archive sit in the "new" status till they are
-        reviewed and an automatic processing policy can be defined for
-        them. Once that policy is defined they can move from "proposed"
-        straight to accepted if they meet the policy.
+        This upload is either a brand-new source package or contains a binary
+        package with brand new debs or similar. The package must sit here until
+        someone with the right role in the DistroRelease checks and either
+        accepts or rejects the upload. If the upload is accepted then
+        entries will be made in the overrides tables and further uploads
+        will bypass this state
         ''')
 
-    ACCEPTED = Item(3, '''
+    UNAPPROVED = Item(3, '''
+        Unapproved
+
+        If a DistroRelease is frozen or locked out of ordinary updates then
+        this state is used to mean that while the package is correct from a
+        technical point of view; it has yet to be approved for inclusion in
+        this DistroRelease. One use of this state may be for security releases
+        where you want the security team of a DistroRelease to approve uploads.
+        ''')
+
+    BYHAND = Item(4, '''
+        ByHand
+
+        If an upload contains files which are not stored directly into the
+        pool tree (I.E. not .orig.tar.gz .tar.gz .diff.gz .dsc .deb or .udeb)
+        then the package must be processed by hand. This may involve unpacking
+        a tarball somewhere special or similar.
+        ''')
+
+    ACCEPTED = Item(5, '''
         Accepted
 
-        Packages in the "accepted" state have been accepted into the archive
-        but have not yet been published. For example, if there is an unmet
-        dependency on that package, it might wait "accepted" until the
-        dependency is met and the package can be published.
+        An upload in this state has passed all the checks required of it and
+        is ready to have its publishing records created.
         ''')
 
-    PUBLISHED = Item(4, '''
+    DONE = Item(7, '''
+        Done
+
+        An upload in this state has had its publishing records created
+        if it needs them and is fully processed into the
+        DistroRelease. This state exists so that a logging and/or
+        auditing tool can pick up accepted uploads and create entries
+        in a journal or similar before removing the queue item.
+        ''')
+
+    REJECTED = Item(6, '''
+        Rejected
+
+        An upload which reaches this state has, for some reason or another
+        not passed the requirements (technical or human) for entry into the
+        DistroRelease it was targetting. As for the 'done' state, this
+        state is present to allow logging tools to record the rejection
+        and then clean up any subsequently unnecessary records.
+        ''')
+
+
+class PackagePublishingStatus(DBSchema):
+    """Package Publishing Status
+
+     A package has various levels of being published within a DistroRelease.
+     This is important because of how new source uploads dominate binary
+     uploads bit-by-bit. Packages (source or binary) enter the publishing
+     tables as 'Pending', progress through to 'Published' eventually become
+     'Superceded' and then become 'PendingRemoval'. Once removed from the
+     DistroRelease the publishing record is also removed.
+     """
+
+    PENDING = Item(1, '''
+        Pending
+
+        This [source] package has been accepted into the DistroRelease and
+        is now pending the addition of the files to the published disk area.
+        ''')
+  
+    PUBLISHED = Item(2, '''
         Published
 
         This package is currently published as part of the archive for that
-        distrorelease. There can only be one release of a given source
-        package that is "published" at any one time.
+        distrorelease. In general there will only ever be one version of
+        any source/binary package published at any one time. Once a newer
+        version becomes published the older version is marked as superceded.
         ''')
 
-    REJECTED = Item(5, '''
-        Rejected
-
-        A package might not be accepted by the archive maintainers. In this
-        case it is "rejected" and will not be proposed again.
-        ''')
-
-    SUPERCEDED = Item(6, '''
+    SUPERCEDED = Item(3, '''
         Superceded
 
-        When a newer version of a source package is published the existing
+        When a newer version of a [source] package is published the existing
         one is marked as "superceded".
         ''')
 
-    REMOVED = Item(7, '''
-        Removed
+    PENDINGREMOVAL = Item(6, '''
+        PendingRemoval
 
-        If a package is actually removed from the archive it will be marked
-        as "removed".
+        Once a package is ready to be removed from the archive is is put
+        into this state and the removal will be acted upon when a period
+        of time has passed. When the package is moved to this state the
+        scheduleddeletiondate column is filled out. When that date has passed
+        the archive maintainance tools will remove the package from the on-disk
+        archive and remove the publishing record.
         ''')
 
+
+class PackagePublishingPriority(DBSchema):
+    """Package Publishing Priority
+
+    Binary packages have a priority which is related to how important
+    it is to have that package installed in a system. Common priorities
+    range from required to optional and various others are available.
+    """
+
+    REQUIRED = Item( 50, '''
+        Required
+
+        This priority indicates that the package is required. This priority
+        is likely to be hard-coded into various package tools. Without all
+        the packages at this priority it may become impossible to use dpkg.
+        ''')
+    
+    IMPORTANT = Item( 40, '''
+        Important
+
+        If foo is in a package; and "What is going on?! Where on earth
+        is foo?!?!" would be the reaction of an experienced UNIX
+        hacker were the package not installed, then the package is
+        important.
+        ''')
+    
+    STANDARD = Item( 30, '''
+        Standard
+
+        Packages at this priority are standard ones you can rely on to be
+        in a distribution. They will be installed by default and provide
+        a basic character-interface userland.
+        ''')
+    
+    OPTIONAL = Item( 20, '''
+        Optional
+
+        This is the software you might reasonably want to install if you
+        did not know what it was or what your requiredments were. Systems
+        such as X or TeX will live here.
+        ''')
+    
+    EXTRA = Item( 10, '''
+        Extra
+
+        This contains all the packages which conflict with those at the other
+        priority levels; or packages which are only useful to people who have
+        very specialised needs.
+        ''')
 
 class SourcePackageRelationships(DBSchema):
     """Source Package Relationships
@@ -1239,7 +1344,7 @@ class BugSeverity(DBSchema):
     MAJOR = Item(2, '''
         Major Severity
 
-        This but needs urgent attention from the maintainer or
+        This bug needs urgent attention from the maintainer or
         upstream. It affects local system security or data integrity.
         ''')
 
