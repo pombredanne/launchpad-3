@@ -154,5 +154,9 @@ class DistroReleaseSet:
     implements(IDistroReleaseSet)
 
     def get(self, distroreleaseid):
-        """See canonical.launchpad.interfaces.IDistroReleaseSet."""
         return DistroRelease.get(distroreleaseid)
+
+    def translatables(self):
+        return DistroRelease.select(
+            "POTemplate.distrorelease=DistroRelease.id",
+            clauseTables=['POTemplate'], distinct=True)

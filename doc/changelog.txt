@@ -2,6 +2,53 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-31 12:56:41 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1529
+
+    Summary:
+      new portlets and navigation for rosetta
+    Revision:
+      launchpad--devel--0--patch-1529
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-895
+       rosetta navigation
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-896
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-897
+       fix page tests
+    
+
+    new files:
+     lib/canonical/launchpad/templates/.arch-ids/portlet-distrorelease-translations.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/portlet-sourcepackage-translations.pt.id
+     lib/canonical/launchpad/templates/portlet-distrorelease-translations.pt
+     lib/canonical/launchpad/templates/portlet-sourcepackage-translations.pt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/distrorelease.py
+     lib/canonical/launchpad/browser/sourcepackage.py
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/database/sourcepackageindistro.py
+     lib/canonical/launchpad/interfaces/distrorelease.py
+     lib/canonical/launchpad/interfaces/launchpad.py
+     lib/canonical/launchpad/interfaces/sourcepackage.py
+     lib/canonical/launchpad/templates/distrorelease-index.pt
+     lib/canonical/launchpad/templates/portlet-product-translations.pt
+     lib/canonical/launchpad/templates/rosetta-index.pt
+     lib/canonical/launchpad/templates/sourcepackage.pt
+     lib/canonical/lp/dbschema.py lib/canonical/rosetta/__init__.py
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-895
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-896
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-897
+
+
 2005-03-31 09:34:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1528
 
     Summary:

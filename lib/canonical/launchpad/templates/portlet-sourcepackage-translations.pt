@@ -1,6 +1,5 @@
 <div class="portlet"
-     tal:define="translatable context/primary_translatable"
-     tal:condition="translatable">
+     tal:condition="context/potemplates">
 
     <h4>Translation Sets:</h4>
 
@@ -10,10 +9,10 @@
 
         <table class="rowNavigation" border="0">
 
-            <tr tal:repeat="template translatable/potemplates"
+            <tr tal:repeat="template context/potemplates"
 
                 tal:attributes="onclick
-                string:window.location='/products/${context/name}/${translatable/version}/+pots/${template/name}';">
+                string:window.location='+pots/${template/name}';">
                 <td tal:content="template/title">template title</td>
             </tr>
 
@@ -22,8 +21,8 @@
         <a href="+translations"
            style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
            title="See more translation options for this product">
-            <img src="/++resource++add.gif" alt="+" />
-            More...
+           <img src="/++resource++add.gif" alt="+" />
+           More...
         </a><br />
 
         </div>

@@ -31,6 +31,9 @@ class DistroReleaseView(object):
     linksPortlet = ViewPageTemplateFile(
         '../templates/portlet-distrorelease-links.pt')
 
+    translationsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-distrorelease-translations.pt')
+
     statusLegend = ViewPageTemplateFile(
         '../templates/portlet-rosetta-status-legend.pt')
 

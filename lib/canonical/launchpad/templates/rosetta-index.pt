@@ -41,6 +41,26 @@
 
     </ul>
 
+    <h1>Translations in Ubuntu</h1>
+
+    <p>Rosetta is the primary translation system for the Ubuntu Project. You
+    can help translation any application in Ubuntu, or any of the Ubuntu
+    derivative distributions, using this web interface. Select a release
+    from the list below:</p>
+    
+    <div style="margin-left: 50px;">
+
+        <p tal:repeat="distrorelease context/translatable_distroreleases">
+            <img src="/++resource++product_icon.gif"> <b><span
+            tal:replace="distrorelease/title">product title</span></b>
+            [ <a tal:attributes="href
+            string:/distros/${distrorelease/distribution/name}/${distrorelease/name}/">Translate</a> ]
+            <br />
+            <span tal:replace="distrorelease/shortdesc">product
+            summary</span>
+        </p>
+
+    </div> <!-- indent -->
 
     <h1>Translatable Applications</h1>
 
@@ -53,7 +73,7 @@
 
     <div style="margin-left: 50px;">
     
-        <p tal:repeat="product context/translatables">
+        <p tal:repeat="product context/translatable_products">
             <img src="/++resource++product_icon.gif"> <b><span
             tal:replace="product/title">product title</span></b>
             [ <a tal:attributes="href
@@ -63,7 +83,7 @@
             summary</span>
         </p>
 
-    </div>
+    </div> <!-- indent -->
 
     <p>Find or register <a href="products">another open source
     application</a> for translation.</p>

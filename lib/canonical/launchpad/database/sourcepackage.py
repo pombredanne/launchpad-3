@@ -14,9 +14,9 @@ from sqlobject import StringCol, ForeignKey, MultipleJoin, DateTimeCol
 from canonical.database.sqlbase import SQLBase, quote
 
 # Launchpad Imports
-from canonical.lp import dbschema
-from canonical.lp.dbschema import EnumCol
-from canonical.lp.dbschema import SourcePackageFormat
+from canonical.lp.dbschema import EnumCol, \
+        SourcePackageFormat, BugTaskStatus, BugSeverity, \
+        PackagePublishingStatus
 
 from canonical.launchpad.interfaces import ISourcePackage, ISourcePackageSet
 from canonical.launchpad.database.product import Product
@@ -120,6 +120,7 @@ class SourcePackage(object):
         proper set of sourcepackage releases specific to this
         distrorelease."""
         return SourcePackageRelease.selectBy(sourcepackagename=self.sourcepackagename)
+    releases = property(releases)
 
     def name(self):
         return self.sourcepackagename.name
@@ -160,13 +161,13 @@ class SourcePackage(object):
 
         ret = [len(self.bugs)]
         severities = [
-            dbschema.BugSeverity.CRITICAL,
-            dbschema.BugSeverity.MAJOR,
-            dbschema.BugSeverity.NORMAL,
-            dbschema.BugSeverity.MINOR,
-            dbschema.BugSeverity.WISHLIST,
-            dbschema.BugTaskStatus.FIXED,
-            dbschema.BugTaskStatus.ACCEPTED,
+            BugSeverity.CRITICAL,
+            BugSeverity.MAJOR,
+            BugSeverity.NORMAL,
+            BugSeverity.MINOR,
+            BugSeverity.WISHLIST,
+            BugTaskStatus.FIXED,
+            BugTaskStatus.ACCEPTED,
         ]
         for severity in severities:
             n = BugTask.selectBy(severity=int(severity),
@@ -186,21 +187,32 @@ class SourcePackage(object):
                 sourcepackagename=self.sourcepackagename,
                 distribution=self.distribution,
                 version=version)
-        # XXX sabdfl 24/03/05 this will fail poorly if there is no such
+        # XXX sabdfl 24/03/05 cprov: this will fail poorly if there is no 
         # source package release published in this distro, we need a clearer
         # plan for how to handle that failure
         assert ret.count() == 1
         return ret[0]
 
-    def proposedrelease(self):
+    def pendingrelease(self):
         ret = VSourcePackageReleasePublishing.selectBy(
-                name=sourcepackagename,
-                publishingstatus=dbschema.PublishingStatus.PROPOSED,
-                distrorelease = self.distrorelease)
-        assert ret.count() < 2
+                sourcepackagenameID=self.sourcepackagename.id,
+                publishingstatus=PackagePublishingStatus.PENDING,
+                distroreleaseID = self.distrorelease.id)
         if ret.count() == 0:
             return None
-        return SourcePackageRelease.get(r.id)
+        return SourcePackageRelease.get(r[0].id)
+    pendingrelease = property(pendingrelease)
+
+    def publishedreleases(self):
+        ret = VSourcePackageReleasePublishing.selectBy(
+                sourcepackagenameID=self.sourcepackagename.id,
+                publishingstatus=[PackagePublishingStatus.PUBLISHED,
+                                  PackagePublishingStatus.SUPERSEDED],
+                distroreleaseID = self.distrorelease.id)
+        if ret.count() == 0:
+            return None
+        return list(ret)
+    publishedreleases = property(publishedreleases)
 
 
 

@@ -15,8 +15,9 @@
 
 <body>
 
-  <metal:leftportlets fill-slot="portlets_one">
-  </metal:leftportlets>
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure view/translationsPortlet" /> <br />
+</metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
   </metal:rightportlets>

@@ -163,6 +163,9 @@ class SourcePackageView:
     statusLegend = ViewPageTemplateFile(
         '../templates/portlet-rosetta-status-legend.pt')
 
+    translationsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-sourcepackage-translations.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.request = request

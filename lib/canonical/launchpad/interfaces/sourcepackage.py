@@ -19,6 +19,7 @@ class ISourcePackage(Interface):
                      "SourcePackageName.")
 
     displayname = Attribute("A displayname, constructed, for this package")
+
     title = Attribute("Title")
 
     shortdesc = Attribute("Summary")
@@ -52,14 +53,18 @@ class ISourcePackage(Interface):
     productseries = Attribute("The best guess we have as to the Launchpad "
                     "ProductSeries for this Source Package.")
 
-    proposedrelease = Attribute("The latest source package release with "
-                "a Publishing status of PROPOSED, if one exists for "
+    pendingrelease = Attribute("The latest source package release with "
+                "a Publishing status of PENDING, if one exists for "
                 "this distrorelease, else None.")
 
     currentrelease = Attribute("""The latest published SourcePackageRelease
         of a source package with this name in the distribution or
         distrorelease, or None if no source package with that name is
         published in this distrorelease.""")
+
+    publishedreleases = Attribute("The complete set of source package "
+        "releases currently published in this distrorelease. This does "
+        "not include proposed releases, only those actually published. ")
 
     def potemplates():
         """Returns the set of POTemplates that exist for this

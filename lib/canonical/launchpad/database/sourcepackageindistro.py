@@ -42,9 +42,9 @@ class SourcePackageInDistro(SQLBase):
 
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
                                    dbName='sourcepackagename', notNull=True)
-    #maintainer = ForeignKey(foreignKey='Person', dbName='maintainer',
-    #                        notNull=True)
+
     name = StringCol(dbName='name', notNull=True)
+
     distrorelease = ForeignKey(foreignKey='DistroRelease',
                                dbName='distrorelease')
 

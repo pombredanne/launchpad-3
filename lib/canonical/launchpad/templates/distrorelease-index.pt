@@ -20,7 +20,7 @@
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure view/detailsPortlet" /> <br />
-<!--   <div tal:replace="structure view/linksPortlet" /> -->
+  <div tal:replace="structure view/translationsPortlet" /> <br />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">

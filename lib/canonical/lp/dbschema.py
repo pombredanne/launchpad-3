@@ -1143,6 +1143,7 @@ class PackagePublishingStatus(DBSchema):
 
         This [source] package has been accepted into the DistroRelease and
         is now pending the addition of the files to the published disk area.
+        In due course, this source package will be published.
         """)
 
     PUBLISHED = Item(2, """

@@ -78,4 +78,7 @@ class IDistroReleaseSet(Interface):
     def get(distroreleaseid):
         """Retrieve the distro release with the given distroreleaseid."""
 
+    def translatables():
+        """Return a set of distroreleases that can be translated in
+        rosetta."""
 
