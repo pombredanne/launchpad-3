@@ -69,7 +69,10 @@
       </div>
 
       <div class="visualClear"></div>
-
+<p>HELLO</p>
+<div tal:define="foo python:{'a':'1', 'b':'2'}; x python:'b'">
+<p tal:content="foo/?x">content</p>
+</div>
 
 <table WIDTH="100%" BORDER="0">
   <tr>

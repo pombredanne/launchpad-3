@@ -11,7 +11,8 @@ _ = MessageIDFactory('launchpad')
 
 __all__ = ('ILaunchpadApplication', 'IMaloneApplication',
            'IRosettaApplication', 'ISoyuzApplication',
-           'IDOAPApplication', 'IFOAFApplication')
+           'IDOAPApplication', 'IFOAFApplication',
+           'IPasswordEncryptor')
 
 class ILaunchpadApplication(Interface):
     """Marker interface for a launchpad application.
@@ -40,4 +41,18 @@ class IDOAPApplication(ILaunchpadApplication):
 
 class IFOAFApplication(ILaunchpadApplication):
     """FOAF application root."""
+
+
+class IPasswordEncryptor(Interface):
+    """An interface representing a password encryption scheme."""
+
+    def encrypt(plaintext):
+        """Return the encrypted value of plaintext."""
+
+    def validate(plaintext, encrypted):
+        """Return a true value if the encrypted value of 'plaintext' is
+        equivalent to the value of 'encrypted'.  In general, if this
+        method returns true, it can also be assumed that the value of
+        self.encrypt(plaintext) will compare equal to 'encrypted'.
+        """
 

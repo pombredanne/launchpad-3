@@ -12,9 +12,8 @@ from xml.sax.saxutils import escape as xml_escape
 from zope.component import getUtility
 from zope.i18n.interfaces import IUserPreferredLanguages
 
-from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
 from canonical.launchpad.interfaces import ILanguageSet, IPerson
-from canonical.launchpad.interfaces import IProjectSet
+from canonical.launchpad.interfaces import IProjectSet, IPasswordEncryptor
 from canonical.launchpad.database import Language, Person
 
 from canonical.rosetta.poexport import POExport
@@ -460,14 +459,17 @@ class ViewPreferences:
             if self.request.method == "POST":
                 # First thing to do, check the password if it's wrong we stop.
                 currentPassword = self.request.form['currentPassword']
-                ssha = SSHADigestEncryptor()
-                if currentPassword and ssha.validate(currentPassword, self.person.password):
+                encryptor = getUtility(IPasswordEncryptor)
+                isvalid = encryptor.validate(
+                    currentPassword, self.person.password)
+                if currentPassword and isvalid:
                     # The password is valid
                     password1 = self.request.form['newPassword1']
                     password2 = self.request.form['newPassword2']
                     if password1 and password1 == password2:
                         try:
-                            self.person.password = ssha.encrypt(password1)
+                            self.person.password = encryptor.encrypt(
+                                password1)
                         except UnicodeEncodeError:
                             self.error_msg = \
                                 "The password can only have ascii characters."

@@ -9,7 +9,7 @@ from textwrap import wrap
 from canonical.foaf.nickname import generate_nick
 from canonical.lp import initZopeless
 from canonical.lp.dbschema import EmailAddressStatus
-from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
+from canonical.lp.placelessauth import SSHADigestEncryptor
 from canonical.launchpad.database import Person, EmailAddress
 from optparse import OptionParser
 from zope.component.tests.placelesssetup import PlacelessSetup

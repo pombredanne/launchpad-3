@@ -1,4 +1,6 @@
+# Copyright 2004 Canonical Ltd.  All rights reserved.
 
+__metaclass__ = type
 
 # Zope interfaces
 from zope.interface import implements
@@ -13,16 +15,16 @@ from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.constants import UTC_NOW
 
 # canonical imports
-from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
-from canonical.launchpad.interfaces import IPerson, IPersonSet,  \
-                                                  IEmailAddress
+from canonical.launchpad.interfaces import IPerson, IPersonSet, IEmailAddress
 from canonical.launchpad.interfaces import ILanguageSet
+from canonical.launchpad.interfaces import IPasswordEncryptor
 from canonical.launchpad.database.pofile import POTemplate
 from canonical.lp import dbschema
 from canonical.foaf import nickname
 
 # python imports
 from datetime import datetime
+
 
 class Person(SQLBase):
     """A Person."""
@@ -155,8 +157,7 @@ def createPerson(displayname, givenname, familyname,
     if Person.selectBy(name=nick).count() > 0:
         return
     
-    ssha = SSHADigestEncryptor()
-    password = ssha.encrypt(password)
+    password = getUtility(IPasswordEncryptor).encrypt(password)
     
     person = Person(displayname=displayname,
                     givenname=givenname,
@@ -184,8 +185,7 @@ def createTeam(displayname, teamowner, teamdescription,
     if Person.selectBy(name=nick).count() > 0:
         return
     
-    ssha = SSHADigestEncryptor()
-    password = ssha.encrypt(password)
+    password = getUtility(IPasswordEncryptor).encrypt(password)
 
     role = dbschema.MembershipRole.ADMIN.value
     status = dbschema.MembershipStatus.CURRENT.value

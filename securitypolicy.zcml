@@ -1,6 +1,6 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
 <securityPolicy
-component="canonical.lp.placelessauth.authorization.LaunchpadSecurityPolicy"
+component="canonical.launchpad.webapp.authorization.LaunchpadSecurityPolicy"
 />
 </configure>

@@ -1,6 +1,11 @@
+# Copyright 2004 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
 import unittest
 import base64
 from zope.interface import implements
+from zope.component import getUtility
 
 from zope.publisher.browser import TestRequest
 from zope.publisher.interfaces.http import IHTTPCredentials
@@ -10,13 +15,13 @@ from zope.app.tests.placelesssetup import PlacelessSetup
 from zope.app.security.principalregistry import Principal
 from zope.app.security.interfaces import ILoginPassword
 from zope.app.security.basicauthadapter import BasicAuthAdapter
-from zope.app import zapi
 
-from canonical.lp.placelessauth.authutility import PlacelessAuthUtility
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
-from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
-from canonical.lp.placelessauth.interfaces import IPlacelessLoginSource, \
-     IPlacelessAuthUtility, IPasswordEncryptor
+from canonical.lp.placelessauth import PlacelessAuthUtility
+from canonical.lp.placelessauth import SSHADigestEncryptor
+from canonical.lp.placelessauth.interfaces import IPlacelessLoginSource
+from canonical.lp.placelessauth.interfaces import IPlacelessAuthUtility
+from canonical.launchpad.interfaces import IPasswordEncryptor
 
 Bruce = Principal('bruce', 'bruce', 'Bruce', 'bruce', 'bruce!')
 
@@ -48,7 +53,7 @@ class TestPlacelessAuth(PlacelessSetup, unittest.TestCase):
             'HTTP_AUTHORIZATION':
             'Basic %s' % base64.encodestring('%s:%s' % (login, pwd))}
         request = TestRequest(**dict)
-        return zapi.getUtility(IPlacelessAuthUtility), request
+        return getUtility(IPlacelessAuthUtility), request
         
     def test_authenticate_ok(self):
         authsvc, request = self._make('bruce', 'bruce!')

@@ -7,8 +7,8 @@ __metaclass__ = type
 import re
 
 from canonical.launchpad.database import EmailAddress
+from canonical.launchpad.interfaces import IPasswordEncryptor
 from canonical.auth import AuthApplication
-from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
 from canonical.zodb import zodbconnection
 
 # Note that this appears as "valid email" in the UI, because that term is
@@ -120,8 +120,9 @@ class ChangeEmailPassword:
                         person = False
 
                     if person:
-                        ssha = SSHADigestEncryptor()
-                        person.password = ssha.encrypt(self.password)
+                        encryptor = getUtility(IPasswordEncryptor)
+                        person.password = encryptor.encrypt(self.password)
+
                         self.success = True
                         return 'Your password has successfully been reset.'
 

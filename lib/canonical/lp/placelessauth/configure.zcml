@@ -1,13 +1,11 @@
-<configure 
-    xmlns="http://namespaces.zope.org/zope"
-    xmlns:browser="http://namespaces.zope.org/browser">
+<configure xmlns="http://namespaces.zope.org/zope">
 
   <utility
-      factory="canonical.lp.placelessauth.authutility.PlacelessAuthUtility"
+      factory="canonical.lp.placelessauth.PlacelessAuthUtility"
       provides="canonical.lp.placelessauth.interfaces.IPlacelessAuthUtility"
       permission="zope.Public"
       />
-  
+
   <subscriber
       for="canonical.publication.IAfterTraverseEvent"
       factory="canonical.lp.placelessauth.handle"
@@ -29,13 +27,13 @@
       />
 
   <utility
-      factory="canonical.lp.placelessauth.encryption.SSHADigestEncryptor"
-      provides="canonical.lp.placelessauth.interfaces.IPasswordEncryptor"
+      factory="canonical.lp.placelessauth.SSHADigestEncryptor"
+      provides="canonical.launchpad.interfaces.IPasswordEncryptor"
       permission="zope.Public"
       />
 
   <utility
-      factory="canonical.lp.placelessauth.launchpadsourceutility.LaunchpadLoginSource"
+      factory="canonical.lp.placelessauth.LaunchpadLoginSource"
       provides="canonical.lp.placelessauth.interfaces.IPlacelessLoginSource"
       permission="zope.Public"
       />

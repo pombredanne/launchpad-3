@@ -4,7 +4,7 @@
 # arch-tag: 34a8f99d-a803-4392-994f-c85ebb8b6fcc
 
 from canonical.lp import initZopeless
-from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
+from canonical.lp.placelessauth import SSHADigestEncryptor
 from canonical.launchpad.database import Person, POTemplate, Product
 from optparse import OptionParser
 from zope.component.tests.placelesssetup import PlacelessSetup
