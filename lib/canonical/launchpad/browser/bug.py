@@ -14,7 +14,7 @@ from canonical.launchpad.database import BugAttachmentSet, \
         BugExternalRefSet, BugSubscriptionSet, \
         BugWatchSet, BugProductInfestationSet, \
         BugPackageInfestationSet, Person, Bug, \
-        BugsAssignedReport, BugSet, BugTaskSet, CVERefSet
+        BugTasksReport, BugSet, BugTaskSet, CVERefSet
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 def traverseBug(bug, request, name):
@@ -37,7 +37,7 @@ def traverseBug(bug, request, name):
 
 def traverseBugs(bugcontainer, request, name):
     if name == 'assigned':
-        return BugsAssignedReport()
+        return BugTasksReport()
     else:
         return BugSet()[int(name)]
 
@@ -75,10 +75,6 @@ class BugView:
 
     watchPortlet = BugPortlet(
         '../templates/portlet-bug-watch.pt')
-    productAssignmentPortlet = BugPortlet(
-        '../templates/portlet-bug-productassignments.pt')
-    sourcepackageAssignmentPortlet = BugPortlet(
-        '../templates/portlet-bug-packageassignments.pt')
     productInfestationPortlet = BugPortlet(
         '../templates/portlet-bug-productinfestation.pt')
     packageInfestationPortlet = BugPortlet(
@@ -99,7 +95,7 @@ class BugEditView(BugView, SQLObjectEditView):
         BugView.__init__(self, context, request)
         SQLObjectEditView.__init__(self, context, request)
 
-class BugAssignmentEditView(BugView, SQLObjectEditView):
+class BugTaskEditView(BugView, SQLObjectEditView):
     def __init__(self, context, request):
         BugView.__init__(self, context, request)
         SQLObjectEditView.__init__(self, context, request)

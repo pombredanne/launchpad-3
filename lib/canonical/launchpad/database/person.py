@@ -9,12 +9,11 @@ from zope.interface import implements
 from zope.interface import directlyProvides, directlyProvidedBy
 from zope.component import ComponentLookupError, getUtility
 
-
 # SQL imports
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, SQLObjectNotFound
 from sqlobject.sqlbuilder import AND
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.constants import UTC_NOW
 
 # canonical imports
@@ -410,7 +409,8 @@ class PersonSet(object):
 
     def getByEmail(self, email, default=None):
         """See IPersonSet."""
-        results = EmailAddress.selectBy(email=email)
+        results = EmailAddress.select("""lower(email) = %s
+                        """ % quote(email.lower()))
         resultscount = results.count()
         if resultscount == 0:
             return default
@@ -434,9 +434,14 @@ class PersonSet(object):
     # XXX: Carlos Perello Marin 20/12/2004 We need this method from
     # pofile.py, I think we should remove the function and use it as this
     # method always.
-    def createPerson(self, displayname, givenname, familyname, password, email):
+    def createPerson(self, displayname, givenname=None,
+                           familyname=None, password=None, email=None):
         """Creates a new person"""
-        return createPerson(displayname, givenname, familyname, password, email)
+        return createPerson(displayname=displayname,
+                            givenname=givenname,
+                            familyname=familyname,
+                            password=password,
+                            email=email)
 
 
 def registeredName(name):
@@ -450,6 +455,9 @@ def createPerson(displayname=None, givenname=None, familyname=None,
                  password=None, email=None):
     """Creates a new person"""
 
+    if email:
+        email = email.lower()
+
     nick = nickname.generate_nick(email, registeredName)
     now = datetime.utcnow()
 
@@ -459,10 +467,11 @@ def createPerson(displayname=None, givenname=None, familyname=None,
     
     if password:
         # password = getUtility(IPasswordEncryptor).encrypt(password)
-        # XXX: Carlos Perello Marin 22/12/2004 We cannot use getUtility from
-        # initZopeless scripts and Rosetta's import_daemon.py calls indirectly to
-        # this function :-(
-        from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
+        # XXX: Carlos Perello Marin 22/12/2004 We cannot use getUtility
+        # from initZopeless scripts and Rosetta's import_daemon.py
+        # calls indirectly to this function :-(
+        from canonical.launchpad.webapp.authentication \
+            import SSHADigestEncryptor
         password = SSHADigestEncryptor().encrypt(password)
  
     person = Person(displayname=displayname,
@@ -477,7 +486,7 @@ def createPerson(displayname=None, givenname=None, familyname=None,
 
     if email:
         EmailAddress(person=person.id,
-                     email=email,
+                     email=email.lower(),
                      status=int(EmailAddressStatus.NEW))
 
     return person

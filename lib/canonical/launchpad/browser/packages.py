@@ -33,8 +33,8 @@ class SourcePackageView:
         sevdef = {}
         for i in BugSeverity.items:
             sevdef[i.name] = 0
-        for bugass in self.context.bugs:
-            binarypackage = bugass.binarypackage
+        for bugtask in self.context.bugtasks:
+            binarypackage = bugtask.binarypackage
             if binarypackage:
                 severity = BugSeverity.items[i].name
                 stats = m.setdefault(binarypackage, sevdef.copy())
@@ -186,10 +186,10 @@ class SourcePackageBugsView:
         self.context = context
         self.request = request
         self.batch = Batch(
-            self.bugassignment_search(), int(request.get('batch_start', 0)))
+            self.bugtask_search(), int(request.get('batch_start', 0)))
         self.batchnav = BatchNavigator(self.batch, request)
 
-    def bugassignment_search(self):
+    def bugtask_search(self):
         return self.context.bugs
 
     def assignment_columns(self):

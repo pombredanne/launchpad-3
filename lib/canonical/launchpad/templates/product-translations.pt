@@ -172,8 +172,8 @@
             </table>
 
             <div align="right">
-                <a tal:attributes="href string:${template/name}"
-                   i18n:translate="">See template details...</a>
+                [ <a tal:attributes="href string:${template/name}"
+                   i18n:translate="">More...</a> ]
             </div>
 
             <div tal:replace="structure view/statusLegend" tal:omit-tag />

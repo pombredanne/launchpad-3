@@ -9,12 +9,7 @@
 <table class="listing rowNavigation" style="width: 100%;">
     <thead>
         <tr>
-            <th>
-                <img src="/++resource++download.png" 
-                     title="Product Assignment" />Upstream /
-                 <img src="/++resource++product_icon.gif" 
-                     title="Package Assignment" />
-                     Package</th>
+            <th>Upstream / Package</th>
             <th>Status</th>
             <th>Severity</th>
             <th>Priority</th>
@@ -25,94 +20,57 @@
 
     <tbody>
         <!-- Upstream Assignments -->
-        <tr tal:repeat="bugass python:[p for p in context.productassignments if p.product]"
-            tal:attributes="onclick string:window.location='/malone/tasks/${bugass/id}/+edit';">
+        <tr tal:repeat="bugtask context/bugtasks"
+            tal:attributes="onclick string:window.location='/malone/tasks/${bugtask/id}/+edit';">
            
             <td>
                 <a href=""
-                    tal:condition="nothing"
-                    tal:attributes="href string:/malone/projects/${bugass/product/project/name}/${bugass/product/name}"
-                    tal:content="bugass/product/name">
-                    $Project.name $Product.name</a>
-                <img src="/++resource++download.png" 
-                     title="Product Assignment" />
-                <span tal:omit-tag="" tal:content="bugass/product/name">
-                    $Project.name $Product.name
-                </span>
+                    tal:condition="bugtask/product"
+                    tal:attributes="href string:/malone/products/${bugtask/product/name}"
+                    >
+                    upstream <span tal:content="bugtask/product/name" />
+                    $Product.name</a>
+                <a href=""
+                    tal:condition="python: bugtask.distribution and bugtask.sourcepackagename"
+                    tal:attributes="href string:/malone/distros/${bugtask/distribution/name}/${bugtask/sourcepackagename/name}"
+                    >
+                        <span tal:content="bugtask/distribution/name">
+                            distro
+                        </span>
+                        <span tal:content="bugtask/sourcepackagename/name">
+                            sourcepackagename
+                        </span>
+                </a>
+                <a href=""
+                    tal:condition="python: bugtask.distribution and not bugtask.sourcepackagename"
+                    tal:attributes="href string:/malone/distros/${bugtask/distribution/name}/}"
+                    >
+                        <span tal:content="bugtask/distribution/name">
+                            distro
+                        </span>
+                </a>
             </td>
             
-            <td tal:content="bugass/status/lp:BugAssignmentStatus">
-                $ProductBugAssignment.status
+            <td tal:content="bugtask/status/lp:BugTaskStatus">
+                $BugTask.status
             </td>
 
-            <td tal:content="bugass/severity/lp:BugSeverity"
-                tal:attributes="class string:severity${bugass/severity/lp:BugSeverity}">
+            <td tal:content="bugtask/severity/lp:BugSeverity"
+                tal:attributes="class string:severity${bugtask/severity/lp:BugSeverity}">
                 Critical
             </td>
 
-            <td tal:content="bugass/priority/lp:BugPriority"
-                tal:attributes="class string:priority${bugass/priority/lp:BugPriority}">
+            <td tal:content="bugtask/priority/lp:BugPriority"
+                tal:attributes="class string:priority${bugtask/priority/lp:BugPriority}">
                 Medium
             </td>
             
             <td>
-                <a tal:condition="bugass/assignee"
-                   tal:attributes="href string:/malone/bugs/assigned?name=${bugass/assignee/name}">
+                <a tal:condition="bugtask/assignee"
+                   tal:attributes="href string:/malone/bugs/assigned?name=${bugtask/assignee/name}">
                    <img src="/++resource++user.gif" alt="" 
-                    /><span tal:replace="bugass/assignee/browsername">
+                    /><span tal:replace="bugtask/assignee/browsername">
                     assignee.browsername
-                    </span>
-                </a>
-            </td>
-        
-        </tr>
-
-
-        <!-- Distribution Package Assignments -->
-        <tr tal:repeat="bugass python:[p for p in context.packageassignments if not p.product]"
-            tal:attributes="onclick string:window.location='/malone/tasks/${bugass/id}/+edit';">
-           
-            <td>
-                <a href=""
-                    tal:condition="nothing"
-                    tal:attributes="href string:/malone/packages/${bugass/sourcepackage/name}"
-                    tal:content="bugass/sourcepackage/name">
-                    $SourcePackageName.name
-                </a>
-                <img src="/++resource++product_icon.gif" 
-                     title="Package Assignment" />
-                <span tal:omit-tag=""
-                    tal:content="bugass/sourcepackagename/name">
-                    $SourcePackageName.name
-                </span>
-            </td>
-            
-            <td tal:content="bugass/status/lp:BugAssignmentStatus">
-                $SourcePackageBugAssignment.status
-            </td>
-
-            <td>
-                <acronym title="Critical Severity.
-This bug is essential to fix as soon as possible. It affects system stability, data integrity and / or remote access security."
-                         tal:content="bugass/severity/lp:BugSeverity"
-                         tal:attributes="class string:severity${bugass/severity/lp:BugSeverity}"
-                >C</acronym>
-            </td>
-
-            <td>
-                <acronym class="priorityMedium"
-                         title="Medium Priority. This is a medium priority bug for the maintainer."
-                         tal:content="bugass/priority/lp:BugPriority"
-                         tal:attributes="class string:priority${bugass/priority/lp:BugPriority}"
-                >=</acronym>
-            </td>
-            
-            <td title="Mr. FixMe">
-                <a tal:condition="bugass/assignee"
-                   tal:attributes="href string:/malone/bugs/assigned?name=${bugass/assignee/name}">
-                   <img src="/++resource++user.gif" alt="" 
-                    /><span tal:replace="bugass/assignee/browsername">
-                    loginname
                     </span>
                 </a>
             </td>

@@ -2,6 +2,191 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-18 02:31:59 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1209
+
+    Summary:
+      eliminate bugassignments in favour of bugtasks
+    Revision:
+      launchpad--devel--0--patch-1209
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-689
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-690
+       use default baz merge operator
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-691
+       ruggedize
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-692
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-693
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-694
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-695
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-696
+       ui polish
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-697
+       make sure python is in tabnanny mode for tests and run
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-698
+       fixup bugmessage renaming in bugattachment
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-699
+       fixup bugmessage in bugattachment.py
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-700
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-701
+       better handling of debbugs messages and smarter bug creation
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-702
+       rework bugtask into a new file and fix templates
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-703
+       move BugTaskSet into bugtask.py
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-704
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-705
+       monster patch to get rid of bugassignments in favour of bugtasks
+    
+
+    new files:
+     database/schema/pending/.arch-ids/mark-bugattachment-message.sql.id
+     database/schema/pending/mark-bugattachment-message.sql
+     lib/canonical/launchpad/database/.arch-ids/bugtask.py.id
+     lib/canonical/launchpad/database/bugtask.py
+
+    removed files:
+     lib/canonical/launchpad/database/.arch-ids/bugassignment.py.id
+     lib/canonical/launchpad/database/bugassignment.py
+     lib/canonical/launchpad/templates/.arch-ids/portlet-bug-packageassignments.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/portlet-bug-productassignments.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/productbugassignments-index.pt.id
+     lib/canonical/launchpad/templates/portlet-bug-packageassignments.pt
+     lib/canonical/launchpad/templates/portlet-bug-productassignments.pt
+     lib/canonical/launchpad/templates/productbugassignments-index.pt
+
+    modified files:
+     Makefile doc/changelog.txt lib/canonical/configure.zcml
+     lib/canonical/foaf/nickname.py
+     lib/canonical/launchpad/browser/__init__.py
+     lib/canonical/launchpad/browser/bug.py
+     lib/canonical/launchpad/browser/bugtask.py
+     lib/canonical/launchpad/browser/packages.py
+     lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/components/bugsubscription.py
+     lib/canonical/launchpad/database/__init__.py
+     lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/database/distribution.py
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/database/message.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/database/project.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/doc/bugactivity.txt
+     lib/canonical/launchpad/interfaces/__init__.py
+     lib/canonical/launchpad/interfaces/bug.py
+     lib/canonical/launchpad/interfaces/bugtask.py
+     lib/canonical/launchpad/interfaces/distrorelease.py
+     lib/canonical/launchpad/interfaces/product.py
+     lib/canonical/launchpad/interfaces/sourcepackage.py
+     lib/canonical/launchpad/mailnotification.py
+     lib/canonical/launchpad/pagetests/standalone/xx-root-page.txt
+     lib/canonical/launchpad/subscribers/bugactivity.py
+     lib/canonical/launchpad/subscribers/karmasubscribers.py
+     lib/canonical/launchpad/templates/bugs-assigned.pt
+     lib/canonical/launchpad/templates/bugs-createdby-index.pt
+     lib/canonical/launchpad/templates/bugs-index.pt
+     lib/canonical/launchpad/templates/bugtask-display.pt
+     lib/canonical/launchpad/templates/bugtask-search-listing.pt
+     lib/canonical/launchpad/templates/debug-root-index.pt
+     lib/canonical/launchpad/templates/doap-about.pt
+     lib/canonical/launchpad/templates/doap-index.pt
+     lib/canonical/launchpad/templates/package-bugs.pt
+     lib/canonical/launchpad/templates/portlet-bug-assignments-headline.pt
+     lib/canonical/launchpad/templates/portlet-bug-people.pt
+     lib/canonical/launchpad/templates/portlet-bug-sourcepackageinfestation.pt
+     lib/canonical/launchpad/templates/portlet-latest-bugs.pt
+     lib/canonical/launchpad/templates/product-bugs.pt
+     lib/canonical/launchpad/templates/product-translations.pt
+     lib/canonical/launchpad/templates/root-index.pt
+     lib/canonical/launchpad/vocabularies/dbobjects.py
+     lib/canonical/launchpad/vocabularies/dbschema.py
+     lib/canonical/launchpad/zcml/bug.zcml
+     lib/canonical/launchpad/zcml/bugtask.zcml
+     lib/canonical/launchpad/zcml/configure.zcml
+     lib/canonical/lp/dbschema.py lib/canonical/malone/browser.py
+     lib/canonical/malone/debsync/debsync.py
+     lib/canonical/malone/debsync/malone.py utilities/refuel
+
+    renamed files:
+     lib/canonical/launchpad/browser/.arch-ids/bugassignment.py.id
+       ==> lib/canonical/launchpad/browser/.arch-ids/bugtask.py.id
+     lib/canonical/launchpad/browser/bugassignment.py
+       ==> lib/canonical/launchpad/browser/bugtask.py
+     lib/canonical/launchpad/interfaces/.arch-ids/bugassignment.py.id
+       ==> lib/canonical/launchpad/interfaces/.arch-ids/bugtask.py.id
+     lib/canonical/launchpad/interfaces/bugassignment.py
+       ==> lib/canonical/launchpad/interfaces/bugtask.py
+     lib/canonical/launchpad/templates/.arch-ids/bugassignment-display.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/bugtask-display.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/bugassignment-editform.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/bugtask-editform.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/bugassignment-search-listing.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/bugtask-search-listing.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/sourcepackagebugassignments-index.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/bugtasks-index.pt.id
+     lib/canonical/launchpad/templates/bugassignment-display.pt
+       ==> lib/canonical/launchpad/templates/bugtask-display.pt
+     lib/canonical/launchpad/templates/bugassignment-editform.pt
+       ==> lib/canonical/launchpad/templates/bugtask-editform.pt
+     lib/canonical/launchpad/templates/bugassignment-search-listing.pt
+       ==> lib/canonical/launchpad/templates/bugtask-search-listing.pt
+     lib/canonical/launchpad/templates/sourcepackagebugassignments-index.pt
+       ==> lib/canonical/launchpad/templates/bugtasks-index.pt
+     lib/canonical/launchpad/zcml/.arch-ids/bugassignment.zcml.id
+       ==> lib/canonical/launchpad/zcml/.arch-ids/bugtask.zcml.id
+     lib/canonical/launchpad/zcml/bugassignment.zcml
+       ==> lib/canonical/launchpad/zcml/bugtask.zcml
+     lib/canonical/malone/debsync/.arch-ids/maldeb-sync.py.id
+       ==> lib/canonical/malone/debsync/.arch-ids/debsync.py.id
+     lib/canonical/malone/debsync/maldeb-sync.py
+       ==> lib/canonical/malone/debsync/debsync.py
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-689
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-690
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-691
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-692
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-693
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-694
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-695
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-696
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-697
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-698
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-699
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-700
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-701
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-702
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-703
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-704
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-705
+
+
 2005-01-17 18:38:41 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1208
 
     Summary:

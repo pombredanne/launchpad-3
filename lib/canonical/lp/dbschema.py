@@ -26,7 +26,7 @@ __all__ = (
 'BinaryPackageFormat',
 'BinaryPackagePriority',
 'BranchRelationships',
-'BugAssignmentStatus',
+'BugTaskStatus',
 'BugExternalReferenceType',
 'BugInfestationStatus',
 'BugPriority',
@@ -1305,7 +1305,7 @@ class BugInfestationStatus(DBSchema):
         """)
 
 
-class BugAssignmentStatus(DBSchema):
+class BugTaskStatus(DBSchema):
     """Bug Assignment Status
 
     Bugs are assigned to products and to source packages in Malone. The

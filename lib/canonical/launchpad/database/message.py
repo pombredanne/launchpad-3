@@ -41,6 +41,11 @@ class Message(SQLBase):
             return self.title
         return 'Re: '+self.title
 
+    def sender(self):
+        return self.owner
+
+    sender = property(sender)
+
 
 class MessageSet:
 

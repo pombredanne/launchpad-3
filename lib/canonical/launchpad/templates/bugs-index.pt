@@ -82,7 +82,7 @@
                         ass_link string:/malone/$collection_name/$assid/+edit;
                         ass_owner assignment/owner/name|nothing;
                         potential_assignee request/lp:person/displayname|nothing;
-                        status assignment/status/lp:BugAssignmentStatus;
+                        status assignment/status/lp:BugTaskStatus;
                         assignee assignment/assignee/name|python:'';
                         priority assignment/priority/lp:BugPriority;
                         severity assignment/severity/lp:BugSeverity;

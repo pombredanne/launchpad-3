@@ -249,7 +249,7 @@ class ProjectVocabulary(SQLObjectVocabularyBase):
 # We cannot refer to a BinaryPackage unambiguously by a name, as
 # we have no assurace that a generated name using $BinaryPackageName.name
 # and $BinaryPackage.version will be unique
-# TODO: The edit sourcepackagebugassignment for does not default its
+# TODO: The edit ibugtask form does not default its
 # binary package field
 class BinaryPackageVocabulary(SQLObjectVocabularyBase):
     # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's

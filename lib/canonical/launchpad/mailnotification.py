@@ -7,7 +7,7 @@ from zope.app.mail.interfaces import IMailDelivery
 from canonical.launchpad.interfaces import IBug, IBugSubscriptionSet
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.database import Bug, BugTracker, EmailAddress
-from canonical.lp.dbschema import BugAssignmentStatus, BugPriority, \
+from canonical.lp.dbschema import BugTaskStatus, BugPriority, \
      BugSeverity, BugInfestationStatus, BugExternalReferenceType, \
      BugSubscription
 from canonical.launchpad.vocabularies import BugTrackerVocabulary
@@ -130,7 +130,7 @@ Priority: %(priority)s
 Severity: %(severity)s
 Assigned: %(assigned)s
 """ % {'product' : product_assignment.product.displayname,
-       'status' : BugAssignmentStatus.items[int(product_assignment.bugstatus)].title,
+       'status' : BugTaskStatus.items[int(product_assignment.bugstatus)].title,
        'priority' : BugPriority.items[int(product_assignment.priority)].title,
        'severity' : BugSeverity.items[int(product_assignment.severity)].title,
        'assigned' : assignee_name}
@@ -148,7 +148,7 @@ def notify_bug_assigned_product_modified(modified_product_assignment, event):
         after = event.object,
         fields = (
             ("product", lambda v: v.displayname),
-            ("bugstatus", lambda v: BugAssignmentStatus.items[v].title),
+            ("bugstatus", lambda v: BugTaskStatus.items[v].title),
             ("priority", lambda v: BugPriority.items[v].title),
             ("severity", lambda v: BugSeverity.items[v].title),
             ("assignee", lambda v: (v and v.displayname) or "(not assigned)")))
@@ -182,7 +182,7 @@ Severity: %(severity)s
 Assigned: %(assigned)s
 """ % {'package' : package_assignment.sourcepackage.sourcepackagename.name,
        'binary' : binary,
-       'status' : BugAssignmentStatus.items[int(package_assignment.bugstatus)].title,
+       'status' : BugTaskStatus.items[int(package_assignment.bugstatus)].title,
        'priority' : BugPriority.items[int(package_assignment.priority)].title,
        'severity' : BugSeverity.items[int(package_assignment.severity)].title,
        'assigned' : assignee_name}
@@ -199,7 +199,7 @@ def notify_bug_assigned_package_modified(modified_package_assignment, event):
         before = event.object_before_modification,
         after = event.object,
         fields = (
-            ("bugstatus", lambda v: BugAssignmentStatus.items[v].title),
+            ("bugstatus", lambda v: BugTaskStatus.items[v].title),
             ("priority", lambda v: BugPriority.items[v].title),
             ("severity", lambda v: BugSeverity.items[v].title),
             ("binarypackagename", lambda v: (v and v.name) or "(none)"),

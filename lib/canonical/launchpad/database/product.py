@@ -11,7 +11,7 @@ from sqlobject import MultipleJoin, RelatedJoin
 from canonical.database.sqlbase import SQLBase, quote
 
 # canonical imports
-from canonical.lp.dbschema import BugSeverity, BugAssignmentStatus
+from canonical.lp.dbschema import BugSeverity, BugTaskStatus
 from canonical.lp.dbschema import RosettaImportStatus, RevisionControlSystems
 
 from canonical.launchpad.database.sourcesource import SourceSource
@@ -84,7 +84,7 @@ class Product(SQLBase):
     #
     potemplates = MultipleJoin('POTemplate', joinColumn='product')
 
-    bugs = MultipleJoin('BugTask', joinColumn='product')
+    bugtasks = MultipleJoin('BugTask', joinColumn='product')
 
     branches = MultipleJoin('Branch', joinColumn='product')
 
@@ -262,16 +262,16 @@ class Product(SQLBase):
         bugmatrix = {}
         for severity in BugSeverity.items:
             bugmatrix[severity] = {}
-            for status in BugAssignmentStatus.items:
+            for status in BugTaskStatus.items:
                 bugmatrix[severity][status] = 0
-        for bugass in self.bugs:
-            bugmatrix[bugass.severity][bugass.bugstatus] += 1
+        for bugtask in self.bugtasks:
+            bugmatrix[bugtask.severity][bugtask.bugstatus] += 1
         resultset = [['']]
-        for status in BugAssignmentStatus.items:
+        for status in BugTaskStatus.items:
             resultset[0].append(status.title)
         severities = BugSeverity.items
         for severity in severities:
-            statuses = BugAssignmentStatus.items
+            statuses = BugTaskStatus.items
             statusline = [severity.title]
             for status in statuses:
                 statusline.append(bugmatrix[severity][status])
@@ -316,13 +316,13 @@ class ProductSet:
         if rosetta:
             clauseTables.add('POTemplate')
         if malone:
-            clauseTables.add('ProductBugAssignment')
+            clauseTables.add('BugTask')
         if bazaar:
             clauseTables.add('SourceSource')
         if 'POTemplate' in clauseTables:
             query += ' AND POTemplate.product=Product.id \n'
-        if 'ProductBugAssignment' in clauseTables:
-            query += ' AND ProductBugAssignment.product=Product.id \n'
+        if 'BugTask' in clauseTables:
+            query += ' AND BugTask.product=Product.id \n'
         if 'SourceSource' in clauseTables:
             query += ' AND SourceSource.product=Product.id \n'
         if not show_inactive:

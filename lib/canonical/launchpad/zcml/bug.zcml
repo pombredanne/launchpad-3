@@ -127,7 +127,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBugSet"
-        class="canonical.launchpad.browser.BugAssignmentsView"
+        class="canonical.launchpad.browser.BugTasksView"
         permission="zope.Public"
         lp:url="malone/bugs/$Bug.id">
         <browser:page

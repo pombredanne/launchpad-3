@@ -4,7 +4,7 @@ from zope.security.proxy import removeSecurityProxy
 from zope.proxy import isProxy
 from zope.schema.vocabulary import getVocabularyRegistry
 
-from canonical.lp.dbschema import BugAssignmentStatus, BugSeverity, BugPriority, BugInfestationStatus
+from canonical.lp.dbschema import BugTaskStatus, BugSeverity, BugPriority, BugInfestationStatus
 from canonical.database.constants import nowUTC
 from canonical.launchpad.database import Bug, BugActivity, Person, SourcePackageRelease, ProductRelease
 
@@ -27,7 +27,7 @@ def what_changed(sqlobject_modified_event):
 
         # figure out the orig value
         if f == 'status':
-            val_before = BugAssignmentStatus.items[val_before].title
+            val_before = BugTaskStatus.items[val_before].title
         elif f == 'priority':
             val_before = BugPriority.items[val_before].title
         elif f == 'severity':
@@ -47,7 +47,7 @@ def what_changed(sqlobject_modified_event):
 
         # figure out the new value
         if f == 'status':
-            val_after = BugAssignmentStatus.items[val_after].title
+            val_after = BugTaskStatus.items[val_after].title
         elif f == 'priority':
             val_after = BugPriority.items[val_after].title
         elif f == 'severity':

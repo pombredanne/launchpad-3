@@ -82,9 +82,7 @@ class IBug(Interface):
 
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
     messages = Attribute('SQLObject.RelatedJoin of IMessages')
-    tasks = Attribute('SQLObject.Multijoin of IBugTask')
-    productassignments = Attribute('SQLObject.Multijoin of IBugTask')
-    packageassignments = Attribute('SQLObject.Multijoin of IBugTask')
+    bugtasks = Attribute('SQLObject.Multijoin of IBugTask')
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
@@ -147,7 +145,7 @@ class IBugTask(Interface):
         title=_('Target'), required=False, vocabulary='Milestone')
     status = Choice(
         title=_('Bug Status'), vocabulary='BugStatus',
-        default=int(dbschema.BugAssignmentStatus.NEW))
+        default=int(dbschema.BugTaskStatus.NEW))
     priority = Choice(
         title=_('Priority'), vocabulary='BugPriority',
         default=int(dbschema.BugPriority.MEDIUM))

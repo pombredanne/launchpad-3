@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces.bugextref import *
 from canonical.launchpad.interfaces.cveref import *
 from canonical.launchpad.interfaces.bugattachment import *
 from canonical.launchpad.interfaces.bugtracker import *
-from canonical.launchpad.interfaces.bugassignment import *
+from canonical.launchpad.interfaces.bugtask import *
 from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.person import *
 from canonical.launchpad.interfaces.translationeffort import *

@@ -154,7 +154,7 @@ class ProjectSet:
             clauseTables.add('POTemplate')
         if malone:
             clauseTables.add('Product')
-            clauseTables.add('ProductBugAssignment')
+            clauseTables.add('BugTask')
         if bazaar:
             clauseTables.add('Product')
             clauseTables.add('SourceSource')
@@ -165,8 +165,8 @@ class ProjectSet:
             query += ' AND Product.project=Project.id \n'
         if 'POTemplate' in clauseTables:
             query += ' AND POTemplate.product=Product.id \n'
-        if 'ProductBugAssignment' in clauseTables:
-            query += ' AND ProductBugAssignment.product=Product.id \n'
+        if 'BugTask' in clauseTables:
+            query += ' AND BugTask.product=Product.id \n'
         if 'SourceSource' in clauseTables:
             query += ' AND SourceSource.product=Product.id \n'
         if not show_inactive:

@@ -105,11 +105,11 @@ EVENT: bug gets assigned to a source package
 
 EVENT: source package assignment edited
 
-  >>> from canonical.lp.dbschema import BugAssignmentStatus
+  >>> from canonical.lp.dbschema import BugTaskStatus
   >>> edit_fields = ["sourcepackagename", "status", "priority", "severity"]
   >>> old_source_package_assignment = capture_state(
   ...     source_package_assignment, *edit_fields)
-  >>> source_package_assignment.status = BugAssignmentStatus.ACCEPTED.value
+  >>> source_package_assignment.status = BugTaskStatus.ACCEPTED.value
   >>> source_package_assignment_edited = SQLObjectModifiedEvent(
   ...     source_package_assignment, old_source_package_assignment,
   ...     edit_fields, user)
@@ -117,9 +117,9 @@ EVENT: source package assignment edited
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
   u'mozilla-firefox-dummy: status'
-  >>> latest_activity.oldvalue == BugAssignmentStatus.NEW.title
+  >>> latest_activity.oldvalue == BugTaskStatus.NEW.title
   True
-  >>> latest_activity.newvalue == BugAssignmentStatus.ACCEPTED.title
+  >>> latest_activity.newvalue == BugTaskStatus.ACCEPTED.title
   True
 
 EVENT: bug gets assigned to an upstream product
@@ -137,16 +137,16 @@ EVENT: upstream product assignment edited
 
   >>> edit_fields = ["product", "status", "priority", "severity"]
   >>> old_product_assignment = capture_state(product_assignment, *edit_fields)
-  >>> product_assignment.status = BugAssignmentStatus.REJECTED.value
+  >>> product_assignment.status = BugTaskStatus.REJECTED.value
   >>> product_assignment_edited = SQLObjectModifiedEvent(
   ...     product_assignment, old_product_assignment, edit_fields, user)
   >>> notify(product_assignment_edited)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
   u'thunderbird: status'
-  >>> latest_activity.oldvalue == BugAssignmentStatus.NEW.title
+  >>> latest_activity.oldvalue == BugTaskStatus.NEW.title
   True
-  >>> latest_activity.newvalue == BugAssignmentStatus.REJECTED.title
+  >>> latest_activity.newvalue == BugTaskStatus.REJECTED.title
   True
 
 EVENT: source package infestation gets documented

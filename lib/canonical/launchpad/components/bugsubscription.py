@@ -28,7 +28,7 @@ class IBugSubscriptionSetAdapter:
                 if best_email:
                     emails.add(best_email)
 
-        for task in self.bug.tasks:
+        for task in self.bug.bugtasks:
             best_email = _get_best_email_address(task.assignee)
             if best_email:
                 emails.add(best_email)

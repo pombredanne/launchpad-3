@@ -5,8 +5,7 @@
          tal:define="bug_url string:/malone/bugs/${context/id}">
         <div class="portletContent even"
              tal:define="subscriptions context/subscriptions;
-                         productass context/productassignments;
-                         packageass context/packageassignments">
+                         bugtasks context/bugtasks">
 
             <h5>submitted by:</h5>
             <ul class="people">
@@ -14,33 +13,15 @@
                 tal:replace="context/owner/browsername">owner</span></li>
             </ul>
 
-            <tal:products tal:define="products python:[p for p in productass if p.product]" >
+            <h5>maintainers:</h5>
 
-            <h5 tal:condition="products">upstream maintainers:</h5>
-
-            <ul class="people">
-                <li tal:repeat="ass products"
-                    tal:content="ass/product/owner/browsername">Product
-                    Maintainer</li>
-                <li tal:repeat="ass products"
-                    tal:content="ass/assignee/browsername|default"></li>
+            <ul class="people" tal:repeat="task bugtasks">
+                <li tal:condition="task/maintainer">
+                <a href=""
+                   tal:content="task/maintainer/browsername"
+                   tal:attributes="href string:/foaf/people/${task/maintainer/name}" />
+                </li>
             </ul>
-
-            </tal:products>
-
-            <tal:packages tal:define="packages python:[p for p in packageass if not p.product]" >
-
-            <h5 tal:condition="packages">package maintainers:</h5>
-
-            <ul class="people">
-                <li tal:repeat="ass packages"
-                    xtal:content="ass/sourcepackage/maintainer/browsername">Package
-                    Maintainer</li>
-                <li tal:repeat="ass packages"
-                    tal:content="ass/assignee/browsername|default"></li>
-            </ul>
-
-            </tal:packages>
 
           <tal:subscriptions
             tal:define="ccs python:[s for s in subscriptions if s.subscription==2];

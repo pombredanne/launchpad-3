@@ -13,7 +13,7 @@ from zope.event import notify
 
 from canonical.launchpad.database import \
         SourcePackage, SourcePackageName, BinaryPackage, \
-        BugTracker, BugsAssignedReport, BugWatch, Product, Person, EmailAddress, \
+        BugTracker, BugTasksReport, BugWatch, Product, Person, EmailAddress, \
         Bug, BugAttachment, BugExternalRef, BugSubscription, \
         BugProductInfestation, BugPackageInfestation, BugSetBase
 

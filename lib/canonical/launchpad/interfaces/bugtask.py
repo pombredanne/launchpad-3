@@ -38,7 +38,7 @@ class IBugTaskSet(Interface):
     def __iter__():
         """Iterate through IBugTasks for a given bug."""
 
-class IBugsAssignedReport(Interface):
+class IBugTasksReport(Interface):
 
     user = Attribute(_("The user for whom this report will be generated"))
 
@@ -52,19 +52,19 @@ class IBugsAssignedReport(Interface):
         report."""))
 
     def maintainedPackageBugs():
-        """Return an iterator over the assignments of bugs to distro
+        """Return an iterator over the tasks of bugs on distro
         packages the user maintains."""
 
     def maintainedProductBugs():
-        """Return an iterator over the assignments of bugs to upstream
+        """Return an iterator over the tasks of bugs on upstream
         products the user maintains."""
 
     def productAssigneeBugs():
-        """Return an iterator over the bugassignments to upstream products
+        """Return an iterator over the bugtasks on upstream products
         which are assigned directly to the user."""
 
     def packageAssigneeBugs():
-        """Return an iterator over the bugassignments to distro packages
+        """Return an iterator over the bug tasks on distro packages
         which are assigned directly to the user."""
 
     def assignedBugs():
