@@ -1,4 +1,12 @@
+# Copyright 2004 Canonical Ltd.  All rights reserved.
+#
+# arch-tag: e6c8f5bd-3c7d-4ec1-8997-586e5f8f7f6d
+
+__metaclass__ = type
+
+
 from zope.interface import Interface, Attribute
+import canonical.database.doap as doap
 
 # Note: When creating a new interface here, the test generation script
 # (scripts/generate_sql_tests.py) should also be updated.
@@ -6,57 +14,8 @@ from zope.interface import Interface, Attribute
 class IRosettaApplication(Interface):
     """Rosetta application class."""
 
-
-class IProjects(Interface):
-    """The collection of projects."""
-
-    def __iter__():
-        """Return an iterator over all the projects."""
-
-    def __getitem__(name):
-        """Get a project by its name."""
-
-    def new(name, title, url, description, owner):
-        """Creates a new project with the given name.
-
-        Returns that project.
-
-        Raises an KeyError if a project with that name already exists.
-        """
-
-    def search(query):
-        """Search for projects matching a certain strings."""
-
-
-class IProject(Interface):
-    """A Project.  For example 'mozilla'."""
-
-    name = Attribute("The project's name. (unique within IProjects)")
-
-    displayName = Attribute("The Project's name that will be showed.")
-
-    title = Attribute("The project's title.")
-
-    url = Attribute("The URL of the project's website.")
-
-    description = Attribute("The project's description.")
-
-    owner = Attribute("The Person who owns this project.")
-
-    # XXX: poTemplate() will go away once we move to
-    # project->product->potemplate traversal rather than project->potemplate
-    # traversal.
-
-    def poTemplate(name):
-        """Returns the PO template with the given name."""
-
-    def poTemplates():
-        """Returns an iterator over this project's PO templates."""
-
-    def product(name):
-        """Returns the product with the given name."""
-    def products():
-        """Returns an iterator over this projects products."""
+class IRosettaStats(Interface):
+    """Rosetta-related statistics."""
 
     def messageCount():
         """Returns the number of Current IPOMessageSets in all templates
@@ -76,6 +35,15 @@ class IProject(Interface):
         """Returns the number of msgsets where we have a translation in rosetta
         but there was no translation in the PO file for this language when we
         last parsed it."""
+
+class IRosettaProject(IRosettaStats, doap.IProject):
+    """The rosetta interface to a project."""
+
+    displayName = Attribute("The Project's name that will be showed.")
+
+    def poTemplates():
+        """Returns an iterator over this project's PO templates."""
+
 
 
 class IProduct(Interface):

@@ -48,6 +48,12 @@ class ISubURLDirective(Interface):
         required=True
         )
 
+    adaptwith = GlobalObject(
+        title=u"Adapter factory to use",
+        required=False
+        )
+
+
 class ITraverseDirective(Interface):
 
     for_ = GlobalObject(
@@ -71,6 +77,11 @@ class ITraverseDirective(Interface):
         required=False
         )
 
+    adaptwith = GlobalObject(
+        title=u"Adapter factory to use",
+        required=False
+        )
+
 
 class SubURLDispatcher:
     implements(ISubURLDispatch)
@@ -87,7 +98,8 @@ class SubURLDispatcher:
     def __call__(self):
         raise NotImplementedError
 
-def suburl(_context, for_, name, permission=None, utility=None, class_=None):
+def suburl(_context, for_, name, permission=None, utility=None, class_=None,
+           adaptwith=None):
     if utility is None and class_ is None:
         raise TypeError("Cannot specify both utility and class.")
 
@@ -96,12 +108,18 @@ def suburl(_context, for_, name, permission=None, utility=None, class_=None):
     if class_ is not None:
         class Dispatcher(SubURLDispatcher):
             def __call__(self):
-                return class_()
+                val = class_()
+                if adaptwith is not None:
+                    val = adaptwith(val)
+                return val
 
     if utility is not None:
         class Dispatcher(SubURLDispatcher):
             def __call__(self):
-                return getUtility(utility)
+                val = getUtility(utility)
+                if adaptwith is not None:
+                    val = adaptwith(val)
+                return val
 
     factory = [Dispatcher]
     if permission == PublicPermission:
@@ -117,6 +135,7 @@ class URLTraverse:
     implements(IBrowserPublisher)
 
     _getter = '__getitem__'
+    _adaptwith = None
 
     def __init__(self, context, request):
         self.context = context
@@ -130,6 +149,8 @@ class URLTraverse:
             except KeyError:
                 raise NotFound(self.context, name)
             else:
+                if self._adaptwith is not None:
+                    traversed_to = self._adaptwith(traversed_to)
                 return traversed_to
         else:
             return view
@@ -149,6 +170,7 @@ class URLTraverseByFunction:
     implements(IBrowserPublisher)
 
     _function = None
+    _adaptwith = None
 
     def __init__(self, context, request):
         self.context = context
@@ -161,6 +183,8 @@ class URLTraverseByFunction:
             if traversed_to is None:
                 raise NotFound(self.context, name)
             else:
+                if self._adaptwith is not None:
+                    traversed_to = self._adaptwith(traversed_to)
                 return traversed_to
         else:
             return view
@@ -170,7 +194,8 @@ class URLTraverseByFunction:
         return self.context, (view_name,)
 
 
-def traverse(_context, for_, getter=None, function=None, permission=None):
+def traverse(_context, for_, getter=None, function=None, permission=None,
+             adaptwith=None):
     if getter is not None and function is not None:
         raise TypeError("Cannot specify both getter and function")
     if getter is None and function is None:
@@ -184,6 +209,7 @@ def traverse(_context, for_, getter=None, function=None, permission=None):
         class URLTraverseGetter(URLTraverse):
             __used_for__ = for_
             _getter = getter
+            _adaptwith = adaptwith
 
         factory = [URLTraverseGetter]
 
@@ -191,6 +217,7 @@ def traverse(_context, for_, getter=None, function=None, permission=None):
         class URLTraverseFunction(URLTraverseByFunction):
             __used_for__ = for_
             _function = staticmethod(function)
+            _adaptwith = adaptwith
 
         factory = [URLTraverseFunction]
 

@@ -28,10 +28,15 @@
     -->
   <browser:suburl
       for="canonical.rosetta.interfaces.IRosettaApplication"
-      utility="canonical.rosetta.interfaces.IProjects"
+      utility="canonical.database.doap.IProjects"
       name="projects"
+      adaptwith="canonical.rosetta.domain.RosettaProjects"
       />
 
+
+  <content class="canonical.rosetta.domain.RosettaProjects">
+    <allow interface="canonical.database.doap.IProjects" />
+  </content>
 
   <!-- Set the default view for the rosetta application, for projects and
        for project.
@@ -41,11 +46,11 @@
       name="index"
       />
   <browser:defaultView
-      for="canonical.rosetta.interfaces.IProjects"
+      for="canonical.rosetta.domain.RosettaProjects"
       name="index"
       />
   <browser:defaultView
-      for="canonical.rosetta.interfaces.IProject"
+      for="canonical.rosetta.domain.RosettaProject"
       name="index"
       />
   <browser:defaultView
@@ -71,8 +76,5 @@
   <include file="pages.zcml"/>
   <include file="resources.zcml" />
 
-<!--
-  <include file="dbtest.zcml" />
-  -->
 </configure>
 <!-- arch-tag: aa306648-cdb7-4165-8aed-cb36ced59e2f -->

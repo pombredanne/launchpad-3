@@ -47,5 +47,8 @@
       name="lp"
       />
 
+  <!-- enable the placeless authentication utility -->
+  <include package="canonical.lp.placelessauth" />
+
 </configure>
 <!-- arch-tag: 9139ef7c-314a-4ffe-b905-fdb59c075d1c -->

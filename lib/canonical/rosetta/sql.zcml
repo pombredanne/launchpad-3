@@ -1,20 +1,7 @@
-<configure
-    xmlns="http://namespaces.zope.org/zope"
-    xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:rdb="http://namespaces.zope.org/rdb"
-    >
+<configure xmlns="http://namespaces.zope.org/zope">
 
-  <utility
-      factory="canonical.rosetta.sql.RosettaProjects"
-      provides="canonical.rosetta.interfaces.IProjects"
-      />
-
-  <content class="canonical.rosetta.sql.RosettaProjects">
-    <allow interface="canonical.rosetta.interfaces.IProjects"/>
-  </content>
-
-  <content class="canonical.rosetta.sql.RosettaProject">
-    <allow interface="canonical.rosetta.interfaces.IProject"/>
+  <content class="canonical.rosetta.domain.RosettaProject">
+    <allow interface="canonical.rosetta.interfaces.IRosettaProject"/>
   </content>
 
   <content class="canonical.rosetta.sql.RosettaProduct">
@@ -39,10 +26,6 @@
 
   <content class="canonical.rosetta.sql.RosettaLanguage">
     <allow interface="canonical.rosetta.interfaces.ILanguage"/>
-  </content>
-
-  <content class="canonical.rosetta.stub.Languages">
-    <allow interface="canonical.rosetta.interfaces.ILanguages"/>
   </content>
 
   <utility

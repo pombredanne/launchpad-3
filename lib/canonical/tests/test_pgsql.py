@@ -44,7 +44,10 @@ class TestLaunchpadSchemaTestCase(LaunchpadSchemaTestCase):
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestHarness))
+    # XXX: These tests require a launchpad_unittest database to be set up.
+    #      They should be rewritten as functional tests.
+    ##suite.addTest(unittest.makeSuite(TestPgTestCase))
+    ##suite.addTest(unittest.makeSuite(TestLaunchpadSchemaTestCase))
     return suite
 
 if __name__ == '__main__':

@@ -1,7 +1,9 @@
 # arch-tag: da5d31ba-6994-4893-b252-83f4f66f0aba
 
 from canonical.database.sqlbase import SQLBase, quote
+
 from canonical.rosetta.interfaces import *
+from canonical.database.doap import IProject, IProjects
 from sqlobject import ForeignKey, MultipleJoin, RelatedJoin, IntCol, \
     BoolCol, StringCol, DateTimeCol
 from zope.interface import implements, directlyProvides
@@ -1024,14 +1026,18 @@ class RosettaBranch(SQLBase):
     ]
 
 
-# XXX: This is cheating.
 def personFromPrincipal(principal):
-    ret = RosettaPerson.selectBy(displayName='Dafydd Harries')
-
-    if ret.count() == 0:
-        raise KeyError, principal
+    from zope.app.security.interfaces import IUnauthenticatedPrincipal
+    if IUnauthenticatedPrincipal.providedBy(principal):
+        return None
     else:
-        return ret[0]
+        # XXX: Fill in real query.
+        ret = RosettaPerson.selectBy(displayName='Dafydd Harries')
+
+        if ret.count() == 0:
+            raise KeyError, principal
+        else:
+            return ret[0]
 
 class RosettaSchema(SQLBase):
     implements(ISchema)

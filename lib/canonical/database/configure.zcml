@@ -1,21 +1,19 @@
-<configure
-    xmlns="http://namespaces.zope.org/zope"
-    xmlns:browser="http://namespaces.zope.org/browser">
+<configure xmlns="http://namespaces.zope.org/zope">
 
-    <!-- TODO: Consider splitting this into multiple files, matching the .py -->
+  <!-- TODO: Consider splitting this into multiple files, matching the .py -->
 
-    <content class="canonical.database.malone.Bug">
-        <allow interface="canonical.database.malone.IBug" />
-        <require permission="zope.View"
-            set_schema="canonical.database.malone.IBug" />
-    </content>
+  <content class="canonical.database.malone.Bug">
+    <allow interface="canonical.database.malone.IBug" />
+    <require permission="zope.View"
+      set_schema="canonical.database.malone.IBug" />
+  </content>
 
-    <content class="canonical.database.malone.BugActivity">
-        <allow interface="canonical.database.malone.IBugActivity" />
-    </content> 
+  <content class="canonical.database.malone.BugActivity">
+    <allow interface="canonical.database.malone.IBugActivity" />
+  </content> 
 
-    <content class="canonical.database.malone.BugExternalRef">
-        <allow interface="canonical.database.malone.IBugExternalRef" />
+  <content class="canonical.database.malone.BugExternalRef">
+    <allow interface="canonical.database.malone.IBugExternalRef" />
         <require permission="zope.View"
             set_schema="canonical.database.malone.IBugExternalRef" />
     </content>
@@ -30,63 +28,72 @@
         <allow interface="canonical.database.malone.IBugWatch" />
         <require permission="zope.View"
             set_schema="canonical.database.malone.IBugWatch" />
-    </content>
+  </content>
 
-    <content class="canonical.database.malone.BugMessage">
-        <allow interface="canonical.database.malone.IBugMessage" />
-    </content>
+  <content class="canonical.database.malone.BugMessage">
+    <allow interface="canonical.database.malone.IBugMessage" />
+  </content>
 
-    <content class="canonical.database.malone.BugAttachment">
-        <allow interface="canonical.database.malone.IBugAttachment" />
-        <require permission="zope.View"
-            set_schema="canonical.database.malone.IBugAttachment" />
-    </content>
+  <content class="canonical.database.malone.BugAttachment">
+    <allow interface="canonical.database.malone.IBugAttachment" />
+    <require permission="zope.View"
+      set_schema="canonical.database.malone.IBugAttachment" />
+  </content>
 
-    <content class="canonical.database.malone.ProductBugAssignment">
-        <allow interface="canonical.database.malone.IProductBugAssignment" />
-        <require permission="zope.View"
-            set_schema="canonical.database.malone.IProductBugAssignment" />
-    </content>
+  <content class="canonical.database.malone.ProductBugAssignment">
+    <allow interface="canonical.database.malone.IProductBugAssignment" />
+    <require permission="zope.View"
+             set_schema="canonical.database.malone.IProductBugAssignment" />
+  </content>
 
-    <content class="canonical.database.malone.SourcepackageBugAssignment">
-        <allow 
-            interface="canonical.database.malone.ISourcepackageBugAssignment"/>
-        <require
-            permission="zope.View"
-            set_schema="canonical.database.malone.ISourcepackageBugAssignment"
-            />
-    </content>
+  <content class="canonical.database.malone.SourcepackageBugAssignment">
+       <allow 
+           interface="canonical.database.malone.ISourcepackageBugAssignment"/>
+       <require
+           permission="zope.View"
+           set_schema="canonical.database.malone.ISourcepackageBugAssignment"
+           />
+  </content>
 
-    <content class="canonical.database.malone.BugSubscription">
-        <allow interface="canonical.database.malone.IBugSubscription" />
-        <require
-            permission="zope.View"
-            set_schema="canonical.database.malone.IBugSubscription"
-            />
-    </content>
+  <content class="canonical.database.malone.BugSubscription">
+    <allow interface="canonical.database.malone.IBugSubscription" />
+       <require
+           permission="zope.View"
+           set_schema="canonical.database.malone.IBugSubscription"
+     />
+  </content>
 
-    <content class="canonical.database.doap.Project">
-        <allow interface="canonical.database.doap.IProject" />
-    </content>
+  <content class="canonical.database.doap.DBProjects">
+    <allow interface="canonical.database.doap.IProjects" />
+  </content>
 
-    <content class="canonical.database.doap.Product">
-        <allow interface="canonical.database.doap.IProduct" />
-    </content>
+  <utility
+      factory="canonical.database.doap.DBProjects"
+      provides="canonical.database.doap.IProjects"
+      />
 
-    <content class="canonical.database.doap.Sourcepackage">
-        <allow interface="canonical.database.doap.ISourcepackage" />
-    </content>
+  <content class="canonical.database.doap.DBProject">
+    <allow interface="canonical.database.doap.IProject" />
+  </content>
 
-    <content class="canonical.database.doap.Binarypackage">
-        <allow interface="canonical.database.doap.IBinarypackage" />
-    </content>
+  <content class="canonical.database.doap.Product">
+    <allow interface="canonical.database.doap.IProduct" />
+  </content>
 
-    <content class="canonical.database.doap.BinarypackageName">
-        <allow interface="canonical.database.doap.IBinarypackageName" />
-    </content>
+  <content class="canonical.database.doap.Sourcepackage">
+    <allow interface="canonical.database.doap.ISourcepackage" />
+  </content>
 
-    <content class="canonical.database.foaf.Person">
-        <allow interface="canonical.database.foaf.IPerson" />
-    </content>
+   <content class="canonical.database.doap.Binarypackage">
+       <allow interface="canonical.database.doap.IBinarypackage" />
+   </content>
+
+   <content class="canonical.database.doap.BinarypackageName">
+       <allow interface="canonical.database.doap.IBinarypackageName" />
+   </content>
+
+  <content class="canonical.database.foaf.Person">
+    <allow interface="canonical.database.foaf.IPerson" />
+  </content>
 
 </configure>

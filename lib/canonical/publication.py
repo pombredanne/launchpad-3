@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+from zope.event import notify
 from zope.interface import implements, Interface
 from zope.component import \
         queryView, getDefaultViewName, queryMultiView, getUtility
@@ -11,7 +12,8 @@ from zope.component import \
 from zope.publisher.http import HTTPRequest
 from zope.publisher.browser import BrowserRequest
 
-from zope.app.publication.interfaces import IPublicationRequestFactory
+from zope.app.publication.interfaces import IPublicationRequestFactory,\
+     BeforeTraverseEvent
 from zope.app.publication.http import HTTPPublication
 from zope.app.publication.browser import BrowserPublication as BrowserPub
 from zope.publisher.interfaces.browser import IBrowserPublisher
@@ -105,6 +107,16 @@ class DebugView:
         finally:
             del tb
 
+class IAfterTraverseEvent(Interface):
+    """An event which gets sent after publication traverse; this
+    should really be pushed into Zope proper """
+
+class AfterTraverseEvent(object):
+    """An event which gets sent after publication traverse"""
+    implements(IAfterTraverseEvent)
+    def __init__(self, ob, request):
+        self.object = ob
+        self.request = request
 
 class BrowserPublication(BrowserPub):
     """Subclass of z.a.publication.BrowserPublication that removes ZODB.
@@ -149,6 +161,48 @@ class BrowserPublication(BrowserPub):
             return applicationControllerRoot
 
         return rootObject
+
+    # the below ovverrides to zopepublication (callTraversalHooks,
+    # afterTraversal, and _maybePlacefullyAuthenticate) make the
+    # assumption that there will never be a ZODB "local"
+    # authentication service (such as the "pluggable auth service").
+    # If this becomes untrue at some point, the code will need to be
+    # revisited.
+
+    def beforeTraversal(self, request):
+        from zope.component import getUtility
+        from zope.security.interfaces import Unauthorized
+        from zope.security.management import newInteraction
+        from transaction import get_transaction
+        from canonical.lp.placelessauth.interfaces import IPlacelessAuthUtility
+        # Try to authenticate against our registry
+        prin_reg = getUtility(IPlacelessAuthUtility)
+        p = prin_reg.authenticate(request)
+        if p is None:
+            p = prin_reg.unauthenticatedPrincipal()
+            if p is None:
+                raise Unauthorized # If there's no default principal
+
+        request.setPrincipal(p)
+        newInteraction(request)
+        get_transaction().begin()
+
+
+    def callTraversalHooks(self, request, ob):
+        """ We don't want to call _maybePlacefullyAuthenticate as does
+        zopepublication """
+        notify(BeforeTraverseEvent(ob, request))
+
+    def afterTraversal(self, request, ob):
+        """ We don't want to call _maybePlacefullyAuthenticate as does
+        zopepublication but we do want to send an AfterTraverseEvent """
+        notify(AfterTraverseEvent(ob, request))
+
+    def _maybePlacefullyAuthenticate(self, request, ob):
+        """ This should never be called because we've excised it in
+        favor of dealing with auth in events; if it is called for any
+        reason, raise an error """
+        raise NotImplementedError
 
 _browser_methods = 'GET', 'POST', 'HEAD'
 

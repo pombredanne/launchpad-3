@@ -7,7 +7,8 @@ import re
 from math import ceil
 
 from zope.component import getUtility
-from canonical.rosetta.interfaces import IProjects, ILanguages, IPerson
+from canonical.rosetta.interfaces import ILanguages, IPerson
+from canonical.database.doap import IProjects
 from canonical.rosetta.sql import RosettaLanguage
 from canonical.rosetta.poexport import POExport
 from canonical.rosetta.pofile import POHeader
@@ -48,11 +49,13 @@ class ViewProjects:
 
 class ViewProject:
     def thereAreProducts(self):
-        return len(list(self.context.products())) > 0
+        return len(list(self.context.products)) > 0
 
     def languageProducts(self):
-        for language in IPerson(self.request.principal).languages():
-            yield LanguageProducts(language, self.context.products())
+        person = IPerson(self.request.principal, None)
+        if person is not None:
+            for language in person.languages():
+                yield LanguageProducts(language, self.context.products)
 
 class LanguageProducts:
     def __init__(self, language, products):
