@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-24 15:03:28 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1492
+
+    Summary:
+      DistroArchRelease page speedy up
+    Revision:
+      launchpad--devel--0--patch-1492
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-491
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-492
+       DistroArchRelease page speedy up
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/distroarchrelease.py
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-491
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-492
+
+
 2005-03-24 11:19:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1491
 
     Summary:

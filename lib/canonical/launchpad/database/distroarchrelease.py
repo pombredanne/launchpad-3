@@ -15,6 +15,7 @@ from canonical.lp import dbschema
 from canonical.launchpad.interfaces import IDistroArchRelease
 from canonical.launchpad.interfaces import IBinaryPackageSet
 from canonical.launchpad.database.distribution import Distribution
+from canonical.launchpad.database.publishing import PackagePublishing
 
 class DistroArchRelease(SQLBase):
 
@@ -54,7 +55,13 @@ class DistroArchRelease(SQLBase):
 
     # useful properties
     def _binarycount(self):
-        return len(self.packages)
+        query = ('PackagePublishing.distroarchrelease = %d AND '
+                 'PackagePublishing.status = %d'
+                 %(self.id, dbschema.PackagePublishingStatus.PUBLISHED.value)
+                 )
+
+        return PackagePublishing.select(query).count()
+        #return len(self.packages)
     binarycount = property(_binarycount)
 
     def findPackagesByName(self, pattern, fti=False):
