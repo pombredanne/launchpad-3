@@ -288,7 +288,7 @@ class POHeader(dict, POMessage):
             field, value = field.strip(), value.strip()
             if field.lower() == 'plural-forms':
                 try:
-                    self[field] = value
+                    self.__setitem__(field, value, False)
                 except ValueError:
                     raise POInvalidInputError(msg='Malformed plural-forms header entry')
             else:
