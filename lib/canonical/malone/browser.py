@@ -438,12 +438,16 @@ class SourcepackageContainer(object):
     implements(ISourcepackageContainer)
     table = Sourcepackage
 
+    #
+    # We need to return a Sourcepackage given a name. For phase 1 (warty)
+    # we can assume that there is only one package with a given name, but
+    # later (XXX) we will have to deal with multiple source packages with
+    # the same name.
+    #
     def __getitem__(self, name):
-        try:
-            return self.table.select(self.table.q.name == name)[0]
-        except IndexError:
-            # Convert IndexError to KeyErrors to get Zope's NotFound page
-            raise KeyError, id
+        return self.table.select("Sourcepackage.sourcepackagename = \
+        SourcepackageName.id AND SourcepackageName.name = %s" %     \
+        sqlbase.quote(name))[0]
 
     def __iter__(self):
         for row in self.table.select():
@@ -454,6 +458,14 @@ class SourcepackageContainer(object):
     def bugassignments(self, orderby='-id'):
         # TODO: Ordering
         return self._bugassignments.select(orderBy=orderby)
+
+    #
+    # return a result set of Sourcepackages with bugs assigned to them
+    # which in future might be limited by distro, for example
+    #
+    def withBugs(self):
+        return self.table.select("Sourcepackage.id = \
+        SourcepackageBugAssignment.sourcepackage")
 
 
 class BugExternalRefsView(object):
