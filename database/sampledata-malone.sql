@@ -141,27 +141,30 @@ CURRENT_DATE, 1, 'title', 'A silly problem',
 );
 
 -- Assign bug 'bob' to the firefox product (NEW, HIGH, MAJOR)
-INSERT INTO ProductBugAssignment (bug, product, bugstatus, priority, severity)
+INSERT INTO ProductBugAssignment (
+    bug, product, bugstatus, priority, severity, assignee
+    )
 VALUES (
     (SELECT id FROM Bug WHERE name='bob'),
     (SELECT id FROM Product WHERE name='firefox'),
-    1, 2, 2
+    1, 2, 2,
+    (SELECT id FROM Person WHERE displayname='Sample Person')
 );
 
 -- Assign bug 'bob' to the mozilla-firefox sourcepackage and firefox-0.81
 -- binary package (OPEN, WONTFIX, 2)
-INSERT INTO SourcepackageBugAssignment 
-    (bug, sourcepackage, bugstatus, priority, severity, binarypackage)
+INSERT INTO SourcepackageBugAssignment (
+    bug, sourcepackage, bugstatus, priority, severity, binarypackage, assignee
+    )
 VALUES (
     (SELECT id FROM Bug WHERE name='bob'),
     (SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox')),
     2, 4, 2,
-    (SELECT id FROM BinaryPackage WHERE version='0.8' 
-        AND binarypackagename = (
-            SELECT id FROM BinarypackageName WHERE name='mozilla-firefox'
-            )
-    )
+    (SELECT id FROM BinaryPackage WHERE version='0.8' AND binarypackagename = (
+        SELECT id FROM BinarypackageName WHERE name='mozilla-firefox'
+        )),
+    (SELECT id FROM Person WHERE displayname='Sample Person')
 );
 
 -- Remove the nickname 'bob', so we have an unnamed bug
@@ -176,11 +179,14 @@ VALUES (
     2, 4, 2, NULL
     );
 */
-INSERT INTO ProductBugAssignment (bug, product, bugstatus, priority, severity)
+INSERT INTO ProductBugAssignment (
+    bug, product, bugstatus, priority, severity, assignee
+    )
 VALUES (
     (SELECT id FROM Bug WHERE name='blackhole'),
     (SELECT id FROM Product WHERE name='thunderbird'),
-    1, 2, 2
+    1, 2, 2,
+    (SELECT id FROM Person WHERE displayname='Sample Person')
 );
 
 

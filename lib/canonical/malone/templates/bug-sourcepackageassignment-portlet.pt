@@ -9,7 +9,9 @@
         </tr>
         <tr tal:repeat="bugass context/sourceassignment"
             tal:attributes="onclick string:window.location='sourcepackageassignments/${bugass/id}/+edit';">
-            <td tal:content="bugass/sourcepackage/title">$Sourcepackage.title</td>
+            <td tal:content="bugass/sourcepackage/sourcepackagename/name">
+                $SourcepackageName.name
+            </td>
             <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">
                 $ProductBugAssignment.bugstatus
             </td>

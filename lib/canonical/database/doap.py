@@ -206,11 +206,13 @@ class ISourcepackage(Interface):
     maintainer = Int(title=_("Maintainer"), required=True)
     name = TextLine(title=_("Name"), required=True)
     title = TextLine(title=_("Title"), required=True)
+    shortdesc = Text(title=_("Description"), required=True)
     description = Text(title=_("Description"), required=True)
     manifest = Int(title=_("Manifest"), required=False)
     distro = Int(title=_("Distribution"), required=False)
+    sourcepackagename = Int(title=_("Sourcepackage Name"), required=True)
 
-    bugs = Attribute('bugs')
+    bugs = Attribute("bugs")
 
 class Sourcepackage(SQLBase):
     implements(ISourcepackage)
@@ -219,8 +221,7 @@ class Sourcepackage(SQLBase):
                 name='maintainer', dbName='maintainer', foreignKey='Person',
                 notNull=True,
                 ),
-        StringCol('name', notNull=True),
-        StringCol('title', notNull=True),
+        StringCol('shortdesc', notNull=True),
         StringCol('description', notNull=True),
         ForeignKey(
                 name='manifest', dbName='manifest', foreignKey='Manifest',
@@ -230,6 +231,10 @@ class Sourcepackage(SQLBase):
                 name='distro', dbName='distro', foreignKey='Distribution',
                 notNull=False,
                 ),
+        ForeignKey(
+                name='sourcepackagename', dbName='sourcepackagename',
+                foreignKey='SourcepackageName', notNull=True
+                ),
         ]
 
     bugs = MultipleJoin(
@@ -238,6 +243,19 @@ class Sourcepackage(SQLBase):
     sourcepackagereleases = MultipleJoin(
             'SourcepackageRelease', joinColumn='sourcepackage'
             )
+
+class ISourcepackageName(Interface):
+    """Name of a Sourcepackage"""
+    id = Int(title=_("ID"), required=True)
+    name = TextLine(title=_("Name"), required=True)
+
+
+class SourcepackageName(SQLBase):
+    _table='SourcepackageName'
+    implements(ISourcepackage)
+    _columns = [
+        StringCol('name', notNull=True, unique=True),
+        ]
 
 """ Currently unneeded
 class SourcepackageRelease(SQLBase):
