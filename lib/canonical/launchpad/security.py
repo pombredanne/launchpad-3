@@ -197,10 +197,13 @@ class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
         else:
             # private bug
             for subscription in self.obj.bug.subscriptions:
-                if (subscription.person.id == user.id and
-                   (subscription.subscription == BugSubscription.WATCH
-                    or subscription.subscription == BugSubscription.CC)):
-                    return True
+                subscriber = subscription.person
+                if ITeam.providedBy(subscriber):
+                    if user.inTeam(subscriber):
+                        return True
+                else:
+                    if subscriber.id == user.id:
+                        return True
 
             return False
 

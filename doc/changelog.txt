@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-24 01:33:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1488
+
+    Summary:
+      fix https://launchpad.ubuntu.com/malone/bugs/232
+    Revision:
+      launchpad--devel--0--patch-1488
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-445
+       fix https://launchpad.ubuntu.com/malone/bugs/232
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-446
+       merge from rf
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/distro-bugprivacy/.arch-ids/05-set-bug-private-as-member-of-maintainer-team.txt.id
+     lib/canonical/launchpad/pagetests/distro-bugprivacy/05-set-bug-private-as-member-of-maintainer-team.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/security.py
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-445
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-446
+
+
 2005-03-23 23:24:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1487
 
     Summary:

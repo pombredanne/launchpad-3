@@ -1,0 +1,181 @@
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/2/+edit HTTP/1.1
+  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Cookie: launchpad=rD7snMSOdWFans5Ukm95CcGOHkM8hBYGxDWm0XnZgjudpcjHC7VGSE
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+              <div class="user">
+                  Welcome,
+                  <a href="/people/name16">
+                  Foo Bar</a>
+                  &ndash;
+                  Prefs
+                  &ndash;
+                  <a href="/+logout">Log Out</a>
+              </div>
+  ...
+      <h4>Related People:</h4>
+  <BLANKLINE>
+      <div class="portletBody">
+          <div class="portletContent even">
+  <BLANKLINE>
+              <h5>submitter:</h5>
+              <ul class="people">
+                  <li><a href="/people/name12">Sample Person</a></li>
+              </ul>
+  <BLANKLINE>
+              <h5>maintainers:</h5>
+  <BLANKLINE>
+              <ul class="people">
+                  <li>
+                  <a href="/people/name17">Ubuntu Team</a>
+                  </li>
+              </ul>
+              <ul class="people">
+                  <li>
+                  <a href="/people/sabdfl">Mark Shuttleworth</a>
+                  </li>
+              </ul>
+  <BLANKLINE>
+  <BLANKLINE>
+              <h5>cc:</h5>
+              <ul class="people">
+                  <li>
+                    <a href="/malone/bugs/2/people/5/+edit">Steve Alexander</a>
+                  </li>
+              </ul>
+  <BLANKLINE>
+  <BLANKLINE>
+              <ul class="people">
+              </ul>
+  <BLANKLINE>
+  <BLANKLINE>
+              <ul class="people">
+              </ul>
+  <BLANKLINE>
+  <BLANKLINE>
+          <a href="/malone/bugs/2/people/+new"
+             style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+             title="Add a subscriber to this bug.">
+              <img src="/++resource++add.gif" alt="+" />
+              Subscribe
+          </a><br />
+          </div>
+  <BLANKLINE>
+      </div>
+  ...
+
+  >>> print http(r"""
+  ... POST /malone/bugs/2/+edit HTTP/1.1
+  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1235
+  ... Content-Type: multipart/form-data; boundary=---------------------------115180199804837416230138857
+  ... Cookie: launchpad=rD7snMSOdWFans5Ukm95CcGOHkM8hBYGxDWm0XnZgjudpcjHC7VGSE
+  ... Referer: http://localhost:9000/malone/bugs/2/+edit
+  ... 
+  ... -----------------------------115180199804837416230138857
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Blackhole Trash folder
+  ... -----------------------------115180199804837416230138857
+  ... Content-Disposition: form-data; name="field.shortdesc"
+  ... 
+  ... Everything put into the folder "Trash" disappears!
+  ... -----------------------------115180199804837416230138857
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... The Trash folder seems to have significant problems! At the moment, dragging an item to the trash results in immediate deletion. The item does not appear in the Trash, it is just deleted from my hard disk. There is no undo or ability to recover the deleted file. Help!
+  ... -----------------------------115180199804837416230138857
+  ... Content-Disposition: form-data; name="field.private.used"
+  ... 
+  ... 
+  ... -----------------------------115180199804837416230138857
+  ... Content-Disposition: form-data; name="field.private"
+  ... 
+  ... on
+  ... -----------------------------115180199804837416230138857
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... blackhole
+  ... -----------------------------115180199804837416230138857
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------115180199804837416230138857--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+              <div class="user">
+                  Welcome,
+                  <a href="/people/name16">
+                  Foo Bar</a>
+                  &ndash;
+                  Prefs
+                  &ndash;
+                  <a href="/+logout">Log Out</a>
+              </div>
+  ...
+      <h4>Related People:</h4>
+  <BLANKLINE>
+      <div class="portletBody">
+          <div class="portletContent even">
+  <BLANKLINE>
+              <h5>submitter:</h5>
+              <ul class="people">
+                  <li><a href="/people/name12">Sample Person</a></li>
+              </ul>
+  <BLANKLINE>
+              <h5>maintainers:</h5>
+  <BLANKLINE>
+              <ul class="people">
+                  <li>
+                  <a href="/people/name17">Ubuntu Team</a>
+                  </li>
+              </ul>
+              <ul class="people">
+                  <li>
+                  <a href="/people/sabdfl">Mark Shuttleworth</a>
+                  </li>
+              </ul>
+  <BLANKLINE>
+  <BLANKLINE>
+              <h5>cc:</h5>
+              <ul class="people">
+                  <li>
+                    <a href="/malone/bugs/2/people/5/+edit">Steve Alexander</a>
+                  </li>
+                  <li>
+                    <a href="/malone/bugs/2/people/6/+edit">Sample Person</a>
+                  </li>
+                  <li>
+                    <a href="/malone/bugs/2/people/7/+edit">Ubuntu Team</a>
+                  </li>
+                  <li>
+                    <a href="/malone/bugs/2/people/8/+edit">Mark Shuttleworth</a>
+                  </li>
+              </ul>
+  <BLANKLINE>
+  <BLANKLINE>
+              <ul class="people">
+              </ul>
+  <BLANKLINE>
+  <BLANKLINE>
+              <ul class="people">
+              </ul>
+  <BLANKLINE>
+  <BLANKLINE>
+          <a href="/malone/bugs/2/people/+new"
+             style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+             title="Add a subscriber to this bug.">
+              <img src="/++resource++add.gif" alt="+" />
+              Subscribe
+          </a><br />
+          </div>
+  <BLANKLINE>
+      </div>
+  ...
