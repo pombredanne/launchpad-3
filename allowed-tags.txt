@@ -53,7 +53,6 @@ lib/canonical/sourcerer/util/tarball.py bdaad292-b07c-4e93-b549-35660b067402
 lib/canonical/soyuz/Makefile 4d44b2e9-d976-44a5-8160-2dc9ccc73d2b
 lib/canonical/soyuz/README.txt 465e24f1-99dd-4813-af4e-62f679adde02
 lib/canonical/soyuz/__init__.py 095a4ca8-1a0f-4287-bb2d-fdd0d48b576b
-lib/canonical/soyuz/browser.py 985007b4-9c10-4601-b3ce-bdb03576569f
 lib/canonical/soyuz/configure.zcml 49ae2d27-b8d1-40f1-a5f3-358c696b767f_-->
 lib/canonical/soyuz/pages.zcml d60390fd-285e-4aa1-844e-24e11159e74c_-->
 lib/canonical/soyuz/resources.zcml 844b6d1e-43ec-46dd-baa0-e4b03661c6cf_-->

@@ -24,7 +24,7 @@
 
   <page for="canonical.soyuz.distroapp.DistrosApp"
          permission="zope.Public"
-	 class="canonical.soyuz.browser.DistrosSearchView"
+	 class="canonical.launchpad.browser.DistrosSearchView"
 	 template="../launchpad/templates/distro-search.pt"
          lp:url="Soyuz/distros/+search"
 	 name="+search"
@@ -32,7 +32,7 @@
 
   <page for="canonical.soyuz.distroapp.DistrosApp"
          permission="launchpad.AnyPerson"
-	 class="canonical.soyuz.browser.DistrosAddView"
+	 class="canonical.launchpad.browser.DistrosAddView"
 	 template="../launchpad/templates/distro-add.pt"
          lp:url="Soyuz/distros/+add"
 	 name="+add"
@@ -62,7 +62,7 @@
 
   <page for="canonical.soyuz.distroapp.DistroApp"
          permission="launchpad.Edit"
-	 class="canonical.soyuz.browser.DistrosEditView"
+	 class="canonical.launchpad.browser.DistrosEditView"
 	 name="+edit"
 	 template="../launchpad/templates/distro-edit.pt"
 	 lp:url="Soyuz/distros/$Distribution.name/+edit"
@@ -83,7 +83,7 @@
 
 	<page for="canonical.soyuz.distroapp.DistroReleasesApp"
 	  permission="launchpad.Admin"
-	  class="canonical.soyuz.browser.ReleasesAddView"
+	  class="canonical.launchpad.browser.ReleasesAddView"
 	  name="+new"
           template="../launchpad/templates/release-new.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+new"
@@ -93,7 +93,7 @@
 
    <pages for="canonical.soyuz.distroapp.DistroReleaseApp"
 	  allowed_attributes="results sources binaries"
-	  class="canonical.soyuz.browser.DistroReleaseView"
+	  class="canonical.launchpad.browser.DistroReleaseView"
 	  permission="zope.Public">
 
 	<page  name="index.html"
@@ -117,7 +117,7 @@
 
 	<page for="canonical.soyuz.distroapp.DistroReleaseApp"
 	  permission="launchpad.Edit"
-	  class="canonical.soyuz.browser.ReleaseEditView"
+	  class="canonical.launchpad.browser.ReleaseEditView"
 	  name="+edit"
           template="../launchpad/templates/release-edit.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+edit"
@@ -125,7 +125,7 @@
 
 	<page for="canonical.soyuz.distroapp.DistroReleaseApp"
 	  permission="zope.Public"
-	  class="canonical.soyuz.browser.ReleaseSearchView"
+	  class="canonical.launchpad.browser.ReleaseSearchView"
 	  name="+search"
           template="../launchpad/templates/release-search.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+search"
@@ -149,7 +149,7 @@
                                           getter="__getitem__" />
    <pages for="canonical.soyuz.sourcepackageapp.DistroReleaseSourcesApp"
 	  allowed_attributes="results"
-          class="canonical.soyuz.browser.DistroReleaseSourcesView"
+          class="canonical.launchpad.browser.DistroReleaseSourcesView"
 	  permission="zope.Public">
 
 	<page  name="index.html"
@@ -160,7 +160,7 @@
 
   <page for="canonical.soyuz.sourcepackageapp.DistroReleaseSourcesApp"
          permission="zope.Public"
-	 class="canonical.soyuz.browser.DistrosReleaseSourcesSearchView"
+	 class="canonical.launchpad.browser.DistrosReleaseSourcesSearchView"
 	 template="../launchpad/templates/sourcepackage-search.pt"
          lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/+search"
 	 name="+search"
@@ -170,7 +170,7 @@
                                           getter="__getitem__" />
    <pages for="canonical.soyuz.sourcepackageapp.DistroReleaseSourceApp"
 	  allowed_attributes="results"
-	  class="canonical.soyuz.browser.DistroReleaseSourceView"
+	  class="canonical.launchpad.browser.DistroReleaseSourceView"
 	  permission="launchpad.AnyPerson">
      <page  name="index.html"
             template="../launchpad/templates/soyuz-sourcepackage-index.pt"
@@ -275,14 +275,14 @@
 	  allowed_attributes="results"
 	  permission="zope.Public"
 	  name="index.html"
-     	  class="canonical.soyuz.browser.DistroReleaseBinariesView"
+     	  class="canonical.launchpad.browser.DistroReleaseBinariesView"
           template="../launchpad/templates/binarypackage-list.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$BinaryPackage.name/index.html"
 	/>
 
   <page for="canonical.soyuz.binarypackageapp.DistroReleaseBinariesApp"
          permission="zope.Public"
-	 class="canonical.soyuz.browser.DistrosReleaseBinariesSearchView"
+	 class="canonical.launchpad.browser.DistrosReleaseBinariesSearchView"
 	 template="../launchpad/templates/binarypackage-search.pt"
          lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/+search"
 	 name="+search"

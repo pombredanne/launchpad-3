@@ -102,10 +102,16 @@ class SourcePackage(SQLBase):
                  ' AND sourcepackage = %d'
                  ' AND publishingstatus = %d'
                  % (distroRelease.id, self.id, status))
+
         if do_sort:
-            query += ' ORDER BY dateuploaded DESC'
-        ret = VSourcePackageReleasePublishing.select(query)
-        return ret
+            # XXX: Daniel Debonzi 2004-12-01
+            # Check if the orderBy is working properly
+            # as soon as we have enought data in db.
+            # Anyway, seems to br ok
+            return VSourcePackageReleasePublishing.select(query,
+                                                  orderBy='dateuploaded')
+        
+        return VSourcePackageReleasePublishing.select(query)
 
     def proposed(self, distroRelease):
         return self.uploadsByStatus(distroRelease,
