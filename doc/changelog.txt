@@ -2,6 +2,38 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-14 17:36:13 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1199
+
+    Summary:
+      Code review changes done
+    Revision:
+      launchpad--devel--0--patch-1199
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-492
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-493
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-494
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-495
+       Code review changes done
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/rosetta/poexport.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-492
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-493
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-494
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-495
+
+
 2005-01-13 22:34:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1198
 
     Summary:
