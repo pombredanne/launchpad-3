@@ -92,6 +92,12 @@
         <browser:page name="+malone-index"
             template="../templates/malone_skin/malone-index.pt"
             lp:url="malone/products/$Product.name/" />
+        <browser:page name="+advancedsearch"
+            template="../templates/malone_skin/malone-under-construction.pt"
+            lp:url="malone/products/$Product.name/+advancedsearch" />
+        <browser:page name="+admin"
+            template="../templates/malone_skin/malone-under-construction.pt"
+            lp:url="malone/products/$Product.name/+admin" />
     </browser:pages>
 
     <browser:pages

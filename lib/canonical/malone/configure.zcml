@@ -30,8 +30,8 @@
     <browser:menuItems menu="malone_actions" for="*">
         <browser:menuItem title="Bugs" action="+malone-index" />
         <browser:menuItem title="Report a Bug" action="+filebug" />
-        <browser:menuItem title="Advanced Search" action="" />
-        <browser:menuItem title="Admin" action="" />
+        <browser:menuItem title="Advanced Search" action="+advancedsearch" />
+        <browser:menuItem title="Admin" action="+admin" />
     </browser:menuItems>
 
     <browser:defaultView

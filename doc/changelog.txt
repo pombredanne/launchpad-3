@@ -2,6 +2,32 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-09 19:34:25 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1298
+
+    Summary:
+      add an under construction page for bits of the newlook skin that are
+ still a few weeks off being integrated.
+    Revision:
+      launchpad--devel--0--patch-1298
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-348
+       add an under construction page for bits of the newlook skin that are still a few weeks off being integrated.
+    
+
+    new files:
+     lib/canonical/launchpad/templates/malone_skin/.arch-ids/malone-under-construction.pt.id
+     lib/canonical/launchpad/templates/malone_skin/malone-under-construction.pt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/zcml/product.zcml
+     lib/canonical/malone/configure.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-348
+
+
 2005-02-09 18:27:38 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1297
 
     Summary:

@@ -1,0 +1,5 @@
+<html metal:use-macro="views/standard_macros/master">
+<metal:block fill-slot="main">
+    <p><i>This page will probably contain something very cool, at some point.</i></p>
+</metal:block>
+</html>
