@@ -1,4 +1,4 @@
-
+Foo Bar views the bugs listing for Ubuntu Linux.
 
   >>> print http(r"""
   ... GET /malone/distros/ubuntu HTTP/1.1
@@ -11,6 +11,8 @@
   ...
       <a href="+filebug">File a bug on Ubuntu Linux</a><br />
   ...
+
+Foo Bar files a *private* bug on Ubuntu Linux.
 
   >>> print http(r"""
   ... POST /malone/distros/ubuntu/+filebug HTTP/1.1
@@ -49,6 +51,8 @@
   HTTP/1.1 303 See Other
   ...
 
+Foo Bar see the private bug he filed.
+
   >>> print http(r"""
   ... GET /malone/distros/ubuntu/ HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
@@ -59,5 +63,7 @@
   ...
     <h1>Bugs in Ubuntu Linux</h1>
   ...
-            <td onclick="window.location='/malone/tasks/16/+edit'">7</td>
+            <td>
+                <a href="/malone/tasks/16/+edit">7</a>
+            </td>
   ...
