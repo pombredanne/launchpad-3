@@ -538,13 +538,14 @@ class GPGKey(SQLBase):
         StringCol('keyid', dbName='keyid', notNull=True),
         StringCol('fingerprint', dbName='fingerprint', notNull=True),
         StringCol('pubkey', dbName='pubkey', notNull=True),
-        BoolCol('revoked', dbName='revoked', notNull=True)
-##FIXME pending 'algorithm' and 'keysize' !!!
+        BoolCol('revoked', dbName='revoked', notNull=True),
+        IntCol('algorithm', dbName='algorithm', notNull=True),
+        IntCol('keysize', dbName='keysize', notNull=True),
         ]
 
-
-##FIXME: Experimental API with 4 attributes (includes also name instead just
-##    value, title, description)
+##XXX: (dbschema+gpg) cprov 20041004
+## Experimental API with 4 attributes (includes also name instead just
+##  value, title, description)
     def _algorithmname(self):
         for name, algorithm in dbschema.GPGKeyAlgorithms.items.mapping.items():
             if algorithm.value == self.algorithm:

@@ -280,7 +280,8 @@ class IGPGKey(Interface):
     revoked = Attribute("Revoked")
     algorithm = Attribute("Algorithm")
     keysize = Attribute("Keysize")
-
+    algorithmname = Attribute("Algorithm Name")
+    
 class IArchUserID(Interface):
     """ARCH specific user ID """
     person = Attribute("Owner")

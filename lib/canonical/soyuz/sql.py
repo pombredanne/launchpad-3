@@ -15,10 +15,12 @@ from canonical.lp import dbschema
 from canonical.database.sqlbase import quote
 
 # launchpad imports
-from canonical.launchpad.interfaces import IBinaryPackage, IBinaryPackageBuild, \
-                                           ISourcePackageRelease, IManifestEntry, \
-                                           IBranch, IChangeset, IPackages, \
-                                           IBinaryPackageSet, ISourcePackageSet
+from canonical.launchpad.interfaces import IBinaryPackage,IBinaryPackageBuild,\
+                                           ISourcePackageRelease,\
+                                           IManifestEntry, IPackages,\
+                                           IBinaryPackageSet,\
+                                           ISourcePackageSet,\
+                                           IBranch, IChangeset 
 
 from canonical.launchpad.database import SoyuzBinaryPackage, SoyuzBuild, \
                                          SoyuzSourcePackage, Manifest, \
@@ -28,7 +30,7 @@ from canonical.launchpad.database import SoyuzBinaryPackage, SoyuzBuild, \
                                          SoyuzDistribution, SoyuzPerson, \
                                          SoyuzEmailAddress, GPGKey, \
                                          ArchUserID, WikiName, JabberID, \
-                                         IrcID, Membership, TeamParticipation, \
+                                         IrcID, Membership, TeamParticipation,\
                                          DistributionRole, DistroReleaseRole, \
                                          SourceSource as infoSourceSource, \
                                          RCSTypeEnum, Branch, Changeset
@@ -574,9 +576,10 @@ class DistroReleaseBinariesApp(object):
                  % quote('%%' + pattern + '%%'))
 
 
-## WTF ist That ?? I wonder how many copies of this code we will find !
-##FIXME: expensive routine
-        selection = Set(SoyuzBinaryPackage.select(query))
+        ## WTF ist That ?? I wonder how many copies of this code we will find !
+        ##FIXME: expensive routine
+        selection = Set(SoyuzBinaryPackage.select(query)[:50])
+
         ##FIXME: Dummy solution to avoid a binarypackage to be shown more
         ##   then once
         present = []

@@ -64,16 +64,15 @@
 	 </table>
     </form>
 
-    <tal:block tal:condition="view/search_action">
-    <div>
+    <div tal:condition="view/search_action">
     <h3>Results</h3>
     <h4><span tal:content="view/entries"/> entries found</h4> 
     <ul>
-    <li tal:repeat="distro view/results">  
-    <a tal:attributes="href distro/name" tal:content="distro/title"></a></li>
+        <li tal:repeat="distro view/results"> 
+	<a tal:attributes="href distro/name" tal:content="distro/title"></a>
+        </li>
     </ul>
     </div>
-    </tal:block> 
 
     </div>
 

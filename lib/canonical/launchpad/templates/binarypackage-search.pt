@@ -26,6 +26,8 @@
     <input type="submit" value="Search"/>
     </form>
 
+   <h4 tal:condition="view/search_action">Search Results</h4>
+
     <ul>
     <li tal:repeat="package view/results">  
       <a tal:attributes="href package/name" tal:content="package/name">

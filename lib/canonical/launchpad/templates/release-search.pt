@@ -62,18 +62,21 @@
 </table>
 
 
+<h4 tal:condition="view/search_action">Search Results</h4> 
+
 <tal:block tal:condition="view/sources">
 <div>
 <fieldset>
 <h3>Source Packages</h3>
 <ul>
-  <li tal:repeat="source view/sources">
-    <a tal:attributes="href string:../../src/${context/release/name}/${source/name}"
-    tal:content="source/name">SOURCE</a> : 
+ <li tal:repeat="source view/sources">
+  <a tal:attributes="href string:../../src/${context/release/name}/${source/name}"
+     tal:content="source/name">SOURCE</a> : 
     <span tal:content="source/shortdesc"/>
   </li> 
 </ul>
 </div>
+</fieldset>
 </tal:block>
 
 <tal:block tal:condition="view/binaries">
@@ -88,6 +91,7 @@
   </li> 
 </ul>
 </div>
+</fieldset>
 </tal:block>
 
 
