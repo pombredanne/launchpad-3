@@ -2,6 +2,44 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-07 13:21:01 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1376
+
+    Summary:
+      Rosetta teams added to sampledata
+    Revision:
+      launchpad--devel--0--patch-1376
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-158
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-159
+       Add copyright header
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-160
+       Update database docs
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-161
+       Rosetta teams added to sampledata
+    
+
+    new files:
+     database/schema/archive/.arch-ids/rosetta-admins.sql.id
+     database/schema/archive/rosetta-admins.sql
+
+    modified files:
+     database/sampledata/current.sql database/schema/Makefile
+     database/schema/launchpad.html doc/changelog.txt
+     lib/canonical/launchpad/ftests/test_system_documentation.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-158
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-159
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-160
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-161
+
+
 2005-03-07 12:40:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1375
 
     Summary:

@@ -111,6 +111,8 @@ all: dev test
 
 doc:
 	postgresql_autodoc -d ${DBNAME} -f launchpad -t html
+
+diagram:
 	${PYTHON} diagram.py
 
 newsample-foaf:

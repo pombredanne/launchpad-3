@@ -1,5 +1,8 @@
-"""Test the examples included in the system documentation in
-lib/canonical/launchpad/doc."""
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+"""
+Test the examples included in the system documentation in
+lib/canonical/launchpad/doc.
+"""
 
 import unittest
 import os
