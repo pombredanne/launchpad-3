@@ -26,6 +26,7 @@ from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.interfaces import IDistroTools
 
 from canonical.launchpad.database import Archive, Branch, ArchNamespace
+from canonical.launchpad.database import Distribution
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.sourcepackage import SourcePackageInDistro
 from canonical.launchpad.database.binarypackage import BinaryPackage

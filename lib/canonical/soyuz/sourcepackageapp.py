@@ -158,36 +158,6 @@ class DistroReleaseSourceReleaseApp(object):
         archReleases = self.sourcepackagerelease.architecturesReleased(distrorelease)
         self.archs = [a.architecturetag for a in archReleases]
 
-
-    def builddepends(self):
-        if not self.sourcepackagerelease.builddepends:
-            return None
-        
-        builddepends = ([], [], [])
-
-        depends = ParseSrcDepends(self.sourcepackagerelease.builddepends)
-
-        for i in range(len(depends)):
-            dep = depends[i]
-            builddepends[i % 3].append(builddepsSet(*dep[0]))
-        return builddepends
-
-    builddepends = property(builddepends)
-
-    def builddependsindep(self):
-        if not self.sourcepackagerelease.builddependsindep:
-            return None
-        builddependsindep = ([], [], [])
-        
-        depends = ParseSrcDepends(self.sourcepackagerelease.builddependsindep)
-        
-        for i in range(len(depends)):
-            dep = depends[i]
-            builddependsindep[i % 3].append(builddepsSet(*dep[0]))
-        return builddependsindep
-                
-    builddependsindep = property(builddependsindep)
-
     def __getitem__(self, arch):
         bset = getUtility(IBuildSet)
         results = bset.getBuildBySRAndArchtag(self.sourcepackagerelease.id,

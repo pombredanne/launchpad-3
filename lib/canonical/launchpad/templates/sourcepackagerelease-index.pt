@@ -124,13 +124,16 @@
         </ul>
       </ul>
 
-      <div condition="context/builddepends">
+      <div class="dummy">
        <h4>Build Dependencies</h4>
        <table width="100%">
-         <tr tal:condition="python: len(context.builddepends) > 0">
+
+<!-- XXX:  cprov 20041210
+     Repair the Builds schema !!!!
+         <tr tal:condition="python: len(view.builddepends) > 0">
            <td valign="top" tal:repeat="index python:range(3)">
              <ul>
-               <span tal:repeat="builddepends python:context.builddepends[index]">
+               <span tal:repeat="builddepends python:view.builddepends[index]">
                  <li>
                    <a tal:content="builddepends/name" tal:attributes="href
                string:../../../../bin/${context/distrorelease/name}/${builddepends/name}"/> 
@@ -143,15 +146,15 @@
              </ul>
            </td>
          </tr>
-         <tr tal:condition="python: len(context.builddependsindep) > 0">
+           <tr tal:condition="python: len(view.builddependsindep) >0">
            <td colspan="3">
              <h5>Plataform Independent Dependencies</h5>
            </td>
          </tr>
-         <tr tal:condition="python: len(context.builddependsindep) > 0">
+         <tr tal:condition="python: len(view.builddependsindep) > 0">
            <td valign="top" tal:repeat="index python:range(3)">
              <ul>
-               <span tal:repeat="builddependsindep python:context.builddependsindep[index]">
+               <span tal:repeat="builddependsindep python:view.builddependsindep[index]">
                  <li>
                    <a tal:content="builddependsindep/name" tal:attributes="href
                       string:../../../../bin/${context/distrorelease/name}/${builddependsindep/name}"/> 
@@ -164,7 +167,8 @@
               </ul>
             </td>
           </tr>
-        </table>
+-->
+        </table> 
       </div>
     </div>
   </div>

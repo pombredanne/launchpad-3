@@ -1,0 +1,28 @@
+
+
+  >>> print http(r"""
+  ... GET /soyuz/distros/+add HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... 
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+      <h1>New Distribution on Soyuz</h1>
+  ...
+
+
+  >>> print http(r"""
+  ... POST /soyuz/distros/+add HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ...
+  ... title=canonical&description=&domain=""")
+  HTTP/1.1 200 Ok
+  ...
+      <h1>New Distribution on Soyuz</h1>
+  ...
+    <div>
+    <h4><a href="canonical">
+    <span>canonical</span></a> 
+    Distribution added</h4>
+    </div>
+  ...

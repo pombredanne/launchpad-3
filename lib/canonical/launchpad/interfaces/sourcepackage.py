@@ -195,8 +195,6 @@ class IDistroReleaseSourceReleaseApp(Interface):
     """A SourcePackageRelease Proxy """
     sourcepackagerelease = Attribute("SourcePackageRelease")
     archs = Attribute("Builded archs")
-    builddepends = Attribute("Builddepends for this sourcepackagerelease")
-    builddependsindep = Attribute("BuilddependsIndep for this sourcepackagerelease")
     distrorelease = Attribute("The DistroRelease need to make links to bin packages")
 
     def __getitem__(name):

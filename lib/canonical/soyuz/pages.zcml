@@ -222,30 +222,23 @@
         for="canonical.soyuz.sourcepackageapp.DistroReleaseSourceReleaseApp"
         getter="__getitem__" />
 
-    <pages
-        for="canonical.soyuz.sourcepackageapp.DistroReleaseSourceReleaseApp"
-	    allowed_attributes="results"
-	    permission="zope.Public">
-
-        <page
-            name="index.html"
-            template="../launchpad/templates/sourcepackagerelease-index.pt"
-	        lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/index.html"
-	        />
-
-        <page
-            name="+changelog"
-            template="../launchpad/templates/sourcechangelog-index.pt"
-	        lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/+changelog"
-	        />
-
-        <page
-            name="+buildlog"
-            template="../launchpad/templates/sourcepackagerelease-buildlog.pt"
-	        lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/+buildlog"
-	        />
-
-    </pages>
+<pages 
+    for="canonical.soyuz.sourcepackageapp.DistroReleaseSourceReleaseApp"
+    class="canonical.launchpad.browser.SourcePackageReleaseView"
+    permission="zope.Public">
+    <page  
+        name="index.html"
+        template="../launchpad/templates/sourcepackagerelease-index.pt"
+	lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/index.html"/>
+    <page  
+        name="+changelog"
+        template="../launchpad/templates/sourcechangelog-index.pt"
+	lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/+changelog"/>
+    <page  
+        name="+buildlog"
+        template="../launchpad/templates/sourcepackagerelease-buildlog.pt"
+	lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/+buildlog"/>
+</pages>
 
     <traverse
         for="canonical.soyuz.binarypackageapp.DistroBinariesApp" 
