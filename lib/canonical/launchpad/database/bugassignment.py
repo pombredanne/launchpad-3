@@ -121,9 +121,12 @@ class BugsAssignedReport(object):
                    """ % (self.user.id,
                    self.minseverity,
                    self.minpriority)
+        clauseTables = ('SourcePackage',)
+
         if not self.showclosed:
             querystr = querystr + ' AND SourcepackageBugAssignment.bugstatus<3'
-        self._maintainedPackageBugs = list(self.BSA.select(querystr))
+        self._maintainedPackageBugs = list(self.BSA.select(querystr,
+        clauseTables=clauseTables))
         return self._maintainedPackageBugs
 
     # bug assignments on products owned by the user
@@ -135,9 +138,13 @@ class BugsAssignedReport(object):
                    ProductBugAssignment.severity>=%s AND
                    ProductBugAssignment.priority>=%s""" % (self.user.id,
                    self.minseverity, self.minpriority)
+        
+        clauseTables = ('Product',)
+
         if not self.showclosed:
             querystr = querystr + ' AND ProductBugAssignment.bugstatus<3'
-        self._maintainedProductBugs = list(self.BPA.select(querystr))
+        self._maintainedProductBugs = list(self.BPA.select(querystr,
+        clauseTables=clauseTables))
         return self._maintainedProductBugs
 
     # package bugs assigned specifically to the user
