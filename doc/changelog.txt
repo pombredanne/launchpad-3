@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-11 14:43:05 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1418
+
+    Summary:
+      Make SourceSource.name UNIQUE as code already depends on this being so
+    Revision:
+      launchpad--devel--0--patch-1418
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-188
+       Make SourceSource.name UNIQUE as code already depends on this being so
+    
+
+    new files:
+     database/schema/.arch-ids/patch-11-05-0.sql.id
+     database/schema/patch-11-05-0.sql
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-188
+
+
 2005-03-11 10:36:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1417
 
     Summary:
