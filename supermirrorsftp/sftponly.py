@@ -12,6 +12,7 @@ from twisted.python import components
 
 from zope.interface import implements
 import binascii
+import os.path
 
 
 class SubsystemOnlySession(session.SSHSession, object):
@@ -70,7 +71,8 @@ class Realm:
         self.homeDirsRoot = homeDirsRoot
 
     def requestAvatar(self, avatarId, mind, *interfaces):
-        return interfaces[0], SFTPOnlyAvatar(avatarId, homeDirsRoot), lambda: None
+        avatar = SFTPOnlyAvatar(avatarId, self.homeDirsRoot)
+        return interfaces[0], avatar, lambda: None
 
 
 class Factory(factory.SSHFactory):
