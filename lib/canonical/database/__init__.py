@@ -13,9 +13,3 @@ to talk to the database. In general:
 
 """
 
-from canonical.database.doap import *
-from canonical.database.foaf import *
-from canonical.database.soyuz import *
-from canonical.database.buttress import *
-from canonical.database.rosetta import *
-

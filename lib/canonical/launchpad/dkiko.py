@@ -1,15 +1,20 @@
 
 # Python imports
 from sets import Set
+from datetime import datetime
 
 # Zope imports
 from zope.interface import implements
+from zope.i18nmessageid import MessageIDFactory
+_ = MessageIDFactory('canonical')
 
 # SQLObject/SQLBase
+from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
                       DateTimeCol
 from sqlobject.sqlbuilder import func
-from canonical.database.sqlbase import SQLBase
+
+from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.doap import Product, DBProject
 from canonical.lp import dbschema
 
@@ -735,4 +740,140 @@ class Release(SQLBase):
         return db_cursor.fetchall()[0][0]
                 
     binarycount = property(binarycount)
+
+#
+# The basic implementation of a Sourcepackage object.
+#
+class Sourcepackage(SQLBase):
+    implements(ISourcepackage)
+    _columns = [
+        ForeignKey(
+                name='maintainer', dbName='maintainer', foreignKey='Person',
+                notNull=True,
+                ),
+        StringCol('shortdesc', notNull=True),
+        StringCol('description', notNull=True),
+        ForeignKey(
+                name='manifest', dbName='manifest', foreignKey='Manifest',
+                notNull=False,
+                ),
+        ForeignKey(
+                name='distro', dbName='distro', foreignKey='Distribution',
+                notNull=False,
+                ),
+        ForeignKey(
+                name='sourcepackagename', dbName='sourcepackagename',
+                foreignKey='SourcepackageName', notNull=True
+                ),
+        ]
+
+    bugs = MultipleJoin(
+            'SourcepackageBugAssignment', joinColumn='sourcepackage'
+            )
+
+    sourcepackagereleases = MultipleJoin(
+            'SourcepackageRelease', joinColumn='sourcepackage'
+            )
+
+    def name(self):
+        return self.sourcepackagename.name
+
+
+#
+# Basic implementation of a SourcepackageName object.
+#
+class SourcepackageName(SQLBase):
+    _table='SourcepackageName'
+    implements(ISourcepackage)
+    _columns = [
+        StringCol('name', notNull=True, unique=True),
+        ]
+
+
+
+""" Currently unneeded
+class SourcepackageRelease(SQLBase):
+    _table = 'SourcepackageRelease'
+    _columns = [
+        ForeignKey(
+            name='sourcepackage', dbName='sourcepackage',
+            foreignKey='Sourcepackage', notNull=True,
+            ),
+        IntCol(name='srcpackageformat', notNull=True,),
+        ForeignKey(
+            name='creator', dbName='creator',
+            foreignKey='Person', notNull=True,
+            ),
+        StringCol('version', notNull=True),
+        DatetimeCol('dateuploaded', notNull=True),
+        IntCol('urgency', notNull=True),
+        ForeignKey(
+            name='dscsigningkey', dbName='dscsigningkey', notNull=False),
+            )
+        IntCol('component', notNull=False),
+        StringCol('changelog', notNull=False),
+        StringCol('builddepends', notNull=False),
+        StringCol('builddependsindep', notNull=False),
+        StringCol('architecturehintlist', notNull=False),
+        StringCol('dsc', notNull=False),
+        ]
+"""
+
+
+
+#
+# Basic implementation of a Binarypackage object.
+#
+class Binarypackage(SQLBase):
+    implements(IBinarypackage)
+    _columns = [
+        #ForeignKey(
+        #        name='sourcepackagerelease', dbName='sourcepackagerelease',
+        #        foreignKey='SourcepackageRelease', notNull=True,
+        #        ),
+        ForeignKey(
+                name='binarypackagename', dbName='binarypackagename',
+                foreignKey='BinarypackageName', notNull=True,
+                ),
+        StringCol('version', notNull=True),
+        StringCol('shortdesc', notNull=True),
+        StringCol('description', notNull=True),
+        ForeignKey(
+                name='build', dbName='build', foreignKey='Build', notNull=True,
+                ),
+        IntCol('binpackageformat', notNull=True),
+        ForeignKey(
+                name='component', dbName='component', foreignKey='Component',
+                notNull=True,
+                ),
+        ForeignKey(
+                name='section', dbName='section', foreignKey='Section',
+                notNull=True,
+                ),
+        IntCol('priority'),
+        StringCol('shlibdeps'),
+        StringCol('recommends'),
+        StringCol('suggests'),
+        StringCol('conflicts'),
+        StringCol('replaces'),
+        StringCol('provides'),
+        BoolCol('essential'),
+        IntCol('installedsize'),
+        StringCol('copyright'),
+        StringCol('licence'),
+        ]
+    
+    def _title(self):
+        return '%s-%s' % (self.binarypackagename.name, self.version)
+    title = property(_title, None)
+
+class BinarypackageName(SQLBase):
+    implements(IBinarypackageName)
+    _table = 'BinarypackageName'
+    _columns = [
+        StringCol('name', notNull=True, unique=True),
+        ]
+    binarypackages = MultipleJoin(
+            'Binarypackage', joinColumn='binarypackagename'
+            )
 

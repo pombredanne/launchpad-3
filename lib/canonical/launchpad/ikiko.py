@@ -1,4 +1,8 @@
 
+# Zope schema imports
+from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
+from zope.schema import Password, Bool
+
 from zope.interface import Interface, Attribute
 
 # Web UI interfaces
@@ -507,4 +511,67 @@ class ICurrentVersion(Interface):
     currentversion = Attribute("Current version of A binary or source package")
     currentbuilds = Attribute("The current builds for binary or source package")
 
+
+#
+# Interface we expect a Sourcepackage to provide.
+#
+class ISourcepackage(Interface):
+    """A Sourcepackage"""
+    id = Int(title=_("ID"), required=True)
+    maintainer = Int(title=_("Maintainer"), required=True)
+    name = TextLine(title=_("Name"), required=True)
+    title = TextLine(title=_("Title"), required=True)
+    shortdesc = Text(title=_("Description"), required=True)
+    description = Text(title=_("Description"), required=True)
+    manifest = Int(title=_("Manifest"), required=False)
+    distro = Int(title=_("Distribution"), required=False)
+    sourcepackagename = Int(title=_("Sourcepackage Name"), required=True)
+    bugs = Attribute("bugs")
+
+
+
+#
+# Interface provied by a SourcepackageName. This is a tiny
+# table that allows multiple Sourcepackage entities to share
+# a single name.
+#
+class ISourcepackageName(Interface):
+    """Name of a Sourcepackage"""
+    id = Int(title=_("ID"), required=True)
+    name = TextLine(title=_("Name"), required=True)
+
+
+#
+# Interface provided by a Binarypackage
+#
+class IBinarypackage(Interface):
+    id = Int(title=_('ID'), required=True)
+    #sourcepackagerelease = Int(required=True)
+    binarypackagename = Int(required=True)
+    version = TextLine(required=True)
+    shortdesc = Text(required=True)
+    description = Text(required=True)
+    build = Int(required=True)
+    binpackageformat = Int(required=True)
+    component = Int(required=True)
+    section = Int(required=True)
+    priority = Int(required=False)
+    shlibdeps = Text(required=False)
+    recommends = Text(required=False)
+    suggests = Text(required=False)
+    conflicts = Text(required=False)
+    replaces = Text(required=False)
+    provides = Text(required=False)
+    essential = Bool(required=False)
+    installedsize = Int(required=False)
+    copyright = Text(required=False)
+    licence = Text(required=False)
+
+    title = TextLine(required=True, readonly=True)
+
+
+class IBinarypackageName(Interface):
+    id = Int(title=_('ID'), required=True)
+    name = TextLine(title=_('Name'), required=True)
+    binarypackages = Attribute('binarypackages')
 
