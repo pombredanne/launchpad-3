@@ -120,9 +120,9 @@ environment.
 
 You have full access to the SQLBase objects
 
->>> stub = Person.byName('stub')
+>>> stub = Person.byName('sabdfl')
 >>> stub.displayname
-u'Stuart Bishop'
+u'Mark Shuttleworth'
 
 You also have access to the Zope3 component architecture, as registered
 by ftesting.zcml

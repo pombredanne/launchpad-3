@@ -74,8 +74,10 @@ class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
 
     def tearDown(self):
         FunctionalTestSetup().tearDown()
-        if self.sqlos_dbadapter.isConnected():
-            self.sqlos_dbadapter.disconnect()
+        #if self.sqlos_dbadapter.isConnected():
+        #    self.sqlos_dbadapter.disconnect()
+        _disconnect_sqlos()
+        LaunchpadFunctionalTestSetup.sqlos_dbadapter = None
         super(LaunchpadFunctionalTestSetup, self).tearDown()
 
 class LaunchpadTestCase(unittest.TestCase):

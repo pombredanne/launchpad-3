@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-12 13:28:20 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1184
+
+    Summary:
+      Tweak LaunchpadFunctionalTestSetup to be a bit more robust
+    Revision:
+      launchpad--devel--0--patch-1184
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-76
+       Tweak LaunchpadFunctionalTestSetup to be a bit more robust
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/doc/testing.txt
+     lib/canonical/launchpad/ftests/harness.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-76
+
+
 2005-01-12 13:21:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1183
 
     Summary:
