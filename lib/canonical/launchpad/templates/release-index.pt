@@ -18,119 +18,107 @@
 
 
 <metal:leftportlets fill-slot="portlets_one">
-<div tal:replace="structure view/rolesPortlet" />
+
+<tal:block tal:define="distro context/release/distribution">
+
+ <div class="portlet">
+  <h4><span tal:content="distro/title">DISTRO</span> Links</h4>
+
+   <div class="portletBody">
+
+     <div class="portletContent even">
+
+     <p><a tal:attributes="href string:/soyuz/distros/${distro/name}">
+     Home Page</a>
+
+     <p><a tal:attributes="href string:/soyuz/distros/${distro/name}/releases">
+      Releases</a>
+     <p><a tal:attributes="href string:/soyuz/distros/${distro/name}/src">
+      Source Packages</a>
+
+     <p><a tal:attributes="href string:/soyuz/distros/${distro/name}/bin">
+     Binary Packages</a>
+
+     </div>
+   </div>  
+ </div>
+
+ <div class="portlet">
+  <h4>Local Links</h4>
+   <div class="portletBody">
+     <div class="portletContent even">
+     <p><a href="+deliver">Deliver this Release</a></p>
+     <p><a href="+edit">Edit Release Information</a></p>
+     </div>
+   </div>  
+ </div>
+</tal:block>
+
 </metal:leftportlets>
 
 
 <metal:rightportlets fill-slot="portlets_two">
-<!-- <div tal:replace="structure view/addrolePortlet" /> -->
+<div tal:replace="structure view/rolesPortlet" />
 </metal:rightportlets>
 
 
 <div metal:fill-slot="main">
+  <div id="content" class="documentEditable">
+    <div class="documentContent" id="region-content">    
 
-    <h1><span
-    tal:content="context/release/displayname">displayname</span> 
+    <h1><span tal:content="context/release/displayname">displayname</span> 
     Overview</h1> 
-   <table width="100%" border="0">
-   <tr><td>
-      <table width="100%">
-      <legend><h4>Short Description</h4></legend>
-      <tr><td>
-        <fieldset>
-        <div>
-	  <table>
-	  <tr><td>
-	  <span tal:content="context/release/shortdesc">short description
-          </span></td></tr>	  
-	  </table>	
-	</div>
-        </fieldset>
-      </td></tr>
-      </table>	
-   </td></tr>
-   <tr><td>
-      <table width="100%">
-      <legend><h4>Description</h4></legend>
-      <tr><td>
-        <fieldset>
-        <div>
-	  <table>
-	  <tr><td>
+  
+     <div>  
+
+         <div>
 	  <span tal:content="context/release/description">description</span>   
-	  <br>
-	  <br>
-	  <br>
-	  <br>
-	  </td></tr>
-	  </table>
+	 </div>
+
+<!-- Throw away this field
+        <h4>Short Description</h4>
+
+        <div>
+	  <span tal:content="context/release/shortdesc">short</span>
 	</div>
-        </fieldset>
-      </td></tr>
-      </table>
-   </td><td>
-      <table width="100%">
-      <legend><h4>Release Information</h4></legend>
-      <tr><td>
-       <fieldset>
-       <div>      
-         <table width="100%">
-         <tr><td>Owner</td>
-         <th align="right"> 
-           <a tal:attributes="href string:/foaf/people/${context/release/owner/name}"
-	      tal:content="context/release/owner/displayname">OWNER</a>
-         </th></tr> 
-         <tr><td>State</td>
-         <th align="right">
-           <span tal:content="context/release/state">STATE</span>
-         </th></tr>
-         <tr><td>DateReleased</td>
-         <th align="right">
-           <span tal:content="context/release/datereleased">DATERELEASED</span>
-         </th></tr>
-         <tr tal:condition="context/release/parentrelease">
-	 <td>ParentRelease</td>
-         <th align="right"><a 
-	 tal:attributes="href string:/soyuz/distros/${context/release/parentrelease/distribution/name}/releases/${context/release/parentrelease/name}">
+-->
+         <h4>Release Information</h4>
+
+         <ul>
+         <li>Owner: <a tal:attributes="href string:/foaf/people/${context/release/owner/name}"
+	               tal:content="context/release/owner/displayname">OWNER</a></li> 
+         <li>State: <span tal:content="context/release/state">STATE</span></li>
+         <li>DateReleased: <span tal:content="context/release/datereleased">DATERELEASED</span></li>
+         <li tal:condition="context/release/parentrelease">
+	    ParentRelease: <a tal:attributes="href string:/soyuz/distros/${context/release/parentrelease/distribution/name}/releases/${context/release/parentrelease/name}">
            <span tal:content="context/release/parentrelease/title">
-	   PARENTRELEASE</span></a>
-         </th></tr>
-         </table>
+	   PARENTRELEASE</span></a></li>
+         </ul>
+
        </div>
-      </td></tr>
-      </table>
-   </td></tr>
-   <tr><td></td>
-   <th align="right">
-      <a href="+edit">Edit Release Information</a>
-   </th></tr>
-   <tr><td>
-     <div>
-     </div>   
-   </td></tr>
-   <tr><td>
-      <table>
-      <legend><h4><span tal:content="context/release/title"/>
-      Packages</h4></legend>
-      <tr><td>
-      <fieldset>
+
+      <h4><span tal:content="context/release/displayname"/> Packages</h4>
+
       <div>
         <table>
 	<tr><td>
-        <form name="search" method="POST" action="+search">
-         <div class="field">
+
+          <form name="search" method="POST" action="+search">
+           <div class="field">
 	    <label>Name</label>
 	    <div class="formHelp">
 	    Enter the package name .
             </div>
 	    <input type="text" name="name"/>
-	 </div>
-	 <div class="formControls">
+	   </div>
+	 
+           <div class="formControls">
 	    <input type="submit" value="Search"/>
-	 </div>
-	 </form>
-	 </td>
-	 <td>
+	   </div>
+	  </form>
+
+	 </td><td>
+
 	 <div>
 	    <table>
 	    <tr><th><a 
@@ -147,17 +135,12 @@
 	    </tr>
 	    </table>
 	 </div>
-      </td></tr>
-      </table>	
-      </div>
-      </td></tr>
-      </table>
-   </td></tr>
-   <tr><th>
-   <a href="+deliver">Deliver <span tal:content="context/release/title"/></a>
-   </th></tr>
-   </table>   
+	 </td></tr>
+       </table>
+     </div>
 
+  </div>
+ </div>
 </div>
 
 

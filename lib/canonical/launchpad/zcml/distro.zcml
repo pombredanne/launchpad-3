@@ -9,7 +9,7 @@
     <allow interface="canonical.launchpad.interfaces.IDistribution"/>
     <require
      permission="zope.Public"
-     set_attributes="name title description"
+     set_attributes="name title description domainname"
      />
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>

@@ -108,21 +108,21 @@ class DistrosEditView(object):
         self.request = request
 
     def edit_action(self):
-        enable_edited = False
-        
         name = self.request.get("name", "")
         title = self.request.get("title", "")
+        domainname = self.request.get("domainname", "")
         description = self.request.get("description", "")
 
-        if (name or title or description):
-            ##XXX: (uniques) cprov 20041003
-            ## again :)
-            self.context.distribution.name = name
-            self.context.distribution.title = title
-            self.context.distribution.description = description
-            enable_edited = True
+        if not (name or title or description):
+            return False
 
-        return enable_edited
+        ##XXX: (uniques) cprov 20041003
+        ## again :)
+        self.context.distribution.name = name
+        self.context.distribution.title = title
+        self.context.distribution.domainname = domainname
+        self.context.distribution.description = description
+        return True
 
 class DistroReleaseView(object):
     def __init__(self, context, request):

@@ -52,6 +52,16 @@
 	</td></tr>
 	<tr><td>
 	<div class="field">
+	    <label>Domain Name</label>
+	    <div class="formHelp">
+	    Enter the Distribution Domain Name.
+            </div>
+	    <input type="text" name="domainname" size="40"
+	    tal:attributes="value context/distribution/domainname|nothing"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
 	    <label>Description</label>
 	    <div class="formHelp">
 	    Enter the Distribution Description.
