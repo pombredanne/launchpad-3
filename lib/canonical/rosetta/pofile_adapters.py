@@ -494,7 +494,7 @@ class POFileImporter(object):
             if 'msgstr' in kw:
                 proxy.msgstr = kw['msgstr']
             # or was it plural?  In fact, store them all!
-            elif 'msgstrPlurals' in kw:
+            if 'msgstrPlurals' in kw:
                 proxy.msgstrPlurals = kw['msgstrPlurals']
             # store comments
             proxy.commentText = kw.get('commentText', '')
