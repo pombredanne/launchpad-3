@@ -91,7 +91,7 @@ class RosettaProjects(object):
 
 
 class RosettaProject(SQLBase):
-    implements(IProject)
+    implements(IRosettaProject)
 
     _table = 'Project'
 
@@ -110,6 +110,11 @@ class RosettaProject(SQLBase):
 
     def products(self):
         return iter(self._productsJoin)
+
+    # XXX: Which one is the difference between products and rosetta products
+    # Should be implemented correctly.
+    def rosettaProducts(self):
+        return self.products()
 
     def product(self, name):
         ret = RosettaProduct.selectBy(name=name)
