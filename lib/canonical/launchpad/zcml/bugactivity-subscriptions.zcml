@@ -14,6 +14,11 @@
 
     <subscriber
         for="canonical.launchpad.interfaces.IBug
+             zope.app.event.interfaces.IObjectCreatedEvent"
+        factory="canonical.launchpad.subscribers.bugactivity.record_bug_added" />
+
+    <subscriber
+        for="canonical.launchpad.interfaces.IBug
              canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
         factory="canonical.launchpad.subscribers.bugactivity.record_bug_edited" />
  

@@ -16,6 +16,8 @@ def test_suite():
         DocFileSuite('../doc/bugsubscription.txt', setUp=setUp, tearDown=tearDown)])
     suite = unittest.TestSuite([
         DocFileSuite('../doc/vocabularies.txt', setUp=setUp, tearDown=tearDown)])
+    suite = unittest.TestSuite([
+        DocFileSuite('../doc/bugactivity.txt', setUp=setUp, tearDown=tearDown)])
     return suite
 
 if __name__ == '__main__':
