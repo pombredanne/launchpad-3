@@ -7,7 +7,7 @@ STARTSCRIPT=runsoyuz.py
 TESTFLAGS=-p -v
 TESTOPTS=
 SETUPFLAGS=
-Z3LIBPATH=
+Z3LIBPATH=$(shell pwd)/sourcecode/zope/src
 HERE:=$(shell pwd)
 
 check: 
