@@ -1,1 +1,0 @@
-ALTER TABLE pomsgidsighting DROP CONSTRAINT pomsgidsighting_potmsgset_key;

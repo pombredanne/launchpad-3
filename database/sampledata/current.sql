@@ -648,6 +648,15 @@ INSERT INTO sourcepackage (id, maintainer, shortdesc, description, manifest, dis
 	K-Meleon and Camino, but written using the XUL user interface language and 
 	designed to lightweight and cross-platform.', NULL, 3, 1, 1);
 INSERT INTO sourcepackage (id, maintainer, shortdesc, description, manifest, distro, sourcepackagename, srcpackageformat) VALUES (9, 1, 'Evolution-Dummy', 'This is evolution sample data package', NULL, 1, 9, 1);
+INSERT INTO sourcepackage (id, maintainer, shortdesc, description, manifest, distro, sourcepackagename, srcpackageformat) VALUES (10, 1, 'Mozilla Firefox Web Browser', 'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
+	K-Meleon and Camino, but written using the XUL user interface language and 
+	designed to lightweight and cross-platform.', NULL, 3, 1, 1);
+INSERT INTO sourcepackage (id, maintainer, shortdesc, description, manifest, distro, sourcepackagename, srcpackageformat) VALUES (11, 1, 'Mozilla Firefox Web Browser', 'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
+	K-Meleon and Camino, but written using the XUL user interface language and 
+	designed to lightweight and cross-platform.', NULL, 3, 1, 1);
+INSERT INTO sourcepackage (id, maintainer, shortdesc, description, manifest, distro, sourcepackagename, srcpackageformat) VALUES (12, 1, 'Mozilla Firefox Web Browser', 'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
+	K-Meleon and Camino, but written using the XUL user interface language and 
+	designed to lightweight and cross-platform.', NULL, 3, 1, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackage'::pg_catalog.regclass;
@@ -1305,7 +1314,6 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'launchpaddatabaserevision'::pg_catalog.regclass;
 
-INSERT INTO launchpaddatabaserevision (major, minor, patch) VALUES (4, 8, 0);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'launchpaddatabaserevision'::pg_catalog.regclass;
@@ -1498,7 +1506,7 @@ SELECT pg_catalog.setval('sourcepackagename_id_seq', 9, true);
 
 
 
-SELECT pg_catalog.setval('sourcepackage_id_seq', 9, true);
+SELECT pg_catalog.setval('sourcepackage_id_seq', 12, true);
 
 
 

@@ -111,7 +111,7 @@
   <body>
 
     <!-- Primary Index -->
-	<p><br><br>Dumped on 2004-11-13</p>
+	<p><br><br>Dumped on 2004-11-15</p>
 <h1><a name="index">Index of database - launchpad_dev</a></h1>
 <ul>
     
@@ -19504,6 +19504,22 @@ generating archives for this distro release
 				</td>
 			 </tr>
             
+            <tr class="tr1">
+				<td>
+                
+                </td>
+            	<td>branchpoint</td>
+            	<td>text</td>
+                <td><i>
+				
+
+				
+				
+				</i>
+				<br><br>The source specification for an import job to branch from.
+				</td>
+			 </tr>
+            
         </table>
 
 		
@@ -20975,8 +20991,9 @@ WHERE (
 <h3>Language: PLPYTHONU</h3>
         <p>validate a version number
 
-    This specification should match the Debian naming policy, as it was
-    lifed source canonical/sourcerer/deb/version.py. Note that versions
+    Note that this is more flexible that the Debian naming policy,
+    as it states &#39;SHOULD&#39; rather than &#39;MUST&#39;, and we have already
+    imported packages that don&#39;t match it. Note that versions
     may contain both uppercase and lowercase letters so we can&#39;t use them
     in URLs. Also note that both a product name and a version may contain
     hypens, so we cannot join the product name and the version with a hypen
@@ -20985,7 +21002,7 @@ WHERE (
         <pre>
     import re
     name = args[0]
-    pat = r&quot;^[0-9][A-Za-z0-9\+:\.\-]*$&quot;
+    pat = r&quot;^[A-Za-z0-9\+:\.\-]+$&quot;
     if name is None or re.match(pat, name):
         return True
     return False
