@@ -249,6 +249,16 @@ def insert_language(cnx, data, plural_forms):
                     data['englishname'].encode('utf-8'),
                     data['code']))
             print ("%r has been updated" % data)
+        elif 'nativename' in data:
+            # We update all language names
+            # XXX: We should check if it has changed and only update it in
+            # that case.
+            cr.execute(
+                    """UPDATE Language SET nativename='%s'
+                        WHERE code='%s'""" %(
+                    data['nativename'],
+                    data['code']))
+            print ("%r has been updated" % data)
 
         if (language_row[1] != data['pluralforms']) or (language_row[2] !=
                 data['pluralexpression']):
