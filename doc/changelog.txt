@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-05 16:41:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1564
+
+    Summary:
+      fix https://dogfood.ubuntu.com/malone/bugs/279
+    Revision:
+      launchpad--devel--0--patch-1564
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-251
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-252
+       fix https://dogfood.ubuntu.com/malone/bugs/279
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/person-packages.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-251
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-252
+
+
 2005-04-05 16:07:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1563
 
     Summary:
