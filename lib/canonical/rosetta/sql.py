@@ -17,11 +17,11 @@ from sets import Set
 standardTemplateCopyright = 'Canonical Ltd'
 
 # XXX: in the four strings below, we should fill in owner information
-standardTemplateTopComment = '''# PO template for %(productname)s
-# Copyright (c) %(copyright)s %(year)s
-# This file is distributed under the same license as the %(productname)s package.
-# PROJECT MAINTAINER OR MAILING LIST <EMAIL@ADDRESS>, %(year)s.
-#
+standardTemplateTopComment = ''' PO template for %(productname)s
+ Copyright (c) %(copyright)s %(year)s
+ This file is distributed under the same license as the %(productname)s package.
+ PROJECT MAINTAINER OR MAILING LIST <EMAIL@ADDRESS>, %(year)s.
+
 '''
 
 # XXX: project-id-version needs a version
@@ -37,11 +37,11 @@ standardTemplateHeader = (
 "X-Rosetta-Version: 0.1\n"
 )
 
-standardPOFileTopComment = '''# %(languagename)s translation for %(productname)s
-# Copyright (c) %(copyright)s %(year)s
-# This file is distributed under the same license as the %(productname)s package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, %(year)s.
-#
+standardPOFileTopComment = ''' %(languagename)s translation for %(productname)s
+ Copyright (c) %(copyright)s %(year)s
+ This file is distributed under the same license as the %(productname)s package.
+ FIRST AUTHOR <EMAIL@ADDRESS>, %(year)s.
+
 '''
 
 standardPOFileHeader = (
