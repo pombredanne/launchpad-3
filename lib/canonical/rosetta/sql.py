@@ -248,7 +248,7 @@ def createMessageIDSighting(messageSet, messageID):
         poMessageID_=messageID,
         dateFirstSeen="NOW",
         dateLastSeen="NOW",
-        inLastRevision=False,
+        inLastRevision=True,
         pluralForm=0)
 
 

@@ -157,7 +157,7 @@ COPY "language" (id, code, englishname, nativename, pluralforms, pluralexpressio
 162	ht	Haitian; Haitian Creole	\N	\N	\N
 163	ha	Hausa	\N	\N	\N
 164	haw	Hawaiian	\N	\N	\N
-68	ca	Catalan	Català	\N	\N
+68	ca	Catalan	Català	2	n != 1
 166	hz	Herero	\N	\N	\N
 167	hil	Hiligaynon	\N	\N	\N
 168	him	Himachali	\N	\N	\N

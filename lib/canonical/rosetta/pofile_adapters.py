@@ -335,7 +335,6 @@ class TemplateImporter(object):
             msgset.getMessageIDSighting(0, allowOld=True).dateLastSeen = "NOW"
         self.len += 1
         msgset.sequence = self.len
-        msgset.getMessageIDSighting(0, allowOld=True).inLastRevision = True
         proxy = MessageProxy(msgset, person=self.person)
         try:
             proxy.msgidPlural = kw.get('msgidPlural', None)
