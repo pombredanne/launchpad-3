@@ -18,8 +18,8 @@
        <tal:block
        tal:replace="context/binarypackage/shortdesc">TITLE</tal:block>
     </h1>
-    <h2>Binarypackage-index (...ubuntu/bin/warty/apache2/) </h2>
-    <table width="80%">
+
+    <table width="100%">
     <tr>
     <td>
     <p> <h4>Description:  </h4> <tal:block tal:replace="context/binarypackage/description" />
