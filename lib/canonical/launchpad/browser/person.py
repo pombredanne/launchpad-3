@@ -1,7 +1,7 @@
 # Copyright 2004 Canonical Ltd
 
 # sqlobject/sqlos
-from canonical.database.sqlbase import flushUpdates
+from canonical.database.sqlbase import flush_database_updates
 
 # zope imports
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -417,7 +417,7 @@ class PersonEditView(object):
         # Need to flush all changes we made, so subsequent queries we make
         # with this transaction will see this changes and thus they'll be
         # displayed on the page that calls this method.
-        flushUpdates()
+        flush_database_updates()
 
     def processValidationRequest(self):
         id = self.request.form.get("NOT_VALIDATED_EMAIL")

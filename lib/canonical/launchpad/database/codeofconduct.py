@@ -16,7 +16,7 @@ from zope.exceptions import NotFoundError
 from sqlobject import DateTimeCol, ForeignKey, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.database.sqlbase import SQLBase, quote, flushUpdates
+from canonical.database.sqlbase import SQLBase, quote, flush_database_updates
 from canonical.database.constants import DEFAULT
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
@@ -338,7 +338,7 @@ class SignedCodeOfConductSet(object):
         if sign.owner.preferredemail:
             sendAdvertisementEmail(sign.owner, subject, content)
 
-        flushUpdates()
+        flush_database_updates()
         
     def acknowledgeSignature(self, user, recipient):
         """See ISignedCodeOfConductSet"""

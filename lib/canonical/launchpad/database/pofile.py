@@ -16,7 +16,7 @@ from zope.app.datetimeutils import SyntaxError, DateError, DateTimeError, \
 # SQL imports
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, SQLObjectNotFound
-from canonical.database.sqlbase import SQLBase, quote, flushUpdates
+from canonical.database.sqlbase import SQLBase, quote, flush_database_updates
 
 # canonical imports
 from canonical.launchpad.interfaces import IPOTMsgSet, \
@@ -790,7 +790,7 @@ class POTemplate(SQLBase, RosettaStats):
 
             # Ask for a sqlobject sync before reusing the data we just
             # updated.
-            flushUpdates()
+            flush_database_updates()
 
             # We update the cached value that tells us the number of msgsets this
             # .pot file has
@@ -1521,7 +1521,7 @@ class POFile(SQLBase, RosettaStats):
 
             # Ask for a sqlobject sync before reusing the data we just
             # updated.
-            flushUpdates()
+            flush_database_updates()
 
             # Now we update the statistics after this new import
             self.updateStatistics(newImport=True)
@@ -1813,7 +1813,7 @@ class POMsgSet(SQLBase):
 
 
         # Ask for a sqlobject sync before reusing the data we just updated.
-        flushUpdates()
+        flush_database_updates()
 
         # Implicit set of iscomplete. If we have all translations, it's 
         # complete, if we lack a translation, it's not complete.

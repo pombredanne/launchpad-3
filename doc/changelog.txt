@@ -2,6 +2,46 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-30 08:17:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1517
+
+    Summary:
+      improve chances of race on test_reconnector.txt winning in our favour.  rename flushUpdates() to flush_database_updates() for improved clarity and great justice.
+    Revision:
+      launchpad--devel--0--patch-1517
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-339
+       refuel
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-340
+       refuel
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-341
+       improve chances of race in test_reconnector.txt from winning in our favour.  add diagnostic output to see more clearly if race fails.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-342
+       change flushUpdates() to flush_database_updates()
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/database/ftests/test_reconnector.txt
+     lib/canonical/database/sqlbase.py
+     lib/canonical/launchpad/browser/emailaddress.py
+     lib/canonical/launchpad/browser/logintoken.py
+     lib/canonical/launchpad/browser/person.py
+     lib/canonical/launchpad/browser/team.py
+     lib/canonical/launchpad/database/codeofconduct.py
+     lib/canonical/launchpad/database/pofile.py
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--devel--0--patch-339
+     steve.alexander@canonical.com/launchpad--devel--0--patch-340
+     steve.alexander@canonical.com/launchpad--devel--0--patch-341
+     steve.alexander@canonical.com/launchpad--devel--0--patch-342
+
+
 2005-03-29 16:21:26 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1516
 
     Summary:

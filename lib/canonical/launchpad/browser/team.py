@@ -20,7 +20,7 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.lp.dbschema import TeamMembershipStatus
 from canonical.lp.dbschema import TeamSubscriptionPolicy
 
-from canonical.database.sqlbase import flushUpdates
+from canonical.database.sqlbase import flush_database_updates
 
 from canonical.foaf.nickname import generate_nick
 
@@ -279,7 +279,7 @@ class ProposedTeamMembersEditView:
         # Need to flush all changes we made, so subsequent queries we make
         # with this transaction will see this changes and thus they'll be
         # displayed on the page that calls this method.
-        flushUpdates()
+        flush_database_updates()
 
 
 def _getMembership(personID, teamID):
