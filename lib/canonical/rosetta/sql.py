@@ -109,6 +109,17 @@ class RosettaProject(SQLBase):
     def products(self):
         return iter(self._productsJoin)
 
+    def poTemplate(self, name):
+        results = RosettaPOTemplate.selectBy(name=name)
+        count = results.count()
+
+        if count == 0:
+            raise KeyError, name
+        elif count > 1:
+            raise ValueError, "whoops!"
+        else:
+            return results[0]
+
     def poTemplates(self):
         for p in self.products():
             for t in p.poTemplates():
@@ -140,7 +151,6 @@ class RosettaProduct(SQLBase):
         results = RosettaPOTemplate.select('''
             POTemplate.product = %d AND
             POTemplate.name = %s''' %
-            # XXX: encoding should not be necessary
             (self.id, quote(name)))
 
         if results.count() == 0:
@@ -194,6 +204,7 @@ class RosettaPOTemplate(SQLBase):
             variantspec = 'IS NULL'
         else:
             variantspec = (u'= "%s"' % quote(variant)).encode('utf-8')
+
         ret = RosettaPOFile.select("""
             POFile.potemplate = %d AND
             POFile.language = Language.id AND
@@ -328,7 +339,8 @@ class RosettaPOFile(SQLBase):
         IntCol(name='translatedCountCached', dbName='currentcount',
             notNull=True),
         IntCol(name='rosettaOnlyCountCached', dbName='rosettacount',
-            notNull=True)
+            notNull=True),
+        IntCol(name='pluralForms', dbName='pluralforms')
         # XXX: missing fields
     ]
 
@@ -405,6 +417,7 @@ class RosettaPOFile(SQLBase):
         self._connection.query('UPDATE POMsgSet SET sequence = 0'
                                ' WHERE pofile = %d'
                                % self.id)
+
 
 class RosettaPOMessageSet(SQLBase):
     implements(IEditPOMessageSet)
@@ -639,7 +652,9 @@ class RosettaLanguage(SQLBase):
     _columns = [
         StringCol(name='code', dbName='code', notNull=True, unique=True),
         StringCol(name='nativeName', dbName='nativename'),
-        StringCol(name='englishName', dbName='englishname')
+        StringCol(name='englishName', dbName='englishname'),
+        IntCol(name='pluralForms', dbName='pluralforms'),
+        StringCol(name='pluralExpression', dbName='pluralexpression'),
     ]
 
 

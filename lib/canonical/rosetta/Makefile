@@ -11,10 +11,10 @@ testdb:
 url-table:
 	./scripts/extract-urls.py < pages.zcml
 
-tests/test_interfaces_sql.py: interfaces.py sql.py scripts/generate_sql_tests.py
+tests/test_interfaces_sql.py: interfaces.py scripts/generate_sql_tests.py
 	python scripts/generate_sql_tests.py -c > tests/test_interfaces_sql.py
 
-ftests/test_interfaces_sql.py: interfaces.py sql.py scripts/generate_sql_tests.py
+ftests/test_interfaces_sql.py: interfaces.py scripts/generate_sql_tests.py
 	python scripts/generate_sql_tests.py -o > ftests/test_interfaces_sql.py
 
 clean:

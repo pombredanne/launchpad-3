@@ -1,5 +1,8 @@
 from zope.interface import Interface, Attribute
 
+# Note: When creating a new interface here, the test generation script should
+# also be updated.
+
 class IRosettaApplication(Interface):
     """Rosetta application class."""
 
@@ -37,6 +40,11 @@ class IProject(Interface):
     description = Attribute("The project's description.")
 
     owner = Attribute("The Person who owns this project.")
+
+    # XXX: This will go away once we move to project->product->potemplate
+    # traversal rather than project->potemplate traversal.
+    def poTemplate(name):
+        """Returns the PO template with the given name."""
 
     def poTemplates():
         """Returns an iterator over this project's PO templates."""
@@ -151,11 +159,13 @@ class IPOFile(Interface):
 
     description = Attribute("PO file description.")
 
-    topComment = Attribute("The main comment for this .po file")
+    topComment = Attribute("The main comment for this .po file.")
 
-    header = Attribute("The header of this .po file")
+    header = Attribute("The header of this .po file.")
 
-    headerFuzzy = Attribute("If the header is fuzzy or not")
+    headerFuzzy = Attribute("Whether the header is fuzzy or not.")
+
+    pluralForms = Attribute("The number of plural forms this PO file has.")
 
     def __len__():
         """Returns the number of current IPOMessageSets in this PO file."""
@@ -410,6 +420,11 @@ class ILanguage(Interface):
     englishName = Attribute("The English name of this language.")
 
     nativeName = Attribute("The name of this language in the language itself.")
+
+    pluralForms = Attribute("The number of plural forms this language has.")
+
+    pluralExpression = Attribute("""The expression that relates a number of
+        items to the appropriate plural form.""")
 
 
 class ILanguages(Interface):
