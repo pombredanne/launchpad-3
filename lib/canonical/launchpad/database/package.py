@@ -159,7 +159,6 @@ class SourcePackageRelease(SQLBase):
     _columns = [
         ForeignKey(name='sourcepackage', foreignKey='Sourcepackage',
                    dbName='sourcepackage', notNull=True),
-        IntCol('srcpackageformat', dbName='srcpackageformat', notNull=True),
         ForeignKey(name='creator', foreignKey='Person', dbName='creator'),
         StringCol('version', dbName='version'),
         DateTimeCol('dateuploaded', dbName='dateuploaded', notNull=True,
