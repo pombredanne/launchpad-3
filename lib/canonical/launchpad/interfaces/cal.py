@@ -4,7 +4,7 @@ _ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute
 from zope.schema import Int, Bool, Object, TextLine, Date, Datetime
 from canonical.launchpad.fields import Title, TimeInterval
-from schoolbell.interfaces import IEditCalendar
+from schoolbell.interfaces import IEditCalendar, ICalendarEvent
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 
 class ILaunchpadCalendar(IEditCalendar, IHasOwner):
@@ -26,7 +26,6 @@ class ILaunchpadCalendar(IEditCalendar, IHasOwner):
                    each time the calendar is changed.""")
                    )
 
-
 class ICalendarOwner(Interface):
     """An object that has a calendar."""
 
@@ -47,7 +46,10 @@ class ICalendarSubscriptionSet(Interface):
     def unsubscribe(calendar):
         """Unsubscribe from a calendar.  Raises an exception if the
         calendar hasn't been subscribed to."""
-
+    def getColour(calendar):
+        """Get the colour used to display events from this calendar"""
+    def setColour(calendar, colour):
+        """Set the colour used to display events from this calendar"""        
 
 class ICalendarDay(Interface):
     """Represents a particular day of events in a calendar"""

@@ -12,6 +12,7 @@ CREATE TABLE CalendarSubscription (
     id serial NOT NULL PRIMARY KEY,
     person integer NOT NULL,
     calendar integer NOT NULL,
+    colour text NOT NULL DEFAULT '#9db8d2',
 
     CONSTRAINT calendarsubscription_sub_key UNIQUE (person, calendar)
 );
@@ -23,8 +24,8 @@ CREATE TABLE CalendarEvent (
     dtstart timestamp without time zone NOT NULL,
     duration interval NOT NULL,
     title text NOT NULL,
-    description text NOT NULL,
-    location text NOT NULL,
+    description text NOT NULL DEFAULT '',
+    location text NOT NULL DEFAULT '',
     recurrence varchar(10) NOT NULL,
     count integer, /* if count is not positive, use until */
     until timestamp without time zone,

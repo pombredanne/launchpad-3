@@ -107,6 +107,8 @@ def calendarFromCalendarOwner(calendarowner):
 class CalendarSubscriptionSet(object):
     implements(ICalendarSubscriptionSet)
 
+    defaultColour = '#9db8d2'
+
     def __init__(self, person):
         self.owner = person
     def __contains__(self, calendar):
@@ -128,6 +130,23 @@ class CalendarSubscriptionSet(object):
         for sub in CalendarSubscription.selectBy(personID=self.owner.id,
                                                  calendarID=calendar.id):
             sub.destroySelf()
+
+    def getColour(self, calendar):
+        if calendar.id is None:
+            return defaultColour
+        for sub in CalendarSubscription.selectBy(personID=self.owner.id,
+                                                 calendarID=calendar.id):
+            return sub.colour
+        else:
+            return defaultColour
+    def setColour(self, calendar, colour):
+        if not re.match(r'#[0-9A-Fa-f]{6}', colour):
+            raise ValueError('invalid colour value "%s"' % colour)
+        if calendar.id is None:
+            return
+        for sub in CalendarSubscription.selectBy(personID=self.owner.id,
+                                                 calendarID=calendar.id):
+            sub.colour = colour
 
 class MergedCalendar(CalendarMixin, EditableCalendarMixin):
     implements(ILaunchpadCalendar)

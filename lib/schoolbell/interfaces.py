@@ -272,6 +272,13 @@ class ICalendarEvent(Interface):
         description=u"""An ID for the event, guaranteed to be unique locally
         but not globally.""")
 
+    calendar = Object(
+        title=u"Calendar",
+        schema=ICalendar,
+        description=u"""
+        The calendar this event belongs to.
+        """)
+
     unique_id = TextLine(
         title=u"UID",
         description=u"""

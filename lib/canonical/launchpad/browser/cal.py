@@ -17,12 +17,13 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from schoolbell.interfaces import IEditCalendar, ICalendarEvent
 from schoolbell.simple import SimpleCalendarEvent
-from canonical.launchpad.interfaces import IRequestTzInfo
+from canonical.launchpad.interfaces import IPerson, IRequestTzInfo
 from canonical.launchpad.interfaces import ICalendarDay, ICalendarWeek
 from canonical.launchpad.interfaces import ICalendarMonth, ICalendarYear
 from canonical.launchpad.interfaces import ICalendarEventCollection
 
 from canonical.launchpad.database import CalendarEvent
+from canonical.launchpad.components.cal import CalendarSubscriptionSet
 
 from schoolbell.utils import prev_month, next_month
 from schoolbell.utils import weeknum_bounds, check_weeknum
@@ -164,6 +165,11 @@ class CalendarViewBase(object):
         self.datestring = datestring
         self.user_timezone = IRequestTzInfo(request).getTzInfo()
         self.canAddEvents = checkPermission('launchpad.Edit', context.calendar)
+        person = IPerson(request.principal, None)
+        if person:
+            self.subscriptions = CalendarSubscriptionSet(person)
+        else:
+            self.subscriptions = None
 
     def _setViewURLs(self, date):
         """Computes the URLs used to switch calendar views."""
@@ -176,7 +182,10 @@ class CalendarViewBase(object):
         self.yearViewURL = '../%04d' % date.year
 
     def eventColour(self, event):
-        return '#9db8d2'
+        if self.subscriptions:
+            return self.subscriptions.getColour(event.calendar)
+        else:
+            return '#9db8d2'
     def eventStart(self, event):
         dtstart = event.dtstart.astimezone(self.user_timezone)
         return dtstart.strftime('%H:%M')

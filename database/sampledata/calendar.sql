@@ -15,15 +15,23 @@ UPDATE Person SET calendar = (SELECT id FROM Calendar WHERE title = 'Foo Bar\'s 
                   timezone_name = 'Africa/Johannesburg'
     WHERE id = (SELECT id from Person WHERE displayname = 'Foo Bar');
 
-INSERT INTO CalendarSubscription (person, calendar)
+INSERT INTO CalendarSubscription (person, calendar, colour)
     VALUES ((SELECT id from Person WHERE displayname = 'Sample Person'),
-            (SELECT id FROM Calendar WHERE title = 'Sample Person\'s Calendar'));
-INSERT INTO CalendarSubscription (person, calendar)
+            (SELECT id FROM Calendar WHERE title = 'Sample Person\'s Calendar'),
+            '#9db8d2');
+INSERT INTO CalendarSubscription (person, calendar, colour)
+    VALUES ((SELECT id from Person WHERE displayname = 'Sample Person'),
+            (SELECT id FROM Calendar WHERE title = 'Foo Bar\'s Calendar'),
+            '#9dd2b8');
+
+INSERT INTO CalendarSubscription (person, calendar, colour)
     VALUES ((SELECT id from Person WHERE displayname = 'Foo Bar'),
-            (SELECT id FROM Calendar WHERE title = 'Foo Bar\'s Calendar'));
-INSERT INTO CalendarSubscription (person, calendar)
+            (SELECT id FROM Calendar WHERE title = 'Foo Bar\'s Calendar'),
+            '#9dd2b8');
+INSERT INTO CalendarSubscription (person, calendar, colour)
     VALUES ((SELECT id from Person WHERE displayname = 'Foo Bar'),
-            (SELECT id FROM Calendar WHERE title = 'Sample Person\'s Calendar'));
+            (SELECT id FROM Calendar WHERE title = 'Sample Person\'s Calendar'),
+            '#9db8d2');
 
 INSERT INTO CalendarEvent (unique_id, calendar, dtstart, duration,
                            title, description, location, recurrence)

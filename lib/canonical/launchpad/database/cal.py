@@ -72,6 +72,7 @@ class CalendarSubscription(SQLBase):
     person = ForeignKey(dbName='person', notNull=True, foreignKey='Person')
     calendar = ForeignKey(dbName='calendar', notNull=True,
                           foreignKey='Calendar')
+    colour = StringCol(dbName='colour', notNull=True, default='#9db8d2')
 
 class CalendarEvent(SQLBase, CalendarEventMixin):
     implements(ICalendarEvent, IHasOwner)
