@@ -58,6 +58,10 @@ Next, we need to grab some values to provide for priority, severity and status.
     >>> upstream_task.product == evolution
     True
 
+    >>> from canonical.launchpad.interfaces import IUpstreamBugTask
+    >>> IUpstreamBugTask.providedBy(upstream_task)
+    True
+
   ii. Distro -- a bug that has to be fixed in a specific distro
 
     >>> ubuntu = distroset.get(1)
@@ -66,6 +70,10 @@ Next, we need to grab some values to provide for priority, severity and status.
     ...     status = STATUS_NEW, priority = PRIORITY_MEDIUM,
     ...     severity = SEVERITY_NORMAL)
     >>> distro_task.distribution == ubuntu
+    True
+    
+    >>> from canonical.launchpad.interfaces import IDistroBugTask
+    >>> IDistroBugTask.providedBy(distro_task)
     True
 
   ii. Distro Release -- a bug that has to be fixed in a specific distro
@@ -78,6 +86,10 @@ Next, we need to grab some values to provide for priority, severity and status.
     ...     status = STATUS_NEW, priority = PRIORITY_MEDIUM,
     ...     severity = SEVERITY_NORMAL)
     >>> distro_release_task.distrorelease == hoary
+    True
+    
+    >>> from canonical.launchpad.interfaces import IDistroReleaseBugTask
+    >>> IDistroReleaseBugTask.providedBy(distro_release_task)
     True
 
 XXX: Brad Bollenbach, 2005-02-24: See the bottom of this file for a chunk of
@@ -157,6 +169,12 @@ There's also support for searching tasks based on a string of text, e.g.:
     1
     >>> print [bugtask.bug.id for bugtask in bugtasks]
     [5]
+
+It's also possible to iterate over all the bug tasks:
+
+    >>> bugtasks = [bugtask for bugtasks in bugtaskset]
+    >>> print len(bugtasks)
+    12
 
 Editing Bug Tasks
 -----------------

@@ -72,6 +72,15 @@ class IBugTask(IHasDateCreated):
     # used for the page layout
     title = Attribute("Title")
 
+class IUpstreamBugTask(IBugTask):
+    """Marker interface for upstream bug tasks."""
+
+class IDistroBugTask(IBugTask):
+    """Marker interface for distro bug tasks."""
+
+class IDistroReleaseBugTask(IDistroBugTask):
+    """Marker interface for distro release bug tasks."""
+
 # XXX: Brad Bollenbach, 2005-02-03: This interface should be removed
 # when spiv pushes a fix upstream for the bug that makes this hackery
 # necessary:
@@ -84,8 +93,6 @@ class ISelectResultsSlicable(ISelectResults):
 class IBugTaskSet(Interface):
 
     title = Attribute('Title')
-
-    bug = Int(title=_("Bug id"), readonly=True)
 
     def __getitem__(key):
         """Get an IBugTask."""

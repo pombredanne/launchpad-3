@@ -26,7 +26,8 @@ from canonical.launchpad.searchbuilder import any, NULL
 
 from canonical.launchpad.interfaces import IBugTasksReport, \
     IBugTaskSet, IEditableUpstreamBugTask, IReadOnlyUpstreamBugTask, \
-    IEditableDistroBugTask, IReadOnlyDistroBugTask, ILaunchBag, IAuthorization
+    IEditableDistroBugTask, IReadOnlyDistroBugTask, IUpstreamBugTask, \
+    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, IAuthorization
 
 class BugTask(SQLBase):
     implements(IBugTask)
@@ -110,62 +111,53 @@ class BugTask(SQLBase):
         return title
     title = property(_title)
 
+    def _init(self, *args, **kw):
+        """Marks the task when it's created or fetched from the database."""
+        SQLBase._init(self, *args, **kw)
 
+        if self.product is not None:
+            mark_task(self, IUpstreamBugTask)
+        elif self.distrorelease is not None:
+            mark_task(self, IDistroReleaseBugTask)
+        else:
+            mark_task(self, IDistroBugTask)
+
+        #XXX: Bjorn Tillenius, 2005-03-15, This decision should be moved to
+        #     some view class.
+        user = getUtility(ILaunchBag).user
+        if self.product:
+            # upstream self
+            checker = getAdapter(self, IAuthorization, 'launchpad.Edit') 
+            if user and checker.checkAuthenticated(user):
+                mark_task(self, IEditableUpstreamBugTask)
+            else:
+                mark_task(self, IReadOnlyUpstreamBugTask)
+        else:
+            # sourcepackage self
+            if user:
+                mark_task(self, IEditableDistroBugTask)
+            else:
+                mark_task(self, IReadOnlyDistroBugTask)
 
 class BugTaskSet:
 
     implements(IBugTaskSet)
 
     def __init__(self, bug=None):
-        self.bug = bug
         self.title = 'A Set of Bug Tasks'
 
     def __getitem__(self, id):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
-        user = getUtility(ILaunchBag).user
-
         try:
             task = BugTask.get(id)
         except SQLObjectNotFound:
             raise KeyError, id
 
-        if task.product:
-            # upstream task
-            checker = getAdapter(task, IAuthorization, 'launchpad.Edit') 
-            if user and checker.checkAuthenticated(user):
-                mark_task(task, IEditableUpstreamBugTask)
-            else:
-                mark_task(task, IReadOnlyUpstreamBugTask)
-        else:
-            # sourcepackage task
-            if user:
-                mark_task(task, IEditableDistroBugTask)
-            else:
-                mark_task(task, IReadOnlyDistroBugTask)
-
         return task
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
-        user = getUtility(ILaunchBag).user
-
-        for task in BugTask.select(self.table.q.bugID == self.bug):
-            if task.product:
-                # upstream task
-                checker = getAdapter(task, IAuthorization, 'launchpad.Edit') 
-                if user is not None and checker.checkAuthenticated(principal):
-                    mark_task(task, IEditableUpstreamBugTask)
-                else:
-                    mark_task(task, IReadOnlyUpstreamBugTask)
-            else:
-                # sourcepackage task
-                # XXX: Bjorn Tillenius, 2005-03-10: This was broken, a test for
-                # this part should be added.
-                if user is not None:
-                    mark_task(task, IEditableDistroBugTask)
-                else:
-                    mark_task(task, IReadOnlyDistroBugTask)
-
+        for task in BugTask.select():
             yield task
 
     def get(self, id):

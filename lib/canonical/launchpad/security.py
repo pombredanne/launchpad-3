@@ -10,7 +10,8 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import IAuthorization, IHasOwner
 from canonical.launchpad.interfaces import IPerson, ITeam, IPersonSet
 from canonical.launchpad.interfaces import ISourceSource, ISourceSourceAdmin
-from canonical.launchpad.interfaces import IMilestone, IBugTask, IBug
+from canonical.launchpad.interfaces import IMilestone, IBug, IBugTask
+from canonical.launchpad.interfaces import IUpstreamBugTask, IDistroBugTask
 from canonical.launchpad.interfaces import IHasProduct, IHasProductAndAssignee
 from canonical.launchpad.interfaces import IReadOnlyUpstreamBugTask
 from canonical.launchpad.interfaces import IEditableUpstreamBugTask, IProduct
@@ -120,9 +121,9 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
         return self.obj.id == user.id or self.user.inTeam(admins)
 
 
-class EditByProductOwnerOrAssignee(AuthorizationBase):
+class EditUpstreamBugTask(AuthorizationBase):
     permission = 'launchpad.Edit'
-    usedfor = IBugTask
+    usedfor = IUpstreamBugTask
 
     def checkAuthenticated(self, user):
         """Allow the maintainer and possible assignee to edit the task.
@@ -130,12 +131,6 @@ class EditByProductOwnerOrAssignee(AuthorizationBase):
         If the maintainer or assignee is a team, everyone belonging to the team
         is allowed to edit the task.
         """
-        if self.obj.product is None:
-            # It's a distro (release) task, thus all authenticated users
-            # may edit it
-            return True
-
-        # Otherwise, only a maintainer or assignee may edit it
         teampart = getUtility(ITeamParticipationSet)
         for allowed_person in (self.obj.maintainer, self.obj.assignee):
             if ITeam.providedBy(allowed_person):
@@ -145,6 +140,15 @@ class EditByProductOwnerOrAssignee(AuthorizationBase):
                 if user is allowed_person:
                     return True
         return False
+
+
+class EditDistroBugTask(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IDistroBugTask
+
+    def checkAuthenticated(self, user):
+        """Allow all authenticated users to edit the task."""
+        return True
 
 
 class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):

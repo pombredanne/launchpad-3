@@ -2,6 +2,58 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-16 16:40:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1444
+
+    Summary:
+      mark bug tasks according to bug #201, and minor clean-ups
+    Revision:
+      launchpad--devel--0--patch-1444
+
+    Patches applied:
+    
+     * bjorn.tillenius@canonical.com/launchpad--dogfood-bug-201--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1441
+    
+     * bjorn.tillenius@canonical.com/launchpad--dogfood-bug-201--0--patch-1
+       mark bug tasks when they are created or fetched
+    
+     * bjorn.tillenius@canonical.com/launchpad--dogfood-bug-201--0--patch-2
+       fix broken BugTaskSet.__iter__()
+    
+     * bjorn.tillenius@canonical.com/launchpad--dogfood-bug-201--0--patch-3
+       remove BugTaskSet.bug
+    
+     * bjorn.tillenius@canonical.com/launchpad--dogfood-bug-201--0--patch-4
+       fix failing bugactivity.txt test
+    
+     * bjorn.tillenius@canonical.com/launchpad--dogfood-bug-201--0--patch-5
+       split IBugTask 'launchpad.Edit' security adapter
+    
+     * bjorn.tillenius@canonical.com/launchpad--dogfood-bug-201--0--patch-6
+       changes as suggested in code review
+    
+     * bjorn.tillenius@canonical.com/launchpad--dogfood-bug-201--0--patch-7
+       merge rf
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/doc/bugactivity.txt
+     lib/canonical/launchpad/doc/bugtask.txt
+     lib/canonical/launchpad/interfaces/bugtask.py
+     lib/canonical/launchpad/security.py
+
+    new patches:
+     bjorn.tillenius@canonical.com/launchpad--dogfood-bug-201--0--base-0
+     bjorn.tillenius@canonical.com/launchpad--dogfood-bug-201--0--patch-1
+     bjorn.tillenius@canonical.com/launchpad--dogfood-bug-201--0--patch-2
+     bjorn.tillenius@canonical.com/launchpad--dogfood-bug-201--0--patch-3
+     bjorn.tillenius@canonical.com/launchpad--dogfood-bug-201--0--patch-4
+     bjorn.tillenius@canonical.com/launchpad--dogfood-bug-201--0--patch-5
+     bjorn.tillenius@canonical.com/launchpad--dogfood-bug-201--0--patch-6
+     bjorn.tillenius@canonical.com/launchpad--dogfood-bug-201--0--patch-7
+
+
 2005-03-16 15:03:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1443
 
     Summary:

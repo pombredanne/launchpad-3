@@ -52,6 +52,12 @@ little functions.
   ...         setattr(state, field, getattr(obj, field))
   ...     return state
 
+XXX: Bjorn Tillenius, 2005-03-15,  Since BugTask._init() checks the
+     current user, we need to login first:
+
+  >>> from canonical.launchpad.ftests import login
+  >>> login('launchpad.anonymous')
+
 Here's a list of events that happen, and the resulting activity logged:
 
   >>> from canonical.launchpad.database import Person
