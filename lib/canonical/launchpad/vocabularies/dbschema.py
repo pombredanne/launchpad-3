@@ -1,4 +1,3 @@
-
 from canonical.lp import dbschema
 
 # DB Schema Vocabularies

@@ -1,10 +1,14 @@
-
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute
 
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
+
+# XXX: Brad Bollenbach, 2004/10/18: the import below causes circular
+# import problems, hence importing directly from dbschema for now
+# from canonical.launchpad.vocabulary import BugRefVocabulary
+from canonical.launchpad.vocabularies.dbschema import BugRefVocabulary
 
 class IBugExternalRefsView(IAddFormCustomization):
     """BugExternalRef views"""
@@ -20,7 +24,7 @@ class IBugExternalRef(Interface):
             )
     bugreftype = Choice(
             title=_('Bug Ref Type'), required=True, readonly=False,
-            vocabulary='BugRef',
+            vocabulary=BugRefVocabulary,
             )
     data = TextLine(
             title=_('Data'), required=True, readonly=False,

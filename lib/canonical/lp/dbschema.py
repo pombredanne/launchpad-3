@@ -1381,14 +1381,14 @@ class BugExternalReferenceType(DBSchema):
     """
 
     CVE = Item(1, '''
-        A cve number
+        CVE Reference
 
         This external reference is a CVE number, which means it
         exists in the CVE database of security bugs.
         ''')
 
     URL = Item(2, '''
-        A URL
+        URL
 
         This external reference is a URL. Typically that means it
         is a reference to a web page or other internet resource

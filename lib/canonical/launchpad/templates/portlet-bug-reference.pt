@@ -3,15 +3,13 @@
 
     <div class="portletBody">
         <div class="portletContent odd"
-             xtal:repeat="ref context/externalrefs">
-            
-            <strong xtal:condition="">CVE reference</strong>
+             tal:repeat="ref context/externalrefs">
+            <strong tal:content="ref/bugreftype/lp:BugExternalReferenceType">CVE reference</strong>
             <br />
-            <a href="#"
-               title="Some CVE description">CVE:Data</a>
-            
+            <a tal:attributes="href ref/url" tal:content="ref/description">CVE:Data</a>
         </div>
-        
+
+<!--
         <div class="portletContent even">
             <strong xtal:condition="">Other references</strong>
             <br />
@@ -20,8 +18,9 @@
             <a href="#"
                title="Another description">Another URL</a>
         </div>
+-->
 
-<!-- Previous code 
+<!-- Previous code
             <a xtal:content="ref/description"
                xtal:attributes="title ref/bugreftype/lp:BugExternalReferenceType;
                                 href ref/url;">
@@ -33,6 +32,6 @@
             <form action="references/+new" method="post">
                 <input type="submit" value="Add Reference" />
             </form>
-        </div> 
+        </div>
     </div>
 </div>
