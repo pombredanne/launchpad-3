@@ -1,6 +1,6 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-from canonical.authserver.client.sshkeys import TwistedAuthServer
+from canonical.authserver.client.twistedclient import TwistedAuthServer
 
 from twisted.conch import avatar, unix
 from twisted.conch.ssh import session, filetransfer
@@ -26,8 +26,13 @@ class SubsystemOnlySession(session.SSHSession, object):
 
 
 class SFTPOnlyAvatar(avatar.ConchUser):
-    def __init__(self, avatarId):
+    def __init__(self, avatarId, homeDirsRoot):
+        assert type(avatarId) is str  # not unicode!
+        assert '/' not in avatarId    # XXX: should be a proper auth failure,
+                                      #      not an assert
+        assert avatarId not in ('.', '..') # XXX: ditto
         self.avatarId = avatarId
+        self.homeDirsRoot = homeDirsRoot
 
         # Set the only channel as a session that only allows requests for
         # subsystems...
@@ -50,8 +55,7 @@ class SFTPOnlyAvatar(avatar.ConchUser):
         return r
 
     def getHomeDir(self):
-        # XXX: the base should be configurable!
-        return '/tmp/' + self.avatarId
+        return os.path.join(self.homeDirsRoot, self.avatarId)
 
 
 # XXX: We need to customise unix.SFTPServerForUnixConchUser, we want to restrict
@@ -62,8 +66,11 @@ components.registerAdapter(unix.SFTPServerForUnixConchUser, SFTPOnlyAvatar, file
 class Realm:
     implements(IRealm)
 
+    def __init__(self, homeDirsRoot):
+        self.homeDirsRoot = homeDirsRoot
+
     def requestAvatar(self, avatarId, mind, *interfaces):
-        return interfaces[0], SFTPOnlyAvatar(avatarId), lambda: None
+        return interfaces[0], SFTPOnlyAvatar(avatarId, homeDirsRoot), lambda: None
 
 
 class Factory(factory.SSHFactory):

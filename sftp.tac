@@ -20,7 +20,8 @@ hostPrivateKey = keys.getPrivateKeyObject(
 )
 
 # Configure the authentication
-portal = portal.Portal(sftponly.Realm())
+homedirs = os.environ.get('SUPERMIRROR_HOMEDIRS', '/tmp')
+portal = portal.Portal(sftponly.Realm(homedirs))
 portal.registerChecker(sftponly.PublicKeyFromLaunchpadChecker(authserverURL))
 sftpfactory = sftponly.Factory(hostPublicKey, hostPrivateKey)
 sftpfactory.portal = portal
