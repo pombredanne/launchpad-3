@@ -11,11 +11,9 @@ from canonical.lp.dbschema import BugAssignmentStatus, BugPriority, \
 from canonical.launchpad.vocabularies import BugTrackerVocabulary
 
 FROM_MAIL = "noreply@bbnet.ca"
-#FROM_MAIL = "stuart@stuartbishop.net"
 
 def get_cc_list(bug):
     """Return the list of people that are CC'd on this bug."""
-    #return ["stuart@stuartbishop.net"]
     return ['test@bbnet.ca']
 
 def notify_bug_assigned_product_added(product_assignment, event):
@@ -124,6 +122,33 @@ Infestation: %(infestation)s
         FROM_MAIL, get_cc_list(package_infestation.bug),
         '"%s" package infestation' % package_infestation.bug.title, msg)
 
+def notify_bug_package_infestation_modified(modified_package_infestation, event):
+    """Notify CC'd list that this package infestation has been modified."""
+    old_bpi = event.object_before_modification
+    new_bpi = event.object
+
+    change = {}
+    old_spr = old_bpi.sourcepackagerelease
+    new_spr = new_bpi.sourcepackagerelease
+    if  old_spr != new_spr:
+        change['sourcepackagerelease'] = {}
+        change['sourcepackagerelease']['old'] = "%s %s" % (
+            old_spr.name, old_spr.version)
+        change['sourcepackagerelease']['new'] = "%s %s" % (
+            new_spr.name, new_spr.version)
+
+    old_status = old_bpi.infestationstatus
+    new_status = new_bpi.infestationstatus
+    if old_status != new_status:
+        change['infestationstatus'] = {}
+        change['infestationstatus']['old'] = BugInfestationStatus.items[old_status].title
+        change['infestationstatus']['new'] = BugInfestationStatus.items[new_status].title
+
+    send_edit_notification(
+        FROM_MAIL, get_cc_list(modified_package_infestation.bug),
+        '"%s" package infestation' % modified_package_infestation.bug.title,
+        change)
+
 def notify_bug_comment_added(comment, event):
     """Notify CC'd list that a comment was added to this bug."""
     msg = """\
@@ -186,6 +211,12 @@ def notify_bug_watch_modified(modified_bug_watch, event):
         change["remotebug"]["old"] = old_rb
         change["remotebug"]["new"] = new_rb
 
+    send_edit_notification(
+        FROM_MAIL, get_cc_list(modified_bug_watch.bug),
+        '"%s" was modified' % modified_bug_watch.bug.title,
+        change)
+
+def send_edit_notification(from_addr, to_addrs, subject, change):
     msg = """The following changes were made:
 
 """
@@ -193,7 +224,5 @@ def notify_bug_watch_modified(modified_bug_watch, event):
         msg += "%s: %s => %s\n" % (
             changed_field, change[changed_field]["old"], change[changed_field]["new"])
 
-    simple_sendmail(
-        FROM_MAIL, get_cc_list(modified_bug_watch.bug),
-        '"%s" was modified' % modified_bug_watch.bug.title, msg)
+    simple_sendmail(from_addr, to_addrs, subject, msg)
 

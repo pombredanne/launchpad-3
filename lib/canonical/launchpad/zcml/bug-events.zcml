@@ -33,6 +33,11 @@
    factory="canonical.launchpad.mailnotification.notify_bug_package_infestation_added" />
 
 <subscriber
+   for="canonical.launchpad.interfaces.IBugPackageInfestation
+        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+   factory="canonical.launchpad.mailnotification.notify_bug_package_infestation_modified" />
+
+<subscriber
    for="canonical.launchpad.interfaces.IBugExternalRef
         zope.app.event.interfaces.IObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_external_ref_added" />
