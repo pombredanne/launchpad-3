@@ -4,7 +4,7 @@
   ... GET /malone/bugs/7 HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... """)
-  HTTP/1.1 401 Unauthorized
+  HTTP/1.1 303 See Other
   ...
-  Content-Type: text/html;charset=utf-8
-  ...
+  Location: http://localhost:9000/malone/bugs/7/+index/+login
+  <BLANKLINE>

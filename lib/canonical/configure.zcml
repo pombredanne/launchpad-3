@@ -103,6 +103,12 @@
     <include package="canonical.database" />
     <include package="canonical.launchpad" />
 
+    <content class="canonical.publication.LoginRoot">
+      <allow
+        attributes="publishTraverse"
+        />
+    </content>
+
     <!-- enable the error reporting service at /errors -->
     <browser:suburl
         for="canonical.publication.RootObject"

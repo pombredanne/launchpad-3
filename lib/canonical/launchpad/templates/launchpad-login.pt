@@ -13,7 +13,7 @@
       This page handles cases in this order:
       1.  already logged in and shouldn't be here
       2.  just logged in successfully
-      3.  just aplied for registration successfully
+      3.  just applied for registration successfully
       4.  might want to log in
           4a. didn't try to log in last time
           4b. just tried to log in and failed

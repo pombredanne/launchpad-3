@@ -8,6 +8,7 @@ from datetime import datetime
 from zope.component import getUtility
 from zope.app.session.interfaces import ISession
 from zope.event import notify
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
 from canonical.launchpad.helpers import well_formed_email
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
@@ -16,6 +17,18 @@ from canonical.launchpad.webapp.interfaces import LoggedOutEvent
 from canonical.launchpad.interfaces import ILoginTokenSet, IPersonSet
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.lp.dbschema import LoginTokenType
+
+class UnauthorizedView:
+
+    def __call__(self):
+        if IUnauthenticatedPrincipal.providedBy(self.request.principal):
+            target = self.request.getURL() + '/+login'
+            self.request.response.redirect(target)
+            # Maybe render page with a link to the redirection?
+            return ''
+        else:
+            self.request.response.setStatus(403) # Forbidden
+            return "Sorry Dave, I can't let you do that."
 
 
 class BasicLoginPage:
@@ -33,9 +46,9 @@ class BasicLoginPage:
             self.request.response.redirect(self.request.getURL(1))
         return ''
 
+
 class LoginOrRegister:
-    """
-    Merges the former CookieLoginPage and JoinLaunchpadView classes
+    """Merges the former CookieLoginPage and JoinLaunchpadView classes
     to allow the two forms to appear on a single page.
     """
 
@@ -45,8 +58,7 @@ class LoginOrRegister:
     email = None
 
     def process_form(self):
-        """
-        Determines whether this is the login form or the register
+        """Determines whether this is the login form or the register
         form, and delegates to the appropriate function.
         """
         if self.request.method != "POST":
@@ -74,8 +86,19 @@ class LoginOrRegister:
         principal = loginsource.getPrincipalByLogin(email)
         if principal is not None and principal.validate(password):
             logInPerson(self.request, principal, email)
+            self.redirectMinusLogin()
         else:
             self.login_error = "The email address and password do not match."
+
+    def redirectMinusLogin(self):
+        """Redirect to the URL with the '/+login' removed from the end.
+
+        Do this only if we're not the root /+login.
+        If we're the root /+login, then show the "you are logged in" message.
+        """
+        if not self.request.URL[1].endswith('+login'):
+            target = self.request.URL[-1]
+            self.request.response.redirect(target)
 
     def process_registration_form(self):
         """A user has asked to join launchpad.

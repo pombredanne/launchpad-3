@@ -2,6 +2,47 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-04 22:42:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1557
+
+    Summary:
+      Better authentication experience.
+    Revision:
+      launchpad--devel--0--patch-1557
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-353
+       refuel
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-354
+       initial decent cookie login screen support
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-355
+       restore usual functionality of root +login, so it doens't redirect you on login.  fix up tests
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/browser-exception.zcml
+     lib/canonical/configure.zcml
+     lib/canonical/launchpad/pagetests/standalone/xx-distribution-membership.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-pofile-edit-allowed.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-pofile-edit-not-allowed.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-edit-allowed.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-edit-not-allowed.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/30-private-upstream-bug-not-accessible-to-anonymous.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/50-private-upstream-bug-not-accessible-to-nonsubscriber-user.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/60-private-upstream-task-not-accessible-to-anonymous.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/70-private-upstream-task-not-accessible-to-nonsubscriber-user.txt
+     lib/canonical/launchpad/templates/launchpad-login.pt
+     lib/canonical/launchpad/webapp/login.py
+     lib/canonical/publication.py
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--devel--0--patch-353
+     steve.alexander@canonical.com/launchpad--devel--0--patch-354
+     steve.alexander@canonical.com/launchpad--devel--0--patch-355
+
+
 2005-04-04 21:19:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1556
 
     Summary:
