@@ -2,6 +2,57 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-05 04:06:46 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1148
+
+    Summary:
+      Make test_zopeless pass -- hopefully resolves issues encountered by ddaa and carlos
+    Revision:
+      launchpad--devel--0--patch-1148
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/launchpad--zopelessfix--0--base-0
+       tag of stuart.bishop@canonical.com/launchpad--zopelessfix--0--patch-1
+    
+     * andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-1
+       Make stub's zopeless tests pass (in conjunction with andrew.bennetts@canonical.com/sqlos--zopelessfix--0--patch-1)
+    
+     * andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-2
+       Rename test SQLObject from Beer -> MoreBeer to avoid clashing with another test module
+    
+     * andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-3
+       Merge from rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--zopelessfix--0--base-0
+       tag of stuart.bishop@canonical.com/launchpad--devel--1--patch-58
+    
+     * stuart.bishop@canonical.com/launchpad--zopelessfix--0--patch-1
+       Add tests that trigger similar exceptions to reports
+    
+
+    new files:
+     lib/canonical/lp/ftests/.arch-ids/=id
+     lib/canonical/lp/ftests/.arch-ids/__init__.py.id
+     lib/canonical/lp/ftests/.arch-ids/test_zopeless.py.id
+     lib/canonical/lp/ftests/__init__.py
+     lib/canonical/lp/ftests/test_zopeless.py
+
+    modified files:
+     doc/changelog.txt lib/canonical/database/sqlbase.py
+     lib/canonical/lp/__init__.py
+
+    new directories:
+     lib/canonical/lp/ftests lib/canonical/lp/ftests/.arch-ids
+
+    new patches:
+     andrew.bennetts@canonical.com/launchpad--zopelessfix--0--base-0
+     andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-1
+     andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-2
+     andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-3
+     stuart.bishop@canonical.com/launchpad--zopelessfix--0--base-0
+     stuart.bishop@canonical.com/launchpad--zopelessfix--0--patch-1
+
+
 2005-01-04 23:29:06 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1147
 
     Summary:

@@ -100,8 +100,15 @@ class _ZopelessConnectionDescriptor(object):
     install = classmethod(install)
 
     def uninstall(cls):
-        # Assumes there was no _connection in this particular class to start
-        # with (which is true for SQLBase, but wouldn't be true for SQLOS)
+        # Explicitly close all connections we opened.
+        descriptor = cls.sqlClass.__dict__.get('_connection')
+        for trans in descriptor.transactions.itervalues():
+            trans.releaseConnection(trans._connection, explicit=True)
+            trans._dbConnection._connection.close()
+
+        # Remove the _connection descriptor.  This assumes there was no
+        # _connection in this particular class to start with (which is true for
+        # SQLBase, but wouldn't be true for SQLOS)
         del cls.sqlClass._connection
     uninstall = classmethod(uninstall)
         
@@ -206,6 +213,7 @@ class ZopelessTransactionManager(object):
         _ZopelessConnectionDescriptor.uninstall()
         # We delete self.sqlClass to make sure this instance isn't still
         # used after uninstall was called, which is a little bit of a hack.
+        self.manager.free(self.manager.get())
         del self.sqlClass 
 
     def _dm(self):
@@ -220,7 +228,7 @@ class ZopelessTransactionManager(object):
         self.begin()
 
     def abort(self, sub=False):
-        objects = self._dm().objects[:]
+        objects = list(self._dm().objects)
         self.manager.get().abort(sub)
         for obj in objects:
             obj.reset()
