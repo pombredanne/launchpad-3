@@ -72,7 +72,7 @@ class POMessage(object):
     def __nonzero__(self):
         return bool(self.msgid)
 
-    def flagsText(self, flags=None):
+    def flagsText(self, flags=None, withHash=True):
         if flags is None:
             flags = self.flags
         if not flags:
@@ -82,7 +82,11 @@ class POMessage(object):
         if 'fuzzy' in flags:
             flags.remove('fuzzy')
             flags.insert(0, 'fuzzy')
-        return u'#, ' + ', '.join(flags)
+        if withHash:
+            prefix = u'#, '
+        else:
+            prefix = u''
+        return prefix + u', '.join(flags)
 
     class _fake_wrapper(object):
         width = None

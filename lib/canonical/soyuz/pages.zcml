@@ -136,14 +136,14 @@
         permission="zope.Public"
         name="index.html"
         template="templates/package-index.pt"
-        lp:url="Soyuz/distros/$Distribution.name/$Release.name/packages/$packages_type/index.html"
+        lp:url="Soyuz/distros/$Distribution.name/$Release.name/binary/index.html"
         />
 
-  <page for="canonical.soyuz.interfaces.ISourcePackage"
+  <page for="canonical.soyuz.interfaces.ISourcePackageRelease"
         permission="zope.Public"
         name="index.html"
         template="templates/package-index.pt"
-        lp:url="Soyuz/distros/$Distribution.name/$Release.name/packages/$packages_type/source/index.html"
+        lp:url="Soyuz/distros/$Distribution.name/$Release.name/source/index.html"
         />
 
 

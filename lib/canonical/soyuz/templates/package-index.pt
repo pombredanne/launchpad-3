@@ -13,7 +13,8 @@
 <body>
 
 <div metal:fill-slot="main">
-  <h1>Package <tal:block tal:replace="context/name" /></h1>
+    <h1>Version <tal:block tal:replace="context/version">0.1.2.3-4</tal:block>
+        of Package <tal:block tal:replace="context/sourcepackage/name">xyz</tal:block></h1>
   </div>
 
     <li> <a href="packages">Packages</a></li>

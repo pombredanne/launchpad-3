@@ -21,17 +21,23 @@
     <tr>
       <th>Title</th>
       <th>Description</th>
+      <th>Version</th>
     </tr>
-    <tr tal:repeat="package context">
+    <tr tal:repeat="release context">
+      <tal:dummy tal:define="package release/sourcepackage">
       <td>
         <a tal:content="package/title"
-	   tal:attributes="href package/name">
+           tal:attributes="href package/name">
 	  distribution name
-	</a>
+	    </a>
       </td>
       <td tal:content="package/description">
         description
       </td>
+      <td tal:content="release/version">
+        version
+      </td>
+      </tal:dummy>
     </tr>
 
   </table>    

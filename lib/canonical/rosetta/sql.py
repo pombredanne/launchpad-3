@@ -159,12 +159,18 @@ class RosettaPOTemplate(SQLBase):
             % self.id))
 
     def __getitem__(self, msgid):
+        if type(msgid) is unicode:
+            msgid = msgid.encode('utf-8')
+        msgid_obj = RosettaPOMessageID.selectBy(text=msgid)
+        if msgid_obj.count() == 0:
+            raise KeyError, msgid
+        msgid_obj = msgid_obj[0]
+        # XXX: AND sequence != 0
         sets = RosettaPOMessageSet.selectBy(poTemplate=self,
-                                            isCurrent=True,
                                             poFile=None,
-                                            primeMessageID=msgid)
+                                            primeMessageID_=msgid_obj)
         if sets.count() == 0:
-            return None
+            raise KeyError, msgid
         return sets[0]
 
     def __len__(self):

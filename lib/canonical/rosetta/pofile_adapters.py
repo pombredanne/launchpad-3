@@ -160,7 +160,7 @@ class MessageProxy(POMessage):
             [flag.strip() for flag in self._msgset.flagsComment.split(',')]
             )
     def _set_flags(self, value):
-        self._msgset.flagsComment = self.flagsText(value)
+        self._msgset.flagsComment = self.flagsText(value, withHash=False)
     flags = property(_get_flags, _set_flags)
 
     def _get_obsolete(self):
@@ -177,22 +177,25 @@ class TemplateImporter(object):
         self.len = 0
         self.parser = POParser(translation_factory=self)
 
-    def do_import(self, filelike):
+    def doImport(self, filelike):
         "Import a file (or similar object)"
         # crack: will this work?  Suggestions of better ways are gladly accepted
-        potemplate._connection.query('UPDATE POMsgSet SET sequence = 0'
-                                     ' WHERE potemplate = %d AND pofile = NULL'
-                                     % potemplate.id)
+        self.potemplate._connection.query('UPDATE POMsgSet SET sequence = 0'
+                                          ' WHERE potemplate = %d AND pofile = NULL'
+                                          % self.potemplate.id)
         # what policy here? small bites? lines? how much memory do we want to eat?
-        parser.write(filelike.read())
-        parser.finish()
-        if not parser.header:
+        self.parser.write(filelike.read())
+        self.parser.finish()
+        if not self.parser.header:
             # bitch like crazy
             raise 'something'
 
     def __call__(self, msgid, **kw):
         "Instantiate a single message/messageset"
-        msgset = self.potemplate[msgid]
+        try:
+            msgset = self.potemplate[msgid]
+        except KeyError:
+            msgset = self.potemplate.newMessageSet(msgid)
         if msgset is None:
             msgset = potemplate.newMessageSet(msgid)
         else:
@@ -220,7 +223,7 @@ class POFileImporter(object):
         self.len = 0
         self.parser = POParser(translation_factory=self)
 
-    def do_import(self, filelike):
+    def doImport(self, filelike):
         "Import a file (or similar object)"
         # crack: will this work?  Suggestions of better ways are gladly accepted
         potemplate._connection.query('UPDATE POMsgSet SET sequence = 0'
