@@ -163,7 +163,7 @@ class DistroReleaseSourceApp(object):
         return DistroReleaseSourceReleaseApp(self.sourcepackage, version)
 
     def proposed(self):
-        return self.sourcepackage.proposed(self.release, self.sourcepackage)
+        return self.sourcepackage.proposed(self.release)
     proposed = property(proposed)
 
     def currentReleases(self):

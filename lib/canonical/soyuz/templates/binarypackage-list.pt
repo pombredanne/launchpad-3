@@ -14,9 +14,25 @@
 <body>
 
 <div metal:fill-slot="main">
-<h1><span tal:content="context/release/title">DISTRORELEASE</span> Binary Packages</h1>
+<h1><spam tal:content="context/release/distribution/title" />
+    <span tal:content="context/release/title" /> Binary Packages</h1>
 <!-- <div tal:on-error="python: error.type, error.value.args"> -->
-<p> 
+
+<h3><spam tal:content="context/release/binarycount" /> Packages</h3>
+
+<form name="search" method="POST" action="+search">
+Find Source Package by Name: 
+<br>
+<input type="text" name="name" tal:attributes="value request/name|nothing" />
+<input type="submit" value="Search"/>
+</form>
+<br><br>
+
+<!-- XXX: Need section stuff in db. They are in soyuz.dia but  -->
+<!-- the db implementatio is missing -->
+
+<h3> Browse Packages</h3>
+ (XXX:It was supose to show sections)
 
 <table class="listing">
   <tr>
