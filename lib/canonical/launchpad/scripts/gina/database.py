@@ -103,26 +103,36 @@ prioritymap = {
 "extra":10
 }
 
-def map_arch(fname):
-    return 1;
-    print "Attempting to map %s" % fname
-    fname = fname[fname.rfind("/"):]
-    if fname.find("_i386."):
-        print "i386"
-        return 1
-    if fname.find("_amd64."):
-        print "amd64"
-        return 2
-    if fname.find("_powerpc."):
-        print "powerpc"
-        return 3
-    raise ValueError, "Unknown architecture in %s" % fname
-
 class Launchpad(SQLThing):
-    def __init__(self, bar):
+    def __init__(self, bar, dr, proc):
         SQLThing.__init__(self,bar)
         self.compcache = {}
         self.sectcache = {}
+        try:
+            ddr = self._query_single("""
+            SELECT id,distro FROM distrorelease WHERE name=%s;
+            """, (dr,))
+            self.distrorelease = ddr[0]
+            self.distro = ddr[1]
+        except:
+            raise ValueError, "Error finding distrorelease for %s" % dr
+        try:
+            dar = self._query_single("""
+            SELECT processorfamily, id FROM distroarchrelease WHERE
+            distrorelease = %s AND architecturetag = %s
+            """, (self.distrorelease,proc))
+            self.processor = dar[0]
+            self.distroarchrelease = dar[1]
+        except:
+            raise ValueError, "Error finding distroarchrelease for %s/%s" % (dr,proc)
+        try:
+            self.processor = self._query_single("""
+            SELECT id FROM processor WHERE family = %s
+            """, (self.processor))[0]
+        except:
+            raise ValueError, "Unable to find a processor from the processor family chosen from %s/%s" % (dr, proc)
+        print "INFO: Chosen DR(%d), PROC(%d), DAR(%d) from SUITE(%s), ARCH(%s)" % (self.distrorelease, self.processor, self.distroarchrelease, dr, proc)
+
     #
     # SourcePackageName
     #
@@ -154,9 +164,7 @@ class Launchpad(SQLThing):
         data = {
             "maintainer":           people,
             "shortdesc" :           short_desc,
-            ## XXX: (distro+hardcoded) cprov 20041025
-            ## Ubuntu hardcoded
-            "distro":               1, 
+            "distro":               self.distro,
             "description":          description,
             "sourcepackagename":    name[0],
             ## XXX: (srcpackageformat+hardcoded) cprov 20041025
@@ -231,11 +239,12 @@ class Launchpad(SQLThing):
         release = self.getSourcePackageRelease(src.package, src.version)[0]
 
         data = {
-            "distrorelease":           1, ## Warty Warthogs
+            "distrorelease":           self.distrorelease,
             "sourcepackagerelease":    release[0],
-            "status":                  2, ## Published !!!
+            # XXX dsilvers 2004-11-01: This *ought* to be pending
+            "status":                  2, ## Published
             "component":               component,
-            "section":                 1, ## default Section
+            "section":                 section, ## default Section
         }
         self._insert("sourcepackagepublishing", data)
 
@@ -283,8 +292,8 @@ class Launchpad(SQLThing):
         
     
         data = {
-            "processor":            1,
-            "distroarchrelease":    1,
+            "processor":            self.processor,
+            "distroarchrelease":    self.distroarchrelease,
             "buildstate":           1,
             "gpgsigningkey":        key,
             "sourcepackagerelease": srcpkg[0][0],
@@ -356,8 +365,8 @@ class Launchpad(SQLThing):
             "description":          description,
             "build":                build[0],
             "binpackageformat":     1, # XXX
-            "section":              section, # XXX
-            "priority":             prioritymap[bin.priority], # XXX
+            "section":              section,
+            "priority":             prioritymap[bin.priority],
             "shlibdeps":            bin.shlibs,
             "depends":              bin.depends,
             "suggests":             bin.suggests,
@@ -379,14 +388,9 @@ class Launchpad(SQLThing):
            "component":         component, 
            "section":           section,
            "priority":          prioritymap[bin.priority],
-           # XXX: Always returns 1 for x86 until we import multi-arch
-           "distroarchrelease": map_arch(bin.filename), 
-           "status": 1,
-           "section":           section,
-           "priority":          prioritymap[bin.priority],
-           # XXX: Always returns 1 for x86 until we import multi-arch
-           "distroarchrelease": map_arch(bin.filename), 
-           "status": 1,
+           "distroarchrelease": self.distroarchrelease,
+            # XXX dsilvers 2004-11-01: This *ought* to be pending
+           "status": 2, ### Published !!!
         }
         self._insert("packagepublishing", data)
 

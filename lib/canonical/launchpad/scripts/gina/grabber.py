@@ -8,17 +8,25 @@ from library import attachLibrarian
 #
 package_root = "/srv/archive.ubuntu.com/ubuntu/"
 keyrings_root = "keyrings/"
-distrorelease = "warty"
+#distrorelease = "hoary"
 #components = ["main", "universe", "restricted"]
-components = ["main", "restricted"]
+#components = ["main", "restricted"]
 #components = ["restricted"]
-arch = "i386"
+#arch = "i386"
 
-LPDB = "launchpad_dev"
+# Parse the commandline...
+
+import sys
+
+distrorelease = sys.argv[1]
+arch = sys.argv[2]
+components = sys.argv[3:]
+
+LPDB = "launchpad_dogfood"
 KTDB = "katie"
 
 LIBRHOST = "localhost"
-LIBRPORT = 19090
+LIBRPORT = 9090
 
 #
 # helpers
@@ -71,13 +79,18 @@ def do_sections(lp, kdb):
 
 if __name__ == "__main__":
     # get the DB abstractors
-    lp = Launchpad(LPDB)
+    lp = Launchpad(LPDB, distrorelease, arch)
     kdb = Katie(KTDB)
 
     # Comment this out if you need to disable the librarian integration
     # for a given run of gina. Note that without the librarian; lucille
     # will be unable to publish any files imported into the database
     attachLibrarian( LIBRHOST, LIBRPORT )
+
+    # Validate that the supplied components are available...
+    print "@ Validating components"
+    for comp in components:
+        lp.getComponentByName(comp)
 
     keyrings = ""
     for keyring in os.listdir(keyrings_root):
