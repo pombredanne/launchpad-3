@@ -2,6 +2,29 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-14 21:51:56 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1202
+
+    Summary:
+      improve bug task view/edit navigation by adding a link back to the
+ upstream bug listing
+    Revision:
+      launchpad--devel--0--patch-1202
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-301
+       improve bug task view/edit navigation by adding a link back to the upstream bug listing
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/bugassignment-display.pt
+     lib/canonical/launchpad/templates/bugassignment-editform.pt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-301
+
+
 2005-01-14 20:58:50 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1201
 
     Summary:
