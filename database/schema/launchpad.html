@@ -120,7 +120,7 @@
 <!-- Primary Index -->
 <p><br />
 <br />
-Dumped on 2005-04-06</p>
+Dumped on 2005-04-07</p>
 <h1><a name="index" id="index">Index of database -
 launchpad_dev</a></h1>
 <ul>
@@ -285,6 +285,8 @@ launchpad_dev</a></h1>
 "#public.table.sourcepackagename">sourcepackagename</a></li>
 <li><a href=
 "#public.table.sourcepackagepublishing">sourcepackagepublishing</a></li>
+<li><a href=
+"#public.table.sourcepackagepublishinghistory">sourcepackagepublishinghistory</a></li>
 <li><a href=
 "#public.view.sourcepackagepublishingview">sourcepackagepublishingview</a></li>
 <li><a href=
@@ -7585,6 +7587,10 @@ public</a></p>
 </ul>
 <ul>
 <li><a href=
+"#public.table.sourcepackagepublishinghistory">public.sourcepackagepublishinghistory</a></li>
+</ul>
+<ul>
+<li><a href=
 "#public.table.sourcepackagerelease">public.sourcepackagerelease</a></li>
 </ul>
 <!-- View Definition -->
@@ -8964,6 +8970,10 @@ uploads and generating archives for this distro release</td>
 <ul>
 <li><a href=
 "#public.table.sourcepackagepublishing">public.sourcepackagepublishing</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.sourcepackagepublishinghistory">public.sourcepackagepublishinghistory</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -20665,6 +20675,10 @@ public</a></p>
 </ul>
 <ul>
 <li><a href=
+"#public.table.sourcepackagepublishinghistory">public.sourcepackagepublishinghistory</a></li>
+</ul>
+<ul>
+<li><a href=
 "#public.table.sourcepackagerelease">public.sourcepackagerelease</a></li>
 </ul>
 <!-- View Definition -->
@@ -21737,6 +21751,244 @@ public.sourcepackagepublishing</caption>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
 <hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.sourcepackagepublishinghistory" id=
+"public.table.sourcepackagepublishinghistory">sourcepackagepublishinghistory</a></h2>
+<p>SourcePackagePublishingHistory: The history of a
+SourcePackagePublishing record. This table represents the lifetime
+of a publishing record from inception to deletion. Records are
+never removed from here and in time the publishing table may become
+a view onto this table. A column being NULL indicates there's no
+data for that state transition. E.g. a package which is removed
+without being superseded won't have datesuperseded or supersededby
+filled in.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.sourcepackagepublishinghistory Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.sourcepackagerelease">public.sourcepackagerelease.id</a></td>
+<td>sourcepackagerelease</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The sourcepackagerelease being published.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.distrorelease">public.distrorelease.id</a></td>
+<td>distrorelease</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The distrorelease into which the sourcepackagerelease is being
+published.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>status</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The current status of the publishing.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.component">public.component.id</a></td>
+<td>component</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The component into which the publishing takes place.</td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.section">public.section.id</a></td>
+<td>section</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The section into which the publishing takes place.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>datecreated</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL</i><br />
+<br />
+The date/time on which the publishing record was created.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>datepublished</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The date/time on which the source was actually published into an
+archive.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>datesuperseded</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The date/time on which the source was superseded by a new
+source.</td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.sourcepackagerelease">public.sourcepackagerelease.id</a></td>
+<td>supersededby</td>
+<td>integer</td>
+<td><br />
+<br />
+The source which superseded this one.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>datemadepending</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The date/time on which this publishing record was made to be
+pending removal from the archive.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>scheduleddeletiondate</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The date/time at which the source is/was scheduled to be
+deleted.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>dateremoved</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The date/time at which the source was actually deleted.</td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.sourcepackagepublishinghistory</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>gina</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr0">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
 <h2>View: <a href="#public.schema">public</a>.<a name=
 "public.view.sourcepackagepublishingview" id=
 "public.view.sourcepackagepublishingview">sourcepackagepublishingview</a></h2>
@@ -22160,6 +22412,10 @@ dbschema.SourcePackageFormat</td>
 <ul>
 <li><a href=
 "#public.table.sourcepackagepublishing">public.sourcepackagepublishing</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.sourcepackagepublishinghistory">public.sourcepackagepublishinghistory</a></li>
 </ul>
 <ul>
 <li><a href=

@@ -2,6 +2,38 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-06 14:46:45 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1572
+
+    Summary:
+      SourcePackagePublishingHistory table for Kinnison
+    Revision:
+      launchpad--devel--0--patch-1572
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-260
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-261
+       SourcePackagePublishingHistory table for Kinnison
+    
+
+    modified files:
+     database/schema/comments.sql database/schema/launchpad.html
+     database/schema/patch-14-03-0.sql database/schema/security.cfg
+     doc/changelog.txt
+
+    renamed files:
+     database/schema/pending/.arch-ids/dsilvers-sprh.sql.id
+       ==> database/schema/.arch-ids/patch-14-03-0.sql.id
+     database/schema/pending/dsilvers-sprh.sql
+       ==> database/schema/patch-14-03-0.sql
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-260
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-261
+
+
 2005-04-06 06:07:44 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1571
 
     Summary:
