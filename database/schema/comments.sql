@@ -90,14 +90,14 @@ COMMENT ON COLUMN POTMsgSet.flagscomment IS 'The flags associated with this set 
 
 -- POTemplate
 COMMENT ON TABLE POTemplate IS 'This table stores a pot file for a given product.';
-COMMENT ON COLUMN POTemplate.rawfile IS 'The pot file itself in raw mode.';
+COMMENT ON COLUMN POTemplate.rawfile IS 'The pot file itself encoded as a base64 string.';
 COMMENT ON COLUMN POTemplate.rawimporter IS 'The person that attached the rawfile.';
 COMMENT ON COLUMN POTemplate.daterawimport IS 'The date when the rawfile was attached.';
 COMMENT ON COLUMN POTemplate.rawimportstatus IS 'The status of the import: 0 pending import, 1 imported, 2 failed.';
 
 -- POFile
 COMMENT ON TABLE POFile IS 'This table stores a po file for a given product.';
-COMMENT ON COLUMN POFile.rawfile IS 'The pot file itself in raw mode.';
+COMMENT ON COLUMN POFile.rawfile IS 'The po file itself encoded as a base64 string.';
 COMMENT ON COLUMN POFile.rawimporter IS 'The person that attached the rawfile.';
 COMMENT ON COLUMN POFile.daterawimport IS 'The date when the rawfile was attached.';
 COMMENT ON COLUMN POFile.rawimportstatus IS 'The status of the import: 0 pending import, 1 imported, 2 failed.';

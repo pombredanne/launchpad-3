@@ -148,7 +148,6 @@ class IProduct(Interface):
         """Returns the distributions this product has been packaged in."""
 
 
-
 class IProductSet(Interface):
     """The collection of products."""
 
@@ -169,4 +168,9 @@ class IProductSet(Interface):
         description fields of product. soyuz, buttress, malone etc are
         hints as to whether the search should be limited to products
         that are active in those Launchpad applications."""
+
+    def translatables(translationProject=None):
+        """Returns an iterator over products that have resources translatables
+        for translationProject, if it's None it returs all available products
+        with translatables resources."""
 

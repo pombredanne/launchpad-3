@@ -1,3 +1,5 @@
+import StringIO, base64
+
 # Zope interfaces
 from zope.interface import implements
 from zope.component import getUtility
@@ -21,11 +23,7 @@ from canonical.lp.dbschema import RosettaTranslationOrigin
 from canonical.lp.dbschema import RosettaImportStatus
 from canonical.database.constants import DEFAULT, UTC_NOW
 
-# XXX: Carlos Perello Marin 01/12/2004 Disabled because it breaks Launchpad.
-# The problem seems to be that canonical/rosetta/__init__.py is not able to
-# include the Product class.
-# This is needed for POTemplate.doRawImport and POFile.doRawImport
-#from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
+from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
 
 standardPOTemplateCopyright = 'Canonical Ltd'
 
@@ -432,13 +430,9 @@ class POTemplate(SQLBase):
         return self.createMessageSetFromMessageID(messageID)
 
     def doRawImport(self):
-        # XXX: Carlos Perello Marin 01/12/2004 Disabled. Look at the
-        # TemplateImporter import up.
-        return
-        
         importer = TemplateImporter(self, self.rawimporter)
     
-        file = StringIO(base64.decodestring(self.rawfile))
+        file = StringIO.StringIO(base64.decodestring(self.rawfile))
     
         try:
             importer.doImport(file)
@@ -904,13 +898,9 @@ class POFile(SQLBase):
             return None
 
     def doRawImport(self):
-        # XXX: Carlos Perello Marin 01/12/2004 Disabled. Look at the
-        # POTemplateImporter import up.
-        return
-
         importer = POFileImporter(self, self.rawimporter)
     
-        file = StringIO(base64.decodestring(self.rawfile))
+        file = StringIO.StringIO(base64.decodestring(self.rawfile))
     
         try:
             importer.doImport(file)

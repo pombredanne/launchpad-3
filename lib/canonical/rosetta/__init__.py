@@ -7,10 +7,10 @@
 __metaclass__ = type
 
 from zope.interface import implements
+from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IRosettaApplication
+from canonical.launchpad.interfaces import IRosettaApplication, IProductSet
 from canonical.publication import rootObject
-from canonical.launchpad.database import Product
 
 class RosettaApplication:
     implements(IRosettaApplication)
@@ -18,10 +18,6 @@ class RosettaApplication:
     __parent__ = rootObject
 
     def translatables(self, translationProject=None):
-        """This will give a list of the translatables in the given
-        Translation Project. For the moment it just returns every
-        translatable product."""
-        clauseTables = ['Product', 'POTemplate']
-        query = """POTemplate.product=Product.id"""
-        return Product.select(query, clauseTables=clauseTables)
+        products = getUtility(IProductSet)
 
+        return products.translatables(translationProject)

@@ -20,7 +20,6 @@ from canonical.launchpad.database import Language, Person, POTemplate, POFile
 
 from canonical.rosetta.poexport import POExport
 from canonical.rosetta.pofile import POHeader
-from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
 from canonical.lp.dbschema import RosettaImportStatus
 
 charactersPerLine = 50
@@ -1007,22 +1006,7 @@ class ViewImportQueue:
 
                     potemplate = POTemplate.get(id)
 
-                    # XXX: Carlos Perello Marin 26/11/2004 : Perhaps this code
-                    # should be moved inside a POTemplate.importFromRaw
-                    # method.
-
-                    importer = TemplateImporter(potemplate, potemplate.rawimporter)
-
-                    file = StringIO(base64.decodestring(potemplate.rawfile))
-
-                    try:
-                        importer.doImport(file)
-                    except:
-                        potemplate.rawimportstatus = \
-                            RosettaImportStatus.FAILED.value
-                    else:
-                        potemplate.rawimportstatus = \
-                            RosettaImportStatus.IMPORTED.value
+                    potemplate.doRawImport()
 
                 match = re.match('po_(\d+)$', key)
                     
@@ -1030,22 +1014,8 @@ class ViewImportQueue:
                     id = int(match.group(1))
 
                     pofile = POFile.get(id)
-
-                    # XXX: Carlos Perello Marin 26/11/2004 : Perhaps this code
-                    # should be moved inside a POFile.importFromRaw method.
-
-                    importer = POFileImporter(pofile, pofile.rawimporter)
-
-                    file = StringIO(base64.decodestring(pofile.rawfile))
-
-                    try:
-                        importer.doImport(file)
-                    except:
-                        pofile.rawimportstatus = \
-                            RosettaImportStatus.FAILED.value
-                    else:
-                        pofile.rawimportstatus = \
-                            RosettaImportStatus.IMPORTED.value
+                    
+                    pofile.doRawImport()
 
 
 # XXX: Implement class ViewTranslationEfforts: to create new Efforts

@@ -338,3 +338,11 @@ class ProductSet:
             query += ' AND Product.active IS TRUE \n'
         return Product.select(query, clauseTables=clauseTables)
 
+    def translatables(self, translationProject=None):
+        """This will give a list of the translatables in the given
+        Translation Project. For the moment it just returns every
+        translatable product."""
+        clauseTables = ['Product', 'POTemplate']
+        query = """POTemplate.product=Product.id"""
+        return Product.select(query, clauseTables=clauseTables)
+

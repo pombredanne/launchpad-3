@@ -2,15 +2,10 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
 
-import canonical.lp, base64, time
-
+import canonical.lp, time
 import sqlos.connection
-from StringIO import StringIO
 
-from canonical.launchpad.database import POTemplate, ProjectSet
-from canonical.lp.dbschema import RosettaImportStatus
-from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
-
+from canonical.launchpad.database import ProjectSet
 
 class ImportDaemon:
     def setUp(self):
@@ -19,45 +14,9 @@ class ImportDaemon:
     def commit(self):
         self._tm.commit()
 
-    def potimport(self, template):
-        importer = TemplateImporter(template, template.rawimporter)
-
-        # The importer needs a file-like object
-        file = StringIO(base64.decodestring(template.rawfile))
-    
-        try:
-            importer.doImport(file)
-        except:
-            # The import failed, we mark it as failed so we could review it
-            # later in case it's a bug in our code.
-            template.rawimportstatus = RosettaImportStatus.FAILED.value
-        else:
-            # We mark it as done.
-            template.rawimportstatus = RosettaImportStatus.IMPORTED.value
-            
-        self.commit()
-
-    def poimport(self, pofile):
-        importer = POFileImporter(pofile, pofile.rawimporter)
-    
-        # The importer needs a file-like object
-        file = StringIO(base64.decodestring(pofile.rawfile))
-    
-        try:
-            importer.doImport(file)
-        except:
-            # The import failed, we mark it as failed so we could review it
-            # later in case it's a bug in our code.
-            pofile.rawimportstatus = RosettaImportStatus.FAILED.value
-        else:
-            # We mark it as done.
-            pofile.rawimportstatus = RosettaImportStatus.IMPORTED.value
-
-        self.commit()
-
     def nextImport(self):
         # We create the connection every time to prevent a problem with cached
-        # data.
+        # data that don't let the daemon to see changes done from launchpad.
         self.setUp()
         projectSet = ProjectSet()
         for project in projectSet:
@@ -74,10 +33,14 @@ class ImportDaemon:
     def run(self):
         while True:
             for object in self.nextImport():
-                if isinstance(object, POTemplate):
-                    self.potimport(object)
-                else:
-                    self.poimport(object)
+                # object could be a POTemplate or a POFile but both objects
+                # implement the doRawImport method so we don't need to care
+                # about it here.
+                object.doRawImport()
+
+                # As soon as the import is done, we commit the transaction so
+                # it's not lost.
+                self.commit()
             else:
                 time.sleep(60)
 
