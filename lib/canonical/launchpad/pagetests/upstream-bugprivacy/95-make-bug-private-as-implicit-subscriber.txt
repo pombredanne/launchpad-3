@@ -123,7 +123,7 @@ in the process.
               <h5>cc:</h5>
               <ul class="people">
                   <li>
-                    <a href="/malone/bugs/4/people/8/+edit">Sample Person</a>
+                    <a href="/malone/bugs/4/people/7/+edit">Sample Person</a>
                   </li>
               </ul>
   <BLANKLINE>

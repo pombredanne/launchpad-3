@@ -203,26 +203,6 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
         description = description, private = private,
         owner = owner.id, datecreated=datecreated)
 
-    if private:
-        if product:
-            # subscribe the upstream maintainer on a private bug, to
-            # ensure they can actually see it!
-            BugSubscription(
-                person = product.owner.id, bug = bug.id,
-                subscription = dbschema.BugSubscription.CC)
-        elif sourcepackagename:
-            # subscribe the sourcepackage maintainer on a private bug,
-            # to ensure they can actually see it!
-            if sourcepackagename and distribution:
-                maintainerships = Maintainership.selectBy(
-                    sourcepackagenameID=sourcepackagename.id,
-                    distributionID=distribution)
-                if maintainerships.count():
-                    BugSubscription(
-                        person = maintainerships[0].maintainer.id,
-                        bug = bug.id,
-                        subscription = dbschema.BugSubscription.CC)
-
     BugSubscription(
         person = owner.id, bug = bug.id,
         subscription = dbschema.BugSubscription.CC)

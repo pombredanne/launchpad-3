@@ -2,6 +2,29 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-04 21:19:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1556
+
+    Summary:
+      fix bug filing code to not auto-subscribe maintainers, to be more simple/consistent with the only-if-you-ask-for-it semantics of private bug notification
+    Revision:
+      launchpad--devel--0--patch-1556
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-484
+       fix bug filing code to not auto-subscribe maintainers, to be more simple/consistent with the only-if-you-ask-for-it semantics of private bug notification
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/doc/bug.txt
+     lib/canonical/launchpad/interfaces/bug.py
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/95-make-bug-private-as-implicit-subscriber.txt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-484
+
+
 2005-04-04 20:42:18 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1555
 
     Summary:

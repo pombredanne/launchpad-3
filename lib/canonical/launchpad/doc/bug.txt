@@ -228,7 +228,7 @@ u'blah blah blah'
 >>> public_bug.bugtasks[0].bugdescription
 u'a new description'
 
-But when a private bug is filed:
+When a private bug is filed:
 
 >>> added_bug = BugFactory(
 ...     product = firefox, title = "test firefox bug",
@@ -237,13 +237,13 @@ But when a private bug is filed:
 >>> notify(ObjectCreatedEvent(added_bug))
 >>> private_bug = bugset.get(added_bug.id)
 
-both the submitter and the maintainer are explicitly subscribed:
+*only* the submitter is explicitly subscribed:
 
 >>> print [subscription.person.id for subscription in private_bug.subscriptions]
-[12, 16]
+[16]
 
-to ensure that both the submitter and maintainer can actually see the bug that
-was filed!
+It's up to the submitter to explicitly subscribe the maintainer, if
+they so choose.
 
 Note that this works similarly for distributions; in this case the
 "maintainer" is considered the person who maintains the applicable
@@ -262,4 +262,4 @@ sourcepackage. E.g.
 >>> notify(ObjectCreatedEvent(added_bug))
 >>> private_bug = bugset.get(added_bug.id)
 >>> print [subscription.person.id for subscription in private_bug.subscriptions]
-[1, 16]
+[16]
