@@ -57,7 +57,7 @@ class PODBBridge(PlacelessSetup):
                 poFile = poTemplate.poFile(languageCode)
             except KeyError:
                 poFile = poTemplate.newPOFile(person, languageCode)
-            importer = POFileImporter(poFile, None)
+            importer = POFileImporter(poFile, person)
         importer.doImport(file)
 
 if __name__ == '__main__':
