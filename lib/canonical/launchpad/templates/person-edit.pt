@@ -25,6 +25,7 @@
 <div metal:fill-slot="main">
 
 <div id="content" class="documentEditable">
+
     <ul class="contentViews">
         <li id="contentview-view" class="plain">
             <a href="index.html">View</a>
@@ -33,12 +34,14 @@
 	<li id="contentview-packages" class="plain">
             <a href="+packages">Packages</a>
         </li>
-
-        <li id="contentview-edit" class="selected">
+	
+        <li tal:condition="view/permission"
+	    id="contentview-edit" class="selected">
             <a>Edit</a>
         </li>
 
-	<li id="contentview-add" class="plain">
+	<li tal:condition="view/permission"
+	    id="contentview-add" class="plain">
             <a href="+add">Add</a>
         </li>
 
@@ -61,7 +64,14 @@
     <p> Here you edit the Information about <span
     tal:content="context/person/displayname">DISPLAYNAME</span>  
     </div>
-    
+  
+
+    <div tal:condition="view/edit_action">
+    <p> <a tal:attributes="href string:../${context/person/name}"
+         tal:content="context/person/displayname">PERSON</a>
+	 Modified
+    </div>
+  
     <div>
     <form name="edit" action="" method="POST">
 	<table>
@@ -187,13 +197,7 @@
 	</table>
   </form>
   </div>
-  
-  <div tal:condition="view/edit_action">
-  <p> <a tal:attributes="href string:../${context/person/name}"
-         tal:content="context/person/displayname">PERSON</a>
-    Modified
-  </div>
-  
+    
   </div>
 </div>
 </div>

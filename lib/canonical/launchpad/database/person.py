@@ -226,6 +226,28 @@ def personFromPrincipal(principal):
         raise ComponentLookupError
     return Person.get(principal.id)
 
+def getPermission(user, context):
+    """
+    return True if the logged user has permission to add/edit the current
+    shown context (it might be the own person, or the teamowner)
+    """
+    permission = False
+    
+    if user:
+        pid = user.id
+
+        ## user is own person
+        if pid == context.person.id:
+            permission = True
+
+        ## person is team
+        if context.person.teamowner:
+            ## user is teamowner
+            if pid == context.person.teamowner.id:
+                permission = True
+                
+    return permission
+
 
 class EmailAddress(SQLBase):
     implements(IEmailAddress)

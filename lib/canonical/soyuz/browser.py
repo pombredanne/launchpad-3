@@ -20,6 +20,7 @@ from canonical.launchpad.database import EmailAddress, IrcID
 from canonical.launchpad.database import GPGKey, ArchUserID 
 from canonical.launchpad.database import createPerson
 from canonical.launchpad.database import createTeam
+from canonical.launchpad.database import getPermission
 
 # interface import
 from canonical.launchpad.database import IPerson
@@ -178,19 +179,9 @@ class TeamAddView(object):
         self.request = request
         self.results = []
         self.error_msg = None
-        self.permission = False
+
         self.person = IPerson(self.request.principal, None)
-        
-        if self.person:
-            pid = self.person.id
-            
-            if pid == self.context.person.id:
-                self.permission = True
-
-            if self.context.person.teamowner:
-                if pid == self.context.person.teamowner.id:
-                    self.permission = True
-
+        self.permission = getPermission(self.person, self.context)        
 
     def add_action(self):
         enable_added = False
@@ -205,13 +196,12 @@ class TeamAddView(object):
         retype = self.request.get("retype", "")
 
         ##XXX: (uniques) cprov 20041003        
-        if displayname:
+        if displayname and self.person:
             if password != retype:
                 self.error_msg = 'Password does not match'
                 return enable_added
 
-            if self.person:
-                teamowner = self.person.id
+            teamowner = self.person.id
             
             self.results = createTeam(displayname,
                                       teamowner,
@@ -306,6 +296,7 @@ class PersonView(object):
         self.request = request
 
         self.person = IPerson(self.request.principal, None)
+        self.permission = getPermission(self.person, self.context)
         
     def is_member(self):
 
@@ -326,6 +317,10 @@ class PersonPackagesView(object):
         self.context = context
         self.request = request
 
+        self.person = IPerson(self.request.principal, None)
+        self.permission = getPermission(self.person, self.context)
+
+
 class PersonEditView(object):
     emailPortlet = ViewPageTemplateFile(
         '../launchpad/templates/portlet-person-email.pt')
@@ -334,18 +329,9 @@ class PersonEditView(object):
         self.context = context
         self.request = request
         self.results = []
-        self.permission = False
-        self.person = IPerson(self.request.principal, None)
-        
-        if self.person:
-            pid = self.person.id
-            
-            if pid == self.context.person.id:
-                self.permission = True
 
-            if self.context.person.teamowner:
-                if pid == self.context.person.teamowner.id:
-                    self.permission = True
+        user = IPerson(self.request.principal, None)
+        self.permission = getPermission(user, self.context)
             
     def email_action(self):
 

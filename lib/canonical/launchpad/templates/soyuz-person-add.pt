@@ -25,11 +25,13 @@
                 <a href="+packages">Packages</a>
             </li>
 
-            <li id="contentview-edit" class="plain">
+            <li tal:condition="view/permission"
+	        id="contentview-edit" class="plain">
                 <a href="+edit">Edit</a>
             </li>
 
-	    <li id="contentview-add" class="selected">
+	    <li tal:condition="view/permission"
+	        id="contentview-add" class="selected">
                 <a href="+add">Add</a>
             </li>
 
@@ -51,6 +53,12 @@
     <p> Here you can create a new Team
     </div>
     
+    <div tal:condition="view/add_action">
+         <p> <a tal:attributes="href string:../${view/results/name}"
+                tal:content="view/results/displayname">NAME</a> 
+                Team added
+    </div>
+
     <div>
     <form name="add" action="" method="POST">
 
@@ -118,14 +126,6 @@
   </form>
   </div>
   </div>
-
-  <tal:block tal:condition="view/add_action">
-  <div>
-     <p> <a tal:attributes="href string:../${view/results/name}"
-            tal:content="view/results/displayname">NAME</a> 
-         Team added
-  </div>
-  </tal:block>
 
   </div>
  </div>

@@ -300,7 +300,7 @@
 
 
    <page for="canonical.soyuz.personapp.PersonApp"
-	 permission="launchpad.AnyPerson"
+	 permission="zope.Public"
 	 name="index.html"
 	 class="canonical.soyuz.browser.PersonView"
          template="../launchpad/templates/person-index.pt"
