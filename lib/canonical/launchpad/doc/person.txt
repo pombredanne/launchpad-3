@@ -1,0 +1,26 @@
+Person
+======
+
+In Launchpad, the Person class is overloaded to represent both people
+and teams. The way to tell if a Person represents a person or a team
+is to check its teamowner attribute
+
+>>> from canonical.launchpad.database import Person
+
+>>> buttsource = Person.byName('buttsource')
+>>> buttsource.teamowner is None
+False
+>>> lifeless = Person.byName('lifeless')
+>>> lifeless.teamowner is None
+True
+
+Person has an inTeam method to allow us to easily check if a person is a
+member of a team. It accepts the team name as a string, which is the
+common use case when checking permissions.
+
+>>> lifeless = Person.byName('lifeless')
+>>> ddaa = Person.byName('ddaa')
+>>> lifeless.inTeam('buttsource') and ddaa.inTeam('buttsource')
+True
+
+

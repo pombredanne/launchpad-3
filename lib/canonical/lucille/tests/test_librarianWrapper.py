@@ -52,7 +52,7 @@ class TestLibrarianWrapper(unittest.TestCase):
                                         contentType='test/test',
                                         digest=digest,
                                         uploader=uploader)
-        print 'ID %s ALIAS %s' %(fileid, filealias)
+        #print 'ID %s ALIAS %s' %(fileid, filealias)
 
         cached = os.path.join(datadir('cache'), name)
         os.path.exists(cached)

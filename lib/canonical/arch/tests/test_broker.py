@@ -812,7 +812,7 @@ class RevisionImport(DatabaseAndArchiveTestCase):
 def test_suite():
     import sys
     result = unittest.TestLoader().loadTestsFromModule(sys.modules[__name__])
-    print 'TODO: lifeless & steveA to talk about enabling the arch ftests'
+    # TODO: lifeless & steveA to talk about enabling the arch ftests'
     return unittest.TestSuite()
 
 def main(argv):

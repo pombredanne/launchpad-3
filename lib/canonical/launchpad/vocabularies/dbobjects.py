@@ -185,6 +185,7 @@ class BinaryPackageNameVocabulary(NamedSQLObjectVocabulary):
 class ProductVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
     _table = Product
+    _orderBy = 'displayname'
 
     def _toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.title)
@@ -240,7 +241,7 @@ class BugTrackerVocabulary(SQLObjectVocabularyBase):
 class PersonVocabulary(NamedSQLObjectVocabulary):
     implements(IHugeVocabulary)
     _table = Person
-    _orderBy = 'familyname'
+    _orderBy = ['familyname','givenname','displayname']
 
     def _toTerm(self, obj):
         return SimpleTerm(

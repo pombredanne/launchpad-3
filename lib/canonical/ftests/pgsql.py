@@ -51,6 +51,68 @@ class ConWrapper:
     def __setattr__(self, key, value):
         return setattr(self.__dict__['_con'], key, value)
 
+def PgTestCaseSetUp(template, dbname):
+    db_adapter = None
+    try:
+        name = zapi.getUtility(IConnectionName).name
+        db_adapter = zapi.getUtility(IZopeDatabaseAdapter, name)
+        if db_adapter.isConnected():
+            # we have to disconnect long enough to drop
+            # and recreate the DB
+            db_adapter.disconnect()
+    except ComponentLookupError, err:
+        # configuration not yet loaded, no worries
+        pass
+
+    con = psycopg.connect('dbname=%s' % template)
+    try:
+        try:
+            cur = con.cursor()
+            cur.execute('ABORT TRANSACTION')
+            cur.execute('DROP DATABASE %s' % dbname)
+        except psycopg.ProgrammingError, x:
+            if 'does not exist' not in str(x):
+                raise
+        for i in range(0,100):
+            try:
+                cur.execute(
+                    "CREATE DATABASE %s TEMPLATE=%s ENCODING='UNICODE'" % (
+                        dbname, template))
+                break
+            except psycopg.ProgrammingError, x:
+                x = str(x)
+                if 'being accessed by other users' not in x:
+                    raise
+            time.sleep(0.1)
+    finally:
+        try:
+            if db_adapter and not db_adapter.isConnected():
+                # the dirty deed is done, time to reconnect
+                db_adapter.connect()
+
+            con.close()
+        except psycopg.Error:
+            pass
+
+def PgTestCaseTearDown(template, dbname):
+    for i in range(0,100):
+        try:
+            con = psycopg.connect('dbname=%s' % template)
+        except psycopg.OperationalError, x:
+            if 'does not exist' in x:
+                return
+            raise
+        cur = con.cursor()
+        cur.execute('ABORT TRANSACTION')
+        try:
+            cur.execute('DROP DATABASE %s' % dbname)
+        except psycopg.ProgrammingError, x:
+            x = str(x)
+            if 'being accessed by other users' in x:
+                time.sleep(0.1)
+                continue
+            if 'does not exist' not in str(x):
+                raise
 
 class PgTestCase(unittest.TestCase):
     """This test harness will create and destroy a database
@@ -67,48 +129,8 @@ class PgTestCase(unittest.TestCase):
         return con
 
     def setUp(self):
-        db_adapter = None
-        try:
-            name = zapi.getUtility(IConnectionName).name
-            db_adapter = zapi.getUtility(IZopeDatabaseAdapter, name)
-            if db_adapter.isConnected():
-                # we have to disconnect long enough to drop
-                # and recreate the DB
-                db_adapter.disconnect()
-        except ComponentLookupError, err:
-            # configuration not yet loaded, no worries
-            pass
-
         self._cons = []
-        con = psycopg.connect('dbname=%s' % self.template)
-        try:
-            try:
-                cur = con.cursor()
-                cur.execute('ABORT TRANSACTION')
-                cur.execute('DROP DATABASE %s' % self.dbname)
-            except psycopg.ProgrammingError, x:
-                if 'does not exist' not in str(x):
-                    raise
-            for i in range(0,100):
-                try:
-                    cur.execute(
-                        "CREATE DATABASE %s TEMPLATE=%s ENCODING='UNICODE'" % (
-                            self.dbname, self.template))
-                    break
-                except psycopg.ProgrammingError, x:
-                    x = str(x)
-                    if 'being accessed by other users' not in x:
-                        raise
-                time.sleep(0.1)
-        finally:
-            try:
-                if db_adapter and not db_adapter.isConnected():
-                    # the dirty deed is done, time to reconnect
-                    db_adapter.connect()
-
-                con.close()
-            except psycopg.Error:
-                pass
+        PgTestCaseSetUp(self.template, self.dbname)
 
     def tearDown(self):
         # Close any unclosed connections if our tests are being lazy
@@ -118,21 +140,5 @@ class PgTestCase(unittest.TestCase):
                 con.close()
             except psycopg.InterfaceError:
                 pass # Already closed
-        for i in range(0,100):
-            try:
-                con = psycopg.connect('dbname=%s' % self.template)
-            except psycopg.OperationalError, x:
-                if 'does not exist' in x:
-                    return
-                raise
-            cur = con.cursor()
-            cur.execute('ABORT TRANSACTION')
-            try:
-                cur.execute('DROP DATABASE %s' % self.dbname)
-            except psycopg.ProgrammingError, x:
-                x = str(x)
-                if 'being accessed by other users' in x:
-                    time.sleep(0.1)
-                    continue
-                if 'does not exist' not in str(x):
-                    raise
+        PgTestCaseTearDown(self.template, self.dbname)
+

@@ -30,6 +30,13 @@ enough to render in a select widget, where non-enumerable vocabularies require
 a special query interface to make it easy to choose just one or a couple of
 options from several hundred, or several thousand, or more.
 
+Vocabularies should not be imported - they can be retrieved from the
+vocabulary registry.
+
+    >>> from zope.schema.vocabulary import getVocabularyRegistry
+    >>> vocabulary_registry = getVocabularyRegistry()
+    >>> product_vocabulary = vocabulary_registry.get(None, "Product")
+
 Enumerable Vocabularies
 =======================
 
@@ -38,16 +45,43 @@ XXX: document your vocabularies here please!
 Non-Enumerable Vocabularies
 ===========================
 
-o ProductVocabulary - the list of selectable products.
+Although you technically *could* iterate over these, in launchpad it
+would be stupid to do so due to their expected size on the production
+database.
 
-    >>> from zope.schema.vocabulary import getVocabularyRegistry
-    >>> vocabulary_registry = getVocabularyRegistry()
+o ProductVocabulary - the list of selectable products. Results are
+  ordered by displayname.
+
     >>> product_vocabulary = vocabulary_registry.get(None, "Product")
     >>> gnome_products = product_vocabulary.search("gnome")
-    >>> [product_term.title for product_term in gnome_products]
-    [u'The Evolution Groupware Application', u'The GNOME Terminal Emulator', u'python gnome2 dev', u'The Gnome Panel Applets', u'Ubuntu']
+    >>> l = [product_term.title for product_term in gnome_products]
+    >>> l[:2]
+    [u'The Evolution Groupware Application', u'The GNOME Terminal Emulator']
+    >>> l[2:4]
+    [u'The Gnome Panel Applets', u'Ubuntu']
+    >>> l[4:]
+    [u'python gnome2 dev']
     >>> arch = product_vocabulary.getTermByToken("arch-mirrors")
     >>> arch.title 
     u'Arch archive mirrors'
+
+o PersonVocabulary - all people and teams. Results are ordered by familyname,
+  givenname, displayname
+
+    >>> vocab = vocabulary_registry.get(None, "Person")
+    >>> stuff = vocab.search('team')
+    >>> [t.token for t in stuff]
+    ['name21', 'name18', 'name17', 'name19', 'name20']
+
+o ValidPerson - all 'valid' people. This is currently defined as people
+  with a password.
+
+    >>> vocab = vocabulary_registry.get(None, "ValidPerson")
+    >>> stuff = vocab.search('team')
+    >>> [t.token for t in stuff]
+    []
+    >>> stuff = vocab.search('bishop')
+    >>> [t.token for t in stuff]
+    ['stub']
 
 XXX: document more vocabularies here, particularly when they break!
