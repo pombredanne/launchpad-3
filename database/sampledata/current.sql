@@ -360,15 +360,15 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'archarchive'::pg_catalog.regclass;
 
-INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (1, 'mozilla', 'Mozilla', 'text', false, NULL);
-INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (2, 'thunderbird', 'Thunderbid', 'text', false, NULL);
-INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (3, 'twisted', 'Twisted', 'text', false, NULL);
-INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (4, 'bugzila', 'Bugzila', 'text', false, NULL);
-INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (5, 'arch', 'Arch', 'text', false, NULL);
-INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (6, 'kiwi2', 'Kiwi2', 'text', false, NULL);
-INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (7, 'plone', 'Plone', 'text', false, NULL);
-INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (8, 'gnome', 'GNOME', 'The GNOME Project', false, NULL);
-INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (9, 'iso-codes', 'iso-codes', 'The iso-codes', false, NULL);
+INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (2, 'thunderbird@arch.ubuntu.com', 'Thunderbid', 'text', false, NULL);
+INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (3, 'twisted@arch.ubuntu.com', 'Twisted', 'text', false, NULL);
+INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (4, 'bugzilla@arch.ubuntu.com', 'Bugzilla', 'text', false, NULL);
+INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (5, 'arch@arch.ubuntu.com', 'Arch', 'text', false, NULL);
+INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (6, 'kiwi2@arch.ubuntu.com', 'Kiwi2', 'text', false, NULL);
+INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (7, 'plone@arch.ubuntu.com', 'Plone', 'text', false, NULL);
+INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (8, 'gnome@arch.ubuntu.com', 'GNOME', 'The GNOME Project', false, NULL);
+INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (9, 'iso-codes@arch.ubuntu.com', 'iso-codes', 'The iso-codes', false, NULL);
+INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (1, 'mozilla@arch.ubuntu.com', 'Mozilla', 'text', false, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'archarchive'::pg_catalog.regclass;
@@ -1140,10 +1140,6 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'bugexternalref'::pg_catalog.regclass;
 
-INSERT INTO bugexternalref (id, bug, bugreftype, data, description, datecreated, "owner") VALUES (1, 2, 1, '45', 'Some junk has to go here because the field is NOT NULL', '2004-09-24 20:58:04.702498', 12);
-INSERT INTO bugexternalref (id, bug, bugreftype, data, description, datecreated, "owner") VALUES (2, 2, 2, 'http://www.mozilla.org', 'The homepage of the project this bug is on, for no particular reason', '2004-09-24 20:58:04.720774', 12);
-INSERT INTO bugexternalref (id, bug, bugreftype, data, description, datecreated, "owner") VALUES (3, 1, 1, '2342', 'A very serious security error. This is most important to fix.', '2004-10-04 00:00:00', 1);
-INSERT INTO bugexternalref (id, bug, bugreftype, data, description, datecreated, "owner") VALUES (4, 1, 2, 'http://www.notdoneyet.com/delayed/', 'The sooner you think you''re nearly there the sooner some unexpected glitch pops up that catches you unawares. Focus!', '2004-10-04 00:00:00', 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bugexternalref'::pg_catalog.regclass;
@@ -1336,6 +1332,13 @@ INSERT INTO bugmessage (id, bug, message) VALUES (5, 2, 6);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bugmessage'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'cveref'::pg_catalog.regclass;
+
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'cveref'::pg_catalog.regclass;
 
 
 SELECT pg_catalog.setval('person_id_seq', 22, true);
@@ -1717,5 +1720,9 @@ SELECT pg_catalog.setval('bounty_id_seq', 1, false);
 
 
 SELECT pg_catalog.setval('bugmessage_id_seq', 5, true);
+
+
+
+SELECT pg_catalog.setval('cveref_id_seq', 1, false);
 
 

@@ -1,0 +1,34 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+    <h1><span tal:replace="context/title">$Branch.title</span></h1>
+
+    <div class="documentDescription" tal:content="context/shortdesc">
+        $Branch.shortdesc goes here. This should be quite short,
+        just a single paragraph of text really, giving the product
+        highlights.
+    </div>
+
+</div>
+
+</body>
+</html>

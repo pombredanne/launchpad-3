@@ -19,7 +19,11 @@
 __docformat__ = "restructuredtext en"
 
 from zope.interface import Interface, Attribute
+from zope.schema import Choice, Datetime, Int, Text, TextLine, Float
+from canonical.launchpad.fields import Title
 
+from zope.i18nmessageid import MessageIDFactory
+_ = MessageIDFactory('launchpad')
 
 class INamespaceObject(Interface):
 
@@ -467,6 +471,18 @@ class IBranch(ICategoryItem, IPackage, IVersionIterable):
         :precondition: `self.exists()` returns ``True``
         :precondition: `self.iter_versions` yields at least one object.
         """
+
+    '''extension interfaces for launchpad, to move into a sub interface'''
+    id = Int(title=_('The database identifier for this branch.'))
+
+    title = Title(title=_('Branch Title'), required=True,
+                  description = _("""The title of the Branch. This will be
+                  displayed on any report listing different branches. It
+                  should be a very brief (one line, less than 70 characters)
+                  title describing the purpose of the branch."""))
+    archnamespace = Int(title=_('The ArchNameSpace object for this branch'),
+                    required=True, readonly=False)
+
 
 class IVersionFactory(Interface):
 

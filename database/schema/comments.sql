@@ -103,6 +103,17 @@ COMMENT ON TABLE SourcepackageBugAssignment IS 'Links a given Bug to a particula
 COMMENT ON COLUMN SourcePackageBugAssignment.datecreated IS 'A timestamp for the creation of this bug assignment. Note that this is not the date the bug was created (though it might be), it\'s the date the bug was assigned to this product, which could have come later.';
 
 
+-- CVERef
+COMMENT ON TABLE CVERef IS 'This table stores CVE references for bugs. CVE is a way of tracking security problems across multiple vendor products.';
+COMMENT ON COLUMN CVERef.cveref IS 'This is the actual CVE number assigned to this specific problem.';
+COMMENT ON COLUMN CVERef.owner IS 'This refers to the person who created the entry.';
+
+-- BugExternalRef
+
+COMMENT ON TABLE BugExternalRef IS 'A table to store web links to related content for bugs.';
+COMMENT ON COLUMN BugExternalRef.bug IS 'The bug to which this URL is relevant.';
+COMMENT ON COLUMN BugExternalRef.owner IS 'This refers to the person who created the link.';
+
 /*
   Soyuz
 */

@@ -28,11 +28,11 @@
   ... 
   ... 1
   ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="field.data"
+  ... Content-Disposition: form-data; name="field.url"
   ... 
   ... http://www.example.com
   ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="field.description"
+  ... Content-Disposition: form-data; name="field.title"
   ... 
   ... test ext ref
   ... ------------0xKhTmLbOuNdArY
@@ -44,13 +44,8 @@
   HTTP/1.1 303 See Other
   ...
           <h1>Add External Reference</h1>
-  ...
-  <option selected="selected" value="URL">URL</option>
-  ...
-  <div><input class="textType" id="field.data" name="field.data" size="20" type="text" value="http://www.example.com"  /></div>
-  ...
-  <div><textarea cols="60" id="field.description" name="field.description" rows="15" >test ext ref</textarea></div>
-  ...
+  ...name="field.url" size="20" type="text" value="http://www.example.com"...
+  ...name="field.title"...
 
 
   >>> print http(r"""
@@ -61,42 +56,7 @@
   HTTP/1.1 303 See Other
   ...
   <BLANKLINE>
-  ..
-  <!--
-  <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-        lang="en"
-        metal:use-macro="context/@@malone_template/master"
-        i18n:domain="rosetta">
-  <body>
-  <BLANKLINE>
-  <div metal:fill-slot="main">
-    <h1>External References</h1>
-    <table class="listing">
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-        <th>Data</th>
-        <th>Action</th>
-      </tr>
-      <tr tal:repeat="ref context">
-        <td tal:content="ref/bugreftype/lp:BugExternalReferenceType">type</td>
-        <td tal:content="ref/description">description</td>
-        <td>
-          <a tal:attributes="href ref/url"
-             tal:content="ref/data">999</a>
-        </td>
-        <td>
-          <a tal:attributes="href string:${ref/id}/+edit">Edit</a>
-        </td>
-      </tr>
-    </table>
-    <input type="submit" value="Add" onclick="window.open('+new','_top')" />
-  </div>
-  <BLANKLINE>
-  </body>
-  </html>
-  -->
-  <BLANKLINE>
+  ...
 
 
   >>> print http(r"""

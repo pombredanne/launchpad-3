@@ -28,8 +28,7 @@
                     <input name="searchtext" size="40" />
                     <input type="submit" value="Search" />
                     <div class="formHelp">Enter any part of the project name,
-                    title or description. This will also search the products
-                    from every project.</div>
+                    title or description.</div>
                 </td>
             </tr>
         </table>

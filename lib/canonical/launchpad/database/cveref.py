@@ -1,3 +1,4 @@
+
 from datetime import datetime
 
 # Zope
@@ -16,30 +17,38 @@ from canonical.launchpad.database.bugset import BugSetBase
 
 
 
-class BugExternalRef(SQLBase):
-    """An external reference for a bug, not supported remote bug systems."""
+class CVERef(SQLBase):
+    """A CVE reference for a bug."""
 
-    implements(IBugExternalRef)
+    implements(ICVERef)
 
-    _table = 'BugExternalRef'
+    _table = 'CVERef'
     bug = ForeignKey(foreignKey='Bug', dbName='bug', notNull=True)
-    url = StringCol(notNull=True)
+    cveref = StringCol(notNull=True)
     title = StringCol(notNull=True)
     datecreated = DateTimeCol(notNull=True, default=datetime.utcnow())
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
 
-class BugExternalRefSet(BugSetBase):
-    """A set for BugExternalRef."""
+    def url(self):
+        """Return the URL for this CVE reference.
+        """
 
-    implements(IBugExternalRefSet)
-    table = BugExternalRef
+        return 'http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=%s' % (
+                                                                  self.data)
 
 
-def BugExternalRefFactory(context, **kw):
+class CVERefSet(BugSetBase):
+    """A set of CVERef."""
+
+    implements(ICVERefSet)
+    table = CVERef
+
+
+def CVERefFactory(context, **kw):
     bug = context.context.bug
-    datecreated = datetime.utcnow()
-    return BugExternalRef(
+    return CVERef(
         bug=bug,
         owner=context.request.principal.id,
         **kw)
+
 

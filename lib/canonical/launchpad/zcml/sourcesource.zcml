@@ -54,7 +54,7 @@
     <!-- CONTENT CLASSES -->
     <content class="canonical.launchpad.database.SourceSourceSet">
         <allow interface="canonical.launchpad.interfaces.ISourceSourceSet" />
-        <require permission="zope.View"
+        <require permission="zope.Public"
         set_schema="canonical.launchpad.interfaces.ISourceSourceSet" />
     </content>
 

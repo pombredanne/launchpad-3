@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces.bugactivity import *
 from canonical.launchpad.interfaces.bugsubscription import *
 from canonical.launchpad.interfaces.bugwatch import *
 from canonical.launchpad.interfaces.bugextref import *
+from canonical.launchpad.interfaces.cveref import *
 from canonical.launchpad.interfaces.bugattachment import *
 from canonical.launchpad.interfaces.bugtracker import *
 from canonical.launchpad.interfaces.bugassignment import *

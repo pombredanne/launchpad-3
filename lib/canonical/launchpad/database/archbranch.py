@@ -30,7 +30,7 @@ class Branch(SQLBase):
     implements(IBranch)
 
     _table = 'Branch'
-    namespace = ForeignKey(foreignKey='ArchNamespace', dbName='archnamespace',
+    archnamespace = ForeignKey(foreignKey='ArchNamespace', dbName='archnamespace',
                            notNull=True)
     title = StringCol(dbName='title', notNull=True)
     description = StringCol(dbName='description', notNull=True)

@@ -17,24 +17,38 @@
 
         <h2 tal:content="prod/title">Product Title</h2>
 
-        <table class="listing rowNavigation"
-               tal:define="summary prod/bugsummary"
+        <table class="listing"
                style="float: right;">
             <tr>
-              <th></th>
+              <th>Bazaar Branch Names</th>
             </tr>
-            <tr tal:repeat="severity summary">
-                <td tal:repeat="bugcount severity"
-                    tal:content="bugcount">x
+            <tr tal:repeat="branch prod/branches"
+                class="rowNavigation">
+                <td tal:content="branch/title">x
                 </td>
            </tr>
+           <tr tal:condition="not: prod/branches">
+                <td>No Bazaar branches for this product.</td>
+            </tr>
+            <tr>
+              <th>Other Revision Control Sources</th>
+            </tr>
+            <tr tal:repeat="source prod/sourcesources"
+                class="rowNavigation">
+                <td tal:content="source/title">x
+                </td>
+           </tr>
+           <tr tal:condition="not: prod/sourcesources">
+                <td>No revision control system for this product.</td>
+            </tr>
         </table>
+
 
         <p tal:content="prod/shortdesc">Product Summary</p>
 
         <p><img src="/++resource++add.gif">
            <a href="#" tal:attributes="href prod/name">See all
-           bugs in <span tal:replace="prod/displayname">product</span>...</a></p>
+           branches for <span tal:replace="prod/displayname">product</span>...</a></p>
     
     </div>
 

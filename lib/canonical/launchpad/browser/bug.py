@@ -22,6 +22,8 @@ def traverseBug(bug, request, name):
         return BugAttachmentSet(bug=bug.id)
     elif name == 'references':
         return BugExternalRefSet(bug=bug.id)
+    elif name == 'cve':
+        return CVERefSet(bug=bug.id)
     elif name == 'people':
         return BugSubscriptionSet(bug=bug.id)
     elif name == 'watches':

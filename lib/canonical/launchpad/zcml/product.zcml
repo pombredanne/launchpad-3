@@ -17,7 +17,7 @@
     <content class="canonical.launchpad.database.Product">
         <allow interface="canonical.launchpad.interfaces.IProduct" />
         <require
-            permission="zope.View"
+            permission="zope.Public"
             set_schema="canonical.launchpad.interfaces.IProduct"
         />
     </content>
@@ -119,8 +119,5 @@
            class="zope.app.form.browser.TextWidget"
            displayWidth="55" />
     </browser:addform>
-    <!--
-        content_factory="canonical.launchpad.database.BugFactory"
-    -->
 
 </configure>

@@ -13,7 +13,7 @@
         <allow
             interface="zope.app.form.browser.interfaces.IAddFormCustomization"
             />
-        <require permission="zope.View" set_schema="canonical.launchpad.interfaces.IBugPackageInfestation" />
+        <require permission="zope.Public" set_schema="canonical.launchpad.interfaces.IBugPackageInfestation" />
     </content>
 
     <content class="canonical.launchpad.database.BugPackageInfestationSet">

@@ -23,10 +23,10 @@
         schema="canonical.launchpad.interfaces.IBugExternalRef"
         for="canonical.launchpad.interfaces.IBugExternalRefSet"
         label="Add External Reference"
-        fields="bugreftype data description"
+        fields="url title"
         content_factory="canonical.launchpad.database.BugExternalRefFactory"
         arguments=""
-        keyword_arguments="bugreftype data description"
+        keyword_arguments="url title"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
         lp:url="malone/bugs/$Bugs.id/references/+new" />
@@ -34,10 +34,10 @@
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.IBugExternalRef"
-        label="Change Bug External Reference"
+        label="Modify Web Reference"
         permission="launchpad.AnyPerson"
         template="../templates/default-editform.pt"
-        fields="bugreftype data description"
+        fields="url title"
         lp:url="malone/bugs/$Bug.id/references/$Reference.id/+edit" />
 
     <!-- BugExternalRefSet -->

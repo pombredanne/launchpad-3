@@ -1,3 +1,4 @@
+
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute
@@ -5,13 +6,11 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
-from canonical.launchpad.fields import Title
+class ICVERefsView(IAddFormCustomization):
+    """Bug Web Link views"""
 
-class IBugExternalRefsView(IAddFormCustomization):
-    """BugExternalRef views"""
-
-class IBugExternalRef(Interface):
-    """An external reference for a bug, not supported remote bug systems."""
+class ICVERef(Interface):
+    """A reference to a CVE number for a bug."""
 
     id = Int(
             title=_('ID'), required=True, readonly=True
@@ -19,15 +18,11 @@ class IBugExternalRef(Interface):
     bug = Int(
             title=_('Bug ID'), required=True, readonly=True,
             )
-    url = TextLine(
-            title=_('URL'), required=True, readonly=False,
-            description = _("""The url of the content that is related to
-            this bug.""")
+    cveref = TextLine(
+            title=_('CVE Reference'), required=True, readonly=False,
             )
-    title = Title(
+    title = Text(
             title=_('Title'), required=True, readonly=False,
-            description=_("""A brief description of the content that is
-            being linked to.""")
             )
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True,
@@ -36,15 +31,19 @@ class IBugExternalRef(Interface):
             title=_('Owner'), required=False, readonly=True,
             )
 
+    def url():
+        """Return a URL to the site that has the CVE data for
+        this CVE reference."""
 
-class IBugExternalRefSet(Interface):
-    """A set for IBugExternalRef objects."""
+
+class ICVERefSet(Interface):
+    """A set for ICVERef objects."""
 
     bug = Int(title=_("Bug id"), readonly=True)
 
     def __getitem__(key):
-        """Get a BugExternalRef."""
+        """Get a CVERef."""
 
     def __iter__():
-        """Iterate through BugExternalRefs for a given bug."""
+        """Iterate through CVERefs for a given bug."""
 

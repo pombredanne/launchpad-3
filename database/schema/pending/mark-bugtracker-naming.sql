@@ -1,7 +1,7 @@
 
 /*
   There still seem to be a few vestigial "bugsystem" objects around, this fragment
-  should clean those up for good.
+  should clean those up for good. Stub, is this ok?
 */
 
 ALTER TABLE bugsystem_pkey RENAME TO bugtracker_pkey;

@@ -14,6 +14,7 @@ from canonical.launchpad.database.bugmessage import *
 from canonical.launchpad.database.bugactivity import *
 from canonical.launchpad.database.bugattachment import *
 from canonical.launchpad.database.bugextref import *
+from canonical.launchpad.database.cveref import *
 from canonical.launchpad.database.bugtracker import *
 from canonical.launchpad.database.sourcesource import *
 from canonical.launchpad.database.pofile import *
