@@ -2,6 +2,56 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-02 09:57:33 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1270
+
+    Summary:
+      Rosetta tar import improvements
+    Revision:
+      launchpad--devel--0--patch-1270
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-438
+       merge from upstream
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-439
+       merge from upstream
+    
+     * daf@canonical.com--2004/launchpad--tar-import--0--base-0
+       tag of daf@canonical.com--2004/launchpad--production-bug-95--0--patch-2
+    
+     * daf@canonical.com--2004/launchpad--tar-import--0--patch-1
+       split PO template editing and uploading into two separate forms, and tidy stuff up
+    
+     * daf@canonical.com--2004/launchpad--tar-import--0--patch-2
+       add support for updating POT files with tarballs
+    
+     * daf@canonical.com--2004/launchpad--tar-import--0--patch-3
+       implement changes suggested by review
+    
+     * daf@canonical.com--2004/launchpad--tar-import-2--0--base-0
+       tag of daf@canonical.com--2004/launchpad--devel--0--patch-439
+    
+     * daf@canonical.com--2004/launchpad--tar-import-2--0--patch-1
+       merge patches from previous branch
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/potemplate-edit.pt
+     lib/canonical/rosetta/browser.py
+
+    new patches:
+     daf@canonical.com--2004/launchpad--devel--0--patch-438
+     daf@canonical.com--2004/launchpad--devel--0--patch-439
+     daf@canonical.com--2004/launchpad--tar-import--0--base-0
+     daf@canonical.com--2004/launchpad--tar-import--0--patch-1
+     daf@canonical.com--2004/launchpad--tar-import--0--patch-2
+     daf@canonical.com--2004/launchpad--tar-import--0--patch-3
+     daf@canonical.com--2004/launchpad--tar-import-2--0--base-0
+     daf@canonical.com--2004/launchpad--tar-import-2--0--patch-1
+
+
 2005-02-02 02:51:13 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1269
 
     Summary:

@@ -610,15 +610,14 @@ class TemplateLanguage:
 
 
 class ViewPOTemplate:
+    statusLegend = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-rosetta-status-legend.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.form = self.request.form
         self.request_languages = request_languages(self.request)
         self.status_message = None
-
-    statusLegend = ViewPageTemplateFile(
-        '../launchpad/templates/portlet-rosetta-status-legend.pt')
 
     def num_messages(self):
         N = self.context.messageCount()
@@ -649,81 +648,100 @@ class ViewPOTemplate:
         for language in languages:
             yield TemplateLanguage(self.context, language)
 
-    def edit(self):
-        """
-        Update the contents of a POTemplate. This method is called by a
-        tal:dummy element in a page template. It checks to see if a
-        form has been submitted that has a specific element, and if
-        so it continues to process the form, updating the fields of
-        the database as it goes.
-        """
-        # check that we are processing the correct form, and that
-        # it has been POST'ed
-        if not self.form.get("Update", None)=="Update POTemplate":
-            return
-        if not self.request.method == "POST":
-            self.status_message='You should post the form'
-            return
+    def submitForm(self):
+        """Called from the page template to do any processing needed if a form
+        was submitted with the request."""
 
-        # XXX Carlos Perello Marin 27/11/04 this check is not yet being done.
-        # check to see if there is an existing product with
-        # this name.
-        if 'name' in self.form:
-            name = self.form['name']
+        if request.method == 'POST':
+            if 'EDIT' in request.form:
+                self.edit()
+            elif 'UPLOAD' in request.form:
+                self.upload()
+
+        return ''
+
+    def editAttributes(self):
+        """Use form data to change a PO template's name or title."""
+
+        # Early returns are used to avoid the redirect at the end of the
+        # method, which prevents the status message from being shown.
+
+        # XXX Dafydd Harries 2005/01/28
+        # We should check that there isn't a template with the new name before
+        # doing the rename.
+
+        if 'name' in self.request.form:
+            name = self.request.form['name']
+
             if name == '':
-                self.status_message='The name field cannot be empty'
+                self.status_message = 'The name field cannot be empty.'
                 return
+
             self.context.name = name
-        if 'title' in self.form:
-            title = self.form['title']
+
+        if 'title' in self.request.form:
+            title = self.request.form['title']
+
             if title == '':
-                self.status_message='The title field cannot be empty'
+                self.status_message = 'The title field cannot be empty.'
                 return
+
             self.context.title = title
 
-        # get the launchpad person who is creating this product
+        # Now redirect to view the template. This lets us follow the template
+        # in case the user changed the name.
+        self.request.response.redirect('../' + self.context.name)
+
+    def upload(self):
+        """Handle a form submission to change the contents of the template."""
+
+        # Get the launchpad Person who is doing the upload.
         owner = IPerson(self.request.principal)
 
-        file = self.form['file']
+        file = self.request.form['file']
 
         if type(file) is not FileUpload:
             if file == '':
                 self.request.response.redirect('../' + self.context.name)
             else:
-                # XXX: Carlos Perello Marin 03/12/2004: Epiphany seems to have an
-                # aleatory bug with upload forms (or perhaps it's launchpad because
-                # I never had problems with bugzilla). The fact is that some uploads
-                # don't work and we get a unicode object instead of a file-like object
-                # in "file". We show an error if we see that behaviour.
-                # For more info, look at bug #116
-                self.status_message = 'There was an unknow error getting the file.'
-            return
+                # XXX: Carlos Perello Marin 2004/12/30
+                # Epiphany seems to have an aleatory bug with upload forms (or
+                # perhaps it's launchpad because I never had problems with
+                # bugzilla). The fact is that some uploads don't work and we
+                # get a unicode object instead of a file-like object in
+                # "file". We show an error if we see that behaviour. For more
+                # info, look at bug #116.
+                self.status_message = (
+                    'There was an unknown error in uploading your file.')
 
         filename = file.filename
-
-        # XXX: Dafydd Harries, 2005/01/19
-        # Add support for tar files here. The problem with this is that this
-        # form always redirects if there is no error, which obliterates
-        # confirmatory status messages. I think the solution is not to allow
-        # renames to be done as the same time as uploads -- i.e. split the two
-        # operations into separate forms.
 
         if filename.endswith('.pot'):
             potfile = file.read()
 
             if not check_po_syntax(potfile):
                 # The file is not correct.
-                self.status_message = 'Please, review the pot file seems to have a problem'
-                return
+                self.status_message = (
+                    'There was a problem parsing the file you uploaded.'
+                    ' Please check that it is correct.')
 
             import_pot_or_po(self.context, owner, potfile)
-        else:
-            self.status_message = 'Unknown file type'
-            return
+        elif is_tar_filename(filename):
+            tf = string_to_tarfile(file.read())
+            pot_paths, po_paths = examine_tarfile(tf)
 
-        # now redirect to view the potemplate. This lets us follow the
-        # template in case the user changed the name
-        self.request.response.redirect('../' + self.context.name)
+            error = check_tar(tf, pot_paths, po_paths)
+
+            if error is not None:
+                self.status_message = error
+                return
+
+            self.status_message = (
+                import_tar(self.context, owner, tf, pot_paths, po_paths))
+        else:
+            self.status_message = (
+                'The file you uploaded was not recognised as a file that '
+                'can be imported.')
 
 
 class ViewPOFile:
