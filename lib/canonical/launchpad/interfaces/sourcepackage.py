@@ -5,9 +5,6 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-#
-# Interface we expect a SourcePackage to provide.
-#
 class ISourcePackage(Interface):
     """A SourcePackage"""
     id = Int(title=_("ID"), required=True)
@@ -39,7 +36,8 @@ class ISourcePackage(Interface):
 
     def current(distrorelease):
         """Current SourcePackageRelease of a SourcePackage"""
-        
+
+
 class ISourcePackageSet(Interface):
     """A set for ISourcePackage objects."""
 

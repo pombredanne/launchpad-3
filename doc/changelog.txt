@@ -2,6 +2,29 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-18 22:42:07 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1463
+
+    Summary:
+      fix https://launchpad.ubuntu.com/malone/bugs/233
+    Revision:
+      launchpad--devel--0--patch-1463
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-432
+       fix https://launchpad.ubuntu.com/malone/bugs/233
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/doc/bug.txt
+     lib/canonical/launchpad/interfaces/sourcepackage.py
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-432
+
+
 2005-03-18 21:40:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1462
 
     Summary:

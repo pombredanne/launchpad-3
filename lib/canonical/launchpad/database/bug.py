@@ -193,12 +193,23 @@ def BugFactory(*args, **kw):
         owner = kw['owner'].id,
         datecreated=datecreated)
 
-    if kw.get("product") and kw.get("private"):
-        # subscribe the upstream maintainer on a private bug, to ensure
-        # they can actually see it!
-        BugSubscription(
-            person = kw['product'].owner.id, bug = bug.id,
-            subscription = dbschema.BugSubscription.CC)
+    if kw.get("private"):
+        if kw.get("product"):
+            # subscribe the upstream maintainer on a private bug, to
+            # ensure they can actually see it!
+            BugSubscription(
+                person = kw['product'].owner.id, bug = bug.id,
+                subscription = dbschema.BugSubscription.CC)
+        elif kw.get("sourcepackagename"):
+            spn = kw.get("sourcepackagename")
+            distributionid = kw.get("distribution")
+            if spn and distributionid:
+                sourcepackages = SourcePackage.selectBy(
+                    sourcepackagenameID = spn.id, distroID = distributionid)
+                if sourcepackages.count():
+                    BugSubscription(
+                        person = sourcepackages[0].maintainer.id, bug = bug.id,
+                        subscription = dbschema.BugSubscription.CC)
 
     BugSubscription(
         person = kw['owner'].id, bug = bug.id,

@@ -137,3 +137,22 @@ both the submitter and the maintainer are explicitly subscribed:
 
 to ensure that both the submitter and maintainer can actually see the bug that
 was filed!
+
+Note that this works similarly for distributions; in this case the
+"maintainer" is considered the person who maintains the applicable
+sourcepackage. E.g.
+
+>>> from canonical.launchpad.interfaces import IDistributionSet, \
+...     ISourcePackageNameSet
+>>> distributionset = getUtility(IDistributionSet)
+>>> spnset = getUtility(ISourcePackageNameSet)
+>>> ubuntu = distributionset.get(1)
+>>> evolution = spnset.get(9)
+>>> added_bug = BugFactory(
+...     distribution = ubuntu.id, sourcepackagename = evolution,
+...     title = "test firefox bug", comment = "blah blah blah",
+...     owner = foobar, private = True)
+>>> notify(ObjectCreatedEvent(added_bug))
+>>> private_bug = bugset.get(added_bug.id)
+>>> print [subscription.person.id for subscription in private_bug.subscriptions]
+[1, 16]

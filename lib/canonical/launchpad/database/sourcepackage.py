@@ -1,20 +1,18 @@
-# Python imports
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
 from sets import Set
 
-# Zope imports
 from zope.interface import implements
 
-# SQLObject/SQLBase
 from sqlobject import MultipleJoin
 from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, DateTimeCol
 
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.lp import dbschema
-
-# interfaces and database 
 from canonical.launchpad.interfaces import ISourcePackage, \
      ISourcePackageSet
-    
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.vsourcepackagereleasepublishing import \
      VSourcePackageReleasePublishing
@@ -24,30 +22,20 @@ class SourcePackage(SQLBase):
     implements(ISourcePackage)
     _table = 'SourcePackage'
 
-    #
-    # Columns
-    #
-    shortdesc   = StringCol(dbName='shortdesc', notNull=True)
+    shortdesc = StringCol(dbName='shortdesc', notNull=True)
     description = StringCol(dbName='description', notNull=True)
-
     srcpackageformat = IntCol(dbName='srcpackageformat', notNull=True)
-
-    distro            = ForeignKey(foreignKey='Distribution', 
-                                   dbName='distro')
-    manifest          = ForeignKey(foreignKey='Manifest', dbName='manifest')
-    maintainer        = ForeignKey(foreignKey='Person', dbName='maintainer', 
-                                   notNull=True)
-    sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
-                                   dbName='sourcepackagename', notNull=True)
-
+    distro = ForeignKey(foreignKey='Distribution', dbName='distro')
+    manifest = ForeignKey(foreignKey='Manifest', dbName='manifest')
+    maintainer = ForeignKey(
+        foreignKey='Person', dbName='maintainer', notNull=True)
+    sourcepackagename = ForeignKey(
+        foreignKey='SourcePackageName', dbName='sourcepackagename',
+        notNull=True)
     releases = MultipleJoin('SourcePackageRelease', joinColumn='sourcepackage')
 
-    #
-    # Properties
-    #
     def name(self):
         return self.sourcepackagename.name
-
     name = property(name)
 
     def bugtasks(self):
@@ -55,7 +43,6 @@ class SourcePackage(SQLBase):
                     "BugTask.sourcepackagename = %i")
         querystr = querystr % (self.distro, self.sourcepackagename)
         return BugTask.select(querystr)
-
     bugtasks = property(bugtasks)
 
     def product(self):
@@ -67,12 +54,8 @@ class SourcePackage(SQLBase):
         except IndexError:
             # No corresponding product
             return None
-
     product = property(product)
 
-    #
-    # Methods
-    #
     def bugsCounter(self):
         from canonical.launchpad.database.bugtask import BugTask
 
@@ -111,7 +94,7 @@ class SourcePackage(SQLBase):
             # Anyway, seems to be ok
             return VSourcePackageReleasePublishing.select(query,
                                                   orderBy='dateuploaded')
-        
+
         return VSourcePackageReleasePublishing.select(query)
 
     def proposed(self, distroRelease):
@@ -120,14 +103,14 @@ class SourcePackage(SQLBase):
 
     def current(self, distroRelease):
         """Currently published releases of this package for a given distro.
-        
+
         :returns: iterable of SourcePackageReleases
         """
-        return self.uploadsByStatus(distroRelease, 
+        return self.uploadsByStatus(distroRelease,
                                     dbschema.PackagePublishingStatus.PUBLISHED)[0]
 
     def lastversions(self, distroRelease):
-        return self.uploadsByStatus(distroRelease, 
+        return self.uploadsByStatus(distroRelease,
                                     dbschema.PackagePublishingStatus.SUPERSEDED,
                                     do_sort=True)
 
