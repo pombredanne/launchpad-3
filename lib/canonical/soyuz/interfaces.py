@@ -336,7 +336,7 @@ class IProjects(Interface):
 
 
 class IProject(Interface):
-    """A Project"""
+    """A Project FIXME: why is this duplicated with the one in doap.py ???"""
 
     name = Attribute("The project's name. (unique within IProjects)")
 
@@ -345,6 +345,9 @@ class IProject(Interface):
     url = Attribute("The URL of the project's website.")
 
     description = Attribute("The project's description.")
+
+    def displayName(aDesc=None):
+        """return the projects shortdesc, setting it if aDesc is provided"""
 
     def potFiles():
         """Returns an iterator over this project's pot files."""
@@ -359,6 +362,8 @@ class IProject(Interface):
         """make a new product"""
     def getProduct(name):
         """blah"""
+    def shortDescription(aDesc=None):
+        """return the projects shortdesc, setting it if aDesc is provided"""
         
 class IProduct(Interface):
     """A Product.  For example 'firefox' in the 'mozilla' project."""

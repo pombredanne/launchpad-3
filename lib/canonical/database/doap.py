@@ -96,6 +96,9 @@ class IProject(Interface):
     description = Text(title=_('Description'))
     homepageurl = TextLine(title=_('Homepage URL'))
 
+    def displayName(aDesc=None):
+        """return the projects shortdesc, setting it if aDesc is provided"""
+
     def products():
         """Return Products for this Project."""
 
@@ -106,6 +109,10 @@ class IProject(Interface):
     #      traversal rather than project->potemplate traversal.
     def poTemplate(name):
         """Returns the RosettaPOTemplate with the given name."""
+
+    def shortDescription(aDesc=None):
+        """return the projects shortdesc, setting it if aDesc is provided"""
+
 
 
 class DBProject(SQLBase):
