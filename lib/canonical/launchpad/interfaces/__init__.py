@@ -72,6 +72,7 @@ from canonical.launchpad.interfaces.codeofconduct import *
 from canonical.launchpad.interfaces.distrotool import *
 from canonical.launchpad.interfaces.component import *
 from canonical.launchpad.interfaces.section import *
+from canonical.launchpad.interfaces.gpghandler import *
 
 class IAuthApplication(Interface):
     """ Interface for AuthApplication """

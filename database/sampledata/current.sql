@@ -56,8 +56,8 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (17, 'testtest@canon
 INSERT INTO emailaddress (id, email, person, status) VALUES (18, 'testtesttest@canonical.com', 12, 3);
 INSERT INTO emailaddress (id, email, person, status) VALUES (20, 'stuart.bishop@canonical.com', 22, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (22, 'david@canonical.com', 23, 2);
-INSERT INTO emailaddress (id, email, person, status) VALUES (23, 'daniel.debonzi@canonical.com', 27, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (24, 'celso.providelo@canonical.com', 28, 1);
+INSERT INTO emailaddress (id, email, person, status) VALUES (23, 'daniel.debonzi@canonical.com', 27, 4);
+INSERT INTO emailaddress (id, email, person, status) VALUES (24, 'celso.providelo@canonical.com', 28, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (25, 'guilherme.salgado@canonical.com', 29, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (1, 'mark@hbd.com', 1, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (2, 'robertc@robertcollins.net', 2, 4);
@@ -76,17 +76,18 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'gpgkey'::pg_catalog.regclass;
 
-INSERT INTO gpgkey (id, "owner", keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (1, 1, '1024D/09F89725', 'XVHJ OU77 IYTD 0982 FTG6 OQFC 0GF8 09PO QW45 MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
-INSERT INTO gpgkey (id, "owner", keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (2, 11, '1024D/09F89890', 'XVHJ OU77 IYTD 0981 FTG6 OQFC 0GF8 09PO QW45 MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
-INSERT INTO gpgkey (id, "owner", keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (3, 10, '1024D/09F89321', 'XVHJ OU77 IYTD 0983 FTG6 OQFC 0GF8 09PO QW45 MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
-INSERT INTO gpgkey (id, "owner", keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (4, 8, '1024D/09F89098', 'XVHJ OU77 IYTD 0984 FTG6 OQFC 0GF8 09PO QW45 MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
-INSERT INTO gpgkey (id, "owner", keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (5, 9, '1024D/09F89123', 'XVHJ OU77 IYTD 0985 FTG6 OQFC 0GF8 09PO QW45 MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
-INSERT INTO gpgkey (id, "owner", keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (6, 4, '1024D/09F89124', 'XVHJ OU77 IYTA 0985 FTG6 OQFC 0GF8 09PO QW45 MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
-INSERT INTO gpgkey (id, "owner", keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (7, 5, '1024D/09F89125', 'XVHJ OU77 IYTQ 0985 FTG6 OQFC 0GF8 09PO QW45 MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
-INSERT INTO gpgkey (id, "owner", keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (8, 7, '1024D/09F89126', 'XVHJ OU77 IYTX 0985 FTG6 OQFC 0GF8 09PO QW45 MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
-INSERT INTO gpgkey (id, "owner", keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (9, 3, '1024D/09F89127', 'XVHJ OU77 IYTZ 0985 FTG6 OQFC 0GF8 09PO QW45 MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
-INSERT INTO gpgkey (id, "owner", keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (10, 6, '1024D/09F89120', 'XVHJ OU77 IYTP 0985 FTG6 OQFC 0GF8 09PO QW45 MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
-INSERT INTO gpgkey (id, "owner", keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (11, 28, '681B6469', 'C858 2652 1A6E F6A6 037B  B3F7 9FF2 583E 681B 6469', '<-- sample pubkey ??? -->', false, 17, 1024);
+
+INSERT INTO gpgkey (id, owner, keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (1, 1, '09F89725', 'XVHJOU77IYTD0982FTG6OQFC0GF809POQW45MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
+INSERT INTO gpgkey (id, owner, keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (2, 11, '09F89890', 'XVHJOU77IYTD0981FTG6OQFC0GF809POQW45MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
+INSERT INTO gpgkey (id, owner, keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (3, 10, '09F89321', 'XVHJOU77IYTD0983FTG6OQFC0GF809POQW45MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
+INSERT INTO gpgkey (id, owner, keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (4, 8, '09F89098', 'XVHJOU77IYTD0984FTG6OQFC0GF809POQW45MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
+INSERT INTO gpgkey (id, owner, keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (5, 9, '09F89123', 'XVHJOU77IYTD0985FTG6OQFC0GF809POQW45MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
+INSERT INTO gpgkey (id, owner, keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (6, 4, '09F89124', 'XVHJOU77IYTA0985FTG6OQFC0GF809POQW45MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
+INSERT INTO gpgkey (id, owner, keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (7, 5, '09F89125', 'XVHJOU77IYTQ0985FTG6OQFC0GF809POQW45MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
+INSERT INTO gpgkey (id, owner, keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (8, 7, '09F89126', 'XVHJOU77IYTX0985FTG6OQFC0GF809POQW45MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
+INSERT INTO gpgkey (id, owner, keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (9, 3, '09F89127', 'XVHJOU77IYTZ0985FTG6OQFC0GF809POQW45MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
+INSERT INTO gpgkey (id, owner, keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (10, 6, '09F89120', 'XVHJOU77IYTP0985FTG6OQFC0GF809POQW45MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
+INSERT INTO gpgkey (id, owner, keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (11, 28, '681B6469', 'C85826521A6EF6A6037BB3F79FF2583E681B6469', '<-- sample pubkey ??? -->', false, 17, 1024);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'gpgkey'::pg_catalog.regclass;

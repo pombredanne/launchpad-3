@@ -4,7 +4,7 @@ This Code of Conduct covers your behaviour as a member of the Ubuntu
 Community, in any forum, mailing list, wiki, web site, IRC channel,
 install-fest, public meeting or private correspondence. The Ubuntu
 Community Council will arbitrate in any dispute over the conduct of a
-member of the community.  
+member of the community.
 
       '''Be considerate.''' Your work will be used by other people,
       and you in turn will depend on the work of others. Any decision
@@ -13,7 +13,7 @@ member of the community.
       example, when we are in a feature freeze, please don't upload
       dramatically new versions of critical system software, as other
       people will be testing the frozen system and not be expecting
-      big changes. 
+      big changes.
 
       '''Be respectful.''' The Ubuntu community and its members treat
       one another with respect. Everyone can make a valuable
@@ -25,7 +25,7 @@ member of the community.
       feel uncomfortable or threatened is not a productive one. We
       expect members of the Ubuntu community to be respectful when
       dealing with other contributors as well as with people outside
-      the Ubuntu project, and with users of Ubuntu. 
+      the Ubuntu project, and with users of Ubuntu.
 
       '''Be collaborative.''' Ubuntu and Free Software are about
       collaboration and working together. Collaboration reduces
@@ -43,7 +43,7 @@ member of the community.
       have that agreement before you begin, but at least keep the
       outside world informed of your work, and publish your work in a
       way that allows outsiders to test, discuss and contribute to
-      your efforts. 
+      your efforts.
 
       '''When you disagree,''' consult others. Disagreements, both
       political and technical, happen all the time and the Ubuntu
@@ -59,7 +59,7 @@ member of the community.
       we encourage you to make a derivative distribution or
       alternative set of packages available using the Ubuntu Package
       Management framework, so that the community can try out your
-      changes and ideas for itself and contribute to the discussion. 
+      changes and ideas for itself and contribute to the discussion.
 
       '''When you are unsure,''' ask for help. Nobody knows
       everything, and nobody is expected to be perfect in the Ubuntu
@@ -69,11 +69,11 @@ member of the community.
       helpful. However, when asking a question, care must be taken to
       do so in an appropriate forum. Off-topic questions, such as
       requests for help on a development mailing list, detract from
-      productive discussion. 
+      productive discussion.
 
       '''Step down considerately.''' Developers on every project come
       and go and Ubuntu is no different. When you leave or disengage
       from the project, in whole or in part, we ask that you do so in
       a way that minimises disruption to the project. This means you
       should tell people you are leaving and take the proper steps to
-      ensure that others can pick up where you leave off. 
+      ensure that others can pick up where you leave off.

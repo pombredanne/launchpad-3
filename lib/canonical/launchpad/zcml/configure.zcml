@@ -86,5 +86,6 @@
     <!-- Special Utilities -->
     <include file="geoip.zcml" />
     <include file="distrotool.zcml" />
+    <include file="gpghandler.zcml" />
 
 </configure>

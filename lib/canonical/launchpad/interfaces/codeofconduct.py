@@ -29,7 +29,7 @@ class ISignedCodeOfConduct(Interface):
              readonly=True
              )
 
-    person = Choice(title=_('Owner'), required=True, vocabulary='ValidPerson',
+    owner = Choice(title=_('Owner'), required=True, vocabulary='ValidPerson',
                     description=_("""Signature owner, it must be a valid
                     Person inside Launchpad context."""))
     
@@ -96,7 +96,7 @@ class ISignedCodeOfConductSet(Interface):
     def __iter__():
         """Iterate through the Signed CoC in this set."""
 
-    def verifyAndStore(person, signingkey, signedcode):
+    def verifyAndStore(user, signedcode):
         """Verify and Store a Signed CoC."""
 
     def searchByDisplayname(displayname, searchfor=None):
@@ -105,16 +105,11 @@ class ISignedCodeOfConductSet(Interface):
     def searchByUser(user_id):
         """Search SignedCoC by Owner.id"""
 
-    def deactivateSignature(sign_id):
-        """Deactivate a Signed CoC."""
+    def modifySignature(sign_id, recipient, admincomment, state):
+        """Modify a Signed CoC."""
 
-    def acknowledgeSignature(person, recipient):
+    def acknowledgeSignature(user, recipient):
         """Acknowledge a paper submitted Signed CoC."""
-
-    def verifySignature(person, signingkey, signedcode):
-        """Verify a proposed Signed CoC and return True if some
-        error was found.
-        """
 
 
 class ICodeOfConductConf(Interface):

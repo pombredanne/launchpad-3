@@ -2,6 +2,94 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-29 14:30:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1514
+
+    Summary:
+      Proto GpgHandler utility using pyME and CoC improvements, not pagetests yet due keyring maintenance issues.
+    Revision:
+      launchpad--devel--0--patch-1514
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-541
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-542
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-543
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-544
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-545
+       CoC pages permissions fine tunning and email template addition.
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-546
+       Repair the GPGKey.fingerprint entries (no space), add a GpgHandler prototype componenent/utility using pyME, reaarange the methods on SignedCoCSet utility to better fit with pyME usage.
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-547
+       Using sha.digest() instead of text comparing, template improves and better error handling.
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-548
+       Merge from RF, resolved conflict in current.sql
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-549
+       Satisfying changes on DB (SignedCoC.person to owner, GPGKey.person to owner) and other minor changes.
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-550
+       Adding missed/weird pagetest for coc-sign, finally
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-551
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-552
+       debug-root-index entry point for CoC pages and removed premature pagetest for coc-sign
+    
+
+    new files:
+     lib/canonical/launchpad/interfaces/.arch-ids/gpghandler.py.id
+     lib/canonical/launchpad/interfaces/gpghandler.py
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-codeofconduct-page.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-codeofconduct-page.txt
+     lib/canonical/launchpad/templates/.arch-ids/signedcoc-acknowledge.txt.id
+     lib/canonical/launchpad/templates/signedcoc-acknowledge.txt
+     lib/canonical/launchpad/utilities/.arch-ids/gpghandler.py.id
+     lib/canonical/launchpad/utilities/gpghandler.py
+     lib/canonical/launchpad/zcml/.arch-ids/gpghandler.zcml.id
+     lib/canonical/launchpad/zcml/gpghandler.zcml
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/launchpad/browser/codeofconduct.py
+     lib/canonical/launchpad/browser/person.py
+     lib/canonical/launchpad/database/codeofconduct.py
+     lib/canonical/launchpad/interfaces/__init__.py
+     lib/canonical/launchpad/interfaces/codeofconduct.py
+     lib/canonical/launchpad/templates/codesofconduct/1.0.txt
+     lib/canonical/launchpad/templates/debug-root-index.pt
+     lib/canonical/launchpad/templates/person-codesofconduct.pt
+     lib/canonical/launchpad/utilities/__init__.py
+     lib/canonical/launchpad/zcml/codeofconduct.zcml
+     lib/canonical/launchpad/zcml/configure.zcml
+     lib/canonical/launchpad/zcml/person.zcml
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-541
+     celso.providelo@canonical.com/launchpad--devel--0--patch-542
+     celso.providelo@canonical.com/launchpad--devel--0--patch-543
+     celso.providelo@canonical.com/launchpad--devel--0--patch-544
+     celso.providelo@canonical.com/launchpad--devel--0--patch-545
+     celso.providelo@canonical.com/launchpad--devel--0--patch-546
+     celso.providelo@canonical.com/launchpad--devel--0--patch-547
+     celso.providelo@canonical.com/launchpad--devel--0--patch-548
+     celso.providelo@canonical.com/launchpad--devel--0--patch-549
+     celso.providelo@canonical.com/launchpad--devel--0--patch-550
+     celso.providelo@canonical.com/launchpad--devel--0--patch-551
+     celso.providelo@canonical.com/launchpad--devel--0--patch-552
+
+
 2005-03-29 12:33:13 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1513
 
     Summary:

@@ -210,7 +210,7 @@ class PersonView(object):
         person."""
         # use utility to query on SignedCoCs
         sCoC_util = getUtility(ISignedCodeOfConductSet)
-        return sCoC_util.searchByUser(self.user.id)
+        return sCoC_util.searchByUser(self.context.id)
 
     def performCoCChanges(self):
         """Make changes to code-of-conduct signature records for this
@@ -229,7 +229,9 @@ class PersonView(object):
             for sign_id in sign_ids:
                 sign_id = int(sign_id)
                 self.message += '%d,' % sign_id
-                sCoC_util.deactivateSignature(sign_id)
+                # Deactivating signature
+                comment = 'Deactivated by Owner'
+                sCoC_util.modifySignature(sign_id, self.user, comment, False)
 
             return True
 

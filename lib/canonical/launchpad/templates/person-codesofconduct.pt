@@ -23,8 +23,6 @@
     <p class="portalMessage" tal:content="view/message"></p>
   </div>
 
-  <form name="coc" action="" method="POST">
-
   <p class="documentDescription">The Ubuntu Code of Conduct is a commitment
   to the principles of collaboration, tolerance and open communication that
   drive the open source community.</p>
@@ -33,7 +31,9 @@
   tal:replace="context/displayname">Person Name</span> has never signed the
   Ubuntu Code of Conduct.</p>
 
-  <table class="listing rowNavigation" tal:condition="view/signatures">
+  <div tal:condition="view/signatures">
+  <form name="coc" action="" method="POST">
+  <table class="listing rowNavigation">
     <tr>
       <th>Signingkey</th>
       <th>Status</th>
@@ -46,19 +46,13 @@
       </td>
       <td tal:condition="not:sign/active">DEACTIVE</td>
     </tr>
-    <tr>
-      <td></td>
-      <td align="right">
-        <input type="submit" value="Submit"/>
-      </td>
-    </tr>
   </table>
-
+  <input type="submit" value="Submit"/>
   </form>
   </div>
 
   <p>See or Sign new Code of Conducts Releases in <a
   href="/codeofconduct">Code of Conduct</a>.</p>
-
+</div>
 </body>
 </html>

@@ -61,10 +61,6 @@
           template="../templates/person-translations.pt"
           lp:url="/people/$Person.name/+translations" />
       <browser:page
-          name="+codesofconduct"
-          template="../templates/person-codesofconduct.pt"
-          lp:url="/people/$Person.name/+codesofconduct" />
-      <browser:page
           name="+sshkey"
           attribute="showSSHKeys"
           lp:url="/people/$Person.name/+sshkey" />
@@ -72,6 +68,16 @@
           name="+bounties"
           template="../templates/person-bounties.pt"
           lp:url="/people/$Person.name/+bounties" />
+  </browser:pages>
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.IPerson"
+      permission="launchpad.Edit"
+      class="canonical.launchpad.browser.PersonView">
+      <browser:page
+          name="+codesofconduct"
+          template="../templates/person-codesofconduct.pt"
+          lp:url="/people/$Person.name/+codesofconduct" />
   </browser:pages>
 
   <browser:pages
