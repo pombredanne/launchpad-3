@@ -89,6 +89,7 @@ class Katie(SQLThing):
                                       AND    source.sig_fpr = fingerprint.id
                                       AND    version = %s""", (name, version))
         if not ret:
+            return None #Shortcircuit because the ubuntu lookup fails
             print "\t\t* that spr didn't turn up. Attempting to find via ubuntu*"
         else:
             return ret
@@ -96,7 +97,7 @@ class Katie(SQLThing):
         return self._query_to_dict("""SELECT * FROM source, fingerprint
                                       WHERE  source = %s 
                                       AND    source.sig_fpr = fingerprint.id
-                                      AND    version like '%subuntu%%'""", (name, version))
+                                      AND    version like '%subuntu%s'""" % ("%s", version, "%"), name)
         
     
     def getBinaryPackageRelease(self, name, version, arch):  
@@ -376,7 +377,7 @@ class Launchpad(SQLThing):
         #print "Looking for %s %s for %s" % (name,version,architecture)
         bin_id = self.getBinaryPackageName(name)
         if not bin_id:
-            print "Failed to find the name"
+            print "Failed to find the binarypackagename for %s" % (name)
             return None
         if architecture == "all":
             return self._query_single("""SELECT * from binarypackage WHERE

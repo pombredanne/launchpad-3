@@ -22,7 +22,7 @@ distrorelease = sys.argv[1]
 archs = sys.argv[2].split(",")
 components = sys.argv[3:]
 
-LPDB = "launchpad_dev_dsilvers"
+LPDB = "launchpad_dogfood"
 KTDB = "katie"
 
 LIBRHOST = "localhost"
@@ -139,7 +139,9 @@ def do_arch(lp, kdb, bin_map, source_map):
             except Exception, e:
                 print "\t!! sourcepackage addition threw an error."
                 print e
-                sys.exit(0)
+                # Since we're importing universe which can cause issues,
+                # we don't exit
+                # sys.exit(0)
 
         # we read the licence from the source package but it is
         # stored in the BinaryPackage table
@@ -151,7 +153,9 @@ def do_arch(lp, kdb, bin_map, source_map):
         except Exception, e:
             print "\t!! binarypackage addition threw an error."
             print e
-            sys.exit(0)
+            # Since we're importing universe which can cause issues,
+            # we don't exit
+            # sys.exit(0)
 
         count = count + 1
         if count == 10:
@@ -162,10 +166,11 @@ def do_arch(lp, kdb, bin_map, source_map):
 
 def do_publishing(pkgs, lp, source):
     for name, pkg in pkgs.items():
-        if source:
-            lp.publishSourcePackage(pkg)
-        else:
-            lp.publishBinaryPackage(pkg)
+        if pkg.is_created(lp):
+            if source:
+                lp.publishSourcePackage(pkg)
+            else:
+                lp.publishBinaryPackage(pkg)
 
 
 if __name__ == "__main__":
@@ -178,7 +183,7 @@ if __name__ == "__main__":
     # Comment this out if you need to disable the librarian integration
     # for a given run of gina. Note that without the librarian; lucille
     # will be unable to publish any files imported into the database
-    #attachLibrarian( LIBRHOST, LIBRPORT )
+    attachLibrarian( LIBRHOST, LIBRPORT )
 
     # Validate that the supplied components are available...
     print "@ Validating components"
