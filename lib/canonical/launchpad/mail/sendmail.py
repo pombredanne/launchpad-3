@@ -27,10 +27,14 @@ from zope.app.mail.interfaces import IMailDelivery
 Charset.add_charset('utf8', Charset.QP, Charset.QP, 'utf8')
 
 def simple_sendmail(from_addr, to_addrs, subject, body):
-    """Construct an email.Message.Message and pass it to sendmail
+    """Send an email from from_addr to to_addrs with the subject and body
+    provided. to_addrs can be a list, tuple, or string.
    
-    Returns the Message-Id
+    Returns the Message-Id.
     """
+    if isinstance(to_addrs, str):
+        to_addrs = [to_addrs]
+
     msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
     msg['To'] = ', '.join([str(a) for a in to_addrs])
     msg['From'] = from_addr

@@ -2,6 +2,43 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-11 23:32:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1177
+
+    Summary:
+      small code improvements based on code review and a db schema change to
+ support security-related bugs
+    Revision:
+      launchpad--devel--0--patch-1177
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-285
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-286
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-287
+       docstring correct/clarification for simple_sendmail. allow to_addrs to be a string.
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-288
+       db patch for handling security-related bugs
+    
+
+    new files:
+     database/schema/pending/.arch-ids/bradb-security-related-bugs.sql.id
+     database/schema/pending/bradb-security-related-bugs.sql
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/mail/sendmail.py
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-285
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-286
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-287
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-288
+
+
 2005-01-11 19:27:16 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1176
 
     Summary:
