@@ -168,3 +168,8 @@ table.rowNavigation tr:hover {
     clear: both;
 }
 
+/* used to mark dummy data with div entity */
+.dummy{
+   background-color: #cccccc;
+}
+
