@@ -3,6 +3,41 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     i18n_domain="canonical.launchpad">
 
+  <!-- TALES namespaces. -->
+
+  <adapter
+      for="zope.publisher.interfaces.IApplicationRequest"
+      provides="zope.app.traversing.interfaces.IPathAdapter"
+      factory="canonical.launchpad.webapp.tales.RequestAPI"
+      name="lp"
+      />
+
+  <adapter
+      for="zope.publisher.interfaces.browser.IBrowserApplicationRequest"
+      provides="zope.app.traversing.interfaces.IPathAdapter"
+      factory="canonical.launchpad.webapp.tales.HTMLFormAPI"
+      name="htmlform"
+      />
+
+  <!-- The next directive should be registered for 'int' only.
+       However, there's a bug in adapter registration that stops
+       this working.  To be fixed in ZopeX3 RSN.
+    -->
+  <adapter
+      for="*"
+      provides="zope.app.traversing.interfaces.IPathAdapter"
+      factory="canonical.launchpad.webapp.tales.DBSchemaAPI"
+      name="lp"
+      />
+
+  <adapter
+      for="*"
+      provides="zope.app.traversing.interfaces.IPathAdapter"
+      factory="canonical.launchpad.webapp.tales.FormattersAPI"
+      name="fmt"
+      />
+
+
   <!-- Authentication. -->
   <utility
       factory="canonical.launchpad.webapp.authentication.PlacelessAuthUtility"

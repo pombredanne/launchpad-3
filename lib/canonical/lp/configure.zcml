@@ -23,40 +23,7 @@
           template="../launchpad/templates/no-app-component-yet.pt"
           />
 
-
   </browser:pages>
-
-  <adapter
-      for="zope.publisher.interfaces.IApplicationRequest"
-      provides="zope.app.traversing.interfaces.IPathAdapter"
-      factory="canonical.lp.tales.RequestAPI"
-      name="lp"
-      />
-
-  <adapter
-      for="zope.publisher.interfaces.browser.IBrowserApplicationRequest"
-      provides="zope.app.traversing.interfaces.IPathAdapter"
-      factory="canonical.lp.tales.HTMLFormAPI"
-      name="htmlform"
-      />
-
-  <!-- XXX The next directive should be registered for 'int' only.
-       However, there's a bug in adapter registration that stops
-       this working.  To be fixed in ZopeX3 RSN.
-    -->
-  <adapter
-      for="*"
-      provides="zope.app.traversing.interfaces.IPathAdapter"
-      factory="canonical.lp.tales.DBSchemaAPI"
-      name="lp"
-      />
-
-  <adapter
-      for="*"
-      provides="zope.app.traversing.interfaces.IPathAdapter"
-      factory="canonical.lp.tales.FormattersAPI"
-      name="fmt"
-      />
 
   <!-- A permission for anybody who has authenticated themselves. -->
   <permission id="launchpad.AnyPerson" title="Any Authenticates Person" />

@@ -6,7 +6,7 @@ from zope.testing.doctestunit import DocTestSuite
 
 def test_requestapi():
     """
-    >>> from canonical.lp.tales import IRequestAPI, RequestAPI
+    >>> from canonical.launchpad.webapp.tales import IRequestAPI, RequestAPI
     >>> from canonical.launchpad.interfaces import IPerson
     >>> from zope.interface.verify import verifyObject
 
@@ -37,27 +37,28 @@ def test_requestapi():
 
 def test_dbschemaapi():
     """
-    >>> from canonical.lp.tales import DBSchemaAPI
+    >>> from canonical.launchpad.webapp.tales import DBSchemaAPI
     >>> from canonical.lp.dbschema import ManifestEntryType
 
     The syntax to get the title is: number/lp:DBSchemaClass
 
-    >>> str(DBSchemaAPI(4).ManifestEntryType) == ManifestEntryType.DIR.title
+    >>> (str(DBSchemaAPI(4).traverse('ManifestEntryType', []))
+    ...  == ManifestEntryType.DIR.title)
     True
 
     Using an inappropriate number should give a KeyError.
 
-    >>> DBSchemaAPI(99).ManifestEntryType
+    >>> DBSchemaAPI(99).traverse('ManifestEntryType', [])
     Traceback (most recent call last):
     ...
     KeyError: 99
 
-    Using a dbschema name that doesn't exist should give an AttributeError.
+    Using a dbschema name that doesn't exist should give a TraversalError
 
-    >>> DBSchemaAPI(99).NotADBSchema
+    >>> DBSchemaAPI(99).traverse('NotADBSchema', [])
     Traceback (most recent call last):
     ...
-    AttributeError: NotADBSchema
+    TraversalError: 'NotADBSchema'
 
     We should also test names that are in the dbschema module, but not in
     __all__.
@@ -66,10 +67,10 @@ def test_dbschemaapi():
     >>> from canonical.lp.dbschema import Item
     >>> 'Item' not in canonical.lp.dbschema.__all__
     True
-    >>> DBSchemaAPI(1).Item
+    >>> DBSchemaAPI(1).traverse('Item', [])
     Traceback (most recent call last):
     ...
-    AttributeError: Item
+    TraversalError: 'Item'
 
     """
 

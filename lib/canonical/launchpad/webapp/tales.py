@@ -1,6 +1,6 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 #
-"""What you get from the lp: namespace in TALES.
+"""Implementation of the lp: and htmlform: namespaces in TALES.
 
 """
 __metaclass__ = type
@@ -11,9 +11,12 @@ from zope.interface import Interface, Attribute, implements
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.app.traversing.interfaces import ITraversable
-
+from zope.exceptions import NotFoundError
 from canonical.launchpad.interfaces import IPerson
 import canonical.lp.dbschema
+
+class TraversalError(NotFoundError):
+    """XXX Remove this when we upgrade to a more recent Zope x3"""
 
 
 class HTMLFormAPI:
@@ -48,6 +51,7 @@ class HTMLFormAPI:
                 return None
 
 def htmlmatch(formvalue, value):
+    value = str(value)
     if isinstance(formvalue, list):
         return value in formvalue
     else:
@@ -91,17 +95,18 @@ class DBSchemaAPI:
     """Adapter from integers to things that can extract information from
     DBSchemas.
     """
+    implements(ITraversable)
     _all = dict([(name, getattr(canonical.lp.dbschema, name))
                  for name in canonical.lp.dbschema.__all__])
 
     def __init__(self, number):
         self._number = number
 
-    def __getattr__(self, name):
+    def traverse(self, name, furtherPath):
         if name in self._all:
             return self._all[name]._items[self._number].title
         else:
-            raise AttributeError, name
+            raise TraversalError, name
 
 
 class FormattersAPI:
