@@ -43,6 +43,7 @@
     <resource name="linkTransparent.gif" file="../images/linkTransparent.gif" />
     <resource name="search_icon.gif" file="../images/search_icon.gif" />
     <resource name="product_icon.gif" file="../images/product_icon.gif" />
+    <resource name="document_icon.gif" file="../images/document_icon.gif" />
     <resource name="ubuntu.gif" file="../images/ubuntu.gif" />
 
     <resource name="defaultFavicon.gif" file="../images/defaultFavicon.gif" />

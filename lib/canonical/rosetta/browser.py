@@ -289,7 +289,7 @@ class TemplateLanguages:
         }
 
         try:
-            poFile = self.template.poFile(language.code)
+            poFile = self.template.getPOFileByLang(language.code)
         except KeyError:
             return retdict
 
@@ -663,7 +663,7 @@ class TranslatePOTemplate:
             code = language.code
 
             try:
-                pofile = context.poFile(language.code)
+                pofile = context.getPOFileByLang(language.code)
             except KeyError:
                 pofile = None
 
@@ -972,10 +972,10 @@ class TranslatePOTemplate:
 
         for language in self.languages:
             try:
-                pofiles[language.code] = self.context.poFile(language.code)
+                pofiles[language.code] = self.context.getPOFileByLang(language.code)
             except KeyError:
                 pofiles[language.code] = self.context.newPOFile(
-                    self.person, language.code)
+                    language.code, owner=self.person)
 
         # Put the translations in the database.
 
@@ -1217,7 +1217,7 @@ class TemplateUpload:
                 for language in self.languages():
                     if language.englishname == language_name:
                         if language in self.context.languages():
-                            pofile = self.context.poFile(language.code)
+                            pofile = self.context.getPOFileByLang(language.code)
                             pofile.rawfile = base64.encodestring(file.read())
                             pofile.daterawimport = UTC_NOW
                             pofile.rawimporter = IPerson(self.request.principal, None)

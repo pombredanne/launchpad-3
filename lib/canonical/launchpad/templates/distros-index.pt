@@ -18,7 +18,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Soyuz Distribution</h1>
+    <h1>Soyuz Distribution Management: All Distributions</h1>
 
     
         <p>This page shows all distributions that are represented in the Soyuz
@@ -33,7 +33,7 @@
             <th>Name</th>
             <th>Title</th>
         </tr>
-        <tr tal:repeat="distribution context/distributions"
+        <tr tal:repeat="distribution context"
             tal:attributes="onclick
                 string:window.location='${distribution/name}'">
             <td>
@@ -49,7 +49,7 @@
     </table>    
 
     <div style="float: right;">
-        (<span tal:replace="context/entries" /> distributions)
+        (<span tal:replace="view/count" /> distributions)
     </div>
 
     <p><img src="/++resource++add.gif"> <a href="+add">Add

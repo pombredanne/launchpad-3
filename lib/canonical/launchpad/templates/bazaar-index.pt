@@ -1,13 +1,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
     lang="en"
     metal:use-macro="context/@@malone_template/master"
-    i18n:domain="buttress">
+    i18n:domain="bazaar">
 <body>
 <div metal:fill-slot="main">
 
-    <h1>Welcome to The Buttress!</h1>
+    <h1>Welcome to The Bazaar!</h1>
 
-    <p class="documentDescription">The Buttress is a Launchpad application
+    <p class="documentDescription">The Bazaar is a Launchpad application
     to keep track of all the upstream and distribution code that is
     registered with the Launchpad and published using the Gnu Arch protocol,
     interoperable with the Bazaar revision control system.</p>

@@ -388,7 +388,7 @@ class BranchRelationships(DBSchema):
 
     In Arch, everything is a branch. Your patches are all branches. Your
     brother, sister and hifi system are all branches. If it moves, it's
-    a branch. And Buttress (the Arch subsystem of Launchpad) tracks the
+    a branch. And Bazaar (the Arch subsystem of Launchpad) tracks the
     relationships between those branches.
     """
 
@@ -1503,7 +1503,7 @@ class UpstreamReleaseVersionStyle(DBSchema):
 class RevisionControlSystems(DBSchema):
     """Revision Control Systems
 
-    Buttress brings code from a variety of upstream revision control
+    Bazaar brings code from a variety of upstream revision control
     systems into Arch. This schema documents the known and supported
     revision control systems.
     """

@@ -67,7 +67,7 @@
         <browser:page
             name="+index"
             template="../templates/sources-index.pt"
-            lp:url="buttress/sources/+index" />
+            lp:url="bazaar/sources/+index" />
     </browser:pages>
 
 </configure>

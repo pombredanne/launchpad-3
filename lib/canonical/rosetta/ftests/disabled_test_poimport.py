@@ -127,7 +127,7 @@ class POImportTestCase(LaunchpadFunctionalTestCase):
         try:
             poFile = poTemplate.poFile('cy')
         except KeyError:
-            poFile = poTemplate.newPOFile(XXXperson, 'cy')
+            poFile = poTemplate.newPOFile('cy')
         importer = POFileImporter(poFile, XXXperson)
         importer.doImport(self.po)
         # try a second time to see if it breaks

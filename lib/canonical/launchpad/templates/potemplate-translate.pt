@@ -48,8 +48,6 @@
       tal:replace="context/title">template title</span>"
     </p>
 
-    <h2>Translation Template Description:</h2>
-
     <p tal:content="context/description">
         template description
     </p>

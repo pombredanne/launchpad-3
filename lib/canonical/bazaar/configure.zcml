@@ -5,37 +5,37 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <!-- This view registers 'buttress' as a suburl of RootObject. -->
+    <!-- This view registers 'bazaar' as a suburl of RootObject. -->
     <browser:suburl
         for="canonical.publication.RootObject"
-        class="canonical.buttress.ButtressApplication"
-        newlayer="canonical.launchpad.layers.ButtressLayer"
-        name="buttress" />
+        class="canonical.bazaar.BazaarApplication"
+        newlayer="canonical.launchpad.layers.BazaarLayer"
+        name="bazaar" />
 
     <browser:defaultView
-        for="canonical.buttress.IButtressApplication"
+        for="canonical.bazaar.IBazaarApplication"
         name="+index" />
 
     <browser:suburl
-        for="canonical.buttress.IButtressApplication"
+        for="canonical.bazaar.IBazaarApplication"
         utility="canonical.launchpad.interfaces.IProductSet"
         name="products" />
 
     <browser:suburl
-        for="canonical.buttress.IButtressApplication"
+        for="canonical.bazaar.IBazaarApplication"
         utility="canonical.launchpad.interfaces.ISourceSourceSet"
         name="sources" />
 
-    <!-- pages for the buttress application -->
+    <!-- pages for the bazaar application -->
     <browser:pages
-        for="canonical.buttress.IButtressApplication"
+        for="canonical.bazaar.IBazaarApplication"
         permission="zope.Public"
-        class="canonical.buttress.ButtressApplicationView"
-        lp:url="buttress">
+        class="canonical.bazaar.BazaarApplicationView"
+        lp:url="bazaar">
         <browser:page
             name="+index"
-            template="../launchpad/templates/buttress-index.pt"
-            lp:url="buttress/+index" />
+            template="../launchpad/templates/bazaar-index.pt"
+            lp:url="bazaar/+index" />
     </browser:pages>
 
 </configure>

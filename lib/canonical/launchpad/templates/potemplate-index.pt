@@ -16,23 +16,67 @@
 
 <body>
 
+
+<metal:leftportlets fill-slot="portlets_one">
+
+<div class="portlet">
+
+    <h4>Template Details:</h4>
+
+    <div class="portletBody">
+
+        <div class="portletContent even">
+
+            <img src="/++resource++document_icon.gif" />
+            <span tal:replace="view/num_messages" /><br />
+
+            <div tal:condition="context/owner" tal:omit-tag>
+                <b>Owner:</b><br />
+                <img src="/++resource++user.gif" />
+                <span tal:replace="context/owner/browsername" /><br />
+            </div>
+
+        </div>
+    </div>
+</div>
+
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+
+<div class="portlet">
+
+    <h4>Actions:</h4>
+
+    <div class="portletBody">
+
+        <div class="portletContent even">
+
+            <p><img src="/++resource++add.gif"><a href="+upload">Upload a newer
+            version of this PO template</a>.
+            This is an advanced operation, limited to Rosetta
+            administrators<span tal:condition="context/owner"> and 
+            <span tal:replace="context/owner/browsername" />, the current owner of
+            this template in Rosetta</span>.</p>
+
+            <p><img src="/++resource++edit.gif"><a href="+edit">Edit this
+            template</a>. This will modify the template header information.</p>
+
+
+        </div>
+    </div>
+</div>
+
+</metal:rightportlets>
+
+
 <div metal:fill-slot="main">
 
-    <h1>Translating: <span tal:replace="context/product/title">Product Title</span></h1>
+    <h1>Translating <span tal:replace="context/product/title">Product
+        Title</span></h1>
 
     <p class="documentDescription">Template: <span tal:replace="context/title">
         Potemplate Title</span></p>
-
-    <p>
-    This file contains <span tal:replace="view/num_messages">N
-    messages</span>.
-    </p>
-
-    <p><a href="+upload">Update this template's data</a>.</p>
-
-    <p><a href="+edit">Edit this template.</a></p>
-
-    <p><a href="translate">Translate into all selected languages.</a></p>
 
     <h2>Translations</h2>
 

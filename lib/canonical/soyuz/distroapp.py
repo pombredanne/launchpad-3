@@ -38,7 +38,7 @@ class DistrosApp(object):
 
     def __init__(self):
         self.dst = getUtility(IDistributionSet)
-        self.entries = self.dst.getDistrosCounter()
+        self.entries = self.dst.count()
 
     def __getitem__(self, name):
         return DistroApp(name)
@@ -52,14 +52,9 @@ class DistroApp(object):
 
     def __init__(self, name):
         dstutil = getUtility(IDistributionSet)
-        self.distribution = dstutil.getDistribution(name)
+        self.distribution = dstutil[name]
 
         self.releases = list(self.distribution.releases)
-
-        if len(self.releases) != 0:
-            self.enable_releases = True
-        else:
-            self.enable_releases = False
 
     def checkPermission(self, principal, permission):
         if permission == 'launchpad.Edit':

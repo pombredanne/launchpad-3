@@ -100,6 +100,8 @@ class POTemplate(SQLBase):
     rawimportstatus = IntCol(dbName='rawimportstatus', notNull=True,
         default=RosettaImportStatus.IGNORE.value)
 
+    poFiles = MultipleJoin('POFile', joinColumn='potemplate')
+
 
     def currentMessageSets(self):
         return POTMsgSet.select(
@@ -253,17 +255,12 @@ class POTemplate(SQLBase):
             POFile.potemplate = %d
             ''' % self.id, clauseTables=('POFile', 'Language')))
 
-    _poFilesJoin = MultipleJoin('POFile', joinColumn='potemplate')
-
-    def poFiles(self):
-        return iter(self._poFilesJoin)
-
     def poFilesToImport(self):
         for pofile in iter(self._poFilesJoin):
             if pofile.rawimportstatus == RosettaImportStatus.PENDING:
                 yield pofile
 
-    def getPObyLang(self, language_code, variant=None):
+    def getPOFileByLang(self, language_code, variant=None):
         if variant is None:
             variantspec = 'IS NULL'
         elif isinstance(variant, unicode):
@@ -286,14 +283,12 @@ class POTemplate(SQLBase):
         else:
             return ret[0]
 
-    def poFile(self, language_code, variant=None):
+    def queryPOFileByLang(self, language_code, variant=None):
         try:
-            return self.getPObyLang(language_code, variant=variant)
+            pofile = self.getPOFileByLang(language_code, variant)
+            return pofile
         except KeyError:
-            # let's create the pofile the user wants, on the fly. We'll set
-            # the unknown values to default.
-            newpo = self.newPOFile(None, language_code, variant=variant)
-            return newpo
+            return None
 
     # XXX: Carlos Perello Marin: currentCount, updatesCount and rosettaCount
     # should be updated with a way that let's us query the database instead
@@ -304,19 +299,19 @@ class POTemplate(SQLBase):
 
     def currentCount(self, language):
         try:
-            return self.poFile(language).currentCount()
+            return self.getPOFileByLang(language).currentCount()
         except KeyError:
             return 0
 
     def updatesCount(self, language):
         try:
-            return self.poFile(language).updatesCount()
+            return self.getPOFileByLang(language).updatesCount()
         except KeyError:
             return 0
 
     def rosettaCount(self, language):
         try:
-            return self.poFile(language).rosettaCount()
+            return self.getPOFileByLang(language).rosettaCount()
         except KeyError:
             return 0
 
@@ -342,16 +337,13 @@ class POTemplate(SQLBase):
                                ' WHERE potemplate = %d'
                                % self.id)
 
-    def newPOFile(self, person, language_code, variant=None):
-        try:
-            existingpo = self.getPObyLang(language_code, variant)
-        except KeyError:
-            pass
-        else:
-            raise KeyError(
-                "This template already has a POFile for %s variant %s" %
-                (language.englishname, variant))
+    def getOrCreatePOFile(self, language_code, variant=None, owner=None):
+        # see if one exists already
+        existingpo = self.queryPOFileByLang(language_code, variant)
+        if existingpo is not None:
+            return existingpo
 
+        # since we don't have one, create one
         try:
             language = Language.byCode(language_code)
         except SQLObjectNotFound:
@@ -367,7 +359,7 @@ class POTemplate(SQLBase):
             # XXX: This is not working and I'm not able to fix it easily
             #'templatedate': self.datecreated.gmtime().Format('%Y-%m-%d %H:%M+000'),
             'templatedate': self.datecreated,
-            'copyright': self.copyright,
+            'copyright': '(c) %d Canonical Ltd, and Rosetta Contributors' % now.year,
             'nplurals': language.pluralforms or 1,
             'pluralexpr': language.pluralexpression or '0',
             }
@@ -378,8 +370,7 @@ class POTemplate(SQLBase):
                       topcomment=standardPOFileTopComment % data,
                       header=standardPOFileHeader % data,
                       fuzzyheader=True,
-                      lasttranslator=person,
-                      owner=person,
+                      owner=owner,
                       pluralforms=data['nplurals'],
                       variant=variant)
 
@@ -551,7 +542,7 @@ class POTMsgSet(SQLBase):
         languages = getUtility(ILanguageSet)
 
         try:
-            pofile = self.potemplate.poFile(language)
+            pofile = self.potemplate.getPOFileByLang(language)
             pluralforms = pofile.pluralforms
         except KeyError:
             pofile = None

@@ -16,7 +16,7 @@
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IPOTemplate"
-        getter="poFile"
+        getter="getOrCreatePOFile"
         />
 
     <browser:defaultView
@@ -48,7 +48,7 @@
         permission="launchpad.AnyPerson"
         class="canonical.rosetta.browser.TranslatePOTemplate" >
         <browser:page
-            name="translate"
+            name="+translate"
             template="../templates/potemplate-translate.pt"
             lp:url="Rosetta/products/$Product.name/$POTemplate.name/+translate" />
     </browser:pages>

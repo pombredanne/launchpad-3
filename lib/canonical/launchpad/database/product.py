@@ -287,7 +287,7 @@ class ProductSet:
 
     def search(self, text=None, soyuz=None,
                rosetta=None, malone=None,
-               buttress=None,
+               bazaar=None,
                show_inactive=False):
         clauseTables = Set()
         clauseTables.add('Product')
@@ -299,7 +299,7 @@ class ProductSet:
             clauseTables.add('POTemplate')
         if malone:
             clauseTables.add('ProductBugAssignment')
-        if buttress:
+        if bazaar:
             clauseTables.add('SourceSource')
         if 'POTemplate' in clauseTables:
             query += ' AND POTemplate.product=Product.id \n'

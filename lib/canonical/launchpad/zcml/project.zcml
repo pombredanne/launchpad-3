@@ -29,8 +29,8 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
-        layer="canonical.launchpad.layers.ButtressLayer"
-        name="+buttress-index" />
+        layer="canonical.launchpad.layers.BazaarLayer"
+        name="+bazaar-index" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
@@ -48,9 +48,9 @@
         <browser:page name="+malone-index"
             template="../templates/project-bugs.pt"
             lp:url="malone/projects/$Project.name/" />
-        <browser:page name="+buttress-index"
+        <browser:page name="+bazaar-index"
             template="../templates/project-branches.pt"
-            lp:url="buttress/upstream/$Project.name/" />
+            lp:url="bazaar/upstream/$Project.name/" />
     </browser:pages>
 
     <browser:pages
@@ -159,7 +159,7 @@
             lp:url="doap/projects/+contentreview" />
         <browser:page
             name="+syncreview"
-            template="../templates/buttress-sync-review.pt"
+            template="../templates/bazaar-sync-review.pt"
             lp:url="doap/projects/+syncreview" />
     </browser:pages>
 

@@ -114,7 +114,7 @@ class DummyPOTMsgSet:
 
 
 class DummyPOTemplate:
-    def poFile(self, language_code):
+    def getPOFileByLang(self, language_code):
         self.language_code = language_code
 
         if language_code in ('ja', 'es'):

@@ -188,11 +188,11 @@ class ProductSetView:
         self.soyuz = self.form.get('soyuz', None)
         self.rosetta = self.form.get('rosetta', None)
         self.malone = self.form.get('malone', None)
-        self.buttress = self.form.get('buttress', None)
+        self.bazaar = self.form.get('bazaar', None)
         self.text = self.form.get('text', None)
         self.searchrequested = False
         if (self.text is not None or \
-            self.buttress is not None or \
+            self.bazaar is not None or \
             self.malone is not None or \
             self.rosetta is not None or \
             self.soyuz is not None):
@@ -208,7 +208,7 @@ class ProductSetView:
         """
         if self.results is None:
             self.results = self.context.search(text=self.text,
-                                               buttress=self.buttress,
+                                               bazaar=self.bazaar,
                                                malone=self.malone,
                                                rosetta=self.rosetta,
                                                soyuz=self.soyuz)

@@ -120,12 +120,16 @@ class IPOTemplate(IRosettaStats):
         """Returns all PO files from this POTemplate that have a rawfile 
         pending of import into Rosetta."""
 
-    def poFile(language_code, variant=None):
+    def getPOFileByLang(language_code, variant=None):
         """Get the PO file of the given language and (potentially)
         variant. If no variant is specified then the translation
         without a variant is given.
 
         Raises KeyError if there is no such POFile."""
+
+    def queryPOFileByLang(language_code, variant=None):
+        """Return a PO file for this PO template in the given language, if
+        it exists, or None if it does not."""
 
     def hasMessageID(msgid):
         """Check whether a message set with the given message ID exists within
@@ -158,7 +162,7 @@ class IEditPOTemplate(IPOTemplate):
     #    is 'messageid_text'.
     #    If one already exists, a KeyError is raised."""
 
-    def newPOFile(person, language_code, variant=None):
+    def getOrCreatePOFile(language_code, variant=None, owner=None):
         """Create and return a new po file in the given language. The
         variant is optional.
 
@@ -283,7 +287,7 @@ class IPOFile(IRosettaStats):
 
     fuzzyheader = Attribute("Whether the header is fuzzy or not.")
 
-    lasttranslator = Attribute("The las person that do a translation here.")
+    lasttranslator = Attribute("The last person that translated a string here.")
 
     license = Attribute("The license under this translation is done.")
 

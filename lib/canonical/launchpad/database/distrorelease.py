@@ -23,11 +23,12 @@ class DistroRelease(SQLBase):
     """Distrorelease SQLObject"""
     implements(IDistroRelease)
 
-    _table = 'Distrorelease'
+    _table = 'DistroRelease'
     _columns = [
         ForeignKey(name='distribution', dbName='distribution',
                    foreignKey='Distribution', notNull=True),
         StringCol('name', dbName='name', notNull=True),
+        StringCol('displayname', dbName='displayname', notNull=True),
         StringCol('title', dbName='title', notNull=True),
         StringCol('shortdesc', dbName='shortdesc', notNull=True),
         StringCol('description', dbName='description', notNull=True),

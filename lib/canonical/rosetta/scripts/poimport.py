@@ -82,9 +82,9 @@ class PODBBridge:
         else:
             # We are importing a POFile.
             try:
-                poFile = poTemplate.poFile(languageCode)
+                poFile = poTemplate.getPOFileByLang(languageCode)
             except KeyError:
-                poFile = poTemplate.newPOFile(person, languageCode)
+                poFile = poTemplate.newPOFile(languageCode, owner=person)
 
             poFile.rawfile = base64.encodestring(fileData)
             poFile.daterawimport = UTC_NOW

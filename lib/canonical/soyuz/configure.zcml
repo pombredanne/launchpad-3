@@ -23,6 +23,13 @@
         name="distros"
         />
 
+    <browser:suburl
+        for="canonical.soyuz.SoyuzApplication"
+        class="canonical.launchpad.database.DistributionSet"
+        permission="zope.Public"
+        name="realdistros"
+        />
+
     <browser:defaultView
         for="canonical.soyuz.SoyuzApplication"
         name="+index" />

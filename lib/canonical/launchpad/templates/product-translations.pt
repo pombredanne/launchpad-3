@@ -104,12 +104,10 @@
                 <tbody>
                     <tr tal:repeat="language template/languages"
                         tal:attributes="onclick
-                        string:window.location='${template/name}/translate?languages=${language/code}'">
-                        <a tal:attributes="href
-                            string:${template/name}/translate?languages=${language/code}">
+                        string:window.location='${template/name}/+translate?languages=${language/code}'">
                         <td>
                             <a tal:attributes="href
-                            string:${template/name}/translate?languages=${language/code}"
+                            string:${template/name}/+translate?languages=${language/code}"
                             tal:content="language/name">Language
                             Name</a></td>
                         <td tal:content="language/poTranslated">0</td>
@@ -165,14 +163,14 @@
                                 &mdash;
                             </tal:block>
                         </td>
-                            <!--
-                            XXX Dafydd Harries, 2004/11/22
-                            We should make PO files autovivify.
-                            -->
-                        </a>
                     </tr>
                 </tbody>
             </table>
+
+            <div align="right">
+                <a tal:attributes="href string:${template/name}">See
+                    template details...</a>
+            </div>
 
             <p>
             <a tal:attributes="href string: ${template/name}">View Template
