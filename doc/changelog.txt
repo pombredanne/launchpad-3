@@ -2,6 +2,40 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-03 23:35:06 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1370
+
+    Summary:
+      improve sourcesource listings and add info icon
+    Revision:
+      launchpad--devel--0--patch-1370
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-782
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-783
+       improve bazaar import listings and add info icon
+    
+
+    new files:
+     lib/canonical/launchpad/images/.arch-ids/info_icon.gif.id
+     lib/canonical/launchpad/images/info_icon.gif
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/sourcesource.py
+     lib/canonical/launchpad/database/sourcesource.py
+     lib/canonical/launchpad/interfaces/sourcesource.py
+     lib/canonical/launchpad/templates/sources-index.pt
+     lib/canonical/launchpad/zcml/resources.zcml
+     lib/canonical/lp/dbschema.py
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-782
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-783
+
+
 2005-03-03 23:11:52 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1369
 
     Summary:

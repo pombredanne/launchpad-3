@@ -8,7 +8,7 @@
 <div metal:fill-slot="main" class="visualPadding"
      tal:define="batch view/batch">
 
-  <h1>Revision Control Systems for the Bazaar</h1>
+  <h1>Bazaar: Upstream Revision Control Imports</h1>
 
   <form action="" method="GET">
     <fieldset>
@@ -16,12 +16,16 @@
 
         <div class="formControls">
             <input type="text" name="text"
-                   tal:attributes="value view/text" size="60">
-            <input type="submit" name="search" value="search" />
-            <br />
+                   tal:attributes="value view/text" size="40">
+            <span tal:replace="structure view/sourcestateselector">
+                StateSelector
+            </span>
             <input type="checkbox" name="ready" id="ready"
                    tal:attributes="checked view/ready">
             <label for="ready">Ready</label>
+            <input type="submit" name="search" value="search" />
+            <br />
+            <!--
             <input type="checkbox" name="sync" id="sync"
                    tal:attributes="checked view/sync">
             <label for="sync">Syncing</label>
@@ -34,6 +38,7 @@
             <input type="checkbox" name="assigned" id="assigned"
                    tal:attributes="checked view/assigned">
             <label for="assigned">Assigned</label>
+            -->
         </div>
 
     </fieldset>
@@ -59,10 +64,10 @@
       <td tal:content="source/name">$SourceSource.name</td>
       <td tal:content="source/title">$SourceSource.title</td>
       <td tal:content="source/autotested">$SourceSource.autotested</td>
-      <td tal:content="source/syncingapproved">$SourceSource.syncingapproved</td>
-      <td tal:content="source/processingapproved">$SourceSource.processingapproved</td>
-      <td tal:content="source/datestarted">$SourceSource.datestarted</td>
-      <td tal:content="source/datefinished">$SourceSource.datefinished</td>
+      <td tal:content="source/syncingapproved/fmt:date | string: -- ">$SourceSource.syncingapproved</td>
+      <td tal:content="source/processingapproved/fmt:date | string: -- ">$SourceSource.processingapproved</td>
+      <td tal:content="source/datestarted/fmt:date | string: -- ">$SourceSource.datestarted</td>
+      <td tal:content="source/datefinished/fmt:date | string: -- ">$SourceSource.datefinished</td>
     </tr>
     <tr class="batchnav">
       <td class="batchnav" colspan="10"
@@ -84,6 +89,10 @@
       </td>
     </tr>
   </table>
+
+  * NB: The SourceSource.status flag is not yet implemented, when this is
+    done the drop-down listbox will actually work properly, till then it's
+    a best guess and STOPPED, DONTSYNC etc do not work :-)
 
 </div>
 

@@ -17,8 +17,11 @@ from canonical.database.sqlbase import SQLBase, quote
 # Launchpad interfaces
 # XXX: Daniel Debonzi 2004-11-25
 # Why RCSTypeEnum is inside launchpad.interfaces?
-from canonical.launchpad.interfaces import ISourceSource, ISourceSourceAdmin, ISourceSourceSet, \
-                                           RCSTypeEnum, RCSNames, IProductSet
+from canonical.launchpad.interfaces import ISourceSource, \
+    ISourceSourceAdmin, ISourceSourceSet, \
+    RCSTypeEnum, RCSNames, IProductSet
+
+from canonical.lp.dbschema import SourceSourceStatus
 
 # tools
 import datetime
@@ -260,6 +263,9 @@ class SourceSourceSet(object):
     """The set of SourceSource's."""
     implements(ISourceSourceSet)
 
+    def __init__(self):
+        self.title = 'Bazaar Upstream Imports'
+
     def __getitem__(self, sourcesourcename):
         # XXX Strangely, the sourcesourcename appears to have been quoted
         # already. Quoting it again causes this query to break, though we
@@ -267,6 +273,84 @@ class SourceSourceSet(object):
         ss = SourceSource.select(SourceSource.q.name=="%s" % \
                                     sourcesourcename)
         return ss[0]
+
+    def _querystr(self, ready=None, text=None, state=None):
+        """Return a querystring and clauseTables for use in a search or a
+        get or a query."""
+        query = '1=1'
+        clauseTables = Set()
+        clauseTables.add('SourceSource')
+        if ready is not None:
+            if len(query) > 0:
+                query = query + ' AND\n'
+            query = query + """SourceSource.product = Product.id AND
+                               Product.active IS TRUE AND
+                               Product.reviewed IS TRUE AND
+                             ( Product.project IS NULL OR
+                             ( Product.project = Project.id AND
+                               Project.active IS TRUE AND
+                               Project.reviewed IS TRUE ) )
+                               """
+            clauseTables.add('Project')
+            clauseTables.add('Product')
+        elif state == SourceSourceStatus.TESTING:
+            if len(query) > 0:
+                query = query + ' AND '
+            query = query + 'SourceSource.processingapproved IS NULL'
+            query = query + ' AND '
+            query = query + 'SourceSource.syncingapproved IS NULL'
+            query = query + ' AND '
+            query = query + 'SourceSource.autotested = 0'
+        elif state == SourceSourceStatus.TESTFAILED:
+            if len(query) > 0:
+                query = query + ' AND '
+            query = query + 'SourceSource.processingapproved IS NULL'
+            query = query + ' AND '
+            query = query + 'SourceSource.syncingapproved IS NULL'
+            query = query + ' AND '
+            query = query + 'SourceSource.autotested = 1'
+        elif state == SourceSourceStatus.AUTOTESTED:
+            if len(query) > 0:
+                query = query + ' AND '
+            query = query + 'SourceSource.autotested = 2'
+        elif state == SourceSourceStatus.PROCESSING:
+            if len(query) > 0:
+                query = query + ' AND '
+            query = query + 'SourceSource.processingapproved IS NOT NULL'
+            query = query + ' AND '
+            query = query + 'SourceSource.syncingapproved IS NULL'
+        elif state == SourceSourceStatus.SYNCING:
+            if len(query) > 0:
+                query = query + ' AND '
+            query = query + 'SourceSource.syncingapproved IS NOT NULL'
+        elif state == SourceSourceStatus.STOPPED:
+            pass
+        if text:
+            if len(query) > 0:
+                query = query + ' AND '
+            text = quote(text)
+            if 'Product' not in clauseTables:
+                query += 'SourceSource.product = Product.id AND '
+                clauseTables.add('Product')
+            query += 'Product.fti @@ ftq(%s) AND ' % text
+            if 'Project' not in clauseTables:
+                query = query + """
+                             ( Product.project IS NULL OR
+                               Product.project = Project.id ) AND
+                               """
+            query += " Project.fti @@ ftq(%s) " % text
+            clauseTables.add('Project')
+        return query, clauseTables
+
+    def search(self, ready=None, 
+                     text=None,
+                     state=None,
+                     start=None,
+                     length=None):
+        query, clauseTables = self._querystr(ready, text, state)
+        return SourceSource.select(query, distinct=True,
+                                   clauseTables=clauseTables)[start:length]
+        
 
     def filter(self, sync=None, process=None, 
                      tested=None, text=None,
@@ -285,6 +369,7 @@ class SourceSourceSet(object):
                                Product.active IS TRUE AND
                                Product.reviewed IS TRUE"""
             clauseTables.add('Project')
+            clauseTables.add('Product')
         if sync is not None:
             if len(query) > 0:
                 query = query + ' AND '
@@ -309,10 +394,12 @@ class SourceSourceSet(object):
             if len(query) > 0:
                 query = query + ' AND '                
             query = query + "Product.name != 'unassigned'"
+            clauseTables.add('Product')
         else:
             if len(query) > 0:
                 query = query + ' AND '                
             query = query + "Product.name = 'unassigned'"
+            clauseTables.add('Product')
         if text is not None:
             if len(query) > 0:
                 query = query + ' AND '
