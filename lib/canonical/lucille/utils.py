@@ -15,3 +15,59 @@ def prefix_multi_line_string(str, prefix, include_blank_lines=0):
         out = out[:-1]
     return out
 
+def extract_component_from_section(section, default_component = "main"):
+    component = ""
+    if section.find("/") != -1:
+        component,section = section.split("/")
+    else:
+        component = default_component
+
+    return (section,component)
+
+from canonical.lucille.TagFiles import ChangesParseError
+
+def build_file_list(tagfile, is_dsc = False, default_component = "main" ):
+    files = {}
+    
+    if "files" not in tagfile:
+        raise ValueError("No Files section in supplied tagfile")
+
+    format = tagfile["format"]
+
+    format = float(format)
+
+    if not is_dsc and (format < 1.5 or format > 2.0):
+        raise ValueError("Unsupported format '%s'" % tagfile["format"])
+
+    for line in tagfile["files"].split("\n"):
+        if not line:
+            break
+
+        tokens = line.split()
+
+        section = priority = ""
+
+        try:
+            if is_dsc:
+                (md5, size, name) = tokens
+            else:
+                (md5, size, section, priority, name) = tokens
+        except ValueError:
+            raise ChangesParseError(line)
+
+        if section == "":
+            section = "-"
+        if priority == "":
+            priority = "-"
+
+        (section, component) = extract_component_from_section(section)
+
+        files[name] = {
+            "md5sum": md5,
+            "size": size,
+            "section": section,
+            "priority": priority,
+            "component": component
+            }
+        
+    return files
