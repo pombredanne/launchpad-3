@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-05 15:56:13 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1562
+
+    Summary:
+      add SourcePackage.shouldimport stub
+    Revision:
+      launchpad--devel--0--patch-1562
+
+    Patches applied:
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-36
+       rocketfuel sync
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-37
+       add SourcePackage.shouldimport
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/sourcepackage.py
+
+    new patches:
+     scott@canonical.com--2005/launchpad--devel--0--patch-36
+     scott@canonical.com--2005/launchpad--devel--0--patch-37
+
+
 2005-04-05 13:43:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1561
 
     Summary:

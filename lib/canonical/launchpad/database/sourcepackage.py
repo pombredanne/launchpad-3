@@ -165,6 +165,16 @@ class SourcePackage(object):
             return None
     product = property(product)
 
+    def shouldimport(self):
+        """Whether we should import this or not.
+
+        Right now this is a stub that returns True for hoary source packages.
+        This should be changed to look up in the database, sabdfl says
+        Packaging.
+        """
+        return self.distrorelease.name == "hoary"
+    shouldimport = property(shouldimport)
+
     def bugsCounter(self):
         from canonical.launchpad.database.bugtask import BugTask
 
