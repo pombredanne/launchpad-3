@@ -38,9 +38,19 @@
             <span tal:replace="view/datestring">Time</span>
           </h1>
 
-
-          <a tal:attributes="href view/prevURL">&lt;- Previous</a>
-          <a tal:attributes="href view/nextURL">Next -&gt;</a>
+          <table class="cal-navigation">
+            <tr>
+              <td width="30%" align="left">
+                <a tal:attributes="href view/prevURL">&#8592; Previous</a>
+              </td>
+              <td width="30%" align="center">
+                <a href="../today">Today</a>
+              </td>
+              <td width="30%" align="right">
+                <a tal:attributes="href view/nextURL">Next &#8594;</a>
+              </td>
+            </tr>
+          </table>
 
           <div id="calendar-view-day"
                tal:attributes="style python:'height: ' + str(view.visiblehours * 4 + 1) + 'em'">
