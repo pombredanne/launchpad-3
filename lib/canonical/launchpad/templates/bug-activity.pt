@@ -17,11 +17,11 @@
             
             
               <li id="contentview-edit" class="plain">
-                <a href="+edit">Edit</a>
+                <a href="+edit">Edit Bug Info</a>
               </li>
             
               <li id="contentview-edit" class="selected">
-                <a href="activity">History</a>
+                <a href="activity">Bug Changelog</a>
               </li>
 
     </ul>

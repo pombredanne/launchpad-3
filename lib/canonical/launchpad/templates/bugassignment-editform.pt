@@ -50,11 +50,11 @@
         </li>
 
         <li id="contentview-edit" class="plain">
-            <a href="+edit">Edit</a>
+            <a href="#" tal:attributes="href string:/malone/bugs/${context/bug/id}/+edit">Edit Bug Info</a>
         </li>
 
         <li id="contentview-edit" class="plain">
-            <a href="activity">History</a>
+            <a href="#" tal:attributes="href string:/malone/bugs/${context/bug/id}/activity">Bug Changelog</a>
         </li>
     </ul>
 
