@@ -35,8 +35,13 @@
             <td tal:content="bugass/priority/lp:BugPriority">
                 $SourcepackageBugAssignment.priority
             </td>
-            <td tal:content="bugass/binarypackage">
-                $SourcepackageBugAssignment.binarypackage
+            <td>
+                <span tal:content="bugass/binarypackage/binarypackagename/name">
+                    $BinarypackageName.name
+                </span>
+                <span tal:content="bugass/binarypackage/version">
+                    $Binarypackage.version
+                </span>
             </td>
         </tr>
     </table>

@@ -502,7 +502,8 @@ class SourcepackageBugAssignment(SQLBase):
         IntCol('bugstatus', default=int(dbschema.BugAssignmentStatus.NEW)),
         IntCol('priority', default=int(dbschema.BugPriority.MEDIUM)),
         IntCol('severity', default=int(dbschema.BugSeverity.NORMAL)),
-        IntCol('binarypackage')
+        ForeignKey(name='binarypackage', dbName='binarypackage',
+                foreignKey='Binarypackage'),
     ]
 
 class IBugInfestation(Interface):

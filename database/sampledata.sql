@@ -1971,3 +1971,25 @@ CURRENT_DATE, 1, 'title', 'A silly problem',
 'An odd problem', 'Decided problem wasn\'t silly after all'
 );
 
+-- Assign bug 'bob' to the firefox product (NEW, HIGH, MAJOR)
+INSERT INTO ProductBugAssignment (bug, product, bugstatus, priority, severity)
+VALUES (
+    (SELECT id FROM Bug WHERE name='bob'),
+    (SELECT id FROM Product WHERE name='firefox'),
+    1, 2, 2
+);
+
+-- Assign bug 'bob' to the mozilla-firefox sourcepackage and firefox-0.81
+-- binary package (OPEN, WONTFIX, 2)
+INSERT INTO SourcepackageBugAssignment 
+    (bug, sourcepackage, bugstatus, priority, severity, binarypackage)
+VALUES (
+    (SELECT id FROM Bug WHERE name='bob'),
+    (SELECT id FROM Sourcepackage WHERE name='mozilla-firefox'),
+    2, 4, 2,
+    (SELECT id FROM BinaryPackage WHERE version='0.8' 
+        AND binarypackagename = (
+            SELECT id FROM BinarypackageName WHERE name='mozilla-firefox-0.8'
+            )
+    )
+);

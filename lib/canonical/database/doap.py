@@ -191,3 +191,19 @@ class Binarypackage(SQLBase):
         StringCol('copyright'),
         StringCol('licence'),
         ]
+
+class IBinarypackageName(Interface):
+    id = Int(title=_('ID'), required=True)
+    name = TextLine(title=_('Name'), required=True)
+    binarypackages = Attribute('binarypackages')
+
+class BinarypackageName(SQLBase):
+    implements(IBinarypackageName)
+    _table = 'BinarypackageName'
+    _columns = [
+        StringCol('name', notNull=True, unique=True),
+        ]
+    binarypackages = MultipleJoin(
+            'Binarypackage', joinColumn='binarypackagename'
+            )
+
