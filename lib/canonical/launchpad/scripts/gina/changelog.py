@@ -1,8 +1,8 @@
 # Gina's changelog parser and muncher for great justice
 
-import re
+import re, sys
 
-first_re = re.compile(r'^[a-zA-Z0-9]+ ')
+first_re = re.compile(r"^[a-z][a-z0-9\\+\\.\\-]+ ")
 prio_re = re.compile(r'(?:urgency|priority)=([^ ]+)')
 
 from sourcerer.deb.version import Version
@@ -19,6 +19,7 @@ def parse_first_line(line):
 
     return (srcpkg, version, priority)
 
+
 def parse_last_line(line):
     maint = line[:line.find(">")+1].strip()
     date = line[line.find(">")+1:].strip()
@@ -32,12 +33,12 @@ def parse_changelog_stanza(firstline, stanza, lastline):
     return {
         "package": srcpkg.lower(),
         "version": version.lower(),
-	# forgot to take my medicine
+        # forgot to take my medicine
         "urgency": priority.lower(),
         "maintainer": maint,
         "date": date,
         "changes": "".join(stanza).strip("\n")
-        }
+    }
 
 
 def parse_changelog(changelines):
@@ -45,7 +46,7 @@ def parse_changelog(changelines):
     firstline = ""
     stanza = []
     rets = []
-    
+   
     for line in changelines:
         #print line[:-1]
         if state == 0:
@@ -60,19 +61,20 @@ def parse_changelog(changelines):
                 #print "state0 Exception skip"
                 continue
             firstline = line.strip()
+            stanza = [line, '\n']
             state = 1
-            stanza = []
             continue
+
         if state == 1:
+            stanza.append(line)
+
             if line.startswith(" --") and "@" in line:
                 #print "state1 accept"
                 # Last line of stanza
                 rets.append(parse_changelog_stanza(firstline,stanza,line.strip()[3:]))
                 state = 0
-                continue
-            stanza.append(line)
-            continue
 
+    # leftovers with no close line
     if state == 1:
         rets[-1]["changes"] += firstline
         if len(rets):
@@ -80,7 +82,8 @@ def parse_changelog(changelines):
 
     return rets
 
+
 if __name__ == '__main__':
     import pprint
-    pprint.pprint(parse_changelog(file("changelog.dpkg","r")))
+    pprint.pprint(parse_changelog(file(sys.argv[1],"r")))
     

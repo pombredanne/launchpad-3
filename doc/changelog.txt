@@ -2,6 +2,56 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-16 13:19:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1321
+
+    Summary:
+      Old kiko gina changes + refuel
+    Revision:
+      launchpad--devel--0--patch-1321
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-434
+       star-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-435
+       star-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-436
+       merge from kiko. Gina changes
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-437
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-438
+       star-merge from rocketfuel
+    
+     * kiko@async.com.br/launchpad--brazilian--0--patch-62
+       FUEL FUEL FUEL
+    
+     * kiko@async.com.br/launchpad--brazilian--0--patch-63
+       Gina needs love: fix CreateSourcePackageRelease and allow more package names
+    
+     * kiko@async.com.br/launchpad--brazilian--0--patch-64
+       Ensuring first and last line go into changes entry as well (doh)
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/scripts/gina/changelog.py
+     lib/canonical/launchpad/scripts/gina/classes.py
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-434
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-435
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-436
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-437
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-438
+     kiko@async.com.br/launchpad--brazilian--0--patch-62
+     kiko@async.com.br/launchpad--brazilian--0--patch-63
+     kiko@async.com.br/launchpad--brazilian--0--patch-64
+
+
 2005-02-16 13:02:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1320
 
     Summary:
