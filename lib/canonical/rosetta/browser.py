@@ -180,6 +180,7 @@ class ViewPOExport:
 
 class TranslatePOTemplate:
     defaultCount = 5
+    multiLineThreshold = 40
 
     def __init__(self, context, request):
         self.context = context
@@ -221,7 +222,7 @@ class TranslatePOTemplate:
         if 'count' in request.form:
             self.count = int(request.form.get('count'))
         else:
-            self.count = TranslatePOTemplate.defaultCount
+            self.count = self.defaultCount
 
     def atBeginning(self):
         return self.offset == 0
@@ -272,7 +273,8 @@ class TranslatePOTemplate:
 
     def _messageID(self, messageID):
         return {
-            'isMultiline' : '\n' in messageID.msgid,
+            'isMultiline' : (len(messageID.msgid) > self.multiLineThreshold or
+                '\n' in messageID.msgid),
             'text' : self._munge(messageID.msgid)
         }
 
