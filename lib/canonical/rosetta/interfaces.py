@@ -132,7 +132,7 @@ class IPOTemplate(Interface):
     def __iter__():
         """Return an iterator over Current IPOMessageSets in this template."""
 
-    def __getitem__(key):
+    def messageSet(key, onlyCurrent=False):
         """Extract one or several POMessageSets from this template.
 
         If the key is a string or a unicode object, returns the
@@ -141,6 +141,12 @@ class IPOTemplate(Interface):
 
         If the key is a slice, returns the message IDs by sequence within the
         given slice.
+
+        If onlyCurrent is True, then get only current message sets.
+        """
+
+    def __getitem__(key):
+        """Same as messageSet(), with onlyCurrent=True
         """
 
     def languages():

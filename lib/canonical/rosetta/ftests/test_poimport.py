@@ -8,7 +8,7 @@ from zope.component.tests.placelesssetup import PlacelessSetup
 from canonical.database.sqlbase import SQLBase
 from canonical.rosetta.interfaces import ILanguages
 from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
-     RosettaProject, RosettaProduct, RosettaLanguages
+     xxxRosettaProject, RosettaProduct, RosettaLanguages, RosettaPOMessageSet
 from sqlobject import connectionForURI
 from canonical.rosetta.pofile_adapters import MessageProxy, \
      TemplateImporter, POFileImporter
@@ -33,7 +33,7 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
 
     def testTemplateImporter(self):
         try:
-            project = RosettaProject.selectBy(name = 'gnome')[0]
+            project = xxxRosettaProject.selectBy(name = 'gnome')[0]
         except (IndexError, KeyError):
             import sys
             t, e, tb = sys.exc_info()
@@ -71,6 +71,12 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
         get_transaction().commit()
         # try a second time to see if it breaks
         importer.doImport(self.pot)
+        msgid = poTemplate.messageSet(slice(1))[0].primeMessageID_
+        results = RosettaPOMessageSet.selectBy(
+            poTemplateID=poTemplate.id,
+            poFileID=None,
+            primeMessageID_ID=msgid.id)
+        assert results.count() == 1, results.count()
         return
         # TODO: add some code that actually tests the database
         # here is an attempt
@@ -87,7 +93,7 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
 
     def testFileImporter(self):
         try:
-            project = RosettaProject.selectBy(name = 'gnome')[0]
+            project = xxxRosettaProject.selectBy(name = 'gnome')[0]
         except (IndexError, KeyError):
             import sys
             t, e, tb = sys.exc_info()

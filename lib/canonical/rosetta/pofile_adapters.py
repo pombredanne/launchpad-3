@@ -271,7 +271,7 @@ class TemplateImporter(object):
     def __call__(self, msgid, **kw):
         "Instantiate a single message/messageset"
         try:
-            msgset = self.potemplate[msgid]
+            msgset = self.potemplate.messageSet(msgid)
         except KeyError:
             msgset = self.potemplate.createMessageSetFromText(msgid)
         else:

@@ -383,13 +383,13 @@ class RosettaPOTemplate(SQLBase):
         # XXX: Should we use the cached value POTemplate.messageCount instead?
         return self.currentMessageSets().count()
 
-    def __getitem__(self, key):
+    def messageSet(self, key, onlyCurrent=False):
+        query = '''potemplate = %d AND pofile is NULL''' % self.id
+        if onlyCurrent:
+            query += ' AND sequence > 0'
+
         if isinstance(key, slice):
-            return RosettaPOMessageSet.select('''
-                potemplate = %d AND
-                pofile is NULL AND
-                sequence > 0
-                ''' % self.id)[key]
+            return RosettaPOMessageSet.select(query)[key]
 
         if not isinstance(key, unicode):
             raise TypeError(
@@ -406,12 +406,8 @@ class RosettaPOTemplate(SQLBase):
 
         # Find a message set with the given message ID.
 
-        results = RosettaPOMessageSet.select('''
-            potemplate = %d AND
-            pofile IS NULL AND
-            primemsgid = %d AND
-            sequence > 0
-            ''' % (self.id, messageID.id))
+        results = RosettaPOMessageSet.select(query +
+            (' AND primemsgid = %d' % messageID.id))
 
         if results.count() == 0:
             raise KeyError, key
@@ -419,6 +415,9 @@ class RosettaPOTemplate(SQLBase):
             assert results.count() == 1
 
             return results[0]
+
+    def __getitem__(self, key):
+        return self.messageSet(key, onlyCurrent=True)
 
     # IEditPOTemplate
     def expireAllMessages(self):
