@@ -136,6 +136,8 @@ class IPOTemplate(Interface):
 
     isCurrent = Attribute("Whether this template is current or not.")
 
+    dateCreated = Attribute("When this template was created.")
+
     # XXX: branch, changeset
 
     # XXX: copyright, license: where do we get this information?
@@ -169,6 +171,12 @@ class IPOTemplate(Interface):
         without a variant is given.
 
         Raises KeyError if there is no such POFile."""
+
+    def newPOFile(language, variant=None):
+        """Creates a new PO file of the given language and (potentially)
+        variant.
+
+        Raises KeyError if there is already such POFile."""
 
     def currentCount(language):
         """Returns the number of msgsets matched to a this potemplate that have
@@ -226,6 +234,8 @@ class IPOFile(Interface):
     headerFuzzy = Attribute("Whether the header is fuzzy or not.")
 
     pluralForms = Attribute("The number of plural forms this PO file has.")
+
+    variant = Attribute("The language variant for this PO file.")
 
     currentCount = Attribute("""
         The number of msgsets matched to the potemplate that have a

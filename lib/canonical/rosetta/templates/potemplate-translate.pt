@@ -105,13 +105,26 @@
                         <label class="language-code"
                             tal:content="language/englishName">pt_BR</label>:
                         <br/>
-                        <input type="text"
-                            tal:condition="not:set/messageID/isMultiline"
-                            xtal:attributes="value python:sighting.currentTranslation(language).text[0]"
-                            tal:attributes="
-                                name string:t_${set/id}_${language/code};
-                                value python:set['translations'][language][0];
-                                " />
+			<!-- XXX: I think this logic should be moved inside browser.py
+			     Added so it does not breaks with msgsets not available with
+			     a POFile. -->
+			<span tal:condition="python: len(set['translations'][language]) > 0" >
+                            <input type="text"
+                                tal:condition="not:set/messageID/isMultiline"
+                                xtal:attributes="value python:sighting.currentTranslation(language).text[0]"
+                                tal:attributes="
+                                    name string:t_${set/id}_${language/code};
+                                    value python:set['translations'][language][0];
+                                    " />
+			</span>
+			<span tal:condition="python: len(set['translations'][language]) < 1" >
+			    <input type="text"
+                                tal:condition="not:set/messageID/isMultiline"
+                                xtal:attributes="value python:sighting.currentTranslation(language).text[0]"
+                                tal:attributes="
+                                    name string:t_${set/id}_${language/code};
+                                    " />
+			</span>
                         <textarea
                             tal:condition="set/messageID/isMultiline"
                             tal:attributes="name

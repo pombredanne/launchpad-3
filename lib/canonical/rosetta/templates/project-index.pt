@@ -67,6 +67,9 @@
                         <!--
                         XXX: Assumption that a PO file exists for this
                         language.
+			CarlosPerelloMarin: Fixed for the statistics, we
+			should implement the export.po in a way we get
+			an empty .po file from the .pot one
                         -->
                         <td><a tal:attributes="href
                             string:${template/name}/translate"

@@ -169,14 +169,22 @@ class ViewPOExport:
 
     def __call__(self):
         self.export = POExport(self.context)
-
         # XXX: hardcoded value
-        self.pofile = self.export.export('cy')
+        languageCode = 'cy'
+
+        try:
+            self.pofile = self.export.export(languageCode)
+        except KeyError:
+            # We don't have that POFile, we should create one
+            # XXX: I'm not sure we should get the person this way...
+            person = IPerson(self.request.principal)
+            self.context.newPOFile(person, languageCode)
+            self.pofile = self.export.export(languageCode)
 
         self.request.response.setHeader('Content-Type', 'application/x-po')
         self.request.response.setHeader('Content-Length', len(self.pofile))
         self.request.response.setHeader('Content-disposition',
-            'attachment; filename="%s"' % 'cy.po')
+            'attachment; filename="%s.po"' % languageCode)
 
         return self.pofile
 
@@ -209,12 +217,20 @@ class TranslatePOTemplate:
         for language in self.languages:
             try:
                 pofile = context.poFile(language.code)
+            except KeyError:
+                # We don't have a POFile for this Language
+                # XXX: I'm not sure we should get the person this way...
+                person = IPerson(self.request.principal)
+                pofile = context.newPOFile(person, language.code)
+            try:
                 self.pluralForms[language.code] = pofile.pluralForms
             except KeyError:
                 if languages[language.code].pluralForms is not None:
                     self.pluralForms[language.code] = \
                         languages[language.code].pluralForms
                 else:
+                    # We don't have a default plural form for this Language
+                    # XXX: We need to implement something here
                     raise RuntimeError, "Eeek!"
 
         if 'offset' in request.form:

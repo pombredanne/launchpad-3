@@ -393,7 +393,9 @@ class RosettaPOTemplate(SQLBase):
             'languagecode': language_code,
             'productname': self.product.title,
             'date': now.isoformat(' '),
-            'templatedate': self.dateCreated.gmtime().Format('%Y-%m-%d %H:%M+000'),
+            # XXX: This is not working and I'm not able to fix it easily
+            #'templatedate': self.dateCreated.gmtime().Format('%Y-%m-%d %H:%M+000'),
+            'templatedate': self.dateCreated,
             'copyright': self.copyright,
             }
         return RosettaPOFile(poTemplate=self,
@@ -450,6 +452,7 @@ class RosettaPOFile(SQLBase):
         IntCol(name='pluralForms', dbName='pluralforms', notNull=True),
         ForeignKey(name='lastTranslator', foreignKey='RosettaPerson', dbName='lasttranslator'),
         DateTimeCol(name='lastParsed', dbName='lastparsed'),
+        StringCol(name='variant', dbName='variant'),
         # XXX: missing fields
     ]
 
