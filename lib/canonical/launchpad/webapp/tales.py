@@ -1,11 +1,13 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 #
-"""Implementation of the lp: and htmlform: namespaces in TALES.
+"""Implementation of the lp: htmlform: fmt: namespaces in TALES.
 
 """
 __metaclass__ = type
 
-import cgi, re
+import cgi
+import re
+import sets
 from zope.interface import Interface, Attribute, implements
 
 from zope.publisher.interfaces import IApplicationRequest
@@ -110,6 +112,40 @@ class DBSchemaAPI:
             raise TraversalError, name
 
 
+class NoneFormatter:
+    """Adapter from None to various string formats.
+
+    In general, these will return an empty string.  They are provided for ease
+    of handling NULL values from the database, which become None values for
+    attributes in content classes.
+    """
+    implements(ITraversable)
+
+    allowed_names = sets.Set([
+        'nl_to_br',
+        'nice_pre',
+        'breadcrumbs',
+        'date',
+        'time',
+        'datetime',
+        ])
+
+    def __init__(self, context):
+        self.context = context
+
+    def traverse(self, name, furtherPath):
+        if name == 'shorten':
+            if len(furtherPath) == 0:
+                raise TraversalError(
+                    "you need to traverse a number after fmt:shorten")
+            maxlength = int(furtherPath.pop())
+            return ''
+        elif name in self.allowed_names:
+            return ''
+        else:
+            raise TraversalError, name
+
+
 class DateTimeFormatterAPI:
     """Adapter from datetime objects to a formatted string.
 
@@ -127,22 +163,13 @@ class DateTimeFormatterAPI:
         self._datetime = datetimeobject
 
     def time(self):
-        if self._datetime is None:
-            return None
-        else:
-            return self._datetime.strftime('%T')
+        return self._datetime.strftime('%T')
 
     def date(self):
-        if self._datetime is None:
-            return None
-        else:
-            return self._datetime.strftime('%Y-%m-%d')
+        return self._datetime.strftime('%Y-%m-%d')
 
     def datetime(self):
-        if self._datetime is None:
-            return None
-        else:
-            return "%s %s" % (self.date(), self.time())
+        return "%s %s" % (self.date(), self.time())
 
 
 class RequestFormatterAPI:
@@ -205,13 +232,14 @@ class FormattersAPI:
         """
         if not self._stringtoformat:
             return self._stringtoformat
-        return (
-                '<pre style="'
-                'white-space: -moz-pre-wrap; white-space: -o-pre-wrap; '
-                'word-wrap: break-word;">%s</pre>' % cgi.escape(
-                    self._stringtoformat
+        else:
+            return ('<pre style="'
+                    'white-space: -moz-pre-wrap;'
+                    'white-space: -o-pre-wrap;'
+                    'word-wrap: break-word;'
+                    '">%s</pre>'
+                    % cgi.escape(self._stringtoformat)
                     )
-                )
 
     def shorten(self, maxlength):
         """Use like tal:content="context/foo/fmt:shorten/60"""

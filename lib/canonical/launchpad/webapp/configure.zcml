@@ -71,12 +71,18 @@
         />
 
     <adapter
-        for="*"
+        for="basestring"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.FormattersAPI"
         name="fmt"
         />
 
+    <adapter
+        for="types.NoneType"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.NoneFormatter"
+        name="fmt"
+        />
 
     <!-- Authentication. -->
     <utility

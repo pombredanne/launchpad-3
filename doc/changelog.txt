@@ -2,6 +2,40 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-06 09:25:31 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1373
+
+    Summary:
+      tales namespace tests, 'fmt:' for None
+    Revision:
+      launchpad--devel--0--patch-1373
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--tales-fmt-of-none--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1371
+    
+     * steve.alexander@canonical.com/launchpad--tales-fmt-of-none--0--patch-1
+       added handling for None by the fmt: namespace in tales.  added system doc test for tales namespace
+    
+     * steve.alexander@canonical.com/launchpad--tales-fmt-of-none--0--patch-2
+       added more tests for more of the tales namespaces we use
+    
+
+    new files:
+     lib/canonical/launchpad/doc/.arch-ids/tales.txt.id
+     lib/canonical/launchpad/doc/tales.txt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/webapp/configure.zcml
+     lib/canonical/launchpad/webapp/tales.py
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--tales-fmt-of-none--0--base-0
+     steve.alexander@canonical.com/launchpad--tales-fmt-of-none--0--patch-1
+     steve.alexander@canonical.com/launchpad--tales-fmt-of-none--0--patch-2
+
+
 2005-03-05 23:29:04 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1372
 
     Summary:

@@ -1,0 +1,75 @@
+=========================
+Testing TALES expressions
+=========================
+
+Set up a 'test_tales(expression, **context)' function for testing various
+TALES features.
+
+    >>> from zope.app.pagetemplate.engine import Engine
+    >>> class Context:
+    ...     def __init__(self, **kw):
+    ...         self.vars = kw
+    ...
+    >>> def test_tales(expression, **kw):
+    ...     compiled_tales = Engine.compile(expression)
+    ...     return compiled_tales(Context(**kw))
+    ...
+
+
+Test the 'fmt:' namespace where the context is a datetime.
+
+   >>> from datetime import datetime
+   >>> dt = datetime(2005, 4, 1, 16, 22)
+   >>> test_tales('dt/fmt:date', dt=dt)
+   '2005-04-01'
+   >>> test_tales('dt/fmt:time', dt=dt)
+   '16:22:00'
+   >>> test_tales('dt/fmt:datetime', dt=dt)
+   '2005-04-01 16:22:00'
+
+Test the 'lp:' namespace for presenting DBSchema classes.
+
+    >>> from canonical.lp.dbschema import BinaryPackageFormat
+    >>> deb = BinaryPackageFormat.DEB.value
+    >>> test_tales('deb/lp:BinaryPackageFormat', deb=deb)
+    'Ubuntu Package'
+
+
+Test the 'fmt:' namespace where the context is a string.
+
+    >>> test_tales('foo/fmt:shorten/8', foo='abcdefghij')
+    'abcde...'
+
+    >>> test_tales('foo/fmt:nl_to_br',
+    ...             foo='icicle\nbicycle\ntricycle & troika')
+    'icicle<br />\nbicycle<br />\ntricycle &amp; troika'
+
+    >>> import pprint, textwrap
+    >>> pprint.pprint(textwrap.wrap(
+    ...     test_tales('foo/fmt:nice_pre', foo='hello & goodbye')
+    ... ))
+    ['<pre style="white-space: -moz-pre-wrap;white-space: -o-pre-wrap;word-',
+     'wrap: break-word;">hello &amp; goodbye</pre>']
+
+
+Test the 'fmt:' namespace where the context is None.
+
+    >>> test_tales('foo/fmt:shorten', foo=None)
+    Traceback (most recent call last):
+    ...
+    TraversalError: 'you need to traverse a number after fmt:shorten'
+
+    >>> test_tales('foo/fmt:shorten/8', foo=None)
+    ''
+    >>> test_tales('foo/fmt:nl_to_br', foo=None)
+    ''
+    >>> test_tales('foo/fmt:nice_pre', foo=None)
+    ''
+    >>> test_tales('foo/fmt:breadcrumbs', foo=None)
+    ''
+    >>> test_tales('foo/fmt:date', foo=None)
+    ''
+    >>> test_tales('foo/fmt:time', foo=None)
+    ''
+    >>> test_tales('foo/fmt:datetime', foo=None)
+    ''
