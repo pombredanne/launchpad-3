@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-11 19:27:16 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1176
+
+    Summary:
+      add command-line options support for Nicole
+    Revision:
+      launchpad--devel--0--patch-1176
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-451
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-452
+       add command-line options support for Nicole
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/scripts/nicole/nicole.py
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-451
+     celso.providelo@canonical.com/launchpad--devel--0--patch-452
+
+
 2005-01-11 18:07:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1175
 
     Summary:
