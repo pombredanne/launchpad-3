@@ -9,22 +9,6 @@ from canonical.database.sqlbase import SQLBase, quote
 # canonical imports
 from canonical.launchpad.interfaces import ILanguageSet, ILanguage
 
-class LanguageSet(object):
-    implements(ILanguageSet)
-
-    def __iter__(self):
-        return iter(Language.select(orderBy='englishname'))
-
-    def __getitem__(self, code):
-        try:
-            return Language.byCode(code)
-        except SQLObjectNotFound:
-            raise KeyError, code
-
-    def keys(self):
-        return [language.code for language in Language.select()]
-
-
 class Language(SQLBase):
     implements(ILanguage)
 
@@ -42,3 +26,20 @@ class Language(SQLBase):
 
     countries = RelatedJoin('Country', joinColumn='language',
         otherColumn='country', intermediateTable='SpokenIn')
+
+class LanguageSet(object):
+    implements(ILanguageSet)
+
+    def __iter__(self):
+        return iter(Language.select(orderBy='englishname'))
+
+    def __getitem__(self, code):
+        try:
+            return Language.byCode(code)
+        except SQLObjectNotFound:
+            raise KeyError, code
+
+    def keys(self):
+        return [language.code for language in Language.select()]
+
+
