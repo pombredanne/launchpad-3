@@ -16,7 +16,7 @@ from sets import Set
 from canonical.launchpad.interfaces import IPOTemplate, IPOTMsgSet, \
     IEditPOTemplate, IEditPOTMsgSet, IPOMsgID, IPOMsgIDSighting, IPOFile, \
     IEditPOFile, IPOMsgSet, IEditPOMsgSet, IPOTranslation, \
-    IPOTranslationSighting
+    IPOTranslationSighting, IPersonSet
 from canonical.launchpad.interfaces import ILanguageSet
 from canonical.launchpad.database.language import Language
 from canonical.lp.dbschema import RosettaTranslationOrigin
@@ -853,6 +853,10 @@ class POFile(SQLBase):
 
     def rosettaCount(self):
         return self.rosettacount
+
+    def getContributors(self):
+        return getUtility(IPersonSet).getContributorsForPOFile(self)
+
 
     # IEditPOFile
 

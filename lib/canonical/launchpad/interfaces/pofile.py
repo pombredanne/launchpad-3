@@ -379,6 +379,10 @@ class IPOFile(IRosettaStats):
         modified (greatest datelastactive), or None if there are no sightings
         belonging to this PO file."""
 
+    def getContributors():
+        """Returns the list of persons that have an active contribution inside
+        this POFile."""
+
 
 class IEditPOFile(IPOFile):
     """Edit interface for a PO File."""

@@ -78,6 +78,11 @@ class IPersonSet(Interface):
     def getAll():
         """Returns all People in a database"""
 
+    def getContributorsForPOFile(pofile):
+        """Returns the list of persons that have an active contribution for a
+        concrete POFile."""
+
+
 class IEmailAddress(Interface):
     """The object that stores the IPerson's emails."""
     # XXX Mark Shuttleworth 08/10/04
