@@ -288,6 +288,9 @@ class BinaryPackageName(SQLBase):
             'BinaryPackage', joinColumn='binarypackagename'
             )
 
+    def __unicode__(self):
+        return self.name
+
 class BinaryPackageNameSet:
     implements(IBinaryPackageNameSet)
 

@@ -121,8 +121,8 @@ def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
                 datechanged=right_now,
                 person=int(sqlobject_modified_event.principal.id),
                 whatchanged="%s: %s" % (assignment_title, changed_field),
-                oldvalue=changes[changed_field][0],
-                newvalue=changes[changed_field][1],
+                oldvalue=unicode(changes[changed_field][0]),
+                newvalue=unicode(changes[changed_field][1]),
                 message='XXX: not yet implemented')
 
 def record_product_assignment_added(product_assignment, object_created_event):

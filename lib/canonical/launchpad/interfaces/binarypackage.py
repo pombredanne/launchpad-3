@@ -61,6 +61,9 @@ class IBinaryPackageName(Interface):
     def nameSelector(sourcepackage=None, selected=None):
         """Return browser-ready HTML to select a Binary Package Name"""
 
+    def __unicode__():
+        """Return the name"""
+
 class IBinaryPackageNameSet(Interface):
 
     def __getitem__():

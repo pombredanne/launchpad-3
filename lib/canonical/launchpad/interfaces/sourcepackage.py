@@ -87,6 +87,9 @@ class ISourcePackageName(Interface):
     id = Int(title=_("ID"), required=True)
     name = TextLine(title=_("Name"), required=True)
 
+    def __unicode__():
+        """Return the name"""
+
 
 class ISourcePackageSet(Interface):
     """A set for ISourcePackage objects."""

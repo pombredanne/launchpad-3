@@ -2,6 +2,23 @@
 # arch-tag: automatic-ChangeLog--stuart.bishop@canonical.com/launchpad--devel--1
 #
 
+2004-12-28 04:02:37 GMT	Stuart Bishop <stuart.bishop@canonical.com>	patch-46
+
+    Summary:
+      Fix bug assignment to a binarypackage
+    Revision:
+      launchpad--devel--1--patch-46
+
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/binarypackage.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/interfaces/binarypackage.py
+     lib/canonical/launchpad/interfaces/sourcepackage.py
+     lib/canonical/launchpad/subscribers/bugactivity.py
+
+
 2004-12-28 02:29:46 GMT	Stuart Bishop <stuart.bishop@canonical.com>	patch-45
 
     Summary:
