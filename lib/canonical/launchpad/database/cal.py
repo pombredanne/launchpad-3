@@ -12,6 +12,9 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import ILaunchpadCalendar
 
 import datetime
+import pytz
+
+_utc_tz = pytz.timezone('UTC')
 
 class Calendar(SQLBase, CalendarMixin, EditableCalendarMixin):
     implements(ILaunchpadCalendar)
@@ -69,6 +72,17 @@ class CalendarEvent(SQLBase, CalendarEventMixin):
     calendar = ForeignKey(dbName='calendar', notNull=True,
                           foreignKey='Calendar')
     dtstart = DateTimeCol(dbName='dtstart', notNull=True)
+    def _get_dtstart(self):
+        '''Add a UTC timezone to the timestamp'''
+        value = self._SO_get_dtstart()
+        return datetime.datetime(value.year, value.month, value.day,
+                                 value.hour, value.minute, value.second,
+                                 tzinfo=_utc_tz)
+    def _set_dtstart(self, value):
+        '''Convert timestamp to UTC'''
+        value = value.astimezone(_utc_tz)
+        self._SO_set_dtstart(value)
+        
     # actually an interval ...
     duration = DateTimeCol(dbName='duration', notNull=True)
     title = StringCol(dbName='title', notNull=True)
@@ -84,6 +98,17 @@ class CalendarEvent(SQLBase, CalendarEventMixin):
                               default='')
     count = IntCol(dbName='count', default=None)
     until = DateTimeCol(dbName='until', default=None)
+    def _get_until(self):
+        '''Add a UTC timezone to the timestamp'''
+        value = self._SO_get_until()
+        return datetime.datetime(value.year, value.month, value.day,
+                                 value.hour, value.minute, value.second,
+                                 tzinfo=_utc_tz)
+    def _set_until(self, value):
+        '''Convert timestamp to UTC'''
+        value = value.astimezone(_utc_tz)
+        self._SO_set_until(value)
+
     exceptions = StringCol(dbName='exceptions', default=None)
     interval = IntCol(dbName='interval', default=None)
     rec_list = StringCol(dbName='rec_list', default=None)

@@ -3,6 +3,8 @@ import re
 import calendar
 from datetime import datetime, date, timedelta, tzinfo
 
+import pytz
+
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
@@ -45,23 +47,8 @@ monthnames = [
     _("December")
     ]
 
-# XXX this should really be the user's timezone
-class UtcTimeZone(tzinfo):
-    def utcoffset(self, dt):
-        return timedelta(0)
-    def tzname(self, dt):
-        return "UTC"
-    def dst(self, dt):
-        return timedelta(0)
-class PerthTimeZone(tzinfo):
-    def utcoffset(self, dt):
-        return timedelta(hours=8)
-    def tzname(self, dt):
-        return "AWST"
-    def dst(self, dt):
-        return timedelta(0)
-UTC = UtcTimeZone()
-user_timezone = PerthTimeZone()
+UTC = pytz.timezone('UTC')
+user_timezone = pytz.timezone('Australia/Perth')
 
 # XXXX we don't actually have any of these view classes yet ...
 _year_pat  = re.compile(r'^(\d\d\d\d)$')
