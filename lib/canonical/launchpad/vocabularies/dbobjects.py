@@ -17,7 +17,7 @@ from canonical.launchpad.database.binarypackage import BinaryPackage, \
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bugtracker import BugTracker
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, quote_like
 
 
 class IHugeVocabulary(IVocabulary):
@@ -108,12 +108,38 @@ class SourcePackageVocabulary(SQLObjectVocabularyBase):
     _table = SourcePackage
     _orderBy = 'id'
 
+    implements(IHugeVocabulary)
+
     def _toTerm(self, obj):
         name = obj.sourcepackagename.name
         return SimpleTerm(obj, str(obj.id), name)
 
     def getTermByToken(self, token):
         return self.getTerm(token)
+
+    def search(self, query):
+        '''Returns products where the sourcepackage name starts with the given
+        query. Returns an empty list if query is None or an empty string.
+
+        We don't do a proper substring match, as this will be slow because
+        PostgreSQL cannot do this search using an index.
+
+        '''
+        if not query:
+            query = ''
+            #return []
+        #import pdb; pdb.set_trace()
+        t = self._table
+        objs = [self._toTerm(r)
+            for r in t.select('''
+                sourcepackage.sourcepackagename = sourcepackagename.id
+                AND sourcepackagename.name like %s || '%%'
+                ''' % quote_like(query.lower()),
+                    #t.q.sourcepackagename.name.startswith(query.lower()),
+                    ['SourcePackageName']
+                    )
+            ]
+        return objs
 
 
 class BinaryPackageNameVocabulary(SQLObjectVocabularyBase):

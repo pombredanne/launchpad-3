@@ -7,20 +7,19 @@
             name matches. It would be much nicer if the source form had a
             name... or I knew Javascript ;-)
         </tal:comment>
+        <script language="Javascript" type="text/javascript"
+            tal:content="string:field = '${request/form/field}';" />
         <script language="Javascript" type="text/javascript">
-            field = '<tal:x replace="request/form/fieldName" />';
             function update(value) {
-            for (var i=0; window.opener.document.forms.length > i; i++) {
-                    f = window.opener.document.forms[i];
-                    for (var j=0; f.elements.length > i; j++) {
-                        e = f.elements[j]
-                        if (e.name = field) {
-                            e.value = value;
-                            window.close();
-                        }
+                e = window.opener.document.getElementById(field);
+                if (e == null) {
+                    alert(field);
+                }
+                if (e != null) {
+                    e.value = value;
+                    window.close();
                     }
                 }
-            }
         </script>
     </head>
     <body>
