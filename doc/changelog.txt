@@ -2,6 +2,39 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-05 22:35:22 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1569
+
+    Summary:
+      fix most of bug 275, and add placeholder page for LP upgrades
+    Revision:
+      launchpad--devel--0--patch-1569
+
+    Patches applied:
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-24
+       override most plone.org URLs with local ones
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-25
+       merge rocketfuel
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-26
+       fix most of bug 275; add placeholder page for Launchpad upgrades
+    
+
+    new files:
+     lib/canonical/launchpad/.arch-ids/offline.html.id
+     lib/canonical/launchpad/offline.html
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/launchpad.css
+
+    new patches:
+     mpt@canonical.com/launchpad--devel--0--patch-24
+     mpt@canonical.com/launchpad--devel--0--patch-25
+     mpt@canonical.com/launchpad--devel--0--patch-26
+
+
 2005-04-05 22:23:03 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1568
 
     Summary:

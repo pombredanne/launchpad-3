@@ -428,8 +428,68 @@ label.fuzzy-checkbox {
     margin: 1em;
 }
 
-
 /* === Undo bugs in plone.css === */
+
+/* -- Stop accessing resources on plone.org -- */
+/* XXX change "http://plone.org/" to "/@@/" once they work */
+
+ul {
+  list-style-image: none;
+}
+#portal-logo {
+  background-image: url(http://plone.org/logo.jpg);
+}
+#portal-personaltools .portalUser, .link-user {
+  background-image: url(/@@/user.gif);
+}
+#portal-personaltools li {
+  background-image: url(http://plone.org/linkOpaque.gif);
+}
+.contentActions li {
+  background-image: url(/@@/arrowDownAlternative.gif);
+}
+#error-handling {
+  background-image: url(/@@/info_icon.gif);
+}
+.standalone, .documentEditable * .standalone {
+  background-image: url(http://plone.org/linkOpaque.gif);
+}
+.context, .documentEditable * .context, .destructive,
+.documentEditable * .destructive {
+  background-image: url(/@@/linkTransparent.gif);
+}
+input.searchButton {
+  background-image: url(/@@/search_icon.gif);
+}
+.fieldRequired {
+  background-image: url(/@@/required.gif);
+}
+.link-parent {
+  background-image: url(/@@/arrowUp.gif);
+}
+.link-external {
+  background-image: url(/@@/link_icon.gif);
+}
+.link-https {
+  background-image: url(/@@/lock_icon.gif);
+}
+.link-mailto {
+  background-image: url(http://plone.org/mail_icon.gif);
+}
+.link-news {
+  background-image: url(http://plone.org/topic_icon.gif);
+}
+.link-ftp {
+  background-image: url(http://plone.org/file_icon.gif);
+}
+.link-irc, .link-comment {
+  background-image: url(http://plone.org/discussionitem_icon.gif);
+}
+.link-callto {
+  background-image: url(http://plone.org/phone_icon.gif);
+}
+
+/* -- Other bugs -- */
 
 body, .listing {
   font-size: 100%;
@@ -453,10 +513,6 @@ code {
 
 .portlet, #portal-top, #portal-footer {
   font-size: smaller;
-}
-
-ul {
-  list-style-image: none;
 }
 
 li {
