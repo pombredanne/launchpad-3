@@ -91,6 +91,10 @@ class IPOTemplate(Interface):
     def __iter__():
         """Iterate over current IPOMessageSets in this template."""
 
+    def __getitem__(msgid):
+        """Get the current IPOMessageSet for this template that has the
+        given primary message ID."""
+
     def languages():
         """Iterate over languages that this template's messages are
         translated into.
@@ -110,7 +114,7 @@ class IPOTemplate(Interface):
 class IEditPOTemplate(IPOTemplate):
     """Edit interface for an IPOTemplate."""
 
-    def newMessageSet(messageIDSighting):
+    def newMessageSet(messageID):
         """Add a message set to this template."""
 
     def createPOFile(language):
@@ -250,11 +254,29 @@ class IPOMessageSet(Interface):
     def messageIDs():
         """Iterate over this set's message IDs."""
 
+    def getMessageIDSighting(plural_form):
+        """Return the message ID sighting that is current and has the
+        plural form provided."""
+
     # XXX: is the primary message ID the same as the message ID with plural
     # form 0? (Ask Mark)
 
     def translations():
         """Iterate over this set's translations."""
+
+    def getTranslationSighting(plural_form):
+        """Return the translation sighting that is current and has the
+        plural form provided."""
+
+
+class IEditPOMessageSet(IPOMessageSet):
+    """Interface for editing a MessageSet."""
+
+    def makeMessageIDSighting(text, plural_form):
+        """Return a new message ID sighting that points back to us."""
+
+    def makeTranslationSighting(text, plural_form):
+        """Return a new translation sighting that points back to us."""
 
 
 class IPOMessageIDSighting(Interface):
@@ -279,6 +301,9 @@ class IEditPOMessageIDSighting(IPOMessageIDSighting):
 
     def touch():
         """Update timestamp of this sighting."""
+
+    def setCurrent(current):
+        """Set isCurrent."""
 
 
 class IPOMessageID(Interface):

@@ -75,6 +75,8 @@ class POMessage(object):
     def flagsText(self, flags=None):
         if flags is None:
             flags = self.flags
+        if not flags:
+            return ''
         flags = list(flags)
         flags.sort()
         if 'fuzzy' in flags:

@@ -1,5 +1,5 @@
 from ipofile import IPOHeader, IPOMessage
-from pofile import POHeader, POMessage
+from pofile import POHeader, POMessage, POParser
 from interfaces import IPOMessageSet
 from zope.interface import implements
 import sets
@@ -12,8 +12,6 @@ class WatchedSet(sets.Set):
     """ Mutable set class that "warns" a callable when changed."""
 
     __slots__ = ['_watcher']
-
-    # BaseSet + operations requiring mutability; no hashing
 
     def __init__(self, watcher, iterable=None):
         """Construct a set from an optional iterable."""
@@ -63,6 +61,27 @@ class WatchedSet(sets.Set):
         self.watcher(self)
 
 
+class TranslationsList(object):
+    def __init__(self, messageset):
+        self._msgset = messageset
+
+    # FIXME: this list implementation is incomplete.  Dude, if you want to do
+    # del foo.msgstrs[2]
+    # or
+    # foo.msgstrs.pop()
+    # then you're probably on crack anyway.
+
+    def __setitem__(self, index, value):
+        current = self._msgset.getTranslationSighting(index)
+        if value == current.poTranslation.text:
+            return
+        current.setCurrent(False)
+        new = self._msgset.makeTranslationSighting(value, index)
+
+    def __getitem__(self, index):
+        return self._msgset.getTranslationSighting(index).poTranslation.text
+
+
 class MessageProxy(POMessage):
     implements (IPOMessage)
 
@@ -82,21 +101,39 @@ class MessageProxy(POMessage):
         if len(msgids) >= 2:
             return msgids[1]
         return None
-    # XXX: setter (gonna be complicated)
+    def _set_msgidPlural(self, value):
+        # do we already have one?
+        old_plural = self.msgidPlural
+        if old_plural is not None:
+            old_plural = self._msgset.getMessageIDSighting(1)
+            old_plural.setCurrent(False)
+        self._msgset.makeMessageIDSighting(value, 1)
     msgidPlural = property(_get_msgidPlural)
 
     def _get_msgstr(self):
         translations = self._msgset.translations()
         if len(translations) == 1:
-            return translations[0]
-    # XXX: setter (gonna be complicated)
+            return translations[0].text
+    def _set_msgstr(self, value):
+        current = self._msgset.getTranslationSighting(0)
+        if value == current.poTranslation.text:
+            return
+        current.setCurrent(False)
+        new = self._msgset.makeTranslationSighting(0, index)        
     msgstr = property(_get_msgstr)
 
     def _get_msgstrPlurals(self):
         translations = self._msgset.translations()
         if len(translations) > 1:
-            return translations
-    # XXX: setter (gonna be complicated)
+            # test is necessary because the interface says when
+            # there are no plurals, msgstrPlurals is None
+            return TranslationsList(self._msgset)
+    def _set_msgstrPlurals(self, value):
+        current = self.msgstrPlurals
+        if len(value) != len(current):
+            raise ValueError("New list of message strings has different size as current one")
+        for index, item in enumerate(value):
+            current[index] = item
     msgstrPlurals = property(_get_msgstrPlurals)
 
     def _get_commentText(self):
@@ -132,3 +169,87 @@ class MessageProxy(POMessage):
         self._msgset.obsolete = value
     obsolete = property(_get_obsolete, _set_obsolete)
 
+
+class TemplateImporter(object):
+    def __init__(self, potemplate, changeset):
+        self.potemplate = potemplate
+        self.changeset = changeset # are we going to use this?
+        self.len = 0
+        self.parser = POParser(translation_factory=self)
+
+    def do_import(self, filelike):
+        "Import a file (or similar object)"
+        # crack: will this work?  Suggestions of better ways are gladly accepted
+        potemplate._connection.query('UPDATE POMsgSet SET sequence = 0'
+                                     ' WHERE potemplate = %d AND pofile = NULL'
+                                     % potemplate.id)
+        # what policy here? small bites? lines? how much memory do we want to eat?
+        parser.write(filelike.read())
+        parser.finish()
+        if not parser.header:
+            # bitch like crazy
+            raise 'something'
+
+    def __call__(self, msgid, **kw):
+        "Instantiate a single message/messageset"
+        msgset = self.potemplate[msgid]
+        if msgset is None:
+            msgset = potemplate.newMessageSet(msgid)
+        else:
+            msgset.getMessageIDSighting(0).touch()
+        self.len += 1
+        msgset.sequence = self.len
+        proxy = MessageProxy(msgset)
+        proxy.msgidPlural = kw.get('msgidPlural', '')
+        if kw.get('msgstr'):
+            proxy.msgstr = kw['msgstr']
+        proxy.commentText = kw.get('commentText', '')
+        proxy.sourceComment = kw.get('sourceComment', '')
+        proxy.fileReferences = kw.get('fileReferences', '').strip()
+        proxy.flags = kw.get('flags', ())
+        if kw.get('msgstrPlurals'):
+            proxy.msgstrPlurals = kw['msgstrPlurals']
+        proxy.obsolete = kw.get('obsolete', False)
+
+
+class POFileImporter(object):
+    def __init__(self, potemplate, changeset):
+        raise NotImplementedError
+        self.potemplate = potemplate
+        self.changeset = changeset # are we going to use this?
+        self.len = 0
+        self.parser = POParser(translation_factory=self)
+
+    def do_import(self, filelike):
+        "Import a file (or similar object)"
+        # crack: will this work?  Suggestions of better ways are gladly accepted
+        potemplate._connection.query('UPDATE POMsgSet SET sequence = 0'
+                                     ' WHERE potemplate = %d AND pofile = NULL'
+                                     % potemplate.id)
+        # what policy here? small bites? lines? how much memory do we want to eat?
+        parser.write(filelike.read())
+        parser.finish()
+        if not parser.header:
+            # bitch like crazy
+            raise 'something'
+
+    def __call__(self, msgid, **kw):
+        "Instantiate a single message/messageset"
+        msgset = self.potemplate[msgid]
+        if msgset is None:
+            msgset = potemplate.newMessageSet(msgid)
+        else:
+            msgset.getMessageIDSighting(0).touch()
+        self.len += 1
+        msgset.sequence = self.len
+        proxy = MessageProxy(msgset)
+        proxy.msgidPlural = kw.get('msgidPlural', '')
+        if kw.get('msgstr'):
+            proxy.msgstr = kw['msgstr']
+        proxy.commentText = kw.get('commentText', '')
+        proxy.sourceComment = kw.get('sourceComment', '')
+        proxy.fileReferences = kw.get('fileReferences', '').strip()
+        proxy.flags = kw.get('flags', ())
+        if kw.get('msgstrPlurals'):
+            proxy.msgstrPlurals = kw['msgstrPlurals']
+        proxy.obsolete = kw.get('obsolete', False)

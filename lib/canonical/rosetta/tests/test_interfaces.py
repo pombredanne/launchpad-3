@@ -95,11 +95,8 @@ def test_verify_sql_pofile():
 def test_verify_sql_pomessageset():
     '''
     >>> from canonical.rosetta.interfaces import IPOMessageSet
-    >>> from canonical.rosetta.ipofile import IPOMessage
     >>> from canonical.rosetta.sql import RosettaPOMessageSet
     >>> verifyClass(IPOMessageSet, RosettaPOMessageSet)
-    True
-    >>> verifyClass(IPOMessage, RosettaPOMessageSet)
     True
     '''
 
@@ -146,8 +143,8 @@ def test_verify_sql_language():
 def test_verify_sql_person():
     '''
     >>> from canonical.rosetta.interfaces import IPerson
-    >>> from canonical.rosetta.sql import Person
-    >>> verifyClass(IPerson, Person)
+    >>> from canonical.rosetta.sql import RosettaPerson
+    >>> verifyClass(IPerson, RosettaPerson)
     True
     '''
 

@@ -143,6 +143,15 @@ class RosettaPOTemplate(SQLBase):
             '''
             % self.id))
 
+    def __getitem__(self, msgid):
+        sets = RosettaPOMessageSet.selectBy(poTemplate=self,
+                                            isCurrent=True,
+                                            poFile=None,
+                                            primeMessageID=msgid)
+        if sets.count() == 0:
+            return None
+        return sets[0]
+
     def __len__(self):
         '''Same query as __iter__, but with COUNT.'''
         #raise NotImplementedError
@@ -255,6 +264,12 @@ class RosettaPOMessageSet(SQLBase):
             POMsgIDSighting.pomsgid = POMsgID.id
             ''' % self.id, clauseTables=('POMsgIDSighting',))
 
+    def getMessageIDSighting(self, plural_form):
+        """Return the message ID sighting that is current and has the
+        plural form provided."""
+        return RosettaPOMessageIdSighting.selectBy(poMessageSet=self,
+                                                   pluralForm=plural_form)[0]
+
     def translations(self):
         return RosettaPOTranslation.select('''
             POTranslationSighting.pomessageset = %d AND
@@ -279,6 +294,64 @@ class RosettaPOMessageSet(SQLBase):
             sighting.potranslation = translation.id
             ORDER BY sighting.pluralform, sighting.lasttouched
         '''
+
+    def getTranslationSighting(self, plural_form):
+        """Return the translation sighting that is current and has the
+        plural form provided."""
+
+
+class RosettaEditPOMessageSet(RosettaPOMessageSet):
+    """Interface for editing a MessageSet."""
+
+    def makeMessageIDSighting(self, text, plural_form):
+        """Return a new message ID sighting that points back to us."""
+        messageIDs = RosettaPOMessageID.selectBy(text=text)
+        if messageIDs.count() == 0:
+            messageID = RosettaPOMessageID(text=text)
+        else:
+            messageID = messageIDs[0]
+        existing = RosettaPOMessageIDSighting.selectBy(
+            poMessageSet=self,
+            poMessageID=messageID,
+            pluralForm=plural_form)
+        if existing.count():
+            existing = existing[0]
+            existing.touch()
+            return existing
+        return RosettaPOMessageIDSighting(
+            poMessageSet=self,
+            poMessageID=messageID,
+            firstSeen="NOW",
+            lastSeen="NOW",
+            isCurrent=True,
+            pluralForm=plural_form)
+
+    def makeTranslationSighting(self, text, plural_form):
+        """Return a new translation sighting that points back to us."""
+        translations = RosettaPOTranslation.selectBy(text=text)
+        if translations.count() == 0:
+            translation = RosettaPOTranslation(text=text)
+        else:
+            translation = translations[0]
+        existing = RosettaPOTranslationSighting.selectBy(
+            poMessageSet=self,
+            poTranslation=translation,
+            pluralForm=plural_form,
+            person='XXX FIXME')
+        if existing.count():
+            existing = existing[0]
+            existing.touch()
+            return existing
+        return RosettaPOTranslationSighting(
+            poMessageSet=self,
+            poTranslation=translation,
+            firstSeen="NOW",
+            lastTouched="NOW",
+            isCurrent=True,
+            pluralForm=plural_form,
+            deprecated=False,
+            person='XXX FIXME')
+
 
 class RosettaPOMessageIDSighting(SQLBase):
     implements(IPOMessageIDSighting)
@@ -393,38 +466,3 @@ class RosettaPerson(SQLBase):
         for code in ('cy', 'no', 'es'):
             yield languages[code]
         '''
-
-# POFile import
-class POMessage(pofile.POMessage):
-    def finish(self):
-        assert (self.pofile is None) or (self.potemplate is None)
-        assert (self.pofile is not None) or (self.potemplate is not None)
-        pofile.POMessage.finish(self)
-
-class POHeader(pofile.POHeader):
-    def finish(self):
-        assert (self.pofile is None) or (self.potemplate is None)
-        assert (self.pofile is not None) or (self.potemplate is not None)
-        pofile.POHeader.finish(self)
-
-class FactoryForPOFile(object):
-    def __init__(self, pofile, real_class):
-        self.pofile = pofile
-        self.real_class = real_class
-
-    def __call__(self, **kw):
-        instance = self.real_class(**kw)
-        instance.pofile = self.pofile
-        instance.potemplate = None
-        return instance
-
-class FactoryForPOTemplate(object):
-    def __init__(self, potemplate, real_class):
-        self.potemplate = potemplate
-        self.real_class = real_class
-
-    def __call__(self, **kw):
-        instance = self.real_class(**kw)
-        instance.pofile = None
-        instance.potemplate = self.potemplate
-        return instance
