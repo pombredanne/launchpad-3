@@ -26,6 +26,7 @@ from canonical.launchpad.database import CalendarEvent
 
 from schoolbell.utils import prev_month, next_month
 from schoolbell.utils import weeknum_bounds, check_weeknum
+from schoolbell.utils import Slots
 
 daynames = [
     _("Monday"),
@@ -208,6 +209,9 @@ class EventInfo(object):
 class CalendarDayView(CalendarViewBase):
     __used_for__ = ICalendarDay
 
+    starthour = 8
+    endhour = 19
+
     def __init__(self, context, request):
         CalendarViewBase.__init__(self, context, request,
                                   '%d %s %04d' % (context.day,
@@ -225,6 +229,163 @@ class CalendarDayView(CalendarViewBase):
                                               tomorrow.day)
         self._setViewURLs(day)
 
+        start = datetime(context.year, context.month, context.day,
+                         0, 0, 0, 0, self.user_timezone).astimezone(UTC)
+        end = start + timedelta(days=1)
+
+        self.events = list(context.calendar.expand(start, end))
+        self._setRange()
+        self.visiblehours = self.endhour - self.starthour
+
+    def getColumns(self):
+        """Return the maximum number of events that are overlapping.
+
+        Extends the event so that start and end times fall on hour
+        boundaries before calculating overlaps.
+        """
+        width = [0] * 24
+        daystart = datetime(self.context.year, self.context.month,
+                            self.context.day, 0, 0, 0, 0,
+                            self.user_timezone)
+        for event in self.events:
+            t = daystart
+            dtend = daystart + timedelta(1)
+            for title, start, duration in self.calendarRows():
+                if start < event.dtstart < start + duration:
+                    t = start
+                if start < event.dtstart + event.duration <= start + duration:
+                    dtend = start + duration
+            while True:
+                width[t.hour] += 1
+                t += timedelta(hours=1)
+                if t >= dtend:
+                    break
+        return max(width) or 1
+
+    def _setRange(self):
+        """Set the starthour and endhour attributes according to events.
+
+        The range of hours to display is the union of the range
+        08:00-18:00 and time spans of all the events in the events
+        list.
+        """
+        midnight = datetime(self.context.year, self.context.month,
+                            self.context.day, 0, 0, 0, 0,
+                            self.user_timezone)
+        for event in self.events:
+            start = midnight + timedelta(hours=self.starthour)
+            end = midnight + timedelta(hours=self.endhour)
+            if event.dtstart < start:
+                newstart = max(midnight, event.dtstart)
+                self.starthour = newstart.astimezone(self.user_timezone).hour
+
+            if event.dtstart + event.duration > end:
+                newend = min(midnight + timedelta(days=1),
+                             event.dtstart+event.duration + timedelta(0, 3599))
+                self.endhour = newend.astimezone(self.user_timezone).hour
+                if self.endhour == 0:
+                    self.endhour = 24
+
+    def calendarRows(self):
+        """Iterates over (title, start, duration) of time slots that
+        make up the daily calendar.
+        """
+        rows = []
+        for hour in range(self.starthour, self.endhour):
+            rows.append(('%02d:00' % hour,
+                         datetime(self.context.year, self.context.month,
+                                  self.context.day, hour, 0, 0, 0,
+                                  self.user_timezone),
+                         timedelta(hours=1)))
+        return rows
+
+    def getHours(self):
+        """Return an iterator over the rows of the table.
+
+        Every row is a dict with the following keys:
+
+            'time' -- row label (e.g. 8:00)
+            'cols' -- sequence of cell values for this row
+
+        A cell value can be one of the following:
+            None  -- if there is no event in this cell
+            event -- if an event starts in this cell
+            ''    -- if an event started above this cell
+
+        """
+        nr_cols = self.getColumns()
+        events = self.events[:]
+        self._setRange()
+        slots = Slots()
+        for title, start, duration in self.calendarRows():
+            end = start + duration
+            hour = start.hour
+
+            # Remove the events that have already ended
+            for i in range(nr_cols):
+                ev = slots.get(i, None)
+                if ev is not None and ev.dtstart + ev.duration <= start:
+                    del slots[i]
+
+            # Add events that start during (or before) this hour
+            while events and events[0].dtstart < end:
+                event = events.pop(0)
+                slots.add(event)
+            cols = []
+
+            # Format the row
+            for i in range(nr_cols):
+                ev = slots.get(i, None)
+                if (ev is not None and
+                    ev.dtstart < start and
+                    hour != self.starthour):
+                    # The event started before this hour (except first row)
+                    cols.append('')
+                else:
+                    # Either None, or new event
+                    cols.append(ev)
+            yield { 'title': title, 'cols': tuple(cols),
+                    'time': start.strftime("%H:%M"),
+                    'duration': duration.seconds // 60 }
+    def rowspan(self, event):
+        """Calculate how many calendar rows the event will take today."""
+        count = 0
+        for title, start, duration in self.calendarRows():
+            if (start < event.dtstart + event.duration and
+                event.dtstart < start + duration):
+                count += 1
+        return count
+
+    def eventColors(self, event):
+        return ('#9db8d2', '#7590ae')
+
+    def eventTop(self, event):
+        """Calculate the position of the top of the event block in the
+        display.
+
+        Each hour is made up of 4 units ('em' currently).  If an event
+        starts at 10:15, and the day starts at 8:00 we get a top value
+        of:
+
+          (2 * 4) + (15 / 15) = 9
+
+        """
+        dtstart = event.dtstart.astimezone(self.user_timezone)
+        top = ((dtstart.hour - self.starthour) * 4
+               + dtstart.minute / 15)
+        return top
+
+    def eventHeight(self, event):
+        """Calculate the height of the event block in the display.
+
+        Each hour is made up of 4 units ('em' currently).  Need to round 1 -
+        14 minute intervals up to 1 display unit.
+        """
+        minutes = event.duration.seconds / 60
+        return max(1, (minutes + 14) / 15)
+
+
+        
 class CalendarWeekView(CalendarViewBase):
     """A week view of the calendar."""
     __used_for__ = ICalendarWeek

@@ -40,7 +40,8 @@ class Calendar(SQLBase, CalendarMixin, EditableCalendarMixin):
         return iter(CalendarEvent.select(AND(
             CalendarEvent.q.calendarID == self.id,
             CalendarEvent.q.dtstart + CalendarEvent.q.duration > first,
-            CalendarEvent.q.dtstart < last)))
+            CalendarEvent.q.dtstart < last),
+                                         orderBy='dtstart'))
 
     def addEvent(self, event):
         # TODO: support recurring events

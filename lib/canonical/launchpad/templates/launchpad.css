@@ -355,3 +355,49 @@ Calendar stuff.
   text-align: right;
   font-size: smaller;
 }
+
+#calendar-view-day {
+  border: #aaaaaa 1px solid;
+  border-top: none;
+  position: relative;
+  padding: 0;
+}
+
+#calendar-view-day .hour {
+  border-top: #4b6983 1px solid;
+  border-top: 1px #bab5ab solid;
+  width: 100%;
+  position: absolute;
+  height: 4em;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#calendar-view-day .even {
+  background: #eae8e3;
+}
+
+#calendar-view-day .events {
+    position: absolute;
+    margin-left: 5em;
+    left: 0;
+    top: 0;
+    width: 100%;
+}
+
+#calendar-view-day .event {
+  display: block;
+  position: absolute;
+  margin-left: 5em;
+  width: 20em;
+  min-width: 20em;
+  border: 1px #4b6983 solid;
+  background: #9db8d2;
+  opacity: 0.85;
+  z-index: 1;
+}
+
+#calendar-view-day .other {
+  background: #e0b6af;
+  border: 1px #884631 solid;
+}

@@ -130,3 +130,35 @@ def check_weeknum(year, weeknum):
     weekstart, weekend = weeknum_bounds(year, weeknum)
     isoyear, isoweek, isoday = weekstart.isocalendar()
     return (year, weeknum) == (isoyear, isoweek)
+
+class Slots(dict):
+    """A dict with automatic key selection.
+
+    The add method automatically selects the lowest unused numeric key
+    (starting from 0).
+
+    Example:
+
+      >>> s = Slots()
+      >>> s.add("first")
+      >>> s
+      {0: 'first'}
+
+      >>> s.add("second")
+      >>> s
+      {0: 'first', 1: 'second'}
+
+    The keys can be reused:
+
+      >>> del s[0]
+      >>> s.add("third")
+      >>> s
+      {0: 'third', 1: 'second'}
+
+    """
+
+    def add(self, obj):
+        i = 0
+        while i in self:
+            i += 1
+        self[i] = obj
