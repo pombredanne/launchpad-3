@@ -2,6 +2,43 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-28 16:15:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1263
+
+    Summary:
+      Follow the doc/security spec in Product/Project
+    Revision:
+      launchpad--devel--0--patch-1263
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-491
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-492
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-493
+       Adding ValidOwnerVocabulary Documentation and Fitting Product and Project Content classes to doc/securitity.txt Specification.
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-494
+       Merge from RF
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/database/project.py
+     lib/canonical/launchpad/doc/vocabularies.txt
+     lib/canonical/launchpad/security.zcml
+     lib/canonical/launchpad/zcml/product.zcml
+     lib/canonical/launchpad/zcml/project.zcml
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-491
+     celso.providelo@canonical.com/launchpad--devel--0--patch-492
+     celso.providelo@canonical.com/launchpad--devel--0--patch-493
+     celso.providelo@canonical.com/launchpad--devel--0--patch-494
+
+
 2005-01-28 15:13:26 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1262
 
     Summary:

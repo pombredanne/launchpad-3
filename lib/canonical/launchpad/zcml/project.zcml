@@ -94,7 +94,7 @@
         fields="name displayname title shortdesc description homepageurl
                 wikiurl sourceforgeproject freshmeatproject owner active
                 reviewed"
-        permission="launchpad.AnyPerson"
+        permission="launchpad.Admin"
         template="../templates/launchpad-editform.pt"
         lp:url="doap/projects/$Project.name/+review">
     </browser:editform>
