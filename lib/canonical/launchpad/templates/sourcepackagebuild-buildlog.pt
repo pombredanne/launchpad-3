@@ -25,6 +25,14 @@
      Build Log
     </h1>
 
+    <div class="dummy">
+    XXX: Daniel Debonzi 2004-10-05
+    To finish this page we need to know information about the
+    filesystem, because the table entry for it points to a file
+    that should contain de buildlog.
+    </div>
+
+   
 </div>
 </body>
 </html>

@@ -581,18 +581,17 @@ class GPGKey(SQLBase):
         StringCol('fingerprint', dbName='fingerprint', notNull=True),
         StringCol('pubkey', dbName='pubkey', notNull=True),
         BoolCol('revoked', dbName='revoked', notNull=True),
-        ## Not in DB
-        ## IntCol('algorithm', dbName='algorithm', notNull=True),
-        ## IntCol('keysize', dbName='keysize', notNull=True),
+        IntCol('algorithm', dbName='algorithm', notNull=True),
+        IntCol('keysize', dbName='keysize', notNull=True),
         ]
 
-##     def _algorithmname(self):
-##         for algorithm in dbschema.GPGKeyAlgorithms.items:
-##             if algorithm.value == self.algorithm:
-##                 return algorithm.title
-##         return 'Unknown (%d)' %self.algorithm
+    def _algorithmname(self):
+        for algorithm in dbschema.GPGKeyAlgorithms.items:
+            if algorithm.value == self.algorithm:
+                return algorithm.title
+        return 'Unknown (%d)' %self.algorithm
     
-##     algorithmname = property(_algorithmname)
+    algorithmname = property(_algorithmname)
 
 
     
