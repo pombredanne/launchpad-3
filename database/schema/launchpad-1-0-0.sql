@@ -2259,6 +2259,7 @@ CREATE TABLE SourceSource (
   newbranchcategory         text,
   newbranchbranch           text,
   newbranchversion          text,
+  currentgpgkey             text,
   packagedistro		    text,
   packagefiles_collapsed    text,
   owner                     integer NOT NULL REFERENCES Person

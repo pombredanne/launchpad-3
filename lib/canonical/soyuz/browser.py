@@ -250,7 +250,7 @@ class ViewProduct(View):
             self.setArg(param, kwargs)
         self.context.newSync(**kwargs)
         self.submittedok=True
-        self.request.response.redirect('f') #kwargs['name'])
+        self.request.response.redirect(kwargs['name'])
 
 class ViewSync(View):
     """har har"""
