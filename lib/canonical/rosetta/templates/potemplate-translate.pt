@@ -38,7 +38,11 @@
 
             <p>
             Before this template can be translated into those languages,
-            Rosetta needs to have this information.
+            Rosetta needs to have this information. Please, send that
+	    information to <a href="mailto:rosetta-testers@lists.ubuntu.com">
+	    rosetta-testers</a> mailing list. If you don't know about this
+	    kind of information, please, ask in that mailing list and we will
+	    try to get it from your knowledge of that language.
             </p>
         </div>
     </div>
