@@ -1,0 +1,56 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xml:lang="en" lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+  <head>
+    <title>
+      <span tal:replace="context/calendar/title">Calendar Title</span> -
+      <span tal:replace="context/datestring">Time</span>
+    </title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+  </head>
+
+  <body>
+
+    <div metal:fill-slot="main">
+      <h1>
+        <span tal:replace="context/calendar/title">Calendar Title</span> -
+        <span tal:replace="context/datestring">Time</span>
+      </h1>
+
+      <table border="1">
+        <tr>
+          <td>
+            <h2>Monday</h2>
+          </td>
+          <td>
+            <h2>Tuesday</h2>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <h2>Wednesday</h2>
+          </td>
+          <td>
+            <h2>Thursday</h2>
+          </td>
+        </tr>
+        <tr>
+          <td rowspan="2">
+            <h2>Friday</h2>
+          </td>
+          <td>
+            <h2>Saturday</h2>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <h2>Sunday</h2>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+  </body>
+</html>

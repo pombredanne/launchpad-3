@@ -40,6 +40,22 @@
 
   <browser:traverse
       for="schoolbell.interfaces.ICalendar"
-      function="canonical.calendar.traverseCalendar" />
+      function="canonical.launchpad.browser.traverseCalendar" />
+
+  <content class="canonical.launchpad.browser.WeekView">
+    <allow interface="canonical.launchpad.interfaces.ICalendarWeekView" />
+  </content>
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.ICalendarWeekView"
+      name="+index" />
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.ICalendarWeekView"
+      permission="zope.Public">
+    <browser:page
+        template="../templates/calendar-view-week.pt"
+        name="+index" />
+  </browser:pages>
 
 </configure>

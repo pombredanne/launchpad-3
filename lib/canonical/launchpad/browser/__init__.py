@@ -23,6 +23,7 @@ from canonical.launchpad.browser.sourcepackage import *
 from canonical.launchpad.browser.distribution import *
 from canonical.launchpad.browser.distrorelease import *
 from canonical.launchpad.browser.publishedpackage import *
+from canonical.launchpad.browser.calendar import *
 
 from canonical.launchpad.browser.widgets import *
 
