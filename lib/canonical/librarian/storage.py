@@ -10,6 +10,7 @@ import errno
 import tempfile
 
 from canonical.librarian import db
+from canonical.database.sqlbase import begin, commit, rollback
 
 __all__ = ['DigestMismatchError', 'FatSamStorage', 'FatSamFile']
 
@@ -77,35 +78,38 @@ class FatSamFile(object):
             raise DigestMismatchError, (self.srcDigest, dstDigest)
 
         # Find potentially matching files
-        similarFiles = self.storage.library.lookupBySHA1(dstDigest)
-        newFile = True
-        txn = self.storage.library.makeAddTransaction()
-        if len(similarFiles) == 0:
-            fileID = self.storage.library.add(dstDigest, self.size, txn)
-        else:
-            for candidate in similarFiles:
-                candidatePath = self.storage._fileLocation(candidate)
-                if _sameFile(candidatePath, self.tmpfilepath):
-                    # Found a file with the same content
-                    fileID = candidate
-                    newFile = False
-                    break
+        begin()
+        try:
+            similarFiles = self.storage.library.lookupBySHA1(dstDigest)
+            newFile = True
+            if len(similarFiles) == 0:
+                fileID = self.storage.library.add(dstDigest, self.size)
             else:
-                # No matches -- we found a hash collision in SHA-1!
-                fileID = self.storage.library.add(dstDigest, self.size, txn)
+                for candidate in similarFiles:
+                    candidatePath = self.storage._fileLocation(candidate)
+                    if _sameFile(candidatePath, self.tmpfilepath):
+                        # Found a file with the same content
+                        fileID = candidate
+                        newFile = False
+                        break
+                else:
+                    # No matches -- we found a hash collision in SHA-1!
+                    fileID = self.storage.library.add(dstDigest, self.size)
 
-        alias = self.storage.library.addAlias(fileID, self.filename,
-                                              self.mimetype, txn)
-        #f = open(self.storage._fileLocation(fileID) + '.metadata', 'wb')
-        #f.close()
+            alias = self.storage.library.addAlias(fileID, self.filename,
+                                                  self.mimetype)
+        except:
+            # Abort transaction and re-raise
+            rollback()
+            raise
+
         if newFile:
             # Move file to final location
             try:
                 self._move(fileID)
             except:
                 # Abort DB transaction
-                if txn is not None:
-                    txn.rollback()
+                rollback()
 
                 # Remove file
                 os.remove(self.tmpfilepath)
@@ -113,20 +117,11 @@ class FatSamFile(object):
                 # Re-raise
                 raise
             else:
-                if txn is not None:
-                   txn.commit()
+                commit()
         else:
             # Not a new file; perhaps a new alias. Commit the transaction
-            if txn is not None:
-                txn.commit()
+            commit()
         
-        if txn is not None:
-            # XXX: dsilvers 2004-10-13: Need to make this nicer
-            # We release the connection to the pool here. Without
-            # this call; we end up overloading the psql server and
-            # we get refused new connections.
-            txn._makeObsolete()
-	
         # Return the IDs
         return fileID, alias
 

@@ -2,6 +2,103 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-11 15:13:17 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1305
+
+    Summary:
+      Fix transaction handling bugs in the librarian, and more tests
+    Revision:
+      launchpad--devel--0--patch-1305
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-328
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--base-0
+       tag of andrew.bennetts@canonical.com/launchpad--devel--0--patch-328
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-1
+       Some new (and failing!) tests of downloading from the librarian
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-2
+       Fix a bug to make one of the new tests pass.
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-3
+       Do all DB access in worker thread, not in callbacks that are invoked in the event loop thread.
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-4
+       A butt-load of hacks (and debug prints), but the tests pass now.
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-5
+       Start cleaning up debug prints
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-6
+       Kill another debug print
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-7
+       Refactor some transaction hackery to canonical.database.sqlbase
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-8
+       Overhauled transaction handling, and made all the librarian's tests pass.
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-9
+       Remove another debugging tweak
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-10
+       Improve test coverage, and fix silly bug this discovered.
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-11
+       Further increase test coverage
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-12
+       Tidy up additions to sqlbase
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-13
+       Tweak calls to _clearCache
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-14
+       Remove another debugging hack
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-15
+       Merge from rocketfuel
+    
+
+    new files:
+     lib/canonical/librarian/ftests/.arch-ids/test.tac.id
+     lib/canonical/librarian/ftests/.arch-ids/test_web.py.id
+     lib/canonical/librarian/ftests/test.tac
+     lib/canonical/librarian/ftests/test_web.py
+
+    modified files:
+     doc/changelog.txt lib/canonical/database/sqlbase.py
+     lib/canonical/librarian/client.py
+     lib/canonical/librarian/db.py
+     lib/canonical/librarian/ftests/test_db.py
+     lib/canonical/librarian/ftests/test_storage.py
+     lib/canonical/librarian/storage.py
+     lib/canonical/librarian/tests/test_storage.py
+     lib/canonical/librarian/web.py
+
+    new patches:
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-328
+     andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--base-0
+     andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-1
+     andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-2
+     andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-3
+     andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-4
+     andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-5
+     andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-6
+     andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-7
+     andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-8
+     andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-9
+     andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-10
+     andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-11
+     andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-12
+     andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-13
+     andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-14
+     andrew.bennetts@canonical.com/launchpad--librarian-webtests--0--patch-15
+
+
 2005-02-11 12:28:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1304
 
     Summary:

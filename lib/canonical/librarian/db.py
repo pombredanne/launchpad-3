@@ -13,34 +13,29 @@ class Library(object):
 
     # the following methods are read-only queries
 
-    def lookupBySHA1(self, digest, connection=None):
+    def lookupBySHA1(self, digest):
         return [fc.id for fc in 
-                LibraryFileContent.selectBy(sha1=digest, connection=connection)]
+                LibraryFileContent.selectBy(sha1=digest)]
 
-    def getAlias(self, fileid, filename, connection=None):
-        return LibraryFileAlias.selectBy(contentID=fileid, filename=filename,
-                                         connection=connection)[0]
+    def getAlias(self, fileid, filename):
+        return LibraryFileAlias.selectBy(contentID=fileid, filename=filename)[0]
 
-    def getAliases(self, fileid, connection=None):
-        results = LibraryFileAlias.selectBy(contentID=fileid,
-                                            connection=connection)
+    def getAliases(self, fileid):
+        results = LibraryFileAlias.selectBy(contentID=fileid)
         return [(a.id, a.filename, a.mimetype) for a in results]
 
-    def getByAlias(self, aliasid, connection=None):
-        return LibraryFileAlias.get(aliasid, connection=connection)
+    def getByAlias(self, aliasid):
+        return LibraryFileAlias.get(aliasid)
 
     # the following methods are used for adding to the library
 
-    def makeAddTransaction(self):
-        return LibraryFileContent._connection.transaction()
-    
-    def add(self, digest, size, txn):
-        lfc = LibraryFileContent(filesize=size, sha1=digest, connection=txn)
+    def add(self, digest, size):
+        lfc = LibraryFileContent(filesize=size, sha1=digest)
         return lfc.id
 
-    def addAlias(self, fileid, filename, mimetype, txn):
+    def addAlias(self, fileid, filename, mimetype):
         try:
-            existing = self.getAlias(fileid, filename, txn)
+            existing = self.getAlias(fileid, filename)
             if existing.mimetype != mimetype:
                 # FIXME: The DB should probably have a constraint that enforces
                 # this i.e. UNIQUE(content, filename)
@@ -48,5 +43,5 @@ class Library(object):
             return existing.id
         except IndexError:
             return LibraryFileAlias(contentID=fileid, filename=filename,
-                                    mimetype=mimetype, connection=txn).id
+                                    mimetype=mimetype).id
             
