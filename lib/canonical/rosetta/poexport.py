@@ -25,15 +25,13 @@ class POExport:
             commentText = unicode(poFile.topComment, 'UTF-8'),
             msgstr = unicode(poFile.header, 'UTF-8'))
         
-        # FIXME: This field does not exists (yet) in the database.
-#        if poFile.headerFuzzy:
-#            header.flags.add('fuzzy')
+        if poFile.headerFuzzy:
+            header.flags.add('fuzzy')
 
         header.finish()
 
         messages = []
         for msgid in self.potfile:
-            # suggested implementation:
             translation = poFile[msgid]
             messages.append(MessageProxy(translation))
 

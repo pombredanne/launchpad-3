@@ -22,7 +22,7 @@ class WatchedSet(sets.Set):
         self._data = {}
         self._watcher = watcher
         if iterable is not None:
-            self._update(iterable)
+            sets.Set._update(self, iterable)
 
     def _update(self, iterable):
         sets.Set._update(self, iterable)
@@ -106,8 +106,8 @@ class MessageProxy(POMessage):
     msgid = property(_get_msgid, _set_msgid)
 
     def _get_msgidPlural(self):
-        msgids = self._msgset.messageIDs()
-        if msgids.count() >= 2:
+        msgids = list(self._msgset.messageIDs())
+        if len(msgids) >= 2:
             return msgids[1].text
         return None
     def _set_msgidPlural(self, value):
@@ -120,8 +120,8 @@ class MessageProxy(POMessage):
     msgidPlural = property(_get_msgidPlural, _set_msgidPlural)
 
     def _get_msgstr(self):
-        translations = self._msgset.translations()
-        if translations.count() == 1:
+        translations = list(self._msgset.translations())
+        if len(translations) == 1:
             return translations[0].text
     def _set_msgstr(self, value):
         current = self._msgset.getTranslationSighting(0)
@@ -132,8 +132,8 @@ class MessageProxy(POMessage):
     msgstr = property(_get_msgstr, _set_msgstr)
 
     def _get_msgstrPlurals(self):
-        translations = self._msgset.translations()
-        if translations.count() > 1:
+        translations = list(self._msgset.translations())
+        if len(translations) > 1:
             # test is necessary because the interface says when
             # there are no plurals, msgstrPlurals is None
             return TranslationsList(self._msgset)

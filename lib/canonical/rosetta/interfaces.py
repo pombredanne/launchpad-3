@@ -198,6 +198,8 @@ class IEditPOFile(IPOFile):
 class IPOMessageSet(Interface):
     """A collection of message IDs and possibly translations."""
 
+    id = Attribute("""An identifier for this POMessageSet""")
+
     poTemplate = Attribute("""The template this set is associated with.""")
 
     poFile = Attribute("""The PO file this set is associated with, if it's
@@ -213,7 +215,7 @@ class IPOMessageSet(Interface):
 
     # XXX: test that
 
-    primeMessageID = Attribute("The primary message ID of this set.")
+    primeMessageID_ = Attribute("The primary message ID of this set.")
 
     sequence = Attribute("The ordering of this set within its file.")
 

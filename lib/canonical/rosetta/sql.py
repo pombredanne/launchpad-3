@@ -646,7 +646,7 @@ class RosettaPerson(SQLBase):
 
 # XXX: Should we use principal instead of hard code Joe Example?
 def personFromPrincipal(principal):
-    ret = RosettaPerson.selectBy(presentationName = 'Joe Example')
+    ret = RosettaPerson.selectBy(presentationName = 'Carlos Perelló Marín')
     if ret.count() == 0:
         raise KeyError, principal
     else:

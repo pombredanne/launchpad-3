@@ -1485,7 +1485,8 @@ CREATE TABLE Language (
   id                    serial PRIMARY KEY,
   code                  text NOT NULL UNIQUE,
   englishname           text,
-  nativename            text
+  nativename            text,
+  pluralform		text
 );
 
 
