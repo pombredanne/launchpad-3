@@ -296,11 +296,14 @@ DROP TABLE DistributionRole;
 DROP TABLE DistroReleaseRole;
 DROP TABLE DistroRelease;
 DROP TABLE Distribution;
-DROP TABLE LaunchpadFileHash;
-DROP TABLE LaunchpadFile;
+DROP TABLE LibraryFileAlias;
+DROP TABLE LibraryFileContent;
 DROP TABLE Label;
 DROP TABLE Schema;
 DROP TABLE Person;
+-- Remove these two in a few days
+DROP TABLE LaunchpadFileHash;
+DROP TABLE LaunchpadFile;
 
 
 
@@ -1146,40 +1149,44 @@ CREATE TABLE DistroArchRelease (
 );
 
 
+/*
+  LibraryFileContent
+  A pointer to file content in the librarian. We store the sha1 hash
+  to allow us to do duplicate detection, size so web applications can
+  warn users of the download size, and some timestamps. The mirrored
+  timestamp, if set, tells us that the file has been mirrored onto
+  the aukland server.
+ 
+  Other tables do not reference this content directly - they should
+  reference LibraryFile which cointains the filename and mimetype
+
+  Note that the sha1 column is not unique - we are dealing with enough
+  files that we may get collisions, so this is used mearly as method
+  of identifying which files need to be compared.
+*/
+CREATE TABLE LibraryFileContent (
+    id            serial PRIMARY KEY,
+    datecreated   timestamp NOT NULL 
+                    DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+    datemirrored  timestamp,
+    filesize      int NOT NULL,
+    sha1          character(40) NOT NULL
+);
+CREATE INDEX idx_LibraryFileContent_sha1 ON LibraryFileContent(sha1);
+
 
 /*
-  LaunchpadFile
-  The Launchpad system keeps copies of all the files that are used to make
-  up a distribution, such as deb's and tarballs and .dsc files and .spec
-  files and Coderelease files... these are represented by this table.
+  LibraryFileAlias
+  A filename and mimetype that we can serve some given binary content with.
+  We seperate LibraryFileContent and LibraryFileAlias so the same file
+  can be reused multiple times with different names and/or mimetypes
 */
-CREATE TABLE LaunchpadFile (
-  id               serial PRIMARY KEY,
-  filename         text NOT NULL,
-  filesize         integer NOT NULL
+CREATE TABLE LibraryFileAlias (
+    id            serial PRIMARY KEY,
+    content       int NOT NULL REFERENCES LibraryFileContent,
+    filename      text NOT NULL,
+    mimetype      text NOT NULL
 );
-
-
-
-/*
-  LaunchpadFileHash
-  A hash (cryptographic digest) on the file. We can support multiple
-  different hashes with different algorithms. Initially we'll just 
-  use SHA1, but if that gets broken we can trivially switch to another
-  algorithm.
-
-  The hash is not required to be UNIQUE but Oscar should flag duplicates
-  for inspection by hand. Note that the combination of filesize and hash
-  should be unique or there is something very weird going on. Or we just hit
-  the crypto lottery and found a collision.
-*/
-CREATE TABLE LaunchpadFileHash (
-  launchpadfile   integer NOT NULL REFERENCES LaunchpadFile,
-  -- see Hash Algorithms schema
-  hashalg         integer NOT NULL,
-  hash            bytea NOT NULL
-);
-
 
 
 /*
@@ -1188,10 +1195,9 @@ CREATE TABLE LaunchpadFileHash (
 */
 CREATE TABLE ProductReleaseFile (
   productrelease integer NOT NULL REFERENCES ProductRelease,
-  launchpadfile   integer NOT NULL REFERENCES LaunchpadFile,
+  libraryfile    integer NOT NULL REFERENCES LibraryFileAlias,
   -- see Product File Type schema
-  filetype        integer NOT NULL,
-  filename        text NOT NULL
+  filetype        integer NOT NULL
 );
 
 
@@ -1311,10 +1317,9 @@ CREATE TABLE SourcepackageRelease (
 */
 CREATE TABLE SourcepackageReleaseFile (
   sourcepackagerelease  integer NOT NULL REFERENCES SourcepackageRelease,
-  launchpadfile         integer NOT NULL REFERENCES LaunchpadFile,
+  libraryfile           integer NOT NULL REFERENCES LibraryFileAlias,
   -- see Source Package File Types schema
-  filetype              integer NOT NULL,
-  filename              text NOT NULL
+  filetype              integer NOT NULL
 );
 
 
@@ -1350,8 +1355,7 @@ CREATE TABLE Build (
   buildstate        integer NOT NULL,
   datebuilt         timestamp,
   buildduration     interval,
-  buildlog          integer REFERENCES LaunchpadFile,
-  buildlogfilename  text,
+  buildlog          integer REFERENCES LibraryFileAlias,
   builder           integer REFERENCES Builder,
   gpgsigningkey     integer REFERENCES GPGKey,
   changes           text
@@ -1413,10 +1417,9 @@ CREATE TABLE Binarypackage (
 */
 CREATE TABLE BinarypackageFile (
   binarypackage     integer NOT NULL REFERENCES Binarypackage,
-  launchpadfile     integer NOT NULL REFERENCES LaunchpadFile,
+  libraryfile       integer NOT NULL REFERENCES LibraryFileAlias,
   -- see Binary Package File Type schema
-  filetype          integer NOT NULL,
-  filename          text NOT NULL
+  filetype          integer NOT NULL
 );
 
 
@@ -2233,8 +2236,7 @@ CREATE TABLE SourceSource (
   product                   integer NOT NULL REFERENCES Product,
   cvsroot                   text,
   cvsmodule                 text,
-  cvstarfile                integer REFERENCES LaunchpadFile,
-  cvstarfilename            text,
+  cvstarfile                integer REFERENCES LibraryFileAlias,
   cvstarfileurl             text,
   cvsbranch                 text,
   svnrepository             text,
