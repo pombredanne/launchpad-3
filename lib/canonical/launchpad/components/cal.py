@@ -16,6 +16,7 @@ from zope.app import zapi
 from zope.publisher.interfaces import IPublishTraverse
 from zope.publisher.interfaces import NotFound
 
+from schoolbell.interfaces import ICalendar
 from canonical.launchpad.interfaces import IPerson, ILaunchpadCalendar
 from canonical.launchpad.interfaces import ICalendarSubscriptionSet
 
