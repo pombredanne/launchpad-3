@@ -425,7 +425,7 @@ class POParser(object):
         self.header = None
         self.messages = []
         self._pending_line = ''
-        self._lineno = 1
+        self._lineno = 0
         self._make_dataholder()
         self._section = None
         self._plural_case = None
@@ -456,7 +456,7 @@ class POParser(object):
             for message in self.messages:
                 if message.msgid == self._partial_transl['msgid']:
                     raise POInvalidInputError('Po file: duplicate msgid ending on line %d'
-                                              % self._lineno)
+                                              % self._partial_transl['_lineno'])
             try:
                 transl = self.translation_factory(header=self.header,
                                                   **self._partial_transl)

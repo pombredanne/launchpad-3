@@ -403,7 +403,9 @@ class TemplateImporter(object):
             # set obsolete
             proxy.obsolete = kw.get('obsolete', False)
         except (KeyError, IndexError):
-            raise POInvalidInputError
+            raise POInvalidInputError(
+                msg='Po file: invalid input on entry at line %d: %s'
+                % (kw['_lineno'], str(e)))
         # Mao; return the results of our work
         return proxy
 
@@ -427,7 +429,6 @@ class POFileImporter(object):
             return
         # check that the plural forms info is valid
         if not header.nplurals:
-            print "No plural forms info!"
             if self.pofile.pluralForms:
                 # first attempt: check if the database already knows it
                 old_header = POHeader(msgstr=self.pofile.header)
@@ -502,6 +503,8 @@ class POFileImporter(object):
             # store obsolete
             proxy.obsolete = kw.get('obsolete', False)
         except (KeyError, IndexError):
-            raise POInvalidInputError
+            raise POInvalidInputError(
+                msg='Po file: invalid input on entry at line %d: %s'
+                % (kw['_lineno'], str(e)))
         # Mao; return the results of our work
         return proxy
