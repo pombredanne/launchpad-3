@@ -4,7 +4,7 @@ DBNAME=launchpad_test
 
 default: all
 
-base: 
+base: check
 	@ echo "* Creating database \"$(DBNAME)\" with sample data."
 	@ echo "* This will hang if another process is accessing the database"
 	createdb -E UNICODE ${DBNAME} || echo ${DBNAME} already exists
@@ -20,7 +20,7 @@ base:
 # Confirm that launchpad-2-00-0.sql hasn't been messed with - this file
 # is our baseline telling us what was installed into production
 check:
-	@if [ "`md5sum launchpad-2-00-0.sql`" != '33030cf494811a41d7471098414e3f15  launchpad-2-00-0.sql' ]; then echo "* launchpad-2-00-0.sql is corrupt or has been modified"; exit 1; else echo "* Using launchpad-2-00-0 as baseline"; fi
+	@if [ "`md5sum launchpad-2-00-0.sql`" != 'fb828f43d0452c8e2cc06cc210fb4a66  launchpad-2-00-0.sql' ]; then echo "* launchpad-2-00-0.sql is corrupt or has been modified"; exit 1; else echo "* Using launchpad-2-00-0 as baseline"; fi
 
 all: base
 #	psql -d ${DBNAME} -f ../sampledata/foaf.sql

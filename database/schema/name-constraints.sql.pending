@@ -1,0 +1,5 @@
+CREATE FUNCTION validname(name) RETURNS boolean AS '
+
+ALTER TABLE Bug ADD CHECK validname(name);
+
+    (name SIMILAR TO '[a-z\\_\\-0-9]*[a-z\\_\\-][a-z\\_\\-]*');
