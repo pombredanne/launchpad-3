@@ -14,7 +14,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Launchpad Project Tracker</h1>
+    <h1>Upstream Project Finder</h1>
 
     <fieldset>
     
@@ -38,7 +38,7 @@
 
         <div tal:condition="view/searchrequested">
         
-            <table class="rowNavigation">
+            <table class="rowNavigation" width="100%">
                 <tr tal:repeat="project view/searchresults"
                     tal:attributes="onclick string:window.location='${project/name}';"
                     valign="top">

@@ -111,6 +111,15 @@
               <a href="/bounties">Bounties</a>
             </li>
 
+            <li class="selected"
+                tal:condition="python:'/buttress' in path_info">
+              <a href="/buttress">Buttress</a>
+            </li>
+            <li class="plain"
+                tal:condition="python:'/buttress' not in path_info">
+              <a href="/buttress">Buttress</a>
+            </li>
+
           </ul>
 
       <div id="portal-personaltools">
