@@ -4,7 +4,8 @@
       i18n:domain="launchpad">
 
   <head>
-    <title metal:fill-slot="title">Launchpad Add-Form</title>
+    <title tal:content="view/page_title|default"
+           metal:fill-slot="title">Launchpad</title>
   </head>
 
   <body>

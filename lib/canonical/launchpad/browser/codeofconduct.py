@@ -100,6 +100,7 @@ class SignedCodeOfConductAddView(AddView):
         self.context = context
         self.request = request
         self.bag = getUtility(ILaunchBag)
+        self.page_title = self.label
         self._nextURL = '.'
         AddView.__init__(self, context, request)
 
@@ -136,6 +137,7 @@ class SignedCodeOfConductAckView(AddView):
         self.request = request
         self.bag = getUtility(ILaunchBag)
         self._nextURL = '.'
+        self.page_title = self.label
         AddView.__init__(self, context, request)
 
     def createAndAdd(self, data):
@@ -213,6 +215,7 @@ class SignedCodeOfConductEditView(EditView):
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self.page_title = self.label
         EditView.__init__(self, context, request)
 
     def changed(self):
@@ -241,6 +244,7 @@ class SignedCodeOfConductActiveView(EditView):
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self.page_title = self.label
         EditView.__init__(self, context, request)
 
     def changed(self):
@@ -275,6 +279,7 @@ class SignedCodeOfConductDeactiveView(EditView):
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self.page_title = self.label
         EditView.__init__(self, context, request)
 
     def changed(self):

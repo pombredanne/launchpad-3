@@ -2,6 +2,61 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-18 13:45:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1459
+
+    Summary:
+      Modified launchpad-[addform, editform] template to support view/page_title attribute and CoC changes.
+    Revision:
+      launchpad--devel--0--patch-1459
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-532
+       Merge from RF: lot of changes
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-533
+       Merge from RF: foaf changes, DB patches and sourcepackage changes
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-534
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-535
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-536
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-537
+       Correct usage of launchpad-addform.pt template.
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-538
+       Reverting previous patch.
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-539
+       Modify launchpad-[addform, editform] templates to customize the Page tilte from the view class by setting page_title attribute and CoC setup.
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-540
+       Merge from RF
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/codeofconduct.py
+     lib/canonical/launchpad/templates/launchpad-addform.pt
+     lib/canonical/launchpad/templates/launchpad-editform.pt
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-532
+     celso.providelo@canonical.com/launchpad--devel--0--patch-533
+     celso.providelo@canonical.com/launchpad--devel--0--patch-534
+     celso.providelo@canonical.com/launchpad--devel--0--patch-535
+     celso.providelo@canonical.com/launchpad--devel--0--patch-536
+     celso.providelo@canonical.com/launchpad--devel--0--patch-537
+     celso.providelo@canonical.com/launchpad--devel--0--patch-538
+     celso.providelo@canonical.com/launchpad--devel--0--patch-539
+     celso.providelo@canonical.com/launchpad--devel--0--patch-540
+
+
 2005-03-18 08:59:46 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1458
 
     Summary:
