@@ -11,12 +11,10 @@ from canonical.database.sqlbase import SQLBase, quote
 # canonical imports
 from canonical.launchpad.interfaces import IPackagePublishing, \
                                            ISourcePackagePublishing, \
-                                           IPendingSourcePackageFile, \
-                                           IPendingBinaryPackageFile, \
-                                           IPublishedSourcePackage, \
-                                           IPublishedBinaryPackage, \
-                                           IPublishedSourcePackageFile, \
-                                           IPublishedBinaryPackageFile
+                                           ISourcePackagePublishingView, \
+                                           IBinaryPackagePublishingView, \
+                                           ISourcePackageFilePublishing, \
+                                           IBinaryPackageFilePublishing
 
 from canonical.launchpad.database import DistroRelease, DistroArchRelease
 
@@ -52,12 +50,12 @@ class SourcePackagePublishing(SQLBase):
     ]
 
     
-class PendingSourcePackageFile(SQLBase):
-    """A source package file which needs publishing"""
+class SourcePackageFilePublishing(SQLBase):
+    """Source package release files and their publishing status"""
 
     _idType = str
 
-    implements(IPendingSourcePackageFile)
+    implements(ISourcePackageFilePublishing)
 
     distribution = IntCol(dbName='distribution', unique=False, default=None,
                           notNull=True)
@@ -78,13 +76,19 @@ class PendingSourcePackageFile(SQLBase):
     sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
                                   default=None, notNull=True)
 
+    distroreleasename = StringCol(dbName='distroreleasename', unique=False,
+                                  default=None, notNull=True)
+
+    publishingstatus = IntCol(dbName='publishingstatus', unique=False,
+                              default=None, notNull=True)
     
-class PendingBinaryPackageFile(SQLBase):
+    
+class BinaryPackageFilePublishing(SQLBase):
     """A binary package file which needs publishing"""
 
     _idType = str
 
-    implements(IPendingBinaryPackageFile)
+    implements(IBinaryPackageFilePublishing)
 
     distribution = IntCol(dbName='distribution', unique=False, default=None,
                           notNull=True)
@@ -105,11 +109,19 @@ class PendingBinaryPackageFile(SQLBase):
     sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
                                   default=None, notNull=True)
 
+    distroreleasename = StringCol(dbName='distroreleasename', unique=False,
+                                  default=None, notNull=True)
 
-class PublishedSourcePackage(SQLBase):
+    publishingstatus = IntCol(dbName='publishingstatus', unique=False,
+                              default=None, notNull=True)
+
+    architecturetag = StringCol(dbName='architecturetag', unique=False,
+                                default=None, notNull=True)
+
+class SourcePackagePublishingView(SQLBase):
     """Source package information published and thus due for putting on disk"""
 
-    implements(IPublishedSourcePackage)
+    implements(ISourcePackagePublishingView)
 
     distroreleasename = StringCol(dbName='distroreleasename', unique=False,
                                   default=None, notNull=True)
@@ -121,13 +133,15 @@ class PublishedSourcePackage(SQLBase):
                             notNull=True)
     distribution = IntCol(dbName='distribution', unique=False, default=None,
                           notNull=True)
+    publishingstatus = IntCol(dbName='publishingstatus', unique=False,
+                              default=None, notNull=True)
 
 
 
-class PublishedBinaryPackage(SQLBase):
+class BinaryPackagePublishingView(SQLBase):
     """Binary package information published and thus due for putting on disk"""
 
-    implements(IPublishedBinaryPackage)
+    implements(IBinaryPackagePublishingView)
 
     distroreleasename = StringCol(dbName='distroreleasename', unique=False,
                                   default=None, notNull=True)
@@ -141,55 +155,5 @@ class PublishedBinaryPackage(SQLBase):
                           notNull=True)
     priority = IntCol(dbName='priority', unique=False, default=None,
                       notNull=True)
-
-class PublishedSourcePackageFile(SQLBase):
-    """Source package files published and thus needing to be included in an archive"""
-
-    implements(IPublishedSourcePackageFile)
-
-    _idType = str
-
-    distroreleasename = StringCol(dbName='distroreleasename', unique=False,
-                                  default=None, notNull=True)
-
-    componentname = StringCol(dbName='componentname', unique=False,
-                              default=None, notNull=False)
-
-    sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
-                                  default=None, notNull=True)
-
-    libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
-                                         unique=False, default=None,
-                                         notNull=True)
-
-    distribution = IntCol(dbName='distribution', unique=False, default=None,
-                          notNull=True)
-
-
-class PublishedBinaryPackageFile(SQLBase):
-    """Binary package files published and thus needing to be included in an archive"""
-
-    implements(IPublishedBinaryPackageFile)
-
-    _idType = str
-
-    distroreleasename = StringCol(dbName='distroreleasename', unique=False,
-                                  default=None, notNull=True)
-
-    componentname = StringCol(dbName='componentname', unique=False,
-                              default=None, notNull=False)
-
-    sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
-                                  default=None, notNull=True)
-
-    libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
-                                         unique=False, default=None,
-                                         notNull=True)
-
-    distribution = IntCol(dbName='distribution', unique=False, default=None,
-                          notNull=True)
-
-
-    architecturetag = StringCol(dbName='architecturetag', unique=False,
-                                default=None, notNull=True)
-
+    publishingstatus = IntCol(dbName='publishingstatus', unique=False,
+                              default=None, notNull=True)

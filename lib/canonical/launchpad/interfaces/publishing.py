@@ -75,8 +75,8 @@ class ISourcePackagePublishing(Interface):
             required=False, readonly=False,
             )
     
-class IPendingSourcePackageFile(Interface):
-    """Source package release files due for publishing"""
+class ISourcePackageFilePublishing(Interface):
+    """Source package release files and their publishing status"""
 
     distribution = Int(
             title=_('Distribution'), required=True, readonly=True,
@@ -104,8 +104,16 @@ class IPendingSourcePackageFile(Interface):
             title=_('Source package name'), required=True, readonly=True,
             )
 
-class IPendingBinaryPackageFile(Interface):
-    """Binary package files due for publishing"""
+    distroreleasename = TextLine(
+            title=_('Distribution release name'), required=True, readonly=True,
+            )
+
+    publishingstatus = Int(
+            title=_('Package publishing status'), required=True, readonly=True,
+            )
+
+class IBinaryPackageFilePublishing(Interface):
+    """Binary package files and their publishing status"""
 
     distribution = Int(
             title=_('Distribution'), required=True, readonly=True,
@@ -133,8 +141,21 @@ class IPendingBinaryPackageFile(Interface):
             title=_('Source package name'), required=True, readonly=True,
             )
 
-class IPublishedSourcePackage(Interface):
-    """Source package information published and thus due for putting on disk"""
+    distroreleasename = TextLine(
+            title=_('Distribution release name'), required=True, readonly=True,
+            )
+
+    publishingstatus = Int(
+            title=_('Package publishing status'), required=True, readonly=True,
+            )
+
+    architecturetag = TextLine(
+            title=_("Architecture tag. As per dpkg's use"), required=True,
+            readonly=True,
+            )
+
+class ISourcePackagePublishingView(Interface):
+    """Source package publishing information neatened up a bit"""
 
     distroreleasename = TextLine(
             title=_('Distro Release name'), required=True, readonly=True,
@@ -153,10 +174,12 @@ class IPublishedSourcePackage(Interface):
             title=_('Distribution ID'), required=True, readonly=True,
             )
 
+    publishingstatus = Int(
+            title=_('Package publishing status'), required=True, readonly=True,
+            )
 
-
-class IPublishedBinaryPackage(Interface):
-    """Binary package information published and thus due for putting on disk"""
+class IBinaryPackagePublishingView(Interface):
+    """Binary package publishing information neatened up a bit"""
 
     distroreleasename = TextLine(
             title=_('Distro Release name'), required=True, readonly=True,
@@ -179,51 +202,6 @@ class IPublishedBinaryPackage(Interface):
             title=_('Distribution ID'), required=True, readonly=True,
             )
 
-class IPublishedSourcePackageFile(Interface):
-    """Source package files published and thus due for inclusion in a release"""
-
-    distroreleasename = TextLine(
-            title=_('Distro Release Name'), required=True, readonly=True,
-            )
-    sourcepackagename = TextLine(
-            title=_('Source Package Name'), required=True, readonly=True,
-            )
-
-    libraryfilealiasfilename = TextLine(
-            title=_('File Name'), required=True, readonly=True,
-            )
-
-    componentname = TextLine(
-            title=_('Component Name'), required=True, readonly=True,
-            )
-
-    distribution = Int(
-            title=_('Distribution ID'), required=True, readonly=True,
-            )
-
-class IPublishedBinaryPackageFile(Interface):
-    """Binary package files published and thus due for inclusion in a release"""
-
-    distroreleasename = TextLine(
-            title=_('Distro Release Name'), required=True, readonly=True,
-            )
-    sourcepackagename = TextLine(
-            title=_('Source Package Name'), required=True, readonly=True,
-            )
-
-    libraryfilealiasfilename = TextLine(
-            title=_('File Name'), required=True, readonly=True,
-            )
-
-    componentname = TextLine(
-            title=_('Component Name'), required=True, readonly=True,
-            )
-
-    distribution = Int(
-            title=_('Distribution ID'), required=True, readonly=True,
-            )
-
-    architecturetag = TextLine(
-            title=_("Architecture tag. As per dpkg's use"), required=True,
-            readonly=True,
+    publishingstatus = Int(
+            title=_('Package publishing status'), required=True, readonly=True,
             )
