@@ -11,7 +11,8 @@ SETUPFLAGS=
 Z3LIBPATH=$(shell pwd)/sourcecode/zope/src
 HERE:=$(shell pwd)
 
-default: test
+# DO NOT ALTER : this should just build by default
+default: inplace
 
 check:
 	$(MAKE) -C sourcecode build
