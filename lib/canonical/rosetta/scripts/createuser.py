@@ -52,9 +52,9 @@ if __name__ == '__main__':
                 print "There was an unknown error executing pwgen."
                 os.exit(1)
 
-        sshad = SSHADigestEncryptor()
+        ssha = SSHADigestEncryptor()
 
-        passEncrypted = sshad.encrypt(options.password)
+        passEncrypted = ssha.encrypt(options.password)
 
         SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))
        

@@ -14,6 +14,7 @@ from canonical.database.doap import IProjects
 from canonical.rosetta.sql import RosettaLanguage, RosettaPerson
 from canonical.rosetta.poexport import POExport
 from canonical.rosetta.pofile import POHeader
+from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
 
 charactersPerLine = 50
 
@@ -305,21 +306,21 @@ class TranslatorDashboard:
         return getUtility(ILanguages)
 
     def selectedLanguages(self):
+        person = self.translator()
+        return list(person.languages())
+
+    def translator(self):
         person = IPerson(self.request.principal, None)
         if person is None:
             # XXX
             person = fake_person()
 
-        return list(person.languages())
+        return person
 
     def submit(self):
-        if "SAVE" in self.request.form:
+        person = self.translator()
+        if "SAVE-LANGS" in self.request.form:
             if self.request.method == "POST":
-                person = IPerson(self.request.principal, None)
-                if person is None:
-                    # XXX
-                    person = fake_person()
-
                 oldInterest = list(person.languages())
 
                 if 'selectedlanguages' in self.request.form:
@@ -340,6 +341,37 @@ class TranslatorDashboard:
                 for language in oldInterest:
                     if language.englishName not in newInterest:
                         person.removeLanguage(language)
+            else:
+                raise RuntimeError("This form must be posted!")
+        elif "SAVE-PERSONAL" in self.request.form:
+            if self.request.method == "POST":
+                # First thing to do, check the password if it's wrong we stop.
+                currentPassword = self.request.form['currentPassword'].encode('ASCII')
+                ssha = SSHADigestEncryptor()
+                if currentPassword and ssha.validate(currentPassword, person.password):
+                    # The password is valid
+                    given = self.request.form['given']
+                    if given and person.givenName != given:
+                        person.givenName = given
+                    family = self.request.form['family']
+                    if family and person.familyName != family:
+                        person.familyName = family
+                    display = self.request.form['display']
+                    if display and person.displayName != display:
+                        person.displayName = display
+                    password1 = self.request.form['newPassword1']
+                    password2 = self.request.form['newPassword2']
+                    if password1 and password1 == password2:
+                        try:
+                            person.password = ssha.encrypt(password1.encode('ASCII'))
+                        except UnicodeEncodeError:
+                            print "ERROR"
+                    elif password1 != "":
+                        #The passwords are differents.
+                        foo = "bar"
+                else:
+                    # The password is not valid
+                    foo = "bar"
             else:
                 raise RuntimeError("This form must be posted!")
 

@@ -4,7 +4,7 @@
       i18n:domain="rosetta">
 
 <head>
-    <title metal:fill-slot="title">Rosetta: Translator dashboard</title>
+    <title metal:fill-slot="title">Rosetta: Translator personal preferences</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Rosetta style sheet -->
@@ -16,15 +16,42 @@
 <div metal:fill-slot="main" >
 
     <h1>Personal preferences</h1>
-    
+
+    <div tal:content="view/submit" />
+
+    <h2>My personal information</h2>
+
+    <p class="formHelp">
+    Here you are able to change your personal information like name and password.
+    </p>
+
+    <form action="prefs" method="post" tal:define="translator view/translator">
+        <fieldset>
+	    Please enter your existing password to confirm account changes.
+	    <br/>
+	    Password: <input type="password" name="currentPassword" />
+	    <br/>
+	    <hr/>
+            Given name: <input type="text" name="given" tal:attributes="value translator/givenName"/>
+	    Family name: <input type="text" name="family" tal:attributes="value translator/familyName" />
+            <br/>
+            Display name: <input type="text" name="display" tal:attributes="value translator/displayName" />
+            <br/>
+	    New Password: <input type="password" name="newPassword1" />
+	    <br/>
+	    Re-enter new Password: <input type="password" name="newPassword2" />
+	    <br/>
+	    <div class="formControls">
+                <input type="submit" name="SAVE-PERSONAL" value="Save" />
+            </div>
+        </fieldset>
+    </form>
     
     <h2>My Languages</h2>
     
     <p class="formHelp">
     Add or remove languages in your language list by double clicking the entries or using the labeled buttons. Use <code>Ctrl</code> to select multiple elements. 
     </p>
-
-    <div tal:content="view/submit" />
 
     <form action="prefs" method="post"
     onSubmit="javascript:selectAllWords();return true;"
@@ -80,10 +107,9 @@
         </div>    
     
         <div class="formControls">
-            <input type="submit" name="SAVE" value="Save" />
+            <input type="submit" name="SAVE-LANGS" value="Save" />
         </div>
     </form>
-    
 </div>
 
 </body>
