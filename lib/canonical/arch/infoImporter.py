@@ -118,21 +118,12 @@ def importInfoFile(infofile):
             continue
 
 
-def clearDatabase():
-    """For testing."""
-    SourceSource.clearTable()
-    Branch.clearTable()
-    ArchArchive.clearTable()
-
-def main(filelist):
+def filterRunner(func, filelist):
     SQLBase.initZopeless(connectionForURI('postgres://'+ canonical.lp.dbhost + '/' + canonical.lp.dbname))
-
-    # clearDatabase() ## XXX: For testing
-
     ok = bad = 0
     for filename in filelist:
         try:
-            importInfoFile(filename)
+            func(filename)
         except (SystemExit, KeyboardInterrupt):
             raise
         except Exception, e:
@@ -140,7 +131,13 @@ def main(filelist):
             bad += 1
         else:
             ok += 1
+    return (ok, bad)
+
+
+def main(filelist):
+    ok, bad = filterRunner(importInfoFile, filelist)
     print '%d imported ok, %d failed' % (ok, bad)
+
 
 if __name__ == '__main__':
     import sys
