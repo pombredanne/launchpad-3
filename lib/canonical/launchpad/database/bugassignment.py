@@ -67,10 +67,10 @@ class BugTaskSet:
         return '.'
 
 def ProductBugAssignmentFactory(context, **kw):
-    return BugTask(bug=context.context.bug, **kw)
+    return BugTask(bugID=context.context.bug, **kw)
 
 def SourcePackageBugAssignmentFactory(context, **kw):
-    return BugTask(bug=context.context.bug, **kw)
+    return BugTask(bugID=context.context.bug, **kw)
 
 # REPORTS
 class BugsAssignedReport(object):

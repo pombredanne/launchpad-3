@@ -15,8 +15,13 @@
     </p>
 
     <ul>
-        <!--<li><a href="+about">About Malone</a></li>-->
-        <li>
+        <li tal:replace="nothing">
+            <!-- XXX: Brad Bollenbach, 2004-12-16: Find a place to put this. -->
+            <a href="+about">About Malone</a>
+        </li>
+        <li tal:replace="nothing">
+            <!-- XXX: Brad Bollenbach, 2004-12-16: We'll get this in
+            soon, but not for the first release. -->
             <a href="bugs/+package">File a Bug on a Package</a> - report a bug
             on something that you installed with apt, rpm, emerge or something
             similar. <b>If you're not sure, start here.</b>

@@ -18,6 +18,13 @@
     specific editform, called table-edit.pt for example, which is the template
     which uses this one.</div>
 
+    <br />
+
+    <div>
+        Return to <a href=""
+                     tal:attributes="href string:/malone/bugs/${context/bug/id}"
+                     tal:content="context/bug/title"></a>
+    </div>
     <div metal:define-macro="editform">
 
       <form action="." tal:attributes="action request/URL" method="post"

@@ -26,7 +26,7 @@
     <tbody>
         <!-- Upstream Assignments -->
         <tr tal:repeat="bugass python:[p for p in context.productassignments if p.product]"
-            tal:attributes="onclick string:window.location='$bug_url/productassignments/${bugass/id}/+edit';">
+            tal:attributes="onclick string:window.location='/malone/tasks/${bugass/id}/+edit';">
            
             <td>
                 <a href=""
@@ -82,7 +82,7 @@ This bug is essential to fix as soon as possible. It affects system stability, d
 
         <!-- Distribution Package Assignments -->
         <tr tal:repeat="bugass python:[p for p in context.packageassignments if not p.product]"
-            tal:attributes="onclick string:window.location='$bug_url/packageassignments/${bugass/id}/+edit';">
+            tal:attributes="onclick string:window.location='/malone/tasks/${bugass/id}/+edit';">
            
             <td>
                 <a href=""
@@ -134,14 +134,14 @@ This bug is essential to fix as soon as possible. It affects system stability, d
     </tbody>
 </table>
 
-<a href="#" tal:attributes="href string:$bug_url/productassignments/+upstreamtask"
+<a href="#" tal:attributes="href string:$bug_url/tasks/+upstreamtask"
     style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
     title="Mark this bug as occurring upstream">
     <img src="/++resource++add.gif" alt="+" />
     File Against Upstream...
 </a>
 
-<a href="#" tal:attributes="href string:$bug_url/packageassignments/+packagetask"
+<a href="#" tal:attributes="href string:$bug_url/tasks/+packagetask"
     style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
     title="Mark this bug as occurring in another package">
     <img src="/++resource++add.gif" alt="+" />
