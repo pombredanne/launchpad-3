@@ -1115,6 +1115,8 @@ class RosettaPerson(SQLBase):
 
     _columns = [
         StringCol(name='displayName', dbName='displayname'),
+        StringCol(name='givenName', dbName='givenname'),
+        StringCol(name='familyName', dbName='familyname'),
     ]
 
 #    isMaintainer
@@ -1122,6 +1124,11 @@ class RosettaPerson(SQLBase):
 #    isContributor
 
     # Invariant: isMaintainer implies isContributor
+
+    _emailsJoin = MultipleJoin('RosettaEmailAddress', joinColumn='person')
+
+    def emails(self):
+        return iter(self._emailsJoin)
 
     # XXX: not implemented
     def maintainedProjects(self):
@@ -1405,5 +1412,17 @@ class RosettaTranslationEffortPOTemplate(SQLBase):
         ForeignKey(name='category', foreignKey='RosettaCategory',
             dbName='category', notNull=False),
         IntCol(name='priority', dbName='priority', notNull=True),
+    ]
+
+class RosettaEmailAddress(SQLBase):
+    implements(interfaces.IEmailAddress)
+
+    _table = 'EmailAddress'
+
+    _columns = [
+        ForeignKey(name='person', foreignKey='RosettaPerson', dbName='person',
+            notNull=True),
+        StringCol(name='email', dbName='email', notNull=True, unique=True),
+        IntCol(name='status', dbName='status', notNull=True),
     ]
 

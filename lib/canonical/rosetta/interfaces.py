@@ -531,7 +531,11 @@ class IBranch(Interface):
 class IPerson(Interface):
     """A person in the system."""
 
-    displayName = Attribute("""The name of this person.""")
+    displayName = Attribute("""The full name of this person.""")
+
+    givenName = Attribute("""The name of this person.""")
+
+    familyName = Attribute("""The surname of this person.""")
 
     # XXX: These attributes disabled because there is no support for them in
     # the database schema.
@@ -543,6 +547,9 @@ class IPerson(Interface):
     #isContributor = Attribute("""Is this person a contributor.""")
 
     # Invariant: isMaintainer implies isContributor
+
+    def emails():
+        """iterate over all emails associated with this person"""
 
     def maintainedProjects():
         """iterate over projects this person maintains"""
@@ -761,3 +768,13 @@ class ITranslationEffortPOTemplate(Interface):
     priority = Attribute("The priority for this poTemplate")
 
     translationEffort = Attribute("The category's translation effort.")
+
+class IEmailAddress(Interface):
+    """The object that stores the IPerson's emails."""
+
+    person = Attribute("The Person owner of this email.""")
+
+    email = Attribute("The email address.""")
+
+    status = Attribute("The status of this email address.""")
+
