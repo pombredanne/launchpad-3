@@ -429,7 +429,7 @@ class RosettaPOFile(SQLBase):
             notNull=True),
         IntCol(name='rosettaCount', dbName='rosettacount',
             notNull=True),
-        IntCol(name='pluralForms', dbName='pluralforms')
+        IntCol(name='pluralForms', dbName='pluralforms', notNull=True)
         # XXX: missing fields
     ]
 

@@ -54,9 +54,9 @@ class LanguageTemplates:
                 'name': template.name,
                 'title': template.title,
                 'poTranslated': 0,
-                'poUntranslated': 0,
+                'poUntranslated': len(template),
                 'poTranslatedPercent': 0,
-                'poUntranslatedPercent': 0,
+                'poUntranslatedPercent': 100,
             }
 
             try:
@@ -68,12 +68,15 @@ class LanguageTemplates:
                 poTranslated = poFile.translatedCount()
                 poUntranslated = poFile.untranslatedCount()
 
+                # We use always len(template) because the POFile could have
+                # messagesets that are obsolete and they are not used to
+                # calculate the statistics
                 retdict.update({
                     'poLength': poLength,
                     'poTranslated' : poTranslated,
                     'poUntranslated' : poUntranslated,
-                    'poTranslatedPercent' : float(poTranslated) / poLength * 100,
-                    'poUntranslatedPercent' : float(poUntranslated) / poLength * 100
+                    'poTranslatedPercent' : float(poTranslated) / len(template) * 100,
+                    'poUntranslatedPercent' : float(poUntranslated) / len(template) * 100
                 })
 
             yield retdict
