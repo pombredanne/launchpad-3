@@ -2,6 +2,40 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-04 23:20:16 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1277
+
+    Summary:
+      improvements to Rosetta preferences page
+    Revision:
+      launchpad--devel--0--patch-1277
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--rosetta-preferences--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1272
+    
+     * daf@canonical.com--2004/launchpad--rosetta-preferences--0--patch-1
+       refactor Rosetta preferences view code
+    
+     * daf@canonical.com--2004/launchpad--rosetta-preferences--0--patch-2
+       tweaks to Rosetta preferences page template
+    
+     * daf@canonical.com--2004/launchpad--rosetta-preferences--0--patch-3
+       address points raised by review
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/rosetta-preferences.pt
+     lib/canonical/rosetta/browser.py
+
+    new patches:
+     daf@canonical.com--2004/launchpad--rosetta-preferences--0--base-0
+     daf@canonical.com--2004/launchpad--rosetta-preferences--0--patch-1
+     daf@canonical.com--2004/launchpad--rosetta-preferences--0--patch-2
+     daf@canonical.com--2004/launchpad--rosetta-preferences--0--patch-3
+
+
 2005-02-03 15:40:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1276
 
     Summary:

@@ -831,6 +831,8 @@ class ViewPreferences:
         self.context = context
         self.request = request
 
+        self.error_msg = None
+        self.submitted_personal = False
         self.person = IPerson(self.request.principal, None)
 
     def languages(self):
@@ -840,71 +842,90 @@ class ViewPreferences:
         return self.person.languages
 
     def submit(self):
-        self.submitted_personal = False
-        self.error_msg = None
+        '''Process a POST request to one of the Rosetta preferences forms.'''
 
-        if "SAVE-LANGS" in self.request.form:
-            if self.request.method != "POST":
-                raise RuntimeError("This form must be posted!")
+        if self.request.method == "POST":
+            if "SAVE-LANGS" in self.request.form:
+                self.submitLanguages()
+            elif "SAVE-PERSONAL" in self.request.form:
+                self.submitPersonal()
+                self.submitted_personal = True
 
-            oldInterest = self.person.languages
+    def submitLanguages(self):
+        '''Process a POST request to the language preference form.
 
-            if 'selectedlanguages' in self.request.form:
-                if isinstance(self.request.form['selectedlanguages'], list):
-                    newInterest = self.request.form['selectedlanguages']
-                else:
-                    newInterest = [ self.request.form['selectedlanguages'] ]
+        This list of languages submitted is compared to the the list of
+        languages the user has, and the latter is matched to the former.
+        '''
+
+        old_languages = self.person.languages
+
+        if 'selectedlanguages' in self.request.form:
+            if isinstance(self.request.form['selectedlanguages'], list):
+                new_languages = self.request.form['selectedlanguages']
             else:
-                newInterest = []
+                new_languages = [self.request.form['selectedlanguages']]
+        else:
+            new_languages = []
 
-            # XXX: We should fix this, instead of get englishname list, we
-            # should get language's code
-            for englishname in newInterest:
-                for language in self.languages():
-                    if language.englishname == englishname:
-                        if language not in oldInterest:
-                            self.person.addLanguage(language)
-            for language in oldInterest:
-                if language.englishname not in newInterest:
-                    self.person.removeLanguage(language)
-        elif "SAVE-PERSONAL" in self.request.form:
-            if self.request.method != "POST":
-                raise RuntimeError("This form must be posted!")
+        # XXX
+        # Making the values submitted in the form be the language codes rather
+        # than the English names would make this simpler. However, given that
+        # the language preferences form is currently based on JavaScript, it
+        # would take JavaScript hacking to make that work.
+        #
+        # https://launchpad.ubuntu.com/malone/bugs/127
+        # -- Dafydd, 2005/02/03
 
-            # First thing to do, check the password if it's wrong we stop.
-            currentPassword = self.request.form['currentPassword']
-            encryptor = getUtility(IPasswordEncryptor)
-            isvalid = encryptor.validate(
-                currentPassword, self.person.password)
-            if currentPassword and isvalid:
-                # The password is valid
-                password1 = self.request.form['newPassword1']
-                password2 = self.request.form['newPassword2']
-                if password1 and password1 == password2:
-                    try:
-                        self.person.password = encryptor.encrypt(
-                            password1)
-                    except UnicodeEncodeError:
-                        self.error_msg = \
-                            "The password can only have ascii characters."
-                elif password1:
-                    #The passwords are differents.
-                    self.error_msg = \
-                        "The two passwords you entered did not match."
+        # Add languages.
+        for englishname in new_languages:
+            for language in self.languages():
+                if language.englishname == englishname:
+                    if language not in old_languages:
+                        self.person.addLanguage(language)
 
-                given = self.request.form['given']
-                if given and self.person.givenname != given:
-                    self.person.givenname = given
-                family = self.request.form['family']
-                if family and self.person.familyname != family:
-                    self.person.familyname = family
-                display = self.request.form['display']
-                if display and self.person.displayname != display:
-                    self.person.displayname = display
+        # Remove languages.
+        for language in old_languages:
+            if language.englishname not in new_languages:
+                self.person.removeLanguage(language)
+
+    def submitPersonal(self):
+        '''Process a POST request to the personal information form.'''
+
+        # First thing to do, check the password. If it's wrong, we stop.
+        currentPassword = self.request.form['currentPassword']
+        encryptor = getUtility(IPasswordEncryptor)
+        isvalid = encryptor.validate(currentPassword, self.person.password)
+
+        if not (currentPassword and isvalid):
+            self.error_msg = "The password you entered is not valid."
+
+        password1 = self.request.form['newPassword1']
+        password2 = self.request.form['newPassword2']
+
+        if password1:
+            if password1 == password2:
+                try:
+                    self.person.password = encryptor.encrypt(password1)
+                except UnicodeEncodeError:
+                    self.error_msg = (
+                        "Your password must contatin ASCII characters only.")
             else:
-                self.error_msg = "The username or password you entered is not valid."
+                self.error_msg = (
+                    "The two passwords you entered did not match.")
 
-            self.submitted_personal = True
+        given = self.request.form['given']
+        family = self.request.form['family']
+        display = self.request.form['display']
+
+        if given and self.person.givenname != given:
+            self.person.givenname = given
+
+        if family and self.person.familyname != family:
+            self.person.familyname = family
+
+        if display and self.person.displayname != display:
+            self.person.displayname = display
 
 
 class ViewPOExport:
