@@ -2,6 +2,147 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-08 00:32:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1162
+
+    Summary:
+      Merge in the buildd stuff so I can start a 2005 archive
+    Revision:
+      launchpad--devel--0--patch-1162
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-83
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-84
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-85
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-86
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-87
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-88
+       Merge initial buildd stuff from laptop archive
+    
+     * daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-89
+       Oops, forgot to add the uinotes.txt file
+    
+     * daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-90
+       reflow buildd notes for easier reading
+    
+     * daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-91
+       Update slave.tac to have an envvar for config and to include a quick guide to interacting with it
+    
+     * daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-92
+       Tidy status fields to be strings instead of numbers for easier debugging. Added a DEPFAIL status in case sbuild explodes during apt-getting the builddepends
+    
+     * daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-93
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-94
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-95
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-96
+       merge from laptop archive
+    
+     * daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-97
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-78
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-79
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-80
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-81
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-82
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-83
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-84
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-85
+       initial buildd notes and the start of the slave implementation
+    
+     * daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-86
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-87
+       Merge desktop archive for working away from home
+    
+     * daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-88
+       add LOGTAIL xmlrpc call for the buildds
+    
+     * daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-89
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+
+    new files:
+     lib/canonical/buildd/.arch-ids/=id
+     lib/canonical/buildd/.arch-ids/__init__.py.id
+     lib/canonical/buildd/.arch-ids/example.conf.id
+     lib/canonical/buildd/.arch-ids/notes.txt.id
+     lib/canonical/buildd/.arch-ids/slave.py.id
+     lib/canonical/buildd/.arch-ids/slave.tac.id
+     lib/canonical/buildd/.arch-ids/uinotes.txt.id
+     lib/canonical/buildd/__init__.py
+     lib/canonical/buildd/example.conf
+     lib/canonical/buildd/notes.txt lib/canonical/buildd/slave.py
+     lib/canonical/buildd/slave.tac
+     lib/canonical/buildd/uinotes.txt
+
+    modified files:
+     doc/changelog.txt
+
+    new directories:
+     lib/canonical/buildd lib/canonical/buildd/.arch-ids
+
+    new patches:
+     daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-83
+     daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-84
+     daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-85
+     daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-86
+     daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-87
+     daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-88
+     daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-89
+     daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-90
+     daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-91
+     daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-92
+     daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-93
+     daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-94
+     daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-95
+     daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-96
+     daniel.silverstone@canonical.com--2004-petitemort/launchpad--devel--0--patch-97
+     daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-78
+     daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-79
+     daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-80
+     daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-81
+     daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-82
+     daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-83
+     daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-84
+     daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-85
+     daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-86
+     daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-87
+     daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-88
+     daniel.silverstone@canonical.com--2004/launchpad--devel--0--patch-89
+
+
 2005-01-07 18:45:21 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1161
 
     Summary:
