@@ -46,7 +46,7 @@ if [ $? -gt 0 ]; then
 fi
 
 # now merge launchpad with the rocketfuel repo
-baz merge rocketfuel@canonical.com/launchpad--devel--0
+baz merge --star-merge --two-way rocketfuel@canonical.com/launchpad--devel--0
 
 # check for conflicts, and if none exist, commit the merge
 FILELIST=$(find . -name "*.orig" -or -name "*.rej" -print)

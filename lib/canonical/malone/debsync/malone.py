@@ -6,6 +6,7 @@ Based on debzilla/bugzilla.py by Matt Zimmerman
 """
 
 from canonical.launchpad.database import *
+from canonical.launchpad.validators.name import valid_name
 from canonical.foaf.nickname import generate_nick
 from canonical.database.sqlbase import quote
 from canonical.lp.encoding import guess as ensure_unicode
@@ -27,12 +28,18 @@ class Launchpad:
         return person
 
     def ensure_sourcepackagename(self, name):
+        name = name.strip().lower()
+        if not valid_name(name):
+            raise ValueError, "'%s' is not a valid name" % name
         try:
             return SourcePackageName.selectBy(name=name)[0]
         except IndexError:
             return SourcePackageName(name=name)
 
     def ensure_binarypackagename(self, name):
+        name = name.strip().lower()
+        if not valid_name(name):
+            raise ValueError, "'%s' is not a valid name" % name
         try:
             return BinaryPackageName.selectBy(name=name)[0]
         except IndexError:
@@ -95,7 +102,7 @@ class Launchpad:
 
     def get_bug_task(self, bug, distribution, sourcepackagename,
                      binarypackagename):
-        for bugtask in bug.tasks:
+        for bugtask in bug.bugtasks:
             if bugtask.sourcepackagename == sourcepackagename and \
                bugtask.distribution == distribution and \
                bugtask.binarypackagename == binarypackagename:
@@ -178,10 +185,11 @@ class Launchpad:
     def add_message(self, message, owner, datecreated):
         msgid = message['message-id']
         if msgid is None:
+            print 'ERROR: Message has no message-id'
             return None
         title=message.get('subject', None)
         if not title:
-            print '\tERROR getting message title for %s ' % msgid
+            print 'ERROR getting message title for %s ' % msgid
             title = 'message without subject'
         title = ensure_unicode(title)
         contents = ensure_unicode(message.as_string())

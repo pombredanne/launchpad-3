@@ -2,6 +2,89 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-20 16:08:08 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1222
+
+    Summary:
+      approved legal text, and debsync ruggedization
+    Revision:
+      launchpad--devel--0--patch-1222
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-706
+       ruggedize malone debsync
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-707
+       fixups... CAUTION baz is behaving strangely this changeset might be b0rked
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-708
+       ruggedize source and binary package names in debsync
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-709
+       smarter handling of unknown source packages
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-710
+       ruggedize debsync
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-711
+       skip bug if initial email is too large too
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-712
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-713
+       make sure we only try to create valid package names
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-714
+       never try to create an invalid package name
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-715
+       make sure generated nick makes a valid name
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-716
+       typo
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-717
+       fix typo in nick generation
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-718
+       try two way merge for refueling
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-719
+       try star merge now
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-720
+       merge rocketfuel
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/foaf/nickname.py
+     lib/canonical/launchpad/configure.zcml
+     lib/canonical/launchpad/database/bugattachment.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/images/languages.gif
+     lib/canonical/launchpad/templates/launchpad-legal.pt
+     lib/canonical/malone/debsync/debsync.py
+     lib/canonical/malone/debsync/malone.py utilities/refuel
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-706
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-707
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-708
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-709
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-710
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-711
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-712
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-713
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-714
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-715
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-716
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-717
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-718
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-719
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-720
+
+
 2005-01-20 15:11:23 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1221
 
     Summary:

@@ -29,15 +29,18 @@ from canonical.launchpad.database import BugFactory, Bug, \
         BugTracker, BugWatch
 from canonical.lp.encoding import guess as ensure_unicode
 from canonical.foaf.nickname import NicknameGenerationError
+from canonical.launchpad.validators.name import valid_name
 
 from malone import Launchpad
 
 # setup core values and defaults
-deb = debbugs.Database('/srv/mirrors/bugs.debian.org/')
+deb = debbugs.Database('/srv/bugs-mirror.debian.org/')
 lp = Launchpad()
 
 debian = lp.get_distribution_by_name('debian')
 ubuntu = lp.get_distribution_by_name('ubuntu')
+
+max_comment_size = 32*1024 # Bugzilla default
 
 # setup mappings of source package names and binary package names
 sourcepackageset = Set([ package[1].split()[0] for package in ginalog.packages ])
@@ -66,6 +69,7 @@ def main():
     ztm.commit()
 
 def get_packagenames(pkgname):
+    pkgname = pkgname.strip().lower()
     srcpkgname = binarypackagedict.get(pkgname, None)
     if srcpkgname:
         binpkgname = pkgname
@@ -90,6 +94,13 @@ def bug_filter(bug):
 def ensure_message(message):
     # look for this message in the database already
     msgid = message['message-id']
+    if msgid is None:
+        print 'ERROR: Message has no message-id'
+        return None
+    # make sure we don't process anything too long
+    if len(message.as_string())>max_comment_size:
+        print "\tSkipping message %s: exceeds size limit" % msgid
+        return None
     msg = lp.get_message_by_id(msgid)
     if msg is not None:
         return msg
@@ -111,6 +122,8 @@ def ensure_message(message):
         print 'ERROR: mail has invalid date %s' % datestr
         return None
     msg = lp.add_message(message, sender, datecreated)
+    if msg is None:
+        print 'ERROR: unable to store msg %s in database.' % msgid
     return msg
 
 def sync():
@@ -128,7 +141,7 @@ def sync():
     for debian_bug in debian_bugs:
         import_bug(debian_bug)
         ztm.commit()
-        if newbugs>1:
+        if newbugs == 1:
             print 'Done many new bugs!'
             break
 
@@ -145,11 +158,19 @@ def import_bug(debian_bug):
             title = 'Debian bug #%d with unknown title' % debian_bug.id
         title = ensure_unicode(title)
         # get the email which started it all
-        initemail = debian_bug.emails()[0]
+        try: initemail = debian_bug.emails()[0]
+        except:
+            print 'ERROR: no initial mail for debian bug %d' % debian_bug.id
+            return
         msg = ensure_message(initemail)
         if msg is None:
             return
-        firstpkg, firstbinpkg = get_packagenames(debian_bug.packagelist()[0])
+        firstpackagename = debian_bug.packagelist()[0]
+        try:
+            firstpkg, firstbinpkg = get_packagenames(firstpackagename)
+        except ValueError:
+            print 'Unable to setup package name for %s' % firstpackagename
+            return
         malone_bug_added = BugFactory(
                          distribution=debian,
                          sourcepackagename=firstpkg,
@@ -169,10 +190,11 @@ def import_bug(debian_bug):
 
     # link the bug to the debian package, if it isn't already linked
     for packagename in debian_bug.packagelist():
-        pkgname, binpkgname = get_packagenames(packagename)
-        if not pkgname:
-            pkgname = lp.ensure_sourcepackagename(packagename)
-            print 'Creating source package called %s' % packagename
+        try:
+            pkgname, binpkgname = get_packagenames(packagename)
+        except ValueError:
+            print '"%s" is not a valid package name'
+            continue
         bugtask = lp.get_bug_task(malone_bug, debian, pkgname,
                                   binpkgname)
         if bugtask is None:
@@ -199,13 +221,10 @@ def import_bug(debian_bug):
 
         # print "\tExamining message %s" % message_id
 
-        # make sure we don't process anything too long
-        max_comment_size = 32*1024 # Bugzilla default
-        if len(message.as_string())>max_comment_size:
-            print "\tSkipping message %s: exceeds size limit" % message_id
-
         # make sure this message is in the db
         lp_msg = ensure_message(message)
+        if lp_msg is None:
+            continue
 
         # create the link between the bug and this message
         bugmsg = lp.link_bug_and_message(malone_bug, lp_msg)
