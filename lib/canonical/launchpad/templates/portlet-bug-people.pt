@@ -14,7 +14,7 @@
                 tal:replace="context/owner/browsername">owner</span></li>
             </ul>
 
-            <tal:products tal:define="products python:[p for p in productass]" >
+            <tal:products tal:define="products python:[p for p in productass if p.product]" >
 
             <h5 tal:condition="products">upstream maintainers:</h5>
 
@@ -28,13 +28,13 @@
 
             </tal:products>
 
-            <tal:packages tal:define="packages python:[p for p in packageass]" >
+            <tal:packages tal:define="packages python:[p for p in packageass if not p.product]" >
 
             <h5 tal:condition="packages">package maintainers:</h5>
 
             <ul class="people">
                 <li tal:repeat="ass packages"
-                    tal:content="ass/sourcepackage/maintainer/browsername">Package
+                    xtal:content="ass/sourcepackage/maintainer/browsername">Package
                     Maintainer</li>
                 <li tal:repeat="ass packages"
                     tal:content="ass/assignee/browsername|default"></li>

@@ -40,7 +40,7 @@ class Product(SQLBase):
     owner = ForeignKey(foreignKey="Person", dbName="owner",
                        notNull=True)
 
-    name = StringCol(dbName='name', notNull=True)
+    name = StringCol(dbName='name', notNull=True, alternateID=True)
 
     displayname = StringCol(dbName='displayname', notNull=True)
 
@@ -83,7 +83,7 @@ class Product(SQLBase):
     #
     potemplates = MultipleJoin('POTemplate', joinColumn='product')
 
-    bugs = MultipleJoin('ProductBugAssignment', joinColumn='product')
+    bugs = MultipleJoin('BugTask', joinColumn='product')
 
     branches = MultipleJoin('Branch', joinColumn='product')
 

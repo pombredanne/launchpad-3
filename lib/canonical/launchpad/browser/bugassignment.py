@@ -8,11 +8,10 @@ from canonical.launchpad.browser.bug import BugView
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import IPerson
-from canonical.launchpad.database import Bug, Person, \
-     SourcePackageBugAssignment, ProductBugAssignment
+from canonical.launchpad.database import Bug, BugTask, Person
 from canonical.lp import dbschema
 from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
-     ProductVocabulary, SourcePackageVocabulary
+     ProductVocabulary, SourcePackageVocabulary, SourcePackageNameVocabulary
 from canonical.database.sqlbase import quote
 
 # Bug Reports
@@ -103,8 +102,7 @@ class BugAssignmentsView:
 
     def search(self):
         """Find the bug assignments the user wants to see."""
-        pba_params = []
-        spba_params = []
+        ba_params = []
 
         param_searchtext = self.request.get('searchtext', None)
         if param_searchtext:
@@ -135,10 +133,7 @@ class BugAssignmentsView:
                 bugs = Bug.select('fti @@ ftq(%s)' % quote(param_searchtext))
                 bugids = [bug.id for bug in bugs]
                 if bugids:
-                    pba_params.append(
-                        IN(ProductBugAssignment.q.bugID, bugids))
-                    spba_params.append(
-                        IN(SourcePackageBugAssignment.q.bugID, bugids))
+                    ba_params.append(IN(BugTask.q.bugID, bugids))
                 else:
                     return []
 
@@ -149,10 +144,7 @@ class BugAssignmentsView:
                 status = param_status
             else:
                 status = [param_status]
-            pba_params.append(
-                IN(ProductBugAssignment.q.bugstatus, status))
-            spba_params.append(
-                IN(SourcePackageBugAssignment.q.bugstatus, status))
+            ba_params.append(IN(BugTask.q.status, status))
 
         param_severity = self.request.get('severity', None)
         if param_severity and param_severity != 'all':
@@ -161,10 +153,7 @@ class BugAssignmentsView:
                 severity = param_severity
             else:
                 severity = [param_severity]
-            pba_params.append(
-                IN(ProductBugAssignment.q.severity, severity))
-            spba_params.append(
-                IN(SourcePackageBugAssignment.q.severity, severity))
+            ba_params.append(IN(BugTask.q.severity, severity))
 
         param_assignee = self.request.get('assignee', None)
         if param_assignee and param_assignee not in ('all', 'unassigned'):
@@ -177,15 +166,10 @@ class BugAssignmentsView:
             if people:
                 assignees = [p.id for p in people]
 
-            pba_params.append(
-                IN(ProductBugAssignment.q.assigneeID, assignees))
-            spba_params.append(
-                IN(SourcePackageBugAssignment.q.assigneeID, assignees))
+            ba_params.append(
+                IN(BugTask.q.assigneeID, assignees))
         elif param_assignee == 'unassigned':
-            pba_params.append(
-                ISNULL(ProductBugAssignment.q.assigneeID))
-            spba_params.append(
-                ISNULL(SourcePackageBugAssignment.q.assigneeID))
+            ba_params.append(ISNULL(BugTask.q.assigneeID))
 
         if self.request.get('submitter', None) and self.request['submitter'] != 'all':
             submitters = []
@@ -197,10 +181,8 @@ class BugAssignmentsView:
             if people:
                 submitters = [p.id for p in people]
 
-            pba_params.append(
-                IN(ProductBugAssignment.q.ownerID, submitters))
-            spba_params.append(
-                IN(SourcePackageBugAssignment.q.ownerID, submitters))
+            ba_params.append(
+                IN(BugTask.q.ownerID, submitters))
 
         if self.request.get('product', None) and self.request['product'] != 'all':
             product_ids = []
@@ -215,44 +197,20 @@ class BugAssignmentsView:
                 term = pv.getTermByToken(product_token)
                 product_ids.append(term.value.id)
 
-            pba_params.append(
-                IN(ProductBugAssignment.q.productID, product_ids))
+            ba_params.append(IN(BugTask.q.productID, product_ids))
 
-        if self.request.get('sourcepackage', None) and self.request['sourcepackage'] != 'all':
-            sourcepackages = []
-            if isinstance(self.request['sourcepackage'], (list, tuple)):
-                sourcepackages = self.request['sourcepackage']
+        if self.request.get('sourcepackagename', None) and self.request['sourcepackagename'] != 'all':
+            sourcepackagenames = []
+            if isinstance(self.request['sourcepackagename'], (list, tuple)):
+                sourcepackagenames = self.request['sourcepackagename']
             else:
-                sourcepackages = [self.request['sourcepackage']]
-            spba_params.append(
-                IN(SourcePackageBugAssignment.q.sourcepackageID, sourcepackages))
+                sourcepackagenames = [self.request['sourcepackagename']]
+            ba_params.append(IN(BugTask.q.sourcepackagenameID, sourcepackagenames))
 
-        if pba_params:
-            pba_params = [AND(*pba_params)]
-        if spba_params:
-            spba_params = [AND(*spba_params)]
+        if ba_params:
+            ba_params = [AND(*ba_params)]
 
-        product_assignments = package_assignments = []
-        if self.request.get('product', None) or not self.submitted():
-            product_assignments = list(ProductBugAssignment.select(*pba_params))
-        if self.request.get('sourcepackage', None) or not self.submitted():
-            package_assignments = list(SourcePackageBugAssignment.select(*spba_params))
-
-        assignment = {}
-        for p in product_assignments + package_assignments:
-            if not assignment.has_key(p.bug.id):
-                assignment[p.bug.id] = [p]
-            else:
-                assignment[p.bug.id].append(p)
-
-        assignment_lists = assignment.items()
-        assignment_lists.sort()
-        assignments = []
-        for assignment_list in assignment_lists:
-            for assignment in assignment_list[1]:
-                assignments.append(assignment)
-
-        return assignments
+        return BugTask.select(*ba_params)
 
     def status_message(self):
         # XXX: Brad Bollenbach, 2004-11-30: This method is a bit of a dirty
@@ -281,9 +239,9 @@ class BugAssignmentsView:
         """Return the list of bug assignment statuses."""
         return dbschema.BugAssignmentStatus.items
 
-    def packages(self):
-        """Return the list of source packages."""
-        return SourcePackageVocabulary(None)
+    def packagenames(self):
+        """Return the list of source package names."""
+        return SourcePackageNameVocabulary(None)
 
     def advanced(self):
         '''Return 1 if the form should be rendered in advanced mode, 0

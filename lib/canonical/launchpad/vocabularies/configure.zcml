@@ -11,6 +11,16 @@
         />
 
     <vocabulary
+        name="SourcePackageName"
+        factory="canonical.launchpad.vocabularies.SourcePackageNameVocabulary"
+        />
+
+    <vocabulary
+        name="Distribution"
+        factory="canonical.launchpad.vocabularies.DistributionVocabulary"
+        />
+
+    <vocabulary
         name="BinaryPackage"
         factory="canonical.launchpad.vocabularies.BinaryPackageVocabulary"
         />

@@ -9,11 +9,12 @@ from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.sourcepackage import SourcePackage, \
-                                            SourcePackageRelease
+    SourcePackageRelease, SourcePackageName
 from canonical.launchpad.database.binarypackage import BinaryPackage, \
-                                            BinaryPackageName
+    BinaryPackageName
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.project import Project
 from canonical.launchpad.database.productrelease import ProductRelease
@@ -21,7 +22,6 @@ from canonical.launchpad.database.bugtracker import BugTracker
 from canonical.database.sqlbase import SQLBase, quote_like, quote
 
 from sqlobject import AND, OR, CONTAINSSTRING
-
 
 class IHugeVocabulary(IVocabulary):
     """Interface for huge vocabularies.
@@ -211,7 +211,7 @@ class ProductVocabulary(SQLObjectVocabularyBase):
             like_query = quote('%%%s%%' % quote_like(query)[1:-1])
             fti_query = quote(query)
             sql = "fti @@ ftq(%s)" % fti_query
-            return [self._toTerm(r) for r in self._table.select(sql)]
+            return [self._toTerm(r) for r in self._table.select(sql, orderBy=self._orderBy)]
 
         return []
 
@@ -350,3 +350,49 @@ class PackageReleaseVocabulary(SQLObjectVocabularyBase):
     def _toTerm(self, obj):
         return SimpleTerm(
             obj, obj.id, obj.sourcepackage.name + " " + obj.version)
+
+class SourcePackageNameVocabulary(SQLObjectVocabularyBase):
+    implements(IHugeVocabulary)
+
+    _table = SourcePackageName
+    _orderBy = 'name'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.id, obj.name)
+
+    def search(self, query):
+        """Return terms where query is a substring of the name"""
+        if query:
+            query = query.lower()
+            like_query = quote('%%%s%%' % quote_like(query)[1:-1])
+            fti_query = quote(query)
+            kw = {}
+            if self._orderBy:
+                kw['orderBy'] = self._orderBy
+            objs = self._table.select("name LIKE %s" % like_query, **kw)
+            return [self._toTerm(obj) for obj in objs]
+
+        return []
+
+class DistributionVocabulary(SQLObjectVocabularyBase):
+    implements(IHugeVocabulary)
+
+    _table = Distribution
+    _orderBy = 'name'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.id, obj.name)
+
+    def search(self, query):
+        """Return terms where query is a substring of the name"""
+        if query:
+            query = query.lower()
+            like_query = quote('%%%s%%' % quote_like(query)[1:-1])
+            fti_query = quote(query)
+            kw = {}
+            if self._orderBy:
+                kw['orderBy'] = self._orderBy
+            objs = self._table.select("name LIKE %s" % like_query, **kw)
+            return [self._toTerm(obj) for obj in objs]
+
+        return []

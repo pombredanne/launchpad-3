@@ -39,11 +39,11 @@
   <form action="" method="GET">
   <h1>Bugs</h1>
   <small tal:content="python:'displaying matching bugs ' + str(ass_batch.startNumber()) + ' to ' + str(ass_batch.endNumber()) + ' of ' + str(ass_batch.total())">displaying 1 to 20 of 42 </small><small> ::
-      <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=unassigned&product=all&sourcepackage=all&search=Search&advanced=0">unassigned</a> .
-      <span tal:omit-tag="" tal:condition="logged_in"><a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=${request/lp:person/name}&product=all&sourcepackage=all&search=Search&advanced=0">my todo list</a> .
-      </span><a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=all&product=all&sourcepackage=all&severity=50&search=Search">critical</a>
+      <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=unassigned&product=all&sourcepackagename=all&search=Search&advanced=0">unassigned</a> .
+      <span tal:omit-tag="" tal:condition="logged_in"><a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=${request/lp:person/name}&product=all&sourcepackagename=all&search=Search&advanced=0">my todo list</a> .
+      </span><a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=all&product=all&sourcepackagename=all&severity=50&search=Search">critical</a>
       <span tal:omit-tag="" tal:condition="logged_in">.
-          <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=all&submitter=${request/lp:person/name}&product=all&sourcepackage=all&search=Search&advanced=0">submitted by me</a></span>
+          <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=all&submitter=${request/lp:person/name}&product=all&sourcepackagename=all&search=Search&advanced=0">submitted by me</a></span>
       :: bug id or text
       <input style="border-style: solid; border-width: 1px; border-color: grey;" type="text" name="searchtext" tal:attributes="value request/searchtext|nothing;"/>
       <input type="submit" style="border-style: solid; border-width: 1px; border-color: grey; background-color: #DCDCDC; " name="search" value="Search" />
@@ -77,13 +77,12 @@
             tal:define="bugid assignment/bug/id;
                         assid assignment/id;
                         product_name assignment/product/name|nothing;
-                        project_name assignment/product/project/name|nothing;
-                        package_name assignment/sourcepackage/sourcepackagename/name|nothing;
-                        collection_name python:(product_name and 'productassignments') or 'packageassignments';
+                        package_name assignment/sourcepackagename/name|nothing;
+                        collection_name string:tasks;
                         ass_link string:$bugid/$collection_name/$assid/+edit;
                         ass_owner assignment/owner/name|nothing;
                         potential_assignee request/lp:person/displayname|nothing;
-                        status assignment/bugstatus/lp:BugAssignmentStatus;
+                        status assignment/status/lp:BugAssignmentStatus;
                         assignee assignment/assignee/name|python:'';
                         priority assignment/priority/lp:BugPriority;
                         severity assignment/severity/lp:BugSeverity;
@@ -92,7 +91,7 @@
           <td tal:content="bugid"
               tal:attributes="onclick string:window.location='${ass_link}';">$Bug.title</td>
           <td tal:condition="product_name"
-              tal:content="python: (project_name == product_name) and product_name or (project_name + ' ' + product_name)"
+              tal:content="python: product_name"
               tal:attributes="onclick string:window.location='${ass_link}';">product</td>
           <td tal:condition="not:product_name"
               tal:attributes="onclick string:window.location='${ass_link}';">-</td>
@@ -172,7 +171,7 @@
       <input type="hidden" name="status" value="20" />
       <input type="hidden" name="assignee" value="all" />
       <input type="hidden" name="product" value="all" />
-      <input type="hidden" name="sourcepackage" value="all" />
+      <input type="hidden" name="sourcepackagename" value="all" />
   </tal:x>
 
   <fieldset tal:condition="view/advanced">
@@ -240,18 +239,18 @@
                 </select>
               </td>
               <td>
-                <select name="sourcepackage" size="5" multiple>
+                <select name="sourcepackagename" size="5" multiple>
                   <option value="all"
                           tal:condition="python:request.has_key('search')"
-                          tal:attributes="selected request/htmlform:sourcepackage/selected/all">All</option>
+                          tal:attributes="selected request/htmlform:sourcepackagename/selected/all">All</option>
                   <option value="all"
                           tal:condition="python:not request.has_key('search')"
                           selected>All</option>
-                  <span tal:omit-tag="" tal:repeat="term view/packages">
+                  <span tal:omit-tag="" tal:repeat="term view/packagenames">
                     <option tal:define="value term/token"
                             tal:content="term/title"
                             tal:attributes="value value;
-                                            selected request/htmlform:sourcepackage/selected/?value">apache</option>
+                                            selected request/htmlform:sourcepackagename/selected/?value">apache</option>
                   </span>
                 </select>
                 </td>

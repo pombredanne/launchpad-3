@@ -72,8 +72,8 @@ def notify_bug_added(bug_add_form, event):
     pname = "(none)"
     if getattr(bug_add_form, 'owner', None):
         owner = bug_add_form.owner.displayname
-    if getattr(bug_add_form, 'sourcepackage', None):
-        spname = bug_add_form.sourcepackage.sourcepackagename.name
+    if getattr(bug_add_form, 'sourcepackagename', None):
+        spname = bug_add_form.sourcepackagename.name
     if getattr(bug_add_form, 'product', None):
         pname = bug_add_form.product.displayname
 

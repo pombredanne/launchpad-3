@@ -12,7 +12,7 @@ from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
 
 from canonical.launchpad.database import Project, Product, SourceSource, \
         SourceSourceSet, ProductSeries, ProductSeriesSet, Bug, \
-        ProductBugAssignment, BugFactory
+        BugFactory
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')

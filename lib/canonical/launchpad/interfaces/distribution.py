@@ -54,3 +54,6 @@ class IDistributionSet(Interface):
     def count():
         """Return the number of distributions in the system."""
 
+class IDistroPackageFinder(Interface):
+    """A tool to find packages in a distribution."""
+

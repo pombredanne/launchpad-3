@@ -91,9 +91,6 @@
       name="source"
       />
 
-  <include file="pages.zcml" />
-  <include file="sourcepackageapp.zcml" />
-  <include file="binarypackageapp.zcml" />
   <include file="importd.zcml" />
   <include file="generalapp.zcml" />
 

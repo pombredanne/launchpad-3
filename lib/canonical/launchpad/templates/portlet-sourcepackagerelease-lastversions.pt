@@ -10,7 +10,7 @@
 	   </li>
 
 	   <li tal:repeat="spackage lastversions">
-	     <a tal:content="spackage/version"
+	     <a tal:content="string:${spackage/name}-${spackage/version}"
 	        tal:attributes="href spackage/version" />
 	   </li>
 	 </ul>

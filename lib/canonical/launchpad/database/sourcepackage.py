@@ -50,8 +50,7 @@ class SourcePackage(SQLBase):
                                    dbName='sourcepackagename', notNull=True)
 
     releases = MultipleJoin('SourcePackageRelease', joinColumn='sourcepackage')
-    bugs     = MultipleJoin('SourcePackageBugAssignment', 
-                            joinColumn='sourcepackage')
+    bugs = MultipleJoin('BugTask', joinColumn='sourcepackage')
 
     #
     # Properties
@@ -78,12 +77,11 @@ class SourcePackage(SQLBase):
     #
     def bugsCounter(self):
         # XXXkiko: move to bugassignment?
-        from canonical.launchpad.database.bugassignment import \
-            SourcePackageBugAssignment
+        from canonical.launchpad.database.bug import BugTask
 
         ret = [len(self.bugs)]
 
-        get = SourcePackageBugAssignment.selectBy
+        get = BugTask.selectBy
         severities = [
             dbschema.BugSeverity.CRITICAL,
             dbschema.BugSeverity.MAJOR,
@@ -94,7 +92,7 @@ class SourcePackage(SQLBase):
             dbschema.BugAssignmentStatus.ACCEPTED,
         ]
         for severity in severities:
-            n = get(severity=int(severity), sourcepackageID=self.id).count()
+            n = get(severity=int(severity), sourcepackagenameID=self.sourcepackagename.id).count()
             ret.append(n)
         return ret
 
@@ -181,10 +179,9 @@ class SourcePackageSet(object):
 
     def withBugs(self):
         pkgset = Set()
-        results = self.table.select("SourcePackage.id = \
-                                     SourcePackageBugAssignment.sourcepackage",
-                                     clauseTables=['SourcePackage',
-                                     'SourcePackageBugAssignment'])
+        results = self.table.select(
+            "SourcePackage.id = SourcePackageBugAssignment.sourcepackage",
+            clauseTables=['SourcePackage', 'SourcePackageBugAssignment'])
         for pkg in results:
             pkgset.add(pkg)
         return pkgset

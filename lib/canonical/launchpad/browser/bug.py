@@ -12,11 +12,9 @@ from canonical.launchpad.interfaces import IPerson, ILaunchBag
 from canonical.lp import dbschema
 from canonical.launchpad.database import BugAttachmentSet, \
         BugExternalRefSet, BugSubscriptionSet, \
-        BugWatchSet, ProductBugAssignmentSet, \
-        SourcePackageBugAssignmentSet, \
-        BugProductInfestationSet, \
+        BugWatchSet, BugProductInfestationSet, \
         BugPackageInfestationSet, Person, Bug, \
-        BugsAssignedReport, BugSet, CVERefSet
+        BugsAssignedReport, BugSet, BugTaskSet, CVERefSet
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 def traverseBug(bug, request, name):
@@ -30,10 +28,8 @@ def traverseBug(bug, request, name):
         return BugSubscriptionSet(bug=bug.id)
     elif name == 'watches':
         return BugWatchSet(bug=bug.id)
-    elif name == 'productassignments':
-        return ProductBugAssignmentSet(bug=bug.id)
-    elif name == 'packageassignments':
-        return SourcePackageBugAssignmentSet(bug=bug.id)
+    elif name == 'tasks':
+        return BugTaskSet(bug=bug.id)
     elif name == 'productinfestations':
         return BugProductInfestationSet(bug=bug.id)
     elif name == 'packageinfestations':
@@ -140,6 +136,3 @@ class BugsCreatedByView:
     def getBugs(self):
         bugs_created_by_owner = self._getBugsForOwner(self.request.get("owner", ""))
         return bugs_created_by_owner
-
-
-

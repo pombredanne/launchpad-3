@@ -13,13 +13,14 @@ from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
 from sqlobject.sqlbuilder import func
 
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.launchpad.database.bugassignment import SourcePackageBugAssignment
+from canonical.launchpad.database.bug import BugTask
 from canonical.launchpad.database.publishedpackage import PublishedPackageSet
 from canonical.lp import dbschema
 
 # interfaces and database 
 from canonical.launchpad.interfaces import IDistribution
 from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.interfaces import IDistroPackageFinder
 
 __all__ = ['Distribution', 'DistributionSet']
 
@@ -78,7 +79,7 @@ class Distribution(SQLBase):
 
         for severity in severities:
             query = query %(quote(self.id), severity)
-            count = SourcePackageBugAssignment.select(query, clauseTables=clauseTables).count()
+            count = BugTask.select(query, clauseTables=clauseTables).count()
             counts.append(count)
 
         return counts
@@ -108,3 +109,10 @@ class DistributionSet(object):
         """Returns a Distribution with name = name"""
         return Distribution.selectBy(name=name)[0]
 
+class DistroPackageFinder(object):
+
+    implements(IDistroPackageFinder)
+
+    def __init__(self, distribution=None, processorfamily=None):
+        self.distribution = distribution
+        # find the x86 processorfamily

@@ -22,12 +22,13 @@ class ProductRelease(SQLBase):
     product = ForeignKey(dbName='product', foreignKey="Product", notNull=True)
     datereleased = DateTimeCol(notNull=True, default=nowUTC)
     version = StringCol(notNull=True)
-    title = StringCol(notNull=True)
-    shortdesc = StringCol(notNull=True)
-    description = StringCol(notNull=True)
+    title = StringCol(notNull=False, default=None)
+    shortdesc = StringCol(notNull=False, default=None)
+    description = StringCol(notNull=False, default=None)
     changelog = StringCol(notNull=False, default=None)
     owner = ForeignKey(dbName="owner", foreignKey="Person", notNull=True)
-    productseries = ForeignKey(dbName='productseries', foreignKey='ProductSeries')
+    productseries = ForeignKey(dbName='productseries',
+                               foreignKey='ProductSeries', default=None)
     manifest = ForeignKey(dbName='manifest', foreignKey='Manifest', default=None)
     
     files = MultipleJoin('ProductReleaseFile', joinColumn='productrelease')

@@ -8,14 +8,7 @@ import urlparse, urllib2
 
 # FIXME: Hard-coded config!
 librarianHost = 'macaroni.ubuntu.com'
-librarianPort = '9090'
-
-
-def extractVersionFromFilename(filename):
-    # XXX: We import this here because hct imports a ridiculous number of
-    # dependencies we don't want.
-    from hct.util.path import version_ext
-    return version_ext.search(filename).group(1)
+librarianPort = 9090
 
 
 class ProductReleaseImporter:
@@ -31,6 +24,59 @@ class ProductReleaseImporter:
             - and create a product file release.
         """
         filename = urlparse.urlsplit(url)[2].split('/')[-1]
+        if self._alreadyImported(filename):
+            # We're done!
+            return
+
+        # Download the file directly into the librarian
+        aliasID = self._downloadIntoLibrarian(url, filename)
+
+        # Get a product release object for this release -- constructing it if
+        # necessary.
+        pr = self._ensureProductRelease(filename)
+
+        # Now create the release file
+        ProductReleaseFile(productreleaseID=pr.id, libraryfileID=aliasID, 
+                           filetype=int(dbschema.UpstreamFileType.CODETARBALL))
+
+        # ...and we're done!
+
+    def _ensureProductRelease(self, filename):
+        from hct.util.path import split_version, name
+        version = split_version(name(filename))[1]
+        existingReleases = ProductRelease.selectBy(productID=self.product.id,
+                                                   version=version)
+        if existingReleases.count() == 0:
+            # Yep, we do need to create a product release.
+            # FIXME: We probably ought to use the last-modified-time reported by
+            # the download, rather than just UTC_NOW.
+            pr = ProductRelease(productID=self.product.id, datereleased=UTC_NOW,
+                                version=version, ownerID=self.product.owner.id)
+        else:
+            # The db schema guarantees there cannot be more than one result
+            pr = existingReleases[0]
+        return pr
+
+    def _downloadIntoLibrarian(self, url, filename):
+        """Download a URL, and upload it directly into the librarian.
+        
+        Returns the library alias ID of the file.
+        """
+        # FIXME: cope with web/ftp servers that don't give the size of files by
+        #        first saving to a temporary file.
+        # XXX: this isn't at all specific to this importer, and probably belongs
+        #      as a utility in the librarian code somewhere.
+        file = urllib2.urlopen(url)
+        info = file.info()
+        size = int(info['content-length'])
+        librarian = FileUploadClient()
+        librarian.connect(librarianHost, librarianPort)
+        ids = librarian.addFile(filename, size, file, info.get('content-type'))
+        aliasID = ids[1]
+        return aliasID
+
+    def _alreadyImported(self, filename):
+        """Do we already have a file by this name for this product?"""
         existingFiles = ProductReleaseFile.select(
             'ProductReleaseFile.productrelease = ProductRelease.id '
             'AND ProductRelease.product = %d '
@@ -40,42 +86,7 @@ class ProductReleaseImporter:
             clauseTables=['ProductRelease', 'LibraryFileAlias']
         )
         
-        if existingFiles.count():
-            # We already have a file by this name for this product release.
-            # We're done!
-            return
-
-        # Download the file directly into the librarian
-        # FIXME: cope with web/ftp servers that don't give the size of files by
-        #        first saving to a temporary file.
-        file = urllib2.urlopen(url)
-        info = file.info()
-        size = int(info['content-length'])
-        librarian = FileUploadClient()
-        librarian.connect(librarianHost, librarianPort)
-        ids = librarian.addFile(filename, size, file, info.get('content-type'))
-        aliasID = ids[1]
-
-        # We need to construct a product release file.  Figure out if we need to
-        # construct a product release as well.
-        version = extractVersionFromFilename(filename)
-        existingReleases = ProductRelease.selectBy(productID=self.product,
-                                                   version=version)
-        if existingReleases.count() == 0:
-            # Yep, we do need to create a product release.
-            # FIXME: We probably ought to use the last-modified-time reported by
-            # the download, rather than just UTC_NOW.
-            pr = ProductRelease(productID=product, datereleased=UTC_NOW,
-                                version=version, ownerID=product.owner)
-        else:
-            # The db schema guarantees there cannot be more than one result
-            pr = existingReleases[0]
-
-        # Now create the release file
-        ProductReleaseFile(productreleaseID=pr, libraryfile=aliasID, 
-                           filetype=dbschema.UpstreamFileType.CODETARBALL)
-
-        # ...and we're done!
+        return bool(existingFiles.count())
 
     def getReleases(self):
         """returns iterable of ProductReleases associated with the product that

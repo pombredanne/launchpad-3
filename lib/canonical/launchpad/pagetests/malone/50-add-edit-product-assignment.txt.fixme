@@ -1,7 +1,7 @@
 
 
   >>> print http(r"""
-  ... GET /malone/bugs/2/productassignments/+new HTTP/1.1
+  ... GET /malone/bugs/2/productassignments/+upstreamtask HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... If-Modified-Since: Mon, 01 Nov 2004 22:57:10 GMT
   ... Referer: http://localhost:9000/malone/bugs/2/
@@ -13,11 +13,11 @@
 
 
   >>> print http(r"""
-  ... POST /malone/bugs/2/productassignments/+new HTTP/1.1
+  ... POST /malone/bugs/2/productassignments/+upstreamtask HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1090
   ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
-  ... Referer: http://localhost:9000/malone/bugs/2/productassignments/+new
+  ... Referer: http://localhost:9000/malone/bugs/2/productassignments/+upstreamtask
   ... 
   ... ------------0xKhTmLbOuNdArY
   ... Content-Disposition: form-data; name="field.product"
@@ -28,11 +28,11 @@
   ... 
   ... 1
   ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="field.bugstatus"
+  ... Content-Disposition: form-data; name="field.status"
   ... 
   ... Fixed
   ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="field.bugstatus-empty-marker"
+  ... Content-Disposition: form-data; name="field.status-empty-marker"
   ... 
   ... 1
   ... ------------0xKhTmLbOuNdArY
@@ -71,7 +71,7 @@
   ...
   <input type="text" name="field.product" value="arch-mirrors" ... />
   ...
-  <select name="field.bugstatus" size="1" >
+  <select name="field.status" size="1" >
   ...
   <option selected="selected" value="Fixed">Fixed</option>
   ...
@@ -86,7 +86,7 @@
   >>> print http(r"""
   ... GET /malone/bugs/2/productassignments/ HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Referer: http://localhost:9000/malone/bugs/2/productassignments/+new
+  ... Referer: http://localhost:9000/malone/bugs/2/productassignments/+upstreamtask
   ... """)
   HTTP/1.1 303 See Other
   ...
@@ -96,7 +96,7 @@
 
   >>> print http(r"""
   ... GET /malone/bugs/2/ HTTP/1.1
-  ... Referer: http://localhost:9000/malone/bugs/2/productassignments/+new
+  ... Referer: http://localhost:9000/malone/bugs/2/productassignments/+upstreamtask
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -131,11 +131,11 @@
   ... 
   ... 1
   ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="field.bugstatus"
+  ... Content-Disposition: form-data; name="field.status"
   ... 
   ... New
   ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="field.bugstatus-empty-marker"
+  ... Content-Disposition: form-data; name="field.status-empty-marker"
   ... 
   ... 1
   ... ------------0xKhTmLbOuNdArY
@@ -173,7 +173,7 @@
   ...
   <a href="javascript:popup_window('@@popup-window?vocabulary=Product&amp;field=field.product','500','400')">(list)</a>
   ...
-  <select name="field.bugstatus" size="1" >
+  <select name="field.status" size="1" >
   ...
   <option selected="selected" value="New">New</option>
   ...

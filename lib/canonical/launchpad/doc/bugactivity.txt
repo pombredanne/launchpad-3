@@ -42,8 +42,8 @@ little functions.
   >>> from zope.app.event.objectevent import ObjectCreatedEvent
   >>> from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
   >>> from canonical.launchpad.database import Bug, BugActivity, \
-  ...     SourcePackageBugAssignment, ProductBugAssignment, \
-  ...     BugPackageInfestation, BugProductInfestation
+  ...     BugPackageInfestation, BugProductInfestation, \
+  ...     BugTask
   >>> from canonical.launchpad.interfaces import IBugAddForm
   >>> def capture_state(obj, *fields):
   ...     class State: pass
@@ -93,30 +93,30 @@ EVENT: bug edited
 
 EVENT: bug gets assigned to a source package
 
-  >>> source_package_assignment = SourcePackageBugAssignment(
-  ...     bug = bug, sourcepackage = 1, owner = user.id)
+  >>> source_package_assignment = BugTask(
+  ...     bug = bug, sourcepackagename = 1, distribution = 1, owner = user.id)
   >>> source_package_assignment_added = ObjectCreatedEvent(source_package_assignment)
   >>> notify(source_package_assignment_added)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
   u'bug'
   >>> latest_activity.message
-  u'assigned to package mozilla-firefox-dummy'
+  u'assigned to source package mozilla-firefox-dummy'
 
 EVENT: source package assignment edited
 
   >>> from canonical.lp.dbschema import BugAssignmentStatus
-  >>> edit_fields = ["sourcepackage", "bugstatus", "priority", "severity"]
+  >>> edit_fields = ["sourcepackagename", "status", "priority", "severity"]
   >>> old_source_package_assignment = capture_state(
   ...     source_package_assignment, *edit_fields)
-  >>> source_package_assignment.bugstatus = BugAssignmentStatus.ACCEPTED.value
+  >>> source_package_assignment.status = BugAssignmentStatus.ACCEPTED.value
   >>> source_package_assignment_edited = SQLObjectModifiedEvent(
   ...     source_package_assignment, old_source_package_assignment,
   ...     edit_fields, user)
   >>> notify(source_package_assignment_edited)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
-  u'mozilla-firefox-dummy: bugstatus'
+  u'mozilla-firefox-dummy: status'
   >>> latest_activity.oldvalue == BugAssignmentStatus.NEW.title
   True
   >>> latest_activity.newvalue == BugAssignmentStatus.ACCEPTED.title
@@ -124,27 +124,26 @@ EVENT: source package assignment edited
 
 EVENT: bug gets assigned to an upstream product
 
-  >>> product_assignment = ProductBugAssignment(
-  ...     bug = bug, product = 8, owner = user.id)
+  >>> product_assignment = BugTask(bug = bug, product = 8, owner = user.id)
   >>> product_assignment_added = ObjectCreatedEvent(product_assignment)
   >>> notify(product_assignment_added)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
   u'bug'
   >>> latest_activity.message
-  u'assigned to product thunderbird'
+  u'assigned to upstream thunderbird'
 
 EVENT: upstream product assignment edited
 
-  >>> edit_fields = ["product", "bugstatus", "priority", "severity"]
+  >>> edit_fields = ["product", "status", "priority", "severity"]
   >>> old_product_assignment = capture_state(product_assignment, *edit_fields)
-  >>> product_assignment.bugstatus = BugAssignmentStatus.REJECTED.value
+  >>> product_assignment.status = BugAssignmentStatus.REJECTED.value
   >>> product_assignment_edited = SQLObjectModifiedEvent(
   ...     product_assignment, old_product_assignment, edit_fields, user)
   >>> notify(product_assignment_edited)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
-  u'thunderbird: bugstatus'
+  u'thunderbird: status'
   >>> latest_activity.oldvalue == BugAssignmentStatus.NEW.title
   True
   >>> latest_activity.newvalue == BugAssignmentStatus.REJECTED.title

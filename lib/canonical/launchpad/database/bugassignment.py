@@ -1,6 +1,8 @@
+__metaclass__ = type
 
 # Zope
-from zope.interface import implements
+from zope.interface import implements, directlyProvides, directlyProvidedBy
+
 # SQL imports
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC, DEFAULT
@@ -8,91 +10,65 @@ from canonical.database.constants import nowUTC, DEFAULT
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.launchpad.interfaces import ISourcePackageBugAssignmentSet, \
-                                           ISourcePackageBugAssignment, \
-                                           IProductBugAssignmentSet, \
-                                           IProductBugAssignment, \
-                                           IBugsAssignedReport
-
+from canonical.launchpad.interfaces import IBugsAssignedReport, \
+    IBugTaskSet, ISourcePackageBugTask, IUpstreamBugTask
 
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.bugset import BugSetBase
+from canonical.launchpad.database.bug import BugTask
 
 from canonical.lp import dbschema
 from sets import Set
 
-class ProductBugAssignment(SQLBase):
-    """A relationship between a Product and a Bug."""
+def mark_task(obj, iface):
+    directlyProvides(obj, iface + directlyProvidedBy(obj))
 
-    implements(IProductBugAssignment)
+def mark_as_upstream_task(task):
+    mark_task(task, IUpstreamBugTask)
 
-    _table = 'ProductBugAssignment'
+def mark_as_sourcepackage_task(task):
+    mark_task(task, ISourcePackageBugTask)
 
-    bug = ForeignKey(dbName='bug', foreignKey='Bug')
-    product = ForeignKey(dbName='product', notNull=True,
-                         foreignKey='Product')
-    bugstatus = IntCol(dbName='bugstatus', notNull=True,
-                       default=int(dbschema.BugAssignmentStatus.NEW))
-    priority = IntCol(dbName='priority', notNull=True,
-                      default=int(dbschema.BugPriority.MEDIUM))
-    severity = IntCol(dbName='severity', notNull=True,
-                      default=int(dbschema.BugSeverity.NORMAL))
-    assignee = ForeignKey(dbName='assignee', foreignKey='Person',
-                          default=None)
-    datecreated = DateTimeCol(dbName='datecreated', notNull=True,
-                              default=nowUTC)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+class BugTaskSet:
+    implements(IBugTaskSet)
+    table = BugTask
 
+    def __init__(self, bug=None):
+        self.bug = bug
 
-class ProductBugAssignmentSet(BugSetBase):
-    """A Set for ProductBugAssignment"""
+    def __getitem__(self, id):
+        try:
+            task = self.table.select(self.table.q.id == id)[0]
+            if task.product:
+                mark_as_upstream_task(task)
+            else:
+                mark_as_sourcepackage_task(task)
+            return task
+        except IndexError:
+            # Convert IndexError to KeyErrors to get Zope's NotFound page
+            raise KeyError, id
 
-    implements(IProductBugAssignmentSet)
-    table = ProductBugAssignment
+    def __iter__(self):
+        for row in self.table.select(self.table.q.bugID == self.bug):
+            if row.product:
+                mark_as_upstream_task(row)
+            else:
+                mark_as_sourcepackage_task(row)
 
+            yield row
+
+    def add(self, ob):
+        return ob
+
+    def nextURL(self):
+        return '.'
 
 def ProductBugAssignmentFactory(context, **kw):
-    return ProductBugAssignment(bug=context.context.bug, **kw)
-
-
-class SourcePackageBugAssignment(SQLBase):
-    """A relationship between a SourcePackage and a Bug."""
-
-    implements(ISourcePackageBugAssignment)
-
-    _table = 'SourcePackageBugAssignment'
-
-    bug = ForeignKey(dbName='bug', foreignKey='Bug')
-    sourcepackage = ForeignKey(dbName='sourcepackage', notNull=True,
-                               foreignKey='SourcePackage')
-    bugstatus = IntCol(dbName='bugstatus', notNull=True,
-                       default=int(dbschema.BugAssignmentStatus.NEW))
-    priority =IntCol(dbName='priority', notNull=True,
-                     default=int(dbschema.BugPriority.MEDIUM))
-    severity = IntCol(dbName='severity', notNull=True,
-                      default=int(dbschema.BugSeverity.NORMAL))
-    binarypackagename = ForeignKey(dbName='binarypackagename',
-                                   foreignKey='BinaryPackageName', default=None)
-    assignee = ForeignKey(dbName='assignee', foreignKey='Person',
-                          default=None)
-    datecreated = DateTimeCol(dbName='datecreated', notNull=True,
-                              default=nowUTC)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-
-
-class SourcePackageBugAssignmentSet(BugSetBase):
-    """A set for SourcePackageBugAssignment"""
-
-    implements(ISourcePackageBugAssignmentSet)
-    table = SourcePackageBugAssignment
-
+    return BugTask(bug=context.context.bug, **kw)
 
 def SourcePackageBugAssignmentFactory(context, **kw):
-    return SourcePackageBugAssignment(bug=context.context.bug,
-                                      binarypackagename=None,
-                                      **kw)
-
+    return BugTask(bug=context.context.bug, **kw)
 
 # REPORTS
 class BugsAssignedReport(object):
@@ -102,14 +78,12 @@ class BugsAssignedReport(object):
     def __init__(self):
         # initialise the user to None, will raise an exception if the
         # calling class does not set this to a person.id
-        from canonical.launchpad.database import SourcePackageBugAssignment, \
-                ProductBugAssignment, Bug
+        from canonical.launchpad.database import BugTask, Bug
         self.user = None
         self.minseverity = 0
         self.minpriority = 0
         self.Bug = Bug
-        self.BSA = SourcePackageBugAssignment
-        self.BPA = ProductBugAssignment
+        self.BT = BugTask
         self.showclosed = False
         self._maintainedPackageBugs = None
         self._maintainedProductBugs = None
@@ -201,5 +175,3 @@ class BugsAssignedReport(object):
         bugs = [ bug[1] for bug in buglistwithdates ]
         self._assignedBugs = bugs
         return self._assignedBugs
-
-

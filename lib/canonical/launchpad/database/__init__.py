@@ -11,8 +11,8 @@ from canonical.launchpad.database.product import *
 from canonical.launchpad.database.productseries import *
 from canonical.launchpad.database.productrelease import *
 from canonical.launchpad.database.project import *
-from canonical.launchpad.database.bugassignment import *
 from canonical.launchpad.database.bug import *
+from canonical.launchpad.database.bugassignment import *
 from canonical.launchpad.database.bugwatch import *
 from canonical.launchpad.database.bugsubscription import *
 from canonical.launchpad.database.bugmessage import *

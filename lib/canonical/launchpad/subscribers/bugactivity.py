@@ -26,7 +26,7 @@ def what_changed(sqlobject_modified_event):
             val_after = removeSecurityProxy(val_after)
 
         # figure out the orig value
-        if f == 'bugstatus':
+        if f == 'status':
             val_before = BugAssignmentStatus.items[val_before].title
         elif f == 'priority':
             val_before = BugPriority.items[val_before].title
@@ -46,7 +46,7 @@ def what_changed(sqlobject_modified_event):
                 val_before.version)
 
         # figure out the new value
-        if f == 'bugstatus':
+        if f == 'status':
             val_after = BugAssignmentStatus.items[val_after].title
         elif f == 'priority':
             val_after = BugPriority.items[val_after].title
@@ -93,25 +93,34 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
                 newvalue=changes[changed_field][1],
                 message='XXX: not yet implemented')
 
-def record_package_assignment_added(package_assignment, object_created_event):
+def record_bug_task_added(bug_task, object_created_event):
+    activity_message = ""
+    if bug_task.product:
+        activity_message = 'assigned to upstream ' + bug_task.product.name
+    else:
+        activity_message = 'assigned to source package ' + bug_task.sourcepackagename.name
     BugActivity(
-        bug=package_assignment.bugID,
+        bug=bug_task.bugID,
         datechanged=nowUTC,
-        person=int(package_assignment.ownerID),
+        person=int(bug_task.ownerID),
         whatchanged='bug',
-        message='assigned to package ' + package_assignment.sourcepackage.sourcepackagename.name)
+        message=activity_message)
 
-def record_package_assignment_edited(package_assignment_edited, sqlobject_modified_event):
+def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
     changes = what_changed(sqlobject_modified_event)
     if changes:
-        package_name = sqlobject_modified_event.object_before_modification.sourcepackage.sourcepackagename.name
+        assignment_title = ""
+        if bug_task_edited.product:
+            assignment_title = sqlobject_modified_event.object_before_modification.product.name
+        else:
+            assignment_title = sqlobject_modified_event.object_before_modification.sourcepackagename.name
         right_now = datetime.utcnow()
         for changed_field in changes.keys():
             BugActivity(
-                bug=package_assignment_edited.bug.id,
+                bug=bug_task_edited.bug.id,
                 datechanged=right_now,
                 person=int(sqlobject_modified_event.principal.id),
-                whatchanged="%s: %s" % (package_name, changed_field),
+                whatchanged="%s: %s" % (assignment_title, changed_field),
                 oldvalue=changes[changed_field][0],
                 newvalue=changes[changed_field][1],
                 message='XXX: not yet implemented')
