@@ -220,14 +220,14 @@ class Projects(object):
 
     def __getitem__(self, name):
         """Get a project by its name."""
-        return Project(dbProject.select("name=%s" % quote(name))[0])
+        return SoyuzProject(dbProject.select("name=%s" % quote(name))[0])
 
     def new(self, name, title, description, url):
         """Creates a new project with the given name.
 
         Returns that project.
         """
-        return Project(dbProject(name=name, title=title, description=description, url=url))
+        return SoyuzProject(dbProject(name=name, title=title, description=description, url=url))
 
 def getOwner():
     return 1
