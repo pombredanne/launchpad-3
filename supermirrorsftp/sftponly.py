@@ -28,10 +28,20 @@ class SubsystemOnlySession(session.SSHSession, object):
 
 class SFTPOnlyAvatar(avatar.ConchUser):
     def __init__(self, avatarId, homeDirsRoot):
-        assert type(avatarId) is str  # not unicode!
-        assert '/' not in avatarId    # XXX: should be a proper auth failure,
-                                      #      not an assert
-        assert avatarId not in ('.', '..') # XXX: ditto
+        # Double-check that we don't get unicode -- directory names on the file
+        # system are a sequence of bytes as far as we're concerned.  We don't
+        # want any tricky login names turning into a security problem.
+        # (I'm reasonably sure cred guarantees this will be str, but in the
+        # meantime let's make sure).
+        assert type(avatarId) is str
+
+        # XXX: These two asserts should be raise exceptions that cause proper
+        #      auth failures, not asserts.  (an assert should never be triggered
+        #      by bad user input).
+        #  - Andrew Bennetts, 2005-01-21
+        assert '/' not in avatarId
+        assert avatarId not in ('.', '..')
+
         self.avatarId = avatarId
         self.homeDirsRoot = homeDirsRoot
 
