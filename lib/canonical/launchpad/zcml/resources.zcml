@@ -16,7 +16,7 @@
     <resource name="green-bar.png" file="../images/green-bar.png" />
     <resource name="blue-bar.png" file="../images/blue-bar.png" />
     <resource name="red-bar.png" file="../images/red-bar.png" />
-    <resource name="dwelled-bar.png" file="../images/dwelled-bar.png" />
+    <resource name="purple-bar.png" file="../images/purple-bar.png" />
     <resource name="bullet.gif" file="../images/bullet.gif" />
     <resource name="required.gif" file="../images/required.gif" />
 

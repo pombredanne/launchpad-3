@@ -80,7 +80,7 @@ class Product(SQLBase):
     #
     # useful Joins
     #
-    _poTemplatesJoin = MultipleJoin('POTemplate', joinColumn='product')
+    potemplates = MultipleJoin('POTemplate', joinColumn='product')
 
     bugs = MultipleJoin('ProductBugAssignment', joinColumn='product')
 
@@ -182,11 +182,8 @@ class Product(SQLBase):
                                 (quote(name), self._product.id)
                                 )[0])
 
-    def poTemplates(self):
-        return iter(self._poTemplatesJoin)
-
     def poTemplatesToImport(self):
-        for template in iter(self._poTemplatesJoin):
+        for template in iter(self.potemplates):
             if template.rawimportstatus == RosettaImportStatus.PENDING:
                 yield template
 
@@ -214,25 +211,25 @@ class Product(SQLBase):
 
     def messageCount(self):
         count = 0
-        for t in self.poTemplates():
+        for t in self.potemplates:
             count += len(t)
         return count
 
     def currentCount(self, language):
         count = 0
-        for t in self.poTemplates():
+        for t in self.potemplates:
             count += t.currentCount(language)
         return count
 
     def updatesCount(self, language):
         count = 0
-        for t in self.poTemplates():
+        for t in self.potemplates:
             count += t.updatesCount(language)
         return count
 
     def rosettaCount(self, language):
         count = 0
-        for t in self.poTemplates():
+        for t in self.potemplates:
             count += t.rosettaCount(language)
         return count
 
@@ -332,7 +329,7 @@ class ProductSet:
             query += ' AND SourceSource.product=Product.id \n'
         if not show_inactive:
             query += ' AND Product.active IS TRUE \n'
-        return Product.select(query, clauseTables=clauseTables)
+        return Product.select(query, distinct=True, clauseTables=clauseTables)
 
     def translatables(self, translationProject=None):
         """This will give a list of the translatables in the given
@@ -340,5 +337,6 @@ class ProductSet:
         translatable product."""
         clauseTables = ['Product', 'POTemplate']
         query = """POTemplate.product=Product.id"""
-        return Product.select(query, clauseTables=clauseTables)
+        return Product.select(query, distinct=True,
+                              clauseTables=clauseTables)
 

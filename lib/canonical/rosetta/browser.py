@@ -13,6 +13,8 @@ from StringIO import StringIO
 from zope.component import getUtility
 from zope.i18n.interfaces import IUserPreferredLanguages
 
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import ILanguageSet, IPerson
 from canonical.launchpad.interfaces import IProjectSet, IPasswordEncryptor
@@ -123,22 +125,40 @@ class TabIndexGenerator:
         return index
 
 
-class ViewProduct:
+class ProductView:
+
+    branchesPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-product-branches.pt')
+
+    detailsPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-product-details.pt')
+
+    actionsPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-product-actions.pt')
+
+    projectPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-product-project.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.form = self.request.form
         self.languages = request_languages(self.request)
+        self.multitemplates = False
+        self._templangs = None
+        if len(list(self.templates()))>1:
+            self.multitemplates = True
 
     def templates(self):
-        templates = self.context.poTemplates()
-
-        if templates:
-            for template in templates:
-                yield TemplateLanguages(template, self.languages)
-        else:
-            raise RuntimeError(
-                "Can't generate TemplateLanguages without templates.")
+        if self._templangs is not None:
+            return self._templangs
+        templates = self.context.potemplates
+        templangs = []
+        for template in templates:
+            templangs.append(TemplateLanguages(template,
+                self.languages))
+        self._templangs = templangs
+        return self._templangs
 
     # This method has been "stolen" from the newproduct one.
     def newpotemplate(self):
@@ -205,7 +225,6 @@ class ViewProduct:
 
             parser.write(potfile)
             parser.finish()
-            
 
             potemplate.rawfile = base64.encodestring(potfile)
             potemplate.daterawimport = UTC_NOW
@@ -218,7 +237,7 @@ class ViewProduct:
 
 
 class TemplateLanguages:
-    """Support class for ViewProduct."""
+    """Support class for ProductView."""
 
     def __init__(self, template, languages):
         self.template = template
@@ -972,7 +991,7 @@ class ViewImportQueue:
         id = 0
         for project in getUtility(IProjectSet):
             for product in project.products():
-                for template in product.poTemplates():
+                for template in product.potemplates:
                     if template.rawimportstatus == RosettaImportStatus.PENDING:
                         retdict = {
                             'id': 'pot_%d' % template.id,
@@ -1094,15 +1113,15 @@ class LanguageTranslationEffortCategories:
             yield retdict
 
 
-# XXX: Is there any way to reuse ViewProduct, we have exactly the same code
+# XXX: Is there any way to reuse ProductView, we have exactly the same code
 # here.
 class ViewTranslationEffortCategory:
     def thereAreTemplates(self):
-        return len(list(self.context.poTemplates())) > 0
+        return len(list(self.context.potemplates)) > 0
 
     def languageTemplates(self):
         for language in request_languages(self.request):
-            yield LanguageTemplates(language, self.context.poTemplates())
+            yield LanguageTemplates(language, self.context.potemplates)
 
 
 class TemplateUpload:

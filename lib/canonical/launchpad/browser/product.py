@@ -48,6 +48,9 @@ def traverseProduct(product, request, name):
 #
 class ProductView(object):
 
+    translationsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-product-translations.pt')
+
     latestBugPortlet = ViewPageTemplateFile(
         '../templates/portlet-latest-bugs.pt')
 
@@ -59,6 +62,9 @@ class ProductView(object):
 
     actionsPortlet = ViewPageTemplateFile(
         '../templates/portlet-product-actions.pt')
+
+    projectPortlet = ViewPageTemplateFile(
+        '../templates/portlet-product-project.pt')
 
     def __init__(self, context, request):
         self.context = context

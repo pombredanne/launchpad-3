@@ -232,18 +232,19 @@
 
     </fieldset>
 
-    <fieldset tal:define="ready python: (context.product.active and \
-    context.product.reviewed and context.product.project.active and \
-    context.product.project.reviewed)">
+    <fieldset>
+
         <legend>Product and Project Status</legend>
 
-        <p><b>Project: <span tal:replace="context/product/project/title">Project
-        Title</span></b></p>
-        <div tal:condition="python: not (context.product.project.reviewed and
-        context.product.project.active)" class="portalMessage">This project is
-        NOT YET APPROVED.</div>
-        <p><span tal:replace="context/product/project/shortdesc">product
-        summary</span></p>
+        <div tal:condition="context/product/project" tal:omit-tag>
+            <p><b>Project: <span tal:replace="context/product/project/title">Project
+            Title</span></b></p>
+            <p tal:condition="python: not (context.product.project.reviewed and
+            context.product.project.active)" class="portalMessage">This project is
+            NOT YET APPROVED.</p>
+            <p><span tal:replace="context/product/project/shortdesc">product
+            summary</span></p>
+        </div>
 
         <p><b>Product: <span tal:replace="context/product/title">Product
         Title</span></b></p>
@@ -253,7 +254,7 @@
         <p><span tal:replace="context/product/shortdesc">product
         summary</span></p>
 
-        <div tal:condition="ready">
+        <div tal:condition="context/namesReviewed">
         
             <div class="field">
                 <label>Enabled</label>

@@ -81,9 +81,6 @@ class IProject(Interface):
     def newSourceSource():
         """Add a SourceSource for upstream code syncing to Arch."""
 
-    def poTemplates():
-        """Returns an iterator over this project's PO templates."""
-
     def product(name):
         """Return the product belonging to this project with the given
         name."""

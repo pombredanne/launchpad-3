@@ -1,9 +1,3 @@
-<!--
-
-   ZCML for the Product object in Launchpad and related classes
- 
--->
-
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -12,8 +6,7 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
     
-    <!-- This is class Product -->
-    <!-- CONTENT CLASSES -->
+    <!-- Product -->
     <content class="canonical.launchpad.database.Product">
         <allow interface="canonical.launchpad.interfaces.IProduct" />
         <require
@@ -22,20 +15,6 @@
         />
     </content>
 
-    <!-- UTILITY DECLARATION-->
-
-    <!--TRAVERSALS-->
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IProduct"
-        function="canonical.launchpad.browser.traverseProduct" />
-
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IProduct"
-        layer="canonical.launchpad.layers.RosettaLayer"
-        getter="poTemplate" />
-
-    
-    <!--BROWSER DEFAULTVIEWS-->
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
         name="+index" />
@@ -51,7 +30,15 @@
         name="+rosetta-index"
         />
 
-    <!--PAGE DECLARATIONS-->
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IProduct"
+        function="canonical.launchpad.browser.traverseProduct" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IProduct"
+        layer="canonical.launchpad.layers.RosettaLayer"
+        getter="poTemplate" />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"
         permission="zope.Public"
@@ -61,23 +48,26 @@
             lp:url="doap/projects/$Project.name/$Product.name/" />
     </browser:pages>
 
-    <browser:pages for="canonical.launchpad.interfaces.IProduct"
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProduct"
         permission="zope.Public"
-        class="canonical.rosetta.browser.ViewProduct"
+        class="canonical.rosetta.browser.ProductView"
         lp:url="Rosetta/projects/$Project.name/$Product.name">
-        <browser:page name="+rosetta-index"
-            template="../templates/rosetta-product-index.pt"
+        <browser:page
+            name="+rosetta-index"
+            template="../templates/product-translations.pt"
             lp:url="Rosetta/projects/$Project.name/$Product.name/index" />
     </browser:pages>
 
-    <browser:pages for="canonical.launchpad.interfaces.IProduct"
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProduct"
         permission="launchpad.AnyPerson"
-        class="canonical.rosetta.browser.ViewProduct" >
-        <browser:page name="+newpotemplate"
+        class="canonical.rosetta.browser.ProductView" >
+        <browser:page
+            name="+newpotemplate"
             template="../templates/potemplate-new.pt"
             lp:url="Rosetta/projects/$Project.name/+newpotemplate" />
     </browser:pages>
-        
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"

@@ -55,7 +55,7 @@
             <br />
             <span tal:content="product/shortdesc">Product short
             description goes here.</span></li>
-            <ul tal:repeat="potemplate product/poTemplates">
+            <ul tal:repeat="potemplate product/potemplates">
                     <li>Translations: <span tal:content="potemplate/title" /></li>
             </ul>
 	</ul>

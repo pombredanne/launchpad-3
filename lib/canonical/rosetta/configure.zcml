@@ -7,7 +7,6 @@
         <allow interface="canonical.launchpad.interfaces.IRosettaApplication" />
     </content>
 
-
     <!-- This registers 'rosetta' as a suburl of RootObject. -->
     <browser:suburl
         for="canonical.publication.RootObject"
@@ -35,9 +34,16 @@
         name="projects"
         />
 
+    <browser:suburl
+        for="canonical.launchpad.interfaces.IRosettaApplication"
+        utility="canonical.launchpad.interfaces.IProductSet"
+        name="products"
+        />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IRosettaApplication"
         permission="zope.Public"
+        class="canonical.rosetta.RosettaApplicationView"
         lp:url="Rosetta">
         <browser:page
             name="+index"

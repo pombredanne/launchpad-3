@@ -81,6 +81,10 @@ class ISourceSource(Interface):
     
     def changeProduct(product):
         """change the product this sync belongs to to be 'product'"""
+
+    def namesReviewed():
+        """Return True if the product and project details have been reviewed
+        and are still active."""
     
 
 class ISourceSourceSet(Interface):

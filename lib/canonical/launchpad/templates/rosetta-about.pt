@@ -35,10 +35,9 @@
     <h2>Adding projects to Rosetta</h2>
 
         <p>It's easy to add a new project to be translated in Rosetta. First
-        you need to add the project (and any products that the project team
-        produce) to the Launchpad registry. You can seach for existing
-        projects <a href="projects">here</a>, and then add yours if it's not
-        already listed.</p>
+        you need to add the product to the Launchpad registry. You can seach
+        for existing registered open source products <a href="products">here</a>,
+        and then add yours if it's not already listed.</p>
 
         <p>Once you have the product in the registry, click on "Add
         Translation" to import a PO Template and PO Files.</p>.

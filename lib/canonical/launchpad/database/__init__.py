@@ -34,7 +34,6 @@ from canonical.launchpad.database.distro import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.schema import *
 from canonical.launchpad.database.language import *
-from canonical.launchpad.database.country import *
 from canonical.launchpad.database.translation_effort import *
 from canonical.launchpad.database.processor import *
 from canonical.launchpad.database.manifest import *
@@ -46,6 +45,8 @@ from canonical.launchpad.database.files import *
 from canonical.launchpad.database.bounty import *
 from canonical.launchpad.database.message import *
 from canonical.launchpad.database.queue import *
+from canonical.launchpad.database.country import *
+from canonical.launchpad.database.spokenin import *
 
 
 

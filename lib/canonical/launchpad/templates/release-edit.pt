@@ -4,6 +4,11 @@
       i18n:domain="launchpad">
 
 <head>
+    <title metal:fill-slot="title">
+        Edit
+        <span tal:replace="context/release/displayname">Release</span>
+        Details
+    </title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Soyuz style sheet -->
@@ -15,7 +20,7 @@
 <div metal:fill-slot="main">
 
    <h1>Edit <span
-   tal:content="context/release/title">Release</span> Release
+   tal:replace="context/release/title">Release</span> Release
    Information </h1> 
 
     <div class="documentDescription">	

@@ -9,7 +9,7 @@ from canonical.launchpad.database import IPerson
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 # Stock View 
-from canonical.rosetta.browser import ViewProduct
+from canonical.launchpad.browser import ProductView
 
 # LP imports
 from canonical.lp.dbschema import BugSeverity
@@ -101,7 +101,7 @@ class DistroReleaseSourceView(object):
 
     def productTranslations(self):
         if self.context.sourcepackage.product:
-            return ViewProduct(self.context.sourcepackage.product,
+            return ProductView(self.context.sourcepackage.product,
                                self.request)
         return None
 

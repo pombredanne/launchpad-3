@@ -5,7 +5,8 @@
 
 <head>
     <title metal:fill-slot="title">Rosetta: Translating
-        <span tal:replace="context/title">PO template title</span></title>
+        <span tal:replace="context/product/displayname">product displayname</span>
+        Template <span tal:replace="context/title">template titleM</span></title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Rosetta style sheet -->
@@ -18,39 +19,43 @@
 
     <div tal:content="structure view/submitTranslations" />
 
-    <h1>Translating <span tal:replace="context/product/project/title">Project
-        title</span> &mdash; <span tal:replace="context/title">POT file
+    <h1>Translating <span tal:replace="context/product/displayname">product
+        displayname</span>:  <span tal:replace="context/title">POT file
         title</span></h1>
 
     <p class="discreet">
-    <a href=".."><span tal:replace="context/product/title">PRODUCT</span>
-    product overview</a>.
+      You are translating <a href=".."><span
+      tal:replace="context/product/displayname">product
+      displayname</span></a> using the Rosetta Translation portal. You can
+      read <a href="/rosetta/+about">more about Rosetta</a> or start
+      translating <span
+      tal:replace="context/product/displayname">product</span> immediately.
+    </p>
+
+    <p tal:content="context/product/shortdesc">
+        product summary
+    </p>
+
+    <p tal:content="context/description">
+        template description
     </p>
 
     <!-- Error messages first. -->
 
     <div tal:condition="context/hasPluralMessage">
-        <div tal:condition="view/badLanguages">
-            <p>
-            This template contains plural messages. However, no information on
-            plural forms is available for the following languages:
-            </p>
 
-            <ul>
-                <li tal:repeat="language view/badLanguages"
-                    tal:content="language/englishname">language</li>
-            </ul>
+        <p class="portalMessage" tal:condition="view/badLanguages">
+        This template contains plural messages. These require special
+        information for each language, and we do not yet have this
+        information on record for 
+            <span tal:repeat="language view/badLanguages" tal:omit-tag>
+               <span tal:replace="language/englishname">language</span>,
+            </span>
+        please contact the <a
+        href="mailto:rosetta-users@lists.ubuntu.com">Rosetta users
+        mailing list</a> to resolve this - it only ever needs to be done
+        once per language!</p>
 
-            <p>
-            Before this template can be translated into these languages,
-            Rosetta needs to have this information. Please send that
-            information to the <a
-            href="mailto:rosetta-users@lists.ubuntu.com">Rosetta users
-            mailing list</a>. If you don't know about this kind of
-            information, please ask on the mailing list and we will try to
-            work it out from your knowledge of that language.
-            </p>
-        </div>
     </div>
 
     <!-- No errors. -->

@@ -25,7 +25,7 @@ class ImportDaemon:
                 for template in product.poTemplatesToImport():
                     # We have a template with raw data to be imported.
                     yield template
-                for template in product.poTemplates():
+                for template in product.potemplates:
                     for pofile in template.poFilesToImport():
                         # We have a po with raw data to be imported.
                         yield pofile

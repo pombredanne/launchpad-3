@@ -43,7 +43,7 @@
                                 tal:condition="language/poUpdatesCount"
                                 tal:attributes="width language/poUpdatesPercent;
                                                 title string: Updates: ${language/poUpdatesPercent}%"
-                            /><img src="/++resource++dwelled-bar.png"
+                            /><img src="/++resource++purple-bar.png"
                                 height="15"
                                 alt="Rosetta additions graph"
                                 tal:condition="language/poRosettaCount"

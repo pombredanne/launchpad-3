@@ -4,6 +4,10 @@
       i18n:domain="launchpad">
 
 <head>
+    <title metal:fill-slot="title">
+        Overview of 
+        <span tal:replace="context/release/displayname">Release</span>
+    </title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Soyuz style sheet -->

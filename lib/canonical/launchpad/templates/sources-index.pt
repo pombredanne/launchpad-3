@@ -15,8 +15,8 @@
         <legend>Filter Criteria</legend>
 
         <div class="formControls">
-            <input type="text" name="projecttext"
-                   tal:attributes="value view/projecttext" size="60">
+            <input type="text" name="text"
+                   tal:attributes="value view/text" size="60">
             <input type="submit" name="search" value="search" />
             <br />
             <input type="checkbox" name="ready" id="ready"
@@ -50,7 +50,8 @@
     </tr>
     <tr tal:repeat="source batch"
         tal:attributes="onclick string:window.location='${source/name}';">
-      <td tal:content="source/product/project/name">$Project.name</td>
+      <td><span tal:condition="source/product/project"
+                tal:content="source/product/project/name">$Project.name</span></td>
       <td tal:content="source/product/name">$Product.name</td>
       <td tal:content="source/name">$SourceSource.name</td>
       <td tal:content="source/title">$SourceSource.title</td>

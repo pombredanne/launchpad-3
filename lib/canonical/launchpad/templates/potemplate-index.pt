@@ -5,7 +5,9 @@
 
 <head>
     <title metal:fill-slot="title">Rosetta:
-        <span tal:replace="context/title">Some PO template or other</span></title>
+        <span tal:replace="context/product/displayname">product
+        displayname</span>:
+        <span tal:replace="context/title">template title</span></title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Rosetta style sheet -->
@@ -16,12 +18,10 @@
 
 <div metal:fill-slot="main">
 
-    <h1 tal:content="context/title">Some PO template or other</h1>
+    <h1>Translating: <span tal:replace="context/product/title">Product Title</span></h1>
 
-    <p class="discreet">
-    This PO template belongs to the product <a href=".."
-        tal:content="context/product/title">PRODUCT</a>.
-    </p>
+    <p class="documentDescription">Template: <span tal:replace="context/title">
+        Potemplate Title</span></p>
 
     <p>
     This file contains <span tal:replace="view/num_messages">N
@@ -30,7 +30,11 @@
 
     <p><a href="translate">Translate this template</a>.</p>
 
-    <p><a href="upload">Update this template's data</a>.</p>
+    <p><a href="+upload">Update this template's data</a>.</p>
+
+    <p><a href="+edit">Edit this template.</a></p>
+
+    <p><a href="+translate">Translate into all selected languages.</a></p>
 
     <h2>Translations</h2>
 

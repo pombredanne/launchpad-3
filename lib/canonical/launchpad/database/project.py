@@ -181,7 +181,7 @@ class ProjectSet:
             query += ' AND Project.active IS TRUE \n'
             if 'Product' in clauseTables:
                 query += ' AND Product.active IS TRUE \n'
-        return Project.select(query, clauseTables=clauseTables)
+        return Project.select(query, distinct=True, clauseTables=clauseTables)
 
 
 class ProjectBugTracker(SQLBase):

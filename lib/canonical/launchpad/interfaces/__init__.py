@@ -30,7 +30,6 @@ from canonical.launchpad.interfaces.person import *
 from canonical.launchpad.interfaces.translationeffort import *
 from canonical.launchpad.interfaces.infestation import *
 from canonical.launchpad.interfaces.language import *
-from canonical.launchpad.interfaces.country import *
 from canonical.launchpad.interfaces.archuser import *
 from canonical.launchpad.interfaces.binarypackage import *
 from canonical.launchpad.interfaces.build import *
@@ -49,6 +48,9 @@ from canonical.launchpad.interfaces.bounty import *
 from canonical.launchpad.interfaces.launchpad import *
 from canonical.launchpad.interfaces.pyarch import *
 from canonical.launchpad.interfaces.queue import *
+from canonical.launchpad.interfaces.country import *
+from canonical.launchpad.interfaces.spokenin import *
+from canonical.launchpad.interfaces.geoip import *
 
 
 class IAuthApplication(Interface):

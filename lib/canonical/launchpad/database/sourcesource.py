@@ -12,8 +12,6 @@ from zope.interface import implements
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 from canonical.database.sqlbase import SQLBase, quote
-#circular import
-#from canonical.soyuz.importd import ProjectMapper, ProductMapper
 
 # Launchpad interfaces
 # XXX: Daniel Debonzi 2004-11-25
@@ -88,6 +86,14 @@ class SourceSource(SQLBase):
     datefinished = DateTimeCol(dbName='datefinished', notNull=False,
         default=None)
 
+    def namesReviewed(self):
+        if not (self.product.reviewed and self.product.active):
+            return False
+        if self.product.project is not None:
+            if not (self.product.project.reviewed and self.product.project.active):
+                return False
+        return True
+
     def certifyForSync(self):
         """enable the sync for processing"""
         self.processingapproved='NOW'
@@ -107,16 +113,13 @@ class SourceSource(SQLBase):
 
     def canChangeProduct(self):
         """is this sync allowed to have its product changed?"""
-        return self.product.project.name=="do-not-use-info-imports" and self.product.name=="unassigned"
+        return self.product.name=="unassigned"
 
     def changeProduct(self, targetname):
         """change the product this sync belongs to to be 'product'"""
         assert (self.canChangeProduct())
-        projectname,productname=targetname.split("/")
-        from canonical.soyuz.importd import ProjectMapper, ProductMapper
-        project=ProjectMapper().getByName(projectname)
-        product=ProductMapper().getByName(productname, project)
-        self.product=product
+        products = getUtility(IProductSet)
+        self.product=products()[targetname]
 
     def needsReview(self):
         if not self.syncapproved and self.autotested:
@@ -248,7 +251,7 @@ class SourceSourceSet(object):
         return ss[0]
 
     def filter(self, sync=None, process=None, 
-                     tested=None, projecttext=None,
+                     tested=None, text=None,
                      ready=None):
         query = ''
         clauseTables = Set()
@@ -257,12 +260,12 @@ class SourceSourceSet(object):
             if len(query) > 0:
                 query = query + ' AND\n'
             query = query + """SourceSource.product = Product.id AND
-                               Product.project = Project.id AND
+                             ( Product.project IS NULL OR
+                             ( Product.project = Project.id AND
                                Project.active IS TRUE AND
-                               Project.reviewed IS TRUE AND
+                               Project.reviewed IS TRUE ) ) AND
                                Product.active IS TRUE AND
                                Product.reviewed IS TRUE"""
-            clauseTables.add('Product')
             clauseTables.add('Project')
         if sync is not None:
             if len(query) > 0:
@@ -284,26 +287,28 @@ class SourceSourceSet(object):
             if len(query) > 0:
                 query = query + ' AND '
             query = query + 'SourceSource.autotested = 2'
-        if projecttext is not None:
+        if text is not None:
             if len(query) > 0:
                 query = query + ' AND '
             if 'Project' not in clauseTables:
                 query = query + """SourceSource.product = Product.id AND
-                               Product.project = Project.id AND"""
-            projecttext = quote( '%' + projecttext + '%' )
+                             ( Product.project IS NULL OR
+                               Product.project = Project.id ) AND"""
+            text = quote( '%' + text + '%' )
             query = query + """( ( Project.title ILIKE %s ) OR
                                  ( Project.shortdesc ILIKE %s ) OR
                                  ( Project.description ILIKE %s ) OR
                                  ( Product.title ILIKE %s ) OR
                                  ( Product.shortdesc ILIKE %s ) OR
                                  ( Product.description ILIKE %s ) )
-                                 """ % ( projecttext, projecttext,
-                                         projecttext, projecttext,
-                                         projecttext, projecttext )
+                                 """ % ( text, text,
+                                         text, text,
+                                         text, text )
             clauseTables.add('Project')
             clauseTables.add('Product')
         if len(query)==0:
             query = None
-        return SourceSource.select(query, clauseTables=clauseTables)
+        return SourceSource.select(query, distinct=True,
+                                   clauseTables=clauseTables)
 
 

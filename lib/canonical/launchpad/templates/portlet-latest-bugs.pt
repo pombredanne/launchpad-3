@@ -1,5 +1,5 @@
 <div class="portlet">
-    <h4>Latest Bugs:</h4>
+    <h4>Latest Malone Bugs:</h4>
 
     <div class="portletBody">
         <div class="portletContent even">
@@ -11,27 +11,21 @@
             </tr>
         </table>
 
-        <a tal:attributes="href string:/malone/projects/${context/project/name}"
-           style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
-           title="See project bug summary..."
-           tal:condition="context/project">
-            <img src="/++resource++add.gif" alt="+" />
-            Summary of Project Bugs
-        </a><br />
-
-        <a tal:attributes="href string:/malone/products/${context/name}"
-            style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
-            title="See all bugs for this product">
-            <img src="/++resource++add.gif" alt="+" />
-            More bugs...
-        </a><br />
-
         <a href="+filebug"
-            style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+            style="font-size: 85%; display: inline; clear: both; text-decoration: none;"
             title="File a bug on this product">
             <img src="/++resource++add.gif" alt="+" />
-            File A Bug
-        </a><br />
+            File Bug on <span
+            tal:replace="context/displayname">product</span><br />
+        </a>
+
+        <a tal:attributes="href string:/malone/products/${context/name}"
+           tal:condition="view/latestBugs"
+           style="font-size: 85%; display: inline; clear: both; text-decoration: none;"
+           title="See all bugs for this product">
+            <img src="/++resource++add.gif" alt="+" />
+            More <span tal:replace="context/displayname">product</span> bugs<br />
+        </a>
 
         </div>
                 

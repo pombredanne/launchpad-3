@@ -1,0 +1,175 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <title metal:fill-slot="title">Rosetta Translations:
+        <span tal:replace="context/title">product title</span></title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+        <div tal:replace="structure view/detailsPortlet" />
+        <div tal:replace="structure view/projectPortlet" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+    <h1>Rosetta Translation overview for
+        <span tal:replace="context/displayname">product
+        displayname</span></h1>
+
+    <p class="documentDescription" tal:content="context/shortdesc">
+        The product summary.
+    </p>
+
+    <!-- indicate if no templates are registered for this product that it is
+    possible to upload a po template -->
+    <tal:block condition="not: view/templates">
+
+        <p><span tal:replace="context/displayname">This product</span>
+        has not yet been setup for translation through Rosetta. If you have
+        the latest PO Template for <span
+        tal:replace="context/displayname">this product</span> then you can
+        upload it and start translating immediately. If not, you'll need to
+        ask the product maintainer, or lead translater, to upload it here,
+        then let you know that you can start translating.
+
+        <!-- the "add a template" link is in here because we don't really
+        want people to add multiple templates for the moment. so once there
+        is a template, don't display the link-->
+        <img src="/++resource++add.gif" />
+        <a href="+newpotemplate">Upload A PO Template</a>
+        </p>
+
+    </tal:block>
+
+    <tal:block condition="view/templates">
+
+        <p tal:condition="view/multitemplates">
+        Below is a list of translation templates for <span
+        tal:replace="context/displayname">this product</span>. Each
+        template has a different purpose: some might be templates for
+        specific releases, others might be for different vendors. Select the
+        template that you wish to work on, and begin translating!</p>
+
+        <div tal:condition="not: view/languages">
+
+            <ul>
+                <li tal:repeat="template context/potemplates">
+                    <a tal:attributes="href string:${template/name}/translate"
+                        tal:content="template/title">template</a></li>
+            </ul>
+        </div>
+
+        <p tal:condition="view/languages">We have determined a short
+        list of languages that you may be
+        interested in translating, and show the translation templates
+        status in each of those languages below:</p>
+
+        <div tal:condition="view/languages" tal:repeat="template view/templates">
+
+            <h2 tal:content="template/title">Template</h2>
+
+            <p tal:content="template/template/description">
+                Template description
+            </p>
+            
+            <table class="listing rowNavigation" width="100%">
+                <thead>
+                    <th>Language</th>
+                    <th>Done</th>
+                    <th>Todo</th>
+                    <th>Graph</th>
+                    <th>Lastest Contributor</th>
+                    <th>Last Edited</th>
+                </thead>
+
+                <tbody>
+                    <tr tal:repeat="language template/languages"
+                        tal:attributes="onclick
+                        string:window.location='${template/name}/translate?languages=${language/code}'">
+                        <a tal:attributes="href
+                            string:${template/name}/translate?languages=${language/code}">
+                        <td>
+                            <a tal:attributes="href
+                            string:${template/name}/translate?languages=${language/code}"
+                            tal:content="language/name">Language
+                            Name</a></td>
+                        <td tal:content="language/poTranslated">0</td>
+                        <td tal:content="language/poUntranslated">0</td>
+                        <td>
+                            <!-- Show an mdash if there is no graph -->
+                            <span tal:condition="not: language/poLen">&mdash;</span>
+
+                            <img src="/++resource++green-bar.png"
+                                height="10"
+                                vspace="5"
+                                alt="Translated Messages"
+                                tal:condition="language/poNonUpdatesCount"
+                                tal:attributes="width language/poNonUpdatesPercent;
+                                                title string: Translated: ${language/poNonUpdatesPercent}%"
+                            /><img src="/++resource++blue-bar.png"
+                                height="10"
+                                style="margin-top: 2px;"
+                                alt="Improved Message Translations"
+                                tal:condition="language/poUpdatesCount"
+                                tal:attributes="width language/poUpdatesPercent;
+                                                title string: Improved In Rosetta : ${language/poUpdatesPercent}%"
+                            /><img src="/++resource++purple-bar.png"
+                                height="10"
+                                style="margin-top: 2px;"
+                                alt="Newly Translated Messages"
+                                tal:condition="language/poRosettaCount"
+                                tal:attributes="width language/poRosettaPercent;
+                                                title string: New In Rosetta: ${language/poRosettaPercent}%"
+                            /><img src="/++resource++red-bar.png"
+                                height="10"
+                                style="margin-top: 2px;"
+                                alt="Untranslated Messages"
+                                tal:condition="language/poUntranslated"
+                                tal:attributes="width language/poUntranslatedPercent;
+                                                title string: Untranslated: ${language/poUntranslatedPercent}%" />
+                        </td>
+                        <td>
+                            <tal:block condition="language/lastChangedSighting">
+                                <span tal:content="language/lastChangedSighting/person/displayname" />
+                            </tal:block>
+                            <tal:block condition="not: language/lastChangedSighting">
+                                &mdash;
+                            </tal:block>
+                        </td>
+                        <td>
+                            <tal:block condition="language/lastChangedSighting">
+                                <span
+                                tal:content="language/lastChangedSighting/datelastactive/fmt:date"
+                                /> GMT
+                            </tal:block>
+                            <tal:block condition="not: language/lastChangedSighting">
+                                &mdash;
+                            </tal:block>
+                        </td>
+                            <!--
+                            XXX Dafydd Harries, 2004/11/22
+                            We should make PO files autovivify.
+                            -->
+                        </a>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+    </tal:block> <!-- condition="view/templates -->
+</div>
+
+</body>
+</html>

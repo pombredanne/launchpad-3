@@ -71,7 +71,7 @@
                                tal:condition="product/poUpdatesCount"
                                tal:attributes="width product/poUpdatesPercent;
                                                title string: Updates: ${product/poUpdatesPercent}%"
-                        /><img src="/++resource++dwelled-bar.png"
+                        /><img src="/++resource++purple-bar.png"
                                height="15"
                                alt="Rosetta additions graph"
                                tal:condition="product/poRosettaCount"

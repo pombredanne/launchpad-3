@@ -1,0 +1,30 @@
+<div class="portlet">
+
+    <h4>Rosetta Translations:</h4>
+
+    <div class="portletBody">
+
+        <div class="portletContent even">
+
+        <table class="rowNavigation" border="0">
+
+            <tr tal:repeat="template context/potemplates"
+
+                tal:attributes="onclick
+                string:window.location='/rosetta/products/${context/name}/${template/name}';">
+                <td tal:content="template/title">template title</td>
+            </tr>
+
+        </table>
+
+        <a tal:attributes="href string:/rosetta/products/${context/name}"
+            style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+            title="See all translations for this product">
+            <img src="/++resource++add.gif" alt="+" />
+            More...
+        </a><br />
+
+        </div>
+                
+    </div>
+</div>

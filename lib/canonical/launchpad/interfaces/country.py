@@ -1,20 +1,45 @@
-# Zope schema imports
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
-from zope.interface import Interface, Attribute
+
+from zope.i18nmessageid import MessageIDFactory
+_ = MessageIDFactory('launchpad')
+
+from zope.interface import Interface, Attribute, classImplements
+
+from zope.schema import Choice, Datetime, Int, Text, TextLine, Float
+from zope.schema.interfaces import IText, ITextLine
+
+from canonical.launchpad.fields import Summary, Title, Description
+from canonical.launchpad.validators.name import valid_name
+
 
 class ICountry(Interface):
-    """A Country."""
+    """The country description."""
 
-    iso3166code2 = Attribute("The ISO 3166 2 letter code for this country.")
+    id = Int(
+            title=_('Country ID'), required=True, readonly=True,
+            )
+    iso3166code2 = TextLine( title=_('iso3166code2'), required=True,
+                             readonly=True)
+    iso3166code3 = TextLine( title=_('iso3166code3'), required=True,
+                             readonly=True)
+    name = TextLine(
+            title=_('Country name'), required=True,
+            constraint=valid_name,
+            )
+    title = Title(
+            title=_('Country title'), required=True,
+            )
+    description = Description(
+            title=_('Description'), required=True,
+            )
 
-    iso3166code3 = Attribute("The ISO 3166 3 letter code for this country.")
 
-    name = Attribute("The name of this country.")
+# Interfaces for containers
+class ICountrySet(Interface):
+    """A container for countries."""
 
-    title = Attribute("The title to use for this country.")
+    def __getitem__(key):
+        """Get a country."""
 
-    description = Attribute("A description for this country.")
-
-    languages = Attribute("A list of languages spoken in this country.")
+    def __iter__():
+        """Iterate through the countries in this set."""
 

@@ -6,6 +6,7 @@
 
     <!-- Content class configuration -->
     <include file="branch.zcml" />
+    <include file="country.zcml" />
     <include file="project.zcml" />
     <include file="product.zcml" />
     <include file="productseries.zcml" />
@@ -47,5 +48,9 @@
     <!-- Event configuration -->
     <include file="bug-events.zcml" />
     <include file="bugactivity-subscriptions.zcml" />
+
+    <!-- Special Utilities -->
+    <include file="geoip.zcml" />
+
 
 </configure>

@@ -19,8 +19,8 @@
 
     <!--
     This tal:dummy block never turns into HTML, but it triggers the edit
-    method on the ViewProduct class. This checks to see if a form has been
-    submitted to it, and if so updates the product.
+    method on the Rosetta ProductView class. This checks to see if a form
+    has been submitted to it, and if so updates the product.
     -->
     <tal:dummy condition="view/edit" />
 

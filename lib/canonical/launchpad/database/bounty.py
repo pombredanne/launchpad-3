@@ -47,7 +47,7 @@ class Bounty(SQLBase):
 
     def checkPermission(self, principal, permission):
         if permission == 'launchpad.Edit':
-            return self.id == principal.id
+            return self.owner.id == principal.id
 
 
 class BountySet(object):
