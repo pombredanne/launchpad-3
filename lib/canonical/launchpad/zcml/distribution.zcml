@@ -38,7 +38,8 @@
         XXX: Daniel Debonzi 20050105 
         Does it still useful? don't we have enought and better 
         search places? 
-        -->
+	I will let it commented. If nobody ask to keep it I will 
+	remove this pages.
         <browser:page
             name="+sources"
             template="../templates/distro-sources.pt"
@@ -49,6 +50,7 @@
             template="../templates/binary-index.pt"
             lp:url="Soyuz/distros/$Distribution.name/+binaries"
             />
+        -->
 
 
 

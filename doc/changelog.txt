@@ -2,6 +2,40 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-24 18:52:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1245
+
+    Summary:
+      No broken page with sourcepackagerelease has a product but not a project. Closes dogfood bug #216; Comment out Soyuz deprecated pages. Will be removed soon if nobody ask to keep it.
+    Revision:
+      launchpad--devel--0--patch-1245
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-423
+       tar-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-424
+       star-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-425
+       No broken page with sourcepackagerelease has a product but not a project. Closes dogfood bug #216
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-426
+       Comment out Soyuz deprecated pages. Will be removed soon if nobody ask to keep it
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/sourcepackagerelease-index.pt
+     lib/canonical/launchpad/zcml/distribution.zcml
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-423
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-424
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-425
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-426
+
+
 2005-01-24 18:08:50 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1244
 
     Summary:

@@ -61,11 +61,16 @@
 
         <li><b>Project:</b>
 	   <tal:block tal:condition="context/sourcepackage/product">
-           <a tal:define="project context/sourcepackage/product/project"
-	      tal:content="project/displayname"
-	      tal:attributes="href string:/doap/projects/${project/name}">
-           Project</a>
-	   </tal:block>
+	     <tal:block tal:condition="context/sourcepackage/product/project">
+               <a tal:define="project context/sourcepackage/product/project"
+	        tal:content="project/displayname"
+	        tal:attributes="href string:/doap/projects/${project/name}">
+                Project</a>
+	     </tal:block>
+	     <i tal:condition="not:context/sourcepackage/product/project">
+	        No project available for this sourcepackage
+	     </i>
+           </tal:block>
 	   <i tal:condition="not:context/sourcepackage/product">
 	     No project available for this sourcepackage
 	   </i>
