@@ -29,6 +29,7 @@ class SubsystemOnlySession(session.SSHSession, object):
         return object.__getattribute__(self, name)
 
     def closeReceived(self):
+        # Without this, the client hangs when its finished transferring.
         self.loseConnection()
 
 
