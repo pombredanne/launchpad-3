@@ -345,6 +345,9 @@ class IPOMessageSet(Interface):
 
     sequence = Attribute("The ordering of this set within its file.")
 
+    def flags():
+        """Return a list of flags on this set."""
+
     def messageIDs():
         """Return an iterator over this set's message IDs."""
 

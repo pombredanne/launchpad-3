@@ -77,6 +77,26 @@ def request_languages(request):
 
     return codes_to_languages(codes)
 
+def parse_cformat_string(s):
+    '''Parse a printf()-style format string into a sequence of interpolations
+    and non-interpolations.'''
+    if s == '':
+        return ()
+
+    match = re.match('(%%|[^%])+', s)
+
+    if match:
+        t = match.group(0)
+        return (('string', t),) + parse_cformat_string(s[len(t):])
+
+    match = re.match('%[^diouxXeEfFgGcspn]*[diouxXeEfFgGcspn]', s)
+
+    if match:
+        t = match.group(0)
+        return (('interpolation', t),) + parse_cformat_string(s[len(t):])
+
+    raise ValueError(s)
+
 
 class ViewProjects:
     def newProjectSubmit(self):
@@ -672,7 +692,7 @@ class TranslatePOTemplate:
         else:
             return self._makeURL(offset = self.offset + self.count)
 
-    def _mungeMessageID(self, text):
+    def _mungeMessageID(self, text, flags):
         # Convert leading and trailing spaces on each line to open boxes.
 
         lines = []
@@ -689,24 +709,39 @@ class TranslatePOTemplate:
                 raise AssertionError(
                     "Regular expression that should always match didn't.")
 
+        for i in range(len(lines)):
+            if 'c-format' in flags:
+                line = ''
+
+                for segment in parse_cformat_string(lines[i]):
+                    type, content = segment
+
+                    if type == 'interpolation':
+                        line += ('<span class="interpolation">%s</span>'
+                            % content)
+                    elif type == 'string':
+                        line += content
+
+                lines[i] = line
+
         # Insert arrows and HTML line breaks at newlines.
 
         return '\n'.join(lines).replace('\n', u'\u21b5<br/>\n')
 
-    def _messageID(self, messageID):
+    def _messageID(self, messageID, flags):
         lines = count_lines(messageID.msgid)
 
         return {
             'lines' : lines,
             'isMultiline' : lines > 1,
             'text' : messageID.msgid,
-            'displayText' : self._mungeMessageID(messageID.msgid)
+            'displayText' : self._mungeMessageID(messageID.msgid, flags)
         }
 
     def _messageSet(self, set):
         messageIDs = set.messageIDs()
         isPlural = len(list(messageIDs)) > 1
-        messageID = self._messageID(messageIDs[0])
+        messageID = self._messageID(messageIDs[0], set.flags())
         translations = {}
 
         for language in self.languages:
@@ -715,7 +750,7 @@ class TranslatePOTemplate:
                 set.translationsForLanguage(language.code)
 
         if isPlural:
-            messageIDPlural = self._messageID(messageIDs[1])
+            messageIDPlural = self._messageID(messageIDs[1], set.flags())
         else:
             messageIDPlural = None
 

@@ -6,7 +6,7 @@ class NowUTC(object):
     def __sqlrepr__(self, dbName):
         return "CURRENT_TIMESTAMP AT TIME ZONE 'UTC'"
 UTCNOW = NowUTC() # All upper because this is the constants module
-nowUTC = UTC_NOW
+nowUTC = UTCNOW
 
 class Default(object):
     def __sqlrepr__(self, dbName):

@@ -278,7 +278,7 @@ class RosettaPOTemplate(SQLBase):
             query += ' AND sequence > 0'
 
         if isinstance(key, slice):
-            return RosettaPOMessageSet.select(query)[key]
+            return RosettaPOMessageSet.select(query, orderBy='sequence')[key]
 
         if not isinstance(key, unicode):
             raise TypeError(
@@ -604,6 +604,13 @@ class RosettaPOMessageSet(SQLBase):
         else:
             # this is a IPOFileMessageSet
             directlyProvides(self, interfaces.IEditPOFileMessageSet)
+
+    def flags(self):
+        if self.flagsComment is None:
+            return ()
+        else:
+            return [ flag for flag in
+                self.flagsComment.replace(' ', '').split(',') if flag != '' ]
 
     def messageIDs(self):
         return RosettaPOMessageID.select('''

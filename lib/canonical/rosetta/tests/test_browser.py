@@ -68,6 +68,9 @@ class DummyPOMessageSet:
     commentText = 'commentText'
     sourceComment = 'sourceComment'
 
+    def flags(self):
+        return []
+
     def messageIDs(self):
         return [DummyMessageID()]
 
@@ -202,6 +205,23 @@ def test_request_languages():
     'ja'
 
     >>> tearDown()
+    '''
+
+def test_parse_cformat_string():
+    '''
+    >>> from canonical.rosetta.browser import parse_cformat_string
+    >>> parse_cformat_string('')
+    ()
+    >>> parse_cformat_string('foo')
+    (('string', 'foo'),)
+    >>> parse_cformat_string('blah %d blah')
+    (('string', 'blah '), ('interpolation', '%d'), ('string', ' blah'))
+    >>> parse_cformat_string('%sfoo%%bar%s')
+    (('interpolation', '%s'), ('string', 'foo%%bar'), ('interpolation', '%s'))
+    >>> parse_cformat_string('%')
+    Traceback (most recent call last):
+    ...
+    ValueError: %
     '''
 
 def test_TranslatePOTemplate_init():
@@ -488,26 +508,26 @@ def test_TranslatePOemplate_mungeMessageID():
 
     First, do no harm.
 
-    >>> t._mungeMessageID(u'foo bar')
+    >>> t._mungeMessageID(u'foo bar', [])
     u'foo bar'
 
     Test replacement of leading and trailing spaces.
 
-    >>> t._mungeMessageID(u' foo bar')
+    >>> t._mungeMessageID(u' foo bar', [])
     u'\u2423foo bar'
-    >>> t._mungeMessageID(u'foo bar ')
+    >>> t._mungeMessageID(u'foo bar ', [])
     u'foo bar\u2423'
-    >>> t._mungeMessageID(u'  foo bar  ')
+    >>> t._mungeMessageID(u'  foo bar  ', [])
     u'\u2423\u2423foo bar\u2423\u2423'
 
     Test replacement of newlines.
 
-    >>> t._mungeMessageID(u'foo\\nbar')
+    >>> t._mungeMessageID(u'foo\\nbar', [])
     u'foo\u21b5<br/>\\nbar'
 
     And both together.
 
-    >>> t._mungeMessageID(u'foo \\nbar')
+    >>> t._mungeMessageID(u'foo \\nbar', [])
     u'foo\u2423\u21b5<br/>\\nbar'
 
     >>> tearDown()

@@ -14,6 +14,10 @@
     margin: 1em;
 }
 
+.interpolation {
+    background-color: #7090c0;
+}
+
 label.language-code {
     width: 6em;
 }
