@@ -2,6 +2,40 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-09 11:19:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1394
+
+    Summary:
+      Fixed bugs #185 and #188 from production's malone
+    Revision:
+      launchpad--devel--0--patch-1394
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-185--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1386
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-185--0--patch-1
+       Fixed the bug and added tests
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-185--0--patch-2
+       Merge with rocketfuel
+    
+
+    new files:
+     lib/canonical/launchpad/doc/.arch-ids/pomsgid.txt.id
+     lib/canonical/launchpad/doc/.arch-ids/potranslation.txt.id
+     lib/canonical/launchpad/doc/pomsgid.txt
+     lib/canonical/launchpad/doc/potranslation.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/pofile.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--bug-185--0--base-0
+     carlos.perello@canonical.com--2004/launchpad--bug-185--0--patch-1
+     carlos.perello@canonical.com--2004/launchpad--bug-185--0--patch-2
+
+
 2005-03-09 04:32:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1393
 
     Summary:

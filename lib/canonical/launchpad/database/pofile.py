@@ -824,8 +824,8 @@ class POMsgID(SQLBase):
         # contains values too large to index. Instead we search on its
         # hash, which *is* indexed
         r = POMsgID.select('sha1(msgid) = sha1(%s)' % quote(key))
-        assert len(r) in (0,1), 'Database constraint broken'
-        if len(r) == 1:
+        assert r.count() in (0,1), 'Database constraint broken'
+        if r.count() == 1:
             return r[0]
         else:
             # To be 100% compatible with the alternateID behaviour, we should
@@ -1644,8 +1644,8 @@ class POTranslation(SQLBase):
         # contains values too large to index. Instead we search on its
         # hash, which *is* indexed
         r = POTranslation.select('sha1(translation) = sha1(%s)' % quote(key))
-        assert len(r) in (0,1), 'Database constraint broken'
-        if len(r) == 1:
+        assert r.count() in (0,1), 'Database constraint broken'
+        if r.count() == 1:
             return r[0]
         else:
             # To be 100% compatible with the alternateID behaviour, we should

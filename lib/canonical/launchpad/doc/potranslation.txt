@@ -1,0 +1,11 @@
+POTranslation.byTranslation()
+=================
+
+Test that byTranslation is working:
+
+>>> from canonical.launchpad.database import POTranslation
+>>> created = POTranslation(translation="This is a launchpad test")
+>>> got = POTranslation.byTranslation("This is a launchpad test")
+>>> got == created
+True
+
