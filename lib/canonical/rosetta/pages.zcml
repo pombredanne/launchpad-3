@@ -63,7 +63,7 @@
   </pages>
 
   <pages for="canonical.rosetta.interfaces.IPOTemplate"
-         permission="zope.Public"
+         permission="launchpad.AnyPerson"
          class="canonical.rosetta.browser.TranslatePOTemplate"
          lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name">
     <page name="translate"
@@ -148,7 +148,7 @@
   </pages>
 
   <pages for="canonical.rosetta.interfaces.IRosettaApplication"
-         permission="zope.Public"
+         permission="launchpad.AnyPerson"
          class="canonical.rosetta.browser.ViewPreferences"
          >
     <page name="prefs"
