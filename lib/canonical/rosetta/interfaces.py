@@ -6,7 +6,7 @@ __metaclass__ = type
 
 
 from zope.interface import Interface, Attribute
-import canonical.database.doap as doap
+from canonical.launchpad.interfaces import IProject
 
 # Note: When creating a new interface here, the test generation script
 # (scripts/generate_sql_tests.py) should also be updated.
@@ -38,7 +38,7 @@ class IRosettaStats(Interface):
         last parsed it."""
 
 
-class IRosettaProject(IRosettaStats, doap.IProject):
+class IRosettaProject(IRosettaStats, IProject):
     """The rosetta interface to a project."""
 
     displayName = Attribute("The Project's name that will be showed.")

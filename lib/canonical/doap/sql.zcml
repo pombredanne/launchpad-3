@@ -1,0 +1,13 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser">
+
+    <content class=".browser.ProjectContainer">
+        <allow interface="canonical.interfaces.IProjectContainer" />
+    </content>
+
+    <utility
+        factory=".browser.ProjectContainer"
+        provides="canonical.interfaces.IProjectContainer" />
+
+</configure>

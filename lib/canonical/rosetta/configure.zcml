@@ -28,14 +28,14 @@
     -->
   <browser:suburl
       for="canonical.launchpad.interfaces.IRosettaApplication"
-      utility="canonical.database.doap.IProjects"
+      utility="canonical.launchpad.interfaces.IProjectSet"
       name="projects"
-      adaptwith="canonical.rosetta.domain.RosettaProjects"
+      adaptwith="canonical.rosetta.domain.RosettaProjectSet"
       />
 
 
-  <content class="canonical.rosetta.domain.RosettaProjects">
-    <allow interface="canonical.database.doap.IProjects" />
+  <content class="canonical.rosetta.domain.RosettaProjectSet">
+    <allow interface="canonical.database.doap.IProjectSet" />
   </content>
 
   <!-- Set the default view for the rosetta application, for projects and
@@ -46,7 +46,7 @@
       name="index"
       />
   <browser:defaultView
-      for="canonical.rosetta.domain.RosettaProjects"
+      for="canonical.rosetta.domain.RosettaProjectSet"
       name="index"
       />
   <browser:defaultView

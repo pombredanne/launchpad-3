@@ -7,7 +7,7 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.schema import TextLine, Int, Choice
 
-from canonical.database import DBProject
+from canonical.database import Project
 from canonical.database import Product
 from canonical.database import sqlbase
 
@@ -33,12 +33,12 @@ class FOAFApplicationView(object):
         if self.request.form.has_key('query'):
             # TODO: Make this case insensitive
             s = self.request.form['query']
-            self.results = DBProject.select(OR(
-                    CONTAINSSTRING(DBProject.q.name, s),
-                    CONTAINSSTRING(DBProject.q.displayname, s),
-                    CONTAINSSTRING(DBProject.q.title, s),
-                    CONTAINSSTRING(DBProject.q.shortdesc, s),
-                    CONTAINSSTRING(DBProject.q.description, s)
+            self.results = Project.select(OR(
+                    CONTAINSSTRING(Project.q.name, s),
+                    CONTAINSSTRING(Project.q.displayname, s),
+                    CONTAINSSTRING(Project.q.title, s),
+                    CONTAINSSTRING(Project.q.shortdesc, s),
+                    CONTAINSSTRING(Project.q.description, s)
                 ))
             self.noresults = not self.results
         else:
@@ -49,7 +49,7 @@ class ProjectContainer(object):
     """A container for Project objects."""
 
     implements(IProjectContainer)
-    table = DBProject
+    table = Project
 
     def __getitem__(self, name):
         try:
@@ -72,6 +72,6 @@ class ProjectContainer(object):
             q += """ AND lower(title) LIKE '%%%%' || %s || '%%%%'""" % (
                     sqlbase.quote(title.lower())
                     )
-        return DBProject.select(q)
+        return Project.select(q)
 
 

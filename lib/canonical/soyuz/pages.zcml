@@ -408,7 +408,7 @@
         lp:url="Soyuz/distros/$Distribution.name/$Release.name/source/index.html"
         />
 
-  <pages for="canonical.launchpad.interfaces.IProjects"
+  <pages for="canonical.launchpad.interfaces.IProjectSet"
          class="canonical.soyuz.browser.ViewProjects"
          permission="zope.Public">
     <page name="index.html"
@@ -425,7 +425,7 @@
           />
   </pages>
 
- <traverse for="canonical.launchpad.interfaces.IProjects" function="canonical.soyuz.browser.urlTraverseProjects" />
+ <traverse for="canonical.launchpad.interfaces.IProjectSet" function="canonical.soyuz.browser.urlTraverseProjects" />
 
 
   <pages for="canonical.launchpad.interfaces.IProject"

@@ -63,16 +63,16 @@
         />
     </content>
 
-    <content class="canonical.database.doap.DBProjects">
-        <allow interface="canonical.database.doap.IProjects" />
+    <content class="canonical.database.doap.ProjectSet">
+        <allow interface="canonical.database.doap.IProjectSet" />
     </content>
 
     <utility
-        factory="canonical.database.doap.DBProjects"
-        provides="canonical.database.doap.IProjects"
+        factory="canonical.database.doap.ProjectSet"
+        provides="canonical.database.doap.IProjectSet"
         />
 
-    <content class="canonical.database.doap.DBProject">
+    <content class="canonical.database.doap.Project">
         <allow interface="canonical.database.doap.IProject" />
     </content>
 

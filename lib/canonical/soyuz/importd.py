@@ -1,6 +1,6 @@
 """Soyuz
 
-(c) Canonical Software Ltd. 2004, all rights reserved.
+(c) Canonical Ltd. 2004
 """
 
 # Python standard library imports
@@ -17,21 +17,17 @@ from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
 from canonical.lp import dbschema
 from canonical.database.sqlbase import quote
 
-# interfaces
-from canonical.launchpad.interfaces import ISync, IProjects, IProduct, IProject, \
-                                           IProjects
+# Interfaces
+from canonical.launchpad.interfaces import IProjectSet, IProduct, IProject
+from canonical.launchpad.interfaces import Project as dbProject, Product \
+     as dbProduct
 
-# 
-from canonical.database.doap import DBProject as dbProject, Product as dbProduct
-
-#
-#
-#
+from canonical.soyuz.interfaces import ISync
 
 class Projects(object):
     """Stub projects collection"""
 
-    implements(IProjects)
+    implements(IProjectSet)
 
     def __init__(self):
         """"""

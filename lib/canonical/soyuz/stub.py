@@ -6,15 +6,7 @@
 __metaclass__ = type
 
 from zope.interface import implements
-
-from canonical.launchpad.interfaces import IPackages, IBinaryPackageSet, \
-                                           IProjects, IProject, IProduct, ISync, \
-                                           IBinaryPackage
-
-
-#
-#
-#
+from canonical.launchpad.interfaces import IPackages, IBinaryPackage, IBinaryPackageSet, IProjectSet, IProject, IProduct, ISync
 
 class Packages:
     """Stub packages collection"""
@@ -67,7 +59,7 @@ import canonical.rosetta.stub
 class Projects(object):
     """Stub projects collection"""
 
-    implements(IProjects)
+    implements(IProjectSet)
     _projects=[]
 
     def __init__(self):

@@ -7,7 +7,7 @@
   -->
 
   <!-- pages for the collection of projects -->
-  <pages for="canonical.rosetta.domain.RosettaProjects"
+  <pages for="canonical.rosetta.domain.RosettaProjectSet"
          permission="zope.Public"
          class="canonical.rosetta.browser.ViewProjects"
          lp:url="Rosetta/projects">
@@ -19,7 +19,7 @@
           lp:url="Rosetta/projects/+request" />
   </pages>
 
-  <traverse for="canonical.rosetta.domain.RosettaProjects"
+  <traverse for="canonical.rosetta.domain.RosettaProjectSet"
             getter="__getitem__"
             adaptwith="canonical.rosetta.domain.RosettaProject" />
 

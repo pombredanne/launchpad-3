@@ -11,7 +11,7 @@ from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
      RosettaPOMessageIDSighting
 from canonical.rosetta.pofile_adapters import MessageProxy, \
      TemplateImporter, POFileImporter
-from canonical.database.doap import DBProject
+from canonical.database.doap import Project
 import os
 import canonical.lp
 
@@ -34,7 +34,7 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
 
     def testTemplateImporter(self):
         try:
-            project = DBProject.selectBy(name = 'gnome')[0]
+            project = Project.selectBy(name = 'gnome')[0]
         except (IndexError, KeyError):
             import sys
             t, e, tb = sys.exc_info()
@@ -101,7 +101,7 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
 
     def testFileImporter(self):
         try:
-            project = DBProject.selectBy(name = 'gnome')[0]
+            project = Project.selectBy(name = 'gnome')[0]
         except (IndexError, KeyError):
             import sys
             t, e, tb = sys.exc_info()

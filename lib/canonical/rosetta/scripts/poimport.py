@@ -5,7 +5,7 @@ from zope.component.tests.placelesssetup import PlacelessSetup
 import canonical.lp
 from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
     RosettaProduct
-from canonical.database.doap import DBProjects
+from canonical.database.doap import ProjectSet
 from canonical.database.sqlbase import SQLBase
 from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
 from optparse import OptionParser
@@ -27,7 +27,7 @@ class PODBBridge(PlacelessSetup):
     def imports(self, person, file, projectName, productName, poTemplateName,
         languageCode=None):
         try:
-            project = DBProjects()[projectName]
+            project = ProjectSet()[projectName]
             product = RosettaProduct.selectBy(projectID = project.id,
                                               name=productName)[0]
         except (IndexError, KeyError):

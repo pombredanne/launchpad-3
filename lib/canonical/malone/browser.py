@@ -33,7 +33,6 @@ from canonical.database.foaf import IPerson
 from canonical.database.malone import \
         Bug, BugAttachment, BugExternalRef, BugSubscription, BugMessage, \
         ProductBugAssignment, SourcepackageBugAssignment
-from canonical.database.doap import DBProject
 from canonical.database.soyuz import Sourcepackage
 from canonical.database.foaf import Person, EmailAddress
 

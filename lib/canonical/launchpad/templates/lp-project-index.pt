@@ -5,11 +5,14 @@
 <body>
 
 <div metal:fill-slot="main">
+
     <h1 tal:content="context/title">Project Title</h1>
+
     <div class="documentDescription"
         tal:content="context/shortdesc">This is the project Short
         Description, which should be no longer than 72 characters,
-        but might be.</div>
+        although it might be.</div>
+
     <div tal:content="context/description">This is the Project Description,
     which is a much more substantial description of the project. It should
     be several paragraphs long, and give you a very clear insight into the
@@ -22,13 +25,19 @@
     products such as APR.</div>
 
     <h2>Products</h2>
+
+    <p>This project has the following products:</p>
+
     <div>
 	<ul tal:repeat="product context/products">
 		<li><a href="" tal:attributes="href product/name" 
-               tal:content="product/title">Product title</a></li>
+               tal:content="product/title">Product title</a><br />
+               <span tal:content="product/shortdesc">Product short
+               description goes here.</span></li>
 	</ul>
 	<a href="products+new">Add a product</a>
 	</div>
+
 </div>
 
 </body>

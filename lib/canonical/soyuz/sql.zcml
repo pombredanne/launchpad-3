@@ -263,7 +263,7 @@
 
 
   <content class="canonical.soyuz.importd.Projects">
-    <allow interface="canonical.database.doap.IProjects"/>
+    <allow interface="canonical.database.doap.IProjectSet"/>
   </content>
   
   <content class="canonical.soyuz.importd.SoyuzProject">

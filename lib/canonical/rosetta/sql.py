@@ -3,7 +3,7 @@
 from canonical.database.sqlbase import SQLBase, quote
 
 import canonical.rosetta.interfaces as interfaces
-from canonical.database.doap import IProject, IProjects
+from canonical.database.doap import IProject, IProjectSet
 from canonical.database.constants import nowUTC
 
 from sqlobject import ForeignKey, MultipleJoin, RelatedJoin, IntCol, \
@@ -66,7 +66,7 @@ class RosettaProduct(SQLBase):
     _table = 'Product'
 
     _columns = [
-        ForeignKey(name='project', foreignKey='DBProject', dbName='project',
+        ForeignKey(name='project', foreignKey='Project', dbName='project',
             notNull=True),
         StringCol(name='name', dbName='name', notNull=True, unique=True),
         StringCol(name='displayName', dbName='displayname', notNull=True),
@@ -1282,7 +1282,7 @@ class RosettaTranslationEffort(SQLBase):
     _columns = [
         ForeignKey(name='owner', foreignKey='RosettaPerson', dbName='owner',
             notNull=True),
-        ForeignKey(name='project', foreignKey='DBProject',
+        ForeignKey(name='project', foreignKey='Project',
             dbName='project', notNull=True),
         ForeignKey(name='categoriesSchema', foreignKey='RosettaSchema',
             dbName='categories', notNull=False),

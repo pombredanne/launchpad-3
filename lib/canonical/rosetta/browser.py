@@ -12,7 +12,7 @@ from xml.sax.saxutils import escape as xml_escape
 from zope.component import getUtility
 from zope.i18n.interfaces import IUserPreferredLanguages
 from canonical.rosetta.interfaces import ILanguages, IPerson
-from canonical.database.doap import IProjects
+from canonical.database.doap import IProjectSet
 from canonical.rosetta.sql import RosettaLanguage, RosettaPerson
 from canonical.rosetta.poexport import POExport
 from canonical.rosetta.pofile import POHeader
@@ -102,7 +102,7 @@ class ViewProjects:
     def newProjectSubmit(self):
         if "SUBMIT" in self.request.form:
             if self.request.method == "POST":
-                projects = getUtility(IProjects)
+                projects = getUtility(IProjectSet)
                 projects.new(
                     name=self.request.form['name'],
                     displayName=self.request.form['displayname'],
@@ -393,7 +393,7 @@ class TranslatorDashboard:
         self.person = IPerson(self.request.principal, None)
 
     def projects(self):
-        return getUtility(IProjects)
+        return getUtility(IProjectSet)
 
 
 class ViewPreferences:
@@ -480,7 +480,7 @@ class ViewSearchResults:
         self.context = context
         self.request = request
 
-        self.projects = getUtility(IProjects)
+        self.projects = getUtility(IProjectSet)
         self.queryProvided = 'q' in request.form and \
             request.form.get('q')
         self.query = request.form.get('q')

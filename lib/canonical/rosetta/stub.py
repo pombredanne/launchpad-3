@@ -6,7 +6,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 from zope.interface import implements
-from canonical.rosetta.interfaces import IProjects, IProject, IProduct
+from canonical.rosetta.interfaces import IProjectSet, IProject, IProduct
 from canonical.rosetta.interfaces import IPOTemplate, IPOFile, ILanguages
 from canonical.rosetta.interfaces import ILanguage
 from canonical.rosetta.interfaces import IPOTranslation, IPerson
@@ -14,7 +14,7 @@ from canonical.rosetta.interfaces import IPOTranslation, IPerson
 class Projects:
     """Stub projects collection"""
 
-    implements(IProjects)
+    implements(IProjectSet)
 
     def __init__(self):
         owner = Person()

@@ -7,7 +7,7 @@ import os, popen2
 
 from zope.component.tests.placelesssetup import PlacelessSetup
 import canonical.lp
-from canonical.database.doap import Product, DBProject
+from canonical.database.doap import Product, Project
 from canonical.rosetta.sql import RosettaPerson
 from optparse import OptionParser
 from datetime import datetime
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     if person is None:
         raise RuntimeError("The person %s does not exists." % options.owner)
 
-    project = DBProject.selectBy(name=options.project)[0]
+    project = Project.selectBy(name=options.project)[0]
     if project is None:
         raise RuntimeError("The Project %s does not exists." %
             options.project)

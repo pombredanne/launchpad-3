@@ -9,7 +9,7 @@ import unittest
 from zope.component import getService, servicenames
 from zope.component.tests.placelesssetup import PlacelessSetup
 from canonical.rosetta.interfaces import ILanguages
-from canonical.database.doap import DBProject
+from canonical.database.doap import Project
 from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
     RosettaProduct, RosettaLanguages
 from canonical.rosetta.poexport import POExport
@@ -159,7 +159,7 @@ class POExportTestCase(PlacelessSetup, unittest.TestCase):
 
     def testPoExportAdapter(self):
         try:
-            project = DBProject.selectBy(name = 'gnome')[0]
+            project = Project.selectBy(name = 'gnome')[0]
             product = RosettaProduct.selectBy(projectID = project.id, name = 'evolution')[0]
             poTemplate = RosettaPOTemplate.selectBy(productID = product.id, name='evolution-2.0')[0]
         except IndexError, e:
