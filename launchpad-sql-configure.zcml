@@ -13,6 +13,6 @@
   <include file="sql.zcml" package="canonical.lp" />
   <include file="sql.zcml" package="canonical.rosetta" />
   <include file="sql.zcml" package="canonical.malone" />
-  <!-- Failing import <include file="sql.zcml" package="canonical.soyuz" />-->
+  <include file="sql.zcml" package="canonical.soyuz" />
 
 </configure>

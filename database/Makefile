@@ -25,13 +25,14 @@ default:
 
 +launchpad-db +launchpad_test-db: +%-db: +pguser
 	@ echo '* create the $* database'
-	createdb $*
+	createdb -E UNICODE $*
 	touch $@
 
 launchpad launchpad_test: %: +%-db
 	@ echo '* create the $* database tables'
 	psql --file launchpad.sql $*
 	psql --file default.sql $*
+	psql --file ../lib/canonical/malone/populate.sql $*
 
 dropdb-launchpad dropdb-launchpad_test: dropdb-%: +%-db
 	@ echo '* remove the $* database'
