@@ -70,13 +70,21 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
         importer.doImport(self.pot)
         get_transaction().commit()
         # try a second time to see if it breaks
+        importer = TemplateImporter(poTemplate, XXXperson)
+        self.pot.seek(0)
         importer.doImport(self.pot)
-        msgid = poTemplate.messageSet(slice(1))[0].primeMessageID_
-        results = RosettaPOMessageSet.selectBy(
-            poTemplateID=poTemplate.id,
-            poFileID=None,
-            primeMessageID_ID=msgid.id)
-        assert results.count() == 1, results.count()
+        # check that there aren't duplicates in the db
+        get_transaction().commit()
+        RosettaPOMessageSet._connection.cache.clear()
+        for message in importer.parser.messages:
+            msgid = message._msgset.primeMessageID_
+            results = RosettaPOMessageSet.select('''
+                poTemplate = %d AND
+                poFile IS NULL AND
+                primeMsgID = %d
+                ''' % (poTemplate.id, msgid.id))
+            assert results.count() == 1, '%d message sets' % results.count()
+            assert results[0].sequence > 0
         return
         # TODO: add some code that actually tests the database
         # here is an attempt
@@ -134,7 +142,20 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
         importer.doImport(self.po)
         get_transaction().commit()
         # try a second time to see if it breaks
+        importer = POFileImporter(poFile, XXXperson)
+        self.po.seek(0)
         importer.doImport(self.po)
+        # check that there aren't duplicates in the db
+        RosettaPOMessageSet._connection.cache.clear()
+        for message in importer.parser.messages:
+            msgid = message._msgset.primeMessageID_
+            results = RosettaPOMessageSet.select('''
+                poTemplate = %d AND
+                poFile = %d AND
+                primeMsgID = %d
+                ''' % (poTemplate.id, poFile.id, msgid.id))
+            assert results.count() == 1, '%d message sets' % results.count()
+            assert results[0].sequence > 0
 
 
 def test_suite():
