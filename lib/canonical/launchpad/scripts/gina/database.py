@@ -71,8 +71,9 @@ class SQLThing:
                  % (table, ",".join(keys), ",".join(["%s"] * len(keys)))
         try:
             self._exec(query, data.values())
-        except:
+        except Exception, e:
             print "Bad things happened, data was %s" % data
+            print "Exception was: %s" % e
             raise
 
 class Katie(SQLThing):
@@ -83,10 +84,20 @@ class Katie(SQLThing):
 
     def getSourcePackageRelease(self, name, version):
         print "\t\t* Hunting for spr (%s,%s)" % (name,version)
-        return self._query_to_dict("""SELECT * FROM source, fingerprint
+        ret =  self._query_to_dict("""SELECT * FROM source, fingerprint
                                       WHERE  source = %s 
                                       AND    source.sig_fpr = fingerprint.id
                                       AND    version = %s""", (name, version))
+        if not ret:
+            print "\t\t* that spr didn't turn up. Attempting to find via ubuntu*"
+        else:
+            return ret
+
+        return self._query_to_dict("""SELECT * FROM source, fingerprint
+                                      WHERE  source = %s 
+                                      AND    source.sig_fpr = fingerprint.id
+                                      AND    version like '%subuntu%%'""", (name, version))
+        
     
     def getBinaryPackageRelease(self, name, version, arch):  
         return self._query_to_dict("""SELECT * FROM binaries, architecture, 
@@ -255,7 +266,11 @@ class Launchpad(SQLThing):
         }                                                          
         self._insert("sourcepackagerelease", data)
 
+
+    def publishSourcePackage(self, src):
         release = self.getSourcePackageRelease(src.package, src.version)[0]
+        component = self.getComponentByName(src.component)[0]
+        section = self.getSectionByName(src.section)[0]
 
         data = {
             "distrorelease":           self.distrorelease,
@@ -271,8 +286,8 @@ class Launchpad(SQLThing):
     # Build
     #
     #FIXME: DOn't use until we have the DB modification
-    def getBuild(self, name, version):
-        build_id = self.getBinaryPackage(name, version)
+    def getBuild(self, name, version, arch):
+        build_id = self.getBinaryPackage(name, version, arch)
         #FIXME: SELECT * is crap !!!
         return self._query("""SELECT * FROM build 
                               WHERE  id = %s;""", (build_id[0],))
@@ -283,12 +298,14 @@ class Launchpad(SQLThing):
                                 AND processor=%s""", (srcid,self.processor))[0]
 
     def createBuild(self, bin):
+        print "\t() hunting for spr with %s at %s" % (bin.source,bin.source_version)
         srcpkg = self.getSourcePackageRelease(bin.source, bin.source_version)
         if not srcpkg:
             # try handling crap like lamont's world-famous
             # debian-installer 20040801ubuntu16.0.20040928
             bin.source_version = re.sub("\.\d+\.\d+$", "", bin.source_version)
-            
+
+            print "\t() trying again with %s at %s" % (bin.source,bin.source_version)
             srcpkg = self.getSourcePackageRelease(bin.source,
                                                   bin.source_version)
             if not srcpkg:
@@ -335,7 +352,7 @@ class Launchpad(SQLThing):
         self._insert("binarypackagename", {"name": name})
        
     def createBinaryPackageFile(self, binpkg, alias):
-        bp = self.getBinaryPackage(binpkg.package,binpkg.version)
+        bp = self.getBinaryPackage(binpkg.package,binpkg.version,binpkg.architecture)
         #print bp
         data = {
         "binarypackage": bp[0],
@@ -347,10 +364,17 @@ class Launchpad(SQLThing):
     #
     # BinaryPackage
     #
-    def getBinaryPackage(self, name, version):
+    def getBinaryPackage(self, name, version, architecture):
+        print "Looking for %s %s for %s" % (name,version,architecture)
         bin_id = self.getBinaryPackageName(name)
         if not bin_id:
+            print "Failed to find the name"
             return None
+        if architecture == "all":
+            return self._query_single("""SELECT * from binarypackage WHERE
+                                         binarypackagename = %s AND
+                                         version = %s""", (bin_id[0][0], version))
+        #else:
         return self._query_single("""SELECT * from binarypackage, build
                                      WHERE  binarypackagename = %s AND 
                                             version = %s AND
@@ -398,13 +422,21 @@ class Launchpad(SQLThing):
             "provides":             bin.provides,
             "essential":            False,
             "installedsize":        bin.installed_size,
-            "licence":              licence
+            "licence":              licence,
+            "architecturespecific": True
         }
+        if bin.architecture == "all":
+            data["architecturespecific"] = False
         self._insert("binarypackage", data)
 
+
+    def publishBinaryPackage(self, bin):
         ## Just publish the binary as Warty DistroRelease
-        bin_id = self.getBinaryPackage(bin.package, bin.version)
-       
+        component = self.getComponentByName(bin.component)[0]
+        section = self.getSectionByName(bin.section)[0]
+        print "%s %s %s" % (bin.package, bin.version, bin.architecture)
+        bin_id = self.getBinaryPackage(bin.package, bin.version, bin.architecture)
+        print "%s" % bin_id
         data = {
            "binarypackage":     bin_id[0], 
            "component":         component, 
@@ -415,6 +447,21 @@ class Launchpad(SQLThing):
            "status": 2, ### Published !!!
         }
         self._insert("packagepublishing", data)
+
+    def emptyPublishing(self, source=False):
+        """Empty the publishing tables for this distroarchrelease"""
+        if source:
+            self._exec(
+                """DELETE FROM sourcepackagepublishing
+                         WHERE distrorelease = %s
+                
+                """ % self.distrorelease
+                )
+        self._exec(
+            """DELETE FROM packagepublishing
+            WHERE distroarchrelease = %s
+            """ % self.distroarchrelease
+            )
 
     #
     # People

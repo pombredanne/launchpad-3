@@ -37,7 +37,10 @@ def get_tagfiles(root, distrorelease, component, arch):
     binaries_zipped = os.path.join(root, "dists", distrorelease,
                                    component, "binary-%s" % arch,
                                    "Packages.gz")
-
+    di_zipped = os.path.join(root, "dists", distrorelease, component,
+                             "debian-installer", "binary-%s" % arch,
+                             "Packages.gz")
+    
     srcfd, sources_tagfile = tempfile.mkstemp()
     os.system("gzip -dc %s > %s" % (sources_zipped, sources_tagfile))
     srcfile = os.fdopen(srcfd)
@@ -46,11 +49,15 @@ def get_tagfiles(root, distrorelease, component, arch):
     os.system("gzip -dc %s > %s" % (binaries_zipped, binaries_tagfile))
     binfile = os.fdopen(binfd)
 
-    return srcfile, sources_tagfile, binfile, binaries_tagfile
+    difd, di_tagfile = tempfile.mkstemp()
+    os.system("gzip -dc %s > %s" % (di_zipped, di_tagfile))
+    difile = os.fdopen(difd)
+
+    return srcfile, sources_tagfile, binfile, binaries_tagfile, difile, di_tagfile
 
 def do_packages(source_map, bin_map, lp, kdb, keyrings, component, arch):
     try:
-        srcfile, src_tags, binfile, bin_tags = \
+        srcfile, src_tags, binfile, bin_tags, difile, di_tags = \
             get_tagfiles(package_root, distrorelease, component, arch)
 
         sources = apt_pkg.ParseTagFile(srcfile)
@@ -68,14 +75,28 @@ def do_packages(source_map, bin_map, lp, kdb, keyrings, component, arch):
             # source packages with the same name as binaries get descriptions
             if source_map.has_key(name):
                 source_map[name].description = binpkg.description
+
+        dibins = apt_pkg.ParseTagFile(difile)
+        while dibins.Step():
+            binpkg = BinaryPackageRelease(component=component,
+                                          filetype="udeb",
+                                          **dict(dibins.Section))
+            name = binpkg.package
+            bin_map[name] = binpkg
+            # source packages with the same name as binaries get descriptions
+            if source_map.has_key(name):
+                source_map[name].description = binpkg.description
+                
     finally:
         os.unlink(bin_tags)
         os.unlink(src_tags)
+        os.unlink(di_tags)
 
 def do_sections(lp, kdb):
     sections = kdb.getSections()
     for section in sections:
         lp.addSection( section[0] )
+        lp.commit()
 
 def do_arch(lp, kdb, bin_map, source_map):
     # Loop through binaries and insert stuff in DB. We do this as a
@@ -86,9 +107,10 @@ def do_arch(lp, kdb, bin_map, source_map):
     bins.sort()
     count = 0
     for name, binpkg in bins:
-        print "- Evaluating %s (%s, %s)" % (binpkg.package, 
+        print "- Evaluating %s (%s, %s) for %s" % (binpkg.package, 
                                             binpkg.component, 
-                                            binpkg.version)
+                                            binpkg.version,
+                                            binpkg.architecture)
         if not source_map.has_key(binpkg.source):
             # We check if we have a source package or else
             # binpkg.ensure_created() is going to die an ugly death
@@ -122,12 +144,21 @@ def do_arch(lp, kdb, bin_map, source_map):
             binpkg.ensure_created(lp)
         except:
             print "\t!! binarypackage addition threw an error."
+            sys.exit(0);
 
         count = count + 1
         if count == 10:
             lp.commit()
             count = 0
             print "* Committed"
+
+
+def do_publishing(pkgs, lp, source):
+    for name, pkg in pkgs.items():
+        if source:
+            lp.publishSourcePackage(pkg)
+        else:
+            lp.publishBinaryPackage(pkg)
 
 
 if __name__ == "__main__":
@@ -172,8 +203,26 @@ if __name__ == "__main__":
     for arch in archs:
         do_arch(lp[arch],kdb,bin_map[arch],source_map)
         lp[arch].commit()
-        lp[arch].close()
 
+    # Next empty the publishing tables...
+    print "@ Emptying publishing tables..."
+    src=True
+    for arch in archs:
+        lp[arch].emptyPublishing(src)
+        lp[arch].commit()
+        src=False
+
+    print "@ Publishing source..."
+    do_publishing(source_map, lp[archs[0]], True)
+    lp[archs[0]].commit()
+    
+    for arch in archs:
+        print "@ Publishing %s binaries..." % arch
+        do_publishing(bin_map[arch], lp[arch], False)
+        lp[arch].commit()
+    
+    for arch in archs:
+        lp[arch].close()
     kdb.commit()
     kdb.close()
 
