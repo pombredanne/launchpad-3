@@ -298,7 +298,7 @@
 
 
    <page for="canonical.soyuz.sql.PersonApp"
-	 permission="zope.Public"
+	 permission="launchpad.AnyPerson"
 	 name="index.html"
 	 class="canonical.soyuz.browser.PersonView"
          template="../launchpad/templates/person-index.pt"
@@ -337,6 +337,14 @@
 	template="../launchpad/templates/person-join.pt"
         lp:url="Soyuz/people/$person.id/+join"
 	name="+join"
+       />
+
+  <page for="canonical.soyuz.sql.PersonApp"
+        permission="launchpad.AnyPerson"
+	class="canonical.soyuz.browser.TeamUnjoinView"
+	template="../launchpad/templates/person-unjoin.pt"
+        lp:url="Soyuz/people/$person.id/+unjoin"
+	name="+unjoin"
        />
 
 

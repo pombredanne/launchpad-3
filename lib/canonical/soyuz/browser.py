@@ -219,14 +219,9 @@ class TeamJoinView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.results = []
-        self.permission = False
-
-    def join_action(self):
-        enable_join = False
-
         self.person = IPerson(self.request.principal)
-
+            
+    def join_action(self):
         ## XXX: (proposed+member) cprov 20041003
         ##  Join always as PROPOSED MEMBER 
         role = dbschema.MembershipRole.MEMBER.value
@@ -234,20 +229,43 @@ class TeamJoinView(object):
 
         if self.person:
             ##XXX: (uniques) cprov 20041003
-            self.results = Membership(personID=self.person.id,
-                                      team=self.context.id,
-                                      role=role,
-                                      status=status)
+            Membership(personID=self.person.id,
+                       teamID=self.context.id,
+                       role=role,
+                       status=status)
             
             ##XXX: (teamparticipation) cprov 20041003
             ## How to do it recursively as it is suposed to be,
             ## I mean flatten participation ...            
-            self.results = TeamParticipation(personID=self.person.id,
-                                             teamID=self.context.id)
+            TeamParticipation(personID=self.person.id,
+                              teamID=self.context.id)
+            return True
+        
+        return False
+
+class TeamUnjoinView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.person = IPerson(self.request.principal)
             
-            enable_join = True
-        return enable_join
+    def unjoin_action(self):
+
+        if self.person:            
+            teampart = TeamParticipation.selectBy(personID=self.person.id,
+                                                  teamID=self.context.id)[0]
+
+            membership = Membership.selectBy(personID=self.person.id,
+                                             teamID=self.context.id)[0]
+            teampart.destroySelf()
+            membership.destroySelf()
             
+            return True
+
+        return False
+        
+                    
 class PersonView(object):
     ## XXX:  cprov 20041101
     ## Use the already done malone portlet !!!!
@@ -267,6 +285,18 @@ class PersonView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self.person = IPerson(self.request.principal)
+        
+    def is_member(self):
+
+        if self.person and self.context.person.teamowner:
+
+            membership = Membership.selectBy(personID=self.person.id,
+                                                  teamID=self.context.id)
+            if membership.count() > 0:
+                return True
+        
+        return False
 
 class PersonPackagesView(object):
     packagesPortlet = ViewPageTemplateFile(

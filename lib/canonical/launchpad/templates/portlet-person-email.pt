@@ -1,4 +1,4 @@
-<fieldset> 
+<fieldset tal:condition="view/permission"> 
  <div>
    <h3>Email Engine</h3>
 

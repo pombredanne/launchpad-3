@@ -13,12 +13,12 @@
 <body>
 
 <div metal:fill-slot="main">
-    <h1>Team Joined</h1>
+    <h1>Team Unjoined</h1>
     
-     <div tal:condition="view/join_action">
+     <div tal:condition="view/unjoin_action">
         <p><a tal:attributes="href string:../${context/person/name}"
               tal:content="context/person/displayname">
-              TEAM</a> was Joined by 
+              TEAM</a> was Unjoined by 
 	      <a tal:attributes="href string:../${view/person/name}"
                  tal:content="view/person/displayname"></a>
      </div>
