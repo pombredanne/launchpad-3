@@ -23,9 +23,11 @@ from interfaces import \
         IBugMessagesView, IBugExternalRefsView, \
         IMaloneBug, IMaloneBugAttachment, \
         IBugContainer, IBugAttachmentContainer, IBugExternalRefContainer, \
-        IBugSubscriptionContainer, IProjectContainer, \
+        IBugSubscriptionContainer, \
         ISourcepackageContainer, IBugWatchContainer, \
         IProductBugAssignmentContainer, ISourcepackageBugAssignmentContainer
+
+from canonical.interfaces import IProjectContainer
 
 # TODO: Anything that relies on these imports should not be in this file!
 from canonical.database.malone import \

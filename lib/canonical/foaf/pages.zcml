@@ -1,0 +1,27 @@
+<configure
+    xmlns="http://namespaces.zope.org/browser"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:zope="http://namespaces.zope.org/zope"
+    xmlns:lp="http://launchpad.canonical.com">
+
+    <!-- pages for the foaf application -->
+    <pages
+        for="canonical.interfaces.IFOAFApplication"
+        permission="zope.Public"
+        class="canonical.foaf.browser.FOAFApplicationView"
+        lp:url="foaf">
+        <page name="+index"
+            template="../lp/templates/foaf-index.pt"
+            lp:url="foaf/+index" />
+        <page name="+about"
+            template="../lp/templates/foaf-about.pt"
+            lp:url="foaf/+about" />
+        <page name="+dashboard"
+            template="../lp/templates/foaf-dashboard.pt"
+            lp:url="foaf/+dashboard" />
+        <page name="+to-do"
+            template="../lp/templates/foaf-to-do.pt"
+            lp:url="foaf/+to-do" />
+    </pages>
+
+</configure>

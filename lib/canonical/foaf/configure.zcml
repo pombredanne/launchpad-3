@@ -1,0 +1,35 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    i18n_domain="foaf"
+    xmlns:i18n="http://namespaces.zope.org/i18n">
+
+  <!-- Content directives.  We need to make sure SubURLs and other kinds of
+       traversal work properly.  We also need to make security declarations.
+    -->
+  <content class="canonical.foaf.FOAFApplication">
+    <implements interface="canonical.publication.IHasSuburls" />
+  </content>
+
+  <!-- This view registers 'foaf' as a suburl of RootObject. -->
+  <browser:suburl
+      for="canonical.publication.RootObject"
+      class="canonical.foaf.FOAFApplication"
+      name="foaf" />
+
+  <browser:defaultView
+      for="canonical.interfaces.IFOAFApplication"
+      name="+index" />
+
+  <browser:suburl
+      for="canonical.interfaces.IFOAFApplication"
+      utility="canonical.interfaces.IProjectContainer"
+      permission="zope.Public"
+      name="projects" />
+
+  <include file="pages.zcml" />
+  <include file="forms.zcml" />
+  <include file="resources.zcml" />
+  <include file="vocabulary.zcml" />
+
+</configure>

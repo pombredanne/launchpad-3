@@ -23,12 +23,7 @@ SQLBase.initZopeless(__connection__)
 #
 # get the database access classes ready
 #
-import canonical.database.soyuz
-import canonical.database.doap
-import canonical.database.foaf
-import canonical.database.rosetta
-import canonical.database.malone
-import canonical.database.buttress
+import canonical.database
 
 
 

@@ -1,9 +1,21 @@
 # Copyright 2004 Canonical Ltd
 #
 # arch-tag: FA3333EC-E6E6-11D8-B7FE-000D9329A36C
-"""Comman database -> Python glue code.
+"""Common database access glue code.
 
-Interfaces and implementation will change when the data model changes -
-stable interfaces should be build on top of these
+Here you'll find the Interfaces and SQLObject classes that you can use
+to talk to the database. In general:
+
+  import canonical.database
+
+  canonical.database.Project.select('name="gnome"')
+  ... etc
 
 """
+
+from canonical.database.doap import *
+from canonical.database.foaf import *
+from canonical.database.soyuz import *
+from canonical.database.buttress import *
+from canonical.database.rosetta import *
+

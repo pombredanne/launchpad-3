@@ -29,7 +29,7 @@
 
   <browser:suburl
       for="canonical.malone.IMaloneApplication"
-      utility="canonical.malone.interfaces.IProjectContainer"
+      utility="canonical.interfaces.IProjectContainer"
       permission="zope.Public"
       name="projects" />
 
@@ -61,14 +61,6 @@
 
   <browser:defaultView
       for=".interfaces.IMaloneBugAttachment"
-      name="index" />
-
-  <browser:defaultView
-      for="canonical.malone.interfaces.IProjectContainer"
-      name="+search" />
-
-  <browser:defaultView
-      for="canonical.database.doap.IProject"
       name="index" />
 
   <browser:defaultView

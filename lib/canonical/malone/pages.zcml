@@ -71,17 +71,7 @@
             template="templates/attachment-index.pt" />
     </pages>
 
-  <pages for="canonical.malone.interfaces.IProjectContainer"
-         permission="zope.Public">
-    <page name="+search"
-          template="templates/projects-search.pt"
-          lp:url="malone/projects/+search" />
-  </pages>
-
-  <traverse for="canonical.malone.interfaces.IProjectContainer"
-            getter="__getitem__" />
-
-  <pages for="canonical.database.doap.IProject"
+  <pages for="canonical.database.IProject"
          permission="zope.Public">
     <page name="index"
           template="templates/project-index.pt"

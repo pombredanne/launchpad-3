@@ -85,7 +85,7 @@ class IBugWatchContainer(Interface):
     def __iter__():
         """Iterate through BugWatches for a given bug."""
 
-class IProjectContainer(Interface):
+class xIProjectContainer(Interface):
     """A container for IProject objects."""
 
     def __getitem__(key):

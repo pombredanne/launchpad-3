@@ -1,0 +1,16 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@launchpad_template/master"
+    i18n:domain="doap">
+<body>
+<div metal:fill-slot="main">
+    <tal:block condition="view/update" />
+
+    <h1>Welcome to DOAP!</h1>
+
+    <h1>Search Projects and Products</h1>
+
+</div>
+</body>
+</html>
+

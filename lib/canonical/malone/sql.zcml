@@ -88,12 +88,12 @@
         provides=".interfaces.IBugSubscriptionContainer" />
 
     <content class=".browser.ProjectContainer">
-        <allow interface=".interfaces.IProjectContainer" />
+        <allow interface="canonical.interfaces.IProjectContainer" />
     </content>
 
     <utility
         factory=".browser.ProjectContainer"
-        provides=".interfaces.IProjectContainer" />
+        provides="canonical.interfaces.IProjectContainer" />
 
     <content class=".browser.SourcepackageContainer">
         <allow interface=".interfaces.ISourcepackageContainer" />
