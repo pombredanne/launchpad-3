@@ -17,6 +17,10 @@
    <allow interface="canonical.launchpad.interfaces.IBinaryPackage" />
 </content>
 
+<browser:defaultView
+   for="canonical.launchpad.interfaces.IBinaryPackage"
+   name="+index" />
+
 <browser:traverse
    for="canonical.launchpad.database.BinaryPackage" 
    getter="__getitem__" />
@@ -25,9 +29,9 @@
    for="canonical.launchpad.database.BinaryPackage" 
    class="canonical.launchpad.browser.BinaryPackageView"
    permission="zope.Public"
-   name="index.html"
+   name="+index"
    template="../templates/binarypackage-index.pt"
-   lp:url="Soyuz/distros/$Distribution/$Distrorelease/$Archtag/$Bin/index.html"/>
+   lp:url="Soyuz/distros/$Distribution/$Distrorelease/$Archtag/$Bin/+index"/>
 
 
 <!-- BinaryPackageSet -->

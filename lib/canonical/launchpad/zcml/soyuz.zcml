@@ -10,6 +10,10 @@
         <allow interface="canonical.launchpad.interfaces.IDistroArchRelease"/>
     </content>
 
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistroArchRelease"
+        name="+index" />
+
     <browser:traverse
         for="canonical.launchpad.database.DistroArchRelease" 
         getter="__getitem__" />
@@ -17,10 +21,10 @@
     <browser:page
         for="canonical.launchpad.database.DistroArchRelease" 
         permission="zope.Public"
-        name="index.html"
+        name="+index"
         class="canonical.launchpad.browser.DistroArchReleaseBinariesView"
         template="../templates/binarypackage-list.pt"
-        lp:url="Soyuz/distros/$Distribution/$Distrorelease/$Archtag/index.html"/>
+        lp:url="Soyuz/distros/$Distribution/$Distrorelease/$Archtag/+index"/>
 
 
     <content class="canonical.launchpad.database.DistributionRole">

@@ -2,6 +2,33 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-07 15:02:52 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1377
+
+    Summary:
+      Removind remaning index.html from zcml files and changing to +index.
+    Revision:
+      launchpad--devel--0--patch-1377
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-449
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-450
+       Removind remaning index.html from zcml files and changing to +index.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/zcml/binarypackage.zcml
+     lib/canonical/launchpad/zcml/build.zcml
+     lib/canonical/launchpad/zcml/soyuz.zcml
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-449
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-450
+
+
 2005-03-07 13:21:01 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1376
 
     Summary:
