@@ -53,6 +53,9 @@
                   <a tal:attributes="href day/dayURL"
                      tal:content="day/date/day">1</a>
                 </div>
+                <div tal:condition="view/canAddEvents" class="cal-addlink">
+                  <a tal:attributes="href day/addURL">(add)</a>
+                </div>
                 <ul>
                   <li tal:repeat="event day/events">
                     <a tal:attributes="href string:../events/${event/event/id}/">
@@ -62,9 +65,6 @@
                     </a>
                   </li>
                 </ul>
-                <div tal:condition="view/canAddEvents">
-                  <a tal:attributes="href day/addURL">(add)</a>
-                </div>
                 </td>
                 <td tal:condition="not:daynum"></td>
               </tal:block>

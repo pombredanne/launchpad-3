@@ -350,3 +350,8 @@ Calendar stuff.
   font-weight: bold;
   background-color: #ff9;
 }
+
+.cal-addlink {
+  text-align: right;
+  font-size: smaller;
+}
