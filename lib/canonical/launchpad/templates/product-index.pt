@@ -63,18 +63,17 @@
 
         <h2>Distro Packages</h2>
 
-        <p>This shows you which distributions have packaged this product,
-        and allows you to navigate straight to the information about that
-        source package.</p>
+        <p>This shows you which distributions have packaged this product.</p>
 
-        <ul tal:repeat="package context/sourcepackages">
+		<p class="dummy">Ideally, this would allow you to navigate straight to
+		the information about that source package (by linking directly to the
+		source package in the distro).</p>
 
-            <li><a tal:content="package/name"
-	           tal:attributes="href string:/soyuz/distros/ubuntu/src/warty/${package/name}">$SourcePackage.name
-	    </a>
-	    </li>
-            
-        </ul>
+		<ul tal:repeat="distro context/packagedInDistros">
+			<li><a tal:content="distro/title"
+				tal:attributes="href string:/soyuz/distros/${distro/name}">$Distro.title
+				</a></li>
+		</ul>
 
     </div>
 

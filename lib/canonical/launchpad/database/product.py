@@ -184,4 +184,20 @@ class Product(SQLBase):
     def getRelease(self, version):
         return ProductRelease.selectBy(productID=self.id, version=version)[0]
 
+    def packagedInDistros(self):
+        # XXX: This function-local import is so we avoid a circular import
+        #   --Andrew Bennetts, 2004/11/07
+
+        # FIXME: The database access here could be optimised a lot, probably
+        # with a view.  Whether it's worth the hassle remains to be seen...
+        #  -- Andrew Bennetts, 2004/11/07
+        from canonical.launchpad.database import Distribution, DistroRelease
+        distros = Distribution.select(
+            "Packaging.product = Product.id AND "
+            "Packaging.sourcepackage = SourcePackage.id AND "
+            "Distribution.id = SourcePackage.distro ",
+            clauseTables=['Packaging', 'SourcePackage'],
+            orderBy='title',
+        )
+        return distros
 

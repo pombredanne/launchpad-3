@@ -100,3 +100,6 @@ class IProduct(Interface):
     def getRelease(version):
         """Returns the release for this product that has the version
         given."""
+
+    def packagedInDistros():
+        """Returns the distributions this product has been packaged in."""
