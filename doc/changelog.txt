@@ -2,6 +2,28 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-28 21:57:46 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1509
+
+    Summary:
+      Only display the email address of any person to logged in users. Added a 'Create New Team' link on the person's actions portlet.
+    Revision:
+      launchpad--devel--0--patch-1509
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-221
+       Only display the email address of any person to logged in users. Added a 'Create New Team' link on the person's actions portlet.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/person-index.pt
+     lib/canonical/launchpad/templates/portlet-person-actions.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-221
+
+
 2005-03-28 21:07:59 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1508
 
     Summary:
