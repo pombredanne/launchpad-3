@@ -199,11 +199,15 @@
        - first versioned release
 */
 
+/* Silence noise */
+set client_min_messages to error;
+
 /*
   DESTROY ALL TABLES
 */
--- remove 25/8/04
+SET client_min_messages TO fatal;
 DROP TABLE BugAttachmentContent;
+SET client_min_messages TO error;
 DROP TABLE ProductBranchRelationship;
 DROP TABLE PackageSelection;
 DROP TABLE SourcepackageBugAssignment;

@@ -1,3 +1,5 @@
+SET client_min_messages TO error;
+
 /*
  * Fixes for Malone bug watches
  */
@@ -5,7 +7,9 @@ ALTER TABLE BugSystem ADD COLUMN contactdetails text;
 
 -- Add a serial id to ProjectBugSystem
 ALTER TABLE ProjectBugSystem ADD COLUMN id integer;
+SET client_min_messages TO fatal;
 CREATE SEQUENCE projectbugsystem_id_seq;
+SET client_min_messages TO error;
 ALTER TABLE ProjectBugSystem ALTER COLUMN id SET NOT NULL;
 ALTER TABLE ProjectBugSystem ALTER COLUMN id 
     SET DEFAULT nextval('projectbugsystem_id_seq');
