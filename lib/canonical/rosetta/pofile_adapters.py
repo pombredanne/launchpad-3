@@ -402,13 +402,7 @@ class TemplateImporter(object):
             proxy.msgstrPlurals = plurals
             # set obsolete
             proxy.obsolete = kw.get('obsolete', False)
-        except:
-            # if we are to mask the original exception, we want to
-            # give a chance for the user to see it when debugging
-            from canonical.rosetta.pofile import DEBUG
-            if DEBUG:
-                import traceback
-                traceback.print_exc()
+        except (KeyError, IndexError):
             raise POInvalidInputError
         # Mao; return the results of our work
         return proxy
@@ -507,13 +501,7 @@ class POFileImporter(object):
             proxy.flags = kw.get('flags', ())
             # store obsolete
             proxy.obsolete = kw.get('obsolete', False)
-        except:
-            # if we are to mask the original exception, we want to
-            # give a chance for the user to see it when debugging
-            from canonical.rosetta.pofile import DEBUG
-            if DEBUG:
-                import traceback
-                traceback.print_exc()
+        except (KeyError, IndexError):
             raise POInvalidInputError
         # Mao; return the results of our work
         return proxy
