@@ -424,7 +424,7 @@ class View(object):
         
 class ViewProjects(View):
     def projects(self):
-        return iter(self.context.projects())
+        return iter(self.context)
     def handle_submit(self):
         if not self.request.form.get("Register", None)=="Register":
             return

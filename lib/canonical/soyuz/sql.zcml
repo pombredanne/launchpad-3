@@ -274,7 +274,15 @@
     <allow interface="canonical.database.doap.IProject"/>
   </content>
   
+  <content class="canonical.soyuz.importd.SoyuzProject">
+    <allow interface="canonical.database.doap.IProject"/>
+  </content>
+  
   <content class="canonical.database.doap.Product">
+    <allow interface="canonical.database.doap.IProduct"/>
+  </content>
+  
+  <content class="canonical.soyuz.importd.SoyuzProduct">
     <allow interface="canonical.database.doap.IProduct"/>
   </content>
   
