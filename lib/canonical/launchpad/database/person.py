@@ -5,20 +5,18 @@ __metaclass__ = type
 # Zope interfaces
 from zope.interface import implements
 from zope.component import ComponentLookupError, getUtility
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
 # SQL imports
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, SQLObjectNotFound
-from sqlobject import SQLObjectNotFound
-from canonical.database.sqlbase import SQLBase, quote
+from sqlobject import MultipleJoin, RelatedJoin, SQLObjectNotFound
+from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 
 # canonical imports
 from canonical.launchpad.interfaces import IPerson, IPersonSet, IEmailAddress
-from canonical.launchpad.interfaces import ILanguageSet
 from canonical.launchpad.interfaces import IPasswordEncryptor
 from canonical.launchpad.interfaces import ITeamParticipationSet
+from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 from canonical.launchpad.database.pofile import POTemplate
 from canonical.lp.dbschema import KarmaField
 from canonical.lp import dbschema
@@ -316,17 +314,22 @@ def createTeam(displayname, teamowner, teamdescription,
 
     return team
 
-    
+
 def personFromPrincipal(principal):
     """Adapt canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal
        to IPerson
     """
-    if IUnauthenticatedPrincipal.providedBy(principal):
+    if ILaunchpadPrincipal.providedBy(principal):
+        return Person.get(principal.id)
+    else:
+        # This is not actually necessary when this is used as an adapter
+        # from ILaunchpadPrincipal, as we know we always have an
+        # ILaunchpadPrincipal.
+        #
         # When Zope3 interfaces allow returning None for "cannot adapt"
         # we can return None here.
         ##return None
         raise ComponentLookupError
-    return Person.get(principal.id)
 
 def getPermission(user, context):
     """
