@@ -1309,7 +1309,7 @@ class BugPriority(DBSchema):
         ''')
 
     WONTFIX = Item(10, '''
-        Won't Fix
+        Wontfix
 
         The maintainer does not intend to fix this bug.
         ''')
@@ -1324,7 +1324,7 @@ class BugSeverity(DBSchema):
     """
 
     CRITICAL = Item(50, '''
-        Critical Severity
+        Critical
 
         This bug is essential to fix as soon as possible. It affects
         system stability, data integrity and / or remote access
@@ -1332,21 +1332,21 @@ class BugSeverity(DBSchema):
         ''')
 
     MAJOR = Item(40, '''
-        Major Severity
+        Major
 
         This bug needs urgent attention from the maintainer or
         upstream. It affects local system security or data integrity.
         ''')
 
     NORMAL = Item(30, '''
-        Normal Severity
+        Normal
 
         This bug warrants an upload just to fix it, but can be put
         off until other major or critical bugs have been fixed.
         ''')
 
     MINOR = Item(20, '''
-        Minor Severity
+        Minor
 
         This bug does not warrant an upload just to fix it, but 
         should if possible be fixed when next the maintainer does an

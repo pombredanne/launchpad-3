@@ -8,29 +8,9 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.lp import dbschema
 
-class IProductBugAssignmentContainer(Interface):
-    """A container for IProductBugAssignment objects."""
-
-    bug = Int(title=_("Bug id"), readonly=True)
-
-    def __getitem__(key):
-        """Get a ProductBugAssignment"""
-
-    def __iter__():
-        """Iterate through ProductBugAssignments for a given bug."""
-
-class ISourcePackageBugAssignmentContainer(Interface):
-    """A container for ISourcePackageBugAssignment objects."""
-
-    bug = Int(title=_("Bug id"), readonly=True)
-
-    def __getitem__(key):
-        """Get a SourcePackageBugAssignment"""
-
-    def __iter__():
-        """Iterate through SourcePackageBugAssignments for a given bug."""
-
-
+#
+# Bug Upstream Assignments
+#
 class IProductBugAssignment(Interface):
     """The status of a bug with regard to a product."""
 
@@ -42,6 +22,21 @@ class IProductBugAssignment(Interface):
     severity = Choice(title=_('Severity'), vocabulary='BugSeverity')
     assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
 
+
+class IProductBugAssignmentContainer(Interface):
+    """A container for IProductBugAssignment objects."""
+
+    bug = Int(title=_("Bug id"), readonly=True)
+
+    def __getitem__(key):
+        """Get a ProductBugAssignment"""
+
+    def __iter__():
+        """Iterate through ProductBugAssignments for a given bug."""
+
+#
+# Bug Assignments to Distro Packages
+#
 
 class ISourcePackageBugAssignment(Interface):
     """The status of a bug with regard to a source package."""
@@ -69,4 +64,17 @@ class ISourcePackageBugAssignment(Interface):
             vocabulary='BinaryPackageName'
             )
     assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
+
+
+class ISourcePackageBugAssignmentContainer(Interface):
+    """A container for ISourcePackageBugAssignment objects."""
+
+    bug = Int(title=_("Bug id"), readonly=True)
+
+    def __getitem__(key):
+        """Get a SourcePackageBugAssignment"""
+
+    def __iter__():
+        """Iterate through SourcePackageBugAssignments for a given bug."""
+
 

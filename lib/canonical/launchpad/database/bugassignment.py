@@ -31,6 +31,17 @@ class ProductBugAssignment(SQLBase):
                           default=None)
 
 
+class ProductBugAssignmentContainer(BugContainerBase):
+    """A container for ProductBugAssignment"""
+
+    implements(IProductBugAssignmentContainer)
+    table = ProductBugAssignment
+
+
+def ProductBugAssignmentFactory(context, **kw):
+    return ProductBugAssignment(bug=context.context.bug, **kw)
+
+
 class SourcePackageBugAssignment(SQLBase):
     """A relationship between a SourcePackage and a Bug."""
 
@@ -52,16 +63,6 @@ class SourcePackageBugAssignment(SQLBase):
     assignee = ForeignKey(dbName='assignee', foreignKey='Person',
                           default=None)
 
-
-class ProductBugAssignmentContainer(BugContainerBase):
-    """A container for ProductBugAssignment"""
-
-    implements(IProductBugAssignmentContainer)
-    table = ProductBugAssignment
-
-
-def ProductBugAssignmentFactory(context, **kw):
-    return ProductBugAssignment(bug=context.context.bug, **kw)
 
 class SourcePackageBugAssignmentContainer(BugContainerBase):
     """A container for SourcePackageBugAssignment"""
