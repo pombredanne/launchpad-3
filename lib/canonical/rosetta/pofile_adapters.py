@@ -121,7 +121,7 @@ class TranslationsList(object):
 
         # value is not empty; there is actually a translation
         # check that the plural form index makes sense
-        if index > self._nplurals:
+        if index >= self._nplurals:
             raise IndexError, index
         # if we're a template set, we can't have translations
         if self._msgset.poFile is None:
@@ -428,15 +428,28 @@ class POFileImporter(object):
 
     def store_header(self):
         "Store the info about the header in the database"
+        header = self.parser.header
         # if it's already stored, or not yet parsed, never mind
-        if self.header_stored or not self.parser.header:
+        if self.header_stored or not header:
             return
+        # check that the plural forms info is valid
+        if not header.nplurals:
+            print "No plural forms info!"
+            if self.pofile.pluralForms:
+                # first attempt: check if the database already knows it
+                old_header = POHeader(msgstr=self.pofile.header)
+                old_header.finish()
+                header['plural-forms'] = old_header['plural-forms']
+            else:
+                # we absolutely don't know it; only complain if
+                # a plural translation is present
+                header.pluralForms = 1
         # store it; use a single db operation
         self.pofile.set(
-            topComment=self.parser.header.commentText.encode('utf-8'),
-            header=self.parser.header.msgstr.encode('utf-8'),
-            headerFuzzy='fuzzy' in self.parser.header.flags,
-            pluralForms=self.parser.header.nplurals)
+            topComment=header.commentText.encode('utf-8'),
+            header=header.msgstr.encode('utf-8'),
+            headerFuzzy='fuzzy' in header.flags,
+            pluralForms=header.nplurals)
         # state that we've done so, or someone might give us a card
         self.header_stored = True
 

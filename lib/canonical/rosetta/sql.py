@@ -25,8 +25,7 @@ standardTemplateTopComment = '''# PO template for %(productname)s
 '''
 
 # XXX: project-id-version needs a version
-standardTemplateHeader = '''msgid ""
-msgstr ""
+standardTemplateHeader = (
 "Project-Id-Version: %(productname)s\n"
 "POT-Creation-Date: %(date)s\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -36,7 +35,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Rosetta-Version: 0.1\n"
-'''
+)
 
 standardPOFileTopComment = '''# %(languagename)s translation for %(productname)s
 # Copyright (c) %(copyright)s %(year)s
@@ -45,8 +44,7 @@ standardPOFileTopComment = '''# %(languagename)s translation for %(productname)s
 #
 '''
 
-standardPOFileHeader = '''msgid ""
-msgstr ""
+standardPOFileHeader = (
 "Project-Id-Version: %(productname)s\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
 "POT-Creation-Date: %(templatedate)s\n"
@@ -57,7 +55,8 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Rosetta-Version: 0.1\n"
-'''
+"Plural-Forms: nplurals=%(nplurals)d; plural=%(pluralexpr)s\n"
+)
 
 
 class xxxRosettaProjects(object):
@@ -493,6 +492,8 @@ class RosettaPOTemplate(SQLBase):
             #'templatedate': self.dateCreated.gmtime().Format('%Y-%m-%d %H:%M+000'),
             'templatedate': self.dateCreated,
             'copyright': self.copyright,
+            'nplurals': language.pluralForms or 1,
+            'pluralexpr': language.pluralExpression or '0',
             }
 
         return RosettaPOFile(poTemplate=self,
@@ -500,15 +501,15 @@ class RosettaPOTemplate(SQLBase):
                              headerFuzzy=True,
                              title='%(languagename)s translation for %(productname)s' % data,
                              description="", # XXX: fill it
-                             topComment=standardTemplateTopComment % data,
-                             header=standardTemplateHeader % data,
+                             topComment=standardPOFileTopComment % data,
+                             header=standardPOFileHeader % data,
                              lastTranslator=person,
                              currentCount=0,
                              updatesCount=0,
                              rosettaCount=0,
                              owner=person,
                              lastParsed="NOW",
-                             pluralForms=language.pluralForms or 0,
+                             pluralForms=data['nplurals'],
                              variant=variant)
 
     def createMessageSetFromMessageID(self, messageID):
