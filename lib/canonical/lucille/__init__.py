@@ -13,3 +13,5 @@ from canonical.lucille.publishing import Publisher
 from canonical.lucille.domination import Dominator
 # Configuration management
 from canonical.lucille.config import Config
+# Librarian wrapper
+from canonical.lucille.library import Librarian
