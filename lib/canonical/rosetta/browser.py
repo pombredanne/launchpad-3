@@ -29,7 +29,7 @@ def count_lines(text):
 def fake_person():
     # XXX: Temporary hack, to be removed as soon as we have the login template
     # working.
-    return RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
+    return RosettaPerson.selectBy(displayName='Foo Bar')[0]
 
 
 class ViewProjects:

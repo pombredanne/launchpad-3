@@ -146,6 +146,10 @@ class MessageProxy(POMessage):
             self._master_msgset = master_msgset
         self._who = person
         self._translations = TranslationsList(msgset, person)
+        self._pending_writes = {}
+
+    def flush(self):
+        self._msgset.set(**self._pending_writes)
 
     def _get_msgid(self):
         return self._msgset.primeMessageID_.msgid
@@ -200,7 +204,7 @@ class MessageProxy(POMessage):
     def _set_commentText(self, value):
         if value and value[-1] == '\n':
             value = value[:-1]
-        self._msgset.commentText = value
+        self._pending_writes['commentText'] = value
     commentText = property(_get_commentText, _set_commentText)
 
     def _get_sourceComment(self):
@@ -210,13 +214,13 @@ class MessageProxy(POMessage):
     def _set_sourceComment(self, value):
         if value and value[-1] == '\n':
             value = value[:-1]
-        self._msgset.sourceComment = value
+        self._pending_writes['sourceComment'] = value
     sourceComment = property(_get_sourceComment, _set_sourceComment)
 
     def _get_fileReferences(self):
         return self._master_msgset.fileReferences
     def _set_fileReferences(self, value):
-        self._msgset.fileReferences = value
+        self._pending_writes['fileReferences'] = value
     fileReferences = property(_get_fileReferences, _set_fileReferences)
 
     def _get_flags(self):
@@ -232,10 +236,10 @@ class MessageProxy(POMessage):
         value = list(value)
         if 'fuzzy' in value:
             value.remove('fuzzy')
-            self._msgset.fuzzy = True
+            self._pending_writes['fuzzy'] = True
         else:
-            self._msgset.fuzzy = False
-        self._msgset.flagsComment = self.flagsText(value, withHash=False)
+            self._pending_writes['fuzzy'] = False
+        self._pending_writes['flagsComment'] = self.flagsText(value, withHash=False)
     flags = property(_get_flags, _set_flags)
 
     def _get_obsolete(self):
@@ -246,7 +250,7 @@ class MessageProxy(POMessage):
         else:
             return self._master_msgset.sequence == 0
     def _set_obsolete(self, value):
-        self._msgset.obsolete = value
+        self._pending_writes['obsolete'] = value
     obsolete = property(_get_obsolete, _set_obsolete)
 
 
@@ -297,6 +301,7 @@ class TemplateImporter(object):
             plurals.append(inp_plural)
         proxy.msgstrPlurals = plurals
         proxy.obsolete = kw.get('obsolete', False)
+        proxy.flush()
         return proxy
 
 
@@ -344,4 +349,5 @@ class POFileImporter(object):
         if kw.get('msgstrPlurals'):
             proxy.msgstrPlurals = kw['msgstrPlurals']
         proxy.obsolete = kw.get('obsolete', False)
+        proxy.flush()
         return proxy

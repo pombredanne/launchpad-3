@@ -12,10 +12,28 @@
  */
 INSERT INTO Person ( displayname, givenname, familyname, password )
 VALUES ( 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín', 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U' );
+INSERT INTO EmailAddress (email, person, status)
+VALUES ('carlos@canonical.com',
+	(SELECT id FROM Person WHERE givenname='Carlos'),
+	2);
 INSERT INTO Person ( displayname, givenname, familyname, password )
 VALUES ( 'Dafydd Harries', 'Dafydd', 'Harries', 'EvSuSe4k4tkRHSp6p+g91vyQIwL5VJ3iTbRZ' );
+INSERT INTO EmailAddress (email, person, status)
+VALUES ('daf@canonical.com',
+	(SELECT id FROM Person WHERE givenname='Dafydd'),
+	2);
 INSERT INTO Person ( displayname, givenname, familyname, password )
 VALUES ( 'Lalo Martins', 'Lalo', 'Martins', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf' );
+INSERT INTO EmailAddress (email, person, status)
+VALUES ('lalo@canonical.com',
+	(SELECT id FROM Person WHERE givenname='Lalo'),
+	2);
+INSERT INTO Person ( displayname, givenname, familyname, password )
+VALUES ( 'Foo Bar', 'Foo', 'Bar', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf' );
+INSERT INTO EmailAddress (email, person, status)
+VALUES ('foo.bar@canonical.com',
+	(SELECT id FROM Person WHERE givenname='Foo'),
+	2);
 
 INSERT INTO Project ( owner, name, displayname, title, shortdesc, description, homepageurl )
 VALUES ((SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
