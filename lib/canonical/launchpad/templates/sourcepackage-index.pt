@@ -25,22 +25,31 @@ Find Source Package by Name:
 <br>
 <input type="text" name="name" tal:attributes="value request/name|nothing" />
 <input type="submit" value="Search"/>
+<div>
+  <label class="checkbox">
+    <input type="checkbox" name="fti"> Search also in description.
+  </label>
+</div>
 </form>
 <br><br>
 
 
-<h3> Browse Source Packages</h3>
-
-
   <tal:block tal:define="bn view/sourcePackagesBatchNavigator;
                          prev_url bn/prevBatchURL;
-                         next_url bn/nextBatchURL;">
+                         next_url bn/nextBatchURL;"
+	     tal:condition="request/name|nothing">
 
-  <table>
+  <table width="100%"
+         tal:define="currentBatch python:list(bn.currentBatch())">
     <tr>
-      <th>Source Packages</th>
+      <th tal:condition="currentBatch">
+         Source packages found
+      </th>
+      <th tal:condition="not:currentBatch">
+         <i>No Source packages found</i>
+      </th>
     </tr>
-    <tr tal:repeat="release python:list(bn.currentBatch())">      
+    <tr tal:repeat="release currentBatch">      
       <tal:dummy tal:define="package release">
       <td><a tal:content="string: ${package/name} : ${package/shortdesc}"
              tal:attributes="href package/name">PACKAGE</a>

@@ -1,0 +1,114 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+  <title metal:fill-slot="title">Members of
+    <span tal:replace="context/displayname">Name</span></title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Soyuz style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <tal:dummy tal:condition="view/formSubmitted" />
+
+  <div id="content" class="documentEditable">
+
+    <div class="documentContent" id="region-content">
+
+      <h1 tal:content="context/displayname">Name</h1>
+
+      <form name="edit_proposed" action="" method="POST">
+      <fieldset tal:define="members context/proposedmembers" 
+                tal:condition="members">
+        <legend>Members awaiting authorization</legend>
+        <table>
+          <tr tal:repeat="member members">
+            <td><input name="selected" type="checkbox" tal:attributes="value member/id" /></td>
+            <td><span tal:content="member/browsername" /></td>
+          </tr>
+        </table>
+
+        <div style="float: right">
+        <table>
+          <tr><td>
+            <select name="action">
+              <option value="authorize">Authorize</option>
+              <option value="notauthorize">Do not authorize</option>
+            </select>
+          </td>
+          <td>
+            <input type="submit" name="PROPOSED_MEMBERS_CHANGES" value="Submit">
+          </td></tr>
+        </table>
+        </div>
+      </fieldset>
+      </form>
+
+      <form name="edit_admins" action="" method="POST">
+      <fieldset tal:define="members context/administrators" 
+                tal:condition="members">
+      <legend>Administrators of this team</legend>
+        <table>
+          <tr tal:repeat="member members">
+            <td><input name="selected" type="checkbox" tal:attributes="value member/id" /></td>
+            <td><span tal:content="member/browsername" /></td>
+          </tr>
+        </table>
+
+        <div style="float: right">
+        <table>
+          <tr><td>
+            <select name="action">
+              <option value="revokeadmin">Revoke admin role</option>
+              <option value="removeadmin">Remove from team</option>
+            </select>
+          </td>
+          <td>
+            <input type="submit" name="ADMIN_CHANGES" value="Submit">
+          </td></tr>
+        </table>
+        </div>
+      </fieldset>
+      </form>
+
+      <form name="edit_members" action="" method="POST">
+      <fieldset tal:define="members context/members" 
+                tal:condition="members">
+      <legend>Members of this team</legend>
+        <table>
+          <tr tal:repeat="member members">
+            <td><input name="selected" type="checkbox" tal:attributes="value member/id" /></td>
+            <td><span tal:content="member/browsername" /></td>
+          </tr>
+        </table>
+
+        <div style="float: right">
+        <table>
+          <tr><td>
+            <select name="action">
+              <option value="giveadmin">Give admin role</option>
+              <option value="removemember">Remove from team</option>
+            </select>
+          </td>
+          <td>
+            <input type="submit" name="MEMBERS_CHANGES" value="Submit">
+          </td></tr>
+        </table>
+        </div>
+      </fieldset>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+
+</body>
+</html>

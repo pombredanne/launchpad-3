@@ -15,14 +15,6 @@
         newlayer="canonical.launchpad.layers.RosettaLayer"
         />
 
-    <browser:page
-        for="*"
-        permission="zope.Public"
-        name="main_template"
-        template="../launchpad/templates/rosetta-main-template.pt"
-        layer="canonical.launchpad.layers.RosettaLayer"
-        />
-
     <browser:defaultView
         for="canonical.launchpad.interfaces.IRosettaApplication"
         name="+index"
@@ -68,13 +60,6 @@
             template="../launchpad/templates/legal.pt"
             lp:url="Rosetta/legal" />
     </browser:pages>
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IRosettaApplication"
-        permission="launchpad.AnyPerson"
-        name="maintainer"
-        template="../launchpad/templates/dashboard-maintainer.pt"
-        lp:url="Rosetta/maintainer" />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IRosettaApplication"

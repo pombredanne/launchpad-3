@@ -45,7 +45,7 @@ class IDistribution(Interface):
 class IDistributionSet(Interface):
     """Interface for DistrosSet"""
 
-    def __iter__(self):
+    def __iter__():
         """Iterate over distributions."""
 
     def __getitem__(name):
@@ -53,4 +53,7 @@ class IDistributionSet(Interface):
 
     def count():
         """Return the number of distributions in the system."""
+
+class IDistroPackageFinder(Interface):
+    """A tool to find packages in a distribution."""
 

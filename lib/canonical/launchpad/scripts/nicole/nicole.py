@@ -1,41 +1,19 @@
 #!/usr/bin/env python
 from string import split
 from time import sleep
-from sys import argv, exit
 from re import sub
-from sourceforge import getProjectSpec
-from database import Doap
 from datetime import datetime
+from optparse import OptionParser
+import sys
+import os
 
-from apt_pkg import ParseTagFile
+#local imports
+from database import Doap
 
-import tempfile, os
+#Morgan's import
+import sourceforge 
+import rdfproj
 
-## DOAP is inside our current Launchpad production DB
-DOAPDB = "launchpad_dev"
-
-## USE ONLY ONE MODE !!!!!!!!!!!!!!
-## Update mode
-UPDATE = True
-
-## Insert mode
-INSERT = False
-package_root = "/ubuntu/"
-distrorelease = "hoary"
-component = "main"
-
-
-## Web search interval avoiding to be blocked by high threshould
-## of requests reached by second
-SLEEP = 20
-
-## Entries not found
-LIST = 'nicole_notfound'
-
-sf = 0
-fm = 0
-both = 0
-skip = 0
 
 def clean_list():
     print """Cleaning 'Not Found' File List"""
@@ -50,265 +28,249 @@ def append_list(data):
     f.write('%s\n' % data)
     f.close()
 
-def get_current_packages():
-    packagenames = []
 
-    print '@ Retrieve SourcePackage Information From Soyuz'
+def merge_data(pref, sup):
+    ##iter through the suplementar keys 
+    for key in sup.keys():
+        ## if there is something new, add new key
+        if key not in pref.keys():
+            pref[key] = sup[key]
+        ## if the preffered value is None 
+        elif sup[key] and not pref[key] :
+            pref[key] = sup[key]
+        ## Otherwise keep the preffered
+        else:
+            pass
 
-    index = 0
-    
-    ## Get SourceNames from Sources file (MAIN)
-    sources_zipped = os.path.join(package_root, "dists", distrorelease,
-                                  component, "source", "Sources.gz")
-    srcfd, sources_tagfile = tempfile.mkstemp()
-    os.system("gzip -dc %s > %s" % (sources_zipped,
-                                    sources_tagfile)) 
-    sources = ParseTagFile(os.fdopen(srcfd))
-    while sources.Step():        
-        packagenames.append(sources.Section['Package'])
-        index += 1
-
-    print '@ %d SourcePackages from Soyuz' % index        
-    return index, packagenames
-
+    return pref
 
 def grab_web_info(name):
-    print '@ Looking for %s on Sourceforge' % name    
-    try:
-        data_sf = getProjectSpec(name)
-        print '@\tFound at Sourceforge'        
-    except:
-        print '@\tNot Found'
-        data_sf = None
+    datas = {}
 
-    print '@ Looking for %s on FreshMeat' % name        
-    try:
-        data_fm = getProjectSpec(name, 'fm')
-        print '@\tFound at FreshMeat'
-    except:
-        print '@\tNot Found'
-        data_fm = None
-            
-    return data_sf, data_fm
+#     repositories = (('sf', 'Sourceforge'),
+#                     ('fm', 'Freshmeat'))
 
-def grab_for_product(data, project, name):
-    if project == name:
-        doap.ensureProduct(project, data, name)
-        print '@\tCreating a Default Product'
+    repositories = (('fm', 'Freshmeat'),)
+
+    for short, desc in repositories:
+
+        print '@ Looking for %s on %s in WEB' % (name, desc)
+        try:
+            data = sourceforge.getProductSpec(name, short)
+            print '@\tFound at %s' % desc        
+        except sourceforge.Error:
+            data = {}
+            print '@\tNot Found'
+        datas[short] = data
+
+    return datas['fm']
+#    return merge_data(datas['fm'], datas['sf'])
+
+def grab_rdf_info(path, name):
+    print '@ Looking for %s on FM RDF' % (name)
+    data = rdfproj.getProductSpec(path, name)
+
+    if data is None:
+        print '@\tNot Found'
         return
 
-    data_sf, data_fm = grab_web_info(name)        
-
-    if data_sf:
-        doap.ensureProduct(project, data_sf, name)
-        print '@\tCreating Sourceforge Product'        
-    elif data_fm:
-        doap.ensureProduct(project, data_fm, name)
-        print '@\tCreating a FreshMeat Product'
-    else:
-        print '@\tNo Product Found for %s' % name
-
-def name_filter(package):
-    ## split the package name by '-' and use just the first part
-    name = split(package, '-')[0]        
+    print '@\tFound at FM RDF'
+    return data
     
-    ## XXX (project+valid_name) cprov 20041013
-    ## for god sake !!! we should avoid names shorter than 3 (!!)
-    ## chars 
-    if len(name) < 3:
-        name = package.replace('-', '')
-        
-    print '@ Proposed Project name %s'% name
+def createorupdate(doap, productname, source, path, packagename=None,
+                   distroname=None, ownername=None, force=None):
 
-    return name
-
-def updater(doap, product_name):
-    global fm, sf, both
-
-    data_sf, data_fm = grab_web_info(product_name)
-
-    if data_sf and not data_fm:
-        ##present_data(data_sf)            
-        sf +=1            
-        doap.updateProduct(data_sf, product_name)
-    elif data_fm and not data_sf:
-        ##present_data(data_fm)
-        fm += 1
-        doap.updateProduct(data_fm, product_name)
-    elif data_sf and data_fm:
-        ##present_data(data_sf)
-        ##present_data(data_fm)
-        both += 1
-        ## Do we really preffer sourceforge ???
-        doap.updateProduct(data_sf, product_name)
+    if source == 'web':
+        data = grab_web_info(productname)
     else:
-        print '@\tNo Product Found for %s' % product_name
-        append_list(product_name)                
+        data = grab_rdf_info(path, productname)
 
-def inserter(doap, product_name):
-    global fm, sf, both
+    if data or force:
+        doap.ensureProduct(data, productname, ownername=ownername)
 
-    data_sf, data_fm = grab_web_info(product_name)
-
-    if data_sf and not data_fm:
-        ##present_data(data_sf)            
-        sf +=1            
-        doap.ensureProduct(None, data_sf,None)
-    elif data_fm and not data_sf:
-        ##present_data(data_fm)
-        fm += 1
-        doap.ensureProduct(None, data_fm, None)
-    elif data_sf and data_fm:
-        ##present_data(data_sf)
-        ##present_data(data_fm)
-        both += 1
-        ## Do we really preffer sourceforge ???
-        doap.ensureProduct(None, data_sf, None)
+        if packagename:
+            if not doap.ensurePackaging(productname, packagename, distroname):
+                print '@\tNo Package Found for %s' % packagename
+                append_list('No Package ' + packagename)                
+                
     else:
-        print '@\tNo Product Found for %s' % product_name
-        append_list(product_name)                
-
-    
-def grabber(package, name):
-    ##for god sake again ...
-    global fm, sf, both
-    
-    data_sf, data_fm = grab_web_info(name)        
-            
-    if data_sf and not data_fm:
-        ##present_data(data_sf)            
-        sf +=1            
-        doap.ensureProject(data_sf)
-        ## Partially Commit DB Project Info
-        doap.commit()
-        grab_for_product(data_sf, name, package)
-        
-    elif data_fm and not data_sf:
-        ##present_data(data_fm)
-        fm += 1
-        doap.ensureProject(data_fm)
-        ## Partially Commit DB Project Info
-        doap.commit()
-        grab_for_product(data_fm, name, package)
-        
-    elif data_sf and data_fm:
-        ##present_data(data_sf)
-        ##present_data(data_fm)
-        both += 1
-        doap.ensureProject(data_sf)
-        ## Partially Commit DB Project Info
-        doap.commit()
-        grab_for_product(data_fm, name, package)    
-        
-    else:
-        print '@\tNo Product Found for %s' % name
-        append_list(package)                
-        
-
-def present_data(data):
-    print '========================================================'
-    for item in data.keys():
-        print item + ':', data[item] 
-    print '========================================================'
+        print '@\tNo Product Found for %s' % productname
+        append_list('No Product ' + productname)                
 
 
 if __name__ == "__main__":
+    # Parse the commandline...
+    parser = OptionParser()
+    ## Select the available Mode to run nicole
+    ## Create -> create from a given name list
+    ## Update -> update products with AutoUpdate & Reviewed ON
+    parser.add_option("-m", "--mode", dest="mode",
+                      help="Operation mode ['create', 'update']",
+                      metavar="MODE",
+                      default="")
+    ## Initial file list containing suggested product names
+    ## line by line
+    parser.add_option("-f", "--file", dest="filename",
+                      help="Product Name List",
+                      metavar="FILE",
+                      default="source_list")
+    ## Data source WEB (HTML parser) or RDF (splited RDF files)
+    parser.add_option("-s", "--source", dest="source",
+                      help="Data Source ['web', 'rdf']",
+                      metavar="SRC",
+                      default="rdf")
+    ## DOAP is inside our current Launchpad production DB
+    parser.add_option("-d", "--database", dest="doapdb",
+                      help="DOAP Database name",
+                      metavar="DBNAME",
+                      default="launchpad_dev")
+    ## DOAP DB host 
+    parser.add_option("-H", "--host", dest="dbhost",
+                      help="DOAP Database Host",
+                      metavar="HOST",
+                      default="localhost")
+    ## Web search interval avoiding to be blocked by high threshould
+    ## of requests reached by second
+    parser.add_option("-w", "--wait", dest="wait",
+                      help="Interval in seconds",
+                      metavar="TIME",
+                      default="10")
+    ## Where Not Found Entries will be stored
+    parser.add_option("-l", "--list", dest="listfile",
+                      help="Not Found list file",
+                      metavar="FILE",
+                      default="nicole_notfound")
+    ## Commit in DB or not
+    parser.add_option("-n", "--dry-run", dest="dry_run",
+                      help="don't commit changes to database",
+                      default=False, action='store_true')
+
+    parser.add_option("-F", "--force", dest="force",
+                      help="Force the creation of the Objects",
+                      default=False, action='store_true')
+
+    parser.add_option("-p", "--package", dest="package",
+                      help="Two columms format list",
+                      default=False, action='store_true')
+    ## Provide a distribution name for packaging
+    parser.add_option("-D", "--distro", dest="distro",
+                      help="Distribution name for Packaging",
+                      metavar="DISTRO",
+                      default="ubuntu")
+    ## Provide a default owner name
+    parser.add_option("-o", "--owner", dest="owner",
+                      help="Default product owner name",
+                      metavar="OWNER",
+                      default="doap")
+    ## set the xml directory
+    parser.add_option("-P", "--path", dest="path",
+                      help="Directory containing the xml files",
+                      metavar="PATH",
+                      default="freshmeat")
+
+    
+    (options,args) = parser.parse_args()
+
+    mode = options.mode
+    filename = options.filename
+    source = options.source
+    DOAPDB = options.doapdb
+    DBHOST = options.dbhost
+    DISTRO = options.distro
+    WAIT = int(options.wait)
+    LIST = options.listfile
+    DRY = options.dry_run
+    FORCE = options.force
+    PKG = options.package
+    OWNER = options.owner
+    PATH = options.path
+    
     # get the DB abstractors
-    doap = Doap(DOAPDB)
+    doap = Doap(DBHOST, DOAPDB)
 
-    if len(argv) > 1:
-        mode = argv[1][1:]
-    else:
-        mode = 'h'
-
-    print '\t\tWelcome to Nicole'
-    print 'An Open Source Project Information Finder'
+    print '=================================='
+    print 'Nicole: Product Information Finder'
+    print '=================================='
+    print '\tMode:', mode
+    if mode == 'create':
+        print '\tList:', filename
+    print '\tSource:', source
+    print '\tDOAP:', DOAPDB
+    print '\tDISTRO:', DISTRO
+    print '\tWait:', WAIT, 's'
+    print '\tNotFOUND:', LIST
+    print '\tDRY-RUN:', DRY
+    print '\tFORCE:', FORCE
+    print '\tPKG:', PKG
+    print '\tPATH:', PATH
+    print '=================================='
+    print ''
+    
+    if mode == 'create':
+        # test file list 
+        if not os.access(filename, os.F_OK):
+            print "Source list not found:", filename
+            sys.exit(1)
+            
+        f = open(filename, 'r')
+        products = f.read().strip().split('\n')
+        #print products
+        tries = len(products)
         
+    elif mode == 'update':
+        tries, products = doap.getProductsForUpdate()
+        #print products
+
+    elif not mode:
+        # clean exit 
+        print 'No MODE select'
+        sys.exit(0)        
+    else:
+        # clean exit 
+        print 'MODE not implemented: ', mode
+        sys.exit(0)
+
+    if not os.access(PATH, os.F_OK):
+        print 'PATH is wrong: ', PATH
+        sys.exit(0)
+
     index = 0
     clean_list()
-    
-    if mode == 'o':
-        print 'Running OLD mode'
-        tries, packages = get_current_packages()
-    
-        for package in packages:
-            index += 1
-            print ' '
-            print '@ Grabbing Information About the %s (%d/%d)'% (package,
-                                                                  index,
-                                                                  tries)
-            name = name_filter(package)
-            
-            if not doap.getProject(name):
-                
-                ## Grab data 
-                grabber(package, name)            
-                ## Partially Commit DB Product Info
-                doap.commit()            
-                ##It should prevent me to be blocked again by SF
-                sleep(SLEEP)
-            else:
-                print '@\tSkipping it, Already included'
-                skip += 1
 
-    elif mode == 'i':
-        print 'Running INSERT mode'        
-        if len(argv) < 3:
-            exit("Not enough Arguments")
+    # main looping
+    for product in products:
+        index += 1
+
+        if PKG:
+            try:                
+                productname, packagename = product.split()
+            except ValueError:
+                print 'Wrong List Format use:'
+                print 'PRODUCT SRC'
+                print 'PRODUCT SRC'
+                print '...'
+                sys.exit(1)
         else:
-            f = open(argv[2], 'r')
-            products = f.read().strip().split('\n')
-            print products
-            tries = len(products)
+            # get always the first token, so the list format is compatible
+            # for both procedures (do packaging or not)
+            productname =  product.split()[0]
+            packagename = None
+
+        print ' '
+        print '@ Search for "%s" (%d/%d)' % (productname,
+                                             index,
+                                             tries)
+    
+        createorupdate(doap, productname, source, PATH,
+                       packagename=packagename, distroname=DISTRO,
+                       ownername=OWNER, force=FORCE)
+
+        ## If permitted, partially Commit DB Product Info
+        if not DRY:
+            doap.commit()            
+
+        ## We sleep to avoid overloading SF or FM servers
+        sleep(WAIT)
  
-        for product in products:
-            index += 1
-            print ' '
-            print '@ Grabbing Information About the %s (%d/%d)'% (product,
-                                                                  index,
-                                                                  tries)
-            updater(doap, product)
-            ## Partially Commit DB Product Info
-            doap.commit()            
-            ##It should prevent me to be blocked again by SF
-            sleep(SLEEP)
-           
-                
-    elif mode == 'u':
-        print 'Running UPDATE mode'        
-        tries, products = doap.getProductsForUpdate()
-        
-        for product in products:
-            index += 1
-            print ' '
-            print '@ Grabbing Information About the %s (%d/%d)'% (product[3],
-                                                                  index,
-                                                                  tries)
-            updater(doap, product[3])
-            ## Partially Commit DB Product Info
-            doap.commit()            
-            ##It should prevent me to be blocked again by SF
-            sleep(SLEEP)
-
-    elif mode == 'h':
-        print 'Usage:'
-        print 'nicole.py -o         OLD MODE, Fill DOAP from'
-        print '                     Package Archive'
-        print 'nicole.py -i <file>  INSERT MODE, insert products'
-        print '                     from a file list'
-        print 'nicole.py -u         UPDATE MODE, update products'
-        print '                     with autoupdate AND reviewed == True'
-        exit("See the Usage")
-
-        
-    fail = tries - (sf + fm + both + skip)
-
     doap.close()
-
-    print '@\t\tSourceforge (only) %d' % sf
-    print '@\t\tFreshMeat (only)   %d' % fm
-    print '@\t\tBoth               %d' % both
-    print '@\t\tFailures           %d' % fail
-    print '@\t\tSkips:             %d' % skip
-    print '@\t\tTries:             %d' % tries
-    print '@ Thanks for using Nicole'
+    print 'Thanks for using Nicole'

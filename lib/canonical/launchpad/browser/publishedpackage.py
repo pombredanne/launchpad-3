@@ -5,6 +5,7 @@ __metaclass__ = type
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
+from zope.component import getUtility
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
 
@@ -13,14 +14,17 @@ from canonical.launchpad.database import PublishedPackage
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-from canonical.launchpad.interfaces import IPublishedPackage
+from canonical.launchpad.interfaces import IPublishedPackage, \
+        ILaunchBag
 
 class PkgBuild:
 
-    def __init__(self, id, processorfamilyname):
+    def __init__(self, id, processorfamilyname,
+                 distroarchrelease):
         self.id = id
         self.processorfamilyname = processorfamilyname
-
+        self.distroarchrelease = distroarchrelease
+        
     def html(self):
         return '<a href="/soyuz/packages/'+str(self.id)+'">'+self.processorfamilyname+'</a>'
 
@@ -61,12 +65,25 @@ class PublishedPackageSetView:
         self.searchtext = request.form.get('text', None)
         if self.searchtext:
             self.searchrequested = True
+        self.launchbag = getUtility(ILaunchBag)
 
     def searchresults(self):
         if self.searchresultset is not None:
             return self.searchresultset
+        if not self.searchtext:
+            return []
+        if self.launchbag.distribution:
+            distribution = self.launchbag.distribution.id
+        else:
+            distribution = None
+        if self.launchbag.distrorelease:
+            distrorelease = self.launchbag.distrorelease.id
+        else:
+            distrorelease = None
         pkgset = self.context
-        resultset = list(pkgset.query(name=self.searchtext, text=self.searchtext))
+        resultset = list(pkgset.query(text=self.searchtext,
+                                      distribution=distribution,
+                                      distrorelease=distrorelease))
         binpkgs = {}
         for package in resultset:
             binpkg = binpkgs.get(package.binarypackagename,
@@ -80,7 +97,8 @@ class PublishedPackageSetView:
                 package.binarypackageversion,
                 PkgVersion(package.binarypackageversion) )
             version.builds.append(PkgBuild(package.binarypackage,
-                                    package.processorfamilyname))
+                                           package.processorfamilyname,
+                                           package.build.distroarchrelease))
             drversions.versions[package.binarypackageversion] = version
             binpkg.distroreleases[package.distroreleasename] = drversions
             binpkgs[package.binarypackagename] = binpkg

@@ -12,113 +12,186 @@
 
 <body>
 
-<div metal:fill-slot="main">
+  <metal:leftportlets fill-slot="portlets_one">
+  </metal:leftportlets>
 
- <h1><span tal:content="context/name">TITLE</span></h1>
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/lastversionsPortlet" />
+  </metal:rightportlets>
 
-   <table width="100%">
-     <tr>
-       <td width="80%">
-         <fieldset>
-	   <legend>
-	     Binary Package Information
-	   </legend>
-	   <p><h4>Description:  </h4> 
-	   <tal:block tal:replace="context/description"/>
-	   <br>
-	   <br>
-	   <p><b>Package name: </b> 
-	   <tal:block tal:replace="context/name"/>
-	 </fieldset>
-	 <fieldset>
-	   <legend>
-	     Available Versions
-	   </legend>
-<!--
-	   <p> <h4>Current:</h4> 
-	   <tal:dummy tal:condition="context/currentversions">
-	   <tal:block tal:repeat="current context/currentversions">
+  <div metal:fill-slot="main" id="content" class="documentEditable">
+    <div class="documentContent" id="region-content">
+      <h1>
+        <span tal:content="context/shortdesc">
+          TITLE</span>
+      </h1>
 
-	     <a tal:content="current/currentversion"
-	     tal:attributes="href current/currentversion">
-	     CURRENTVERSION
-	     </a>(
+      <h4>Binary Package Information</h4>
+      <p tal:content="context/description" />
+      <ul>
+            
+	<li><b>Package Version:</b> <span tal:replace="context/version" />
 
-	     <tal:block tal:repeat="currentbuild current/currentbuilds">
-	     [<a tal:content="currentbuild" tal:attributes="href
-	     string:${current/currentversion}/${currentbuild}">
-	       CURRENTBUILD
-             </a>
-	     ]
-	     </tal:block>
-	     [
-	     <a tal:attributes="href
-	     string:../../../src/${context/release/name}/${current/release/sourcepackage/name}">
-	     src
-	     </a>
-	     ])<br>
-           </tal:block>
-	   </tal:dummy>
-	   <tal:dummy tal:condition="not:context/currentversions">
-	     No Current Releases Available
-	   </tal:dummy>
+	<li><b>Package Status:</b> <span tal:replace="context/status" />
 
-	 </fieldset>
-       </td>
-     <td valign="top">
-          <fieldset>
-	     <legend>Bug Count</legend>
-	     <div>
-	        <table>
-		<tr><td>All bugs</td>
-		    <td>
-		      <a tal:content="python:context.bugsCounter[0]">
-			 N
-		      </a>
-		    </td>
-		</tr>
-		<tr><td>Release Critical</td>
-		    <td tal:content="python:context.bugsCounter[1]">N</td>
-                </tr>	
-		<tr><td>Important and Normal</td>
-		    <td tal:content="python:context.bugsCounter[2]">N</td>
-		</tr>
-		<tr><td>Minor and Wishlist</td>
-		    <td tal:content="python:context.bugsCounter[3]">N</td>
-		</tr>
-		<tr><td>Fixed and Pending</td>
-		    <td tal:content="python:context.bugsCounter[4]">N</td>
-		</tr>
-        <tr><td colspan="2"> 
-		         <a tal:define="sourcepackagename 
-                        context/binarypackage/build/sourcepackagerelease/sourcepackage/name"
-                    tal:attributes="href
-	                 string:/malone/packages/${sourcepackagename}">View
-                     Bug List</a>
-            </td>
-        </tr>
-		</table>
-	     </div>
-	  </fieldset>    
+        <li><b>Component:</b>
+           <span tal:content="context/component/name">
+           Component</span>
+	</li>
 
-	   <fieldset tal:condition="context/lastversions"> 
-   	     <legend>
-	       Last Packages
-           </legend>
-	   <ul>
-	     <li tal:repeat="lastversion context/lastversions">
-	       <a tal:content="lastversion/version" tal:attributes="href 
-	       lastversion/version">0.0.0-0</a>
-	     </li>
-	   </ul>
-	   </fieldset>
--->
-     </td>
-   <tr>
- </table>
+        <li><b>Priority:</b>
+           <span tal:content="context/pkgpriority">
+           PRIORITY</span>
+	</li>
 
+        <li><b>Source package:</b>
+           <a tal:define="spackage context/build/sourcepackagerelease/sourcepackage"
+	         tal:content="spackage/sourcepackagename/name"
+		 tal:attributes="href string:../../+sources/${spackage/sourcepackagename/name}">
+           SOURCEPACKAGE</a>
+	</li>
 
-</div>
+      </ul>
+
+      <table width="100%">
+        <tr>
+          <td width="50%" valign="top">
+            <div align="center">
+	      <h4>Package Dependences</h4>
+	    </div>
+	    <ul>
+	      <i tal:condition="not:view/depends"> 
+	        Not Available
+	      </i>
+	    <span tal:repeat="bindepends view/depends">
+	      <li>
+	        <a tal:content="bindepends/name"
+		tal:attributes="href string:../${bindepends/name}"/> 
+		<tal:dummy condition="bindepends/signal">
+		  ( <span tal:content="bindepends/signal" /> 
+		  <span tal:content="bindepends/version" />)
+		</tal:dummy> 
+	      </li> 
+	    </span> 
+	    </ul> 
+          </td>
+
+          <td width="50%" valign="top">
+            <div align="center">
+              <h4>Package Recommends</h4>
+	    </div>
+	    <ul>
+	      <i tal:condition="not:view/recommends">
+	        Not Available
+	      </i>
+	    <span tal:repeat="binrecommends view/recommends">
+	      <li>
+	        <a tal:content="binrecommends/name"
+		tal:attributes="href string:../${binrecommends/name}"/>
+		<tal:dummy condition="binrecommends/signal">
+		  ( <span tal:content="binrecommends/signal" />
+		  <span tal:content="binrecommends/version" /> )
+		</tal:dummy>
+	      </li>
+	    </span>
+	    </ul>
+         </td>
+      </tr>
+
+      <tr>
+
+        <td width="50%" valign="top">
+          <div align="center">
+            <h4>Package Conflicts</h4>
+	  </div>
+	  <ul>
+	    <i tal:condition="not:view/conflicts">
+	      Not Available
+	    </i>
+	    <span tal:repeat="binconflicts view/conflicts">
+	      <li>
+	        <a tal:content="binconflicts/name"
+		tal:attributes="href string:../${binconflicts/name}"/>
+		<tal:dummy condition="binconflicts/signal">
+		  ( <span tal:content="binconflicts/signal" />
+		  <span tal:content="binconflicts/version" /> )
+		</tal:dummy>
+	      </li>
+	    </span>
+	  </ul>
+        </td>
+
+        <td width="50%" valign="top">
+          <div align="center">
+            <h4>Package Replaces</h4>
+	  </div>
+	    <ul>
+	      <i tal:condition="not:view/replaces">
+	        Not Available
+	      </i>
+	    <span tal:repeat="binreplaces view/replaces">
+	      <li>
+	        <a tal:content="binreplaces/name"
+		tal:attributes="href string:../${binreplaces/name}"/>
+		<tal:dummy condition="binreplaces/signal">
+		  ( <span tal:content="binreplaces/signal" />
+		  <span tal:content="binreplaces/version" /> )
+		</tal:dummy>
+	      </li>
+	    </span>
+	  </ul>
+        </td>
+      </tr>
+
+      <tr>
+
+        <td width="50%" valign="top">
+          <div align="center">
+            <h4>Package Suggests</h4>
+	  </div>
+	  <ul>
+	    <i tal:condition="not:view/suggests">
+	      Not Available
+	    </i>
+	    <span tal:repeat="binsuggests view/suggests">
+	      <li>
+	        <a tal:content="binsuggests/name"
+		tal:attributes="href string:../${binsuggests/name}"/>
+		<tal:dummy condition="binsuggests/signal">
+		  ( <span tal:content="binsuggests/signal" />
+		  <span tal:content="binsuggests/version" /> )
+		</tal:dummy>
+	      </li>
+	    </span>
+	  </ul>
+        </td>
+
+        <td width="50%" valign="top">
+          <div align="center">
+	     <h4>Package Provides</h4>
+  	  </div>
+	  <ul>
+	    <i tal:condition="not:view/provides">
+	      Not Available
+	    </i>
+	    <span tal:repeat="binprovides view/provides">
+	     <li>
+	      <span tal:content="binprovides/name" />
+		<tal:dummy condition="binprovides/signal">
+		  ( <span tal:content="binprovides/signal" />
+		  <span tal:content="binprovides/version" /> )
+		</tal:dummy>
+	      </li>
+	    </span>
+	  </ul>
+        </td>
+    </tr>
+
+   </table>
+
+    </div>
+  </div>
+
 </body>
 </html>
  

@@ -226,17 +226,17 @@ class DatabaseUserDetailsStorage(object):
         )
         return [row[0] for row in transaction.fetchall()]
 
-    def getSSHKeys(self, loginID):
+    def getSSHKeys(self, archiveName):
         ri = self.connectionPool.runInteraction
-        return ri(self._getSSHKeysInteraction, loginID)
+        return ri(self._getSSHKeysInteraction, archiveName)
 
-    def _getSSHKeysInteraction(self, transaction, loginID):
-        row = self._getPerson(transaction, loginID)
-        personID = row[0]
+    def _getSSHKeysInteraction(self, transaction, archiveName):
         transaction.execute(
-            'SELECT keytype, keytext FROM SSHKey '
-            'WHERE person = %d'
-            % (personID,)
+            "SELECT keytype, keytext "
+            "FROM SSHKey "
+            "JOIN PushMirrorAccess ON SSHKey.person = PushMirrorAccess.person "
+            "WHERE PushMirrorAccess.name = '%s'"
+            % (archiveName.replace("'", "''"),)
         )
         return list(transaction.fetchall())
 

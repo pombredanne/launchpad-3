@@ -1,0 +1,78 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+  <title metal:fill-slot="title">Members of 
+    <span tal:replace="context/browsername">Name</span></title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Soyuz style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <div id="content" class="documentEditable">
+    <ul class="contentViews">
+      <li id="contentview-profile" class="plain">
+        <a href=".">Team Information</a>
+      </li>
+
+      <li id="contentview-members" class="selected">
+        <a href="+members">Team Members</a>
+      </li>
+    </ul>
+
+    <div class="documentContent" id="region-content">
+
+      <h1>Members of <span tal:replace="context/browsername" /></h1>
+
+      <div tal:define="proposedmembers context/proposedmembers" 
+           tal:condition="proposedmembers" style="margin: 1em 3em">
+      <span tal:replace="python: len(proposedmembers)" />
+      new member(s) awaiting for approval.
+
+      <table width="80%" id="ass_listing" class="listing rowNavigation">
+        <tr>
+          <th>Name</th>
+        </tr>
+        <tr tal:repeat="member proposedmembers">
+          <td><a tal:attributes="href string:/foaf/people/${member/name}">
+            <span tal:replace="member/displayname" /></a></td>
+        </tr>
+      </table>
+      </div>
+
+      <div tal:define="members context/currentmembers" tal:condition="members"
+           style="margin: 1em 3em">
+      <span tal:replace="python: len(members)" /> member(s)
+      currently approved.
+
+      <table width="80%" id="ass_listing" class="listing rowNavigation">
+        <tr>
+          <th>Name</th>
+          <th>Role</th>
+        </tr>
+        <tr tal:repeat="member members">
+          <td><a tal:attributes="href string:/foaf/people/${member/name}">
+            <span tal:replace="member/displayname" /></a></td>
+          <td><span tal:replace="python: context.getMembershipByMember(member).rolename" /></td>
+        </tr>
+      </table>
+      </div>
+
+    <div style="float: right; padding-right: 1em">
+      <p><a href="+editmembers">Manage Team Members</a></p>
+    </div>
+
+    </div>
+  </div>
+</div>
+
+
+</body>
+</html>

@@ -62,6 +62,10 @@ parser.add_option("-R", "--run", dest="run",
                   help="actually do the run",
                   default=False, action='store_true')
 
+parser.add_option("-n", "--dry-run", dest="dry_run",
+                  help="don't commit changes to database",
+                  default=False, action='store_true')
+
 (options,args) = parser.parse_args()
 
 package_root = options.package_root
@@ -84,6 +88,8 @@ print "$ Architectures to import: %s" % ", ".join(archs)
 print "$ Launchpad database: %s" % LPDB
 print "$ Katie database: %s" % KTDB
 print "$ Librarian: %s:%s" % (LIBRHOST,LIBRPORT)
+print "$ Dry run: %s" % (options.dry_run)
+print
 
 if not options.run:
     print "* Specify --run to actually run, --help to see help"
@@ -115,7 +121,8 @@ def get_tagfiles(root, distrorelease, component, arch):
     os.system("gzip -dc %s > %s" % (di_zipped, di_tagfile))
     difile = os.fdopen(difd)
 
-    return srcfile, sources_tagfile, binfile, binaries_tagfile, difile, di_tagfile
+    return (srcfile, sources_tagfile, binfile, binaries_tagfile, difile,
+            di_tagfile)
 
 def do_packages(source_map, bin_map, lp, kdb, keyrings, component, arch):
     try:
@@ -234,30 +241,39 @@ def do_publishing(pkgs, lp, source):
             else:
                 lp.publishBinaryPackage(pkg)
 
+def do_backpropogation(kdb, lp, sources, keyrings):
+    names = sources.keys() 
+    # You can vary order here by doing names.sort() or names.reverse()
+    names.sort()
+    for srcpkg in names:
+        if not sources[srcpkg].is_processed:
+            sources[srcpkg].process_package(kdb, package_root, keyrings)
+        sources[srcpkg].backpropogate(lp)
+
 
 if __name__ == "__main__":
     # get the DB abstractors
     lp = {}
     for arch in archs:
-        lp[arch] = Launchpad(LPDB, distro, distrorelease, arch)
-    kdb = Katie(KTDB, distrorelease)
+        lp[arch] = Launchpad(LPDB, distro, distrorelease, arch, options.dry_run)
+    kdb = Katie(KTDB, distrorelease, options.dry_run)
 
     # Comment this out if you need to disable the librarian integration
     # for a given run of gina. Note that without the librarian; lucille
     # will be unable to publish any files imported into the database
     attachLibrarian( LIBRHOST, LIBRPORT )
 
-    # Validate that the supplied components are available...
-    print "@ Validating components"
-    for arch in archs:
-        for comp in components:
-            lp[arch].getComponentByName(comp)
-
     keyrings = ""
     for keyring in os.listdir(keyrings_root):
           keyrings += " --keyring=./keyrings/%s" % keyring
     if not keyrings:
         raise AttributeError, "Keyrings not found in ./keyrings/"
+
+    # Validate that the supplied components are available...
+    print "@ Validating components"
+    for arch in archs:
+        for comp in components:
+            lp[arch].getComponentByName(comp)
 
     # Build us dicts of all package releases
     source_map = {}
@@ -268,15 +284,17 @@ if __name__ == "__main__":
             print "@ Loading components for %s/%s" % (arch,component)
             do_packages(source_map, bin_map[arch], lp[arch], kdb,
                         keyrings, component, arch)
+
     print "@ Loading sections"
     for arch in archs:
         do_sections(lp[arch], kdb)
     
-    #sys.exit(0);
-
     for arch in archs:
         do_arch(lp[arch],kdb,bin_map[arch],source_map)
         lp[arch].commit()
+
+    print "@ Performing backpropogation of sourcepackagerelease..."
+    do_backpropogation(kdb, lp[archs[0]], source_map, keyrings)
 
     # Next empty the publishing tables...
     print "@ Emptying publishing tables..."

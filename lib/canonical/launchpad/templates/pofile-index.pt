@@ -61,15 +61,18 @@
 
         <div class="portletContent even">
 
-            <p><img src="/++resource++add.gif"><a href="+upload">Upload a newer
-            version of this PO file</a>.
-            This is an advanced operation, limited to Rosetta
-            administrators<span tal:condition="context/owner"> and 
-            <span tal:replace="context/owner/browsername" />, the current owner of
-            this template in Rosetta</span>.</p>
-
             <p><img src="/++resource++edit.gif"><a href="+edit">Edit this
-            translation</a>. This will modify the translation header information.</p>
+            pofile details</a>. This will modify the pofile information and
+            upload a newer version of this PO file. This is an advanced
+            operation, limited to Rosetta administrators
+            <span tal:condition="context/owner"> and 
+            <span tal:replace="context/owner/browsername" />, the current owner of
+            this translation in Rosetta</span>.</p>
+
+            <p><a tal:attributes="href
+                  string:../+translate?languages=${context/language/code}">Translate
+            this pofile</a>. This will let you translate this pofile into
+            <span tal:replace="context/language/englishname" />.
 
             <p><a tal:attributes="href string:po">Export as PO file</a>. This
             will let you download the po file for this translation.</p>

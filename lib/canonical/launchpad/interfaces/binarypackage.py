@@ -36,14 +36,24 @@ class IBinaryPackage(Interface):
     installedsize = Int(required=False)
     copyright = Text(required=False)
     licence = Text(required=False)
+    architecturespecific = Bool(required=True)
 
     title = TextLine(required=True, readonly=True)
     name = Attribute("Binary Package Name")
     pkgpriority = Attribute("Package Priority")
+    status = Attribute("The BinaryPackageStatus Title")
 
     def current(distroRelease):
-        """ xxx """
+        """Get the current BinaryPackage in a distrorelease"""
 
+    def lastversions():
+        """Return the SUPERCEDED BinaryPackages in a DistroRelease
+           that comes from the same SourcePackage"""
+
+    def __getitem__(version):
+        """Return the packagename that matches the given version"""
+    
+    
 class IBinaryPackageName(Interface):
     id = Int(title=_('ID'), required=True)
     name = TextLine(title=_('Name'), required=True)
@@ -51,6 +61,9 @@ class IBinaryPackageName(Interface):
 
     def nameSelector(sourcepackage=None, selected=None):
         """Return browser-ready HTML to select a Binary Package Name"""
+
+    def __unicode__():
+        """Return the name"""
 
 class IBinaryPackageNameSet(Interface):
 
@@ -90,6 +103,9 @@ class IBinaryPackageSet(Interface):
     def findPackagesByName(pattern):
         """Search BinaryPackages matching pattern"""
 
+    def findPackagesByArchtagName(archtag, pattern, fti=False):
+        """Search BinaryPackages matching pattern and archtag"""
+
     def __getitem__(name):
         """Getter"""    
 
@@ -102,7 +118,8 @@ class IBinaryPackageUtility(Interface):
     def getByNameInDistroRelease(distroreleaseID, name):
         """Get an BinaryPackage in a DistroRelease by its name"""
 
-    def findByNameInDistroRelease(distroreleaseID, pattern):
+    def findByNameInDistroRelease(distroreleaseID, pattern,
+                                  archtag=None, fti=False):
         """Returns a set of binarypackages that matchs pattern
         inside a distrorelease"""
 
@@ -112,61 +129,10 @@ class IBinaryPackageUtility(Interface):
     def getByNameVersion(distroreleaseID, name, version):
         """Get a set of BinaryPackages in a DistroRelease by its name and version"""
 
-    def getByArchtag(self, distroreleaseID, name, version, archtag):
+    def getByArchtag(distroreleaseID, name, version, archtag):
         """Get a BinaryPackage in a DistroRelease by its name, version and archtag"""
 
 
-#
-# BinaryPackages related Applications Interface
-#
-class IDistroReleaseBinariesApp(Interface):
-    """A Release Binary Tag """
-    release = Attribute("Release")
-
-    def __getitem__(name):
-        """retrieve binarypackges by release"""
-
-    def __iter__():
-        """retrieve an iterator"""
-
-    def findPackagesByName():
-        """Find packages by name"""
-
-class IDistroReleaseBinaryApp(Interface):    
-    """A Binary Package Proxy """
-    binarypackage = Attribute("BinaryPackage")
-    lastversions = Attribute("Last Release Versions")
-    currentversions = Attribute("Current Release Versions")
-    release = Attribute("Distro Release")
-    bugsCounter = Attribute("BinaryPackages bugs counter")
-    
-    def __getitem__(name):
-        """Retrieve a package release by version."""
-
-class IDistroReleaseBinaryReleaseApp(Interface):
-    """A Binary Release Proxy """
-    binarypackagerelease = Attribute("BinaryPackageRelease")
-    version = Attribute("BinaryPackageRelease Version ?!?!")
-    distrorelease = Attribute("The DistroRelease from where the binary's SourcePackageRelease came from")
-    archs = Attribute("Builded archs")
-    
-    def __getitem__(name):
-        """retrieve binarypackagesbuild by version"""
-
-
-class IDistroReleaseBinaryReleaseBuildApp(Interface):
-    binarypackagerelease = Attribute("Release")
-    version = Attribute("Version")
-    arch = Attribute("Arch")
-
-    depends = Attribute("Package Dependencies")
-    recommends = Attribute("Package Recommends")
-    suggests = Attribute("Package Sugestions")
-    conflicts = Attribute("Package Conflicts")
-    replaces = Attribute("Package Replaces")
-    provides = Attribute("Package Provides")
-
-    pkgformat = Attribute("Package Format")
 
 
 

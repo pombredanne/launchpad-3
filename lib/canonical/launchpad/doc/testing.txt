@@ -1,0 +1,136 @@
+Launchpad Test Harnesses
+========================
+
+There is a selection of test harnesses to chose from for writing Launchpad
+functional tests. Although you could simply always use the most fully
+featured, this is not recommended as it will needlessly slow things down
+and hide errors (eg. if this object is supposed to be usable outside of
+zope, we should not be testing it with the full Z3 functional test
+harness).
+
+If you are wondering why we use `PgTestSetup().setUp()` and
+`PgTestSetup.tearDown()` instead of `pgtestsetup.setUp()` or
+`pgtestsetup.tearDown()`, it is because I'm mirroring the design used in
+Zope3's `FunctionalTestSetup`.
+
+PgTestSetup
+-----------
+
+PgTestSetup is used for tests that require access to a PostgreSQL backend.
+For example, we would use this for testing SQLObject or our custom
+extentions to it.
+
+The class is defined in canonical.ftests.pgsql
+
+>>> from canonical.ftests.pgsql import PgTestSetup
+
+The setup procedure builds us a fresh, empty database
+
+>>> PgTestSetup().setUp()
+
+We can get connections to this database
+
+>>> connection = PgTestSetup().connect()
+>>> cursor = connection.cursor()
+>>> cursor.execute("CREATE TABLE Beer (id serial PRIMARY KEY, name text)")
+>>> cursor.execute("INSERT INTO Beer(name) VALUES ('Mountain Goat')")
+
+Note that at this level, Unicode is not supported and we have to manually
+encode/decode to and from UTF-8
+
+>>> cursor.execute("SHOW client_encoding")
+>>> cursor.fetchone()[0]
+'UNICODE'
+>>> cursor.execute("SELECT * FROM Beer")
+>>> cursor.fetchone()[1]
+'Mountain Goat'
+
+When we have finished, we need to call the tearDown method which closes
+all outstanding connections and destroys the database
+
+>>> PgTestSetup().tearDown()
+
+Because the database has been destroyed, further tests will not be
+affected.
+
+>>> PgTestSetup().setUp()
+>>> connection = PgTestSetup().connect()
+>>> cursor = connection.cursor()
+>>> cursor.execute("CREATE TABLE Beer (id serial PRIMARY KEY, name text)")
+>>> PgTestSetup().tearDown()
+
+
+LaunchpadTestSetup
+------------------
+
+LaunchpadTestSetup is identical to PgTestSetup, except that it creates a
+fresh copy of the Launchpad database filled with our sample data. This
+class is defined in canonical.launchpad.ftests.harness.
+
+Note that at this level, you cannot access any of the SQLBase objects
+
+>>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+>>> LaunchpadTestSetup().setUp()
+>>> connection = LaunchpadTestSetup().connect()
+>>> cursor = connection.cursor()
+>>> cursor.execute("SELECT displayname FROM person WHERE name='carlos'")
+>>> displayname = cursor.fetchone()[0]
+>>> displayname
+'Carlos Perell\xc3\xb3 Mar\xc3\xadn'
+>>> displayname.decode('utf8')
+u'Carlos Perell\xf3 Mar\xedn'
+>>> LaunchpadTestSetup().tearDown()
+
+
+LaunchpadZopelessTestSetup
+--------------------------
+
+LaunchpadZopelessTestSetup builds on LaunchpadTestSetup, calling
+initZopeless for you so you can access the SQLBase objects without needing
+the Zope3 infrastructure.
+
+>>> from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
+>>> LaunchpadZopelessTestSetup().setUp()
+>>> from canonical.launchpad.database.person import Person
+>>> stub = Person.byName('stub')
+>>> stub.displayname
+u'Stuart Bishop'
+>>> stub.displayname = u'The Walrus'
+>>> stub.displayname
+u'The Walrus'
+
+You have access to the zopeless transaction
+
+>>> LaunchpadZopelessTestSetup().txn.abort()
+>>> stub.displayname
+u'Stuart Bishop'
+
+And always remember to tearDown or you will victimize other tests!
+
+>>> LaunchpadZopelessTestSetup().tearDown()
+
+LaunchpadFunctionalTestSetup
+----------------------------
+
+One with the lot. A LaunchpadTestSetup which also loads in the Zope3
+environment.
+
+>>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
+>>> LaunchpadFunctionalTestSetup().setUp()
+
+You have full access to the SQLBase objects
+
+>>> sabdfl = Person.byName('sabdfl')
+>>> sabdfl.displayname
+u'Mark Shuttleworth'
+
+You also have access to the Zope3 component architecture, as registered
+by ftesting.zcml
+
+>>> from zope.app import zapi
+>>> from zope.app.mail.interfaces import IMailer
+>>> zapi.getUtility(IMailer, 'smtp') is not None
+True
+
+>>> LaunchpadFunctionalTestSetup().tearDown()
+

@@ -1,8 +1,8 @@
-
 # Zope
 from zope.interface import implements
+
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
+from sqlobject import ForeignKey
 
 from canonical.launchpad.interfaces import IBugMessage
 from canonical.database.sqlbase import SQLBase

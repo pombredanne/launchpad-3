@@ -1,0 +1,23 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <content class="canonical.launchpad.database.EmailAddress">
+        <allow interface="canonical.launchpad.interfaces.IEmailAddress"/>
+    </content>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IPerson"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.EmailAddressEditView">
+        <browser:page
+            name="+emails"
+            template="../templates/person-emails.pt"
+            lp:url="foaf/people/$person.id/+emails" />
+    </browser:pages>
+
+</configure>
+

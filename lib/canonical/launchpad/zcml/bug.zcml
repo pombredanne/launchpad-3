@@ -78,28 +78,56 @@
         name="+index" />
 
     <browser:addform
-        name="+new"
+        name="+product"
         for="canonical.launchpad.interfaces.IBugSet"
         schema="canonical.launchpad.interfaces.IBugAddForm"
         class="canonical.launchpad.browser.bug.BugAddView"
-        label="Create A New Bug Record"
-        fields="title description sourcepackage product owner"
+        label="File a Bug on a Product"
+        fields="product title comment owner"
         content_factory="canonical.launchpad.database.BugFactory"
         arguments=""
-        keyword_arguments="title description sourcepackage product owner"
+        keyword_arguments="product title comment owner"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
-        lp:url="malone/bugs/+new">
+        lp:url="malone/bugs/+product">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
            displayWidth="55" />
+        <browser:widget
+           field="comment"
+           class="zope.app.form.browser.TextAreaWidget"
+           height="10" />
+    </browser:addform>
+
+    <browser:addform
+        name="+package"
+        for="canonical.launchpad.interfaces.IBugSet"
+        schema="canonical.launchpad.interfaces.IBugAddForm"
+        class="canonical.launchpad.browser.bug.BugAddView"
+        label="File a Bug on a Package"
+        fields="distribution sourcepackagename title comment owner"
+        content_factory="canonical.launchpad.database.BugFactory"
+        arguments=""
+        keyword_arguments="distribution sourcepackagename title comment owner"
+        permission="launchpad.AnyPerson"
+        template="../templates/bug-add.pt"
+        lp:url="malone/bugs/+product">
+        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget
+           field="title"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="55" />
+        <browser:widget
+           field="comment"
+           class="zope.app.form.browser.TextAreaWidget"
+           height="10" />
     </browser:addform>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBugSet"
-        class="canonical.launchpad.browser.BugAssignmentsView"
+        class="canonical.launchpad.browser.BugTasksView"
         permission="zope.Public"
         lp:url="malone/bugs/$Bug.id">
         <browser:page
@@ -119,4 +147,9 @@
             lp:url="malone/bugs/created/$Bug.owner/index" />
     </browser:pages>
 
+    <!-- IBugTask -->
+    <content class="canonical.launchpad.database.BugTask">
+        <allow interface="canonical.launchpad.interfaces.IBugTask" />
+        <require permission="zope.Public" set_schema="canonical.launchpad.interfaces.IBugTask" />
+    </content>
 </configure>

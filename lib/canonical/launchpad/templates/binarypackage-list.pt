@@ -29,29 +29,40 @@
 <!-- <div tal:on-error="python: error.type, error.value.args"> -->
 
 <form name="search" method="GET">
-Find Binary Package by Name: 
+Find packages by name: 
 <br>
 <input type="text" name="name" tal:attributes="value request/name|nothing" />
 <input type="submit" value="Search"/>
+<div>
+  <label class="checkbox">
+    <input type="checkbox" name="fti"> Search also in description.
+  </label>
+</div>
 </form>
 <br><br>
 
 
-<h3> Browse Binary Packages</h3>
-
-
   <tal:block tal:define="bn view/binaryPackagesBatchNavigator;
                          prev_url bn/prevBatchURL;
-                         next_url bn/nextBatchURL;">
-
-  <table>
+			 next_url bn/nextBatchURL;"
+             tal:condition="request/name|nothing">
+			 
+  <table width="100%" 
+         tal:define="currentBatch python:list(bn.currentBatch())"> 
     <tr>
-      <th>Binary Packages</th>
+      <th tal:condition="currentBatch">
+         Packages found
+      </th>
+      <th tal:condition="not:currentBatch">
+         <i>No Packages found</i>
+      </th>
     </tr>
-    <tr tal:repeat="release python:list(bn.currentBatch())">      
+    <tr tal:repeat="release currentBatch">      
       <tal:dummy tal:define="package release">
-      <td><a tal:content="string: ${package/name} : ${package/shortdesc}"
-             tal:attributes="href package/name">PACKAGE</a>
+      <td><a tal:content="package/name"
+             tal:attributes="href package/name">PACKAGENAME
+          </a>:
+	  <span tal:replace="package/shortdesc">SHORTDESC</span>
       </td>
       </tal:dummy>
     </tr>    

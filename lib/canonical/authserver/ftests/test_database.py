@@ -211,9 +211,19 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
             "  'fred@bedrock')"
             % (dbschema.SSHKeyType.DSA,)
         )
+
+        # Add test push mirror access
+        self.cursor.execute(
+            "INSERT INTO PushMirrorAccess (name, person) "
+            "VALUES ("
+            "  'freds-archive@example.com',"
+            "  (SELECT id FROM Person WHERE displayname = 'Fred Flintstone')) "
+        )
+
         
         storage = DatabaseUserDetailsStorage(None)
-        keys = storage._getSSHKeysInteraction(self.cursor, 'fred@bedrock')
+        keys = storage._getSSHKeysInteraction(self.cursor,
+                                              'freds-archive@example.com')
         self.assertEqual([(dbschema.SSHKeyType.DSA, 'garbage123')], keys)
 
 

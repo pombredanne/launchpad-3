@@ -1,0 +1,24 @@
+#!/bin/sh
+# Copyright Canonical Limited
+# Author: Daniel Silverstone <daniel.silverstone@canonical.com>
+
+# Buildd Slave tool to remove an unmounted chroot
+
+# Expects build id as arg 1, makes build-id to contain the build
+
+# Needs RM to be set to a gnu rm instance
+# Needs SUDO to be set to a sudo instance for passwordless access
+
+RM=/bin/rm
+SUDO=/usr/bin/sudo
+BUILDID="$1"
+
+set -e
+
+exec 2>&1
+
+set -x
+
+cd $HOME
+
+$SUDO $RM -rf "build-$BUILDID"

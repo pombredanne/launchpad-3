@@ -8,6 +8,7 @@ import sys, os.path
 sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 
 from canonical.lp import initZopeless
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugtracker import BugTracker
 from canonical.database.sqlbase import SQLBase
@@ -21,21 +22,20 @@ def check_one_watch(watch):
         version = versioncache[bugtracker.baseurl]
     else:
         version = None
-    print "Checking: %s %s for bug %d" % (bugtracker.name,
-        watch.remotebug, watch.bug.id)
+    print "Checking: %s %s for bug %d" % (
+            bugtracker.name, watch.remotebug, watch.bug.id
+            )
+    watch.lastchecked = UTC_NOW
     try:
         remotesystem = externalsystem.ExternalSystem(bugtracker,version)
-    # XXX this name doesn't exist anywhere
     except externalsystem.UnknownBugTrackerTypeError, val:
         print "*** WARNING: BugTrackerType '%s' is not known" % (
             val.bugtrackertypename, )
         print "    Skipping %s bug %s watch on bug %s" % (
             val.bugtrackername, watch.remotebug, watch.bug)
-        return
     except externalsystem.BugTrackerConnectError, val:
         print "*** WARNING: Got error trying to contact %s" % bugtracker.name
         print "    %s" % val
-        return
     else:
         versioncache.update({ bugtracker.baseurl : remotesystem.version })
         remotestatus = remotesystem.get_bug_status(watch.remotebug)
@@ -44,12 +44,10 @@ def check_one_watch(watch):
             if remotestatus == None:
                 remotestatus = 'UNKNOWN'
             watch.remotestatus = remotestatus
-            watch.lastchanged = 'NOW'
-        watch.lastchecked = 'NOW'
+        watch.lastchanged = UTC_NOW
 
 def main():
-    initZopeless()
-
+    txn = initZopeless()
     # We want 1 day, but we'll use 23 hours because we can't count on the cron
     # job hitting exactly the same time every day
     watches = BugWatch.select(
@@ -57,6 +55,8 @@ def main():
           lastchecked IS NULL)""")
     for watch in watches:
         check_one_watch(watch)
+        txn.commit()
+
 
 if __name__ == '__main__':
     main()

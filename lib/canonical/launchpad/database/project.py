@@ -9,16 +9,16 @@ Part of the Launchpad system.
 from zope.interface import implements
 
 # SQL object
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
+from sqlobject import DateTimeCol, ForeignKey, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 from canonical.database.sqlbase import SQLBase, quote
 
 # Launchpad interfaces
 from canonical.launchpad.interfaces import IProject, IProjectSet, \
-                                           IProjectBugTracker
+                                           IProjectBugTracker,\
+                                           IObjectAuthorization
 
 # Import needed database objects
-from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.product import Product
 
 from sets import Set
@@ -26,7 +26,7 @@ from sets import Set
 class Project(SQLBase):
     """A Project"""
 
-    implements(IProject)
+    implements(IProject, IObjectAuthorization)
 
     _table = "Project"
 
@@ -44,13 +44,25 @@ class Project(SQLBase):
     lastdoap = StringCol(dbName='lastdoap', notNull=False, default=None)
     active = BoolCol(dbName='active', notNull=True, default=True)
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
-    
+
     # convenient joins
     _products = MultipleJoin('Product', joinColumn='project')
 
     _bugtrackers = RelatedJoin('BugTracker', joinColumn='project',
                                            otherColumn='bugtracker',
                                            intermediateTable='ProjectBugTracker')
+
+    def checkPermission(self, principal, permission):
+        if permission == "launchpad.Edit":
+            owner = getattr(self.owner, 'id', None)
+            user = getattr(principal, 'id', None)
+            # XXX cprov 20050104
+            # Uncovered case when Onwer is a Team
+
+            # prevent NOT LOGGED and uncertain NO OWNER
+            if owner and user:
+                # I'm the product owner and want to edit
+                return user == owner
 
     def bugtrackers(self):
         for bugtracker in self._bugtrackers:
@@ -66,18 +78,6 @@ class Project(SQLBase):
         except IndexError:
             return None
 
-    def poTemplate(self, name):
-        # XXX: What does this have to do with Project?  This function never
-        # uses self.  I suspect this belongs somewhere else.
-        results = RosettaPOTemplate.selectBy(name=name)
-        count = results.count()
-
-        if count == 0:
-            raise KeyError, name
-        elif count == 1:
-            return results[0]
-        else:
-            raise AssertionError("Too many results.")
 
 class ProjectSet:
     implements(IProjectSet)
@@ -154,7 +154,7 @@ class ProjectSet:
             clauseTables.add('POTemplate')
         if malone:
             clauseTables.add('Product')
-            clauseTables.add('ProductBugAssignment')
+            clauseTables.add('BugTask')
         if bazaar:
             clauseTables.add('Product')
             clauseTables.add('SourceSource')
@@ -165,8 +165,8 @@ class ProjectSet:
             query += ' AND Product.project=Project.id \n'
         if 'POTemplate' in clauseTables:
             query += ' AND POTemplate.product=Product.id \n'
-        if 'ProductBugAssignment' in clauseTables:
-            query += ' AND ProductBugAssignment.product=Product.id \n'
+        if 'BugTask' in clauseTables:
+            query += ' AND BugTask.product=Product.id \n'
         if 'SourceSource' in clauseTables:
             query += ' AND SourceSource.product=Product.id \n'
         if not show_inactive:

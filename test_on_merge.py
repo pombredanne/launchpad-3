@@ -3,7 +3,7 @@
 
 """Tests that get run automatically on a merge."""
 
-import sys
+import sys, re
 import os, os.path
 import popen2
 import tabnanny
@@ -85,7 +85,8 @@ def main():
     # Build the template database. Tests duplicate this.
     here = os.path.dirname(os.path.realpath(__file__))
     schema_dir = os.path.join(here, 'database', 'schema')
-    if os.system('cd %s; make test > /dev/null 2>&1' % schema_dir) != 0:
+    if os.system('cd %s; make test PYTHON=%s > /dev/null 2>&1' % (
+        schema_dir, sys.executable)) != 0:
         print 'Failed to create database'
         return 1
 
@@ -115,6 +116,15 @@ def main():
     if enc != 'UNICODE':
         print 'Database encoding incorrectly set'
         return 1
+    cur.execute(r"""
+        SELECT setting FROM pg_settings
+        WHERE context='internal' AND name='lc_ctype'
+        """)
+    loc = cur.fetchone()[0]
+    if not (loc.startswith('en_') or loc in ('C', 'en')):
+        print 'Database locale incorrectly set. Need to rerun initdb.'
+        return 1
+
     # Explicity close our connections - things will fail if we leave open
     # connections.
     cur.close()
@@ -124,8 +134,11 @@ def main():
     
 
     print 'Running tests.'
-    proc = popen2.Popen3('cd %s; python test.py %s < /dev/null' %
-        (here, ' '.join(sys.argv[1:])), True)
+    cmd = 'cd %s; %s test.py %s < /dev/null' % (
+            here, sys.executable, ' '.join(sys.argv[1:])
+            )
+    print cmd
+    proc = popen2.Popen3(cmd, True)
     stdin, out, err = proc.tochild, proc.fromchild, proc.childerr
 
     # Use non-blocking reader threads to cope with differing expectations
@@ -143,7 +156,9 @@ def main():
     dataout = outthread.read()
 
     if test_ok:
-        print errlines[1]
+        for line in errlines:
+            if re.match('^Ran\s\d+\stest(s)?\sin\s[\d\.]+s$', line):
+                print line
         return 0
     else:
         print '---- test stdout ----'

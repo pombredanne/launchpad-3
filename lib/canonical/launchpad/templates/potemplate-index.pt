@@ -51,18 +51,13 @@
     <div class="portletBody">
 
         <div class="portletContent even">
-
-            <p><img src="/++resource++add.gif"><a href="+upload">Upload a newer
-            version of this PO template</a>.
+            <p><img src="/++resource++edit.gif"><a href="+edit">Edit this
+            template</a>. This will modify the template header information and
+            will let you upload a new PO template version.<br />
             This is an advanced operation, limited to Rosetta
             administrators<span tal:condition="context/owner"> and 
             <span tal:replace="context/owner/browsername" />, the current owner of
             this template in Rosetta</span>.</p>
-
-            <p><img src="/++resource++edit.gif"><a href="+edit">Edit this
-            template</a>. This will modify the template header information.</p>
-
-
         </div>
     </div>
 </div>
@@ -93,12 +88,10 @@
         <tbody>
             <tr tal:repeat="language view/languages"
                 tal:attributes="onclick
-                string:window.location='${language/code}'">
-                <a tal:attributes="href
-                    string:${language/code}">
+                string:window.location='${language/translateURL}'">
+                <a tal:attributes="href language/translateURL">
                     <td>
-                        <a tal:attributes="href
-                        string:${language/code}"
+                        <a tal:attributes="href language/translateURL"
                         tal:content="language/name">Language
                         Name</a></td>
                     <td tal:content="language/poTranslated">0</td>
@@ -157,6 +150,9 @@
             </tr>
         </tbody>
     </table>
+
+    <div tal:replace="structure view/statusLegend" tal:omit-tag />
+
 </div>
 
 </body>

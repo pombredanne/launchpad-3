@@ -2,11 +2,9 @@
 from zope.interface import implements
 
 # SQLObject/SQLBase
-from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
-                      DateTimeCol
+from sqlobject import ForeignKey, IntCol
 
-from canonical.database.sqlbase import SQLBase, quote
-from canonical.lp import dbschema
+from canonical.database.sqlbase import SQLBase
 
 # interfaces and database 
 from canonical.launchpad.interfaces import IBinaryPackageFile, \

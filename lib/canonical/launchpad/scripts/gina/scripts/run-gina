@@ -9,6 +9,7 @@ LOG=$SRV/logs
 DATE=`date "+%Y%m%d%H%M%S"`
 
 LPL=$SRV/launchpad-dogfood/lib
+#LPL=/home/dsilvers/newpad/lib
 
 GINA=$LPL/canonical/launchpad/scripts/gina
 

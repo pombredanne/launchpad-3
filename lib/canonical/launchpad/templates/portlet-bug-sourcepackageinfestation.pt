@@ -11,7 +11,7 @@
             <td nowrap tal:content="python: pkginfest.sourcepackagerelease.sourcepackage.sourcepackagename.name + ' ' +
                              pkginfest.sourcepackagerelease.version">$Product.title</td>
             <td tal:content="pkginfest/infestationstatus/lp:BugInfestationStatus">
-                $ProductBugAssignment.bugstatus
+                $BugInfestationStatus
             </td>
         </tr>
     </table>

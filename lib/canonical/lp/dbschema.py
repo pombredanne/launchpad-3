@@ -26,7 +26,7 @@ __all__ = (
 'BinaryPackageFormat',
 'BinaryPackagePriority',
 'BranchRelationships',
-'BugAssignmentStatus',
+'BugTaskStatus',
 'BugExternalReferenceType',
 'BugInfestationStatus',
 'BugPriority',
@@ -485,7 +485,8 @@ class EmailAddressStatus(DBSchema):
         has just been created in the system, either by a person claiming
         it as their own, or because we have stored an email message or
         arch changeset including that email address and have created
-        a phantom person and email address to record it.
+        a phantom person and email address to record it. WE SHOULD
+        NEVER EMAIL A "NEW" EMAIL.
         """)
 
     VALIDATED = Item(2, """
@@ -504,6 +505,13 @@ class EmailAddressStatus(DBSchema):
         longer accessible or in use by them. We should not use this email
         address to login that person, nor should we associate new incoming
         content from that email address with that person.
+        """)
+
+    PREFERRED = Item(4, """
+        Preferred Email Address
+
+        The email address was validated and is the person's choice for
+        receiving notifications from Launchpad.
         """)
 
 class MembershipRole(DBSchema):
@@ -1297,11 +1305,11 @@ class BugInfestationStatus(DBSchema):
         """)
 
 
-class BugAssignmentStatus(DBSchema):
-    """Bug Assignment Status
+class BugTaskStatus(DBSchema):
+    """Bug Task Status
 
     Bugs are assigned to products and to source packages in Malone. The
-    assignment carries a status - new, open or closed. This schema
+    task carries a status - new, open or closed. This schema
     documents those possible status values.
     """
 
@@ -1332,7 +1340,7 @@ class BugAssignmentStatus(DBSchema):
         """)
 
 class RemoteBugStatus(DBSchema):
-    """Bug Assignment Status
+    """Bug Task Status
 
     The status of a bug in a remote bug tracker. We map known statuses
     to one of these values, and use UNKNOWN if we are unable to map
@@ -1401,7 +1409,7 @@ class BugPriority(DBSchema):
 class BugSeverity(DBSchema):
     """Bug Severity
 
-    A bug assignment has a severity, which is an indication of the
+    A bug task has a severity, which is an indication of the
     extent to which the bug impairs the stability and security of
     the distribution.
     """
@@ -1823,4 +1831,40 @@ class SSHKeyType(DBSchema):
         DSA
         """)
 
+class LoginTokenType(DBSchema):
+    """Login token type
+
+    Tokens are emailed to users in workflows that require email address
+    validation, such as forgotten password recovery or account merging.
+    We need to identify the type of request so we know what workflow
+    is being processed.
+    """
+
+    PASSWORDRECOVERY = Item(1, """
+        Password Recovery
+
+        User has forgotten or never known their password and need to
+        reset it.
+        """)
+
+    ACCOUNTMERGE = Item(2, """
+        Account Merge
+
+        User has requested that another account be merged into their
+        current one.
+        """)
+
+    NEWACCOUNT = Item(3, """
+        New Account
+
+        A new account is being setup. They need to verify their email address
+        before we allow them to set a password and log in.
+        """)
+
+    VALIDATEEMAIL = Item(4, """
+        Validate Email
+
+        A user has added more email addresses to their account and they
+        need to be validated.
+        """)
 

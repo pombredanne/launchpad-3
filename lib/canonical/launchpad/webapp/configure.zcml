@@ -45,6 +45,13 @@
         name="htmlform"
         />
 
+    <adapter
+        for="zope.publisher.interfaces.browser.IBrowserApplicationRequest"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.RequestFormatterAPI"
+        name="fmt"
+        />
+
     <!-- The next directive should be registered for 'int' only.
         However, there's a bug in adapter registration that stops
         this working.  To be fixed in ZopeX3 RSN.
@@ -98,6 +105,16 @@
         factory="canonical.launchpad.webapp.authentication.handle"
         />
 
+    <subscriber
+        for="canonical.launchpad.webapp.interfaces.IPrincipalIdentifiedEvent"
+        factory="canonical.launchpad.webapp.launchbag.set_login_in_launchbag_when_principal_identified"
+        />
+
+    <subscriber
+        for="canonical.launchpad.webapp.interfaces.ILoggedOutEvent"
+        factory="canonical.launchpad.webapp.launchbag.reset_login_in_launchbag_on_logout"
+        />
+
     <utility
         factory="canonical.launchpad.webapp.authentication.SSHADigestEncryptor"
         provides="canonical.launchpad.interfaces.IPasswordEncryptor"
@@ -135,6 +152,22 @@
         class="canonical.launchpad.webapp.login.CookieLoginPage"
         permission="zope.Public"
         name="+login"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadApplication"
+        template="../templates/launchpad-join.pt"
+        class="canonical.launchpad.webapp.login.JoinLaunchpadView"
+        permission="zope.Public"
+        name="+register"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadApplication"
+        template="../templates/launchpad-forgottenpassword.pt"
+        class="canonical.launchpad.webapp.login.ForgottenPasswordPage"
+        permission="zope.Public"
+        name="+forgottenpassword"
         />
 
     <browser:page

@@ -1,8 +1,8 @@
-
 # Zope
 from zope.interface import implements
+
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
+from sqlobject import DateTimeCol, ForeignKey, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.database.bug import BugSetBase
@@ -19,8 +19,8 @@ class BugAttachment(SQLBase):
     implements(IBugAttachment)
 
     _table = 'BugAttachment'
-    bugmessage = ForeignKey(foreignKey='BugMessage',
-                            dbName='bugmessage', notNull=True)
+    message = ForeignKey(foreignKey='Message',
+                            dbName='message', notNull=True)
     name = StringCol(notNull=False, default=None)
     description = StringCol(notNull=False, default=None)
     libraryfile = ForeignKey(foreignKey='LibraryFileAlias',

@@ -164,6 +164,7 @@ class BrowserPublication(BrowserPub):
         #
         # XXX: Move this to SQLOS, in a method that is subscribed to the
         # transaction begin event rather than hacking it into traversal.
+        # -- Steve Alexander, Tue Dec 14 13:15:06 UTC 2004
         name = getUtility(IConnectionName).name
         key = (thread.get_ident(), name)
         cache = sqlos.connection.connCache

@@ -6,12 +6,12 @@ __metaclass__ = type
 from zope.interface import implements
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
+from sqlobject import DateTimeCol, ForeignKey, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
 from canonical.database.sqlbase import SQLBase, quote
 
 # canonical imports
-from canonical.lp.dbschema import BugSeverity, BugAssignmentStatus
+from canonical.lp.dbschema import BugSeverity, BugTaskStatus
 from canonical.lp.dbschema import RosettaImportStatus, RevisionControlSystems
 
 from canonical.launchpad.database.sourcesource import SourceSource
@@ -20,6 +20,7 @@ from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.pofile import POTemplate
 
 from canonical.launchpad.interfaces import IProduct, IProductSet
+from canonical.launchpad.interfaces import IObjectAuthorization
 
 from sets import Set
 from datetime import datetime
@@ -27,7 +28,7 @@ from datetime import datetime
 class Product(SQLBase):
     """A Product."""
 
-    implements(IProduct)
+    implements(IProduct, IObjectAuthorization)
 
     _table = 'Product'
 
@@ -40,7 +41,8 @@ class Product(SQLBase):
     owner = ForeignKey(foreignKey="Person", dbName="owner",
                        notNull=True)
 
-    name = StringCol(dbName='name', notNull=True)
+    name = StringCol(dbName='name', notNull=True, alternateID=True,
+                     unique=True)
 
     displayname = StringCol(dbName='displayname', notNull=True)
 
@@ -72,18 +74,18 @@ class Product(SQLBase):
 
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
 
+    autoupdate = BoolCol(dbName='autoupdate', notNull=True, default=False)
+
     freshmeatproject = StringCol(notNull=False, default=None)
 
     sourceforgeproject = StringCol(notNull=False, default=None)
-
-    autoupdate = BoolCol(notNull=True, default=False)
 
     #
     # useful Joins
     #
     potemplates = MultipleJoin('POTemplate', joinColumn='product')
 
-    bugs = MultipleJoin('ProductBugAssignment', joinColumn='product')
+    bugtasks = MultipleJoin('BugTask', joinColumn='product')
 
     branches = MultipleJoin('Branch', joinColumn='product')
 
@@ -97,6 +99,20 @@ class Product(SQLBase):
 
     releases = MultipleJoin('ProductRelease', joinColumn='product',
                              orderBy='-datereleased')
+
+    milestones = MultipleJoin('Milestone', joinColumn = 'product')
+    
+    def checkPermission(self, principal, permission):
+        if permission == "launchpad.Edit":
+            owner = getattr(self.owner, 'id', None)
+            user = getattr(principal, 'id', None)
+            # XXX cprov 20050104
+            # Uncovered case when Onwer is a Team
+            
+            # prevent NOT LOGGED and uncertain NO OWNER
+            if owner and user:
+                # I'm the product owner and want to edit
+                return user == owner
 
     def newseries(self, form):
         # Extract the details from the form
@@ -174,12 +190,16 @@ class Product(SQLBase):
             return results[0]
 
     def newPOTemplate(self, person, name, title):
-        # XXX: we have to fill up a lot of other attributes
         if POTemplate.selectBy(
                 productID=self.id, name=name).count():
             raise KeyError(
                   "This product already has a template named %s" % name)
-        return POTemplate(name=name, title=title, product=self)
+        return POTemplate(
+                name=name,
+                title=title,
+                product=self,
+                owner=person,
+                iscurrent=False)
 
     def messageCount(self):
         count = 0
@@ -211,7 +231,7 @@ class Product(SQLBase):
     def packagedInDistros(self):
         # XXX: This function-local import is so we avoid a circular import
         #   --Andrew Bennetts, 2004/11/07
-        from canonical.launchpad.database import Distribution, DistroRelease
+        from canonical.launchpad.database import Distribution
 
         # FIXME: The database access here could be optimised a lot, probably
         # with a view.  Whether it's worth the hassle remains to be seen...
@@ -243,16 +263,16 @@ class Product(SQLBase):
         bugmatrix = {}
         for severity in BugSeverity.items:
             bugmatrix[severity] = {}
-            for status in BugAssignmentStatus.items:
+            for status in BugTaskStatus.items:
                 bugmatrix[severity][status] = 0
-        for bugass in self.bugs:
-            bugmatrix[bugass.severity][bugass.bugstatus] += 1
+        for bugtask in self.bugtasks:
+            bugmatrix[bugtask.severity][bugtask.bugstatus] += 1
         resultset = [['']]
-        for status in BugAssignmentStatus.items:
+        for status in BugTaskStatus.items:
             resultset[0].append(status.title)
         severities = BugSeverity.items
         for severity in severities:
-            statuses = BugAssignmentStatus.items
+            statuses = BugTaskStatus.items
             statusline = [severity.title]
             for status in statuses:
                 statusline.append(bugmatrix[severity][status])
@@ -274,6 +294,22 @@ class ProductSet:
         else:
             return ret[0]
 
+    def createProduct(self, owner, name, displayname, title, shortdesc,
+                      description, project=None, homepageurl=None,
+                      screenshotsurl=None, wikiurl=None,
+                      downloadurl=None, freshmeatproject=None,
+                      sourceforgeproject=None):
+        """Create a new Product"""
+        return Product(owner=owner, name=name, displayname=displayname,
+                       title=title, project=project, shortdesc=shortdesc,
+                       description=description,
+                       homepageurl=homepageurl,
+                       screenshotsurl=screenshotsurl,
+                       wikiurl=wikiurl,
+                       downloadurl=downloadurl,
+                       freshmeatproject=freshmeatproject,
+                       sourceforgeproject=sourceforgeproject)
+    
     def forReview(self):
         return Product.select("reviewed IS FALSE")
 
@@ -290,13 +326,13 @@ class ProductSet:
         if rosetta:
             clauseTables.add('POTemplate')
         if malone:
-            clauseTables.add('ProductBugAssignment')
+            clauseTables.add('BugTask')
         if bazaar:
             clauseTables.add('SourceSource')
         if 'POTemplate' in clauseTables:
             query += ' AND POTemplate.product=Product.id \n'
-        if 'ProductBugAssignment' in clauseTables:
-            query += ' AND ProductBugAssignment.product=Product.id \n'
+        if 'BugTask' in clauseTables:
+            query += ' AND BugTask.product=Product.id \n'
         if 'SourceSource' in clauseTables:
             query += ' AND SourceSource.product=Product.id \n'
         if not show_inactive:

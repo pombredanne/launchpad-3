@@ -9,11 +9,13 @@ from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.sourcepackage import SourcePackage, \
-                                            SourcePackageRelease
+    SourcePackageRelease, SourcePackageName
 from canonical.launchpad.database.binarypackage import BinaryPackage, \
-                                            BinaryPackageName
+    BinaryPackageName
+from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.project import Project
 from canonical.launchpad.database.productrelease import ProductRelease
@@ -21,7 +23,6 @@ from canonical.launchpad.database.bugtracker import BugTracker
 from canonical.database.sqlbase import SQLBase, quote_like, quote
 
 from sqlobject import AND, OR, CONTAINSSTRING
-
 
 class IHugeVocabulary(IVocabulary):
     """Interface for huge vocabularies.
@@ -55,7 +56,7 @@ class SQLObjectVocabularyBase(object):
     implements(IVocabulary, IVocabularyTokenized)
     _orderBy = None
 
-    def __init__(self, context):
+    def __init__(self, context=None):
         self.context = context
 
     def _toTerm(self, obj):
@@ -120,11 +121,9 @@ class SourcePackageVocabulary(SQLObjectVocabularyBase):
         return self.getTerm(token)
 
     def search(self, query):
-        '''Returns products where the sourcepackage name contains the given
+        '''Returns products where the sourcepackage full text indexes
+        contain the given
         query. Returns an empty list if query is None or an empty string.
-
-        This won't use indexes. If this is too slow, we need full text
-        searching.
 
         '''
         if not query:
@@ -211,7 +210,7 @@ class ProductVocabulary(SQLObjectVocabularyBase):
             like_query = quote('%%%s%%' % quote_like(query)[1:-1])
             fti_query = quote(query)
             sql = "fti @@ ftq(%s)" % fti_query
-            return [self._toTerm(r) for r in self._table.select(sql)]
+            return [self._toTerm(r) for r in self._table.select(sql, orderBy=self._orderBy)]
 
         return []
 
@@ -250,7 +249,7 @@ class ProjectVocabulary(SQLObjectVocabularyBase):
 # We cannot refer to a BinaryPackage unambiguously by a name, as
 # we have no assurace that a generated name using $BinaryPackageName.name
 # and $BinaryPackage.version will be unique
-# TODO: The edit sourcepackagebugassignment for does not default its
+# TODO: The edit ibugtask form does not default its
 # binary package field
 class BinaryPackageVocabulary(SQLObjectVocabularyBase):
     # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
@@ -300,6 +299,17 @@ class PersonVocabulary(NamedSQLObjectVocabulary):
         return [self._toTerm(obj) for obj in objs]
 
 
+class ValidOwnerVocabulary(PersonVocabulary):
+    """
+    ValidOwnerVocabulary implements a Vocabulary Describing valid Owner
+    entities, People and Teams, according the Ubuntu Membership
+    Management System.
+    """
+    ## XXX cprov 20050124
+    ## Waiting for the FOAF support to follow implementation path.
+    pass
+
+
 class ValidPersonVocabulary(PersonVocabulary):
     def __iter__(self):
         kw = {}
@@ -343,6 +353,18 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
         return SimpleTerm(
             obj, obj.id, obj.product.name + " " + obj.version)
 
+class MilestoneVocabulary(NamedSQLObjectVocabulary):
+    _table = Milestone
+    _orderBy = 'name'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.name)
+
+    def __iter__(self):
+        if self.context.product:
+            for ms in self.context.product.milestones:
+                yield SimpleTerm(ms, ms.name, ms.name)
+
 class PackageReleaseVocabulary(SQLObjectVocabularyBase):
     _table = SourcePackageRelease
     _orderBy = 'sourcepackage'
@@ -350,3 +372,55 @@ class PackageReleaseVocabulary(SQLObjectVocabularyBase):
     def _toTerm(self, obj):
         return SimpleTerm(
             obj, obj.id, obj.sourcepackage.name + " " + obj.version)
+
+class SourcePackageNameVocabulary(NamedSQLObjectVocabulary):
+    implements(IHugeVocabulary)
+
+    _table = SourcePackageName
+    _orderBy = 'name'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.name)
+
+    def search(self, query):
+        '''Returns names where the sourcepackage contains the given
+        query. Returns an empty list if query is None or an empty string.
+
+        '''
+        if not query:
+            return []
+        query = query.lower()
+        t = self._table
+        objs = [self._toTerm(r)
+            for r in t.select('''
+                sourcepackage.sourcepackagename = sourcepackagename.id
+                AND (
+                    sourcepackagename.name like '%%' || %s || '%%'
+                    OR sourcepackage.fti @@ ftq(%s)
+                    )
+                ''' % (quote_like(query), quote(query)),
+                ['SourcePackage']
+                )
+            ]
+        return objs
+
+
+class DistributionVocabulary(NamedSQLObjectVocabulary):
+    implements(IHugeVocabulary)
+
+    _table = Distribution
+    _orderBy = 'name'
+
+    def search(self, query):
+        """Return terms where query is a substring of the name"""
+        if query:
+            query = query.lower()
+            like_query = quote('%%%s%%' % quote_like(query)[1:-1])
+            fti_query = quote(query)
+            kw = {}
+            if self._orderBy:
+                kw['orderBy'] = self._orderBy
+            objs = self._table.select("name LIKE %s" % like_query, **kw)
+            return [self._toTerm(obj) for obj in objs]
+
+        return []

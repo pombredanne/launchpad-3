@@ -20,6 +20,10 @@
     <h1>Register a New POTemplate for: <span
     tal:content="context/displayname">$Product.displayname</span></h1>
 
+    <div class="portalMessage"
+         tal:condition="view/status_message"
+         tal:content="structure view/status_message">Successful</div>
+
     <div class="documentDescription">
     Please fill in the details below to register a new POTemplate for the <span
     tal:content="context/displayname">$Product.displayname</span>.
@@ -33,7 +37,7 @@
         when the template is created. -->
 
         <form method="POST" enctype="multipart/form-data"
-            tal:attributes="action string: ${request/URL}/..">
+            tal:attributes="action string: ${request/URL}">
 
         <div class="field">
 
@@ -77,7 +81,9 @@
 
         <div class="field">
 
-            <label>file</label>
+            <label>File</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
 
             <div class="formHelp">
             The PO template file we want to translate.

@@ -1,0 +1,13 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+  <content class="canonical.launchpad.database.Membership">
+    <allow interface="canonical.launchpad.interfaces.IMembership"/>
+    <!--
+    <require
+     permission="zope.Public"
+     set_attributes="role status"
+     />
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    -->
+  </content>
+
+</configure>

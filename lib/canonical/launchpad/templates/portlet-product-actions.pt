@@ -7,14 +7,20 @@
         <img src="/++resource++edit.gif">
         <a href="+edit">Edit Product</a><br />
         <img src="/++resource++edit.gif">
+        <a href="+review">Review Product</a><br />
+        <img src="/++resource++edit.gif">
         <a href="+addsources">Add RCS</a><br />
         <img src="/++resource++edit.gif">
         Add Package<br />
         <img src="/++resource++edit.gif">
         <a href="+addseries">Add Series</a><br />
         <img src="/++resource++edit.gif">
-        <a href="+addrelease">Add Release</a>
-
+        <a href="+addrelease">Add Release</a><br />
+        <span tal:omit-tag=""
+              tal:condition="python:request.principal and request.principal.id == context.owner.id">
+            <img src="/++resource++edit.gif">
+            <a href="+milestone">Add Milestone</a>
+        </span>
         </div>
     </div>
 </div>

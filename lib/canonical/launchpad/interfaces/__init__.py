@@ -14,6 +14,7 @@ from canonical.launchpad.interfaces.productseries import *
 from canonical.launchpad.interfaces.productrelease import *
 from canonical.launchpad.interfaces.sourcesource import *
 from canonical.launchpad.interfaces.sourcepackage import *
+from canonical.launchpad.interfaces.milestone import *
 from canonical.launchpad.interfaces.bug import *
 from canonical.launchpad.interfaces.message import *
 from canonical.launchpad.interfaces.bugmessage import *
@@ -24,7 +25,7 @@ from canonical.launchpad.interfaces.bugextref import *
 from canonical.launchpad.interfaces.cveref import *
 from canonical.launchpad.interfaces.bugattachment import *
 from canonical.launchpad.interfaces.bugtracker import *
-from canonical.launchpad.interfaces.bugassignment import *
+from canonical.launchpad.interfaces.bugtask import *
 from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.person import *
 from canonical.launchpad.interfaces.translationeffort import *
@@ -42,7 +43,6 @@ from canonical.launchpad.interfaces.jabber import *
 from canonical.launchpad.interfaces.manifest import *
 from canonical.launchpad.interfaces.manifestentry import *
 from canonical.launchpad.interfaces.processor import *
-from canonical.launchpad.interfaces.team import *
 from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.publishing import *
 from canonical.launchpad.interfaces.files import *
@@ -53,6 +53,9 @@ from canonical.launchpad.interfaces.queue import *
 from canonical.launchpad.interfaces.country import *
 from canonical.launchpad.interfaces.spokenin import *
 from canonical.launchpad.interfaces.geoip import *
+from canonical.launchpad.interfaces.ssh import *
+from canonical.launchpad.interfaces.logintoken import *
+from canonical.launchpad.interfaces.karma import *
 
 # XXX this is old soyuz style and must go
 from canonical.launchpad.interfaces.soyuz import *

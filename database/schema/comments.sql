@@ -94,6 +94,11 @@ COMMENT ON COLUMN POTemplate.rawfile IS 'The pot file itself encoded as a base64
 COMMENT ON COLUMN POTemplate.rawimporter IS 'The person that attached the rawfile.';
 COMMENT ON COLUMN POTemplate.daterawimport IS 'The date when the rawfile was attached.';
 COMMENT ON COLUMN POTemplate.rawimportstatus IS 'The status of the import: 0 pending import, 1 imported, 2 failed.';
+COMMENT ON COLUMN POTemplate.sourcepackagename IS 'A reference to a sourcepackage name from where this POTemplate comes.';
+COMMENT ON COLUMN POTemplate.distrorelease IS 'A reference to the distribution from where this POTemplate comes.';
+COMMENT ON COLUMN POTemplate.sourcepackagerelease IS 'The sourcepackagerelease from where this POTemplate was imported last time.';
+COMMENT ON COLUMN POTemplate.sourcepackageversion IS 'The sourcepackage version string from where this potemplate was imported last time. This field is temporal, if you use it add a note at https://dogfood.ubuntu.com/malone/bugs/220/';
+COMMENT ON COLUMN POTemplate.header IS 'The header of a .pot file when we import it. Most important info from it is POT-Creation-Date and custom headers.';
 
 -- POFile
 COMMENT ON TABLE POFile IS 'This table stores a po file for a given product.';
@@ -113,6 +118,7 @@ COMMENT ON COLUMN POFile.rawimportstatus IS 'The status of the import: 0 pending
 */
 COMMENT ON TABLE Bug IS 'A software bug that requires fixing. This particular bug may be linked to one or more products or sourcepackages to identify the location(s) that this bug is found.';
 COMMENT ON COLUMN Bug.name IS 'A lowercase name uniquely identifying the bug';
+COMMENT ON COLUMN Bug.private IS 'Is this bug private? If so, only explicit subscribers will be able to see it';
 COMMENT ON TABLE ProductBugAssignment IS 'Links a given Bug to a particular product.';
 COMMENT ON COLUMN ProductBugAssignment.datecreated IS 'A timestamp for the creation of this bug assignment. Note that this is not the date the bug was created (though it might be), it\'s the date the bug was assigned to this product, which could have come later.';
 COMMENT ON TABLE SourcepackageBugAssignment IS 'Links a given Bug to a particular sourcepackage.';
@@ -130,7 +136,7 @@ COMMENT ON COLUMN BugTask.binarypackagename IS 'The name of the binary package b
 COMMENT ON COLUMN BugTask.assignee IS 'The person who has been assigned to fix this bug in this product or (sourcepackagename, distro)';
 COMMENT ON COLUMN BugTask.dateassigned IS 'The date on which the bug in this (sourcepackagename, distro) or product was assigned to someone to fix';
 COMMENT ON COLUMN BugTask.datecreated IS 'A timestamp for the creation of this bug assignment. Note that this is not the date the bug was created (though it might be), it''s the date the bug was assigned to this product, which could have come later.';
-
+COMMENT ON COLUMN BugTask.milestone IS 'A way to mark a bug for grouping purposes, e.g. to say it needs to be fixed by version 1.2';
 
 -- CVERef
 COMMENT ON TABLE CVERef IS 'This table stores CVE references for bugs. CVE is a way of tracking security problems across multiple vendor products.';
@@ -357,7 +363,7 @@ COMMENT ON COLUMN SourcePackage.maintainer IS 'The maintainer of a sourcepackage
 COMMENT ON COLUMN SourcePackage.shortdesc IS 'The title or short name of a sourcepackage. E.g. "Mozilla Firefox Browser"';
 COMMENT ON COLUMN SourcePackage.description IS 'A description of the sourcepackage. Typically longer and more detailed than shortdesc.';
 COMMENT ON COLUMN SourcePackage.manifest IS 'The head HCT manifest for the sourcepackage';
-COMMENT ON COLUMN SourcePackage.distro IS 'The distribution (if any) that the sourcepackage resides in.';
+COMMENT ON COLUMN SourcePackage.distro IS 'The distribution in which this package "belongs", if any. It is possible for a package to have no home distribution, in the sense that it is just a package produced by an individual, and not yet published.'; 
 
 -- SourcePackageRelease
 
@@ -524,3 +530,22 @@ COMMENT ON TABLE SourcePackageReleaseFile IS 'SourcePackageReleaseFile: A soyuz 
 COMMENT ON COLUMN SourcePackageReleaseFile.libraryfile IS 'The libraryfilealias embodying this file';
 COMMENT ON COLUMN SourcePackageReleaseFile.filetype IS 'The type of the file. E.g. TAR, DIFF, DSC';
 COMMENT ON COLUMN SourcePackageReleaseFile.sourcepackagerelease IS 'The sourcepackagerelease that this file belongs to';
+
+COMMENT ON TABLE LoginToken IS 'LoginToken stores one time tokens used for validating email addresses and other tasks that require verifying an email address is valid such as password recovery and account merging. This table will be cleaned occasionally to remove expired tokens. Expiry time is not yet defined.';
+COMMENT ON COLUMN LoginToken.requester IS 'The Person that made this request. This will be null for password recovery requests.';
+COMMENT ON COLUMN LoginToken.requesteremail IS 'The email address that was used to login when making this request. This provides an audit trail to help the end user confirm that this is a valid request. It is not a link to the EmailAddress table as this may be changed after the request is made. This field will be null for password recovery requests.';
+COMMENT ON COLUMN LoginToken.email IS 'The email address that this request was sent to.';
+COMMENT ON COLUMN LoginToken.created IS 'The timestamp that this request was made.';
+COMMENT ON COLUMN LoginToken.tokentype IS 'The type of request, as per dbschema.TokenType.';
+COMMENT ON COLUMN LoginToken.token IS 'The token (not the URL) emailed used to uniquely identify this request. This token will be used to generate a URL that when clicked on will continue a workflow.';
+
+
+COMMENT ON TABLE Milestone IS 'An identifier that helps a maintainer group together things in some way, e.g. "1.2" could be a Milestone that bazaar developers could use to mark a task as needing fixing in bazaar 1.2.';
+COMMENT ON COLUMN Milestone.product IS 'The product for which this is a milestone.';
+COMMENT ON COLUMN Milestone.name IS 'The identifier text, e.g. "1.2."';
+COMMENT ON COLUMN Milestone.title IS 'The description of, e.g. "1.2."';
+
+    
+COMMENT ON TABLE PushMirrorAccess IS 'Records which users can update which push mirrors';
+COMMENT ON COLUMN PushMirrorAccess.name IS 'Name of an arch archive on the push mirror, e.g. lord@emf.net--2003-example';
+COMMENT ON COLUMN PushMirrorAccess.person IS 'A person that has access to update the named archive';

@@ -13,32 +13,41 @@ shown in many different ways, eg. :
 Dependencies:
 
      -> database.py: modified database class from Gina
-     -> nickname.py: unique/nick name factory from Gina (static)
+     -> BeatifulSoup.py: HTML check/repair facilities
      -> sourceforge.py: A proto WebBot able to acquice information 
      	                 from SF and FM (static)
-			 
+     -> rdfproj.py: A XML parser fitting with FM-RDF format projects
+                     export file
 Configuring:
 
-You can configure the following parameters on Nicole: 
+Configure nicole by command line options:
 
-    -> DOAPDB: Local DOAP database name
+$python nicole.py -h
+usage: nicole.py [options]
 
-    -> UPDATE: Running mode True for updating info anyway and False for skip
-                existent projects (Not implemented yet)
-
-    -> SLEEP:  Interval in seconds between the Web Requests (values as 20
-                prevent the Server Side to block you by Web Attack)
-
-    -> LIST:   Filename where you be stored the missed packages
-    
-    -> PACKAGES: Debian like Packages (gunziped) filename 
+options:
+  -h, --help            show this help message and exit
+  -m MODE, --mode=MODE  Operation mode ['create', 'update']
+  -f FILE, --file=FILE  Product Name List
+  -s SRC, --source=SRC  Data Source ['web', 'rdf']
+  -d DBNAME, --database=DBNAME
+                        DOAP Database name
+  -w TIME, --wait=TIME  Interval in seconds
+  -l FILE, --list=FILE  Not Found list file
+  -n, --dry-run         don't commit changes to database
+  -F, --force           Force the creation of the Objects
+  -p, --package         Two columms format list
+  -D DISTRO, --distro=DISTRO
+                        Distribution name for Packaging
+  -o OWNER, --owner=OWNER
+                        Default product owner name
+  -P PATH, --path=PATH  Directory containing the xml files
     
 Running:
 
-$ dropdb <lp-db>  
-$ createdb -E UNICODE <lp-db>
-$ psql -f <gina_dump> <lp-db>  # contact me if you don't have a gina_dump
-$ python nicole.py             # it takes a long time, but isn't cpu-expensive
+$ export PYTHONPATH=<LAUNCHPAD>/lib:;python nicole.py -s web -m update  
+
+Notes: using 'web' as source it takes a long time, but isn't cpu-expensive
 
 
 Developer: Celso Providelo <cprov@gwyddion.com>
@@ -47,4 +56,4 @@ Contributors: Christian Reis <kiko@async.com.br>
 	      Daniel Debonzi <debonzi@gwyddion.com>
 	      Morgan Collett <morgan@mcode.co.za>
 
-Release Date: 2004-10-05 
+Release Date: 2004-12-15 

@@ -1,0 +1,107 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+  <title metal:fill-slot="title">Edit
+    <span tal:replace="context/displayname">Name</span>
+    Information</title>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+  <!-- Soyuz style sheet -->
+  <style type="text/css" media="screen">@import url(soyuz.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+<div id="content" class="documentEditable">
+<div class="documentContent" id="region-content">
+
+<div>
+  <h1>Your email adresses</h1>
+
+  <tal:dummy tal:define="submitted view/formSubmitted">
+  <div tal:condition="submitted">
+    <p class="portalMessage" tal:content="view/message"></p>
+  </div>
+  </tal:dummy>
+  
+  <form name="email" action="" method="POST">
+
+  <p>Your preferred email address is the only one we'll use to communicate with
+  you. There can be only one preferred email address at a time, and it cannot 
+  be removed.</p>
+
+  <table id="ass_listing" class="listing rowNavigation">
+    <tr>
+      <th>Preferred</th>
+      <th>Email</th>
+      <th>Remove</th>
+    </tr>
+    <tr tal:define="email context/preferredemail" tal:condition="email">
+      <td>
+        <input type="radio" name="PREFERRED_EMAIL"
+               tal:attributes="value email/id" checked />
+      </td>
+      <td tal:content="email/email">email</td>
+      <td>
+        <input tal:attributes="value email/id" name="REMOVE_EMAIL" type="checkbox" disabled/>
+      </td>
+    </tr>
+    <tr tal:repeat="email context/validatedemails">
+      <td>
+        <input type="radio" name="PREFERRED_EMAIL" tal:attributes="value email/id" />
+      </td>
+      <td tal:content="email/email">email</td>
+      <td> 
+        <input tal:attributes="value email/id" name="REMOVE_EMAIL" type="checkbox" />
+      </td>
+    </tr>
+  </table>
+  <br />
+
+  <table>
+    <tr>
+      <td>Add a New Email: </td>
+      <td><input type="text" name="newemail" /></td>
+    </tr>
+
+    <tr>
+      <td>Password: </td>
+      <td><input type="password" name="password" /></td>
+    </tr>
+    <tr>
+      <td></td>
+      <td align="right"><input type="submit" name="SUBMIT_CHANGES" value="Submit"/>
+      </td>
+    </tr>
+  </table>
+
+  <tal:block define="notvalidatedemails context/notvalidatedemails">
+  <fieldset tal:condition="notvalidatedemails">
+    <legend>Guessed Emails</legend>
+    <p>The following email addresses have been guessed by our system as 
+    probably being yours. In order to use them on Launchpad, you must 
+    validate them. To do so, just select one from the list below and 
+    click on the Validate button.</p>
+    <select name="NOT_VALIDATED_EMAIL">
+      <option tal:repeat="email notvalidatedemails"
+              tal:attributes="value email/id"
+              tal:content="email/email">email</option>
+    </select>
+    <input type="submit" value="Validate" name="VALIDATE_EMAIL" />
+  </fieldset>
+  </tal:block>
+
+  </form>
+  </div>
+
+</div>
+</div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,19 @@
+
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+    
+    <!-- SourcePackageReleaseFile -->
+    <content class="canonical.launchpad.database.SourcePackageReleaseFile">
+        <allow interface="canonical.launchpad.interfaces.ISourcePackageReleaseFile" />
+    </content>
+
+    <!-- BinaryPackageFile -->
+    <content class="canonical.launchpad.database.BinaryPackageFile">
+        <allow interface="canonical.launchpad.interfaces.IBinaryPackageFile" />
+    </content>
+
+</configure>

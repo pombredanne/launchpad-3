@@ -8,10 +8,22 @@
     <include file="soyuz.zcml" />
 
     <!-- Content class configuration -->
+    <include file="logintoken.zcml" />
+    <include file="archuserid.zcml" />
+    <include file="emailaddress.zcml" />
+    <include file="teamparticipation.zcml" />
+    <include file="gpgkey.zcml" />
+    <include file="sshkey.zcml" />
+    <include file="ircid.zcml" />
+    <include file="jabberid.zcml" />
+    <include file="membership.zcml" />
+    <include file="person.zcml" />
+    <include file="wikiname.zcml" />
     <include file="branch.zcml" />
     <include file="country.zcml" />
     <include file="project.zcml" />
     <include file="product.zcml" />
+    <include file="milestone.zcml" />
     <include file="productseries.zcml" />
     <include file="productrelease.zcml" />
     <include file="binarypackage.zcml" />
@@ -20,11 +32,11 @@
     <include file="productrelease.zcml" />
     <include file="bugpackageinfestation.zcml" />
     <include file="bugactivity.zcml" />
+    <include file="bugtask.zcml" />
     <include file="bugsubscription.zcml" />
     <include file="sourcepackage.zcml" />
     <include file="bug.zcml" />
     <include file="bugwatch.zcml" />
-    <include file="bugassignment.zcml" />
     <include file="buginfestation.zcml" />
     <include file="bugextref.zcml" />
     <include file="cveref.zcml" />
@@ -45,6 +57,9 @@
     <include file="pomsgset.zcml" />
     <include file="potranslationsighting.zcml" />
     <include file="potranslation.zcml" />
+    <include file="files.zcml" />
+    <include file="package.zcml" />
+
 
     <include file="widgets.zcml" />
     <include file="fields.zcml" />

@@ -58,7 +58,7 @@
             product or source package in which this bug should be fixed.
         </div>
 
-        <div tal:replace="structure view/assignmentsHeadline" />
+        <div tal:replace="structure view/tasksHeadline" />
 
         <div class="discreet">
 
@@ -94,7 +94,8 @@
                             enter it below.
                         </div>
                         <b>Subject:</b>
-                        <input name="field.title" type="text" size="50" /><br />
+                        <input name="field.title" type="text" size="50" 
+                            tal:attributes="value context/followup_title" /><br />
                         <b>Comment:</b> <textarea name="field.contents" rows="10"></textarea>
                         <input type="submit" name="UPDATE_SUBMIT" value="Add" />
                     </form>

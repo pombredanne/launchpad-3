@@ -35,18 +35,9 @@
                   <img src="/++resource++soyuz.png" alt="Soyuz" />
                </a>
       </div>
-      
+
           <ul id="portal-globalnav"
               tal:define="path_info request/PATH_INFO">
-
-            <li class="selected"
-                tal:condition="python:path_info.endswith('/ubuntu')">
-              <a href="http://localhost:8080/ubuntu">Ubuntu</a>
-            </li>
-            <li class="plain"
-                tal:condition="python:not path_info.endswith('/ubuntu')">
-              <a href="http://localhost:8080/ubuntu">Ubuntu</a>
-            </li>
 
             <li class="selected"
                 tal:condition="python:'/foaf' in path_info">
@@ -94,15 +85,6 @@
             </li>
 
             <li class="selected"
-                tal:condition="python:'/lists' in path_info">
-              <a href="/lists">Lists</a>
-            </li>
-            <li class="plain"
-                tal:condition="python:'/lists' not in path_info">
-              <a href="/lists">Lists</a>
-            </li>
-
-            <li class="selected"
                 tal:condition="python:'/bounties' in path_info">
               <a href="/bounties">Bounties</a>
             </li>
@@ -122,26 +104,26 @@
 
           </ul>
 
-      <div id="portal-personaltools">
+      <div id="portal-personaltools"
+           tal:define="path_info request/PATH_INFO">
 
         <span tal:condition="request/lp:person">
             Logged in as
-            <span tal:replace="request/lp:person/displayname">Foo Bar</span>
+            <a tal:attributes="href string:/foaf/people/${request/lp:person/name}">
+            <span tal:replace="request/lp:person/displayname">Foo Bar</span></a>
             &mdash;
             <a href="/+logout">Log Out</a>
         </span>
 
         <span tal:condition="not: request/lp:person">
             <a href="/+login">Log In</a>
+            &mdash;
+            <a href="/+register">Join</a>
         </span>
 
         &mdash;
 
         <a href="/rosetta/translator">Translator Dashboard</a>
-
-        &mdash;
-
-        <a href="/rosetta/maintainer">Project Maintainer Dashboard</a>
 
         &mdash;
 
@@ -151,18 +133,7 @@
 
       <div id="portal-breadcrumbs">
         You are here:
-        <span tal:define="parts python:request.get('PATH_INFO').split('/')"
-            tal:repeat="crumb parts">
-
-            <span tal:condition="
-                    python: crumb and not crumb.startswith('++')">
-                <a tal:attributes="href
-                        python:'/'.join(parts[0:repeat['crumb'].number()])"
-                    tal:content="crumb">home</a>
-                <span tal:condition="not:repeat/crumb/end"
-                    class="breadcrumbSeparator"> &raquo; </span>
-            </span>
-        </span>
+        <span tal:replace="structure request/fmt:breadcrumbs" />
       </div>
 
       <div class="visualClear"></div>
@@ -176,10 +147,8 @@
                 metal:define-slot="column_one">
               <div class="visualPadding">
                 <metal:portlets define-slot="portlets_one">
-                
+
                 </metal:portlets>
-                <div tal:condition="nothing"
-                    tal:replace="structure view/@@bag" />
                 &nbsp;
               </div>
             </td>
@@ -198,7 +167,7 @@
                 metal:define-slot="column_two">
               <div class="visualPadding">
                 <metal:portlets define-slot="portlets_two">
-                
+
                 </metal:portlets>
                 &nbsp;
               </div>

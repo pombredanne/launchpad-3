@@ -3,19 +3,84 @@ The LaunchBag is a collection of all the 'stuff' we have traversed. It
 contains the requests 'context' or environment, which can be used to
 filter or otherwise specialize views or behavior.
 
+First, we'll set up various imports and stub objects.
+
+>>> from zope.component import getUtility
+>>> from zope.app.session.interfaces import ISession
+>>> from canonical.launchpad.interfaces import ILaunchBag, IOpenLaunchBag
+>>> from canonical.launchpad.webapp.interfaces import BasicAuthLoggedInEvent
+>>> from canonical.launchpad.webapp.interfaces import LoggedOutEvent
+>>> from canonical.launchpad.webapp.interfaces import \
+...     CookieAuthPrincipalIdentifiedEvent
+
 >>> person = object()
 
 >>> class Principal(object):
 ...     id = 23
 ...     def __conform__(self, protocol):
 ...         if protocol is IPerson:
-...             return Person()
+...             return person
 
+>>> principal = Principal()
 >>> class Participation(object):
 ...     principal = principal
 ...     interaction = None
 
->>> from zope.app import zapi
->>> from canonical.launchpad.interfaces import ILaunchBag
->>> launchbag = zapi.getUtility(ILaunchBag)
+>>> session = {'launchpad.authenticateduser':
+...     {'login': 'cookie@example.com', 'personid': 23}
+...     }
+
+>>> class Request(object):
+...     principal = principal
+...     cookies = {}
+...     def setPrincipal(self, principal):
+...         pass
+...     def __conform__(self, protocol):
+...         if protocol is ISession:
+...             return session
+
+>>> request = Request()
+
+Before we start, let's clear the launchbag.
+
+XXX: The test machinery should be ensuring that the launchbag is cleared
+     between test runs.  In which case, we would not need to clear the
+     launchbag.
+     -- Steve Alexander, Wed Jan  5 15:14:44 UTC 2005
+
+>>> getUtility(IOpenLaunchBag).clear()
+
+There have been no logins, so launchbag.login will be None.
+
+>>> launchbag = getUtility(ILaunchBag)
+>>> print launchbag.login
+None
+
+Let's send a basic auth login event.
+
+>>> login = "foo.bar@canonical.com"
+>>> event = BasicAuthLoggedInEvent(request, login, principal)
+>>> from zope.event import notify
+>>> notify(event)
+
+Now, launchbag.login will be 'foo.bar@canonical.com'.
+
+>>> print launchbag.login
+foo.bar@canonical.com
+
+Login should be set back to None on a logout.
+
+>>> event = LoggedOutEvent(request)
+>>> notify(event)
+>>> print launchbag.login
+None
+
+Let's do a cookie auth principal identification.  In this case, the login
+will be cookie@example.com, as given in the session dict above.
+
+>>> event = CookieAuthPrincipalIdentifiedEvent(principal, request)
+>>> notify(event)
+>>> print launchbag.login
+cookie@example.com
+
 

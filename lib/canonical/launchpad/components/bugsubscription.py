@@ -28,22 +28,25 @@ class IBugSubscriptionSetAdapter:
                 if best_email:
                     emails.add(best_email)
 
-        for prod_ass in self.bug.productassignments:
-            best_email = _get_best_email_address(prod_ass.assignee)
-            if best_email:
-                emails.add(best_email)
-            best_email = _get_best_email_address(prod_ass.product.owner)
+        for task in self.bug.bugtasks:
+            best_email = _get_best_email_address(task.assignee)
             if best_email:
                 emails.add(best_email)
 
-        for pack_ass in self.bug.packageassignments:
-            best_email = _get_best_email_address(pack_ass.assignee)
-            if best_email:
-                emails.add(best_email)
-            best_email = _get_best_email_address(pack_ass.sourcepackage.maintainer)
+            if task.product:
+                best_email = _get_best_email_address(task.product.owner)
+            else:
+                # XXX: Brad Bollenbach, 2004-12-15: Get the proper maintainer
+                # here, after first smoothing out the bug reporting screens
+                # over the next day or two.
+                best_email = None
+                pass
             if best_email:
                 emails.add(best_email)
 
+        best_owner_email = _get_best_email_address(self.bug.owner)
+        if best_owner_email:
+            emails.add(best_owner_email)
         emails = list(emails)
         emails.sort()
         return emails
@@ -54,14 +57,9 @@ def _get_best_email_address(person):
         valid_email_addresses = EmailAddress.select(AND(
             EmailAddress.q.personID == person.id,
             EmailAddress.q.status == EmailAddressStatus.VALIDATED.value))
-        new_email_addresses = EmailAddress.select(AND(
-            EmailAddress.q.personID == person.id,
-            EmailAddress.q.status == EmailAddressStatus.NEW.value))
-        best_email = None
 
+        best_email = None
         if valid_email_addresses:
             best_email = valid_email_addresses[0].email
-        elif new_email_addresses:
-            best_email = new_email_addresses[0].email
 
         return best_email

@@ -15,7 +15,7 @@
     <div tal:content="context/description">$SourcePackage.description
     </div>
 
-    <div metal:use-macro="context/@@bugassignment_search_listing/buglisting" />
+    <div metal:use-macro="context/@@bugtask_search_listing/buglisting" />
    
 </div>
 

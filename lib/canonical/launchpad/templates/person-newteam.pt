@@ -1,0 +1,86 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+    <title metal:fill-slot="title">FOAF: Create a New Team</title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Soyuz style sheet -->
+    <style type="text/css" media="screen">@import url(soyuz.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+<div id="content" class="documentEditable">
+
+    <div class="documentContent" id="region-content">
+
+    <h1>Create a New Team</h1>
+
+    <div class="documentDescription">	
+      <p> Here you can create a new Team</p>
+    </div>
+    
+    <div tal:condition="view/add_action" class="portalMessage">
+         <p> Team <a tal:attributes="href string:${view/results/name}"
+                tal:content="view/results/displayname">NAME</a> 
+             Succesfully Created.</p>
+    </div>
+
+    <div>
+    <form name="add" action="" method="POST">
+
+    <legend><h3>Create a New team</h3><legend>
+	<table>
+	<tr><td>
+	<div class="field">
+	    <label>Display Name</label>
+	    <span class="fieldRequired" title="Required">(Required)</span>
+	    <div class="formHelp">
+	    Enter the Display Name.
+            </div>
+	    <input type="text" name="displayname"
+	    tal:attributes="value request/displayname|nothing"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
+	    <label>Team Description</label>
+	    <div class="formHelp">
+	    Enter the Team Description.
+            </div>
+            <textarea name="teamdescription" cols="40" rows="4"
+	    tal:content="request/teamdescription|nothing">
+	    </textarea>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
+	    <label>Email Address</label>
+	    <span class="fieldRequired" title="Required">(Required)</span>
+	    <div class="formHelp">
+	    Enter the Email Address.
+            </div>
+	    <input type="text" name="email"
+	    tal:attributes="value request/email|nothing"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="formControls">
+	  <input type="submit" value="Create"/>
+	</div>
+	</td></tr>
+	</table>
+  </form>
+  </div>
+
+  </div>
+ </div>
+</div>
+
+</body>
+</html>

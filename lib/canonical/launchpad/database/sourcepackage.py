@@ -1,17 +1,17 @@
 # Python imports
-import re
+import os
 from sets import Set
-from datetime import datetime
+from urllib2 import URLError
 
 # Zope imports
 from zope.interface import implements
 from zope.component import getUtility
 
 # SQLObject/SQLBase
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
-from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
-                      DateTimeCol
+from sqlobject import MultipleJoin
+from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, DateTimeCol
 
+from canonical.librarian.client import FileDownloadClient
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.lp import dbschema
 
@@ -20,13 +20,14 @@ from canonical.launchpad.interfaces import ISourcePackageRelease, \
                                            ISourcePackageReleasePublishing, \
                                            ISourcePackage, \
                                            ISourcePackageName, \
+                                           ISourcePackageNameSet, \
                                            ISourcePackageSet, \
                                            ISourcePackageInDistroSet, \
-                                           ISourcePackageUtility
+                                           ISourcePackageUtility, \
+                                           IDownloadURL
 
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.binarypackage import BinaryPackage
-
 
 class SourcePackage(SQLBase):
     """A source package, e.g. apache2."""
@@ -39,7 +40,10 @@ class SourcePackage(SQLBase):
     shortdesc   = StringCol(dbName='shortdesc', notNull=True)
     description = StringCol(dbName='description', notNull=True)
 
-    distro            = ForeignKey(foreignKey='Distribution', dbName='distro')
+    srcpackageformat = IntCol(dbName='srcpackageformat', notNull=True)
+
+    distro            = ForeignKey(foreignKey='Distribution', 
+                                   dbName='distro')
     manifest          = ForeignKey(foreignKey='Manifest', dbName='manifest')
     maintainer        = ForeignKey(foreignKey='Person', dbName='maintainer', 
                                    notNull=True)
@@ -47,8 +51,6 @@ class SourcePackage(SQLBase):
                                    dbName='sourcepackagename', notNull=True)
 
     releases = MultipleJoin('SourcePackageRelease', joinColumn='sourcepackage')
-    bugs     = MultipleJoin('SourcePackageBugAssignment', 
-                            joinColumn='sourcepackage')
 
     #
     # Properties
@@ -57,6 +59,14 @@ class SourcePackage(SQLBase):
         return self.sourcepackagename.name
 
     name = property(name)
+
+    def bugtasks(self):
+        querystr = ("BugTask.distribution = %i AND "
+                    "BugTask.sourcepackagename = %i")
+        querystr = querystr % (self.distro, self.sourcepackagename)
+        return BugTask.select(querystr)
+
+    bugtasks = property(bugtasks)
 
     def product(self):
         try:
@@ -74,24 +84,22 @@ class SourcePackage(SQLBase):
     # Methods
     #
     def bugsCounter(self):
-        # XXXkiko: move to bugassignment?
-        from canonical.launchpad.database.bugassignment import \
-            SourcePackageBugAssignment
+        from canonical.launchpad.database.bugtask import BugTask
 
         ret = [len(self.bugs)]
 
-        get = SourcePackageBugAssignment.selectBy
+        get = BugTask.selectBy
         severities = [
             dbschema.BugSeverity.CRITICAL,
             dbschema.BugSeverity.MAJOR,
             dbschema.BugSeverity.NORMAL,
             dbschema.BugSeverity.MINOR,
             dbschema.BugSeverity.WISHLIST,
-            dbschema.BugAssignmentStatus.FIXED,
-            dbschema.BugAssignmentStatus.ACCEPTED,
+            dbschema.BugTaskStatus.FIXED,
+            dbschema.BugTaskStatus.ACCEPTED,
         ]
         for severity in severities:
-            n = get(severity=int(severity), sourcepackageID=self.id).count()
+            n = get(severity=int(severity), sourcepackagenameID=self.sourcepackagename.id).count()
             ret.append(n)
         return ret
 
@@ -126,7 +134,7 @@ class SourcePackage(SQLBase):
         :returns: iterable of SourcePackageReleases
         """
         return self.uploadsByStatus(distroRelease, 
-                                    dbschema.PackagePublishingStatus.PUBLISHED)
+                                    dbschema.PackagePublishingStatus.PUBLISHED)[0]
 
     def lastversions(self, distroRelease):
         return self.uploadsByStatus(distroRelease, 
@@ -178,10 +186,10 @@ class SourcePackageSet(object):
 
     def withBugs(self):
         pkgset = Set()
-        results = self.table.select("SourcePackage.id = \
-                                     SourcePackageBugAssignment.sourcepackage",
-                                     clauseTables=['SourcePackage',
-                                     'SourcePackageBugAssignment'])
+        results = self.table.select(
+            "SourcePackage.sourcepackagename = BugTask.sourcepackagename AND"
+            "SourcePackage.distro = BugTask.distribution",
+            clauseTables=['SourcePackage', 'BugTask'])
         for pkg in results:
             pkgset.add(pkg)
         return pkgset
@@ -199,9 +207,10 @@ class SourcePackageInDistroSet(object):
         """Take the distrorelease when it makes part of the context"""
         self.distrorelease = distrorelease
 
-    def findPackagesByName(self, pattern):
+    def findPackagesByName(self, pattern, fti=False):
         srcutil = getUtility(ISourcePackageUtility)
-        return srcutil.findByNameInDistroRelease(self.distrorelease.id, pattern)
+        return srcutil.findByNameInDistroRelease(self.distrorelease.id,
+                                                 pattern, fti)
 
     def __iter__(self):
         plublishing_status = dbschema.PackagePublishingStatus.PUBLISHED.value
@@ -229,15 +238,34 @@ class SourcePackageUtility(object):
     """A utility for sourcepackages"""
     implements(ISourcePackageUtility)
 
-    def findByNameInDistroRelease(self, distroreleaseID, pattern):
+    def findByNameInDistroRelease(self, distroreleaseID,
+                                  pattern, fti=False):
         """Returns a set o sourcepackage that matchs pattern
         inside a distrorelease"""
 
-        pattern = quote("%%" + pattern.replace('%', '%%') + "%%")
-        query = ('distrorelease = %d AND '
-                 '(name ILIKE %s OR shortdesc ILIKE %s)' %
-                 (distroreleaseID, pattern, pattern))
-        return VSourcePackageReleasePublishing.select(query, orderBy='name')
+        clauseTables = ()
+
+        pattern = pattern.replace('%', '%%')
+
+        if fti:
+            clauseTables = ('SourcePackage',)
+            query = ('VSourcePackageReleasePublishing.sourcepackage = '
+                     'SourcePackage.id AND '
+                     'distrorelease = %d AND '
+                     '(name ILIKE %s OR SourcePackage.fti @@ ftq(%s))'
+                     %(distroreleaseID,
+                       quote('%%'+pattern+'%%'),
+                       quote(pattern))
+                     )
+
+        else:
+            query = ('distrorelease = %d AND '
+                     'name ILIKE %s '
+                     % (distroreleaseID, quote('%%'+pattern+'%%'))
+                     )
+
+        return VSourcePackageReleasePublishing.select(query, orderBy='name',
+                                                      clauseTables=clauseTables)
 
     def getByNameInDistroRelease(self, distroreleaseID, name):
         """Returns a SourcePackage by its name"""
@@ -258,7 +286,25 @@ class SourcePackageName(SQLBase):
     implements(ISourcePackageName)
     _table = 'SourcePackageName'
 
-    name = StringCol(dbName='name', notNull=True)
+    name = StringCol(dbName='name', notNull=True, unique=True,
+        alternateID=True)
+
+    def __unicode__(self):
+        return self.name
+
+
+class SourcePackageNameSet(object):
+    implements(ISourcePackageNameSet)
+
+    def __getitem__(self, name):
+        try:
+            return SourcePackageName.byName(name)
+        except SQLObjectNotFound:
+            raise KeyError, name
+
+    def __iter__(self):
+        for sourcepackagename in SourcePackageName.select():
+            yield sourcepackagename
 
 
 class SourcePackageRelease(SQLBase):
@@ -285,6 +331,8 @@ class SourcePackageRelease(SQLBase):
 
     builds = MultipleJoin('Build', joinColumn='sourcepackagerelease')
 
+    files = MultipleJoin('SourcePackageReleaseFile',
+                         joinColumn='sourcepackagerelease')
     #
     # Properties
     #
@@ -303,28 +351,36 @@ class SourcePackageRelease(SQLBase):
 
         return BinaryPackage.select(query, clauseTables=clauseTables)
 
-    def linkified_changelog(self):
-        # XXX: salgado: No bugtracker URL should be hardcoded.
-        sourcepkgname = self.sourcepackage.sourcepackagename.name
-        deb_bugs = 'http://bugs.debian.org/cgi-bin/bugreport.cgi?bug='
-        warty_bugs = 'https://bugzilla.ubuntu.com/show_bug.cgi?id='
-        changelog = re.sub(r'%s \(([^)]+)\)' % sourcepkgname,
-                           r'%s (<a href="../\1">\1</a>)' % sourcepkgname,
-                           self.changelog)
-        changelog = re.sub(r'([Ww]arty#)([0-9]+)', 
-                           r'<a href="%s\2">\1\2</a>' % warty_bugs,
-                           changelog)
-        changelog = re.sub(r'[^(W|w)arty]#([0-9]+)', 
-                           r'<a href="%s\1">#\1</a>' % deb_bugs,
-                           changelog)
-        return changelog
+    def files_url(self):
+        # XXX: Daniel Debonzi 20050125
+        # Get librarian host and librarian download port from
+        # invironment variables until we have it configurable
+        # somewhere.
+        librarian_host = os.environ.get('LB_HOST', 'localhost')
+        librarian_port = int(os.environ.get('LB_DPORT', '8000'))
 
-    linkified_changelog = property(linkified_changelog)
+        downloader = FileDownloadClient(librarian_host, librarian_port)
+
+        urls = []
+
+        for _file in self.files:
+            try:
+                url = downloader.getURLForAlias(_file.libraryfile.id)
+            except URLError:
+                # librarian not runnig or file not avaiable
+                pass
+            else:
+                name = _file.libraryfile.filename
+            
+                urls.append(DownloadURL(name, url))
+
+        return urls
 
     binaries = property(binaries)
 
     pkgurgency = property(_urgency)
 
+    files_url = property(files_url)
     #
     # Methods
     #
@@ -363,16 +419,15 @@ class VSourcePackageReleasePublishing(SourcePackageRelease):
     #XXX: salgado: wtf is this?
     #MultipleJoin('Build', joinColumn='sourcepackagerelease'),
 
-    def __getitem__(self, name):
-        """Geta SourcePackageRelease"""
-
-# XXX Mark Shuttleworth: this is somewhat misleading as there
-# will likely be several versions of a source package with the
-# same name, please consider getSourcePackages() 21/10/04
-def getSourcePackage(name):
-    return SourcePackage.selectBy(name=name)
-
-
+    def __getitem__(self, version):
+        """Get a  SourcePackageRelease"""
+        table = VSourcePackageReleasePublishing 
+        try:            
+            return table.select("sourcepackage = %d AND version = %s"
+                                % (self.sourcepackage.id, quote(version)))[0]
+        except IndexError:
+            raise KeyError, 'Version Not Found'
+        
 def createSourcePackage(name, maintainer=0):
     # FIXME: maintainer=0 is a hack.  It should be required (or the DB shouldn't
     #        have NOT NULL on that column).
@@ -383,3 +438,10 @@ def createSourcePackage(name, maintainer=0):
         description='', # FIXME
     )
 
+
+class DownloadURL(object):
+    implements(IDownloadURL)
+
+    def __init__(self, filename, fileurl):
+        self.filename = filename
+        self.fileurl = fileurl

@@ -25,7 +25,8 @@ example, you might want to send out a notification email to everyone that is
 Cc'd on a bug when something changes.
 
 To get the set of subscriptions to a bug, Launchpad provides an adapter from an
-IBug to an IBugSubscriptionSet.
+IBug to an IBugSubscriptionSet. The only email addresses that will ever be used
+for a Person are those that have been validated.
 
     >>> from zope.component import getAdapter
     >>> from canonical.launchpad.database import Bug
@@ -33,4 +34,4 @@ IBug to an IBugSubscriptionSet.
     >>> bug = Bug.get(1)
     >>> subscriptions = getAdapter(bug, IBugSubscriptionSet, '')
     >>> subscriptions.getCcEmailAddresses()
-    [u'mark@hbd.com', u'scott.james.remnant@ubuntulinux.com', u'steve.alexander@ubuntulinux.com', u'test@canonical.com']
+    [u'mark@hbd.com', u'test@canonical.com']

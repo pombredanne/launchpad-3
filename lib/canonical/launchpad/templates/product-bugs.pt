@@ -4,7 +4,10 @@
       i18n:domain="malone">
 <body>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="column_one">
+</div>
+
+<div metal:fill-slot="main" class="visualPadding">
     <h1>Upstream Bugs for:
         <span tal:replace="context/displayname">$Product.displayname</span>
     </h1>
@@ -13,13 +16,13 @@
         tal:content="context/shortdesc">$Product.shortdesc
     </div>
 
-    <div metal:use-macro="context/@@bugassignment_search_listing/buglisting" />
+    <div metal:use-macro="context/@@bugtask_search_listing/buglisting" />
 
-    <p tal:condition="not: context/bugs">No bugs filed against
+    <p tal:condition="not: context/bugtasks">No bugs filed against
         <span tal:replace="context/displayname">$Product.displayname</span>
     </p>
 
-    <p style="float: right;"><img src="/++resource++add.gif" alt="+">
+    <p><img src="/++resource++add.gif" alt="+">
     <a href="+filebug">File a new bug</a><br />
     <img src="/++resource++add.gif" alt="+">
     <a href="#"

@@ -1,12 +1,7 @@
-
-
-import psycopg
-
 from canonical.database.sqlbase import quote, SQLBase
-from sqlobject import StringCol, BoolCol, ForeignKey, IntCol, DateTimeCol, \
-                      MultipleJoin
+from sqlobject import StringCol, BoolCol, ForeignKey, IntCol
 
-from canonical.launchpad.interfaces import ArchiveAlreadyRegistered, ArchiveNotRegistered, ArchiveLocationDoublyRegistered
+from canonical.launchpad.interfaces import ArchiveNotRegistered, ArchiveLocationDoublyRegistered
 from canonical.launchpad.interfaces import RevisionNotRegistered
 from canonical.launchpad.interfaces import RevisionAlreadyRegistered
 from canonical.launchpad.interfaces import VersionNotRegistered
@@ -14,7 +9,6 @@ from canonical.launchpad.interfaces import VersionAlreadyRegistered
 from canonical.launchpad.interfaces import BranchAlreadyRegistered
 from canonical.launchpad.interfaces import CategoryAlreadyRegistered
 
-from zope.interface import implements
 from canonical.launchpad.interfaces import IBranch
 
 

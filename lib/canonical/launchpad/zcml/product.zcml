@@ -120,8 +120,8 @@
         label="Review Upstream Product Details:"
         fields="name displayname title shortdesc description homepageurl
                 screenshotsurl wikiurl programminglang downloadurl
-                sourceforgeproject freshmeatproject project active
-                reviewed"
+                sourceforgeproject freshmeatproject project owner active
+                autoupdate reviewed "
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-editform.pt"
         lp:url="doap/projects/$Project.name/$Product.name/+review">
@@ -132,10 +132,10 @@
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBugAddForm"
         label="Report Bug on Upstream Product"
-        fields="title description owner"
+        fields="title comment owner"
         class="canonical.launchpad.browser.ProductFileBugView"
         arguments=""
-        keyword_arguments="title description owner"
+        keyword_arguments="title comment owner"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
         lp:url="malone/projects/$Project.name/$Product.name/+filebug">
@@ -145,8 +145,6 @@
            class="zope.app.form.browser.TextWidget"
            displayWidth="55" />
     </browser:addform>
-
-
 
     <!-- ProductSet-->
     <content class="canonical.launchpad.database.ProductSet">

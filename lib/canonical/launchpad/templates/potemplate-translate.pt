@@ -16,19 +16,38 @@
 <body>
 
 <div metal:fill-slot="portlets_one">
-    <label>Quick Reference</label>
+    <div class="portlet">
+        <h4>Quick Reference</h4>
 
-    <ul>
-    <li><span class="po-message-special" style="padding: 0.2em">&#x21b5;</span>
-        &ndash; a new line</li>
-    <li><span class="po-message-special" style="padding: 0.2em">&#x2022;</span>
-        &ndash; a space character</li>
-    </ul>
+        <div class="portletBody">
+            <ul>
+            <li><span class="po-message-special"
+                style="padding: 0.2em">&#x21b5;</span> &ndash; a new line</li>
+            <li><span class="po-message-special"
+                style="padding: 0.2em">&#x2022;</span> &ndash; a space
+                character</li>
+            </ul>
 
-    <p>
-    Check the "needs review" button if you are not sure a translation is
-    correct.
-    </p>
+            <p>
+            Check the "needs review" button if you are not sure a translation
+            is correct.
+            </p>
+        </div>
+    </div>
+
+    <div class="portlet">
+        <h4>PO File Details</h4>
+
+        <div class="portletBody">
+
+            <ul>
+            <li tal:repeat="language view/languages"><a
+                tal:attributes="href language/code"
+                tal:content="language/englishname"
+                >Language</a></li>
+            </ul>
+        </div>
+    </div>
 </div>
 
 <div metal:fill-slot="main">
@@ -63,11 +82,17 @@
             <span tal:repeat="language view/badLanguages" tal:omit-tag>
                <span tal:replace="language/englishname">language</span>,
             </span>
-        please contact the <a
+        please read the <a
+        href="http://www.gnu.org/software/gettext/manual/html_chapter/gettext_10.html#SEC150">
+        documentation</a> about plural forms and contact the <a
         href="mailto:rosetta-users@lists.ubuntu.com">Rosetta users
-        mailing list</a> to resolve this. This procedure only ever needs to be
-        done once per language. Once we have the information, you can
-        translate into these languages.
+        mailing list</a> to resolve this giving us the plural form expression
+        as the documentation specifies it.<br />
+        If you don't understand exactly how it works, just give us the rules
+        you follow when writing into your language and we will try to write
+        the expression for you.<br />
+        This procedure only ever needs to be done once per language. Once we have
+        the information, you can translate into these languages.
         </p>
 
     </div>
@@ -78,7 +103,7 @@
 
     <!-- Display settings. -->
 
-    <form method="post" tal:attributes="action request/URL">
+    <form method="post" tal:attributes="action view/URL">
         <fieldset>
         <legend>Display Settings</legend>
             <div class="field">
@@ -91,15 +116,15 @@
                 <label><input name="show" type="radio" value="translated"
                     tal:attributes="checked
                         python:('', 'checked')[view.show == 'translated']" />
-                    translated messages</label>
+                    translated</label>
                 <label><input name="show" type="radio" value="untranslated"
                     tal:attributes="checked
                         python:('', 'checked')[view.show == 'untranslated']" />
-                    untranslated messages</label>
+                    untranslated</label>
                 <label><input name="show" type="radio" value="all"
                     tal:attributes="checked
                         python:('', 'checked')[view.show == 'all']" />
-                    all messages</label>
+                    all</label>
 
                 <input type="hidden" name="languages"
                     tal:condition="view/codes"
@@ -138,7 +163,7 @@
         </span>
     </div>
 
-    <!-- Navigation doodads. -->
+    <!-- Paging doodads. -->
 
     <div class="listingBar">
         <!-- Link to previous page and beginning, if this is not the beginning page. -->
@@ -161,7 +186,7 @@
 
     <!-- The translation form. -->
 
-    <form method="post" tal:attributes="action request/URL">
+    <form method="post" tal:attributes="action view/URL">
         <fieldset class="message-strings" tal:repeat="set view/messageSets">
             <input type="hidden"
                 tal:attributes="
@@ -173,12 +198,15 @@
 
             <div class="po-comment" tal:condition="set/sourceComment">
                 <label>Developer Note</label>
+
                 <div tal:content="set/sourceComment">This refers to the content type.</div>
             </div>
 
-            <!-- Simple message. -->
             <tal:simple-message condition="not:set/isPlural">
+                <!-- Simple message. -->
+
                 <label class="language-code">English (Source)</label>:
+
                 <div class="messageSourceString"
                      tal:content="structure set/messageID/displayText">text</div>
 
@@ -193,8 +221,8 @@
                         <input type="checkbox" value="fuzzy" tal:attributes="
                             checked python:set['fuzzy'][language];
                             name string:set_${set/id}_fuzzy_${language/code};
-                            tabindex: view/makeTabIndex"
-                            />
+                            tabindex: view/makeTabIndex
+                            " />
                     </label>
 
                     <br/>
@@ -227,8 +255,9 @@
                 </div>
             </tal:simple-message>
 
-            <!-- Plural message. -->
             <tal:plural-message condition="set/isPlural">
+                <!-- Plural message. -->
+
                 <div class="field">
                     <label class="language-code">English Singular</label>:
                     <div class="messageSourceString"
@@ -242,11 +271,21 @@
                 </div>
 
                 <div tal:repeat="language view/languages">
-                        <label class="language-code"
-                            tal:content="language/englishname">pt_BR[0]</label>:
+
+                    <label class="fuzzy-checkbox">
+                        Needs review
+                        <input type="checkbox" value="fuzzy" tal:attributes="
+                            checked python:set['fuzzy'][language];
+                            name string:set_${set/id}_fuzzy_${language/code};
+                            tabindex: view/makeTabIndex
+                            " />
+                    </label>
+
+                    <label class="language-code"
+                        tal:content="language/englishname">pt_BR[0]</label>:
 
                     <div class="field" tal:repeat="i python:
-                            range(view.pluralforms[language.code])">
+                        range(view.pluralforms[language.code])">
 
                         <input type="text"
                             tal:condition="not:set/messageID/isMultiline"
@@ -287,11 +326,14 @@
         <input type="hidden" name="languages"
             tal:condition="view/codes"
             tal:attributes="value view/codes" />
+        <input type="hidden" name="show"
+            tal:condition="view/show"
+            tal:attributes="value view/show" />
         <input type="submit" name="SUBMIT" value="Save"
             tal:attributes="tabindex: view/makeTabIndex" />
     </form>
 
-    </div> <!-- tal:condition="not: view/badLanguages" -->
+    </div> <!-- condition: not: view/badLanguages -->
 </div>
 
 </body>

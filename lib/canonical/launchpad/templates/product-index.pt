@@ -19,12 +19,14 @@
     <div tal:replace="structure view/latestBugPortlet" />
     <div tal:replace="structure view/branchesPortlet" />
     <div tal:replace="structure view/translationsPortlet" />
+    <div tal:condition="python:request.principal and request.principal.id == context.owner.id"
+         tal:replace="structure view/milestonePortlet" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
         <div tal:replace="structure view/detailsPortlet" />
-        <div tal:replace="structure view/projectPortlet" />
         <div tal:replace="structure view/actionsPortlet" />
+        <div tal:replace="structure view/projectPortlet" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main" class="documentContent">

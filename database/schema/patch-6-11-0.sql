@@ -58,7 +58,24 @@ CREATE INDEX bugtask_owner_idx ON BugTask("owner");
 ALTER TABLE ONLY BugTask ADD CONSTRAINT bugtask_assignment_checks
     CHECK (product IS NULL <> distribution IS NULL);
 
-/* indexes */
+/* migrate existing product assignments */
+INSERT INTO BugTask (
+    bug, product, status, priority, severity,
+    assignee, dateassigned, datecreated, owner)
+SELECT bug, product, bugstatus, priority, severity, assignee,
+       dateassigned, datecreated, owner 
+FROM productbugassignment;
 
+/* migrate existing package assignments */
+INSERT INTO BugTask (
+    bug, sourcepackagename, distribution, status, priority, 
+    severity, binarypackagename, assignee, dateassigned, 
+    datecreated, owner)
+SELECT bug, sourcepackagename, distro, bugstatus, priority, severity,
+       binarypackagename, assignee, dateassigned, datecreated, owner
+FROM sourcepackagebugassignment spba, sourcepackage sp, sourcepackagename spn
+WHERE spba.sourcepackage = sp.id and sp.sourcepackagename = spn.id;
+
+/* indexes */
 UPDATE LaunchpadDatabaseRevision SET major=6,minor=11,patch=0;
 

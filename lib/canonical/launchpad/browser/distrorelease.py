@@ -12,18 +12,25 @@ from zope.component import getUtility
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
+BATCH_SIZE = 20
 
 class DistroReleaseView(object):
 
     detailsPortlet = ViewPageTemplateFile(
         '../templates/portlet-distrorelease-details.pt')
 
+    actionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-distrorelease-actions.pt')
+    
+    linksPortlet = ViewPageTemplateFile(
+        '../templates/portlet-distrorelease-links.pt')
+    
     def __init__(self, context, request):
         self.context = context
         self.request = request
 
     def bugSourcePackagesBatchNavigator(self):
-        packages = list(self.context.bugSourcePackages())
+        packages = list(self.context.getBugSourcePackages())
         start = int(self.request.get('batch_start', 0))
         end = int(self.request.get('batch_end', BATCH_SIZE))
 

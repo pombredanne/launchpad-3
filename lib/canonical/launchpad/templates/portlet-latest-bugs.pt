@@ -5,9 +5,9 @@
         <div class="portletContent even">
 
         <table class="rowNavigation" border="0">
-            <tr tal:repeat="bugassignment view/latestBugs"
-                tal:attributes="onclick string:window.location='/malone/bugs/${bugassignment/bug/id}';">
-                <td tal:content="bugassignment/bug/title">bug title</td>
+            <tr tal:repeat="bugtask view/latestBugTasks"
+                tal:attributes="onclick string:window.location='/malone/bugs/${bugtask/bug/id}';">
+                <td tal:content="bugtask/bug/title">bug title</td>
             </tr>
         </table>
 
@@ -20,7 +20,7 @@
         </a>
 
         <a tal:attributes="href string:/malone/products/${context/name}"
-           tal:condition="view/latestBugs"
+           tal:condition="view/latestBugTasks"
            style="font-size: 85%; display: inline; clear: both; text-decoration: none;"
            title="See all bugs for this product">
             <img src="/++resource++add.gif" alt="+" />

@@ -2,30 +2,30 @@
 
 __metaclass__ = type
 
-from zope.interface import implements
-from zope.schema import TextLine, Int, Choice
-
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-
+from zope.app.form import CustomWidgetFactory
+from zope.app.form.browser import SequenceWidget, ObjectWidget
+from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
+from zope.component import getUtility
+import zope.security.interfaces
 
-from canonical.launchpad.database import Project, Product, SourceSource, \
-        SourceSourceSet, ProductSeries, ProductSeriesSet, Bug, \
-        ProductBugAssignment, BugFactory
+from sqlobject.sqlbuilder import AND, IN, ISNULL
 
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
+from canonical.lp import dbschema
+from canonical.lp.z3batching import Batch
+from canonical.lp.batching import BatchNavigator
+from canonical.database.sqlbase import quote
+from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
+     MilestoneVocabulary
+
+from canonical.launchpad.database import Product, ProductSeriesSet, Bug, \
+     BugFactory, ProductMilestoneSet, Milestone, BugTask, SourceSourceSet,\
+     Person
 
 from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet
-
 from canonical.launchpad.browser.productrelease import newProductRelease
-
-from zope.app.form.browser.add import AddView
-from zope.app.form.browser import SequenceWidget, ObjectWidget
-from zope.app.form import CustomWidgetFactory
-
-import zope.security.interfaces
 
 #
 # Traversal functions that help us look up something
@@ -35,7 +35,9 @@ def traverseProduct(product, request, name):
     if name == '+sources':
         return SourceSourceSet()
     elif name == '+series':
-        return ProductSeriesSet(product=product)
+        return ProductSeriesSet(product = product)
+    elif name == 'milestones':
+        return ProductMilestoneSet(product = product)
     else:
         return product.getRelease(name)
 
@@ -62,6 +64,9 @@ class ProductView:
     projectPortlet = ViewPageTemplateFile(
         '../templates/portlet-product-project.pt')
 
+    milestonePortlet = ViewPageTemplateFile(
+        '../templates/portlet-product-milestones.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.product = context
@@ -78,16 +83,17 @@ class ProductView:
         """
         # check that we are processing the correct form, and that
         # it has been POST'ed
-        if not self.form.get("Update", None)=="Update Product":
+        form = self.form
+        if form.get("Update") != "Update Product":
             return
-        if not self.request.method == "POST":
+        if self.request.method != "POST":
             return
         # Extract details from the form and update the Product
-        self.context.displayname = self.form['displayname']
-        self.context.title = self.form['title']
-        self.context.shortdesc = self.form['shortdesc']
-        self.context.description = self.form['description']
-        self.context.homepageurl = self.form['homepageurl']
+        self.context.displayname = form['displayname']
+        self.context.title = form['title']
+        self.context.shortdesc = form['shortdesc']
+        self.context.description = form['description']
+        self.context.homepageurl = form['homepageurl']
         notify(ObjectModifiedEvent(self.context))
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
@@ -96,17 +102,26 @@ class ProductView:
         return iter(self.context.sourcesources())
 
     def newSourceSource(self):
-        if not self.form.get("Register", None)=="Register Revision Control System":
+        form = self.form
+        if (form.get("Register") != "Register Revision Control System"):
             return
-        if not self.request.method=="POST":
+        if self.request.method != "POST":
             return
         owner = IPerson(self.request.principal)
-        ss = self.context.newSourceSource(self.form, owner)
-        self.request.response.redirect('+sources/'+self.form['name'])
+        #XXX: cprov 20050112
+        # SteveA comments:
+        # Passing form is only slightly more evil than passing **kw.
+        # I'd rather see the correct keyword arguments passed in explicitly.
+        #
+        # Avoid passing obscure arguments as self.form
+        ss = self.context.newSourceSource(form, owner)
+        self.request.response.redirect('+sources/'+ form['name'])
 
     def newProductRelease(self):
         # default owner is the logged in user
         owner = IPerson(self.request.principal)
+        #XXX: cprov 20050112
+        # Avoid passing obscure arguments as self.form
         pr = newProductRelease(self.form, self.context, owner)
  
     def newseries(self):
@@ -115,41 +130,189 @@ class ProductView:
         # The code needs to extract all the relevant form elements,
         # then call the ProductSeries creation methods.
         #
-        if not self.form.get("Register", None)=="Register Series":
+        if not self.form.get("Register") == "Register Series":
             return
         if not self.request.method == "POST":
             return
+        #XXX: cprov 20050112
+        # Avoid passing obscure arguments as self.form
         series = self.context.newseries(self.form)
         # now redirect to view the page
         self.request.response.redirect('+series/'+series.name)
 
-    def latestBugs(self, quantity=5):
+    def latestBugTasks(self, quantity=5):
         """Return <quantity> latest bugs reported against this product."""
-        buglist = self.context.bugs
-        bugsdated = []
-        for bugass in buglist:
-            bugsdated.append( (bugass.datecreated, bugass) )
-        bugsdated.sort(); bugsdated.reverse()
-        buglist = []
-        for bug in bugsdated[:quantity]:
-            buglist.append(bug[1])
-        buglist.reverse()
-        return buglist
+        tasklist = self.context.bugtasks
+        # Sort the bugs by datecreated and return the last <quantity> bugs.
+        bugsdated = [(task.datecreated, task) for task in tasklist]
+        bugsdated.sort()
+        last_few_tasks = bugsdated[-quantity:]
+        return [task for sortkey, task in last_few_tasks]
 
+# XXX cprov 20050107
+# This class needs revision for:
+#  * not using BugTask directly
+#  * code improves
+#  * use Authorization component
 class ProductBugsView:
-    def bugassignment_search(self):
-        return self.context.bugs
+    DEFAULT_STATUS = (
+        int(dbschema.BugTaskStatus.NEW),
+        int(dbschema.BugTaskStatus.ACCEPTED))
 
-    def assignment_columns(self):
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.batch = Batch(
+            self.bugtask_search(), int(request.get('batch_start', 0)))
+        self.batchnav = BatchNavigator(self.batch, request)
+
+    def bugtask_search(self):
+        ba_params = []
+
+        param_searchtext = self.request.get('searchtext')
+        if param_searchtext:
+            try:
+                int_param_searchtext = int(param_searchtext)
+            except ValueError:
+                # Use full text indexing. We can't use like to search text
+                # or descriptions since it won't use indexes.
+                # XXX: Stuart Bishop, 2004-12-02 Pull this commented code
+                # after confirming if we stick with tsearch2
+
+                # XXX: Brad Bollenbach, 2004-11-26:
+                # I always found it particularly
+                # unhelpful that sqlobject doesn't have this by default, for DB
+                # backends that support it.
+                #
+                # def ILIKE(expr, string):
+                #    return SQLOp("ILIKE", expr, string)
+
+                # looks like user wants to do a text search of
+                # title/shortdesc/description
+                #
+                # searchtext = '%' + param_searchtext + '%'
+                # bugs = Bug.select(
+                #     OR(ILIKE(Bug.q.title, searchtext),
+                #        ILIKE(Bug.q.shortdesc, searchtext),
+                #        ILIKE(Bug.q.description, searchtext)))
+                
+                bugs = Bug.select('fti @@ ftq(%s)' % quote(param_searchtext))
+                bugids = [bug.id for bug in bugs]
+                if bugids:
+                    ba_params.append(IN(BugTask.q.bugID, bugids))
+                else:
+                    return []
+
+            else:
+                self.request.response.redirect("/malone/bugs/" +
+                                               int_param_searchtext)
+
+        param_status = self.request.form.get('status', self.DEFAULT_STATUS)
+        if param_status and param_status != 'all':
+            status = []
+            if isinstance(param_status, (list, tuple)):
+                status = param_status
+            else:
+                status = [param_status]
+            ba_params.append(IN(BugTask.q.status, status))
+
+        param_severity = self.request.get('severity', None)
+        if param_severity and param_severity != 'all':
+            severity = []
+            if isinstance(param_severity, (list, tuple)):
+                severity = param_severity
+            else:
+                severity = [param_severity]
+            ba_params.append(IN(BugTask.q.severity, severity))
+
+        param_assignee = self.request.get('assignee')
+        if param_assignee and param_assignee not in ('all', 'unassigned'):
+            assignees = []
+            if isinstance(param_assignee, (list, tuple)):
+                people = Person.select(IN(Person.q.name, param_assignee))
+            else:
+                people = Person.select(Person.q.name == param_assignee)
+
+            if people:
+                assignees = [p.id for p in people]
+
+            ba_params.append(
+                IN(BugTask.q.assigneeID, assignees))
+        elif param_assignee == 'unassigned':
+            ba_params.append(ISNULL(BugTask.q.assigneeID))
+
+        param_target = self.request.get('target')
+        if param_target and param_target not in ('all', 'unassigned'):
+            targets = []
+            if isinstance(param_target, (list, tuple)):
+                targets = Milestone.select(IN(Milestone.q.name, param_target))
+            else:
+                targets = Milestone.select(Milestone.q.name == param_target)
+
+            if targets:
+                targets = [t.id for t in targets]
+
+            ba_params.append(
+                IN(BugTask.q.milestoneID, targets))
+        elif param_target == 'unassigned':
+            ba_params.append(ISNULL(BugTask.q.milestoneID))
+
+        ba_params.append(BugTask.q.productID == self.context.id)
+
+        if ba_params:
+            ba_params = [AND(*ba_params)]
+
+        return BugTask.select(*ba_params)
+
+    def task_columns(self):
         return [
-            "id", "title", "status", "priority", "severity",
-            "submittedon", "submittedby", "assignedto", "actions"]
-   
+            "id", "title", "milestone", "status", "submittedby", "assignedto"]
+
+    def assign_to_milestones(self):
+        if self.request.principal:
+            if self.context.owner.id == self.request.principal.id:
+                milestone_name = self.request.get('milestone')
+                if milestone_name:
+                    milestone = Milestone.byName(milestone_name)
+                    if milestone:
+                        taskids = self.request.get('task')
+                        if taskids:
+                            if not isinstance(taskids, (list, tuple)):
+                                taskids = [taskids]
+
+                            tasks = [BugTask.get(taskid) for taskid in taskids]
+                            for task in tasks:
+                                task.milestone = milestone
+       
+    def people(self):
+        """Return the list of people in Launchpad."""
+        # the vocabulary doesn't need context since the
+        # ValidPerson is independent of it in LP
+        return ValidPersonVocabulary(None)
+    
+    def milestones(self):
+        """Return the list of milestones for this product."""
+        # Produce an empty context 
+        class HackedContext:
+            pass
+        
+        context = HackedContext()
+        # Set context.product as required by Vocabulary
+        context.product = self.context
+        # Pass the designed context
+        return MilestoneVocabulary(context)
+
+    def statuses(self):
+        """Return the list of bug task statuses."""
+        return dbschema.BugTaskStatus.items
+
 
 class ProductFileBugView(AddView):
 
     __used_for__ = IProduct
 
+    #XXX cprov 20050107
+    # Can we use the IBug instead of the content class ?
     ow = CustomWidgetFactory(ObjectWidget, Bug)
     sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
     options_widget = sw
@@ -164,12 +327,16 @@ class ProductFileBugView(AddView):
         # add the owner information for the bug
         owner = IPerson(self.request.principal, None)
         if not owner:
-            raise zope.security.interfaces.Unauthorized, "Need an authenticated bug owner"
+            raise zope.security.interfaces.Unauthorized(
+                "Need an authenticated bug owner")
         kw = {}
-        for item in data.items():
-            kw[str(item[0])] = item[1]
+        for key, value in data.items():
+            kw[str(key)] = value
         kw['product'] = self.context
         # create the bug
+        # XXX cprov 20050112
+        # Try to avoid passing **kw, it is unreadable
+        # Pass the keyword explicitly ...
         bug = BugFactory(**kw)
         notify(ObjectCreatedEvent(bug))
         return bug
@@ -183,19 +350,20 @@ class ProductSetView:
     __used_for__ = IProductSet
 
     def __init__(self, context, request):
+        
         self.context = context
         self.request = request
-        self.form = self.request.form
-        self.soyuz = self.form.get('soyuz', None)
-        self.rosetta = self.form.get('rosetta', None)
-        self.malone = self.form.get('malone', None)
-        self.bazaar = self.form.get('bazaar', None)
-        self.text = self.form.get('text', None)
+        form = self.request.form
+        self.soyuz = form.get('soyuz')
+        self.rosetta = form.get('rosetta')
+        self.malone = form.get('malone')
+        self.bazaar = form.get('bazaar')
+        self.text = form.get('text')
         self.searchrequested = False
-        if (self.text is not None or \
-            self.bazaar is not None or \
-            self.malone is not None or \
-            self.rosetta is not None or \
+        if (self.text is not None or
+            self.bazaar is not None or 
+            self.malone is not None or 
+            self.rosetta is not None or 
             self.soyuz is not None):
             self.searchrequested = True
         self.results = None
@@ -236,12 +404,26 @@ class ProductSetAddView(AddView):
         # add the owner information for the product
         owner = IPerson(self.request.principal, None)
         if not owner:
-            raise zope.security.interfaces.Unauthorized, "Need an authenticated owner"
+            raise zope.security.interfaces.Unauthorized(
+                "Need an authenticated bug owner")
         kw = {}
-        for item in data.items():
-            kw[str(item[0])] = item[1]
+        for key, value in data.items():
+            kw[str(key)] = value
         kw['owner'] = owner
-        product = Product(**kw)
+        # grab a ProductSet utility 
+        product_util = getUtility(IProductSet)
+        # create a brand new Product
+        # XXX cprov 20050112
+        # -> try to don't use collapsed dict as argument, use it expanded
+        # XXX cprov 20050117
+        # The required field are:
+        #    def createProduct(owner, name, displayname, title, shortdesc,
+        #                      description, project=None, homepageurl=None,
+        #                      screenshotsurl=None, wikiurl=None,
+        #                      downloadurl=None, freshmeatproject=None,
+        #                      sourceforgeproject=None):
+        # make sure you have those required keys in the kw dict 
+        product = product_util.createProduct(**kw)
         notify(ObjectCreatedEvent(product))
         self._nextURL = kw['name']
         return product

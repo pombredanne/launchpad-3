@@ -17,8 +17,13 @@
    <allow interface="canonical.launchpad.interfaces.IBinaryPackage" />
 </content>
 
+<browser:traverse
+   for="canonical.launchpad.database.BinaryPackage" 
+   getter="__getitem__" />
+
 <browser:page
    for="canonical.launchpad.database.BinaryPackage" 
+   class="canonical.launchpad.browser.BinaryPackageView"
    permission="zope.Public"
    name="index.html"
    template="../templates/binarypackage-index.pt"
@@ -42,14 +47,6 @@
    class="canonical.launchpad.browser.DistroReleaseBinariesView"
    template="../templates/binarypackage-list.pt"
    lp:url="Soyuz/distros/$Distribution/$Distrorelease/$Archtag/index.html"/>
-
-<!-- <browser:page -->
-<!--    for="canonical.launchpad.database.BinaryPackageSet"  -->
-<!--    permission="zope.Public" -->
-<!--    class="canonical.launchpad.browser.DistrosReleaseBinariesSearchView" -->
-<!--    template="../templates/binarypackage-search.pt" -->
-<!--    lp:url="Soyuz/distros/$Distribution/$Distrorelease/$Archtag/+search" -->
-<!--    name="+search"/> -->
 
 
 <!-- BinaryPackagename -->
