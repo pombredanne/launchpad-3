@@ -200,3 +200,7 @@ COMMENT ON COLUMN SourcePackagePublishing.status IS 'This column contains the st
 
 COMMENT ON COLUMN PackagePublishing.status IS 'This column contains the status of the publishing record. The valid states are described in dbschema.py in PackagePublishingStatus. Example states are "Pending" and "Published"';
 
+-- PersonLanguage
+COMMENT ON TABLE PersonLanguage IS 'PersonLanguage: This table stores the preferred languages that a Person has, it''s used in Rosetta to select the languages that should be showed to be translated.';
+COMMENT ON COLUMN PersonLanguage.person IS 'This field is a reference to a Person object that has this preference.';
+COMMENT ON COLUMN PersonLanguage.language IS 'This field is a reference to a Language object that says that the Person associated to this row knows how to translate/understand this language.';
