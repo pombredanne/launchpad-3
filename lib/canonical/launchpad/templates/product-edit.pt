@@ -50,7 +50,7 @@
                     <i>Apache</i>, <i>Thunderbird</i>, <i>Firefox</i>.
                   </div>
 
-                <input type="text" name="displayname" size="20"
+                <input type="text" name="displayname" size="30"
                        value="" tal:attributes="value context/displayname" />
         </div>
 
@@ -68,7 +68,7 @@
                     Mozilla Firefox Web Browser</i>.
                   </div>
 
-                <input type="text" name="title" size="30"
+                <input type="text" name="title" size="50"
                        value="" tal:attributes="value context/title" />
         </div>
 
@@ -113,7 +113,7 @@
                     be the same as the overall project home page.
                   </div>
 
-                <input type="text" name="homepageurl" size="30"
+                <input type="text" name="homepageurl" size="50"
                        value="" tal:attributes="value context/homepageurl" />
         </div>
 

@@ -66,7 +66,7 @@ class ProjectContainerView(object):
         title = self.form['title']
         shortdesc = self.form['shortdesc']
         description = self.form['description']
-        homepageurl = self.form['url']
+        homepageurl = self.form['homepageurl']
         # get the launchpad person who is creating this product
         owner = IPerson(self.request.principal)
         # Now create a new project in the db
@@ -78,9 +78,7 @@ class ProjectContainerView(object):
                           owner=owner,
                           homepageurl=homepageurl,
                           datecreated=nowUTC)
-        # XXX Mark Shuttleworth 02/10/04 I don't understand this
-        #     next line. Why do we reset project to None?
-        self.submittedok=True
+        # now redirect to the page to view it
         self.request.response.redirect(name)
 
 
@@ -111,7 +109,7 @@ class ProjectView(object):
         title = self.form['title']
         shortdesc = self.form['shortdesc']
         description = self.form['description']
-        url = self.form['url']
+        homepageurl = self.form['homepageurl']
         # XXX Mark Shuttleworth 03/10/04 this check is not yet being done.
         # check to see if there is an existing product with
         # this name.
@@ -125,18 +123,12 @@ class ProjectView(object):
                           description=description,
                           project=self.context.id,
                           owner=owner,
-                          homepageurl=url,
+                          homepageurl=homepageurl,
                           datecreated=nowUTC)
-        # XXX Mark Shuttleworth 02/10/04 I don't understand this
-        #     next line. Why do we reset product to None?
-        product = None
-        self.submittedok=True
+        # now redirect to view the page
         self.request.response.redirect(name)
 
     def edit(self):
-        # XXX Mark Shuttleworth 03/10/04 This method is virtually
-        #     identical to ProductView.edit(), should they have a common
-        #     ancestor class or mixin?
         """
         Update the contents of a Project. This method is called by a
         tal:dummy element in a page template. It checks to see if a
@@ -155,6 +147,10 @@ class ProjectView(object):
         self.context.title = self.form['title']
         self.context.shortdesc = self.form['shortdesc']
         self.context.description = self.form['description']
+        self.context.homepageurl = self.form['homepageurl']
+        # now redirect to view the product
+        self.request.response.redirect(self.request.URL[-1])
+        
 
 
 #
@@ -188,4 +184,7 @@ class ProductView(object):
         self.context.title = self.form['title']
         self.context.shortdesc = self.form['shortdesc']
         self.context.description = self.form['description']
+        self.context.homepageurl = self.form['homepageurl']
+        # now redirect to view the product
+        self.request.response.redirect(self.request.URL[-1])
 

@@ -69,7 +69,7 @@
                     Mozilla Project</i>.
                   </div>
 
-                <input type="text" name="title" size="30"
+                <input type="text" name="title" size="50"
                        value="" tal:attributes="value context/title" />
         </div>
 
@@ -117,7 +117,7 @@
                     only product.
                   </div>
 
-                <input type="text" name="homepageurl" size="30"
+                <input type="text" name="homepageurl" size="50"
                        value="" tal:attributes="value context/homepageurl" />
         </div>
 

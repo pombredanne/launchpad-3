@@ -15,7 +15,7 @@ from zope.i18n.interfaces import IUserPreferredLanguages
 from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
 from canonical.launchpad.interfaces import ILanguages, IPerson
 from canonical.launchpad.interfaces import IProjectSet
-from canonical.launchpad.database import RosettaLanguage, Person
+from canonical.launchpad.database import Language, Person
 
 from canonical.rosetta.poexport import POExport
 from canonical.rosetta.pofile import POHeader

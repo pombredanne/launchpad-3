@@ -14,7 +14,7 @@
         set_attributes="header pluralForms"/>
   </content>
 
-  <content class="canonical.launchpad.database.RosettaPOMessageSet">
+  <content class="canonical.launchpad.database.POMessageSet">
     <allow interface="canonical.launchpad.interfaces.IEditPOTemplateOrPOFileMessageSet"/>
   </content>
 
@@ -22,20 +22,20 @@
     <allow interface="canonical.launchpad.interfaces.IPOTranslationSighting"/>
   </content>
 
-  <content class="canonical.launchpad.database.RosettaPOMessageID">
+  <content class="canonical.launchpad.database.POMessageID">
     <allow interface="canonical.launchpad.interfaces.IPOMessageID"/>
   </content>
 
-  <content class="canonical.launchpad.database.RosettaPOTranslation">
+  <content class="canonical.launchpad.database.POTranslation">
     <allow interface="canonical.launchpad.interfaces.IPOTranslation"/>
   </content>
 
-  <content class="canonical.launchpad.database.RosettaLanguage">
+  <content class="canonical.launchpad.database.Language">
     <allow interface="canonical.launchpad.interfaces.ILanguage"/>
   </content>
 
   <utility
-      factory="canonical.launchpad.database.RosettaLanguages"
+      factory="canonical.launchpad.database.Languages"
       provides="canonical.launchpad.interfaces.ILanguages"
       />
 
