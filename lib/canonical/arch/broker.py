@@ -3,10 +3,10 @@
 # Copyright (C) 2004 Canonical Software
 
 from zope.interface import implements, classProvides
-from canonical.arch.interfaces import *
+from canonical.launchpad.interfaces import *
 import canonical.arch, sys
 canonical.arch.broker = sys.modules['canonical.arch.broker']
-from canonical.arch import database
+from canonical.launchpad import database
 
 default_location = "/tmp/"
 

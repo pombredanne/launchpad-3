@@ -5,9 +5,9 @@ It will create ArchArchive and Branch entries as needed.
 
 #from canonical.arch.database import Archive
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.database.buttress import SourceSource
 from canonical.soyuz.importd import SoyuzProduct
 import canonical.lp
+from canonical.launchpad.database import ArchArchive, ArchPerson, SourceSource
 
 from sqlobject import ForeignKey, IntCol, StringCol, DateTimeCol, BoolCol, \
                       EnumCol, connectionForURI
@@ -19,18 +19,6 @@ import importd
 import importd.Job
 
 import logging
-
-class ArchArchive(SQLBase):
-    """ArchArchive table"""
-
-    _table = 'ArchArchive'
-    _columns = [
-        StringCol('name', dbName='name', notNull=True),
-        StringCol('title', dbName='title', notNull=True),
-        StringCol('description', dbName='description', notNull=True),
-        BoolCol('visible', dbName='visible', notNull=True),
-        ForeignKey(name='owner', foreignKey='ArchPerson', dbName='owner'),
-    ]
 
 
 class RCSTypeEnum:
@@ -120,14 +108,6 @@ class ImporterSourceSource(SourceSource):
 
 # XXX: This hack should go away when everything is properly refactored
 SourceSource = ImporterSourceSource
-
-class ArchPerson(SQLBase):
-
-    _table = 'Person'
-
-    _columns = [
-        StringCol('name', dbName='displayname', notNull=True),
-        ]
 
 
 def make_lifeless():
