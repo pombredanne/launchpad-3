@@ -85,7 +85,6 @@ fieldset.two-column {
 /* Plone elements that should be changed */
 
 h1, h2, h3, h4, h5, h6 {
-    text-shadow: #999999 3px 3px 3px;
     border-bottom: none;
 }
 
@@ -432,12 +431,32 @@ label.fuzzy-checkbox {
 
 /* === Undo bugs in plone.css === */
 
-body {
+body, .listing {
   font-size: 100%;
+}
+.listing td {
+  padding: 0.125em 0.25em;
+}
+
+code {
+  font-family: monospace;
+  font-size: 100%;
+  color: inherit;
+  background: transparent;
+  border: none;
+  padding: inherit;
+}
+
+.formHelp, .formHelp:hover {
+  color: #666666;
 }
 
 .portlet, #portal-top, #portal-footer {
   font-size: smaller;
+}
+
+ul {
+  list-style-image: none;
 }
 
 li {
@@ -448,8 +467,17 @@ li.edit, ul.edit li {
     list-style-image: url(/++resource++edit.gif);
 }
 
+#portal-personaltools .portalUser {
+    background: transparent url(/++resource++user.gif)
+}
+
 .portlet li a {
     text-decoration: none
+}
+
+pre {
+  font-family: monospace;
+  font-size: 100%;
 }
 
 /* === New design === */
@@ -470,7 +498,61 @@ thead {
   vertical-align: bottom;
 }
 
-/* Launchpad-wide */
+/* -- Launchpad-wide -- */
+
+h1, h2, h3, h4, h5, h6 {
+  clear: both;
+	color: #000066;
+	font-family: "Lucida Grande", sans-serif;
+	font-weight: normal;
+	margin-top: 0;
+	text-align: left;
+}
+h2 {
+	text-transform: uppercase;
+	margin: 0.5em 0;
+}
+h2, h3, h4, h5, h6 {
+	font-size: 1em;
+}
+/* temporary while page-header exists: */
+.page-header h2 {
+  clear: none;
+  margin: 0;
+  text-transform: none;
+  font-size: 1.5em;
+}
+h3, h4, h5, h6 {
+	margin-bottom: 0;
+}
+table {
+	border-collapse: collapse;
+}
+table.data, table.data thead, table.data tfoot {
+	border: solid #999;
+	border-width: 1pt 0;
+}
+table.data tr {
+	border: dotted #999;
+	border-width: 1pt 0;
+}
+table.data th, table.data td {
+  padding: 0.25em 0.125em;
+}
+td p, td ol:first-child, td blockquote:first-child {
+	margin-top: 0;
+}
+th {
+	text-align: right;
+}
+thead th {
+	text-align: center;
+}
+tr {
+	vertical-align: top;
+}
+
+
 
 .user {
 	float: right;
@@ -503,6 +585,7 @@ address.app {
 }
 .navigation li:before {
 	content: '\2022';
+	margin-right: 0.25em;
 }
 #main {
 	border-top: 2pt solid black;
@@ -536,6 +619,17 @@ address.app {
     float: right;
 }
 .launchpad-apps td {
+}
+
+.bugid {
+  text-align: left;
+  width: 50%;
+  float: left;
+}
+.created {
+  text-align: right;
+  width: 50%;
+  float: right;
 }
 
 td.plain {

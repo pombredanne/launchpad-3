@@ -8,8 +8,5 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
-              <h5>submitter:</h5>
-              <ul class="people">
-                  <li><a href="/people/name16">Foo Bar</a></li>
-              </ul>
+              <a href="/people/name16">Foo Bar</a>
   ...

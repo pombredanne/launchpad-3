@@ -78,7 +78,6 @@
                     <a href="/malone/bugs/2/people/6/+edit">...</a>
                   </li>
   ...
-      <h1>Bug Description and Discussion</h1>
+      <h2>
+        Description
   ...
-
-

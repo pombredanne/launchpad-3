@@ -2,6 +2,66 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-05 03:09:01 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1559
+
+    Summary:
+      accumulated fixes for bug report page, +add forms, and font sizes ... 7th time lucky
+    Revision:
+      launchpad--devel--0--patch-1559
+
+    Patches applied:
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-17
+       merge rocketfuel
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-18
+       begin overriding plone.org image references
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-19
+       improving bug report display; removing dead 'prefs' link
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-20
+       fixing page tests
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-21
+       improve +add forms display
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-22
+       fix page test error
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-23
+       enlarge text in listing tables
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/interfaces/bounty.py
+     lib/canonical/launchpad/pagetests/distro-bugprivacy/05-set-bug-private-as-member-of-maintainer-team.txt
+     lib/canonical/launchpad/pagetests/malone/10-add-subscription.txt
+     lib/canonical/launchpad/pagetests/malone/60-add-external-ref.txt
+     lib/canonical/launchpad/pagetests/malone/70-add-edit-watch.txt
+     lib/canonical/launchpad/pagetests/malone/80-add-comment.txt
+     lib/canonical/launchpad/pagetests/malone/91-bug-add-owner-auto-subscribed.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-index.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/95-make-bug-private-as-implicit-subscriber.txt
+     lib/canonical/launchpad/templates/bounty.pt
+     lib/canonical/launchpad/templates/bug-index.pt
+     lib/canonical/launchpad/templates/launchpad-addform.pt
+     lib/canonical/launchpad/templates/launchpad-widget-macros.pt
+     lib/canonical/launchpad/templates/launchpad.css
+     lib/canonical/launchpad/templates/main-template.pt
+     lib/canonical/launchpad/templates/portlet-bug-people.pt
+     lib/canonical/launchpad/templates/portlet-bug-tasks-headline.pt
+
+    new patches:
+     mpt@canonical.com/launchpad--devel--0--patch-17
+     mpt@canonical.com/launchpad--devel--0--patch-18
+     mpt@canonical.com/launchpad--devel--0--patch-19
+     mpt@canonical.com/launchpad--devel--0--patch-20
+     mpt@canonical.com/launchpad--devel--0--patch-21
+     mpt@canonical.com/launchpad--devel--0--patch-22
+     mpt@canonical.com/launchpad--devel--0--patch-23
+
+
 2005-04-04 23:00:56 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1558
 
     Summary:
