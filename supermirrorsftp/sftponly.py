@@ -124,7 +124,7 @@ class SFTPServerForPushMirrorUser:
         os.mkdir(path)
         # XXX: self._setattrs(path)
 
-    def removeDir(self, path):
+    def removeDirectory(self, path):
         os.rmdir(self._childPath(path).path)
 
     def openDirectory(self, path):
