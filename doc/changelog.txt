@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-18 13:22:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1333
+
+    Summary:
+      Fix dupe db patch
+    Revision:
+      launchpad--devel--0--patch-1333
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-138
+       fix dupe db patch
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-139
+       Merge from Rocketfuel
+    
+
+    modified files:
+     database/schema/patch-10-04-0.sql doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-138
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-139
+
+
 2005-02-18 11:37:12 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1332
 
     Summary:
