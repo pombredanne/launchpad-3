@@ -1,0 +1,93 @@
+Last Review: 26 Aug 2004 13:50 CEST
+arch-tag: 06f3feef-229e-42b9-a9d5-ab8c3758a23b
+
+This document talks about the process we should follow to export a .po file from Rosetta:
+
+Here is described the process and it's not optimized, perhaps there is a faster way to do it
+with less queries and less steps, that's outside the scope of this document.
+
+We need a temporary store for a list of POMsgSet.id that are already exported.
+
+
+Comments:
+ 1.- What happens if we have a msgset in a POFile that is not available in the POFile anymore
+ and we see again it, should we reuse it? For example, it happens if we import a pofile with
+ an obsolete msgset and when we import it again, someone has deleted it.
+ Also it could be interesting add as fuzzy other translations from other modules (perhaps for Phase 2)
+
+To be able to export a POFile we need to know the POFile object we want to get.
+
+1.- We get the POTemplate associated to this POFile "po" (POFile.potemplate)
+2.- We get all POMsgSets for this POTemplate "pot" that have POMsgIDSighting that were in the
+    pot file last time we imported it:
+    SELECT POMsgSet.* FROM POMsgSet
+    WHERE
+        POMsgSet.potemplate = pot.id AND 
+        POMsgSet.pofile IS NULL AND
+        EXISTS (SELECT * FROM POMsgIDSighting
+	        WHERE
+		    POMsgSet.id = POMsgIDSighting.pomsgset AND
+                    POMsgIDSighting.inlastrevision = TRUE)
+3.- For every POMsgSet "potSet" we got in #2 we look for its equivalent POMsgSet "poSet" inside the POFile:
+    SELECT POMsgSet.* FROM POMsgSet
+    WHERE
+        POMsgSet.potemplate = pot.id AND
+        POMsgSet.pofile = po.id AND
+        POMsgSet.primemsgid = potSet.primemsgid
+    3.1 If we don't get a POMsgSet from #3 we dump the potSet one and continue with next one (back to #3)
+    3.2 If we get a POMsgSet from #3:
+        3.2.1 We add its POMsgSet.id inside the temporal store.
+        3.2.2 We look for any active translation "transSight":
+            SELECT * FROM POTranslationSighting
+            WHERE
+                POTranslationSighting.pomsgset = poSet.id AND
+                POTranslationSighting.active = TRUE)
+            3.2.2.1 If we don't get any POTranslationSighting, we dump the potSet + poSet.commenttext
+                and back to #3
+		XXX: Should we look on older translations? (Read comment #1)
+            3.2.2.2 If we have an active translation we need to check if it's a plural form ("potMsgIDSight")
+	        and if it's the same than POTemplate one:
+                SELECT POMsgIDSighting.id FROM POMsgIDSighting
+                WHERE
+                    POMsgIDSighting.pomsgset = potSet.id AND
+                    POMSgIDSighting.pluralform > 0 AND
+                    POMsgIDSighting.inlastrevision = TRUE
+                3.2.2.2.1 The resultset is empty so it's not a plural form in the POTemplate, we check
+		    if it's a plural form in the POFile:
+		    SELECT POMsgIDSighting.id FROM POMsgIDSighting
+		    WHERE
+		        POMsgIDSighting.pomsgset = poSet.id AND
+			POMSgIDSighting.pluralform > 0 AND
+			POMsgIDSighting.inlastrevision = TRUE
+		    3.2.2.2.1.1 Does not exists any record, we dump the potSet +:
+                        poSet.commenttext
+                        poSet.fuzzy
+			transSight.potranslation.translation
+			and back to #3
+		    3.2.2.2.1.2 We have a record, we dump the potSet +:
+		        poSet.commenttext
+			transSight.potranslation.translation
+			and set the fuzzy flag always.
+			and back to #3
+		3.2.2.2.2 The resultset is not empty so it's a plural form in POTemplate, we check
+		    if exists the same plural form in the POFile as active:
+		    SELECT POMsgIDSighting.id FROM POMsgIDSighting
+		    WHERE
+		        POMsgIDSighting.pomsgid = potMsgIDSight.pomsgid AND
+			POMsgIDSighting.inlastrevision = TRUE
+		    3.2.2.2.2.1 The plural forms are equal, we dump the potSet +:
+		        poSet.commenttext
+			poSet.fuzzy (if poSet.iscomplete is FALSE, we set also the fuzzy flag)
+			transSight.potranslation.translation
+			and back to #3
+		    3.2.2.2.2.2 The plural forms are not equal, we dump the potSet +:
+		        poset.commenttext
+			transSight.potranslation.translation
+			and set the fuzzy flag always.
+			and back to #3
+		
+	
+		    
+					
+
+		

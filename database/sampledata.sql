@@ -677,12 +677,6 @@ INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, descr
 VALUES ((SELECT id FROM Project WHERE name='gnome'),
 	(SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
 	'gnome-terminal', 'GNOME Terminal', 'The GNOME terminal emulator', 'foo', 'bar', 'http://www.gnome.org/' );
-/*
-INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, description, homepageurl )
-VALUES ((SELECT id FROM Project WHERE name='gnome'),
-	(SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
-	'gnome-terminal', 'GNOME Terminal', 'The GNOME terminal emulator', 'foo', 'bar', 'http://www.gnome.org/' );
-*/
 INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, description, homepageurl )
 VALUES ((SELECT id FROM Project WHERE name='iso-codes'),
 	(SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
