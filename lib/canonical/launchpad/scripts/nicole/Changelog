@@ -1,3 +1,9 @@
+2005-01-12 cprov:
+     -> Integrate command line support with optparse module
+	(see help for further info)
+     -> Fix #47 (production) request for -F and -p flags
+     -> Add -n (dry-run) flag
+
 2005-01-11 cprov:
      -> Add Morgan's RDF support files (fetchrdf.py, rdfspli.py,
 					rdfproj.py)

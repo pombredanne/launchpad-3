@@ -77,17 +77,17 @@ def grab_rdf_info(name):
     print '@\tFound at FM RDF'
     return data
     
-def createorupdate(doap, product_name, source):
+def createorupdate(doap, productname, source, packagename=None, force=None):
     if source == 'web':
-        data = grab_web_info(product_name)
+        data = grab_web_info(productname)
     else:
-        data = grab_rdf_info(product_name)
+        data = grab_rdf_info(productname)
 
-    if data:
-        doap.ensureProduct(data, product_name, None)
+    if data or force:
+        doap.ensureProduct(data, productname, packagename=packagename)
     else:
-        print '@\tNo Product Found for %s' % product_name
-        append_list(product_name)                
+        print '@\tNo Product Found for %s' % productname
+        append_list(productname)                
 
 
 if __name__ == "__main__":
@@ -128,6 +128,18 @@ if __name__ == "__main__":
                       help="Not Found list file",
                       metavar="FILE",
                       default="nicole_notfound")
+    ## Commit in DB or not
+    parser.add_option("-n", "--dry-run", dest="dry_run",
+                      help="don't commit changes to database",
+                      default=False, action='store_true')
+
+    parser.add_option("-F", "--force", dest="force",
+                      help="Force the creation of the Objects",
+                      default=False, action='store_true')
+
+    parser.add_option("-p", "--package", dest="package",
+                      help="Two columms format list",
+                      default=False, action='store_true')
 
     
     (options,args) = parser.parse_args()
@@ -138,7 +150,10 @@ if __name__ == "__main__":
     DOAPDB = options.doapdb
     WAIT = int(options.wait)
     LIST = options.listfile
-
+    DRY = options.dry_run
+    FORCE = options.force
+    PKG = options.package
+    
     # get the DB abstractors
     doap = Doap(DOAPDB)
 
@@ -152,6 +167,9 @@ if __name__ == "__main__":
     print '\tDOAP:', DOAPDB
     print '\tWait:', WAIT, 's'
     print '\tNotFOUND:', LIST
+    print '\tDRY-RUN:', DRY
+    print '\tFORCE:', FORCE
+    print '\tPKG:', PKG
     print '=================================='
     print ''
     
@@ -184,14 +202,33 @@ if __name__ == "__main__":
 
     # main looping
     for product in products:
-        index +=1
+        index += 1
+
+        if PKG:
+            try:                
+                productname, packagename = product.split()
+            except ValueError:
+                print 'Wrong List Format use:'
+                print 'PRODUCT SRC'
+                print 'PRODUCT SRC'
+                print '...'
+                sys.exit(1)
+        else:
+            productname =  product
+            packagename = None
+
         print ' '
-        print '@ Search for "%s" (%d/%d)' % (product,
+        print '@ Search for "%s" (%d/%d)' % (productname,
                                              index,
                                              tries)
-        createorupdate(doap, product, source)
-        ## Partially Commit DB Product Info
-        doap.commit()            
+    
+        createorupdate(doap, productname, source, packagename=packagename,
+                       force=FORCE)
+
+        ## If permitted, partially Commit DB Product Info
+        if not DRY:
+            doap.commit()            
+
         ## We sleep to avoid overloading SF or FM servers
         sleep(WAIT)
  

@@ -290,9 +290,12 @@ class ProductSet:
             return ret[0]
 
     def createProduct(self, **kw):
-        """Proxyed Method to create a new Product """
+        """Create a new Product"""
+        # XXX cprov 20050112
+        # Avoid using obscure **kw, we should have explicit
+        # keyword arguments.
         return Product(**kw)
-
+    
     def forReview(self):
         return Product.select("reviewed IS FALSE")
 

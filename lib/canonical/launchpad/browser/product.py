@@ -84,7 +84,7 @@ class ProductView:
         # check that we are processing the correct form, and that
         # it has been POST'ed
         form = self.form
-        if form.get("Update", None) != "Update Product":
+        if form.get("Update") != "Update Product":
             return
         if self.request.method != "POST":
             return
@@ -108,16 +108,20 @@ class ProductView:
         if self.request.method != "POST":
             return
         owner = IPerson(self.request.principal)
-        #XXX: cprov 20050107
-        # pushing form instead of **kw (BAD API)
+        #XXX: cprov 20050112
+        # SteveA comments:
+        # Passing form is only slightly more evil than passing **kw.
+        # I'd rather see the correct keyword arguments passed in explicitly.
+        #
+        # Avoid passing obscure arguments as self.form
         ss = self.context.newSourceSource(form, owner)
         self.request.response.redirect('+sources/'+ form['name'])
 
     def newProductRelease(self):
         # default owner is the logged in user
         owner = IPerson(self.request.principal)
-        #XXX: cprov 20050107
-        # pushing form instead of **kw (BAD API)
+        #XXX: cprov 20050112
+        # Avoid passing obscure arguments as self.form
         pr = newProductRelease(self.form, self.context, owner)
  
     def newseries(self):
@@ -126,12 +130,12 @@ class ProductView:
         # The code needs to extract all the relevant form elements,
         # then call the ProductSeries creation methods.
         #
-        if not self.form.get("Register", None)=="Register Series":
+        if not self.form.get("Register") == "Register Series":
             return
         if not self.request.method == "POST":
             return
-        #XXX: cprov 20050107
-        # pushing form instead of **kw (BAD API)
+        #XXX: cprov 20050112
+        # Avoid passing obscure arguments as self.form
         series = self.context.newseries(self.form)
         # now redirect to view the page
         self.request.response.redirect('+series/'+series.name)
@@ -165,34 +169,33 @@ class ProductBugsView:
     def bugassignment_search(self):
         ba_params = []
 
-        param_searchtext = self.request.get('searchtext', None)
+        param_searchtext = self.request.get('searchtext')
         if param_searchtext:
             try:
-                int(param_searchtext)
-                self.request.response.redirect("/malone/bugs/" +
-                                               param_searchtext)
+                int_param_searchtext = int(param_searchtext)
             except ValueError:
-                """
-                Use full text indexing. We can't use like to search text
-                or descriptions since it won't use indexes.
-                XXX: Stuart Bishop, 2004-12-02 Pull this commented code
-                after confirming if we stick with tsearch2
+                # Use full text indexing. We can't use like to search text
+                # or descriptions since it won't use indexes.
+                # XXX: Stuart Bishop, 2004-12-02 Pull this commented code
+                # after confirming if we stick with tsearch2
 
                 # XXX: Brad Bollenbach, 2004-11-26:
                 # I always found it particularly
                 # unhelpful that sqlobject doesn't have this by default, for DB
                 # backends that support it.
-                def ILIKE(expr, string):
-                    return SQLOp("ILIKE", expr, string)
+                #
+                # def ILIKE(expr, string):
+                #    return SQLOp("ILIKE", expr, string)
 
                 # looks like user wants to do a text search of
                 # title/shortdesc/description
-                searchtext = '%' + param_searchtext + '%'
-                bugs = Bug.select(
-                    OR(ILIKE(Bug.q.title, searchtext),
-                       ILIKE(Bug.q.shortdesc, searchtext),
-                       ILIKE(Bug.q.description, searchtext)))
-                """
+                #
+                # searchtext = '%' + param_searchtext + '%'
+                # bugs = Bug.select(
+                #     OR(ILIKE(Bug.q.title, searchtext),
+                #        ILIKE(Bug.q.shortdesc, searchtext),
+                #        ILIKE(Bug.q.description, searchtext)))
+                
                 bugs = Bug.select('fti @@ ftq(%s)' % quote(param_searchtext))
                 bugids = [bug.id for bug in bugs]
                 if bugids:
@@ -200,7 +203,11 @@ class ProductBugsView:
                 else:
                     return []
 
-        param_status = self.request.get('status', self.DEFAULT_STATUS)
+            else:
+                self.request.response.redirect("/malone/bugs/" +
+                                               int_param_searchtext)
+
+        param_status = self.request.form.get('status', self.DEFAULT_STATUS)
         if param_status and param_status != 'all':
             status = []
             if isinstance(param_status, (list, tuple)):
@@ -209,7 +216,7 @@ class ProductBugsView:
                 status = [param_status]
             ba_params.append(IN(BugTask.q.status, status))
 
-        param_assignee = self.request.get('assignee', None)
+        param_assignee = self.request.get('assignee')
         if param_assignee and param_assignee not in ('all', 'unassigned'):
             assignees = []
             if isinstance(param_assignee, (list, tuple)):
@@ -225,7 +232,7 @@ class ProductBugsView:
         elif param_assignee == 'unassigned':
             ba_params.append(ISNULL(BugTask.q.assigneeID))
 
-        param_target = self.request.get('target', None)
+        param_target = self.request.get('target')
         if param_target and param_target not in ('all', 'unassigned'):
             targets = []
             if isinstance(param_target, (list, tuple)):
@@ -256,11 +263,11 @@ class ProductBugsView:
     def assign_to_milestones(self):
         if self.request.principal:
             if self.context.owner.id == self.request.principal.id:
-                milestone_name = self.request.get('milestone', None)
+                milestone_name = self.request.get('milestone')
                 if milestone_name:
                     milestone = Milestone.byName(milestone_name)
                     if milestone:
-                        taskids = self.request.get('task', None)
+                        taskids = self.request.get('task')
                         if taskids:
                             if not isinstance(taskids, (list, tuple)):
                                 taskids = [taskids]
@@ -271,14 +278,20 @@ class ProductBugsView:
        
     def people(self):
         """Return the list of people in Launchpad."""
+        # the vocabulary doesn't need context since the
+        # ValidPerson is independent of it in LP
         return ValidPersonVocabulary(None)
     
     def milestones(self):
         """Return the list of milestones for this product."""
+        # Produce an empty context 
         class HackedContext:
             pass
+        
         context = HackedContext()
+        # Set context.product as required by Vocabulary
         context.product = self.context
+        # Pass the designed context
         return MilestoneVocabulary(context)
 
     def statuses(self):
@@ -313,6 +326,9 @@ class ProductFileBugView(AddView):
             kw[str(key)] = value
         kw['product'] = self.context
         # create the bug
+        # XXX cprov 20050112
+        # Try to avoid passing **kw, it is unreadable
+        # Pass the keyword explicitly ...
         bug = BugFactory(**kw)
         notify(ObjectCreatedEvent(bug))
         return bug
@@ -330,11 +346,11 @@ class ProductSetView:
         self.context = context
         self.request = request
         form = self.request.form
-        self.soyuz = form.get('soyuz', None)
-        self.rosetta = form.get('rosetta', None)
-        self.malone = form.get('malone', None)
-        self.bazaar = form.get('bazaar', None)
-        self.text = form.get('text', None)
+        self.soyuz = form.get('soyuz')
+        self.rosetta = form.get('rosetta')
+        self.malone = form.get('malone')
+        self.bazaar = form.get('bazaar')
+        self.text = form.get('text')
         self.searchrequested = False
         if (self.text is not None or
             self.bazaar is not None or 
@@ -389,6 +405,9 @@ class ProductSetAddView(AddView):
         # grab a ProductSet utility 
         product_util = getUtility(IProductSet)
         # create a brand new Product
+        # XXX cprov 20050112
+        # Don't use collapsed dict as argument, use the
+        # expanded  
         product = product_util.createProduct(**kw)
         notify(ObjectCreatedEvent(product))
         self._nextURL = kw['name']

@@ -2,6 +2,51 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-12 20:58:41 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1190
+
+    Summary:
+      Bug Fix (production #47) on Nicole
+    Revision:
+      launchpad--devel--0--patch-1190
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-453
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-454
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-455
+       ending style revision on Product files, they need REDESING
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-456
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-457
+       fix #47(production) adding -F and -p options to Nicole
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-458
+       update nicole changelog
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/interfaces/product.py
+     lib/canonical/launchpad/scripts/nicole/Changelog
+     lib/canonical/launchpad/scripts/nicole/database.py
+     lib/canonical/launchpad/scripts/nicole/nicole.py
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-453
+     celso.providelo@canonical.com/launchpad--devel--0--patch-454
+     celso.providelo@canonical.com/launchpad--devel--0--patch-455
+     celso.providelo@canonical.com/launchpad--devel--0--patch-456
+     celso.providelo@canonical.com/launchpad--devel--0--patch-457
+     celso.providelo@canonical.com/launchpad--devel--0--patch-458
+
+
 2005-01-12 18:25:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1189
 
     Summary:
