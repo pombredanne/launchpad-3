@@ -6,8 +6,8 @@
      </tr>
      <tr tal:repeat="package context/packages">
        <!-- FIXME: distribuiton and distrorelease missed --> 
-       <td><a tal:attributes="href string:../../distros/ubuntu/src/warty/${package/sourcepackage/name}"
-         tal:content="string:${package/sourcepackage/name}">
+       <td><a tal:attributes="href string:../../distros/ubuntu/src/warty/${package/name}"
+         tal:content="string:${package/name}">
 	     PACKAGES
 	   </a>
        <td>

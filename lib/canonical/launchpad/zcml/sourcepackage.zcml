@@ -26,6 +26,12 @@
         <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
         <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
+    
+    <!-- SourcePackageInDistro -->
+    <content class="canonical.launchpad.database.SourcePackageInDistro">
+        <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
+        <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    </content>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ISourcePackage"

@@ -27,6 +27,7 @@ from canonical.launchpad.database import BinaryPackage, Build, \
                                          SourcePackage, Manifest, \
                                          ManifestEntry, DistroRelease, \
                                          SourcePackageRelease, \
+                                         SourcePackageInDistro, \
                                          DistroArchRelease, \
                                          Distribution, Person, \
                                          EmailAddress, GPGKey, \
@@ -144,7 +145,6 @@ class DistroReleaseSourceReleaseApp(object):
             self.sourcepackagerelease = results[0]
 
         sourceReleases = sourcepackage.current(distrorelease)
-
         sourceReleases = SourcePackageRelease.selectByVersion(sourceReleases,
                                                               version)
         self.archs = None
@@ -203,14 +203,12 @@ class DistroReleaseSourceApp(object):
         
 
     def _countBugs(self):
-        all, critical, important, \
-        normal, minor, wishlist, \
-        fixed, pending = self.sourcepackage.bugsCounter()
+        (all, critical, important, normal, 
+         minor, wishlist, fixed, pending) = self.sourcepackage.bugsCounter()
 
+        # Merge some of the counts
         return (all, critical, important + normal,
                 minor + wishlist, fixed + pending)
-        
-
 
     def __getitem__(self, version):
         return DistroReleaseSourceReleaseApp(self.sourcepackage, version,
@@ -254,25 +252,24 @@ class DistroReleaseSourcesApp(object):
     """
     def __init__(self, release):
         self.release = release
-        self.people = Person.select('teamowner IS NULL',
-                                    orderBy='displayname')
         
     def findPackagesByName(self, pattern):
-        return SourcePackage.findSourcesByName(self.release, pattern)
+        return SourcePackageInDistro.findSourcesByName(self.release, pattern)
 
     def __getitem__(self, name):
         try:
-            release = SourcePackageRelease.getByName(self.release, name)
+            package = SourcePackageInDistro.getByName(self.release, name)
         except IndexError:
             # Convert IndexErrors into KeyErrors so that Zope will give a
             # NotFound page.
             raise KeyError, name
         else:
-            sourcePackage = release.sourcepackage
-            return DistroReleaseSourceApp(self.release, sourcePackage)
+            return DistroReleaseSourceApp(self.release, package)
 
     def __iter__(self):
-        return iter(SourcePackageRelease.getReleases(self.release))
+        ret = SourcePackageInDistro.getReleases(self.release)
+        return iter(ret)
+
 
 class DistroSourcesApp(object):
     def __init__(self, distribution):
@@ -331,7 +328,7 @@ class PersonApp(object):
         self.person = Person.selectBy(name=name)[0]
         self.id = self.person.id
         
-        self.packages = self._getsourcesByPerson()
+        self.packages = self._getSourcesByPerson()
 
         self.roleset = []
         self.statusset = []
@@ -421,8 +418,8 @@ class PersonApp(object):
         except IndexError:
             self.gpg = None
 
-    def _getsourcesByPerson(self):
-        return SourcePackageRelease.getByPersonID(self.id)
+    def _getSourcesByPerson(self):
+        return SourcePackageInDistro.getByPersonID(self.id)
     
 
 

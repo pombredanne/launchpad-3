@@ -72,11 +72,7 @@
 	        <table>
 		<tr><td>All bugs</td>
 		    <td>
-		      <a tal:content="python:context.bugsCounter[0]"
-		         tal:define="sourcepackagename 
-			 context/binarypackage/build/sourcepackagerelease/sourcepackage/name"
-		         tal:attributes="href
-	                 string:/malone/package/${sourcepackagename}">
+		      <a tal:content="python:context.bugsCounter[0]">
 			 N
 		      </a>
 		    </td>
@@ -93,6 +89,14 @@
 		<tr><td>Fixed and Pending</td>
 		    <td tal:content="python:context.bugsCounter[4]">N</td>
 		</tr>
+        <tr><td colspan="2"> 
+		         <a tal:define="sourcepackagename 
+                        context/binarypackage/build/sourcepackagerelease/sourcepackage/name"
+                    tal:attributes="href
+	                 string:/malone/package/${sourcepackagename}">View
+                     Bug List</a>
+            </td>
+        </tr>
 		</table>
 	     </div>
 	  </fieldset>    

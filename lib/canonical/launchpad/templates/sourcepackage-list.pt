@@ -40,12 +40,10 @@ Find Source Package by Name:
     <tr>
       <th>Source Packages</th>
     </tr>
-    <tr tal:repeat="release python:list(bn.currentBatch())">      
-      <tal:dummy tal:define="package release/sourcepackage">
+    <tr tal:repeat="package python:list(bn.currentBatch())">      
       <td><a tal:content="string: ${package/name} : ${package/shortdesc}"
              tal:attributes="href package/name">PACKAGE</a>
       </td>
-      </tal:dummy>
     </tr>    
     <tr>
     <td align="center">

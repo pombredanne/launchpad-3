@@ -25,57 +25,35 @@ from canonical.launchpad.database.binarypackage import BinaryPackage
 
 class SourcePackage(SQLBase):
     """A source package, e.g. apache2."""
-
     implements(ISourcePackage)
-
     _table = 'SourcePackage'
 
-    maintainer = ForeignKey(foreignKey='Person', dbName='maintainer', notNull=True)
-    sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
-                   dbName='sourcepackagename', notNull=True)
-    shortdesc = StringCol(dbName='shortdesc', notNull=True)
+    #
+    # Columns
+    #
+    shortdesc   = StringCol(dbName='shortdesc', notNull=True)
     description = StringCol(dbName='description', notNull=True)
-    manifest = ForeignKey(foreignKey='Manifest', dbName='manifest',
-                          default=None)
-    distro = ForeignKey(foreignKey='Distribution', dbName='distro')
 
-    releases = MultipleJoin('SourcePackageRelease',
-                            joinColumn='sourcepackage')
+    distro            = ForeignKey(foreignKey='Distribution', dbName='distro')
+    manifest          = ForeignKey(foreignKey='Manifest', dbName='manifest')
+    maintainer        = ForeignKey(foreignKey='Person', dbName='maintainer', 
+                                   notNull=True)
+    sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
+                                   dbName='sourcepackagename', notNull=True)
 
-    # Got from the old SourcePackage class
-    bugs = MultipleJoin(
-            'SourcePackageBugAssignment', joinColumn='sourcepackage'
-            )
+    releases              = MultipleJoin('SourcePackageRelease', 
+                                         joinColumn='sourcepackage')
+    bugs                  = MultipleJoin('SourcePackageBugAssignment', 
+                                         joinColumn='sourcepackage')
+    sourcepackagereleases = MultipleJoin('SourcePackageRelease', 
+                                         joinColumn='sourcepackage')
 
-    sourcepackagereleases = MultipleJoin(
-            'SourcePackageRelease', joinColumn='sourcepackage'
-            )
-    ####
-    def bugsCounter(self):
-        from canonical.launchpad.database.bugassignment import SourcePackageBugAssignment
-
-        get = SourcePackageBugAssignment.selectBy
-        all = len(self.bugs)
-        critical = get(severity=int(dbschema.BugSeverity.CRITICAL),
-                       sourcepackageID = self.id).count()
-        important = get(severity = int(dbschema.BugSeverity.MAJOR),
-                       sourcepackageID = self.id).count()
-        normal = get(severity = int(dbschema.BugSeverity.NORMAL),
-                       sourcepackageID = self.id).count()
-        minor = get(severity = int(dbschema.BugSeverity.MINOR),
-                       sourcepackageID = self.id).count()
-        wishlist = get(severity = int(dbschema.BugSeverity.WISHLIST),
-                       sourcepackageID = self.id).count()
-        fixed = get(bugstatus = int(dbschema.BugAssignmentStatus.CLOSED),
-                       sourcepackageID = self.id).count()
-        pending = get(bugstatus = int(dbschema.BugAssignmentStatus.OPEN),
-                       sourcepackageID = self.id).count()
-
-        return (all, critical, important, normal, minor, wishlist, fixed, pending)
-
-
+    #
+    # Properties
+    #
     def name(self):
         return self.sourcepackagename.name
+
     name = property(name)
 
     def product(self):
@@ -87,27 +65,48 @@ class SourcePackage(SQLBase):
         except IndexError:
             # No corresponding product
             return None
+
     product = property(product)
 
-    def getManifest(self):
-        return self.manifest
+    #
+    # Methods
+    #
+    def bugsCounter(self):
+        # XXXkiko: move to bugassignment?
+        from canonical.launchpad.database.bugassignment import \
+            SourcePackageBugAssignment
+
+        ret = [len(self.bugs)]
+
+        get = SourcePackageBugAssignment.selectBy
+        severities = [
+            dbschema.BugSeverity.CRITICAL,
+            dbschema.BugSeverity.MAJOR,
+            dbschema.BugSeverity.NORMAL,
+            dbschema.BugSeverity.MINOR,
+            dbschema.BugSeverity.WISHLIST,
+            dbschema.BugAssignmentStatus.CLOSED,
+            dbschema.BugAssignmentStatus.OPEN,
+        ]
+        for severity in severities:
+            n = get(severity=int(severity), sourcepackageID=self.id).count()
+            ret.append(n)
+        return ret
 
     def getRelease(self, version):
-        return SourcePackageRelease.selectBy(version=version)[0]
+        ret = list(SourcePackageRelease.selectBy(version=version))
+        assert len(ret) == 1
+        return ret[0]
 
-    def uploadsByStatus(self, distroRelease, status):
-        clauseTables = ('SourcePackagePublishing', 'SourcePackageRelease')
-        uploads = list(SourcePackageRelease.select(
-            'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id'
-            ' AND SourcePackagePublishing.distrorelease = %d'
-            ' AND SourcePackageRelease.sourcepackage = %d'
-            ' AND SourcePackagePublishing.status = %d'
-            % (distroRelease.id, self.id, status), clauseTables=clauseTables))
-
-        if uploads:
-            return uploads[0]
-        else:
-            return None
+    def uploadsByStatus(self, distroRelease, status, do_sort=False):
+        query = (' distrorelease = %d '
+                 ' AND sourcepackage = %d'
+                 ' AND publishingstatus = %d'
+                 % (distroRelease.id, self.id, status))
+        if do_sort:
+            query += ' ORDER BY dateuploaded DESC'
+        ret = SourcePackageRelease.select(query)
+        return ret
 
     def proposed(self, distroRelease):
         return self.uploadsByStatus(distroRelease,
@@ -118,62 +117,69 @@ class SourcePackage(SQLBase):
         
         :returns: iterable of SourcePackageReleases
         """
-        clauseTables = ('SourcePackagePublishing', 'SourcePackageRelease')
-        sourcepackagereleases = SourcePackageRelease.select(
-            'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id'
-            ' AND SourcePackagePublishing.distrorelease = %d'
-            ' AND SourcePackageRelease.sourcepackage = %d'
-            ' AND SourcePackagePublishing.status = %d'
-            % (distroRelease.id, self.id, dbschema.PackagePublishingStatus.PUBLISHED),
-            clauseTables=clauseTables)
-
-        return sourcepackagereleases
+        return self.uploadsByStatus(distroRelease, 
+                                    dbschema.PackagePublishingStatus.PUBLISHED)
 
     def lastversions(self, distroRelease):
-        clauseTables=('SourcePackagePublishing', 'SourcePackageRelease')
+        return self.uploadsByStatus(distroRelease, 
+                                    dbschema.PackagePublishingStatus.SUPERCEDED,
+                                    do_sort=True)
 
-        last = list(SourcePackageRelease.select(
-            'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id'
-            ' AND SourcePackagePublishing.distrorelease = %d'
-            ' AND SourcePackageRelease.sourcepackage = %d'
-            ' AND SourcePackagePublishing.status = %d'
-            ' ORDER BY sourcePackageRelease.dateuploaded DESC'
-            % (distroRelease.id, self.id,dbschema.PackagePublishingStatus.SUPERCEDED)
-        , clauseTables=clauseTables))
 
-        if last:
-            return last
-        else:
-            return None
+class SourcePackageInDistro(SourcePackage):
+    """
+    Represents source packages that have releases published in the
+    specified distribution. This view's contents are uniqued, for the
+    following reason: a certain package can have multiple releases in a
+    certain distribution release.
+    """
+    _table = 'VSourcePackageInDistro'
+   
+    #
+    # Columns
+    #
+    name = StringCol(dbName='name', notNull=True)
 
     #
-    # SourcePackage Class Methods
+    # Class Methods
     #
+    def getByName(klass, distrorelease, name):
+        """Get A SourcePackageRelease in a distrorelease by its name"""
+        ret = klass.getReleases(distrorelease, name)
+        assert len(list(ret)) == 1
+        return ret[0]
 
-    def findSourcesByName(klass, distrorelease, pattern):
+    getByName = classmethod(getByName)
+
+    def getReleases(klass, distrorelease, name=None):
+        """
+        Answers the question: what source packages have releases
+        published in the specified distribution (optionally named)
+        """
+        query = 'distrorelease = %d ' \
+                % distrorelease.id
+        if name is not None:
+            query += ' AND name = %s' % quote(name)
+        return klass.select(query, orderBy='name')
+
+    getReleases = classmethod(getReleases)
+
+    def getByPersonID(klass, personID):
+        # XXXkiko: we should allow supplying a distrorelease here and
+        # get packages by distro
+        return klass.select("maintainer = %d" % personID, orderBy='name')
+
+    getByPersonID = classmethod(getByPersonID)
+
+    def findSourcesByName(klass, distroRelease, pattern):
         """Search for SourcePackages in a distrorelease that matches"""
-        clauseTables=('SourcePackagePublishing', 'SourcePackage',
-                      'SourcePackageName', 'SourcePackageRelease')
-        pattern = pattern.replace('%', '%%')
-        query = ('SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
-                  'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
-                  'AND SourcePackagePublishing.distrorelease = %d '
-                  'AND SourcePackage.sourcepackagename = SourcePackageName.id'
-                  % (distrorelease.id) +
-                 ' AND (SourcePackageName.name ILIKE %s'
-                 % quote('%%' + pattern + '%%')
-                 + ' OR SourcePackage.shortdesc ILIKE %s)'
-                 % quote('%%' + pattern + '%%'))
-        
-        # XXX: Daniel Debonzi 2004-10-19
-        # Returning limited results until
-        # sql performanse issues been solved
-        return klass.select(query,
-                            clauseTables=clauseTables,
-                            orderBy='sourcepackagename.name')
+        pattern = quote("%%" + pattern.replace('%', '%%') + "%%")
+        query = ('distrorelease = %d AND '
+                 '(name ILIKE %s OR shortdesc ILIKE %s)' %
+                 (distroRelease.id, pattern, pattern))
+        return SourcePackageRelease.select(query, orderBy='name')
 
     findSourcesByName = classmethod(findSourcesByName)
-
 
 
 class SourcePackageContainer(object):
@@ -205,58 +211,55 @@ class SourcePackageContainer(object):
         for pkg in results:
             pkgset.add(pkg)
         return pkgset
-        
-
 
 
 class SourcePackageName(SQLBase):
-
     implements(ISourcePackageName)
-
     _table = 'SourcePackageName'
 
     name = StringCol(dbName='name', notNull=True)
 
 
-
 class SourcePackageRelease(SQLBase):
-    """A source package release, e.g. apache 2.0.48-3"""
-    
     implements(ISourcePackageRelease)
+    _table = 'VSourcePackageReleasePublishing'
+  
+    #
+    # Columns
+    #
+    # XXXkiko: IDs in this table are *NOT* unique!
+    # XXXkiko: clean up notNulls
+    status = IntCol(dbName='publishingstatus', notNull=True)
+    urgency = IntCol(dbName='urgency', notNull=True)
 
-    _table = 'SourcePackageRelease'
-    _columns = [
-        ForeignKey(name='sourcepackage', foreignKey='SourcePackage',
-                   dbName='sourcepackage', notNull=True),
-        ForeignKey(name='creator', foreignKey='Person', dbName='creator'),
-        StringCol('version', dbName='version'),
-        DateTimeCol('dateuploaded', dbName='dateuploaded', notNull=True,
-                    default='NOW'),
-        IntCol('urgency', dbName='urgency', notNull=True),
-        ForeignKey(name='component', foreignKey='Component', dbName='component'),
-        StringCol('changelog', dbName='changelog'),
-        StringCol('builddepends', dbName='builddepends'),
-        StringCol('builddependsindep', dbName='builddependsindep'),
-        ForeignKey(name='section', foreignKey='Section', dbName='section'),
-    ]
+    name              = StringCol(dbName='name', notNull=True)
+    # XXXkiko: move to property
+    changelog         = StringCol(dbName='changelog')
+    shortdesc         = StringCol(dbName='shortdesc', notNull=True)
+    description       = StringCol(dbName='description', notNull=True)
+    version           = StringCol(dbName='version', notNull=True)
+    componentname     = StringCol(dbName='componentname', notNull=True)
+    componenttitle    = StringCol(dbName='componenttitle', notNull=True)
+    componentdesc     = StringCol(dbName='componentdesc', notNull=True)
+    builddepends      = StringCol(dbName='builddepends')
+    builddependsindep = StringCol(dbName='builddependsindep')
+
+    dateuploaded   = DateTimeCol(dbName='dateuploaded', notNull=True,
+                                 default='NOW')
+
+    creator       = ForeignKey(foreignKey='Person', dbName='creator')
+    maintainer    = ForeignKey(foreignKey='Person', dbName='maintainer')
+    # XXXkiko: remove in lieu of expanded crap
+    component     = ForeignKey(foreignKey='Component', dbName='component')
+    section       = ForeignKey(foreignKey='Section', dbName='section')
+    distrorelease = ForeignKey(foreignKey='DistroRelease', dbName='distrorelease')
+    sourcepackage = ForeignKey(foreignKey='SourcePackage', dbName='sourcepackage')
 
     builds = MultipleJoin('Build', joinColumn='sourcepackagerelease')
 
-    def architecturesReleased(self, distroRelease):
-        # The import is here to avoid a circular import. See top of module.
-        from canonical.launchpad.database.distro import DistroArchRelease
-        clauseTables = ('PackagePublishing', 'BinaryPackage', 'Build')
-        
-        archReleases = Set(DistroArchRelease.select(
-            'PackagePublishing.distroarchrelease = DistroArchRelease.id '
-            'AND DistroArchRelease.distrorelease = %d '
-            'AND PackagePublishing.binarypackage = BinaryPackage.id '
-            'AND BinaryPackage.build = Build.id '
-            'AND Build.sourcepackagerelease = %d'
-            % (distroRelease.id, self.id),
-            clauseTables=clauseTables))
-        return archReleases
-
+    #
+    # Properties
+    #
     def _urgency(self):
         for urgency in dbschema.SourcePackageUrgency.items:
             if urgency.value == self.urgency:
@@ -268,8 +271,7 @@ class SourcePackageRelease(SQLBase):
         
         query = ('SourcePackageRelease.id = Build.sourcepackagerelease'
                  ' AND BinaryPackage.build = Build.id '
-                 ' AND Build.sourcepackagerelease = %i'
-                 %self.id)
+                 ' AND Build.sourcepackagerelease = %i' % self.id)
 
         return BinaryPackage.select(query, clauseTables=clauseTables)
         
@@ -277,103 +279,48 @@ class SourcePackageRelease(SQLBase):
 
     pkgurgency = property(_urgency)
 
+    #
+    # Methods
+    #
+    def architecturesReleased(self, distroRelease):
+        # The import is here to avoid a circular import. See top of module.
+        from canonical.launchpad.database.distro import DistroArchRelease
+        clauseTables = ('PackagePublishing', 'BinaryPackage', 'Build')
+        
+        archReleases = Set(DistroArchRelease.select(
+            'PackagePublishing.distroarchrelease = DistroArchRelease.id '
+            'AND DistroArchRelease.distrorelease = %d '
+            'AND PackagePublishing.binarypackage = BinaryPackage.id '
+            'AND BinaryPackage.build = Build.id '
+            'AND Build.sourcepackagerelease = %d'
+            % (distroRelease.id, self.id), clauseTables=clauseTables))
+        return archReleases
 
     #
-    # SourcePackageRelease Class Methods
+    # Class Methods
     #
-    
-    def getByName(klass, distrorelease, name):
-        """Get A SourcePackageRelease in a distrorelease by its name"""
-        clauseTables = ('SourcePackage', 'SourcePackagePublishing',
-                        'SourcePackageName')
-
-        # XXX: (mult_results) Daniel Debonzi 2004-10-13
-        # What about multiple results?
-        #(which shouldn't happen here...)
-        query = ('SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
-                 'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
-                 'AND SourcePackagePublishing.distrorelease = %d '
-                 'AND SourcePackage.sourcepackagename = SourcePackageName.id'
-                 ' AND SourcePackageName.name = %s'
-                 % (distrorelease.id, quote(name))  )
-
-
-        return klass.select(query, clauseTables=clauseTables)[0]
-    getByName = classmethod(getByName)
-
-    def getReleases(klass, distrorelease):
-        """Get SourcePackageReleases in a distrorelease"""
-        clauseTables = ('SourcePackagePublishing', 'Sourcepackage',
-                        'SourcePackageName')
-
-        query = ('SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
-                 'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
-                 'AND SourcePackagePublishing.distrorelease = %d '
-                 'AND SourcePackage.sourcepackagename = SourcePackageName.id'
-                 % (distrorelease.id))
-        
-        # FIXME: (distinct_query) Daniel Debonzi - 2004-10-13
-        # the results are NOT UNIQUE (DISTINCT)
-        
-        # FIXME: (SQLObject_Selection+batching) Daniel Debonzi - 2004-10-13
-        # The selection is limited here because batching and SQLObject
-        # selection still not working properly. Now the days for each
-        # page showing BATCH_SIZE results the SQLObject makes queries
-        # for all the related things available on the database which
-        # presents a very slow result.
-        return klass.select(query,
-                            clauseTables=clauseTables,
-                            orderBy='sourcepackagename.name')
-    getReleases = classmethod(getReleases)
-
-
     def selectByVersion(klass, sourcereleases, version):
         """Select from SourcePackageRelease.SelectResult that have
         version=version"""
-
-        clauseTables = ('SourcePackagePublishing',)
         
         query = sourcereleases.clause + \
-                ' AND SourcePackageRelease.version = %s' %quote(version)
+                ' AND version = %s' % quote(version)
 
-        return klass.select(query, clauseTables=clauseTables)
+        return klass.select(query)
 
     selectByVersion = classmethod(selectByVersion)
 
     def selectByBinaryVersion(klass, sourcereleases, version):
         """Select from SourcePackageRelease.SelectResult that have
         BinaryPackage.version=version"""
-        clauseTables = ('SourcepackagePublishing','BinaryPackage', 'Build')
-        
         query = sourcereleases.clause + \
-                (' AND Build.id = BinaryPackage.build'
-                 ' AND Build.sourcepackagerelease = SourcePackageRelease.id'
-                 ' AND BinaryPackage.version = %s' %quote(version)
-                )
-
-        return klass.select(query, clauseTables=clauseTables)
+                '''AND Build.id = BinaryPackage.build
+                   AND Build.sourcepackagerelease = 
+                       VSourcePackageReleasePublishing.id
+                   AND BinaryPackage.version = %s''' % quote(version)
+        return klass.select(query)
 
     selectByBinaryVersion = classmethod(selectByBinaryVersion)
-
-
-    def getByPersonID(klass, personID):
-        clauseTables = ('SourcePackagePublishing', 'SourcePackageName',
-                        'SourcePackage')
-        query = ('''SourcePackagePublishing.sourcepackagerelease = 
-                        SourcePackageRelease.id 
-                    AND SourcePackageName.id = SourcePackage.sourcepackagename
-                    AND SourcePackageRelease.sourcepackage = SourcePackage.id 
-                    AND SourcePackage.maintainer = %i''' % personID)
-        # FIXME: (sourcename_order) Daniel Debonzi 2004-10-13
-        # ORDER by SourcePackagename
-        # The result should be ordered by SourcePackageName
-        # but seems that is it not possible
-        return klass.select(query,
-                            clauseTables=clauseTables,
-                            orderBy='sourcepackagename.name')
-    getByPersonID = classmethod(getByPersonID)
-        
-
 
 
 
