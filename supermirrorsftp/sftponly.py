@@ -13,7 +13,9 @@ from twisted.python.filepath import FilePath, InsecurePath
 
 from zope.interface import implements
 import binascii
-import os, os.path
+import os
+import os.path
+import errno
 
 
 class SubsystemOnlySession(session.SSHSession, object):
@@ -79,10 +81,18 @@ class SFTPServerForPushMirrorUser:
     # TODO: This doesn't return friendly error messages to the client when
     #       restricted operations are attempted (they generally are sent as
     #       "Failure").
+
     implements(filetransfer.ISFTPServer)
+
     def __init__(self, avatar):
         self.avatar = avatar
         self.homedir = FilePath(self.avatar.getHomeDir())
+        # Make the home dir if it doesn't already exist
+        try:
+            self.homedir.makedirs()
+        except OSError, e:
+            if e.errno != errno.EEXIST:
+                raise
 
     def _childPath(self, path):
         if path.startswith('/'):
