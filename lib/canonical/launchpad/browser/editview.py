@@ -78,7 +78,8 @@ class SQLObjectEditView(EditView):
                     notify(
                         SQLObjectModifiedEvent(
                             content, content_before_modification,
-                            self.fieldNames, self.request.principal))
+                            self.fieldNames, self.request.principal,
+                            self.request))
             except WidgetsError, errors:
                 self.errors = errors
                 status = _("An error occured.")

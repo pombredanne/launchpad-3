@@ -12,7 +12,7 @@ When do bug notifications get sent?
 
 Not *every* change on a bug causes a notification to be sent. This section will
 give a rundown of the things that do cause notifications to be sent. To start
-with, let's simulate an interaction with the system as a logged-in user:
+with, let's login:
 
     >>> from canonical.launchpad.ftests import login
     >>> login("test@canonical.com")
@@ -24,25 +24,29 @@ what email has been sent, to whom, and what the body of the message contains:
     >>> stub.test_emails = []
 
 And with that, here are the things that cause bug notifications to be sent, and
-what those notifications look like:
+what those notifications look like.
+
+1. Filing a new bug
 
     >>> import email
     >>> from zope.event import notify
-    >>> from zope.app.event.objectevent import ObjectCreatedEvent
-    >>> from canonical.launchpad.event.sqlobjectevent import \
-    ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent
-    >>> from canonical.launchpad.database.bug import BugFactory
     >>> from zope.component import getUtility
+    >>> from zope.publisher.browser import TestRequest
+    >>> from canonical.launchpad.event.sqlobjectevent import \
+    ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, \
+    ...     SQLObjectCreatedEvent
+    >>> from canonical.launchpad.database.bug import BugFactory
     >>> from canonical.launchpad.interfaces import IProductSet, IPersonSet, \
     ...     IDistributionSet, IDistroReleaseSet, ISourcePackageNameSet, IBugSet
 
+    >>> request = TestRequest()
     >>> bug_submitter = getUtility(IPersonSet).get(12)
     >>> firefox = getUtility(IProductSet).get(4)
 
     >>> firefox_crashes = BugFactory(
     ...     product = firefox, title = "firefox crashes all the time",
     ...     comment = "this is a comment", owner = bug_submitter)
-    >>> notify(ObjectCreatedEvent(firefox_crashes))
+    >>> notify(SQLObjectCreatedEvent(firefox_crashes, request))
 
     >>> import transaction
     >>> transaction.commit()
@@ -57,6 +61,12 @@ what those notifications look like:
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     'Bug #...: "firefox crashes all the time" added'
+
+Note that all bug notification emails include an absolute URL to the
+bug:
+
+    >>> msg.get_payload()
+    '...Bug URL: http://127.0.0.1/malone/bugs/...'
 
     >>> stub.test_emails = []
 
@@ -88,7 +98,7 @@ let's hang a bug onto the ILaunchBag utility.
     ...     None, distribution = debian.id,
     ...     sourcepackagename = firefox_source.id,
     ...     owner = bug_submitter.id)
-    >>> notify(ObjectCreatedEvent(firefox_crashes_in_debian))
+    >>> notify(SQLObjectCreatedEvent(firefox_crashes_in_debian, request))
 
     >>> transaction.commit()
 
@@ -102,6 +112,9 @@ let's hang a bug onto the ILaunchBag utility.
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '...task added'
+
+    >>> msg.get_payload()
+    '...Bug URL: http://127.0.0.1/malone/bugs/...'
 
     >>> stub.test_emails = []
 
@@ -116,7 +129,7 @@ let's hang a bug onto the ILaunchBag utility.
     >>> firefox_crashes_in_sid = BugTaskFactory(
     ...     None, distrorelease = sid.id,
     ...     sourcepackagename = firefox_source.id, owner = bug_submitter.id)
-    >>> notify(ObjectCreatedEvent(firefox_crashes_in_sid))
+    >>> notify(SQLObjectCreatedEvent(firefox_crashes_in_sid, request))
 
     >>> transaction.commit()
 
@@ -130,6 +143,9 @@ let's hang a bug onto the ILaunchBag utility.
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '...task added'
+
+    >>> msg.get_payload()
+    '...Bug URL: http://127.0.0.1/malone/bugs/...'
 
     >>> stub.test_emails = []
 
@@ -146,7 +162,7 @@ let's hang a bug onto the ILaunchBag utility.
 
     >>> firefox_crashes_upstream = BugTaskFactory(
     ...     None, product = firefox.id, owner = bug_submitter.id)
-    >>> notify(ObjectCreatedEvent(firefox_crashes_upstream))
+    >>> notify(SQLObjectCreatedEvent(firefox_crashes_upstream, request))
 
     >>> transaction.commit()
 
@@ -161,6 +177,9 @@ let's hang a bug onto the ILaunchBag utility.
     >>> msg["Subject"]
     '...task added'
 
+    >>> msg.get_payload()
+    '...Bug URL: http://127.0.0.1/malone/bugs/...'
+
     >>> stub.test_emails = []
 
 3. Commenting on a bug
@@ -173,7 +192,7 @@ let's hang a bug onto the ILaunchBag utility.
 
     >>> comment_on_firefox_crashes_in_debian = BugMessageFactory(
     ...     None, title = "some title", contents = "just a test comment")
-    >>> notify(ObjectCreatedEvent(comment_on_firefox_crashes_in_debian))
+    >>> notify(SQLObjectCreatedEvent(comment_on_firefox_crashes_in_debian, request))
 
     >>> transaction.commit()
 
@@ -187,6 +206,9 @@ let's hang a bug onto the ILaunchBag utility.
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '...comment added'
+
+    >>> msg.get_payload()
+    '...Bug URL: http://127.0.0.1/malone/bugs/...'
 
     >>> stub.test_emails = []
 
@@ -206,7 +228,7 @@ let's hang a bug onto the ILaunchBag utility.
     >>> firefox_crashes_in_debian.status = BugTaskStatus.FIXED
     >>> debian_task_modified = SQLObjectModifiedEvent(
     ...     firefox_crashes_in_debian, bugtask_before_modification,
-    ...     ["status"], bug_submitter)
+    ...     ["status"], bug_submitter, request)
     >>> notify(debian_task_modified)
 
     >>> transaction.commit()
@@ -221,6 +243,10 @@ let's hang a bug onto the ILaunchBag utility.
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '...task edited'
+
+    >>> msg.get_payload()
+    '...Bug URL: http://127.0.0.1/malone/bugs/...'
+
 
 Implications of Bug Privacy
 ---------------------------
@@ -258,7 +284,7 @@ report private:
     >>> bug_before_modification.bugtasks = firefox_bug.bugtasks
     >>> bug_modified = SQLObjectModifiedEvent(
     ...     firefox_bug, bug_before_modification,
-    ...     ["private"], bug_submitter)
+    ...     ["private"], bug_submitter, request)
 
     >>> notify(bug_modified)
 
@@ -285,7 +311,7 @@ that will get notified of changes on this bug. Because the bug is
 private, and Foo Bar is not an explicit subscriber to the bug, he will
 *not* be included in the list of recipients!
 
-    >>> notify(ObjectCreatedEvent(firefox_crashes_upstream))
+    >>> notify(SQLObjectCreatedEvent(firefox_crashes_upstream, request))
 
     >>> transaction.commit()
 

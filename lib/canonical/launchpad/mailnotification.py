@@ -3,8 +3,9 @@ application."""
 
 from zope.app import zapi
 from zope.app.mail.interfaces import IMailDelivery
+from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IBug
+from canonical.launchpad.interfaces import IBug, IBugSet
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.database import Bug, BugTracker, EmailAddress
 from canonical.lp.dbschema import BugTaskStatus, BugPriority, \
@@ -71,31 +72,38 @@ def get_changes(before, after, fields):
     return changes
 
 def notify_bug_added(bug_add_form, event):
-    """Notify the owner and the global notification list that a bug
-    was added."""
+    """Send an email notification that a bug was added."""
+
+    # get the real bug first, to ensure that things like view lookups
+    # (e.g. for the absolute URL) and attribute access in the code
+    # below Just Work.
+    bug = getUtility(IBugSet).get(bug_add_form.id)
+
     owner = "(no owner)"
     spname = "(none)"
     pname = "(none)"
-    if getattr(bug_add_form, 'owner', None):
-        owner = bug_add_form.owner.displayname
-    if getattr(bug_add_form, 'sourcepackagename', None):
-        spname = bug_add_form.sourcepackagename.name
-    if getattr(bug_add_form, 'product', None):
-        pname = bug_add_form.product.displayname
+    if bug.owner:
+        owner = bug.owner.displayname
+    if bug.bugtasks[0].sourcepackagename:
+        spname = bug.bugtasks[0].sourcepackagename.name
+    if bug.bugtasks[0].product:
+        pname = bug.bugtasks[0].product.displayname
 
     msg = """\
+Bug URL: %(url)s
+
 Title: %(title)s
 Comment: %(comment)s
 Source Package: %(source_package)s
 Product: %(product)s
 Submitted By: %(owner)s
-""" % {'title' : bug_add_form.title,
-       'comment' : bug_add_form.comment,
+""" % {'url': zapi.absoluteURL(bug, event.request),
+       'title' : bug.title,
+       'comment' : bug.description,
        'source_package' : spname,
        'product' : pname,
        'owner' : owner}
 
-    bug = Bug.get(bug_add_form.id)
     send_edit_notification_simple(
         bug,
         FROM_ADDR,
@@ -113,13 +121,19 @@ def notify_bug_modified(modified_bug, event):
             ("description", None),
             ("name", None)))
 
+    edit_header_line = """\
+Edited bug: %(title)s
+
+Bug URL: %(url)s""" % {
+        'title' : event.object_before_modification.title,
+        'url' : zapi.absoluteURL(event.object, event.request)}
+
     send_edit_notification(
         bug = modified_bug,
         from_addr = FROM_ADDR,
         to_addrs = get_cc_list(modified_bug),
         subject = '"%s" edited' % event.object_before_modification.title,
-        edit_header_line = (
-            "Edited bug: %s" % event.object_before_modification.title),
+        edit_header_line = edit_header_line,
         changes = changes)
 
 def notify_bugtask_added(bugtask, event):
@@ -127,12 +141,15 @@ def notify_bugtask_added(bugtask, event):
     somewhere else."""
     bugtask = event.object
     assignee_name = "(not assigned)"
+
+    msg = "Bug URL: %s\n\n" % zapi.absoluteURL(bugtask.bug, event.request)
+
     if bugtask.product:
-        msg = "Upstream: %s" % bugtask.product.displayname
+        msg += "Upstream: %s" % bugtask.product.displayname
     elif bugtask.distribution:
-        msg = "Distribution: %s" % bugtask.distribution.displayname
-    elif bugtask.distrorelease: 
-        msg = "Distribution Release: %s (%s)" % (
+        msg += "Distribution: %s" % bugtask.distribution.displayname
+    elif bugtask.distrorelease:
+        msg += "Distribution Release: %s (%s)" % (
             bugtask.distrorelease.distribution.displayname,
             bugtask.distrorelease.displayname)
     else:
@@ -165,11 +182,17 @@ def notify_bugtask_edited(modified_bugtask, event):
         where = "%s %s" % (
             task.distrorelease.distribution.name, task.distrorelease.name)
 
+    edit_header_line = """\
+Edited task on %(where)s
+
+Bug URL: %(url)s""" % {
+        'where' : where, 'url' : zapi.absoluteURL(task.bug, event.request)}
+
     send_edit_notification(
         bug = task.bug, from_addr = FROM_ADDR,
         to_addrs = get_cc_list(task.bug),
         subject = '"%s" task edited' % task.bug.title,
-        edit_header_line = "Edited task on %s" % where,
+        edit_header_line = edit_header_line,
         changes = changes)
 
 def notify_bug_product_infestation_added(product_infestation, event):
@@ -251,13 +274,17 @@ def notify_bug_package_infestation_modified(modified_package_infestation, event)
 def notify_bug_comment_added(bugmessage, event):
     """Notify CC'd list that a message was added to this bug."""
     msg = """\
-%s said:
+Bug URL: %(url)s
 
-%s
+%(submitter)s said:
 
-%s""" % (bugmessage.message.owner.displayname,
-         bugmessage.message.title,
-         bugmessage.message.contents)
+%(subject)s
+
+%(contents)s""" % {
+        'url' : zapi.absoluteURL(bugmessage.bug, event.request),
+        'submitter' :bugmessage.message.owner.displayname,
+        'subject' : bugmessage.message.title,
+        'contents' : bugmessage.message.contents}
 
     send_edit_notification_simple(
         bugmessage.bug,
@@ -268,10 +295,12 @@ def notify_bug_external_ref_added(ext_ref, event):
     """Notify CC'd list that a new web link has
     been added for this bug."""
     msg = """\
+Bug URL: %(bugurl)s
+
 URL: %(url)s
 Title: %(title)s
-""" % {'url' : ext_ref.url,
-       'title' : ext_ref.title}
+""" % {'bugurl' : zapi.absoluteURL(ext_ref.bug, event.request),
+       'url' : ext_ref.url, 'title' : ext_ref.title}
 
     send_edit_notification_simple(
         ext_ref.bug,
@@ -282,9 +311,12 @@ def notify_bug_watch_added(watch, event):
     """Notify CC'd list that a new watch has been added for this
     bug."""
     msg = """\
+Bug URL: %(bugurl)s
+
 Bug Tracker: %(bug_tracker)s
 Remote Bug: %(remote_bug)s
-""" % {'bug_tracker' : watch.bugtracker.title, 'remote_bug' : watch.remotebug}
+""" % {'bugurl' : zapi.absoluteURL(watch.bug, event.request),
+       'bug_tracker' : watch.bugtracker.title, 'remote_bug' : watch.remotebug}
 
     send_edit_notification_simple(
         watch.bug,
@@ -300,12 +332,17 @@ def notify_bug_watch_modified(modified_bug_watch, event):
             ("bugtracker", lambda v: btv.getTermByToken(v.id).title),
             ("remotebug", lambda v: v)))
 
+    edit_header_line = """\
+Edited watch on bugtracker: %(bugtracker)s
+
+Bug URL: %(url)s""" % {
+        'bugtracker' : event.object_before_modification.bugtracker.title,
+        'url' : zapi.absoluteURL(modified_bug_watch.bug, event.request)}
+
     send_edit_notification(
         bug = event.object_before_modification.bug,
         from_addr = FROM_ADDR,
         to_addrs = get_cc_list(modified_bug_watch.bug),
         subject = '"%s" watch edited' % event.object_before_modification.bug.title,
-        edit_header_line = (
-            "Edited watch on bugtracker: %s" %
-            event.object_before_modification.bugtracker.title),
+        edit_header_line = edit_header_line,
         changes = changes)

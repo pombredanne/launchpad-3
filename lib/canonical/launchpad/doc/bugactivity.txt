@@ -39,12 +39,15 @@ little functions.
 
   >>> from datetime import datetime
   >>> from zope.event import notify
-  >>> from zope.app.event.objectevent import ObjectCreatedEvent
-  >>> from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
+  >>> from canonical.launchpad.event.sqlobjectevent import \
+  ...     SQLObjectCreatedEvent, SQLObjectModifiedEvent
   >>> from canonical.launchpad.database import Bug, BugActivity, \
   ...     BugPackageInfestation, BugProductInfestation, \
   ...     BugTask
   >>> from canonical.launchpad.interfaces import IBugAddForm
+  >>> from zope.publisher.browser import TestRequest
+
+  >>> request = TestRequest()
   >>> def capture_state(obj, *fields):
   ...     class State: pass
   ...     state = State()
@@ -71,7 +74,7 @@ EVENT: user files a bug
   ...     owner = user.id)
   >>> bug.activity
   []
-  >>> object_created = ObjectCreatedEvent(bug)
+  >>> object_created = SQLObjectCreatedEvent(bug, request)
   >>> notify(object_created)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.person == user.id
@@ -86,8 +89,9 @@ EVENT: bug edited
   >>> old_state = capture_state(
   ...     bug, "id", "title", "shortdesc", "description")
   >>> bug.title = "new bug title"
-  >>> bug_edited = SQLObjectModifiedEvent(bug, old_state,
-  ...     ["title", "shortdesc", "description"], user)
+  >>> bug_edited = SQLObjectModifiedEvent(
+  ...     bug, old_state, ["title", "shortdesc", "description"],
+  ...     user, request)
   >>> notify(bug_edited)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
@@ -101,7 +105,8 @@ EVENT: bug gets assigned to a source package
 
   >>> source_package_assignment = BugTask(
   ...     bug = bug, sourcepackagename = 1, distribution = 1, owner = user.id)
-  >>> source_package_assignment_added = ObjectCreatedEvent(source_package_assignment)
+  >>> source_package_assignment_added = SQLObjectCreatedEvent(
+  ...     source_package_assignment, request)
   >>> notify(source_package_assignment_added)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
@@ -118,7 +123,7 @@ EVENT: source package assignment edited
   >>> source_package_assignment.status = BugTaskStatus.ACCEPTED
   >>> source_package_assignment_edited = SQLObjectModifiedEvent(
   ...     source_package_assignment, old_source_package_assignment,
-  ...     edit_fields, user)
+  ...     edit_fields, user, request)
   >>> notify(source_package_assignment_edited)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
@@ -131,7 +136,8 @@ EVENT: source package assignment edited
 EVENT: bug gets assigned to an upstream product
 
   >>> product_assignment = BugTask(bug = bug, product = 8, owner = user.id)
-  >>> product_assignment_added = ObjectCreatedEvent(product_assignment)
+  >>> product_assignment_added = SQLObjectCreatedEvent(
+  ...     product_assignment, request)
   >>> notify(product_assignment_added)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
@@ -145,7 +151,8 @@ EVENT: upstream product assignment edited
   >>> old_product_assignment = capture_state(product_assignment, *edit_fields)
   >>> product_assignment.status = BugTaskStatus.REJECTED
   >>> product_assignment_edited = SQLObjectModifiedEvent(
-  ...     product_assignment, old_product_assignment, edit_fields, user)
+  ...     product_assignment, old_product_assignment, edit_fields, user,
+  ...     request)
   >>> notify(product_assignment_edited)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
@@ -165,7 +172,8 @@ EVENT: source package infestation gets documented
   ...     verifiedbyID=user.id, lastmodified=right_now,
   ...     lastmodifiedbyID=user.id, sourcepackagerelease=14,
   ...     infestationstatus=BugInfestationStatus.AFFECTED)
-  >>> package_infesation_added = ObjectCreatedEvent(package_infestation)
+  >>> package_infesation_added = SQLObjectCreatedEvent(
+  ...     package_infestation, request)
   >>> notify(package_infesation_added)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
@@ -179,7 +187,8 @@ EVENT: source package infestation edited
   >>> old_package_infestation = capture_state(package_infestation, *edit_fields)
   >>> package_infestation.infestationstatus = BugInfestationStatus.VICTIMIZED
   >>> package_infestation_edited = SQLObjectModifiedEvent(
-  ...     package_infestation, old_package_infestation, edit_fields, user)
+  ...     package_infestation, old_package_infestation, edit_fields, user,
+  ...     request)
   >>> notify(package_infestation_edited)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
@@ -198,7 +207,8 @@ EVENT: product infestation gets documented
   ...     verifiedbyID=user.id, lastmodified=right_now,
   ...     lastmodifiedbyID=user.id, productrelease=4,
   ...     infestationstatus=BugInfestationStatus.AFFECTED)
-  >>> product_infesation_added = ObjectCreatedEvent(product_infestation)
+  >>> product_infesation_added = SQLObjectCreatedEvent(
+  ...     product_infestation, request)
   >>> notify(product_infesation_added)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
@@ -212,7 +222,8 @@ EVENT: product infestation edited
   >>> old_product_infestation = capture_state(product_infestation, *edit_fields)
   >>> product_infestation.infestationstatus = BugInfestationStatus.UNKNOWN
   >>> product_infestation_edited = SQLObjectModifiedEvent(
-  ...     product_infestation, old_product_infestation, edit_fields, user)
+  ...     product_infestation, old_product_infestation, edit_fields, user,
+  ...     request)
   >>> notify(product_infestation_edited)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged

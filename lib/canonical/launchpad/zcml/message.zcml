@@ -30,6 +30,7 @@
         name="+new"
         schema="canonical.launchpad.interfaces.IMessage"
         for="canonical.launchpad.interfaces.IMessagesView"
+        class="canonical.launchpad.browser.addview.SQLObjectAddView"
         label="Add a Comment"
         fields="title contents"
         content_factory="canonical.launchpad.database.BugMessageFactory"

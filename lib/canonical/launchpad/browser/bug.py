@@ -2,6 +2,7 @@
 
 __metaclass__ = type
 
+from zope.app.publisher.browser import BrowserView
 from zope.component import getUtility
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile, \
     BoundPageTemplate
@@ -16,6 +17,7 @@ from canonical.launchpad.database import BugAttachmentSet, \
         BugWatchSet, BugProductInfestationSet, \
         BugPackageInfestationSet, Person, Bug, \
         BugTasksReport, CVERefSet
+from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 def traverseBug(bug, request, name):
@@ -121,6 +123,14 @@ class BugView:
                 if s.subscription==dbschema.BugSubscription.IGNORE]
 
 
+class BugAbsoluteURL(BrowserView):
+    """The view for an absolute URL of a bug."""
+    def __str__(self):
+        return "%s%s/%d" % (
+            self.request.getApplicationURL(),
+            "/malone/bugs", self.context.id)
+
+
 class BugEditView(BugView, SQLObjectEditView):
     def __init__(self, context, request):
         BugView.__init__(self, context, request)
@@ -143,7 +153,7 @@ class BugAddView(AddView):
         return ".?bugadded=" + str(self.bugadded.id)
 
 
-class BugAddingView:
+class BugAddingView(SQLObjectAddView):
     """A hack for browser:addform's that use IBug as their context.
 
     Use this class in the class="" of a browser:addform directive

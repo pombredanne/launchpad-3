@@ -25,13 +25,14 @@ from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
      MilestoneVocabulary
 
 from canonical.rosetta.browser import request_languages, TemplateLanguages
-
 from canonical.launchpad.database import Product, ProductSeriesSet, \
      BugFactory, ProductMilestoneSet, Milestone, SourceSourceSet, Person
 from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet, \
      IPersonSet, IBugTaskSet, IAging, ILaunchBag
 from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad.helpers import is_maintainer
+from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 
 # Traversal functions that help us look up something
 # about a project or product
@@ -338,7 +339,7 @@ class ProductTranslationView:
         return self._template_languages
 
 
-class ProductFileBugView(AddView):
+class ProductFileBugView(SQLObjectAddView):
 
     __used_for__ = IProduct
 
@@ -346,7 +347,7 @@ class ProductFileBugView(AddView):
         self.request = request
         self.context = context
         self._nextURL = '.'
-        AddView.__init__(self, context, request)
+        SQLObjectAddView.__init__(self, context, request)
 
     def createAndAdd(self, data):
         # add the owner information for the bug
@@ -363,7 +364,7 @@ class ProductFileBugView(AddView):
         # Try to avoid passing **kw, it is unreadable
         # Pass the keyword explicitly ...
         bug = BugFactory(**kw)
-        notify(ObjectCreatedEvent(bug))
+        notify(SQLObjectCreatedEvent(bug, self.request))
         return bug
 
     def nextURL(self):

@@ -2,6 +2,49 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-01 23:32:38 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1546
+
+    Summary:
+      add absolute URLs to all bug notification emails, except infestations
+    Revision:
+      launchpad--devel--0--patch-1546
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-477
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-478
+       add absolute URLs to all bug notification emails, except infestations
+    
+
+    new files:
+     lib/canonical/launchpad/browser/.arch-ids/addview.py.id
+     lib/canonical/launchpad/browser/addview.py
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/bug.py
+     lib/canonical/launchpad/browser/distribution.py
+     lib/canonical/launchpad/browser/editview.py
+     lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/doc/bug.txt
+     lib/canonical/launchpad/doc/bugactivity.txt
+     lib/canonical/launchpad/doc/bugnotifications.txt
+     lib/canonical/launchpad/doc/bugtask.txt
+     lib/canonical/launchpad/event/interfaces.py
+     lib/canonical/launchpad/event/sqlobjectevent.py
+     lib/canonical/launchpad/mailnotification.py
+     lib/canonical/launchpad/zcml/bug-events.zcml
+     lib/canonical/launchpad/zcml/bug.zcml
+     lib/canonical/launchpad/zcml/bugextref.zcml
+     lib/canonical/launchpad/zcml/bugwatch.zcml
+     lib/canonical/launchpad/zcml/message.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-477
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-478
+
+
 2005-04-01 15:15:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1545
 
     Summary:

@@ -28,6 +28,7 @@
         name="+new"
         schema="canonical.launchpad.interfaces.IBugExternalRef"
         for="canonical.launchpad.interfaces.IBugExternalRefSet"
+        class="canonical.launchpad.browser.addview.SQLObjectAddView"
         label="Add External Reference"
         fields="url title"
         content_factory="canonical.launchpad.database.BugExternalRefFactory"

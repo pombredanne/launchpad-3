@@ -319,12 +319,14 @@ search listings) to explicit subscribers. Public bugs are visible to
 anyone.
 
     >>> from zope.event import notify
+    >>> from zope.publisher.browser import TestRequest
     >>> from canonical.launchpad.event.sqlobjectevent import SQLObjectToBeModifiedEvent, \
     ...     SQLObjectModifiedEvent
 
 Let's log in as the user Foo Bar (to be allowed to edit bugs):
 
     >>> login('foo.bar@canonical.com')
+    >>> request = TestRequest()
 
 and mark one of the Firefox bugs private:
 
@@ -343,8 +345,8 @@ and mark one of the Firefox bugs private:
     >>> bug_firefox_no_svg_support.bug.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     bug_firefox_no_svg_support.bug, old_state,
-    ...     ["id", "title", "private"],
-    ...     getUtility(IPersonSet).get(16))
+    ...     ["id", "title", "private"], getUtility(IPersonSet).get(16),
+    ...     request)
     >>> notify(bug_set_private)
     >>> transaction.commit()
 

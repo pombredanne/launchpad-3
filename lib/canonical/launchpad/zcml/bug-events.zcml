@@ -4,7 +4,7 @@
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugAddForm
-        zope.app.event.interfaces.IObjectCreatedEvent"
+        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_added" />
 
 <subscriber
@@ -64,12 +64,12 @@
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugExternalRef
-        zope.app.event.interfaces.IObjectCreatedEvent"
+        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_external_ref_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugWatch
-        zope.app.event.interfaces.IObjectCreatedEvent"
+        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_watch_added" />
 
 <subscriber
