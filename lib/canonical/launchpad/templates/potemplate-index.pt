@@ -28,13 +28,11 @@
     messages</span>.
     </p>
 
-    <p><a href="translate">Translate this template</a>.</p>
-
     <p><a href="+upload">Update this template's data</a>.</p>
 
     <p><a href="+edit">Edit this template.</a></p>
 
-    <p><a href="+translate">Translate into all selected languages.</a></p>
+    <p><a href="translate">Translate into all selected languages.</a></p>
 
     <h2>Translations</h2>
 
@@ -51,12 +49,12 @@
         <tbody>
             <tr tal:repeat="language view/languages"
                 tal:attributes="onclick
-                string:window.location='${context/name}/translate?languages=${language/code}'">
+                string:window.location='${language/code}'">
                 <a tal:attributes="href
-                    string:${context/name}/translate?languages=${language/code}">
+                    string:${language/code}">
                     <td>
                         <a tal:attributes="href
-                        string:${context/name}/translate?languages=${language/code}"
+                        string:${language/code}"
                         tal:content="language/name">Language
                         Name</a></td>
                     <td tal:content="language/poTranslated">0</td>

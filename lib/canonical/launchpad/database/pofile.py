@@ -750,7 +750,8 @@ class POFile(SQLBase):
     # as pot's len + the obsolete msgsets from this .po file.
     def __len__(self):
         '''Count of __iter__.'''
-        return self.currentMessageSets().count()
+#        return self.currentMessageSets().count()
+        return self.currentcount + self.rosettacount
 
     # XXX: Carlos Perello Marin XX/XX/04: This is implemented using the cache,
     # we should add an option to get the real count.
