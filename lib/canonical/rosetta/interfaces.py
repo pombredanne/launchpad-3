@@ -117,8 +117,9 @@ class IEditPOTemplate(IPOTemplate):
     def expireAllMessages():
         """Mark our of our message sets as not current (sequence=0)"""
 
-    def newMessageSet(messageID):
-        """Add a message set to this template."""
+    def newMessageSet(text):
+        """Add a message set to this template.  Primary message ID
+        is 'text'."""
 
     def createPOFile(language):
         """Create and return a new po file in the given language.

@@ -198,6 +198,30 @@ class RosettaEditPOTemplate(RosettaPOTemplate):
                                ' WHERE potemplate = %d AND pofile = NULL'
                                % self.id)
 
+    def newMessageSet(text):
+        # XXX: return a RosettaEditPOMessageSet? Why would you create
+        # an object that you don't intend to edit? :-)
+        messageIDs = RosettaPOMessageID.selectBy(text=text)
+        if messageIDs.count() == 0:
+            messageID = RosettaPOMessageID(text=text)
+        else:
+            messageID = messageIDs[0]
+        return RosettaPOMessageSet(poTemplate=self,
+                                   poFile=None,
+                                   primeMessageID_=messageID,
+                                   sequence=0,
+                                   isComplete=False,
+                                   obsolete=False,
+                                   fuzzy=False)
+
+    def createPOFile(language):
+        # XXX: are we getting a string or a IRosettaLanguage object?
+        if RosettaPOFile.selectBy(poTemplate=self, language=language).count():
+            raise KeyError, "This template already has a POFile for %s" % language.englishName
+        # FIXME: this will not run, there are a few notNull columns missing
+        return RosettaPOFile(poTemplate=self,
+                             language=language)
+
 
 class RosettaPOFile(SQLBase):
     implements(IPOFile)
