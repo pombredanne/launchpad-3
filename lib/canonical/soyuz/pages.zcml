@@ -168,6 +168,7 @@
                                           getter="__getitem__" />
    <pages for="canonical.soyuz.sql.DistroReleaseSourceApp"
 	  allowed_attributes="results"
+	  class="canonical.launchpad.browser.packages.SourcePackageTranslationsView"
 	  permission="zope.Public">
      <page  name="index.html"
             template="../launchpad/templates/soyuz-sourcepackage-index.pt"

@@ -15,7 +15,7 @@
 <div metal:fill-slot="main">
 
     <h1><span tal:content="context/sourcepackage/shortdesc"/></h1>
-
+    
     <table width="100%">
        <tr>
          <td valign="top" width="80%">
@@ -178,13 +178,14 @@
 
           <fieldset>
           <legend>Other Links </legend> 
-          <div class="dummy">
+          <div>
            <ul>
-            <li><a href="+buildlog">Build Log Summaries</a></li>
-            <li><a href="">Translations</a></li>
+            <li class="dummy"><a href="+buildlog">Build Log Summaries</a></li>
            </ul>
           </div>
           </fieldset>
+
+	  <div tal:replace="structure view/translationPortlet" />
 
 
      <fieldset>
