@@ -87,8 +87,8 @@ msgstr ""
 #. addressbook:ldap-init secondary
 #: addressbook/addressbook-errors.xml.h:4
 msgid ""
-"This addressbook server might unreachable or the server name may be misspelled "
-"or your network connection could be down."
+"This addressbook server might unreachable or the server name may be "
+"misspelled or your network connection could be down."
 msgstr ""
 
 #. addressbook:ldap-auth primary
@@ -99,9 +99,9 @@ msgstr ""
 #. addressbook:ldap-auth secondary
 #: addressbook/addressbook-errors.xml.h:8
 msgid ""
-"Check to make sure your password is spelled correctly and that you are using a "
-"supported login method. Remember that many passwords are case sensitive; your "
-"caps lock might be on."
+"Check to make sure your password is spelled correctly and that you are using "
+"a supported login method. Remember that many passwords are case sensitive; "
+"your caps lock might be on."
 msgstr ""
 
 #: addressbook/gui/component/addressbook-migrate.c:124
@@ -113,13 +113,13 @@ msgstr ""
 # This is an example of commenttext for a multiline msgset
 #: addressbook/gui/component/addressbook-migrate.c:1123
 msgid ""
-"The location and hierarchy of the Evolution contact folders has changed since "
-"Evolution 1.x.\\n"
+"The location and hierarchy of the Evolution contact folders has changed "
+"since Evolution 1.x.\\n"
 "\\n"
 "Please be patient while Evolution migrates your folders..."
 msgstr ""
-"La ubicaci\xc3\xb3n y jerarqu\xc3\xada de las carpetas de contactos de Evolution ha cambiado "
-"desde Evolution 1.x.\\n"
+"La ubicaci\xc3\xb3n y jerarqu\xc3\xada de las carpetas de contactos de Evolution ha "
+"cambiado desde Evolution 1.x.\\n"
 "\\n"
 "Tenga paciencia mientras Evolution migra sus carpetas..."
 
