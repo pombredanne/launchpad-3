@@ -26,8 +26,8 @@
     <p> <h4>Package name: </h4> <tal:block tal:replace="context/binarypackage/name" />
     <p> <h4>Maintainer:   </h4> Maintainer Name
 
-    <p> <h4>Proposed:</h4>
-    0.0.0-1
+<!--     <p> <h4>Proposed:</h4> -->
+<!--     0.0.0-1 -->
 
     <p> <h4>Current:</h4>
 
@@ -57,8 +57,8 @@
     <br>
     <br>
     <b>Last Packages:</b>
-    <li tal:repeat="version context/lastversions">
-    <a tal:content="version" tal:attributes="href version">
+    <li tal:repeat="lastversion context/lastversions">
+    <a tal:content="lastversion/version" tal:attributes="href lastversion/version">
     0.0.0-0
     </a>
     </li>

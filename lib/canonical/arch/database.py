@@ -475,10 +475,8 @@ class RevisionMapper(object):
                           changesetfilename=name.id,
                           filecontents="",
                           filesize=size)
-        for checksum in checksums:
-            hashes={"md5":0, "sha1":1}
-            hashalg = hashes[checksum[0]]
+        for hashalg, hashval in checksums.items():
+            hashid = {"md5":0, "sha1":1}[hashalg]
             hasha = ChangesetFileHash(changesetfile=f.id,
-                                      hashalg=hashalg,
-                                      hash=checksum[1],
-                                      )
+                                      hashalg=hashid,
+                                      hash=hashval)

@@ -28,6 +28,10 @@
         <span tal:replace="context/poTemplate/__len__">N</span>
     <br/>
     Untranslated messages: <span tal:replace="view/untranslated">N</span>
+    <br/>
+    <a tal:attributes="href string:po">Export as PO file</a>
+    <br/>
+    <a tal:attributes="href string:mo">Export as MO file</a>
     </p>
 
 </div>

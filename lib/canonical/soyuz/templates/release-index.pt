@@ -14,11 +14,80 @@
 
 <div metal:fill-slot="main">
 
-    <h1><span tal:content="context/release/title">TITLE</span> Release overview</h1>
-    <h3><span tal:content="context/release/name">name</span></h3>
+    <h1><span
+    tal:content="context/release/displayname">displayname</span> 
+    Overview</h1> 
+
+   <table width="80%">
+   <tr><td>
+      <table>
+      <legend><h4>Description</h4></legend>
+      <tr><td>
+        <fieldset>
+        <div>
+	<p> <span
+      tal:content="context/release/description">description</span>   
+      </td></tr>
+      </table>
+   </td><td>
+      <table>
+      <legend><h4>Release Status</h4></legend>
+      <tr><td>
+        <fieldset>
+        <div>
+	<ul>
+	</ul>
+      </td></tr>
+      </table>
+   </td></tr>
+   <tr><td>
+      <table>
+      <legend><h4>Release Bugs</h4></legend>
+      <tr><td>
+        <fieldset>
+        <div>
+	<ul>
+	</ul>
+      </td></tr>
+      </table>
+   </td><td>
+      <table>
+      <legend><h4>Release Team</h4></legend>
+      <tr><td>
+        <fieldset>
+        <div>
+	<ul>
+	</ul>
+      </td></tr>
+      </table>   
+   </td></tr>
+   <tr><td>
+      <table>
+      <legend><h4>Releases Translations</h4></legend>
+      <tr><td>
+        <fieldset>
+        <div>
+	<ul>
+	</ul>
+      </td></tr>
+      </table>   
+   </td></tr>
+   <tr><td>
+      <table>
+      <legend><h4>Packages (xxx packages)</h4></legend>
+      <tr><td>
+        <fieldset>
+        <div>
+	<ul>
+	</ul>
+      </td></tr>
+      </table>   
+   </td></tr>
+   </table>   
+
+
 
     <table class="listing">
-
     <tr>
        <th>
          <a href="+edit">Edit this Release </a>

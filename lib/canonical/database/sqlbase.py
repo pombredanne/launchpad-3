@@ -24,6 +24,7 @@ class SQLBase(SQLOS):
         # forget about SQLOS's zope support.
         cls._connection = connection
         cls.zope = False
+        cls._lazyUpdate = False
     initZopeless = classmethod(initZopeless)
     
     def _set_dirty(self, value):

@@ -236,12 +236,13 @@ class DistroReleaseSourcesApp(object):
             'SourcePackageUpload.sourcepackagerelease=SourcePackageRelease.id '
             'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
             'AND SourcePackageUpload.distrorelease = %d '
+            'AND SourcePackage.sourcepackagename = SourcePackageName.id'
             % (self.release.id))
         
     def findPackagesByName(self, pattern):
         query = self._query()
         pattern = pattern.replace('%', '%%')
-        query += ' AND name LIKE %s' % quote('%%' + pattern + '%%')
+        query += ' AND SourcePackageName.name LIKE %s' % quote('%%' + pattern + '%%')
         from sets import Set
         return Set(SoyuzSourcePackage.select(query))
 
@@ -250,7 +251,7 @@ class DistroReleaseSourcesApp(object):
         #      (which shouldn't happen here...)
 
         query = self._query()
-        query += ' AND name = %s ORDER BY dateuploaded DESC' % quote(name)
+        query += ' AND SourcePackageName.name = %s ORDER BY dateuploaded DESC' % quote(name)
         try:
             release = self.table.select(query,
                                         clauseTables=self.clauseTables)[0]
@@ -289,7 +290,7 @@ class DistroSourcesApp(object):
 ###########################################################
 
 # Team app component (team)
-#YAPS: I shouls be moved to database.py !! and work for instance 
+#FIXME: I shouls be moved to database.py !! and work for instance 
 class DistributionRole(SQLBase):
 
     implements(IDistributionRole)
@@ -318,7 +319,7 @@ class DistroReleaseRole(SQLBase):
         IntCol('role', dbName='role')
         ]
 
-#YAPS: just usefull for STUBs
+#FIXME: just usefull for STUBs
 class Team(object):
     def __init__(self, displayname, role):
         self.displayname = displayname
@@ -329,7 +330,7 @@ class DistroReleaseTeamApp(object):
     def __init__(self, release):
         self.release = release
 
-#YAPS: STUB sucks         
+#FIXME: STUB sucks         
 #        self.team=DistroReleaseRole.select()
         self.team = [Team('Matt Zimmerman', 'Maintainer'),
                        Team('Robert Collins', 'Translator'),
@@ -340,7 +341,7 @@ class DistroReleaseTeamApp(object):
 class DistroTeamApp(object):
     def __init__(self, distribution):
         self.distribution = distribution
-#YAPS: STUB sucks         
+#FIXME: STUB sucks         
 #        self.team=DistributionRole.select()
 
         self.team = [Team('Mark Shuttleworth', 'Maintainer'),
@@ -362,9 +363,14 @@ class PeopleApp(object):
     def __init__(self):
         self.entries = SoyuzPerson.select('teamowner IS NULL').count()
 
-    #YAPS: traverse by ID ?
+    #FIXME: traverse by ID ?
     def __getitem__(self, id):
-        return PersonApp(id)
+        print 'PeopleApp, __getitem__,', id
+        try:
+            return PersonApp(int(id))
+        except Exception, e:
+            print e.__class__, e
+            raise
 
     def __iter__(self):
         return iter(SoyuzPerson.select('teamowner IS NULL'))
@@ -372,14 +378,29 @@ class PeopleApp(object):
 class PersonApp(object):
     def __init__(self, id):
         self.id = id
-        # YAPS: I know it seems totally nasty ...
+        # FIXME: I know it seems totally nasty ...
         # it should query By ID ... 
         self.person = SoyuzPerson.get(self.id)
-        self.email = SoyuzEmailAddress.get(self.id)
-        self.wiki = WikiName.get(self.id)
-        self.jabber = JabberID.get(self.id)
-        self.irc = IrcID.get(self.id)
-        self.gpg = GPGKey.get(self.id)
+        try:
+            self.email = SoyuzEmailAddress.selectBy(personID=self.id)[0]
+        except IndexError:
+            self.email = None
+        try:
+            self.wiki = WikiName.selectBy(personID=self.id)[0]
+        except IndexError:
+            self.wiki = None
+        try:
+            self.jabber = JabberID.selectBy(personID=self.id)[0]
+        except IndexError:
+            self.jabber = None
+        try:
+            self.irc = IrcID.selectBy(personID=self.id)[0]
+        except IndexError:
+            self.irc = None
+        try:
+            self.gpg = GPGKey.selectBy(personID=self.id)[0]
+        except IndexError:
+            self.gpg = None
 
 ################################################################
 
@@ -449,19 +470,44 @@ class DistroReleaseBinaryReleaseApp(object):
                                                   arch)
     
 class DistroReleaseBinaryApp(object):
-    def __init__(self, binarypackage):
+    def __init__(self, binarypackage, release):
         # FIXME: stub
         self.binarypackage = binarypackage
-        self.lastversions = ['1.2.3-4',
-                             '1.2.3-5',
-                             '1.2.3-6',
-                             '1.2.4-0',
-                             '1.2.4-1']
+        self.release = release
+
+##         self.lastversions = ['1.2.3-4',
+##                              '1.2.3-5',
+##                              '1.2.3-6',
+##                              '1.2.4-0',
+##                              '1.2.4-1']
 
 
-        self.currentversions = [CurrentVersion('1.2.4-0',['i386', 'AMD64']),
-                                CurrentVersion('1.2.3-6',['PPC'])
-                                ]
+##         Self.currentversions = [CurrentVersion('1.2.4-0',['i386', 'AMD64']),
+##                                 CurrentVersion('1.2.3-6',['PPC'])
+##                                 ]
+
+    def currentReleases(self):
+        """The current releases of this binary package by architecture.
+        
+        :returns: a dict of version -> list-of-architectures
+        """
+        binaryReleases = self.binarypackage.current(self.release)
+        current = {}
+        from canonical.soyuz.database import SoyuzDistroArchRelease
+        for release in binaryReleases:
+            # Find distroarchs for that release
+            archReleases = release.architecturesReleased(self.release)
+            current[release.version] = [a.archtecturetag for a in archReleases]
+        return current
+
+    def currentversions(self):
+        print [CurrentVersion(k, v) for k,v in self.currentReleases().iteritems()]
+        return [CurrentVersion(k, v) for k,v in self.currentReleases().iteritems()]
+
+    def lastversions(self):
+        return self.binarypackage.lastversions(self.release)
+
+    lastversions = property(lastversions)
 
     def __getitem__(self, version):
         return DistroReleaseBinaryReleaseApp(self.binarypackage, version)
@@ -524,12 +570,12 @@ class DistroReleaseBinariesApp(object):
                 'AND Binarypackage.binarypackagename = BinarypackageName.id '
                 'AND BinarypackageName.name = ' + quote(name)
                 )
-            return DistroReleaseBinaryApp(SoyuzBinaryPackage.select(where)[0])
+            return DistroReleaseBinaryApp(SoyuzBinaryPackage.select(where)[0], self.release)
         except IndexError:
             raise KeyError, name
          
     def __iter__(self):
-        return iter([DistroReleaseBinaryApp(p) for p in 
+        return iter([DistroReleaseBinaryApp(p, self.release) for p in 
                      SoyuzBinaryPackage.select(self.where % self.release.id)])
     
 class DistroBinariesApp(object):
@@ -607,6 +653,12 @@ class Release(SQLBase):
         ForeignKey(name='owner', dbName='owner', foreignKey='SoyuzPerson',
                    notNull=True)
     ]
+
+    def displayname(self):
+        return "%s %s (%s)" % (self.distribution.title, self.version,
+                               self.title)
+
+    displayname = property(displayname)
 
     def parent(self):
         if self.parentrelease:

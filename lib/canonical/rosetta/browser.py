@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-import re
+import re, os, popen2
 from math import ceil
 
 from zope.component import getUtility
@@ -262,30 +262,6 @@ class ViewPOFile:
             self.submitted = False
             return ""
 
-def traverseIPOFile(pofile, request, name):
-    print "Entro en el traversal"
-    if name == 'po':
-        print "Es un po"
-        poExport = POExport(pofile.poTemplate)
-        print "Tengo el pot"
-        languageCode = pofile.language.code
-        print "Voy a exportarlo"
-        exportedFile = poExport.export(languageCode)
-        print "Lo he exportado"
-
-        request.response.setHeader('Content-Type', 'application/x-po')
-        request.response.setHeader('Content-Length', len(exportedFile))
-        request.response.setHeader('Content-disposition',
-                'attachment; filename="%s.po"' % languageCode)
-        return exportedFile
-    # XXX: Implemente .mo export:
-    #elseif name == 'mo':
-    else:
-        # XXX: What should we do if the tye something that it's not a po or
-        # mo?
-        raise RuntimeError("Unknown request!")
-
-
 class TranslatorDashboard:
     def projects(self):
         return getUtility(IProjects)
@@ -354,18 +330,53 @@ class ViewSearchResults:
 class ViewPOExport:
 
     def __call__(self):
-        self.export = POExport(self.context)
-        # XXX: hardcoded value
-        languageCode = 'es'
-
-        self.pofile = self.export.export(languageCode)
+        pofile = self.context
+        poExport = POExport(pofile.poTemplate)
+        languageCode = pofile.language.code
+        exportedFile = poExport.export(languageCode)
 
         self.request.response.setHeader('Content-Type', 'application/x-po')
-        self.request.response.setHeader('Content-Length', len(self.pofile))
+        self.request.response.setHeader('Content-Length', len(exportedFile))
         self.request.response.setHeader('Content-disposition',
-            'attachment; filename="%s.po"' % languageCode)
+                'attachment; filename="%s.po"' % languageCode)
+        return exportedFile
 
-        return self.pofile
+class ViewMOExport:
+
+    def __call__(self):
+        pofile = self.context
+        poExport = POExport(pofile.poTemplate)
+        languageCode = pofile.language.code
+        exportedFile = poExport.export(languageCode)
+
+        # XXX: It's ok to hardcode the msgfmt path?
+        msgfmt = popen2.Popen3('/usr/bin/msgfmt -o - -', True)
+
+        # We feed the command with our .po file from the stdin
+        msgfmt.tochild.write(exportedFile)
+        msgfmt.tochild.close()
+
+        # Now we wait until the command ends
+        status = msgfmt.wait()
+
+        if os.WIFEXITED(status):
+            if os.WEXITSTATUS(status) == 0:
+                # The command worked
+                output = msgfmt.fromchild.read()
+                
+                self.request.response.setHeader('Content-Type',
+                    'application/x-gmo')
+                self.request.response.setHeader('Content-Length',
+                    len(output))
+                self.request.response.setHeader('Content-disposition',
+                    'attachment; filename="%s.mo"' % languageCode)
+                return output
+            else:
+                # XXX: Perhaps we should be more "polite" if it fails
+                return msgfmt.childerr.read()
+        else:
+            # XXX: Perhaps we should be more "polite" if it fails
+            return "ERROR exporting the .mo!!"
 
 
 class TranslatePOTemplate:

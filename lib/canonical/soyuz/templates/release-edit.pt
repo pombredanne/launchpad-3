@@ -45,7 +45,7 @@
 	    <div class="formHelp">
 	    Enter the Release Title.
             </div>
-	    <input type="text" name="title"
+	    <input type="text" name="title" size="40"
 	    tal:attributes="value context/release/title|nothing"/>
 	</div>
 	</td></tr>
@@ -55,8 +55,9 @@
 	    <div class="formHelp">
 	    Enter the Release Description.
             </div>
-	    <input type="text" name="description"
-	    tal:attributes="value context/release/description|nothing"/>
+            <textarea name="description" cols="60" rows="6"
+	    tal:content="context/release/description|nothing">
+	    </textarea>
 	</div>
 	</td></tr>
 	<tr><td>

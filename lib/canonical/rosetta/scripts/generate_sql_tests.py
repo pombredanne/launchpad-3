@@ -21,6 +21,7 @@ tests = [
     ('ICategory', 'RosettaCategory'),
     ('ITranslationEffort', 'RosettaTranslationEffort'),
     ('ITranslationEffortPOTemplate', 'RosettaTranslationEffortPOTemplate'),
+    ('IEmailAddress', 'RosettaEmailAddress'),
     ]
 
 if '-c' in sys.argv:
