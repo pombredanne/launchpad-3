@@ -43,8 +43,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.searchbuilder import NULL
 
-from canonical.lp.dbschema import EnumCol
-from canonical.lp.dbschema import KarmaType
+from canonical.lp.dbschema import EnumCol, SSHKeyType, KarmaType
 from canonical.lp.dbschema import EmailAddressStatus
 from canonical.lp.dbschema import TeamSubscriptionPolicy
 from canonical.lp.dbschema import TeamMembershipStatus
@@ -969,9 +968,22 @@ class SSHKey(SQLBase):
     _table = 'SSHKey'
 
     person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
-    keytype = StringCol(dbName='keytype', notNull=True)
+    keytype = EnumCol(dbName='keytype', notNull=True, schema=SSHKeyType)
     keytext = StringCol(dbName='keytext', notNull=True)
     comment = StringCol(dbName='comment', notNull=True)
+
+    def keytypename(self):
+        return self.keytype.title
+    keytypename = property(keytypename)
+
+    def keykind(self):
+        if self.keytype == SSHKeyType.DSA:
+            return 'ssh-dss'
+        elif self.keytype == SSHKeyType.RSA:
+            return 'ssh-rsa'
+        else:
+            return 'Unknown key type'
+    keykind = property(keykind)
 
 
 class SSHKeySet(object):

@@ -150,7 +150,8 @@ class PersonView(object):
 
     def showSSHKeys(self):
         self.request.response.setHeader('Content-Type', 'text/plain')
-        return "\n".join([key.keytext for key in self.context.sshkeys])
+        return "\n".join(["%s %s %s" % (key.keykind, key.keytext, key.comment)
+                          for key in self.context.sshkeys])
     
     def sshkeysCount(self):
         return len(self.context.sshkeys)

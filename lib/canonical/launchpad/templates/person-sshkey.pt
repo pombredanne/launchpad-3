@@ -41,7 +41,7 @@
     <legend>SSH Key Information </legend>
     <dl>
     <dt>Key type</dt>
-        <dd tal:content="sshkey/keytype/lp:SSHKeyType">DSA</dd>
+        <dd tal:content="sshkey/keytypename">DSA</dd>
     <dt>Key text</dt>
         <dd style="overflow: auto;" tal:content="sshkey/keytext">aaaaAAAA...</dd>
     <dt>Comment</dt>

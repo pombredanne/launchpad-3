@@ -2,6 +2,42 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-06 16:51:36 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1574
+
+    Summary:
+      SSHKey.keytype must be an EnumCol and not a StringCol; fixed it. Removing some stuff that is useless now that we have the actions portlet on person's pages.
+    Revision:
+      launchpad--devel--0--patch-1574
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-257
+       Forgot to remove one link for the edit-gpgkeys page.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-258
+       Removing some stuff that is useless now that we have the actions portlet on person's pages.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-259
+       SSHKey.keytype must be an EnumCol and not a StringCol; fixed it. Display the full ssh key, including the key type (ssh-dss/ssh-rsa) and the comment, in the +sshkey page.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-260
+       Fix a problem I introduced when changed SSHKey.keytype from StringCol to EnumCol.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/person.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/ssh.py
+     lib/canonical/launchpad/templates/person-index.pt
+     lib/canonical/launchpad/templates/person-sshkey.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-257
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-258
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-259
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-260
+
+
 2005-04-06 14:59:00 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1573
 
     Summary:
