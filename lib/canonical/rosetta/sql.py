@@ -984,7 +984,11 @@ class RosettaLanguage(SQLBase):
     ]
 
     def translateLabel(self):
-        schema = RosettaSchema.selectBy(name='translation-languages')
+        try:
+            schema = RosettaSchema.byName('translation-languages')
+        except SQLObjectNotFound:
+            raise RuntimeError("Launchpad installation is broken, " + \
+                    "the DB is missing essential data.")
         return RosettaLabel.selectBy(schemaID=schema.id, name=self.code)
 
     def translators(self):
@@ -1051,20 +1055,42 @@ class RosettaPerson(SQLBase):
 
     def languages(self):
         languages = getUtility(interfaces.ILanguages)
-        schema = RosettaSchema.selectBy(name='translation-languages')[0]
+        try:
+            schema = RosettaSchema.byName('translation-languages')
+        except SQLObjectNotFound:
+            raise RuntimeError("Launchpad installation is broken, " + \
+                    "the DB is missing essential data.")
 
         for label in self._labelsJoin:
             if label.schema == schema:
                 yield languages[label.name]
 
     def addLanguage(self, language):
-        schema = RosettaSchema.selectBy(name='translation-languages')[0]
-        label = RosettaLabel.selectBy(schemaID=schema.id, name=language.code)[0]
+        try:
+            schema = RosettaSchema.byName('translation-languages')
+        except SQLObjectNotFound:
+            raise RuntimeError("Launchpad installation is broken, " + \
+                    "the DB is missing essential data.")
+        label = RosettaLabel.selectBy(schemaID=schema.id, name=language.code)
+        if label.count() < 1:
+            # The label for this language does not exists yet into the
+            # database, we should create it.
+            label = RosettaLabel(
+                        schemaID=schema.id,
+                        name=language.code,
+                        title='Translates into ' + language.englishName,
+                        description='A person with this label says that ' + \
+                                    'knows how to translate into ' + \
+                                    language.englishName)
         # This method comes from the RelatedJoin
         self.addRosettaLabel(label)
 
     def removeLanguage(self, language):
-        schema = RosettaSchema.selectBy(name='translation-languages')[0]
+        try:
+            schema = RosettaSchema.byName('translation-languages')
+        except SQLObjectNotFound:
+            raise RuntimeError("Launchpad installation is broken, " + \
+                    "the DB is missing essential data.")
         label = RosettaLabel.selectBy(schemaID=schema.id, name=language.code)[0]
         # This method comes from the RelatedJoin
         self.removeRosettaLabel(label)
@@ -1099,12 +1125,12 @@ class RosettaSchemas(object):
     implements(interfaces.ISchemas)
 
     def __getitem__(self, name):
-        results = RosettaSchema.selectBy(name=name)
-
-        if results.count() == 0:
+        try:
+            schema = RosettaSchema.byName(name)
+        except SQLObjectNotFound:
             raise KeyError, name
         else:
-            return results[0]
+            return schema
 
     def keys(self):
         return [schema.name for schema in RosettaSchema.select()]
@@ -1118,7 +1144,7 @@ class RosettaSchema(SQLBase):
     _columns = [
         ForeignKey(name='owner', foreignKey='RosettaPerson',
             dbName='owner', notNull=True),
-        StringCol(name='name', dbName='name', notNull=True),
+        StringCol(name='name', dbName='name', notNull=True, alternateID=True),
         StringCol(name='title', dbName='title', notNull=True),
         StringCol(name='description', dbName='description', notNull=True),
 #        BoolCol(name='extensible', dbName='extensible', notNull=True),

@@ -400,6 +400,8 @@ class ViewPreferences:
                     for language in self.languages():
                         if language.englishName == englishName:
                             if language not in oldInterest:
+                                import pdb
+                                pdb.set_trace()
                                 person.addLanguage(language)
                 for language in oldInterest:
                     if language.englishName not in newInterest:
