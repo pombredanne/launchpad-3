@@ -403,48 +403,83 @@ INSERT INTO Schema (name, title, description, owner, extensible) VALUES
 	('enema', 'ENHEMA', 'description', 
 	(SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'), 
 	TRUE);
+-- Sourcepackagename
+INSERT INTO Sourcepackagename (name)
+	VALUES('mozilla-firefox'); 
+INSERT INTO Sourcepackagename (name)
+	VALUES('mozilla-thunderbird'); 
+INSERT INTO Sourcepackagename (name)
+	VALUES('python-twisted'); 
+INSERT INTO Sourcepackagename (name)
+	VALUES('bugzilla'); 
+INSERT INTO Sourcepackagename (name)
+	VALUES('arch'); 
+INSERT INTO Sourcepackagename (name)
+	VALUES('kiwi2'); 
+INSERT INTO Sourcepackagename (name)
+	VALUES('plone'); 
+INSERT INTO Sourcepackagename (name)
+	VALUES('evolution'); 
+
 
 -- Sourcepackage
-INSERT INTO Sourcepackage (maintainer, name, title, description)
+INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc, 
+	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
-         'mozilla-firefox', 'Ubuntu Mozilla Firefox', 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox'),
+	'Ubuntu Mozilla Firefox', 
          'text');
 
-INSERT INTO Sourcepackage (maintainer, name, title, description)
+INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc, 
+	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
-         'mozilla-thunderbird', 'Ubuntu Mozilla Thunderbird', 
+        (SELECT id FROM Sourcepackagename WHERE name = 'mozilla-thunderbird'),
+	'Ubuntu Mozilla Thunderbird', 
          'text');
 
-INSERT INTO Sourcepackage (maintainer, name, title, description)
+INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc, 
+	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
-         'python-twisted', 'Python Twisted', 
+        (SELECT id FROM Sourcepackagename WHERE name = 'python-twisted'),
+	'Python Twisted', 
          'text');
-INSERT INTO Sourcepackage (maintainer, name, title, description)
+INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc, 
+	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Dave Miller'),
-         'bugzilla', 'Bugzilla', 
+        (SELECT id FROM Sourcepackagename WHERE name = 'bugzilla'),
+	'Bugzilla', 
          'text');
-INSERT INTO Sourcepackage (maintainer, name, title, description)
+INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc, 
+	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'James Blackwell'),
-         'arch', 'Arch(TLA)', 
+        (SELECT id FROM Sourcepackagename WHERE name = 'arch'),
+	'Arch(TLA)', 
          'text');
-INSERT INTO Sourcepackage (maintainer, name, title, description)
+INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc, 
+	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Christian Reis'),
-         'kiwi2', 'Kiwi2', 
+        (SELECT id FROM Sourcepackagename WHERE name = 'kiwi2'),
+	'Kiwi2', 
          'text');
-INSERT INTO Sourcepackage (maintainer, name, title, description)
+INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc, 
+	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
-         'plone', 'Plone', 
+        (SELECT id FROM Sourcepackagename WHERE name = 'plone'),
+	'Plone', 
          'text');
-INSERT INTO Sourcepackage (maintainer, name, title, description)
+INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc, 
+	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Jeff Waugh'),
-        'evolution', 'Evolution', 
+        (SELECT id FROM Sourcepackagename WHERE name = 'evolution'),
+	'Evolution', 
         'text');
 
 
 --SourcepackageRelease
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
-VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-firefox'),
+VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM SOurcepackagename WHERE name = 'mozilla-firefox')),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
         '0.9.0-6',
@@ -454,7 +489,8 @@ VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-firefox'),
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
-VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-firefox'),
+VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox')),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
         '0.9.0-7',
@@ -464,7 +500,8 @@ VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-firefox'),
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
-VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-firefox'),
+VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox')),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
         '0.9.0-8',
@@ -473,7 +510,8 @@ VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-firefox'),
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
-VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-firefox'),
+VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox')),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
         '0.9.0-9',
@@ -482,7 +520,8 @@ VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-firefox'),
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
-VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-firefox'),
+VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox')),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
         '0.9.1-1',
@@ -491,7 +530,8 @@ VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-firefox'),
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
-VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-thunderbird'),
+VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-thunderbird')),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
         '0.9.1-2',
@@ -500,7 +540,8 @@ VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-thunderbird'),
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
-VALUES ((SELECT id FROM Sourcepackage WHERE name = 'python-twisted'),
+VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM SOurcepackagename WHERE name = 'python-twisted')),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
         '0.9.1-3',
@@ -509,7 +550,8 @@ VALUES ((SELECT id FROM Sourcepackage WHERE name = 'python-twisted'),
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
-VALUES ((SELECT id FROM Sourcepackage WHERE name = 'bugzilla'),
+VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'bugzilla')),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Dave Miller'),
         '0.9.1-4',
@@ -518,7 +560,8 @@ VALUES ((SELECT id FROM Sourcepackage WHERE name = 'bugzilla'),
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
-VALUES ((SELECT id FROM Sourcepackage WHERE name = 'arch'),
+VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'arch')),
  	1,
         (SELECT id FROM Person WHERE displayname = 'James Blackwell'),
         '0.9.1-5',
@@ -527,7 +570,8 @@ VALUES ((SELECT id FROM Sourcepackage WHERE name = 'arch'),
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
-VALUES ((SELECT id FROM Sourcepackage WHERE name = 'kiwi2'),
+VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'kiwi2')),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Christian Reis'),
         '0.9.1-6',
@@ -536,7 +580,8 @@ VALUES ((SELECT id FROM Sourcepackage WHERE name = 'kiwi2'),
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
-VALUES ((SELECT id FROM Sourcepackage WHERE name = 'plone'),
+VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'plone')),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
         '0.9.1-7',
@@ -927,18 +972,17 @@ INSERT INTO Binarypackagename(name) VALUES ('arch');
 INSERT INTO Binarypackagename(name) VALUES ('kiwi');
 INSERT INTO Binarypackagename(name) VALUES ('plone');
 
-
-
-
 -- Binarypackage
 INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
 version, shortdesc, description, build, binpackageformat, component, 
 section, priority) 
 	VALUES (
-(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
-	(SELECT id from Sourcepackage where name = 'mozilla-firefox')  and version='0.9.1-1'),
-(SELECT id from Binarypackagename WHERE name = 'mozilla-firefox'), 
-'0.8', 'Mozilla Firefox 0.8', 'some text', 
+	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox'))  
+	and version='0.9.1-1'),
+	(SELECT id from Binarypackagename WHERE name = 'mozilla-firefox'), 
+	'0.8', 'Mozilla Firefox 0.8', 'some text', 
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
 	1, -- default component
@@ -949,10 +993,12 @@ INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename,
 version, shortdesc, description, build, binpackageformat, component, 
 section, priority) 
 	VALUES (
-(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
-	(SELECT id from Sourcepackage where name = 'mozilla-thunderbird')),
-(SELECT id from Binarypackagename WHERE name = 'mozilla-thunderbird'), 
-'1.5', 'Mozilla Thunderbird 1.5', 'some text', 
+	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-thunderbird'))
+	),
+	(SELECT id from Binarypackagename WHERE name = 'mozilla-thunderbird'), 
+	'1.5', 'Mozilla Thunderbird 1.5', 'some text', 
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
 	1, -- default component
@@ -963,10 +1009,11 @@ INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename,
 version, shortdesc, description, build, binpackageformat, component, 
 section, priority) 
 	VALUES (
-(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
-	(SELECT id from Sourcepackage where name = 'python-twisted')),
-(SELECT id from Binarypackagename WHERE name = 'python-twisted'), 
-'1.3', 'Python Twisted 1.3', 'some text', 
+	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'python-twisted'))),
+	(SELECT id from Binarypackagename WHERE name = 'python-twisted'), 
+	'1.3', 'Python Twisted 1.3', 'some text', 
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
 	1, -- default component
@@ -977,10 +1024,11 @@ INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename,
 version, shortdesc, description, build, binpackageformat, component, 
 section, priority) 
 	VALUES (
-(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
-	(SELECT id from Sourcepackage where name = 'bugzilla')),
-(SELECT id from Binarypackagename WHERE name = 'bugzilla'), 
-'2.18', 'Bugzilla 2.18', 'some text', 
+	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'bugzilla'))),
+	(SELECT id from Binarypackagename WHERE name = 'bugzilla'), 
+	'2.18', 'Bugzilla 2.18', 'some text', 
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
 	1, -- default component
@@ -991,10 +1039,11 @@ INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename,
 version, shortdesc, description, build, binpackageformat, component, 
 section, priority) 
 	VALUES (
-(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
-	(SELECT id from Sourcepackage where name = 'arch')),
-(SELECT id from Binarypackagename WHERE name = 'arch'), 
-'1.0', 'ARCH 1.0', 'some text', 
+	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'arch'))),
+	(SELECT id from Binarypackagename WHERE name = 'arch'), 
+	'1.0', 'ARCH 1.0', 'some text', 
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
 	1, -- default component
@@ -1005,10 +1054,11 @@ INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename,
 version, shortdesc, description, build, binpackageformat, component, 
 section, priority) 
 	VALUES (
-(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
-	(SELECT id from Sourcepackage where name = 'kiwi2')),
-(SELECT id from Binarypackagename WHERE name = 'kiwi'), 
-'2.0', 'Python Kiwi 2.0', 'some text', 
+	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'kiwi2'))),
+	(SELECT id from Binarypackagename WHERE name = 'kiwi'), 
+	'2.0', 'Python Kiwi 2.0', 'some text', 
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
 	1, -- default component
@@ -1019,10 +1069,11 @@ INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename,
 version, shortdesc, description, build, binpackageformat, component, 
 section, priority) 
 	VALUES (
-(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
-	(SELECT id from Sourcepackage where name = 'plone')),
-(SELECT id from Binarypackagename WHERE name = 'plone'), 
-'1.0', 'Plone 1.0', 'some text', 
+	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'plone'))),
+	(SELECT id from Binarypackagename WHERE name = 'plone'), 
+	'1.0', 'Plone 1.0', 'some text', 
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
 	1, -- default component
@@ -1087,80 +1138,106 @@ INSERT INTO Packagepublishing (binarypackage, distroarchrelease, component,
 INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
 				uploadstatus) 
 VALUES ((SELECT id FROM Distrorelease WHERE name = 'warty'),
-        (SELECT id FROM Sourcepackagerelease WHERE 
-	 sourcepackage = (SELECT id from Sourcepackage where name = 'plone')),
+        (SELECT id FROM Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'plone'))),
+	1);
+
+INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
+				uploadstatus) 
+VALUES ((SELECT id FROM Distrorelease WHERE name = 'warty'),
+        (SELECT id FROM Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'kiwi2'))),
 	1);
 INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
 				uploadstatus) 
 VALUES ((SELECT id FROM Distrorelease WHERE name = 'warty'),
-        (SELECT id FROM Sourcepackagerelease WHERE 
-	 sourcepackage = (SELECT id from Sourcepackage where name = 'kiwi2')),
-	1);
-INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
-				uploadstatus) 
-VALUES ((SELECT id FROM Distrorelease WHERE name = 'warty'),
-        (SELECT id FROM Sourcepackagerelease WHERE 
-	 sourcepackage = (SELECT id from Sourcepackage where name = 'mozilla-firefox') and version='0.9.0-6'),
+        (SELECT id FROM Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox'))
+	 and version='0.9.0-6'),
 	6);
 INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
 				uploadstatus) 
 VALUES ((SELECT id FROM Distrorelease WHERE name = 'warty'),
-        (SELECT id FROM Sourcepackagerelease WHERE 
-	 sourcepackage = (SELECT id from Sourcepackage where name = 'mozilla-firefox') and version='0.9.0-7'),
+        (SELECT id FROM Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox')) 
+	and version='0.9.0-7'),
 	6);
 INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
 				uploadstatus) 
 VALUES ((SELECT id FROM Distrorelease WHERE name = 'warty'),
-        (SELECT id FROM Sourcepackagerelease WHERE 
-	 sourcepackage = (SELECT id from Sourcepackage where name = 'mozilla-firefox') and version='0.9.0-8'),
+        (SELECT id FROM Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox')) 
+	and version='0.9.0-8'),
 	6);
 INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
 				uploadstatus) 
 VALUES ((SELECT id FROM Distrorelease WHERE name = 'warty'),
-        (SELECT id FROM Sourcepackagerelease WHERE 
-	 sourcepackage = (SELECT id from Sourcepackage where name = 'mozilla-firefox') and version='0.9.0-9'),
+        (SELECT id FROM Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox')) 
+	and version='0.9.0-9'),
 	4);
 INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
 				uploadstatus) 
 VALUES ((SELECT id FROM Distrorelease WHERE name = 'warty'),
-        (SELECT id FROM Sourcepackagerelease WHERE 
-	 sourcepackage = (SELECT id from Sourcepackage where name = 'mozilla-firefox') and version='0.9.1-1'),
+        (SELECT id FROM Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox'))
+	 and version='0.9.1-1'),
 	1);
 INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
 				uploadstatus) 
 VALUES ((SELECT id FROM Distrorelease WHERE name = 'warty'),
-        (SELECT id FROM Sourcepackagerelease WHERE 
-	 sourcepackage = (SELECT id from Sourcepackage where name = 'mozilla-thunderbird')),
+        (SELECT id FROM Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name='mozilla-thunderbird'))),
+	1);
+
+INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
+				uploadstatus) 
+VALUES ((SELECT id FROM Distrorelease WHERE name = 'hoary'),
+        (SELECT id FROM Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'python-twisted'))),
 	1);
 INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
 				uploadstatus) 
 VALUES ((SELECT id FROM Distrorelease WHERE name = 'hoary'),
-        (SELECT id FROM Sourcepackagerelease WHERE 
-	 sourcepackage = (SELECT id from Sourcepackage where name = 'python-twisted')),
+        (SELECT id FROM Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'kiwi2'))),
 	1);
 INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
 				uploadstatus) 
 VALUES ((SELECT id FROM Distrorelease WHERE name = 'hoary'),
-        (SELECT id FROM Sourcepackagerelease WHERE 
-	 sourcepackage = (SELECT id from Sourcepackage where name = 'kiwi2')),
-	1);
-INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
-				uploadstatus) 
-VALUES ((SELECT id FROM Distrorelease WHERE name = 'hoary'),
-        (SELECT id FROM Sourcepackagerelease WHERE 
-	sourcepackage = (SELECT id from Sourcepackage where name = 'bugzilla')),
+        (SELECT id FROM Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'bugzilla'))),
 	1);
 
 INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
 				uploadstatus) 
 VALUES ((SELECT id FROM Distrorelease WHERE name = 'grumpy'),
-        (SELECT id FROM Sourcepackagerelease WHERE 
-	sourcepackage = (SELECT id from Sourcepackage where name = 'bugzilla')),
+        (SELECT id FROM Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'bugzilla'))),
 	1);
 
 INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
 				uploadstatus) 
 VALUES ((SELECT id FROM Distrorelease WHERE name = 'grumpy'),
-        (SELECT id FROM Sourcepackagerelease WHERE 
-	sourcepackage = (SELECT id from Sourcepackage where name = 'arch')),
+        (SELECT id FROM Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'arch'))),
 	1);
+
+
+
+
+
+

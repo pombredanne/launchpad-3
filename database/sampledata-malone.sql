@@ -56,7 +56,8 @@ timestamp '2004-06-28 00:00', 'mozilla-firefox-0.9.1',
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
 version, dateuploaded, urgency)
 VALUES (
-(SELECT id FROM Sourcepackage WHERE name='mozilla-firefox'),
+(SELECT id FROM Sourcepackage WHERE sourcepackagename=
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox')),
 1, (SELECT id FROM Person WHERE displayname='Sample Person'),
 '0.9.1-1', timestamp '2004-06-29 00:00', 1
 );
@@ -69,7 +70,8 @@ timestamp '2004-06-29 00:00',
 
 INSERT INTO CodeRelease (sourcepackagerelease, manifest)
 VALUES (
-(SELECT id FROM Sourcepackage WHERE name='mozilla-firefox'),
+(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox')),
 (SELECT max(id) FROM Manifest)
 );
 
@@ -93,7 +95,8 @@ timestamp '2004-06-28 00:00', 'mozilla-thunderbird-0.8.0',
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
 version, dateuploaded, urgency)
 VALUES (
-(SELECT id FROM Sourcepackage WHERE name='mozilla-thunderbird'),
+(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-thunderbird')),
 1, (SELECT id FROM Person WHERE displayname='Sample Person'),
 '0.8.0-1', timestamp '2004-06-29 00:00', 1
 );
@@ -106,7 +109,8 @@ timestamp '2004-06-29 00:00',
 
 INSERT INTO CodeRelease (sourcepackagerelease, manifest)
 VALUES (
-(SELECT id FROM Sourcepackage WHERE name='mozilla-thunderbird'),
+(SELECT id FROM Sourcepackage WHERE sourcepackagename =
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-thunderbird')),
 (SELECT max(id) FROM Manifest)
 );
 
@@ -150,7 +154,8 @@ INSERT INTO SourcepackageBugAssignment
     (bug, sourcepackage, bugstatus, priority, severity, binarypackage)
 VALUES (
     (SELECT id FROM Bug WHERE name='bob'),
-    (SELECT id FROM Sourcepackage WHERE name='mozilla-firefox'),
+    (SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox')),
     2, 4, 2,
     (SELECT id FROM BinaryPackage WHERE version='0.8' 
         AND binarypackagename = (
