@@ -52,18 +52,27 @@ from canonical.soyuz.database import SoyuzEmailAddress, GPGKey, ArchUserID, \
 
 
 class DistrosApp(object):
+    def __init__(self):
+        self.entries = SoyuzDistribution.select().count()
+
     def __getitem__(self, name):
         return DistroApp(name)
 
-    def __iter__(self):
-    	return iter(SoyuzDistribution.select())
+    def distributions(self):
+        return SoyuzDistribution.select()
 
+    
 class DistroApp(object):
 
     def __init__(self, name):
         self.distribution = SoyuzDistribution.selectBy(name=name)[0]
         self.releases = Release.selectBy(distributionID=self.distribution.id)
 
+        if self.releases.count() > 0 :
+            self.enable_releases = True
+        else:
+            self.enable_releases = False
+        
     def getReleaseContainer(self, name):
         if name == 'releases':
             return DistroReleasesApp(self.distribution)
@@ -572,8 +581,6 @@ class SoyuzDistribution(SQLBase):
                    notNull=True)
         ]
 
-
-
 class Release(SQLBase):
 
     implements(IRelease)
@@ -593,7 +600,7 @@ class Release(SQLBase):
         IntCol('releasestate', dbName='releasestate', notNull=True),
         DateTimeCol('datereleased', dbName='datereleased', notNull=True),
         ForeignKey(name='parentrelease', dbName='parentrelease',
-                   foreignKey='Release'),
+                   foreignKey='Release', notNull=False),
         ForeignKey(name='owner', dbName='owner', foreignKey='SoyuzPerson',
                    notNull=True)
     ]

@@ -14,16 +14,19 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Distributions overview: </h1>
+  <h1>Distributions overview: (<span tal:content="context/entries"/>
+   Distributions)</h1>
 
-<!--<div tal:on-error="python: error.type, error.value.args">-->
+  <div class="documentDescription">
+  <p> This page shows all Distributions Hosted by Soyuz Application 
+  </div>
 
   <table class="listing">
     <tr>
       <th>Title</th>
       <th>Description</th>
     </tr>
-    <tr tal:repeat="distribution context">
+    <tr tal:repeat="distribution context/distributions">
       <td>
         <a tal:content="distribution/title" 
 	   tal:attributes="href distribution/name">
@@ -34,16 +37,10 @@
         description
       </td>
     </tr>
-
   </table>    
 
 <input type="submit" value="Add"
          onclick="window.open('+add', '_top')" />
-
-<!--</div>-->
-
-
-
 
 </div>
 

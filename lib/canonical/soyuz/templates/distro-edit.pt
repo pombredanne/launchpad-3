@@ -14,24 +14,71 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Editing <span tal:content="context/distribution/title">DISTRO</span> Information</h1>
+    <h1>Edit <span tal:content="context/distribution/title">DISTRO</span> 
+	Information</h1>
 
-    <form name="add" action="" method="POST">
-    <table>
-      <tr><th>Name</th><th><input type="text" name="name" 
-        tal:attributes="value
-        request/name|context/distribution/name"/>
-	</th></tr>
-      <tr><th>Title</th><th><input type="text" name="title" 
-        tal:attributes="value
-        request/title|context/distribution/title"/>
-	</th></tr>
-      <tr><th>Description</th><th><input type="text" name="description" 
-        tal:attributes="value
-        request/description|context/distribution/description"/> 
-        </th></tr>
-      <tr><th></th><th><input type="submit" value="ok"/></th>
-    </form>
+    <div class="documentDescription">	
+    <p> Here you edit the Information about <span
+    tal:content="context/distribution/title">DISTRO</span>  
+    Distribution
+    </div>
+    
+    <div>
+    <form name="edit" action="" method="POST">
+    <fieldset>
+    <legend><h3>Edit <span
+	tal:content="context/distribution/title">DISTRO</span>
+	 Information</h3><legend> 
+	<table>
+	<tr><td>
+	<div class="field">
+	    <label>Name</label>
+	    <div class="formHelp">
+	    Enter the Distribution Name.
+            </div>
+	    <input type="text" name="name"
+	    tal:attributes="value context/distribution/name|nothing"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
+	    <label>Title</label>
+	    <div class="formHelp">
+	    Enter the Distribution Title.
+            </div>
+	    <input type="text" name="title"
+	    tal:attributes="value context/distribution/title|nothing"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
+	    <label>Description</label>
+	    <div class="formHelp">
+	    Enter the Distribution Description.
+            </div>
+	    <input type="text" name="description"
+	    tal:attributes="value context/distribution/description|nothing"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="formControls">
+	  <input type="submit" value="Edit"/>
+	</div>
+	</td></tr>
+	</table>
+  </form>
+  </div>
+
+  <tla:block tal:condition="view/enable_edited">
+  <div>
+  <h4><a tal:attributes="href string:../${request/name}">
+  <span tal:content="request/title"/></a>
+   Distribution Modified</h4>
+  </div>
+  </tla:block>
+
+
+
 
 </div>
 

@@ -14,30 +14,78 @@
 
 <div metal:fill-slot="main">
 
-   <h1>Editing <span tal:content="context/release/title">Release</span> Release 
-	Information </h1>
+   <h1>Edit <span
+   tal:content="context/release/title">Release</span> Release
+   Information </h1> 
 
-    <form name="add" action="" method="POST">
+    <div class="documentDescription">	
+    <p> Here you can edit <span
+    tal:content="context/release/title">Release</span>
+    Release Information
+    </div>
+    
+    <div>
+    <form name="edit" action="" method="POST">
+    <fieldset>
+    <legend><h3>Edit Release Information</h3><legend>
 	<table>
-
-	<tr><th>Name</th> <th><input type="text" name="name" 
-	tal:attributes="value context/release/name|request/release/name"/>
-	</th></tr>
-
-	<tr><th>Title</th> <th><input type="text" name="title" 
-	tal:attributes="value context/release/title|request/release/title"/>
-	</th></tr>
-
-    	<tr><th> Description</th> <th><input type="text" name="description" 
-	tal:attributes="value context/release/description|request/release/description"/></th></tr>
-
-	<tr><th>Version</th> <th><input type="text" name="version" 
-        tal:attributes="value context/release/version|request/release/version"/> </th> </tr>
-
-	<tr><th></th><th><input type="submit" value="ok"/></th></tr>
-
+	<tr><td>
+	<div class="field">
+	    <label>Name</label>
+	    <div class="formHelp">
+	    Enter the Release Name.
+            </div>
+	    <input type="text" name="name"
+	    tal:attributes="value context/release/name|nothing"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
+	    <label>Title</label>
+	    <div class="formHelp">
+	    Enter the Release Title.
+            </div>
+	    <input type="text" name="title"
+	    tal:attributes="value context/release/title|nothing"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
+	    <label>Description</label>
+	    <div class="formHelp">
+	    Enter the Release Description.
+            </div>
+	    <input type="text" name="description"
+	    tal:attributes="value context/release/description|nothing"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
+	    <label>Version</label>
+	    <div class="formHelp">
+	    Enter the Release Version.
+            </div>
+	    <input type="text" name="version"
+	    tal:attributes="value context/release/version|nothing"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="formControls">
+	  <input type="submit" value="Edit"/>
+	</div>
+	</td></tr>
 	</table>
-    </form>
+  </form>
+  </div>
+
+  <tla:block tal:condition="view/enable_edited">
+  <div>
+  <h4><a tal:attributes="href string:../${context/release/name}">
+  <span tal:content="context/release/title"/></a> Release Modified</h4>
+  </div>
+  </tla:block>
+
+
 
 
 

@@ -56,12 +56,18 @@
   </div>
 
 
+  <tla:block tal:condition="view/enable_results">
+  <div>
+  <h3>Results</h3>
+  <h4><span tal:content="view/entries"/> entries found</h4>
   <ul>
   <li tal:repeat="person view/results"> 
   <a tal:attributes="href person/id"
   tal:content="person/displayname">
   </a></li>
   </ul>
+  </div>
+  </tla:block>
 
 
 

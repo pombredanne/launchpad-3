@@ -85,7 +85,7 @@
 	  permission="zope.Public"
 	  class="canonical.soyuz.browser.ReleasesAddView"
 	  name="+new"
-          template="templates/releases-new.pt"	
+          template="templates/release-new.pt"	
 	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+new"
 	/>
 

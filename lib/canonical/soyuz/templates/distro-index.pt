@@ -18,51 +18,60 @@
     Distribution Overview</h1>
 
    <table width="80%">
-   <tr> <td>
-     <h4>Latest Posts</h4>
-   </td><td>
-     <h4>Related Links</h4>
-   </td></tr>
    <tr><td>
-    <table>
-    <tr><td><i>Hello World</i></td><td></td></tr>
-    <tr><td></td><td><a href="../../people/1">Lamont</a></td></tr>
-    <tr><td><i>Soyuz Rocks</i></td><td></td></tr>
-    <tr><td></td><td><a href="../../people/1">Cprov</a></td></tr>
-    <tr><td><i>Launchpad burns</i></td><td></td></tr>
-    <tr><td></td><td><a href="../../people/1">Kiko</a></td></tr>
+      <table>
+      <legend><h4>Latest Notice (Suggestion)</h4></legend>
+      <tr><td>
+        <fieldset>
+        <div>
+	<ul>
+	  <li><b>Glibc update has landed, please check for smoke in your
+	packages</b></li>
+	  <ul><a href="../../people/1">LamontJones</a></ul>
+	  <li><b>Two weeks to Warty freeze, get your updates in or be sorry
+	  later</b></li> 
+	  <ul><a href="../../people/1">MattZimmerman</a></ul>
+	  <li><b>Today's package changes: 22 packages updated, 22 added
+	  and 1 removed</b></li>
+	  <ul><a href="../../people/1">BuildBot</a></ul>	            
+	  <li><b>Today's build results: 2311 packages passed, 22 failed
+	  (on 3 archs)</b></li> 
+	  <ul><a href="../../people/1">BuildBot</a></ul>
+	  </ul>
+          </div>
+       </td></tr>
+       <tr><th align="right"><a href="">New Notice</a></th></tr>
     </table>
    </td><td>
-   <ul> <a href="src"><span tal:content="context/distribution/title">
-   TITLE</span> Sourcepackages</a></ul> 
-   <ul> <a href="bin"><span tal:content="context/distribution/title">
-   TITLE</span> Binarypackages</a></ul>  
-   <ul> <a href="team"><span
-   tal:content="context/distribution/title">TITLE</span> 
-   Team </a> </ul> 
-   <ul> <a href="+translations"><span
-   tal:content="context/distribution/title">TITLE</span> 
-   Translations </a> </ul> 
-   <ul> <a href="+bugs"><span
-   tal:content="context/distribution/title">TITLE</span> 
-   Bugs</a> </ul> 
+       <table>
+         <legend><h4>Related Links</h4></legend>
+         <tr><td>
+           <div>
+	      <ul>
+	      <li><a href="src">Sourcepackages</a></li> 
+	      <li><a href="bin">Binarypackages</a></li>  
+	      <li><a href="team">Team</a> </li> 
+	      <li><a href="+translations">Translations</a> </li> 
+	      <li><a href="+bugs">Bugs</a> </li> 
+	      </ul>
+	   </div>
+         </td></tr>
+       </table>
    </td></tr>
    <tr><td>
-   <h3><span tal:content="context/distribution/title">TITLE</span> Distribution
-      Description</h3> 
+   <h3>Distribution Description</h3> 
    </td></tr>
    <tr><td>
    <div>
    <p><span tal:content="context/distribution/description">DESCRIPTION</span>
    </div>
    </td></tr>
-   <tr><td>
-    <p> <a href="+edit">Edit <span
-    tal:content="context/distribution/title">
-    TITLE</span> Information</a>   
-   </td></tr>  
-   <tr><td>
+   <tr><th align="right"><a href="+edit">Edit Information</a></th></tr>  
+   <!--Conditional block -->
+   <tr tal:condition="context/enable_releases"><td>
    <table class="listing">
+   <legend><h4>Releases of <span
+   tal:content="context/distribution/title"/></h4></legend>
     <tr>
       <th>Name</th>
       <th>Title</th>
@@ -95,18 +104,11 @@
       <td tal:content="release/parent"> PARENT</td>          
       <td tal:content="release/owner/displayname">OWNER</td>            
     </tr>
-    </table>    
+    </table>
    </td></tr>
-   <tr><td>
-   <p><a href="releases/+new">Create a new <span
-        tal:content="context/distribution/title">TITLE</span>
-	 Release</a>
-   </td></tr>
-   <tr><td>
-   <p><a href="releases">See Current <span
-	tal:content="context/distribution/title">TITLE</span> 
-	Releases</a><b>(DEPRECATED!!)</b> 
-  </td></tr>
+   <!--end of conditional release feature -->
+   <tr><th align="right"><a href="releases/+new">Create New Release</a>
+   </th></tr>
   </table>
  
 </div>

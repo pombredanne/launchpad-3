@@ -13,23 +13,25 @@ class IPackages(Interface):
 
 class IDistributions(Interface):
     """Root object for collection of Distributions"""
+    entries = Attribute('number of distributions')
+    
     def __getitem__(name):
         """retrieve distribution by name"""
-    def distributions():
-        """retrieve all projects"""
 
-    def __iter__():
-        """retrieve an iterator"""
+    def distributions():
+        """retrieve all Distribution"""
 
     def new(name, title, description, url):
         """Creates a new distribution with the given name.
 
         Returns that project.
         """
+    
 class IDistroApp(Interface):
     distribution = Attribute("Distribution")
     releases = Attribute("Distribution releases")
-
+    enable_releases = Attribute("Enable Distribution releases Features")
+    
     def getReleaseContainer(name):
         """Returns an associated IReleaseContainer"""
 
@@ -42,6 +44,7 @@ class IDistribution(Interface):
     description = Attribute("The distro's description.")
     domainname = Attribute("The distro's domain name.")
     owner = Attribute("The distro's owner.")
+
 
 
 class IDistroReleasesApp(Interface):
