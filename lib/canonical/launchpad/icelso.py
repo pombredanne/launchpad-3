@@ -7,6 +7,106 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
+from canonical.lp import dbschema
+
+# Vocabularies
+SubscriptionVocabulary = dbschema.vocabulary(dbschema.BugSubscription)
+InfestationVocabulary = dbschema.vocabulary(dbschema.BugInfestationStatus)
+BugStatusVocabulary = dbschema.vocabulary(dbschema.BugAssignmentStatus)
+BugPriorityVocabulary = dbschema.vocabulary(dbschema.BugPriority)
+BugSeverityVocabulary = dbschema.vocabulary(dbschema.BugSeverity)
+BugRefVocabulary = dbschema.vocabulary(dbschema.BugExternalReferenceType)
+#RemoteBugStatusVocabulary = dbschema.vocabulary(dbschema.RemoteBugStatus)
+
+
+class IBug(Interface):
+    """The core bug entry."""
+
+    id = Int(
+            title=_('Bug ID'), required=True, readonly=True,
+            )
+    datecreated = Datetime(
+            title=_('Date Created'), required=True, readonly=True,
+            )
+    name = TextLine(
+            title=_('Nickname'), required=False,
+            )
+    title = TextLine(
+            title=_('Title'), required=True,
+            )
+    shortdesc = Text(
+            title=_('Short Description'), required=True,
+            )
+    description = Text(
+            title=_('Description'), required=True,
+            )
+    ownerID = Int(
+            title=_('Owner'), required=True, readonly=True
+            )
+    owner = Attribute("The owner's IPerson")
+    duplicateof = Int(
+            title=_('Duplicate Of'), required=False,
+            )
+    communityscore = Int(
+            title=_('Community Score'), required=True, readonly=True,
+            default=0,
+            )
+    communitytimestamp = Datetime(
+            title=_('Community Timestamp'), required=True, readonly=True,
+            #default=datetime.utcnow,
+            )
+    hits = Int(
+            title=_('Hits'), required=True, readonly=True,
+            default=0,
+            )
+    hitstimestamp = Datetime(
+            title=_('Hits Timestamp'), required=True, readonly=True,
+            #default=datetime.utcnow,
+            )
+    activityscore = Int(
+            title=_('Activity Score'), required=True, readonly=True,
+            default=0,
+            )
+    activitytimestamp = Datetime(
+            title=_('Activity Timestamp'), required=True, readonly=True,
+            #default=datetime.utcnow,
+            )
+
+    activity = Attribute('SQLObject.Multijoin of IBugActivity')
+    messages = Attribute('SQLObject.Multijoin of IBugMessages')
+    people = Attribute('SQLObject.Multijoin of IPerson')
+    productassignment = Attribute('SQLObject.Multijoin of IProductBugAssigment')
+    sourceassignment = Attribute(
+            'SQLObject.Multijoin of ISourcepackageBugAssignment'
+            )
+    watches = Attribute('SQLObject.Multijoin of IBugWatch')
+    externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
+    subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
+
+    url = Attribute('Generated URL based on data and reference type')
+
+class IBugAttachment(Interface):
+    """A file attachment to an IBugMessage."""
+
+    id = Int(
+            title=_('ID'), required=True, readonly=True,
+            )
+    bugmessageID = Int(
+            title=_('Bug Message ID'), required=True, readonly=True,
+            )
+    bugmessage = Attribute('Bug Message')
+    name = TextLine(
+            title=_('Name'), required=False, readonly=False,
+            )
+    description = Text(
+            title=_('Description'), required=True, readonly=False,
+            )
+    libraryfile = Int(
+            title=_('Library File'), required=True, readonly=False,
+            )
+    datedeactivated = Datetime(
+            title=_('Date deactivated'), required=False, readonly=False,
+            )
 
 class IMaloneApplication(Interface):
     """Malone application class."""
@@ -119,95 +219,6 @@ class IBugMessagesView(IAddFormCustomization):
 
 class IBugExternalRefsView(IAddFormCustomization):
     """BugExternalRef views"""
-
-class IBug(Interface):
-    """The core bug entry."""
-
-    id = Int(
-            title=_('Bug ID'), required=True, readonly=True,
-            )
-    datecreated = Datetime(
-            title=_('Date Created'), required=True, readonly=True,
-            )
-    name = TextLine(
-            title=_('Nickname'), required=False,
-            )
-    title = TextLine(
-            title=_('Title'), required=True,
-            )
-    shortdesc = Text(
-            title=_('Short Description'), required=True,
-            )
-    description = Text(
-            title=_('Description'), required=True,
-            )
-    ownerID = Int(
-            title=_('Owner'), required=True, readonly=True
-            )
-    owner = Attribute("The owner's IPerson")
-    duplicateof = Int(
-            title=_('Duplicate Of'), required=False,
-            )
-    communityscore = Int(
-            title=_('Community Score'), required=True, readonly=True,
-            default=0,
-            )
-    communitytimestamp = Datetime(
-            title=_('Community Timestamp'), required=True, readonly=True,
-            #default=datetime.utcnow,
-            )
-    hits = Int(
-            title=_('Hits'), required=True, readonly=True,
-            default=0,
-            )
-    hitstimestamp = Datetime(
-            title=_('Hits Timestamp'), required=True, readonly=True,
-            #default=datetime.utcnow,
-            )
-    activityscore = Int(
-            title=_('Activity Score'), required=True, readonly=True,
-            default=0,
-            )
-    activitytimestamp = Datetime(
-            title=_('Activity Timestamp'), required=True, readonly=True,
-            #default=datetime.utcnow,
-            )
-
-    activity = Attribute('SQLObject.Multijoin of IBugActivity')
-    messages = Attribute('SQLObject.Multijoin of IBugMessages')
-    people = Attribute('SQLObject.Multijoin of IPerson')
-    productassignment = Attribute('SQLObject.Multijoin of IProductBugAssigment')
-    sourceassignment = Attribute(
-            'SQLObject.Multijoin of ISourcepackageBugAssignment'
-            )
-    watches = Attribute('SQLObject.Multijoin of IBugWatch')
-    externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
-    subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
-
-    url = Attribute('Generated URL based on data and reference type')
-
-class IBugAttachment(Interface):
-    """A file attachment to an IBugMessage."""
-
-    id = Int(
-            title=_('ID'), required=True, readonly=True,
-            )
-    bugmessageID = Int(
-            title=_('Bug Message ID'), required=True, readonly=True,
-            )
-    bugmessage = Attribute('Bug Message')
-    name = TextLine(
-            title=_('Name'), required=False, readonly=False,
-            )
-    description = Text(
-            title=_('Description'), required=True, readonly=False,
-            )
-    libraryfile = Int(
-            title=_('Library File'), required=True, readonly=False,
-            )
-    datedeactivated = Datetime(
-            title=_('Date deactivated'), required=False, readonly=False,
-            )
 
 class IBugActivity(Interface):
     """A log of all things that have happened to a bug."""

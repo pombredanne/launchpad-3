@@ -23,15 +23,6 @@ from canonical.database.sqlbase import SQLBase
 
 from canonical.lp import dbschema
 
-# Vocabularies
-SubscriptionVocabulary = dbschema.vocabulary(dbschema.BugSubscription)
-InfestationVocabulary = dbschema.vocabulary(dbschema.BugInfestationStatus)
-BugStatusVocabulary = dbschema.vocabulary(dbschema.BugAssignmentStatus)
-BugPriorityVocabulary = dbschema.vocabulary(dbschema.BugPriority)
-BugSeverityVocabulary = dbschema.vocabulary(dbschema.BugSeverity)
-BugRefVocabulary = dbschema.vocabulary(dbschema.BugExternalReferenceType)
-#RemoteBugStatusVocabulary = dbschema.vocabulary(dbschema.RemoteBugStatus)
-
 def is_allowed_filename(value):
     if '/' in value: # Path seperator
         return False
