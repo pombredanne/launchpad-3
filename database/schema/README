@@ -59,6 +59,31 @@ Steps 6, 7 & 8 can be ommitted of course if no table modifications are being
 made (eg. just indexes being added).
 
 
+How to roll out a new database revision
+=======================================
+
+1. Create a new database on emperor (or wherever) using the latest 
+    available dump. 
+
+2. Check a checkout of the patches you need to roll out
+
+3. Connect to the the test database you setup.
+
+4. Run the patches one at a time, in order, using \i patch-2-01-0.sql.
+    Ensure there are no errors. If things have been done right, there won't be
+
+5. Get clients shutdown nicely
+
+6. Run 'pg_ctl -m fast stop' to drop any remaining connections
+
+7. Turn off remote access in /etc/postgres/pg_hba.conf
+
+8. Run 'pg_ctl start' to start postgres
+
+9. Connect to the real database, and run the patches in order as before
+
+10. Shutdown again. Revert changes to /etc/postgres/pg_hba.conf. Startup.
+
 Notes
 =====
 launchpad.sql has been moved from launchpad/database/launchpad.sql

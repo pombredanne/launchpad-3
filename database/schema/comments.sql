@@ -96,3 +96,17 @@ COMMENT ON COLUMN SourcepackageName.name IS
 COMMENT ON COLUMN BinarypackageName.name IS
     'A lowercase name identifying one or more binarypackages';
 
+
+/* Lucille's configuration */
+
+COMMENT ON COLUMN distribution.lucilleconfig IS 'Configuration
+information which lucille will use when processing uploads and
+generating archives for this distribution';
+
+COMMENT ON COLUMN distrorelease.lucilleconfig IS 'Configuration
+information which lucille will use when processing uploads and
+generating archives for this distro release';
+
+
+COMMENT ON COLUMN ArchArchive.name IS 'The archive name, usually in the format of an email address';
+
