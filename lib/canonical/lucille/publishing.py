@@ -70,22 +70,28 @@ class Publisher(object):
         outf.close()
         inf.close()
 
-    def publish(self, records):
+    def publish(self, records, isSource = True):
         """records should be an iterable of indexables which provide the
         following attributes:
 
-               pp : PackagePublishing record
-          pfalias : LibraryFileAlias.id
-          lfaname : LibraryFileAlias.filename
-           spname : SourcePackageName.name
-            cname : Component.name
+               packagepublishing : {Source,}PackagePublishing record
+                libraryfilealias : LibraryFileAlias.id
+        libraryfilealiasfilename : LibraryFileAlias.filename
+               sourcepackagename : SourcePackageName.name
+                   componentname : Component.name
         """
         for pubrec in records:
-            source = pubrec.spname.encode('utf-8')
-            component = pubrec.cname.encode('utf-8')
-            filename = pubrec.lfaname.encode('utf-8')
-            self._publish( source, component, filename, pubrec.pfalias )
-            pubrec.pp.status = PackagePublishingStatus.PUBLISHED.value
+            source = pubrec.sourcepackagename.encode('utf-8')
+            component = pubrec.componentname.encode('utf-8')
+            filename = pubrec.libraryfilealiasfilename.encode('utf-8')
+            self._publish( source, component, filename,
+                           pubrec.libraryfilealias )
+            if isSource:
+                pubrec.sourcepackagepublishing.status = \
+                                       PackagePublishingStatus.PUBLISHED.value
+            else:
+                pubrec.packagepublishing.status = \
+                                       PackagePublishingStatus.PUBLISHED.value
 
     def publishOverrides(self, sourceoverrides, binaryoverrides, \
                          overrideroot, defaultcomponent = "main"):
@@ -112,10 +118,10 @@ class Publisher(object):
             prio[p] = PackagePublishingPriority._items[p].title.lower()
 
         for so in sourceoverrides:
-            distrorelease = so.drname.encode('utf-8')
-            component = so.cname.encode('utf-8')
-            section = so.sname.encode('utf-8')
-            sourcepackagename = so.spname.encode('utf-8')
+            distrorelease = so.distroreleasename.encode('utf-8')
+            component = so.componentname.encode('utf-8')
+            section = so.sectionname.encode('utf-8')
+            sourcepackagename = so.sourcepackagename.encode('utf-8')
             if component != defaultcomponent:
                 section = "%s/%s" % (component,section)
             overrides.setdefault(distrorelease, {})
@@ -124,10 +130,10 @@ class Publisher(object):
             overrides[distrorelease][component]['src'].append( (sourcepackagename,section) )
 
         for bo in binaryoverrides:
-            distrorelease = bo.drname.encode('utf-8')
-            component = bo.cname.encode('utf-8')
-            section = bo.sname.encode('utf-8')
-            binarypackagename = bo.bpname.encode('utf-8')
+            distrorelease = bo.distroreleasename.encode('utf-8')
+            component = bo.componentname.encode('utf-8')
+            section = bo.sectionname.encode('utf-8')
+            binarypackagename = bo.binarypackagename.encode('utf-8')
             priority = bo.priority
             if priority not in prio:
                 raise ValueError, "Unknown priority value %d" % priority

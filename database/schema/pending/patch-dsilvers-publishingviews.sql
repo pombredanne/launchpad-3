@@ -4,16 +4,16 @@
  * would slow things down
  */
 
-DROP VIEW SourcePackageFilesToPublish;
+DROP VIEW PendingSourcePackageFile;
 
-CREATE VIEW SourcePackageFilesToPublish AS SELECT
+CREATE VIEW PendingSourcePackageFile AS SELECT
 LibraryFileAlias.id || '.' || SourcePackagePublishing.id  AS id,
-           DistroRelease.distribution AS drd,
-           SourcePackagePublishing.id AS sppid,
- SourcePackageReleaseFile.libraryfile AS pfalias,
-            LibraryFileAlias.filename AS lfaname,
-               SourcePackageName.name AS spname,
-                       Component.name AS cname
+           DistroRelease.distribution AS distribution,
+           SourcePackagePublishing.id AS sourcepackagepublishing,
+ SourcePackageReleaseFile.libraryfile AS libraryfilealias,
+            LibraryFileAlias.filename AS libraryfilealiasfilename,
+               SourcePackageName.name AS sourcepackagename,
+                       Component.name AS componentname
 
 FROM SourcePackagePublishing,
      SourcePackageRelease,
@@ -37,16 +37,16 @@ WHERE SourcePackagePublishing.distrorelease = DistroRelease.id
 
 -- ------------------------------------------------------------------------- --
 
-DROP VIEW BinaryPackageFilesToPublish;
+DROP VIEW PendingBinaryPackageFile;
 
-CREATE VIEW BinaryPackageFilesToPublish AS SELECT
+CREATE VIEW PendingBinaryPackageFile AS SELECT
 LibraryFileAlias.id || '.' || PackagePublishing.id AS id,
-DistroRelease.distribution AS drd,
-PackagePublishing.id AS ppid,
-Component.name as cname,
-LibraryFileAlias.filename as lfaname,
-SourcePackageName.name AS spname,
-BinaryPackageFile.libraryfile AS pfalias
+DistroRelease.distribution AS distribution,
+PackagePublishing.id AS packagepublishing,
+Component.name as componentname,
+LibraryFileAlias.filename as libraryfilealiasfilename,
+SourcePackageName.name AS sourcepackagename,
+BinaryPackageFile.libraryfile AS libraryfilealias
 
 FROM PackagePublishing,
      SourcePackage,
@@ -79,15 +79,15 @@ WHERE DistroRelease.id = DistroArchRelease.distrorelease
 -- ------------------------------------------------------------------------- --
 -- ------------------------------------------------------------------------- --
 
-DROP VIEW PublishedSourcePackageOverrides;
+DROP VIEW PublishedSourcePackage;
 
-CREATE VIEW PublishedSourcePackageOverrides AS SELECT
+CREATE VIEW PublishedSourcePackage AS SELECT
 SourcePackagePublishing.id AS id,
-DistroRelease.name AS drname,
-SourcePackageName.name AS spname,
-Component.name AS cname,
-Section.name AS sname,
-DistroRelease.distribution AS distro
+DistroRelease.name AS distroreleasename,
+SourcePackageName.name AS sourcepackagename,
+Component.name AS componentname,
+Section.name AS sectionname,
+DistroRelease.distribution AS distribution
 
 FROM
 
@@ -114,16 +114,16 @@ WHERE SourcePackagePublishing.distrorelease = DistroRelease.id
 
 -- ------------------------------------------------------------------------- --
 
-DROP VIEW PublishedBinaryPackageOverrides;
+DROP VIEW PublishedBinaryPackage;
 
-CREATE VIEW PublishedBinaryPackageOverrides AS SELECT
+CREATE VIEW PublishedBinaryPackage AS SELECT
 PackagePublishing.id AS id,
-DistroRelease.name AS drname,
-BinaryPackageName.name AS bpname,
-Component.name AS cname,
-Section.name AS sname,
+DistroRelease.name AS distroreleasename,
+BinaryPackageName.name AS binarypackagename,
+Component.name AS componentname,
+Section.name AS sectionname,
 PackagePublishing.priority AS priority,
-DistroRelease.distribution AS distro
+DistroRelease.distribution AS distribution
 
 FROM
 PackagePublishing,

@@ -75,106 +75,106 @@ class ISourcePackagePublishing(Interface):
             required=False, readonly=False,
             )
     
-class ISourcePackageFilesToPublish(Interface):
+class IPendingSourcePackageFile(Interface):
     """Source package release files due for publishing"""
 
-    drd = Int(
+    distribution = Int(
             title=_('Distribution'), required=True, readonly=True,
             )
 
-    sppid = Int(
+    sourcepackagepublishing = Int(
             title=_('Sourcepackage publishing record id'), required=True,
             readonly=True,
             )
 
-    pfalias = Int(
+    libraryfilealias = Int(
             title=_('Sourcepackage release file alias'), required=True,
             readonly=True,
             )
  
-    lfaname = TextLine(
+    libraryfilealiasfilename = TextLine(
             title=_('File name'), required=True, readonly=True,
             )
 
-    cname = TextLine(
+    componentname = TextLine(
             title=_('Component name'), required=True, readonly=True,
             )
 
-    spname = TextLine(
+    sourcepackagename = TextLine(
             title=_('Source package name'), required=True, readonly=True,
             )
 
-class IBinaryPackageFilesToPublish(Interface):
-    """Source package release files due for publishing"""
+class IPendingBinaryPackageFile(Interface):
+    """Binary package files due for publishing"""
 
-    drd = Int(
+    distribution = Int(
             title=_('Distribution'), required=True, readonly=True,
             )
 
-    ppid = Int(
+    packagepublishing = Int(
             title=_('Package publishing record id'), required=True,
             readonly=True,
             )
 
-    pfalias = Int(
+    libraryfilealias = Int(
             title=_('Binarypackage file alias'), required=True,
             readonly=True,
             )
  
-    lfaname = TextLine(
+    libraryfilealiasfilename = TextLine(
             title=_('File name'), required=True, readonly=True,
             )
 
-    cname = TextLine(
+    componentname = TextLine(
             title=_('Component name'), required=True, readonly=True,
             )
 
-    spname = TextLine(
+    sourcepackagename = TextLine(
             title=_('Source package name'), required=True, readonly=True,
             )
 
-class IPublishedSourcePackageOverrides(Interface):
-    """Source package overrides published and thus due for putting on disk"""
+class IPublishedSourcePackage(Interface):
+    """Source package information published and thus due for putting on disk"""
 
-    drname = TextLine(
+    distroreleasename = TextLine(
             title=_('Distro Release name'), required=True, readonly=True,
             )
-    spname = TextLine(
+    sourcepackagename = TextLine(
             title=_('Binary package name'), required=True, readonly=True,
             )
-    cname = TextLine(
+    componentname = TextLine(
             title=_('Component name'), required=True, readonly=True,
             )
-    sname = TextLine(
+    sectionname = TextLine(
             title=_('Section name'), required=True, readonly=True,
             )
     
-    distro = Int(
+    distribution = Int(
             title=_('Distribution ID'), required=True, readonly=True,
             )
 
 
 
-class IPublishedBinaryPackageOverrides(Interface):
-    """Binary package overrides published and thus due for putting on disk"""
+class IPublishedBinaryPackage(Interface):
+    """Binary package information published and thus due for putting on disk"""
 
-    drname = TextLine(
+    distroreleasename = TextLine(
             title=_('Distro Release name'), required=True, readonly=True,
             )
-    bpname = TextLine(
+    binarypackagename = TextLine(
             title=_('Binary package name'), required=True, readonly=True,
             )
-    cname = TextLine(
+    componentname = TextLine(
             title=_('Component name'), required=True, readonly=True,
             )
-    sname = TextLine(
-            title=_('Distro Release name'), required=True, readonly=True,
+    sectionname = TextLine(
+            title=_('Section name'), required=True, readonly=True,
             )
     
     priority = Int(
             title=_('Priority'), required=True, readonly=True,
             )
     
-    distro = Int(
+    distribution = Int(
             title=_('Distribution ID'), required=True, readonly=True,
             )

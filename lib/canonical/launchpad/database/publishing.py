@@ -11,10 +11,10 @@ from canonical.database.sqlbase import SQLBase, quote
 # canonical imports
 from canonical.launchpad.interfaces import IPackagePublishing, \
                                            ISourcePackagePublishing, \
-                                           ISourcePackageFilesToPublish, \
-                                           IBinaryPackageFilesToPublish, \
-                                           IPublishedSourcePackageOverrides, \
-                                           IPublishedBinaryPackageOverrides
+                                           IPendingSourcePackageFile, \
+                                           IPendingBinaryPackageFile, \
+                                           IPublishedSourcePackage, \
+                                           IPublishedBinaryPackage
 
 from canonical.launchpad.database import DistroRelease, DistroArchRelease
 
@@ -50,83 +50,92 @@ class SourcePackagePublishing(SQLBase):
     ]
 
     
-class SourcePackageFilesToPublish(SQLBase):
+class PendingSourcePackageFile(SQLBase):
     """A source package file which needs publishing"""
 
     _idType = str
 
-    implements(ISourcePackageFilesToPublish)
+    implements(IPendingSourcePackageFile)
 
-    drd = IntCol(dbName='drd', unique=False, default=None, notNull=True)
+    distribution = IntCol(dbName='distribution', unique=False, default=None,
+                          notNull=True)
 
-    pp = ForeignKey(dbName='sppid', foreignKey='SourcePackagePublishing')
+    sourcepackagepublishing = ForeignKey(dbName='sourcepackagepublishing',
+                                         foreignKey='SourcePackagePublishing')
 
-    pfalias = IntCol(dbName='pfalias', unique=False, default=None,
-                       notNull=True)
+    libraryfilealias = IntCol(dbName='libraryfilealias', unique=False,
+                              default=None, notNull=True)
     
-    lfaname = StringCol(dbName='lfaname', unique=False, default=None,
-                        notNull=True)
+    libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
+                                         unique=False, default=None,
+                                         notNull=True)
 
-    cname = StringCol(dbName='cname', unique=False, default=None,
-                        notNull=True)
+    componentname = StringCol(dbName='componentname', unique=False,
+                              default=None, notNull=True)
 
-    spname = StringCol(dbName='spname', unique=False, default=None,
-                        notNull=True)
+    sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
+                                  default=None, notNull=True)
 
-class BinaryPackageFilesToPublish(SQLBase):
+    
+class PendingBinaryPackageFile(SQLBase):
     """A binary package file which needs publishing"""
 
     _idType = str
 
-    implements(IBinaryPackageFilesToPublish)
+    implements(IPendingBinaryPackageFile)
 
-    drd = IntCol(dbName='drd', unique=False, default=None, notNull=True)
+    distribution = IntCol(dbName='distribution', unique=False, default=None,
+                          notNull=True)
 
-    pp = ForeignKey(dbName='ppid', foreignKey='PackagePublishing')
+    packagepublishing = ForeignKey(dbName='packagepublishing',
+                                   foreignKey='PackagePublishing')
 
-    pfalias = IntCol(dbName='pfalias', unique=False, default=None,
-                       notNull=True)
+    libraryfilealias = IntCol(dbName='libraryfilealias', unique=False,
+                              default=None, notNull=True)
     
-    lfaname = StringCol(dbName='lfaname', unique=False, default=None,
-                        notNull=True)
+    libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
+                                         unique=False, default=None,
+                                         notNull=True)
 
-    cname = StringCol(dbName='cname', unique=False, default=None,
-                        notNull=True)
+    componentname = StringCol(dbName='componentname', unique=False,
+                              default=None, notNull=True)
 
-    spname = StringCol(dbName='spname', unique=False, default=None,
-                        notNull=True)
-
-
-class PublishedSourcePackageOverrides(SQLBase):
-    """Source package overrides published and thus due for putting on disk"""
-
-    implements(IPublishedSourcePackageOverrides)
-
-    drname = StringCol(dbName='drname', unique=False, default=None,
-                       notNull=True)
-    spname = StringCol(dbName='spname', unique=False, default=None,
-                       notNull=True)
-    cname = StringCol(dbName='cname', unique=False, default=None,
-                       notNull=True)
-    sname = StringCol(dbName='sname', unique=False, default=None,
-                       notNull=True)
-    distro = IntCol(dbName='distro', unique=False, default=None, notNull=True)
+    sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
+                                  default=None, notNull=True)
 
 
+class PublishedSourcePackage(SQLBase):
+    """Source package information published and thus due for putting on disk"""
 
-class PublishedBinaryPackageOverrides(SQLBase):
-    """Binary package overrides published and thus due for putting on disk"""
+    implements(IPublishedSourcePackage)
 
-    implements(IPublishedBinaryPackageOverrides)
+    distroreleasename = StringCol(dbName='distroreleasename', unique=False,
+                                  default=None, notNull=True)
+    sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
+                                  default=None, notNull=True)
+    componentname = StringCol(dbName='componentname', unique=False,
+                              default=None, notNull=True)
+    sectionname = StringCol(dbName='sectionname', unique=False, default=None,
+                            notNull=True)
+    distribution = IntCol(dbName='distribution', unique=False, default=None,
+                          notNull=True)
 
-    drname = StringCol(dbName='drname', unique=False, default=None,
-                       notNull=True)
-    bpname = StringCol(dbName='bpname', unique=False, default=None,
-                       notNull=True)
-    cname = StringCol(dbName='cname', unique=False, default=None,
-                       notNull=True)
-    sname = StringCol(dbName='sname', unique=False, default=None,
-                       notNull=True)
-    distro = IntCol(dbName='distro', unique=False, default=None, notNull=True)
+
+
+class PublishedBinaryPackage(SQLBase):
+    """Binary package information published and thus due for putting on disk"""
+
+    implements(IPublishedBinaryPackage)
+
+    distroreleasename = StringCol(dbName='distroreleasename', unique=False,
+                                  default=None, notNull=True)
+    binarypackagename = StringCol(dbName='binarypackagename', unique=False,
+                                  default=None, notNull=True)
+    componentname = StringCol(dbName='componentname', unique=False,
+                              default=None, notNull=True)
+    sectionname = StringCol(dbName='sectionname', unique=False, default=None,
+                            notNull=True)
+    distribution = IntCol(dbName='distribution', unique=False, default=None,
+                          notNull=True)
     priority = IntCol(dbName='priority', unique=False, default=None,
                       notNull=True)
