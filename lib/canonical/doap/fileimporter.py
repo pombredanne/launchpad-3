@@ -36,7 +36,7 @@ class ProductReleaseImporter:
         pr = self._ensureProductRelease(filename)
 
         # Now create the release file
-        ProductReleaseFile(productreleaseID=pr.id, libraryfile=aliasID, 
+        ProductReleaseFile(productreleaseID=pr.id, libraryfileID=aliasID, 
                            filetype=dbschema.UpstreamFileType.CODETARBALL)
 
         # ...and we're done!
@@ -51,7 +51,7 @@ class ProductReleaseImporter:
             # FIXME: We probably ought to use the last-modified-time reported by
             # the download, rather than just UTC_NOW.
             pr = ProductRelease(productID=self.product.id, datereleased=UTC_NOW,
-                                version=version, ownerID=self.product.owner)
+                                version=version, ownerID=self.product.owner.id)
         else:
             # The db schema guarantees there cannot be more than one result
             pr = existingReleases[0]

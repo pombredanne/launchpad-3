@@ -40,7 +40,7 @@ class Product(SQLBase):
     owner = ForeignKey(foreignKey="Person", dbName="owner",
                        notNull=True)
 
-    name = StringCol(dbName='name', notNull=True)
+    name = StringCol(dbName='name', notNull=True, alternateID=True)
 
     displayname = StringCol(dbName='displayname', notNull=True)
 

@@ -27,7 +27,8 @@ class ProductRelease(SQLBase):
     description = StringCol(notNull=False, default=None)
     changelog = StringCol(notNull=False, default=None)
     owner = ForeignKey(dbName="owner", foreignKey="Person", notNull=True)
-    productseries = ForeignKey(dbName='productseries', foreignKey='ProductSeries')
+    productseries = ForeignKey(dbName='productseries',
+                               foreignKey='ProductSeries', default=None)
     manifest = ForeignKey(dbName='manifest', foreignKey='Manifest', default=None)
     
     files = MultipleJoin('ProductReleaseFile', joinColumn='productrelease')
