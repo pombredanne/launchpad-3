@@ -22,7 +22,7 @@
                 string:window.location='../package/${pkg/name}';">
             <td>
                 <a href="#" 
-                    tal:attributes="href string:../sourcepackage/${pkg/name}/"
+                    tal:attributes="href string:../package/${pkg/name}/"
                     tal:content="pkg/name">$SourcePackageName.name</a>
             </td>
             <td tal:content="pkg/shortdesc">
