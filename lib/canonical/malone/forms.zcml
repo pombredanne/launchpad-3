@@ -43,7 +43,7 @@
     schema="canonical.database.malone.IBug"
     label="Change Bug Information"
     permission="zope.View"
-    template="templates/default-editform.pt"
+    template="templates/bug-edit.pt"
     lp:url="malone/bugs/$Bug.id/+edit">
     <!--<widget field="datecreated" class="canonical.widgets.DateWidget" />-->
   </editform>
