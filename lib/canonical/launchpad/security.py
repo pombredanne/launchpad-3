@@ -17,7 +17,6 @@ from canonical.launchpad.interfaces import IUpstreamBugTask, IDistroBugTask
 from canonical.launchpad.interfaces import IHasProduct, IHasProductAndAssignee
 from canonical.launchpad.interfaces import IReadOnlyUpstreamBugTask
 from canonical.launchpad.interfaces import IEditableUpstreamBugTask, IProduct
-from canonical.launchpad.interfaces import ITeamParticipationSet
 from canonical.launchpad.interfaces import IPOTemplate, IPOFile
 from canonical.lp.dbschema import BugSubscription
 

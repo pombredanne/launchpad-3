@@ -8,24 +8,25 @@ from StringIO import StringIO
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import ITeamParticipationSet, \
-    ILaunchBag, IHasOwner, ITeam
+from canonical.launchpad.interfaces import ILaunchBag, IHasOwner
 
 def is_maintainer(hasowner):
     """Return True if the logged in user is an owner of hasowner.
 
     Return False if he's not an owner.
 
-    The user is an owner if it either matches has.owner directly or is a
+    The user is an owner if it either matches hasowner.owner directly or is a
     member of the hasowner.owner team.
 
     Raise TypeError is hasowner does not provide IHasOwner.
     """
     if not IHasOwner.providedBy(hasowner):
         raise TypeError, "hasowner doesn't provide IHasOwner"
-    teampart = getUtility(ITeamParticipationSet)
     launchbag = getUtility(ILaunchBag)
-    return launchbag.user in teampart.getAllMembers(hasowner.owner)
+    if launchbag.user is not None:
+        return launchbag.user.inTeam(hasowner.owner)
+    else:
+        return False
 
 
 def tar_add_file(tf, name, contents):

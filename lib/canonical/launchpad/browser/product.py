@@ -25,7 +25,7 @@ from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
 from canonical.launchpad.database import Product, ProductSeriesSet, \
      BugFactory, ProductMilestoneSet, Milestone, SourceSourceSet, Person
 from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet, \
-     IPersonSet, IBugTaskSet, IAging, ITeamParticipationSet, ILaunchBag
+     IPersonSet, IBugTaskSet, IAging, ILaunchBag
 from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad.helpers import is_maintainer
 

@@ -2,6 +2,45 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-30 20:36:23 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1522
+
+    Summary:
+      All ITeamParticipationSet methods are in the wrong place; moved them out of there and removed ITeamParticipationSet. Also fixed places that were using ITeamParticipationSet.getAllMembers() to see if a person is a member of a team.
+    Revision:
+      launchpad--devel--0--patch-1522
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-231
+       All ITeamParticipationSet methods are in the wrong place; moved them out of there and removed ITeamParticipationSet. Also fixed places that were using ITeamParticipationSet.getAllMembers() to see if a person is a member of a team.
+    
+
+    removed files:
+     lib/canonical/launchpad/templates/.arch-ids/portlet-person-subteams.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/portlet-person-teams.pt.id
+     lib/canonical/launchpad/templates/portlet-person-subteams.pt
+     lib/canonical/launchpad/templates/portlet-person-teams.pt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/distribution.py
+     lib/canonical/launchpad/browser/distrorelease.py
+     lib/canonical/launchpad/browser/person.py
+     lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/doc/bugtask.txt
+     lib/canonical/launchpad/doc/teamparticipation.txt
+     lib/canonical/launchpad/helpers.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/security.py
+     lib/canonical/launchpad/templates/person-index.pt
+     lib/canonical/launchpad/templates/team-index.pt
+     lib/canonical/launchpad/zcml/teamparticipation.zcml
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-231
+
+
 2005-03-30 18:15:30 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1521
 
     Summary:

@@ -70,7 +70,7 @@
 
     <table width="100%">
     <tr><td width="50%" valign="top"
-            tal:define="subteams context/subteams"
+            tal:define="subteams context/getSubTeams"
             tal:condition="subteams">
       <!-- SubTeams -->
       <fieldset>
@@ -85,7 +85,7 @@
         </table>
       </fieldset>
     </td>
-    <td valign="top" tal:define="superteams context/teams"
+    <td valign="top" tal:define="superteams context/getSuperTeams"
         tal:condition="superteams">
       <!-- SuperTeams -->
       <fieldset>

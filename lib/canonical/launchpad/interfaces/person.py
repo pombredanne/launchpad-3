@@ -79,7 +79,6 @@ class IPerson(Interface):
     irc = Attribute("IRC")
     bugs = Attribute("Bug")
     wiki = Attribute("Wiki")
-    teams = Attribute("List of teams this Person is a member of.")
     emails = Attribute("Email")
     jabber = Attribute("Jabber")
     archuser = Attribute("Arch user")
@@ -102,11 +101,6 @@ class IPerson(Interface):
     inactivemembers = Attribute(("List of members with EXPIRED or "
                                  "DEACTIVATED status"))
     deactivatedmembers = Attribute("List of members with DEACTIVATED status")
-
-    subteams = Attribute(("List of subteams of this Team. That is, teams "
-                          "which are members of this Team."))
-    superteams = Attribute(("List of superteams of this Team. That is, teams "
-                            "which this Team is a member of."))
 
     teamowner = Int(title=_('Team Owner'), required=False, readonly=False)
     teamdescription = Text(title=_('Team Description'), required=False,
@@ -225,6 +219,38 @@ class IPerson(Interface):
         filling/cleaning the TeamParticipation table when the transition
         requires it and setting the expiration date, reviewer and
         reviewercomment.
+        """
+
+    def getSubTeams():
+        """Return all subteams of this team.
+        
+        A subteam is any team that is (either directly or indirectly) a 
+        member of this team. As an example, let's say we have this hierarchy
+        of teams:
+        
+        Rosetta Translators
+            Rosetta pt Translators
+                Rosetta pt_BR Translators
+        
+        In this case, both "Rosetta pt Translators" and "Rosetta pt_BR
+        Translators" are subteams of the "Rosetta Translators" team, and all
+        members of both subteams are considered members of "Rosetta
+        Translators".
+        """
+
+    def getSuperTeams():
+        """Return all superteams of this team.
+
+        A superteam is any team that this team is a member of. For example,
+        let's say we have this hierarchy of teams, and we are the
+        "Rosetta pt_BR Translators":
+
+        Rosetta Translators
+            Rosetta pt Translators
+                Rosetta pt_BR Translators
+        
+        In this case, we will return both "Rosetta pt Translators" and 
+        "Rosetta Translators", because we are member of both of them.
         """
 
 
@@ -442,23 +468,18 @@ class ITeamMembershipSubset(Interface):
 
 
 class ITeamParticipation(Interface):
-    """Team Participation for Users"""
+    """A TeamParticipation.
+    
+    A TeamParticipation object represents a person being a member of a team.
+    Please note that because a team is also a person in Launchpad, we can
+    have a TeamParticipation object representing a team that is a member of
+    another team. We can also have an object that represents a person being a
+    member of itself.
+    """
+
     id = Int(title=_('ID'), required=True, readonly=True)
-    team = Int(title=_("Team"), required=True, readonly=False)
-    person = Int(title=_("Owner"), required=True, readonly=False)
-
-
-class ITeamParticipationSet(Interface):
-    """A set for ITeamParticipation objects."""
-
-    def getSubTeams(teamID):
-        """Return all subteams for the specified team."""
-
-    def getSuperTeams(teamID):
-        """Return all superteams for the specified team."""
-
-    def getAllMembers(team):
-        """Return a list of (direct / indirect) members for the given team."""
+    team = Int(title=_("The team"), required=True, readonly=False)
+    person = Int(title=_("The member"), required=True, readonly=False)
 
 
 class IRequestPeopleMerge(Interface):

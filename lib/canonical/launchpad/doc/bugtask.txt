@@ -238,10 +238,8 @@ Then let's login as the Sample Person user:
 
 Note that Sample Person is not a member of the Foo team:
 
-    >>> from canonical.launchpad.database import TeamParticipationSet
-    >>> teampart = TeamParticipationSet()
-    >>> sample_person not in teampart.getAllMembers(foo_team)
-    True
+    >>> sample_person.inTeam(foo_team)
+    False
 
 Thus, he can't edit the task:
 

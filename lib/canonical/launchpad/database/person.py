@@ -19,7 +19,6 @@ from canonical.database.constants import UTC_NOW
 # canonical imports
 from canonical.launchpad.interfaces import IPerson, ITeam, IPersonSet
 from canonical.launchpad.interfaces import ITeamMembership, ITeamParticipation
-from canonical.launchpad.interfaces import ITeamParticipationSet
 from canonical.launchpad.interfaces import ITeamMembershipSet
 from canonical.launchpad.interfaces import IEmailAddress, IWikiName
 from canonical.launchpad.interfaces import IIrcID, IArchUserID, IJabberID
@@ -220,6 +219,60 @@ class Person(SQLBase):
         results = TeamMembership.selectBy(personID=self.id, teamID=team.id)
         return bool(results.count())
 
+    def leave(self, team):
+        assert self.teamowner is None
+
+        results = TeamMembership.selectBy(personID=self.id, teamID=team.id)
+        assert results.count() == 1
+
+        tm = results[0]
+        assert tm.status in (TeamMembershipStatus.ADMIN,
+                             TeamMembershipStatus.APPROVED)
+
+        team.setMembershipStatus(self, TeamMembershipStatus.DEACTIVATED)
+        return True
+
+    def join(self, team):
+        assert self.teamowner is None
+
+        if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+            return False
+        elif team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
+            status = TeamMembershipStatus.PROPOSED
+        elif team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
+            status = TeamMembershipStatus.APPROVED
+
+        results = TeamMembership.selectBy(personID=self.id, teamID=team.id)
+        if results.count() == 1:
+            tm = results[0]
+            if tm.status == TeamMembershipStatus.DECLINED:
+                # The user is a DECLINED member, we just have to change the
+                # status according to the team's subscriptionpolicy.
+                team.setMembershipStatus(self, status)
+            else:
+                # The user is a member and the status is not DECLINED, there's
+                # nothing we can do for it.
+                return False
+        else:
+            team.addMember(self, status)
+
+        return True
+
+    #
+    # ITeam methods
+    #
+
+    def getSuperTeams(self):
+        query = ('Person.id = TeamParticipation.team AND '
+                 'TeamParticipation.person = %d' % self.id)
+        return list(Person.select(query, clauseTables=['TeamParticipation']))
+
+    def getSubTeams(self):
+        query = ('Person.id = TeamParticipation.person AND '
+                 'TeamParticipation.team = %d AND '
+                 'Person.teamowner IS NOT NULL' % self.id)
+        return list(Person.select(query, clauseTables=['TeamParticipation']))
+
     def addMember(self, person, status=TeamMembershipStatus.APPROVED,
                   expires=None, reviewer=None, comment=None):
         assert self.teamowner is not None
@@ -289,55 +342,20 @@ class Person(SQLBase):
         elif status in [deactivated, expired]:
             _cleanTeamParticipation(person, self)
 
-    def leave(self, team):
-        assert self.teamowner is None
+    #
+    # Private methods
+    #
 
-        results = TeamMembership.selectBy(personID=self.id, teamID=team.id)
-        assert results.count() == 1
-
-        tm = results[0]
-        assert tm.status in (TeamMembershipStatus.ADMIN,
-                             TeamMembershipStatus.APPROVED)
-
-        team.setMembershipStatus(self, TeamMembershipStatus.DEACTIVATED)
-        return True
-
-    def join(self, team):
-        assert self.teamowner is None
-
-        if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
-            return False
-        elif team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
-            status = TeamMembershipStatus.PROPOSED
-        elif team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
-            status = TeamMembershipStatus.APPROVED
-
-        results = TeamMembership.selectBy(personID=self.id, teamID=team.id)
-        if results.count() == 1:
-            tm = results[0]
-            if tm.status == TeamMembershipStatus.DECLINED:
-                # The user is a DECLINED member, we just have to change the
-                # status according to the team's subscriptionpolicy.
-                team.setMembershipStatus(self, status)
-            else:
-                # The user is a member and the status is not DECLINED, there's
-                # nothing we can do for it.
-                return False
-        else:
-            team.addMember(self, status)
-
-        return True
+    def _getMembersByStatus(self, status):
+        query = ("TeamMembership.team = %d AND TeamMembership.status = %d "
+                 "AND TeamMembership.person = Person.id") % (
+                 self.id, status.value)
+        return list(Person.select(query, clauseTables=['TeamMembership']))
 
     def _getEmailsByStatus(self, status):
         query = AND(EmailAddress.q.personID==self.id,
                     EmailAddress.q.status==status)
         return list(EmailAddress.select(query))
-
-    def getMembersByStatus(self, status):
-        query = ("TeamMembership.team = %d AND TeamMembership.status = %d "
-                 "AND TeamMembership.person = Person.id") % (
-                 self.id, status.value)
-        return list(Person.select(query, clauseTables=['TeamMembership']))
 
     #
     # Properties
@@ -354,27 +372,27 @@ class Person(SQLBase):
     title = property(title)
 
     def deactivatedmembers(self):
-        return self.getMembersByStatus(TeamMembershipStatus.DEACTIVATED)
+        return self._getMembersByStatus(TeamMembershipStatus.DEACTIVATED)
     deactivatedmembers = property(deactivatedmembers)
 
     def expiredmembers(self):
-        return self.getMembersByStatus(TeamMembershipStatus.EXPIRED)
+        return self._getMembersByStatus(TeamMembershipStatus.EXPIRED)
     expiredmembers = property(expiredmembers)
 
     def declinedmembers(self):
-        return self.getMembersByStatus(TeamMembershipStatus.DECLINED)
+        return self._getMembersByStatus(TeamMembershipStatus.DECLINED)
     declinedmembers = property(declinedmembers)
 
     def proposedmembers(self):
-        return self.getMembersByStatus(TeamMembershipStatus.PROPOSED)
+        return self._getMembersByStatus(TeamMembershipStatus.PROPOSED)
     proposedmembers = property(proposedmembers)
 
     def administrators(self):
-        return self.getMembersByStatus(TeamMembershipStatus.ADMIN)
+        return self._getMembersByStatus(TeamMembershipStatus.ADMIN)
     administrators = property(administrators)
 
     def approvedmembers(self):
-        return self.getMembersByStatus(TeamMembershipStatus.APPROVED)
+        return self._getMembersByStatus(TeamMembershipStatus.APPROVED)
     approvedmembers = property(approvedmembers)
 
     def activemembers(self):
@@ -388,22 +406,6 @@ class Person(SQLBase):
     def memberships(self):
         return list(TeamMembership.selectBy(personID=self.id))
     memberships = property(memberships)
-
-    def teams(self):
-        # XXX: Fix this by doing a query in Person
-        memberships = TeamMembership.selectBy(personID=self.id)
-        return [m.team for m in memberships]
-    teams = property(teams)
-
-    def superteams(self):
-        teampart = getUtility(ITeamParticipationSet)
-        return teampart.getSuperTeams(self)
-    superteams = property(superteams)
-
-    def subteams(self):
-        teampart = getUtility(ITeamParticipationSet)
-        return teampart.getSubTeams(self)
-    subteams = property(subteams)
 
     def _setPreferredemail(self, email):
         assert email.person == self
@@ -909,27 +911,6 @@ class TeamMembershipSet(object):
                                           orderBy='displayname'))
 
 
-class TeamParticipationSet(object):
-
-    implements(ITeamParticipationSet)
-
-    def getAllMembers(self, team):
-        query = ('Person.id = TeamParticipation.person AND '
-                 'TeamParticipation.team = %d' % team.id)
-        return list(Person.select(query, clauseTables=['TeamParticipation']))
-
-    def getSubTeams(self, team):
-        query = ('Person.id = TeamParticipation.person AND '
-                 'TeamParticipation.team = %d AND '
-                 'Person.teamowner IS NOT NULL' % team.id)
-        return list(Person.select(query, clauseTables=['TeamParticipation']))
-
-    def getSuperTeams(self, team):
-        query = ('Person.id = TeamParticipation.team AND '
-                 'TeamParticipation.person = %d' % team.id)
-        return list(Person.select(query, clauseTables=['TeamParticipation']))
-
-
 class TeamParticipation(SQLBase):
     implements(ITeamParticipation)
 
@@ -937,6 +918,12 @@ class TeamParticipation(SQLBase):
 
     team = ForeignKey(foreignKey='Person', dbName='team', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+
+
+def _getAllMembers(team):
+    query = ('Person.id = TeamParticipation.person AND '
+             'TeamParticipation.team = %d' % team.id)
+    return list(Person.select(query, clauseTables=['TeamParticipation']))
 
 
 def _cleanTeamParticipation(person, team):
@@ -952,17 +939,16 @@ def _cleanTeamParticipation(person, team):
         # The given person is, in fact, a team, and in this case we must 
         # remove all of its members from the given team and from its 
         # superteams.
-        teampart = getUtility(ITeamParticipationSet)
-        members.extend(teampart.getAllMembers(person))
+        members.extend(_getAllMembers(person))
 
     for member in members:
-        for subteam in team.subteams:
+        for subteam in team.getSubTeams():
             # This person is an indirect member of this team. We cannot remove
             # its TeamParticipation entry.
             if member.inTeam(subteam):
                 break
         else:
-            for t in team.superteams + [team]:
+            for t in team.getSuperTeams() + [team]:
                 r = TeamParticipation.selectBy(personID=member.id, teamID=t.id)
                 if r.count() > 0:
                     assert r.count() == 1
@@ -980,11 +966,10 @@ def _fillTeamParticipation(person, team):
     if person.teamowner is not None:
         # The given person is, in fact, a team, and in this case we must 
         # add all of its members to the given team and to its superteams.
-        teampart = getUtility(ITeamParticipationSet)
-        members.extend(teampart.getAllMembers(person))
+        members.extend(_getAllMembers(person))
 
     for member in members:
-        for t in team.superteams + [team]:
+        for t in team.getSuperTeams() + [team]:
             if not member.inTeam(t):
                 TeamParticipation(personID=member.id, teamID=t.id)
 

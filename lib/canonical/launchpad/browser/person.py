@@ -195,13 +195,6 @@ class PersonView(object):
         self.request.response.setHeader('Content-Type', 'text/plain')
         return "\n".join([key.keytext for key in self.context.sshkeys])
 
-    def membershipOrRoles(self):
-        # XXX: salgado, 2005-01-13: I'll find a better way to display
-        # memberships and distro/distrorelease roles on a Person's page,
-        # and then we're not going to need this method anymore.
-        person = self.context
-        return person.teams
-
     def sshkeysCount(self):
         return len(self.context.sshkeys)
 
@@ -234,7 +227,6 @@ class PersonView(object):
                 sCoC_util.modifySignature(sign_id, self.user, comment, False)
 
             return True
-
 
 
 class PersonEditView(object):

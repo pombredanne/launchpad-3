@@ -132,8 +132,8 @@
         </table>
 
 
-        <!-- Teams and Roles-->
-        <div tal:condition="view/membershipOrRoles">
+        <!-- Teams which I'm a member of -->
+        <div tal:condition="context/memberships">
           <fieldset>
             <legend><span tal:replace="context/displayname"></span> is
             </legend>

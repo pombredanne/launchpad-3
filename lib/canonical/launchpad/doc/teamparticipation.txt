@@ -14,13 +14,12 @@ First of all, create some teams:
 >>> from zope.component import getUtility
 
 >>> from canonical.launchpad.database import Person
->>> from canonical.launchpad.interfaces import ITeamParticipationSet
+>>> from canonical.launchpad.database.person import _getAllMembers
 >>> from canonical.lp.dbschema import TeamSubscriptionPolicy
 >>> from canonical.lp.dbschema import TeamMembershipStatus
 
 >>> from canonical.database.sqlbase import flush_database_updates
 
->>> teampart = getUtility(ITeamParticipationSet)
 >>> o = TeamSubscriptionPolicy.OPEN
 >>> m = TeamSubscriptionPolicy.MODERATED
 >>> expires = datetime(2005, 12, 01)
@@ -41,14 +40,14 @@ Now, add p as a member of t3.
 
 >>> p.join(t3)
 True
->>> [m.displayname for m in teampart.getAllMembers(t3)]
+>>> [m.displayname for m in _getAllMembers(t3)]
 []
 
 
 But t3 is a MODERATED team, somebody have to approve the membership:
 
 >>> t3.setMembershipStatus(p, TeamMembershipStatus.APPROVED, expires, p)
->>> [m.displayname for m in teampart.getAllMembers(t3)]
+>>> [m.displayname for m in _getAllMembers(t3)]
 [u'Foo Bar']
 
 
@@ -57,28 +56,28 @@ actions, it can't actually "join" t2. Instead, an administrator of t2 have
 to addMember() it.
 
 >>> t2.addMember(t3)
->>> [m.displayname for m in teampart.getAllMembers(t2)]
+>>> [m.displayname for m in _getAllMembers(t2)]
 [u'Foo Bar', u't3']
 
 
 ... t2 as a member of t1, ...
 
 >>> t1.addMember(t2)
->>> [m.displayname for m in teampart.getAllMembers(t1)]
+>>> [m.displayname for m in _getAllMembers(t1)]
 [u'Foo Bar', u't2', u't3']
 
 
 ... t2 as a member of t5, ...
 
 >>> t5.addMember(t2)
->>> [m.displayname for m in teampart.getAllMembers(t5)]
+>>> [m.displayname for m in _getAllMembers(t5)]
 [u'Foo Bar', u't2', u't3']
 
 
 ... t5 as a member of t4
 
 >>> t4.addMember(t5)
->>> [m.displayname for m in teampart.getAllMembers(t4)]
+>>> [m.displayname for m in _getAllMembers(t4)]
 [u'Foo Bar', u't2', u't3', u't5']
 
 
@@ -87,16 +86,16 @@ Now let's remove some members to see what happens:
 >>> flush_database_updates()
 >>> p.leave(t3)
 True
->>> len(teampart.getAllMembers(t3))
+>>> len(_getAllMembers(t3))
 0
 
->>> [m.displayname for m in teampart.getAllMembers(t2)]
+>>> [m.displayname for m in _getAllMembers(t2)]
 [u't3']
 
->>> [m.displayname for m in teampart.getAllMembers(t4)]
+>>> [m.displayname for m in _getAllMembers(t4)]
 [u't2', u't3', u't5']
 
->>> [m.displayname for m in teampart.getAllMembers(t5)]
+>>> [m.displayname for m in _getAllMembers(t5)]
 [u't2', u't3']
 
 
@@ -104,9 +103,9 @@ t2 can't leave() t5 because it's a team and teams take no actions. We have to
 call setMembershipStatus() for t2 in t5, to make it a DEACTIVATED member.
 
 >>> t5.setMembershipStatus(t2, TeamMembershipStatus.DEACTIVATED)
->>> len(teampart.getAllMembers(t5))
+>>> len(_getAllMembers(t5))
 0
 
->>> [m.displayname for m in teampart.getAllMembers(t4)]
+>>> [m.displayname for m in _getAllMembers(t4)]
 [u't5']
 

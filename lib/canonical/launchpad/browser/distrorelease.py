@@ -10,8 +10,7 @@ from sqlobject import LIKE, AND
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import BugTaskStatus
-from canonical.launchpad.interfaces import IBugTaskSet, ILaunchBag, \
-    ITeamParticipationSet
+from canonical.launchpad.interfaces import IBugTaskSet, ILaunchBag
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.helpers import is_maintainer
 
