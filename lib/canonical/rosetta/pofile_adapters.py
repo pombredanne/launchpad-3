@@ -73,7 +73,12 @@ class TranslationsList(object):
         self._msgset = messageset
         self._who = person
         # cache, as we use that value a lot
-        self._nplurals = messageset.nplurals()
+        if messageset.poFile is None:
+            # allow pot-sets to have 2 msgstrs, since some efforts
+            # seem to like it that way
+            self._nplurals = messageset.messageIDs().count()
+        else:
+            self._nplurals = messageset.nplurals()
 
     # FIXME: this list implementation is incomplete.  Dude, if you want to do
     # del foo.msgstrs[2]

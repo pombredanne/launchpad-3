@@ -696,38 +696,44 @@ class RosettaPOMessageSet(SQLBase):
         else:
             return ret[0]
 
-    def nplurals(self):
+    def pluralForms(self):
+        if self.poFile is None:
+            raise RuntimeError, """This method cannot be used with PO template
+                message sets!"""
+
         # we need to check a pot-set, if one exists, to find whether this set
         # *does* have plural forms, by looking at the number of message ids.
         # It's usually not safe to look at the message ids of this message set,
         # because if it's a po-set it may be incorrect; but if a pot-set can't
         # be found, then self is our best guess.
-        if self.poFile is None:
-            # if this *is* a pot-set, then obviously it's an authoritative
-            # source for knowing if there are plurals
+        try:
+            potset = self.templateMessageSet()
+        except KeyError:
+            # set is obsolete... try to get the count from self, although
+            # that's not 100% reliable
+            # when/if we split tables, this shouldn't be necessary
             potset = self
-        else:
-            potset = RosettaPOMessageSet.select('''
-                poTemplate = %d AND
-                poFile IS NULL AND
-                primemsgid = %d
-                ''' % (self.poTemplate.id, self.primeMessageID_.id))
-            if potset.count() == 0:
-                # obsolete... try to get the count from self, although
-                # that's not 100% reliable
-                potset = self
-            else:
-                assert potset.count() == 1
-                potset = potset[0]
         if potset.messageIDs().count() > 1:
             # has plurals
-            if self.poFile is None:
-                # nplurals() for pot-sets is always 2
-                return 2
             return self.poFile.pluralForms
         else:
             # message set is singular
             return 1
+
+    def templateMessageSet(self):
+        if self.poFile is None:
+            raise RuntimeError, """This method cannot be used with PO template
+                message sets!"""
+
+        potset = RosettaPOMessageSet.select('''
+            poTemplate = %d AND
+            poFile IS NULL AND
+            primemsgid = %d
+            ''' % (self.poTemplate.id, self.primeMessageID_.id))
+        if potset.count() == 0:
+            raise KeyError, self.primeMessageID_.msgid
+        assert potset.count() == 1
+        return potset[0]
 
     def translations(self):
         return RosettaPOTranslation.select('''
@@ -737,7 +743,7 @@ class RosettaPOMessageSet(SQLBase):
 
     def translationsForLanguage(self, language):
         if self.poFile is not None:
-            raise RuntimeError, """This method cannot be used with PO template
+            raise RuntimeError, """This method cannot be used with PO file
                 message sets!"""
 
         # Find the number of plural forms.
@@ -795,8 +801,9 @@ class RosettaPOMessageSet(SQLBase):
     def getTranslationSighting(self, plural_form, allowOld=False):
         """Return the translation sighting that is committed and has the
         plural form provided."""
-        if self.poFile == None:
-            raise ValueError
+        if self.poFile is None:
+            raise RuntimeError, """This method cannot be used with PO template
+                message sets!"""
         if allowOld:
             translations = RosettaPOTranslationSighting.selectBy(
                 poMessageSetID=self.id,
@@ -812,8 +819,9 @@ class RosettaPOMessageSet(SQLBase):
             return translations[0]
 
     def translationSightings(self):
-        if self.poFile == None:
-            raise ValueError
+        if self.poFile is None:
+            raise RuntimeError, """This method cannot be used with PO template
+                message sets!"""
         return RosettaPOTranslationSighting.selectBy(
             poMessageSetID=self.id)
 

@@ -404,7 +404,10 @@ class IPOFileMessageSet(IPOMessageSet):
         Flags for this set.
         """)
 
-    def nplurals():
+    def templateMessageSet():
+        """Return the corresponding IPOTemplateMessageSet."""
+
+    def pluralForms():
         """Number of translations that have to point to this message set
         for it to be complete."""
 
