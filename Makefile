@@ -12,9 +12,6 @@ Z3LIBPATH=$(shell pwd)/sourcecode/zope/src
 HERE:=$(shell pwd)
 
 check:
-	echo Nothing to be done
-
-XXXcheck2:
 	$(MAKE) -C sourcecode build
 	# Run the pagetests.  Ensure that launchpad is not running using
 	# the launchpad_test database, and that nothing else is using that
