@@ -88,13 +88,18 @@ class SQLThing:
 
         ## delete the last ','
         fieldstring = fieldstring[:-1]
+
+        if not fieldstring:
+            print '@\tNo info to UPDATE'
+            return
  
         query = "UPDATE %s SET %s WHERE %s;" % (table, fieldstring, clause)
         try:
             self._exec(query)
             #print query
         except:
-            raise Error, "Bad things happened, data was %s" % data
+            print "Bad things happened, data was %s" % data
+            raise 
 
 ### XXX:cprov
 # This class needs a lot of Love, it is fitting and cleaning data
@@ -326,7 +331,7 @@ class Doap(SQLThing):
         # autoupdate field is true        
         self._update("product", dbdata, ("name='%s' and autoupdate=True"
                                          % productname))
-        print '@\tUpdating ', productname        
+        print '@\tProduct %s Updated' % productname        
 
 
     def createProduct(self, owner, fitted_data):

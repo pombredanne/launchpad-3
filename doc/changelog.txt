@@ -2,6 +2,35 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-21 18:06:36 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1234
+
+    Summary:
+      Nicole Ready to Production
+    Revision:
+      launchpad--devel--0--patch-1234
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-476
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-477
+       improves on Nicole to run on Dogfood
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-478
+       Merge from RF
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/scripts/nicole/database.py
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-476
+     celso.providelo@canonical.com/launchpad--devel--0--patch-477
+     celso.providelo@canonical.com/launchpad--devel--0--patch-478
+
+
 2005-01-21 17:32:22 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1233
 
     Summary:
