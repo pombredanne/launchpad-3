@@ -100,11 +100,11 @@ label {
     font-weight: bold;    
 }
 
-.listingBar a {
-    text-decoration: none;
-}
-
-.portlet a {
+.listingBar a,
+.portlet a,
+#portal-personaltools a,
+#portal-breadcrumbs a,
+#portal-footer a {
     text-decoration: none;
 }
 

@@ -27,7 +27,7 @@ table {
 
 
 a {
-    color: #436976;
+    color: #000066;
     background-color: transparent;
 }
 img {
@@ -56,7 +56,7 @@ p img {
 
 hr {
     height: 1px;
-    color: #7a9ec6;
+    color: #364970;
     background-color: transparent;
 }
 
@@ -69,7 +69,7 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: normal;
     margin: 0;
     padding-top: 0.5em;
-    border-bottom: 1px solid #7a9ec6;
+    border-bottom: 1px solid #364970;
     margin-bottom: 0.2em;
 }
 
@@ -155,7 +155,7 @@ dd.link a {
 }
 
 fieldset {
-    border: 1px solid #7a9ec6;
+    border: 1px solid #364970;
     margin: 1em 0em 1em 0em;
     padding: 0em 1em 1em 1em;
     line-height: 1.5em;
@@ -206,16 +206,16 @@ blockquote {
 code {
     font-size: 120%;
     color: Black;
-    background-color: #8fb3d9;
-    border: 1px dashed #7a9ec6;
+    background-color: #93bee2;
+    border: 1px dashed #364970;
     padding: 0 0.1em;
 }
 pre {
     font-size: 120%;
     padding: 1em;
-    border: 1px dashed #7a9ec6;
+    border: 1px dashed #364970;
     color: Black;
-    background-color: #8fb3d9;
+    background-color: #93bee2;
     overflow: auto;
 }
 .pre a {
@@ -337,11 +337,11 @@ del {
 }
 #portal-globalnav li a {
     /* The normal, unselected tabs. They are all links */
-    background-color: transparent;
-    border-color: #7a9ec6;
+    background-color: #eff7ff;
+    border-color: #364970;
     border-width: 1px; 
     border-style: solid solid none solid;
-    color: #436976;
+    color: #000066;
     height: auto;
     margin-right: 0.5em;
     padding: 0em 2em;
@@ -350,24 +350,24 @@ del {
 }
 #portal-globalnav li.selected a {
     /* The selected tab. There's only one of this */
-    background-color: #8fb3d9;
-    border: 1px solid #7a9ec6;
-    border-bottom: #8fb3d9 1px solid;
-    color: #436976;
+    background-color: #93bee2;
+    border: 1px solid #364970;
+    border-bottom: #93bee2 1px solid;
+    color: #000066;
 }
 #portal-globalnav li a:hover {
-    background-color: #8fb3d9;
-    border-color: #7a9ec6;
-    border-bottom-color: #8fb3d9;
-    color: #436976;
+    background-color: #93bee2;
+    border-color: #364970;
+    border-bottom-color: #93bee2;
+    color: #000066;
 }
 #portal-personaltools {
     /* Bar with personalized menu (user preferences, favorites etc) */
-    background-color: #8fb3d9;
-    border-top-color: #7a9ec6;
+    background-color: #93bee2;
+    border-top-color: #364970;
     border-top-style: solid;
     border-top-width: 1px;
-    border-bottom-color: #7a9ec6;
+    border-bottom-color: #364970;
     border-bottom-style: solid;
     border-bottom-width: 1px;
     line-height: 1.3em;
@@ -393,20 +393,20 @@ del {
 #portal-personaltools li {
     background: transparent url(http://plone.org/linkOpaque.gif) center left no-repeat;
     padding-left: 8px;
-    color: #436976;
+    color: #000066;
     margin-left: 1em;
     display: inline;
 }
 #portal-personaltools li a {
     text-decoration: none;
-    color: #436976;
+    color: #000066;
 }
 .visualCaseSensitive {
     text-transform: none;
 }
 #portal-breadcrumbs {
     /* The path bar, including breadcrumbs and add to favorites */
-    border-bottom-color: #7a9ec6;
+    border-bottom-color: #364970;
     border-bottom-style: solid;
     border-bottom-width: 1px;
     padding-left: 2em;
@@ -582,7 +582,7 @@ del {
 
 .newsItem {
     margin-bottom: 1em;
-    border-bottom: 1px solid #7a9ec6;
+    border-bottom: 1px solid #364970;
 }
 
 .newsContent {
@@ -706,9 +706,9 @@ del {
 }
 
 #portal-footer {
-    background-color: #8fb3d9;
-    border-top: 1px solid #7a9ec6;
-    border-bottom: 1px solid #7a9ec6;
+    background-color: #93bee2;
+    border-top: 1px solid #364970;
+    border-bottom: 1px solid #364970;
     float: none;
     margin: 2em 0em 1em 0em;
     padding: 0.5em 0em 1em 0em;
@@ -744,7 +744,7 @@ del {
 
 .standalone,
 .documentEditable * .standalone {
-    background: #8fb3d9 url(http://plone.org/linkOpaque.gif) 9px 1px no-repeat;
+    background: #93bee2 url(http://plone.org/linkOpaque.gif) 9px 1px no-repeat;
     cursor: pointer;
     font-size: 85%;
     margin-bottom: 1em;
@@ -851,8 +851,8 @@ input.searchButton {
 } 
 
 .card {
-    background-color: #8fb3d9;
-    border-color: #7a9ec6;
+    background-color: #93bee2;
+    border-color: #364970;
     border-width: 1px;
     border-style: solid;
     float: left;
@@ -863,8 +863,8 @@ input.searchButton {
 }
 
 .portrait {
-    background-color: #8fb3d9;
-    border-color: #7a9ec6;
+    background-color: #93bee2;
+    border-color: #364970;
     border-width: 1px;
     border-style: solid;
     font-size: 85%;
@@ -881,16 +881,16 @@ input.searchButton {
 .listing {
     /* The default table for document listings. Contains name, document types, modification times etc in a file-browser-like fashion */
     border-collapse: collapse;
-    border-left: 1px solid #7a9ec6;
-    border-bottom: 1px solid #7a9ec6;
+    border-left: 1px solid #364970;
+    border-bottom: 1px solid #364970;
     font-size: 85%;
     margin: 1em 0em 1em 0em;
 }
 .listing th {
-    background: #8fb3d9;
-    border-top: 1px solid #7a9ec6;
-    border-bottom: 1px solid #7a9ec6;
-    border-right: 1px solid #7a9ec6;
+    background: #93bee2;
+    border-top: 1px solid #364970;
+    border-bottom: 1px solid #364970;
+    border-right: 1px solid #364970;
     font-weight: normal;
     padding: 0em 1em 0em 1em;
     text-transform: none;
@@ -913,7 +913,7 @@ input.searchButton {
     text-align: center;
 }
 .listing td {
-    border-right: 1px solid #7a9ec6;
+    border-right: 1px solid #364970;
     padding: 0em 1em;
     text-align: left;
 }
@@ -980,10 +980,10 @@ ol.visualNoMarker {
 }
 .stx table  /* stupid STX table workaround */
 {
-    border: 1px solid #7a9ec6 ! important;
+    border: 1px solid #364970 ! important;
 }
 .stx table td {
-    border-bottom: 1px solid #7a9ec6;
+    border-bottom: 1px solid #364970;
 }
 
 .portlet {
@@ -1002,8 +1002,8 @@ ol.visualNoMarker {
     white-space: nowrap;
 }
 .portlet h5 { 
-    background: #8fb3d9;
-    border: 1px solid #7a9ec6;
+    background: #93bee2;
+    border: 1px solid #364970;
     border-style: solid solid none solid;
     padding: 0em 1em 0em 1em;
     display: inline;
@@ -1011,8 +1011,8 @@ ol.visualNoMarker {
     white-space: nowrap;
 }
 .portlet h6 { 
-    background: #8fb3d9;
-    border: 1px solid #7a9ec6;
+    background: #93bee2;
+    border: 1px solid #364970;
     border-style: solid solid none solid;
     padding: 0em 1em 0em 1em;
     display: block;
@@ -1023,7 +1023,7 @@ ol.visualNoMarker {
 .portletBody {
     background: transparent;
     border-collapse: collapse;
-    border: 1px solid #7a9ec6;
+    border: 1px solid #364970;
 }
 .portletDetails {
     text-align: right;
@@ -1040,7 +1040,7 @@ ol.visualNoMarker {
 .portletClose {
     float: right;
     text-transform: none;
-    border-left: 1px solid #7a9ec6;
+    border-left: 1px solid #364970;
     padding: 0em 0.2em;
 }
 .portlet h1, 
@@ -1062,7 +1062,7 @@ ol.visualNoMarker {
 
 .comment {
     background: #f7f9fa; 
-    border: 1px dashed #7a9ec6; 
+    border: 1px dashed #364970; 
     padding: 0 1em 0.5em 1em;
     margin-bottom: 1em;
 }
@@ -1141,8 +1141,8 @@ ol.visualNoMarker {
 }
 
 .listingBar {
-    background-color: #8fb3d9;
-    border-color: #7a9ec6;
+    background-color: #93bee2;
+    border-color: #364970;
     border-style: solid;
     border-width: 1px;
     padding: 0em 1em;
@@ -1271,9 +1271,9 @@ ol.visualNoMarker {
 }
 
 .optionsToggle {
-    border: 1px solid #7a9ec6;
+    border: 1px solid #364970;
     color: Black;
-    background-color: #8fb3d9;
+    background-color: #93bee2;
     font-weight: normal !important;
     font-size: 85%;
 }
@@ -1313,7 +1313,7 @@ ol.visualNoMarker {
 }
 
 .ploneCalendar {
-    border: 1px solid #7a9ec6;
+    border: 1px solid #364970;
     margin: 1em 0em;
 }
 .ploneCalendar a {
@@ -1323,7 +1323,7 @@ ol.visualNoMarker {
     text-decoration: none;
 }
 .ploneCalendar th {
-    background-color: #8fb3d9;
+    background-color: #93bee2;
     font-weight: bold;
     text-align: center;
     padding: 2px;
@@ -1335,18 +1335,18 @@ ol.visualNoMarker {
     padding: 2px;
 }
 .ploneCalendar .weekdays td {
-    background-color: #8fb3d9;
-    border: 1px solid #7a9ec6;
+    background-color: #93bee2;
+    border: 1px solid #364970;
     border-style: solid none;
     text-align: center;
     padding: 2px;
 }
 .ploneCalendar .event {
-    background-color: #8fb3d9;
+    background-color: #93bee2;
     font-weight: bold;
 }
 .ploneCalendar .todayevent {
-    background-color: #8fb3d9;
+    background-color: #93bee2;
     border: 2px solid #ffa500;
     font-weight: bold;
 }

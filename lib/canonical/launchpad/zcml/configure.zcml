@@ -23,6 +23,7 @@
     <include file="bugtracker.zcml" />
     <include file="bugattachment.zcml" />
     <include file="bugmessage.zcml" />
+    <include file="widgets.zcml" />
 
     <!-- Event configuration -->
     <include file="bug-events.zcml" />
