@@ -11,6 +11,8 @@ class ILaunchpadCalendar(IEditCalendar, IHasOwner):
     """Launchpad specific calendar.
     """
 
+    id = Int(title=_("ID"), required=False)
+
     title = Title(
                   title=_('Calendar title'), required=True,
                   description=_("""The title of the calendar is a short

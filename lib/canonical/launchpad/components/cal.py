@@ -110,15 +110,21 @@ class CalendarSubscriptionSet(object):
     def __init__(self, person):
         self.owner = person
     def __contains__(self, calendar):
+        if calendar.id is None:
+            return False
         return bool(CalendarSubscription.selectBy(personID=self.owner.id,
                                                   calendarID=calendar.id))
     def __iter__(self):
         for sub in CalendarSubscription.selectBy(personID=self.owner.id):
             yield sub.calendar
     def subscribe(self, calendar):
+        if calendar.id is None:
+            raise ValueError('calendar has no identifier')
         if calendar not in self:
             CalendarSubscription(person=self.owner, calendar=calendar)
     def unsubscribe(self, calendar):
+        if calendar.id is None:
+            raise ValueError('calendar has no identifier')
         for sub in CalendarSubscription.selectBy(personID=self.owner.id,
                                                  calendarID=calendar.id):
             sub.destroySelf()
@@ -127,6 +133,7 @@ class MergedCalendar(CalendarMixin, EditableCalendarMixin):
     implements(ILaunchpadCalendar)
 
     def __init__(self, person):
+        self.id = None
         self.person = person
         self.subscriptions = CalendarSubscriptionSet(self.person)
         self.revision = 0
@@ -135,6 +142,11 @@ class MergedCalendar(CalendarMixin, EditableCalendarMixin):
     def __iter__(self):
         for calendar in self.subscriptions:
             for event in calendar:
+                yield event
+
+    def expand(self, first, last):
+        for calendar in self.subscriptions:
+            for event in calendar.expand(first, last):
                 yield event
 
     def addEvent(self, event):

@@ -175,6 +175,9 @@ class CalendarViewBase(object):
         self.monthViewURL = '../%04d-%02d' % (date.year, date.month)
         self.yearViewURL = '../%04d' % date.year
 
+    def eventColour(self, event):
+        return '#9db8d2'
+
 
 class MonthInfo(object):
     def __init__(self, year, month):
@@ -358,9 +361,6 @@ class CalendarDayView(CalendarViewBase):
                 event.dtstart < start + duration):
                 count += 1
         return count
-
-    def eventColors(self, event):
-        return ('#9db8d2', '#7590ae')
 
     def eventTop(self, event):
         """Calculate the position of the top of the event block in the
