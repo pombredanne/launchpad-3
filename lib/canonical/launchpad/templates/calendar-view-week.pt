@@ -40,13 +40,20 @@
           <a tal:attributes="href context/nextURL">Next -&gt;</a>
 
       <table border="1">
-        <tr tal:repeat="row context/layout">
+        <tr tal:repeat="row context/layout" valign="top">
           <div tal:omit-tag="" tal:repeat="daynum row">
           <td tal:condition="daynum"
               tal:attributes="rowspan python:context.rowspans[daynum-1]">
             <div tal:define="day python:context.days[daynum-1]">
             <h2><a tal:attributes="href day/dayURL"
                    tal:content="day/dayname">Monday</a></h2>
+            <ul>
+              <li tal:repeat="event day/events">
+                <span tal:replace="event/timestring">12:00</span>
+                -
+                <span tal:replace="event/event/title">Title</span>
+              </li>
+            </ul>
             </div>
           </td>
           </div>

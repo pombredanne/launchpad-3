@@ -40,7 +40,7 @@
           <a tal:attributes="href context/nextURL">Next -&gt;</a>
 
           <table>
-            <tr tal:repeat="row context/layout">
+            <tr tal:repeat="row context/layout" valign="top">
               <td tal:repeat="monthnum row">
                 <div tal:define="month python:context.months[monthnum-1]">
 
