@@ -148,17 +148,18 @@ class SourceSource(SQLBase):
         job.frequency=None
         job.tagging_rules=[]
 
+  
         job.name = self.name
         job.RCS = RCSNames[self.rcstype]
-        job.repository = self.repository
+        job.repository = str(self.repository)
         job.svnrepository = self.svnrepository
-        job.module = self.cvsmodule
+        job.module = str(self.cvsmodule)
 
-        job.category = self.newbranchcategory
-        job.archivename = self.newarchive
-        job.branchfrom = self.cvsbranch # FIXME: assumes cvs!
-        job.branchto = self.newbranchbranch
-        job.archversion = self.newbranchversion
+        job.category = str(self.newbranchcategory)
+        job.archivename = str(self.newarchive)
+        job.branchfrom = str(self.cvsbranch) # FIXME: assumes cvs!
+        job.branchto = str(self.newbranchbranch)
+        job.archversion = str(self.newbranchversion)
 
         job.package_distro = self.package_distro
         job.package_files = self.package_files
