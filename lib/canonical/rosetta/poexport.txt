@@ -24,10 +24,12 @@ To be able to export a POFile we need to know the POFile object we want to get.
     WHERE
         POMsgSet.potemplate = pot.id AND 
         POMsgSet.pofile IS NULL AND
+	POMsgSet.sequence > 0
         EXISTS (SELECT * FROM POMsgIDSighting
 	        WHERE
 		    POMsgSet.id = POMsgIDSighting.pomsgset AND
                     POMsgIDSighting.inlastrevision = TRUE)
+        ORDER BY POMsgSet.sequence
 3.- For every POMsgSet "potSet" we got in #2 we look for its equivalent POMsgSet "poSet" inside the POFile:
     SELECT POMsgSet.* FROM POMsgSet
     WHERE
@@ -85,9 +87,22 @@ To be able to export a POFile we need to know the POFile object we want to get.
 			transSight.potranslation.translation
 			and set the fuzzy flag always.
 			and back to #3
-		
-	
-		    
-					
+4.- At this point we have already dumped all current msgset, now it's time to export the remaining POFile's MsgSets
+    4.1 We get the list of POMsgSets that are active:
+        SELECT POMsgSet.* FROM POMsgSet
+        WHERE
+            POMsgSet.potemplate = pot.id AND 
+            POMsgSet.pofile = po.id AND
+            POMsgSet.sequence > 0
+            EXISTS (SELECT * FROM POMsgIDSighting
+                    WHERE
+		        POMsgSet.id = POMsgIDSighting.pomsgset AND
+                        POMsgIDSighting.inlastrevision = TRUE)
+            ORDER BY POMsgSet.sequence
+    4.2 For every POMsgSet we get from the previous query:
+        4.2.1 If the POMsgSet.id is already inside the temporary store, we ignore it and return to #4.2
+	4.2.2 The POMsgSet.id is not inside the temporary store, we dump this POMsgSet with all its translations
+	      except for the POMsgSet.filereferences and POMsgSet.sourcecomment and we always set the obsolete flag
+	      Finally, we return to #4.2
 
-		
+5.- We should have a complete .po file now.
