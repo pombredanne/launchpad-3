@@ -61,7 +61,6 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
     def checkKey(self, credentials):
         authorizedKeys = self.authserver.getSSHKeys(credentials.username)
         authorizedKeys.addCallback(self._cb_hasAuthorisedKey, credentials)
-        authorizedKeys.addErrback(eb)
         return authorizedKeys
                 
     def _cb_hasAuthorisedKey(self, keys, credentials):
