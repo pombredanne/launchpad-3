@@ -3,8 +3,8 @@
 from twisted.application import service, internet
 from twisted.web import server
 
-from authserver.xmlrpc import UserDetailsResource
-from authserver.stub import StubUserDetailsStorage
+from canonical.authserver.xmlrpc import UserDetailsResource
+from canonical.authserver.stub import StubUserDetailsStorage
 
 
 application = service.Application("authserver_test")

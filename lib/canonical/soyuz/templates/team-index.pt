@@ -39,9 +39,9 @@
   </td><td valign="top">
    <div>
    <table>
-    <legend>Releases</legend>
+    <legend>Release Teams</legend>
     <tr tal:repeat="release context">
-        <td><a tal:content="release/title"
+        <td><a tal:content="string:${release/title} Team"
 	       tal:attributes="href release/name">RELEASE</a>
 	</td>
     </tr>

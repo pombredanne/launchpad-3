@@ -11,6 +11,6 @@ from canonical.authserver.database import DatabaseUserDetailsStorage
 application = service.Application("authserver_test")
 dbpool = ConnectionPool('psycopg', 'dbname=launchpad_test')
 storage = DatabaseUserDetailsStorage(dbpool)
-site = server.Site(UserDetailsResource(storage))
+site = server.Site(UserDetailsResource(storage, debug=True))
 internet.TCPServer(8999, site).setServiceParent(application)
 

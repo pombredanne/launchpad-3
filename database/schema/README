@@ -1,3 +1,12 @@
+Update
+======
+
+We are now using launchpad-2-00-0.sql as our baseline, which is a
+schema dump of the production server. The old files have all been
+moved to the archive directory
+
+Notes
+=====
 launchpad.sql has been moved from launchpad/database/launchpad.sql
 to launchpad/database/schema/launchpad-1-0-0.sql. This file should
 never be altered (if someone can tell me how to make arch throw a hissy

@@ -71,7 +71,7 @@
              tal:attributes="href string:../../people/${context/distribution/owner/id}">
            OWNER</a>
    </td></tr>
-   <tr><th align="right"><a href="+edit">Edit Information</a></th></tr>  
+   <tr><th albgign="right"><a href="+edit">Edit Information</a></th></tr>  
    <!--Conditional block -->
    <tr tal:condition="context/enable_releases"><td>
    <table class="listing">
@@ -105,8 +105,17 @@
       </td>
       <td tal:content="release/state">RELEASESTATE</td>
       <td tal:content="release/datereleased">DATERELEASED</td>      
-      <td tal:content="release/parent"> PARENT</td>          
-      <td tal:content="release/owner/displayname">OWNER</td>            
+
+      <td>
+           <a tal:condition="release/parentrelease"
+	      tal:attributes="href string:releases/${release/parentrelease/name}" 
+	      tal:content="release/parentrelease/title">
+	PARENTRELEASE</a>
+      </td>          
+
+      <td><a tal:attributes="href string:../../people/${release/owner/id}"
+	      tal:content="release/owner/displayname">OWNER</a>
+      </td>            
     </tr>
     </table>
    </td></tr>
