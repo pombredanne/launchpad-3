@@ -101,6 +101,30 @@ class IBug(Interface):
     def followup_title():
         """Return a candidate title for a followup message."""
 
+    def subscribe(person, subscription):
+        """Subscribe person to the bug, with the provided subscription type.
+
+        Returns an IBugSubscription. Raises a ValueError if the person is
+        already subscribed.
+        """
+
+    def unsubscribe(person):
+        """Remove this person's subscription to this bug.
+
+        Raises a ValueError if the person wasn't subscribed.
+        """
+
+    def isSubscribed(person):
+        """Is person subscribed to this bug?
+
+        Returns True if the user is explicitly subscribed to this bug
+        (no matter what the type of subscription), otherwise False.
+        """
+
+    def notificationRecipientAddresses():
+        """Return the list of email addresses that recieve notifications.
+        """
+
 
 class IBugAddForm(IBug):
     """Information we need to create a bug"""

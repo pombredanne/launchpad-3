@@ -5,6 +5,7 @@ Part of the Launchpad system.
 (c) 2004 Canonical, Ltd.
 """
 
+from sets import Set
 from datetime import datetime
 from email.Utils import make_msgid
 
@@ -22,6 +23,10 @@ from canonical.launchpad.database.message import Message, MessageSet
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.bugsubscription import BugSubscription
+from canonical.launchpad.database.sourcepackage import SourcePackage
+
+from zope.i18n import MessageIDFactory
+_ = MessageIDFactory("launchpad")
 
 class Bug(SQLBase):
     """A bug."""
@@ -49,7 +54,7 @@ class Bug(SQLBase):
     activitytimestamp = DateTimeCol(dbName='activitytimestamp', notNull=True,
                                     default=DEFAULT)
     private = BoolCol(notNull=True, default=False)
-    
+
     # useful Joins
     activity = MultipleJoin('BugActivity', joinColumn='bug')
     messages = RelatedJoin('Message', joinColumn='bug',
@@ -66,11 +71,95 @@ class Bug(SQLBase):
     def followup_title(self):
         return 'Re: '+ self.title
 
+    def subscribe(self, person, subscription):
+        """See canonical.launchpad.interfaces.IBug."""
+        if self.isSubscribed(person):
+            raise ValueError(
+                _("Person with ID %d is already subscribed to this bug") %
+                person.id)
+
+        return BugSubscription(
+            bug = self.id, person = person.id, subscription = subscription)
+
+    def unsubscribe(self, person):
+        """See canonical.launchpad.interfaces.IBug."""
+        pass
+
+    def isSubscribed(self, person):
+        """See canonical.launchpad.interfaces.IBug."""
+        bs = BugSubscription.selectBy(
+            bugID = self.id, personID = person.id)
+        if bs.count():
+            return True
+        else:
+            return False
+
+    def notificationRecipientAddresses(self):
+        """See canonical.launchpad.interfaces.IBug."""
+        emails = Set()
+        for subscription in self.subscriptions:
+            if subscription.subscription == dbschema.BugSubscription.CC:
+                preferred_email = subscription.person.preferredemail
+                # XXX: Brad Bollenbach, 2005-03-14: Subscribed users
+                # should always have a preferred email, but
+                # realistically, we've got some corruption in our db
+                # still that prevents us from guaranteeing that all
+                # subscribers will have a preferredemail
+                if preferred_email:
+                    emails.add(preferred_email.email)
+
+        if not self.private:
+            # Collect implicit subscriptions. This only happens on
+            # public bugs.
+            for task in self.bugtasks:
+                if task.assignee:
+                    preferred_email = task.assignee.preferredemail
+                    # XXX: Brad Bollenbach, 2005-03-14: Subscribed users
+                    # should always have a preferred email, but
+                    # realistically, we've got some corruption in our db
+                    # still that prevents us from guaranteeing that all
+                    # subscribers will have a preferredemail
+                    if preferred_email:
+                        emails.add(preferred_email.email)
+
+                if task.product:
+                    preferred_email = task.product.owner.preferredemail
+                    if preferred_email:
+                        emails.add(preferred_email.email)
+                else:
+                    if task.sourcepackagename:
+                        if task.distribution:
+                            distribution = task.distribution
+                        else:
+                            distribution = task.distrorelease.distribution
+                        # XXX: Brad Bollenbach, 2005-03-04: I'm not going
+                        # to bother implementing an ISourcePackage.get,
+                        # because whomever implements the
+                        # Nukesourcepackage spec is going to break this
+                        # code either way. Once Nukesourcepackage is
+                        # implemented, the code below should be replaced
+                        # with a proper implementation that uses something
+                        # like an IMaintainershipSet.get
+                        sourcepackages = SourcePackage.selectBy(
+                            sourcepackagenameID = task.sourcepackagename.id,
+                            distroID = distribution.id)
+                        if sourcepackages.count():
+                            preferred_email = sourcepackages[0].maintainer.preferredemail
+                            if preferred_email:
+                                emails.add(preferred_email.email)
+
+        preferred_email = self.owner.preferredemail
+        if preferred_email:
+            emails.add(preferred_email.email)
+        emails = list(emails)
+        emails.sort()
+        return emails
+
 
 def BugFactory(*args, **kw):
     """Create a bug from an IBugAddForm. Note some unusual behaviour in this
     Factory:
-    
+
       - the Summary and Description are not normally passed, we generally
         like to create bugs with just a title and a first comment, and let
         expert users create the summary and description if needed.

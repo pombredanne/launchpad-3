@@ -52,12 +52,6 @@
         />
     </securedutility>
 
-    <adapter
-        for="canonical.launchpad.interfaces.IBug"
-        provides="canonical.launchpad.interfaces.IBugSubscriptionSet"
-        factory="canonical.launchpad.components.bugsubscription.BugSubscriptionSetAdapter"
-        />
-
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugSubscriptionSet"
         name="+index" />

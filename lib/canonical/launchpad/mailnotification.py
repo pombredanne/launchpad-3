@@ -4,7 +4,7 @@ application."""
 from zope.app import zapi
 from zope.app.mail.interfaces import IMailDelivery
 
-from canonical.launchpad.interfaces import IBug, IBugSubscriptionSet
+from canonical.launchpad.interfaces import IBug
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.database import Bug, BugTracker, EmailAddress
 from canonical.lp.dbschema import BugTaskStatus, BugPriority, \
@@ -40,12 +40,11 @@ The following changes were made:
 
 def get_cc_list(bug):
     """Return the list of people that are CC'd on this bug."""
-    bugsubscriptions = zapi.getAdapter(bug, IBugSubscriptionSet, "")
     subscriptions = []
     if not bug.private:
         subscriptions = list(GLOBAL_NOTIFICATION_EMAIL_ADDRS)
 
-    subscriptions += bugsubscriptions.getCcEmailAddresses()
+    subscriptions += bug.notificationRecipientAddresses()
 
     return subscriptions
 

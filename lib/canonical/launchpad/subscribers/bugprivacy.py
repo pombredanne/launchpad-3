@@ -1,6 +1,5 @@
-from zope.component import getAdapter
-from canonical.launchpad.interfaces import IBugSubscriptionSet
 from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.lp.dbschema import BugSubscription
 
 def make_subscriptions_explicit_on_private_bug(bug, event):
     """Convert implicit subscriptions to explicit subscriptions
@@ -8,19 +7,19 @@ def make_subscriptions_explicit_on_private_bug(bug, event):
     if "private" in event.edited_fields:
         if ((not event.object_before_modification.private) and
             event.object.private):
-            # the bug has been set private; turn all implicit subscriptions
-            # into explicit subscriptions. basically this means explici
-            subscriptions = getAdapter(bug, IBugSubscriptionSet, '')
+            # The bug has been set private; turn all implicit subscriptions
+            # into explicit subscriptions. First, add the bug submitter.
+            if not bug.isSubscribed(bug.owner):
+                bug.subscribe(bug.owner, BugSubscription.CC)
 
-            # first, add the bug submitter
-            subscriptions.subscribePerson(bug.owner)
-
-            # then add the task assignees and maintainers
+            # Then add the task assignees and maintainers.
             for task in bug.bugtasks:
                 if task.assignee:
-                    subscriptions.subscribePerson(task.assignee)
+                    if not bug.isSubscribed(task.assignee):
+                        bug.subscribe(task.assignee, BugSubscription.CC)
                 if task.product:
-                    subscriptions.subscribePerson(task.product.owner)
+                    if not bug.isSubscribed(task.product.owner):
+                        bug.subscribe(task.product.owner, BugSubscription.CC)
                 else:
                     if task.sourcepackagename:
                         if task.distribution:
@@ -39,4 +38,7 @@ def make_subscriptions_explicit_on_private_bug(bug, event):
                             sourcepackagenameID = task.sourcepackagename.id,
                             distroID = distribution.id)
                         if sourcepackages.count():
-                            subscriptions.subscribePerson(sourcepackages[0].maintainer)
+                            maintainer = sourcepackages[0].maintainer
+                            if not bug.isSubscribed(maintainer):
+                                bug.subscribe(
+                                    maintainer, BugSubscription.CC)

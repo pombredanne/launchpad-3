@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-16 22:32:52 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1447
+
+    Summary:
+      refactor bug subscription code to look more like bounty subscription code
+    Revision:
+      launchpad--devel--0--patch-1447
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-424
+       refactor bug subscription code to look more like bounty subscription code
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/database/bugsubscription.py
+     lib/canonical/launchpad/doc/bugsubscription.txt
+     lib/canonical/launchpad/interfaces/bounty.py
+     lib/canonical/launchpad/interfaces/bug.py
+     lib/canonical/launchpad/interfaces/bugsubscription.py
+     lib/canonical/launchpad/mailnotification.py
+     lib/canonical/launchpad/subscribers/bugprivacy.py
+     lib/canonical/launchpad/zcml/bugsubscription.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-424
+
+
 2005-03-16 22:11:39 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1446
 
     Summary:

@@ -92,7 +92,6 @@ class IBounty(IHasOwner):
         """Remove this person's subscription to this bounty."""
 
 
-
 # Interfaces for containers
 class IBountySet(IAddFormCustomization):
     """A container for bounties."""
