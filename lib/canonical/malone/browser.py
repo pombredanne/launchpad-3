@@ -248,7 +248,7 @@ def BugMessageFactory(context, **kw):
     bug = context.context.context.id # view.comments.bug
     return BugMessage(
             bug=bug, parent=None, datecreated=datetime.utcnow(),
-            rfc822msgid=make_msgid('malone'), **kw
+            ownerID=1, rfc822msgid=make_msgid('malone'), **kw
             )
 
 def PersonFactory(context, **kw):

@@ -4,6 +4,12 @@
 
 
 default:
+	@ echo
+	@ echo =======================================================
+	@ echo "You probably don't want this Makefile - try the one in"
+	@ echo "the 'schema' directory."
+	@ echo =======================================================
+	@ echo
 	@ echo "Usage: $(MAKE) TARGET"
 	@ echo
 	@ echo "  launchpad   create and populate the launchpad database"

@@ -390,11 +390,16 @@ class BugMessage(SQLBase):
         DateTimeCol('datecreated', notNull=True),
         StringCol('title', notNull=True),
         StringCol('contents', notNull=True),
-        ForeignKey(name='personmsg', foreignKey='Person', dbName='personmsg'),
-        ForeignKey(name='parent', foreignKey='BugMessage', dbName='parent'),
+        ForeignKey(
+                name='owner', foreignKey='Person', dbName='owner', notNull=True
+                ),
+        ForeignKey(
+                name='parent', foreignKey='BugMessage', dbName='parent',
+                notNull=True
+                ),
         ForeignKey(
                 name='distribution', foreignKey='Distribution',
-                dbName='distribution'
+                dbName='distribution', notNull=False, default=None
                 ),
         StringCol('rfc822msgid', unique=True, notNull=True),
     ]

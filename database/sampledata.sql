@@ -833,8 +833,8 @@ VALUES (
 INSERT INTO Product (project, owner, name, displayname,  title, shortdesc,
     description)
 VALUES (
-    (SELECT id FROM Person WHERE displayname='Sample Person'),
     (SELECT id FROM Project WHERE name='mozilla'),
+    (SELECT id FROM Person WHERE displayname='Sample Person'),
     'firefox', 'Mozilla Firefox', 'Mozilla Firefox',
     'The Mozilla Firefox web browser',
     'The Mozilla Firefox web browser'
