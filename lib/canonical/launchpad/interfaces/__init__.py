@@ -8,6 +8,13 @@ from canonical.launchpad.icelso import *
 from zope.interface import Interface, Attribute
 from persistent import IPersistent
 
+#
+# Please DO NOT put interfaces here. put them in the correct
+# file, one of person, project, bug, etc.
+#
+
+from canonical.launchpad.interfaces.project import *
+
 class IAuthApplication(Interface):
     """ Interface for AuthApplication """
     def __getitem__(name):

@@ -21,7 +21,5 @@
             </td>
         </tr>
     </table>
-    <form action="productassignments/+new" method="post">
-        <input type="submit" value="New" />
-    </form>
+    [ <a href="productassignments/+new">Assign Bug to a Product</a> ]
 </div>

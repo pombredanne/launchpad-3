@@ -14,7 +14,7 @@
 
 <div metal:fill-slot="main">
 
-   <tal:dummy condition="view/new" />
+   <tal:dummy condition="view/newBugTracker" />
 
     <h1>Register a New Bug Tracking System</h1>
 
@@ -27,7 +27,7 @@
 
         <legend>Bug System Details</legend>
 
-        <form action="+new" method="post">
+        <form action="+newbugtracker" method="post">
         <div class="field">
 
             <label>Name</label>
@@ -42,6 +42,10 @@
                     Examples: <i>mozilla-bugs</i>, <i>gnome-main</i>,
                     <i>nvu-bugzilla</i>.
                   </div>
+
+                <!--XXX Mark Shuttleworth 05/10/04 for Alex Limi:
+                        does the text-transform actually submit lowercase
+                        value? Or just make them LOOK that way?-->
 
                 <input type="text" name="name" size="15"
                        value="" style="text-transform: lowercase" />

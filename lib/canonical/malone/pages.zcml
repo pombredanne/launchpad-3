@@ -88,7 +88,7 @@
     <pages for="canonical.launchpad.interfaces.IBugSystemSet"
         permission="launchpad.AnyPerson"
         class="canonical.malone.browser.BugSystemSetView">
-        <page name="+new"
+        <page name="+newbugtracker"
             template="../launchpad/templates/bugsystem-new.pt"
             lp:url="malone/bugsystems/+new" />
     </pages>

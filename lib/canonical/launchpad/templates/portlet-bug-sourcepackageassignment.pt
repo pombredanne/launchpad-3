@@ -33,7 +33,6 @@
             </td>
         </tr>
     </table>
-    <form action="sourcepackageassignments/+new" method="post">
-        <input type="submit" value="New" />
-    </form>
+    [ <a href="sourcepackageassignments/+new">Assign Bug to Source
+    Package</a> ]
 </div>

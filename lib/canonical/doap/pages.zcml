@@ -72,6 +72,9 @@
         <page name="+edit"
             template="../launchpad/templates/project-edit.pt"
             lp:url="doap/projects/$Project.name/+edit" />
+        <page name="+newbugtracker"
+            template="../launchpad/templates/bugsystem-new.pt"
+            lp:url="doap/projects/$Project.name/+newbugtracker" />
     </pages>
 
     <pages for="canonical.launchpad.interfaces.IProduct"

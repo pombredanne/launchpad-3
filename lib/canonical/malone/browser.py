@@ -73,6 +73,44 @@ def traverseBugAttachment(bugattachment, request, name):
         raise KeyError, name
 
 
+def newBugTracker(form, owner):
+    """Process a form to create a new BugSystem Bug Tracking instance
+    object."""
+    #
+    # Verify that the form was in fact submitted, and that it looks like
+    # the right form (by checking the contents of the submit button
+    # field, called "Update").
+    #
+    if not form.has_key('Register'): return
+    if not form['Register'] == 'Register Bug Tracker': return
+    #
+    # Extract the BugSystem details, which are in self.form
+    #
+    name = form['name']
+    title = form['title']
+    shortdesc = form['shortdesc']
+    baseurl = form['baseurl']
+    contactdetails = form['contactdetails']
+    #
+    # XXX Mark Shuttleworth 05/10/04 Hardcoded Bugzilla for the moment
+    #
+    bugsystemtype = 1
+    #
+    # Create the new BugSystem
+    #
+    bugsystem = BugSystem(name=name,
+                          bugsystemtype=bugsystemtype,
+                          title=title,
+                          shortdesc=shortdesc,
+                          baseurl=baseurl,
+                          contactdetails=contactdetails,
+                          owner=owner)
+    #
+    # return the bugsystem
+    #
+    return bugsystem
+
+
 class MaloneApplicationView(object):
     def __init__(self, context, request):
         self.context = context
@@ -547,51 +585,25 @@ class BugSystemSetView(object):
         self.request = request
         self.form = request.form
         
-    def new(self):
-        """Process a form to create a new BugSystem Bug Tracking instance
-        object. This method is triggered by a tal:dummy element in the page
+    def newBugTracker(self):
+        """This method is triggered by a tal:dummy element in the page
         template, so it is run even when the page is first displayed. It
-        determines whether or not a form has been submitted, and if so it
-        updates itself accordingly and redirects back to its display
-        page."""
-        #
-        # Verify that the form was in fact submitted, and that it looks like
-        # the right form (by checking the contents of the submit button
-        # field, called "Update").
-        #
-        if not self.form.has_key('Register'): return
-        if not self.form['Register'] == 'Register Bug Tracker': return
-        #
-        # Extract the BugSystem details, which are in self.form
-        #
-        name = self.form['name']
-        title = self.form['title']
-        shortdesc = self.form['shortdesc']
-        baseurl = self.form['baseurl']
-        contactdetails = self.form['contactdetails']
-        #
-        # XXX Mark Shuttleworth 05/10/04 Hardcoded Bugzilla for the moment
-        #
-        bugsystemtype = 1
+        calls newBugTracker which will check if a form has been submitted,
+        and if so it creates one accordingly and redirects back to its
+        display page."""
         #
         # The person who is logged in needs to end up owning this bug
         # tracking instance.
         #
         owner = IPerson(self.request.principal).id
         #
-        # Create the new BugSystem
+        # Try to process the form
         #
-        bugsystem = BugSystem(name=name,
-                              bugsystemtype=bugsystemtype,
-                              title=title,
-                              shortdesc=shortdesc,
-                              baseurl=baseurl,
-                              contactdetails=contactdetails,
-                              owner=owner)
-        #
+        bugsystem = newBugTracker(self.form, owner)
+        if not bugsystem: return
         # Now redirect to view it again
-        #
         self.request.response.redirect(self.request.URL[-1])
+
 
 
 class BugSystemView(object):
