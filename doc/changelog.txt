@@ -2,6 +2,55 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-05 15:36:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1280
+
+    Summary:
+      Move buildd master to new scripts dir, and buildd slave to new daemons dir
+    Revision:
+      launchpad--devel--0--patch-1280
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--script-rearrange--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1278
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--script-rearrange--0--patch-1
+       merge in the buildd work
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--script-rearrange--0--patch-2
+       Moved the buildd stuff into the new daemons/scripts dirs
+    
+
+    new files:
+     daemons/.arch-ids/=id scripts/.arch-ids/=id
+
+    modified files:
+     daemons/buildd-slave-example.conf daemons/buildd-slave.tac
+     doc/changelog.txt
+
+    renamed files:
+     lib/canonical/buildd/.arch-ids/example.conf.id
+       ==> daemons/.arch-ids/buildd-slave-example.conf.id
+     lib/canonical/buildd/.arch-ids/master.py.id
+       ==> scripts/.arch-ids/master.py.id
+     lib/canonical/buildd/.arch-ids/slave.tac.id
+       ==> daemons/.arch-ids/buildd-slave.tac.id
+     lib/canonical/buildd/example.conf
+       ==> daemons/buildd-slave-example.conf
+     lib/canonical/buildd/master.py
+       ==> scripts/master.py
+     lib/canonical/buildd/slave.tac
+       ==> daemons/buildd-slave.tac
+
+    new directories:
+     daemons daemons/.arch-ids scripts scripts/.arch-ids
+
+    new patches:
+     daniel.silverstone@canonical.com--laptop/launchpad--script-rearrange--0--base-0
+     daniel.silverstone@canonical.com--laptop/launchpad--script-rearrange--0--patch-1
+     daniel.silverstone@canonical.com--laptop/launchpad--script-rearrange--0--patch-2
+
+
 2005-02-05 15:10:54 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1279
 
     Summary:
