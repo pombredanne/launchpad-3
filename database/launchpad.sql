@@ -18,6 +18,9 @@
   CHANGES
 
 
+  v0.99-dev:
+        - add ChangesetFileHash.id for Robert Weir
+        - rename UpstreamRelease to ProductRelease
   v0.98:
         - merge SourceSource table from Andrew Bennetts
 	- change SourceSource.homepageurl to SourceSource.product
@@ -119,7 +122,7 @@
 	  Product and a Sourcepackage
   v0.92:
         - make Schema and Label have name, title, description
-        - added filenames for UpstreamreleaseFile, SourcepackageFile
+        - added filenames for ProductreleaseFile, SourcepackageFile
 	  and BinarypackageBuildFile
         - linked BinarypackageBuild to DistroRelease instead of
 	  DistroArchRelease
@@ -205,8 +208,8 @@ DROP TABLE SourcepackageLabel;
 DROP TABLE Sourcepackage;
 DROP TABLE ArchConfigEntry;
 DROP TABLE ArchConfig;
-DROP TABLE UpstreamReleaseFile;
-DROP TABLE UpstreamRelease;
+DROP TABLE ProductReleaseFile;
+DROP TABLE ProductRelease;
 DROP TABLE ChangesetFileHash;
 DROP TABLE ChangesetFile;
 DROP TABLE ChangesetFileName;
@@ -575,6 +578,7 @@ CREATE TABLE ChangesetFile (
   A cryptographic hash of a changeset file.
 */
 CREATE TABLE ChangesetFileHash (
+  id                serial PRIMARY KEY,
   changesetfile     integer NOT NULL REFERENCES ChangesetFile,
   /* see Hash Algorithms schema */
   hashalg           integer NOT NULL,
@@ -733,10 +737,10 @@ CREATE TABLE ProductLabel (
 
 
 /*
-  UpstreamRelease
-  A specific tarball release of Upstream.
+  ProductRelease
+  A specific tarball release of Product.
 */
-CREATE TABLE UpstreamRelease (
+CREATE TABLE ProductRelease (
   id               serial PRIMARY KEY,
   product          integer NOT NULL REFERENCES Product,
   datereleased     timestamp NOT NULL,
@@ -748,6 +752,7 @@ CREATE TABLE UpstreamRelease (
   owner            integer REFERENCES Person,
   UNIQUE ( product, version )
 );
+
 
 
 /*
@@ -764,7 +769,7 @@ CREATE TABLE ArchConfig (
   name             text NOT NULL,
   title            text NOT NULL,
   description      text NOT NULL,
-  upstreamrelease  integer REFERENCES UpstreamRelease,
+  productrelease  integer REFERENCES ProductRelease,
   owner            integer REFERENCES Person
 );
 
@@ -932,13 +937,13 @@ CREATE TABLE LaunchpadFileHash (
 
 
 /*
-  UpstreamReleaseFile
-  A file from an Upstream Coderelease. Usually this would be a tarball.
+  ProductReleaseFile
+  A file from an Product Coderelease. Usually this would be a tarball.
 */
-CREATE TABLE UpstreamReleaseFile (
-  upstreamrelease integer NOT NULL REFERENCES UpstreamRelease,
+CREATE TABLE ProductReleaseFile (
+  productrelease integer NOT NULL REFERENCES ProductRelease,
   launchpadfile   integer NOT NULL REFERENCES LaunchpadFile,
-  -- see Upstream File Type schema
+  -- see Product File Type schema
   filetype        integer NOT NULL,
   filename        text NOT NULL
 );
@@ -1157,9 +1162,9 @@ CREATE TABLE BinarypackageUpload (
 
 /*
   LIBRARIAN. TRACKING UPSTREAM AND SOURCE PACKAGE RELEASES.
-  This section is devoted to data that tracks upstream and distribution
+  This section is devoted to data that tracks product and distribution
   SOURCE PACKAGE releases. So, for example, Apache 2.0.48 is an
-  UpstreamRelease. Apache 2.0.48-3 is a Debian SourcepackageRelease.
+  ProductRelease. Apache 2.0.48-3 is a Debian SourcepackageRelease.
   We have data tables for both of those, and the Coderelease table is
   the data that is common to any kind of Coderelease. This subsystem also
   keeps track of the actual files associated with Codereleases, such as
@@ -1170,24 +1175,24 @@ CREATE TABLE BinarypackageUpload (
 
 /*
   Coderelease
-  A release of software. Could be an Upstream release or
+  A release of software. Could be an Product release or
   a SourcepackageRelease.
 */
 CREATE TABLE Coderelease (
   id                   serial PRIMARY KEY,
-  upstreamrelease      integer REFERENCES UpstreamRelease,
+  productrelease      integer REFERENCES ProductRelease,
   sourcepackagerelease integer REFERENCES SourcepackageRelease,
   manifest             integer REFERENCES Manifest,
-  CHECK ( NOT ( upstreamrelease IS NULL AND sourcepackagerelease IS NULL ) ),
-  CHECK ( NOT ( upstreamrelease IS NOT NULL AND sourcepackagerelease IS NOT NULL ) )
-); -- EITHER upstreamrelease OR sourcepackagerelease must not be NULL
+  CHECK ( NOT ( productrelease IS NULL AND sourcepackagerelease IS NULL ) ),
+  CHECK ( NOT ( productrelease IS NOT NULL AND sourcepackagerelease IS NOT NULL ) )
+); -- EITHER productrelease OR sourcepackagerelease must not be NULL
 
 
 
 
 /*
   CodereleaseRelationship
-  Maps the relationships between releases (upstream and
+  Maps the relationships between releases (product and
   sourcepackage).
 */
 CREATE TABLE CodereleaseRelationship (
@@ -1766,7 +1771,7 @@ CREATE TABLE BugSystem (
 /*
   BugWatch
   This is a table of bugs in remote bug systems (for example, upstream
-  bugzilla's) which we want to monitor for status changes.
+  bugzilla instances) which we want to monitor for status changes.
 */
 CREATE TABLE BugWatch (
   id               serial PRIMARY KEY,
