@@ -39,12 +39,15 @@
             <td tal:content="bugass/sourcepackage/name">
                 $Sourcepackage.name
             </td>
-            <td>
+            <td tal:condition="bugass/binarypackage">
                 <span tal:content="bugass/binarypackage/binarypackagename/name">
                     $BinarypackageName.name
                 </span>&ndash;<span tal:content="bugass/binarypackage/version">
                     $Binarypackage.version
                 </span>
+            </td>
+            <td tal:condition="not:bugass/binarypackage">
+                (none)
             </td>
         </tr>
     </table>
