@@ -68,6 +68,9 @@ class Bug(SQLBase):
 
 def BugFactory(*args, **kw):
     """Create a bug from an IBugAddForm"""
+    description = kw['description']
+    summary = description.split('\n')[0]
+    kw['shortdesc'] = summary
     bug = Bug(
         title = kw['title'],
         shortdesc = kw['shortdesc'],
