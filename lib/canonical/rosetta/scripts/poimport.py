@@ -25,6 +25,9 @@ translation in the PO file when we last parsed it: %d
 def get_project(name):
     # XXX: We should probably be using a utility for getting the project.
     # -- Dafydd Harries, Fri, 19 Nov 2004 01:31:23 -0500
+    # XXX: This will be difficult when this is run as a script.
+    #      Perhaps initZopeless needs to load adapters and utilities too?
+    # -- Steve Alexander, Fri Nov 19 15:25:08 UTC 2004
 
     try:
         project = ProjectSet()[name]
@@ -48,8 +51,8 @@ def get_template(product, name):
     templates = list(POTemplate.selectBy(productID = product.id, name = name))
 
     if len(templates) == 0:
-        print "template '%s' does not exist for project '%s', product '%s'" % (
-            name, product.project.name, product.name)
+        print ("template '%s' does not exist for project '%s', product '%s'"
+               % (name, product.project.name, product.name))
         sys.exit(1)
 
     return templates[0]
@@ -116,8 +119,8 @@ def parse_options():
         help="Update the statistics fields, don't import anything")
     parser.add_option("-n", "--no-op", dest="noop",
         default=False, action="store_true",
-        help="Don't actually write anything to the database, just "
-                      "see what would happen")
+        help="Don't actually write anything to the database,"
+             " just see what would happen")
 
     (options, args) = parser.parse_args()
 
@@ -131,7 +134,7 @@ def main(owner, project, product, potemplate, language, update_stats_only,
         try:
             print "Updating %s pofile for '%s'..." % (potemplate, language)
             bridge.update_stats(project, product, potemplate, language)
-        except:
+        except: # Bare except followed by a raise.
             print "aborting database transaction"
             bridge.abort()
             raise
@@ -157,11 +160,12 @@ def main(owner, project, product, potemplate, language, update_stats_only,
                 language)
 
             if language is not None:
-                print "Updating %s pofile for '%s'..." % (potemplate, language)
+                print "Updating %s pofile for '%s'..." % (
+                    potemplate, language)
 
                 bridge.update_stats(project, product, potemplate, language,
                     True)
-        except:
+        except: # Bare except followed by a raise.
             print "aborting database transaction"
             bridge.abort()
             raise

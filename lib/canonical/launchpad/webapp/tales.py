@@ -112,6 +112,8 @@ class DBSchemaAPI:
 class FormattersAPI:
     """Adapter from strings to HTML formatted text."""
 
+    implements(ITraversable)
+
     def __init__(self, stringtoformat):
         self._stringtoformat = stringtoformat
 
@@ -121,7 +123,7 @@ class FormattersAPI:
 
     def nice_pre(self):
         """<pre>, except the browser knows it is allowed to break long lines
-        
+
         Note that CSS will eventually have a property to specify this
         behaviour, but we want this now. To do this we need to use the mozilla
         specific -moz-pre-wrap value of the white-space property. We try to
@@ -138,4 +140,25 @@ class FormattersAPI:
                 'white-space: -moz-pre-wrap; white-space: -o-pre-wrap; '
                 'word-wrap: break-word;">%s</div>' % self.nl_to_br()
                 )
+
+    def shorten(self, maxlength):
+        """Use like tal:content="context/foo/fmt:shorten/60"""
+        if len(self._stringtoformat) > maxlength:
+            return '%s...' % self._stringtoformat[:maxlength-3]
+        else:
+            return self._stringtoformat
+
+    def traverse(self, name, furtherPath):
+        if name == 'nl_to_br':
+            return self.nl_to_br()
+        elif name == 'nice_pre':
+            return self.nice_pre()
+        elif name == 'shorten':
+            if len(furtherPath) == 0:
+                raise TraversalError(
+                    "you need to traverse a number after fmt:shorten")
+            maxlength = int(furtherPath.pop())
+            return self.shorten(maxlength)
+        else:
+            raise TraversalError, name
 

@@ -71,12 +71,20 @@ class Server(ServerBase):
         os.mkdir(root)
         uploadfilesystem = UploadFileSystem(root)
         clienthost, clientport = channel.peername
-        self.new_client_hook(root, clienthost, clientport)
+        try:
+            self.new_client_hook(root, clienthost, clientport)
+        except Exception:
+            # Almost bare except, result logged, to keep server running.
+            self.logger.exception("Exception during new client hook")
         return uploadfilesystem, root
 
     def clientFinished(self, channel):
         clienthost, clientport = channel.peername
-        self.client_done_hook(channel.fsroot, clienthost, clientport)
+        try:
+            self.client_done_hook(channel.fsroot, clienthost, clientport)
+        except Exception:
+            # Almost bare except, result logged, to keep server running.
+            self.logger.exception("Exception during client done hook")
 
 
 def run_server(rootdir, host, port, ident, numthreads,
