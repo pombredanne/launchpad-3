@@ -111,7 +111,7 @@
   <body>
 
     <!-- Primary Index -->
-	<p><br><br>Dumped on 2005-01-22</p>
+	<p><br><br>Dumped on 2005-01-25</p>
 <h1><a name="index">Index of database - launchpad_dev</a></h1>
 <ul>
     
@@ -3325,6 +3325,22 @@ WHERE (
 			 </tr>
             
             <tr class="tr0">
+				<td>
+                
+                </td>
+            	<td>private</td>
+            	<td>boolean</td>
+                <td><i>
+				
+
+				NOT NULL
+				DEFAULT false
+				</i>
+				<br><br>Is this bug private? If so, only explicit subscribers will be able to see it
+				</td>
+			 </tr>
+            
+            <tr class="tr1">
 				<td>
                 
                 </td>
@@ -15062,6 +15078,46 @@ generating archives for this distro release
 				</td>
 			 </tr>
             
+            <tr class="tr1">
+				<td>
+                
+                  
+                  <a href="#public.table.sourcepackagerelease">public.sourcepackagerelease.id</a>
+                  
+                
+                </td>
+            	<td>sourcepackagerelease</td>
+            	<td>integer</td>
+                <td><i>
+				
+					
+
+					
+				
+
+				
+				
+				</i>
+				<br><br>The sourcepackagerelease from where this POTemplate was imported last time.
+				</td>
+			 </tr>
+            
+            <tr class="tr0">
+				<td>
+                
+                </td>
+            	<td>sourcepackageversion</td>
+            	<td>text</td>
+                <td><i>
+				
+
+				
+				
+				</i>
+				<br><br>The sourcepackage version string from where this potemplate was imported last time. This field is temporal, if you use it add a note at https://dogfood.ubuntu.com/malone/bugs/220/
+				</td>
+			 </tr>
+            
         </table>
 
 		
@@ -21843,6 +21899,10 @@ WHERE (
 		
 			<ul>	
 				<li><a href="#public.table.distroreleasequeuesource">public.distroreleasequeuesource</a></li>
+			</ul>
+		
+			<ul>	
+				<li><a href="#public.table.potemplate">public.potemplate</a></li>
 			</ul>
 		
 			<ul>	

@@ -2,6 +2,35 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-24 13:52:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1243
+
+    Summary:
+      POTemplate additions for Rosetta, as per Bug220
+    Revision:
+      launchpad--devel--0--patch-1243
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-99
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-100
+       POTemplate additions for Rosetta, as per Bug220
+    
+
+    new files:
+     database/schema/.arch-ids/patch-6-29-0.sql.id
+     database/schema/patch-6-29-0.sql
+
+    modified files:
+     database/schema/comments.sql database/schema/launchpad.html
+     doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-99
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-100
+
+
 2005-01-24 05:26:21 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1242
 
     Summary:
