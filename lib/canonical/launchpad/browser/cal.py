@@ -16,7 +16,7 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from schoolbell.interfaces import IEditCalendar, ICalendarEvent
 from schoolbell.simple import SimpleCalendarEvent
-from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces import IHasOwner, IRequestTzInfo
 from canonical.launchpad.interfaces import ICalendarDay, ICalendarWeek
 from canonical.launchpad.interfaces import ICalendarMonth, ICalendarYear
 from canonical.launchpad.interfaces import ICalendarEventCollection
@@ -51,7 +51,6 @@ monthnames = [
     ]
 
 UTC = pytz.timezone('UTC')
-user_timezone = pytz.timezone('Australia/Perth')
 
 # XXXX we don't actually have any of these view classes yet ...
 _year_pat  = re.compile(r'^(\d\d\d\d)$')
@@ -59,6 +58,8 @@ _month_pat = re.compile(r'^(\d\d\d\d)-(\d\d)$')
 _week_pat  = re.compile(r'^(\d\d\d\d)-W(\d\d)$')
 _day_pat   = re.compile(r'^(\d\d\d\d)-(\d\d)-(\d\d)$')
 def traverseCalendar(calendar, request, name):
+    user_timezone = IRequestTzInfo(request).getTzInfo()
+
     match = _year_pat.match(name)
     if match:
         try:
@@ -159,6 +160,7 @@ class CalendarViewBase(object):
         self.context = context
         self.request = request
         self.datestring = datestring
+        self.user_timezone = IRequestTzInfo(request).getTzInfo()
 
     def _setViewURLs(self, date):
         """Computes the URLs used to switch calendar views."""
@@ -192,7 +194,7 @@ class DayInfo(object):
     hasEvents = property(hasEvents)
 
 class EventInfo(object):
-    def __init__(self, event):
+    def __init__(self, event, user_timezone):
         self.event = event
         self.dtstart = event.dtstart.astimezone(user_timezone)
         self.timestring = '%02d:%02d' % (self.dtstart.hour,
@@ -244,10 +246,10 @@ class CalendarWeekView(CalendarViewBase):
         # find events for the week
         self.events = []
         start = datetime(start.year, start.month, start.day,
-                         0, 0, 0, 0, user_timezone).astimezone(UTC)
+                         0, 0, 0, 0, self.user_timezone).astimezone(UTC)
         end = start + timedelta(weeks=1)
         for event in context.calendar.expand(start, end):
-            ev = EventInfo(event)
+            ev = EventInfo(event, self.user_timezone)
             self.days[ev.dtstart.weekday()].events.append(ev)
 
         self.layout = [ [ 1, 2 ],
@@ -284,12 +286,12 @@ class CalendarMonthView(CalendarViewBase):
 
         # convert to UTC time offsets
         start = datetime(start.year, start.month, 1,
-                         0, 0, 0, 0, user_timezone).astimezone(UTC)
+                         0, 0, 0, 0, self.user_timezone).astimezone(UTC)
         end = datetime(next.year, next.month, 1,
-                         0, 0, 0, 0, user_timezone).astimezone(UTC)
+                         0, 0, 0, 0, self.user_timezone).astimezone(UTC)
 
         for event in context.calendar.expand(start, end):
-            ev = EventInfo(event)
+            ev = EventInfo(event, self.user_timezone)
             self.days[ev.dtstart.day - 1].events.append(ev)
 
         # lay out the dayinfo objects in a 2D grid
@@ -317,11 +319,11 @@ class CalendarYearView(CalendarViewBase):
 
         # convert to UTC time offsets
         start = datetime(context.year, 1, 1,
-                         0, 0, 0, 0, user_timezone).astimezone(UTC)
+                         0, 0, 0, 0, self.user_timezone).astimezone(UTC)
         end = datetime(context.year+1, 1, 1,
-                         0, 0, 0, 0, user_timezone).astimezone(UTC)
+                         0, 0, 0, 0, self.user_timezone).astimezone(UTC)
         for event in context.calendar.expand(start, end):
-            ev = EventInfo(event)
+            ev = EventInfo(event, self.user_timezone)
             self.months[ev.dtstart.month - 1].days[ev.dtstart.day - 1].events.append(ev)
 
         self.daynames = [ d[0] for d in daynames ]

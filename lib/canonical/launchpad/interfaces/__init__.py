@@ -55,6 +55,7 @@ from canonical.launchpad.interfaces.spokenin import *
 from canonical.launchpad.interfaces.geoip import *
 from canonical.launchpad.interfaces.ssh import *
 from canonical.launchpad.interfaces.cal import *
+from canonical.launchpad.interfaces.tzinfo import *
 from canonical.launchpad.interfaces.logintoken import *
 
 # XXX this is old soyuz style and must go

@@ -80,6 +80,8 @@ class Person(SQLBase):
         return self._calendar
     calendar = property(calendar)
 
+    timezone_name = StringCol(dbName='timezone_name', default=None)
+
     def get(cls, id, connection=None, selectResults=None):
         """Override the classmethod get from the base class.
 

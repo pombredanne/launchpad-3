@@ -70,6 +70,7 @@
 
     <!-- Special Utilities -->
     <include file="geoip.zcml" />
+    <include file="tzinfo.zcml" />
 
 
 </configure>

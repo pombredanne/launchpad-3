@@ -8,9 +8,11 @@ INSERT INTO Calendar (owner, title, revision)
     VALUES ((SELECT id from Person WHERE displayname = 'Foo Bar'),
             'Foo Bar\'s Calendar', 0);
 
-UPDATE Person SET calendar = (SELECT id FROM Calendar WHERE title = 'Sample Person\'s Calendar')
+UPDATE Person SET calendar = (SELECT id FROM Calendar WHERE title = 'Sample Person\'s Calendar'),
+                  timezone_name = 'Australia/Perth'
     WHERE id = (SELECT id from Person WHERE displayname = 'Sample Person');
-UPDATE Person SET calendar = (SELECT id FROM Calendar WHERE title = 'Foo Bar\'s Calendar')
+UPDATE Person SET calendar = (SELECT id FROM Calendar WHERE title = 'Foo Bar\'s Calendar'),
+                  timezone_name = 'Africa/Johannesburg'
     WHERE id = (SELECT id from Person WHERE displayname = 'Foo Bar');
 
 INSERT INTO CalendarSubscription (person, calendar)

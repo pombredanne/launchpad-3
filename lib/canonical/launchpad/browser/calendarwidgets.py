@@ -1,6 +1,5 @@
 import re
 from datetime import datetime, timedelta
-import pytz
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -13,9 +12,7 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.form.browser.widget import SimpleInputWidget, renderElement
 from zope.app.form.interfaces import ConversionError, InputErrors
 
-UTC = pytz.timezone('UTC')
-user_timezone = pytz.timezone('Australia/Perth')
-
+from canonical.launchpad.interfaces import IRequestTzInfo
 
 _date_re = re.compile(r'^(\d\d\d\d)-(\d\d?)-(\d\d?)\ +(\d\d?):(\d\d)(?::(\d\d))?$')
 class LocalDateTimeWidget(TextWidget):
@@ -42,6 +39,7 @@ class LocalDateTimeWidget(TextWidget):
         else:
             second = 0
 
+        user_timezone = IRequestTzInfo(self.request).getTzInfo()
         try:
             val = datetime(year, month, day, hour, minute, second,
                             tzinfo=user_timezone)
@@ -53,6 +51,7 @@ class LocalDateTimeWidget(TextWidget):
         if value == self.context.missing_value:
             return self._missing
         else:
+            user_timezone = IRequestTzInfo(self.request).getTzInfo()
             value = value.astimezone(user_timezone)
             return value.strftime('%Y-%m-%d %H:%M:%S')
 

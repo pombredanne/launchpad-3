@@ -53,3 +53,4 @@ ALTER TABLE CalendarEvent
 ALTER TABLE Person ADD COLUMN calendar integer;
 ALTER TABLE Person
     ADD CONSTRAINT "$2" FOREIGN KEY (calendar) REFERENCES Calendar(id);
+ALTER TABLE Person ADD COLUMN timezone_name text;

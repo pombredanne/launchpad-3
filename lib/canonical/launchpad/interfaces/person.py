@@ -43,6 +43,10 @@ class IPerson(Interface):
     languages = Attribute(_('List of know languages by this person'))
     sshkeys = Attribute(_('List of SSH keys'))
 
+    timezone_name = TextLine(
+        title=_('Timezone Name'), required=False, readonly=False
+        )
+
     # XXX: These fields are used only to generate the form to create a
     # new person.
     email = TextLine(title=_('Email'), required=True)
