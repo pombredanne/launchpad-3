@@ -647,9 +647,6 @@ class SoyuzPerson(SQLBase):
                    foreignKey='SoyuzPerson', notNull=True),
         StringCol('teamdescription', dbName='teamdescription'),
         IntCol('karma', dbName='karma'),
-# THE table Karma should exists, isn't it ?!?!  
-#        ForeignKey(name='karma', dbName='karma', foreignKey='Karma',
-#                   notNull=True),
         DateTimeCol('karmatimestamp', dbName='karmatimestamp', notNull=True)
         ]
 
