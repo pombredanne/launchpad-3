@@ -59,6 +59,10 @@
 
     <content class="canonical.database.malone.BugSubscription">
         <allow interface="canonical.database.malone.IBugSubscription" />
+        <require
+            permission="zope.View"
+            set_schema="canonical.database.malone.IBugSubscription"
+            />
     </content>
 
     <content class="canonical.database.doap.Project">

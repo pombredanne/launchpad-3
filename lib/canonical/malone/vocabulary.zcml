@@ -1,6 +1,6 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
-    <!-- TODO: These vocabularies should move to lib/canonical/database? -->
+    <!-- TODO: These vocabularies should move to lib/canonical/database -->
     <vocabulary
         name="Product"
         factory=".vocabulary.ProductVocabulary" />
@@ -16,4 +16,9 @@
     <vocabulary
         name="BugSystem"
         factory=".vocabulary.BugSystemVocabulary" />
+
+    <vocabulary
+        name="Person"
+        factory=".vocabulary.PersonVocabulary" />
+
 </configure>

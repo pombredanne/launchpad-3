@@ -208,6 +208,15 @@
         keyword_arguments="subscription person"
         permission="zope.View"
         template="templates/default-addform.pt"
-        lp:url="malone/bugs/$Bug.id/person/+new" />
+        lp:url="malone/bugs/$Bug.id/people/+new" />
+
+    <editform
+        name="+edit"
+        schema="canonical.database.malone.IBugSubscription"
+        label="Change Bug Subscription"
+        permission="zope.View"
+        template="templates/default-editform.pt"
+        fields="subscription"
+        lp:url="malone/bugs/$Bug.id/people/$BugSubscription.id/+edit" />
 
 </configure>

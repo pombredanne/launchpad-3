@@ -84,6 +84,14 @@
       name="index" />
 
   <browser:defaultView
+      for="canonical.malone.interfaces.IProductBugAssignmentContainer"
+      name="index" />
+
+  <browser:defaultView
+      for="canonical.malone.interfaces.ISourcepackageBugAssignmentContainer"
+      name="index" />
+
+  <browser:defaultView
       for="canonical.malone.interfaces.IBugSubscriptionContainer"
       name="index" />
 

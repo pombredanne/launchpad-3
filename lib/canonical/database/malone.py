@@ -106,6 +106,10 @@ class IBug(Interface):
             'SQLObject.Multijoin of ISourcepackageBugAssignment'
             )
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
+    externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
+    subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
+
+    url = Attribute('Generated URL based on data and reference type')
 
 class Bug(SQLBase):
     """A bug."""
@@ -139,6 +143,8 @@ class Bug(SQLBase):
     sourceassignment = MultipleJoin('SourcepackageBugAssignment',
                                     joinColumn='bug')
     watches = MultipleJoin('BugWatch', joinColumn='bug')
+    externalrefs = MultipleJoin('BugExternalRef', joinColumn='bug')
+    subscriptions = MultipleJoin('BugSubscription', joinColumn='bug')
 
     def _set_title(self, value):
         # Record changes of title in activity log
@@ -154,6 +160,14 @@ class Bug(SQLBase):
                             message='Message here')
         self._SO_set_title(value)
 
+    def _url(self):
+        if int(self.bugreftype) == int(dbschema.BugExternalReferenceType.CVE):
+            return 'http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=%s' % (
+                    urlquote(self.data)
+                    )
+        else:
+            return self.data
+    url = property(_url, None)
 
 class IBugAttachment(Interface):
     """A file attachment to an IBugMessage."""
@@ -356,12 +370,16 @@ class BugMessage(SQLBase):
 class IBugSubscription(Interface):
     """The relationship between a person and a bug."""
 
-    id = Int(title=_('ID'),
-             readonly=True)
-    person = Int(title=_('Person ID'))
-    bug = Int(title=_('Bug ID'))
-    subscription = Choice(title=_('Subscription'),
-                          vocabulary=SubscriptionVocabulary)
+    id = Int(title=_('ID'), readonly=True, required=True)
+    person = Choice(
+            title=_('Person ID'), required=True, vocabulary='Person',
+            readonly=True,
+            )
+    bug = Int(title=_('Bug ID'), required=True, readonly=True)
+    subscription = Choice(
+            title=_('Subscription'), required=True, readonly=False,
+            vocabulary=SubscriptionVocabulary
+            )
 
 class BugSubscription(SQLBase):
     """A relationship between a person and a bug."""

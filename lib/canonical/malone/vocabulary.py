@@ -6,10 +6,13 @@ from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
 
+from canonical.database.foaf import Person
 from canonical.database.doap import Sourcepackage, Product, Binarypackage
 from canonical.database.malone import BugSystem
 
 __metaclass__ = type
+
+# TODO: These vocabularies should limit their choices based on context (?)
 
 class TitledTableVocabulary(object):
     implements(IVocabulary, IVocabularyTokenized)
@@ -80,3 +83,14 @@ class BinarypackageVocabulary(TitledTableVocabulary):
 class BugSystemVocabulary(TitledTableVocabulary):
     _table = BugSystem
 
+class PersonVocabulary(TitledTableVocabulary):
+    _table = Person
+    _orderBy = 'familyname'
+    def _toTerm(self, pkg):
+        return SimpleTerm(
+                pkg.id, str(pkg.id), pkg.displayname or '%s %s' % (
+                    pkg.givenname, pkg.familyname
+                    )
+                )
+    def getTermByToken(self, token):
+        return self.getTerm(token)

@@ -162,6 +162,12 @@ class MaloneBugView(object):
     sourcepackageAssignmentPortlet = ViewPageTemplateFile(
             'templates/bug-sourcepackageassignment-portlet.pt'
             )
+    referencePortlet = ViewPageTemplateFile(
+            'templates/bug-reference-portlet.pt'
+            )
+    peoplePortlet = ViewPageTemplateFile(
+            'templates/bug-people-portlet.pt'
+            )
 
 class MaloneBugAttachment(BugAttachment, BugContainerBase):
     implements(IMaloneBugAttachment)

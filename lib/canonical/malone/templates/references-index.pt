@@ -1,3 +1,9 @@
+<html tal:replace="python:request.response.redirect('..')">
+    <body>
+        <a href=".">Here</a>
+    </body>
+</html>
+<!--
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@malone_template/master"
@@ -30,3 +36,4 @@
 
 </body>
 </html>
+-->

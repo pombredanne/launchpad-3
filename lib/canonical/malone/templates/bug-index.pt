@@ -138,20 +138,22 @@
         </fieldset>
 
         <fieldset class="collapsible">
+            <legend><img src="++resource++arrowDown.gif" />
+                External References
+            </legend>
+            <div tal:replace="structure view/referencePortlet" />
+        </fieldset>
+    
+        <fieldset class="collapsible">
             <legend><img src="++resource++arrowDown.gif" /> Watches</legend>
             <div tal:replace="structure view/watchPortlet" />
         </fieldset>
-    
-        <p>
-            <a href="assignments">Assignments</a>
-        </p>
-        <p>
-            <a href="references">External References</a>
-        </p>
-        <p>
-            <a href="people">People</a>
-        </p>
 
+        <fieldset class="collapsible">
+            <legend><img src="++resource++arrowDown.gif" /> People</legend>
+            <div tal:replace="structure view/peoplePortlet" />
+        </fieldset>
+    
     </div>
 </div>
 

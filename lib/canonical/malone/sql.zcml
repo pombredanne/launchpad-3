@@ -6,94 +6,101 @@
        traversal work properly.  We also need to make security declarations.
   -->
 
-  <content class=".browser.MaloneBugAttachment">
-    <allow interface=".interfaces.IMaloneBugAttachment" />
-    <require permission="zope.View" set_schema=".interfaces.IMaloneBug" />
-  </content>
+    <content class=".browser.MaloneBugAttachment">
+        <allow interface=".interfaces.IMaloneBugAttachment" />
+        <require permission="zope.View" set_schema=".interfaces.IMaloneBug" />
+    </content>
 
-  <content class=".browser.MaloneBug">
-    <allow interface=".interfaces.IMaloneBug" />
-    <require permission="zope.View" set_schema=".interfaces.IMaloneBug" />
-  </content>
+    <content class=".browser.MaloneBug">
+        <allow interface=".interfaces.IMaloneBug" />
+        <require permission="zope.View" set_schema=".interfaces.IMaloneBug" />
+    </content>
 
-  <content class=".browser.BugContainer">
-    <allow interface=".interfaces.IBugContainer" />
-  </content>
+    <content class=".browser.BugContainer">
+        <allow interface=".interfaces.IBugContainer" />
+    </content>
 
-  <utility
-      factory=".browser.BugContainer"
-      provides=".interfaces.IBugContainer" />
+    <utility
+        factory=".browser.BugContainer"
+        provides=".interfaces.IBugContainer" />
 
-  <content class=".browser.BugAttachmentContainer">
-    <allow interface=".interfaces.IBugAttachmentContainer" />
-  </content>
+    <content class=".browser.BugAttachmentContainer">
+        <allow interface=".interfaces.IBugAttachmentContainer" />
+    </content>
 
-  <utility
-      factory=".browser.BugAttachmentContainer"
-      provides=".interfaces.IBugAttachmentContainer" />
+    <utility
+        factory=".browser.BugAttachmentContainer"
+        provides=".interfaces.IBugAttachmentContainer" />
 
-  <content class=".browser.BugExternalRefContainer">
-      <allow interface=".interfaces.IBugExternalRefContainer" />
-      <allow 
-          interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
-  </content>
+    <content class=".browser.BugExternalRefContainer">
+        <allow interface=".interfaces.IBugExternalRefContainer" />
+        <allow 
+            interface="zope.app.form.browser.interfaces.IAddFormCustomization"
+            />
+    </content>
 
-  <utility
-      factory=".browser.BugExternalRefContainer"
-      provides=".interfaces.IBugExternalRefContainer" />
+    <utility
+        factory=".browser.BugExternalRefContainer"
+        provides=".interfaces.IBugExternalRefContainer" />
 
-  <content class=".browser.BugWatchContainer">
-      <allow interface=".interfaces.IBugWatchContainer" />
-      <allow 
-          interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
-  </content>
+    <content class=".browser.BugWatchContainer">
+        <allow interface=".interfaces.IBugWatchContainer" />
+        <allow 
+            interface="zope.app.form.browser.interfaces.IAddFormCustomization" 
+            />
+    </content>
 
-  <utility
-      factory=".browser.BugWatchContainer"
-      provides=".interfaces.IBugWatchContainer" />
+    <utility
+        factory=".browser.BugWatchContainer"
+        provides=".interfaces.IBugWatchContainer" />
 
-  <content class=".browser.ProductBugAssignmentContainer">
-      <allow interface=".interfaces.IProductBugAssignmentContainer" />
-      <allow 
-          interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
-  </content>
+    <content class=".browser.ProductBugAssignmentContainer">
+        <allow interface=".interfaces.IProductBugAssignmentContainer" />
+        <allow 
+            interface="zope.app.form.browser.interfaces.IAddFormCustomization" 
+            />
+    </content>
 
-  <utility
-      factory=".browser.ProductBugAssignmentContainer"
-      provides=".interfaces.IProductBugAssignmentContainer" />
+    <utility
+        factory=".browser.ProductBugAssignmentContainer"
+        provides=".interfaces.IProductBugAssignmentContainer" />
 
-  <content class=".browser.SourcepackageBugAssignmentContainer">
-      <allow interface=".interfaces.ISourcepackageBugAssignmentContainer" />
-      <allow 
-          interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
-  </content>
+    <content class=".browser.SourcepackageBugAssignmentContainer">
+        <allow interface=".interfaces.ISourcepackageBugAssignmentContainer" />
+        <allow 
+            interface="zope.app.form.browser.interfaces.IAddFormCustomization" 
+            />
+    </content>
 
-  <utility
-      factory=".browser.SourcepackageBugAssignmentContainer"
-      provides=".interfaces.ISourcepackageBugAssignmentContainer" />
+    <utility
+        factory=".browser.SourcepackageBugAssignmentContainer"
+        provides=".interfaces.ISourcepackageBugAssignmentContainer" />
 
-  <content class=".browser.BugSubscriptionContainer">
-    <allow interface=".interfaces.IBugSubscriptionContainer" />
-  </content>
+    <content class=".browser.BugSubscriptionContainer">
+        <allow interface=".interfaces.IBugSubscriptionContainer" />
+        <allow 
+            interface="zope.app.form.browser.interfaces.IAddFormCustomization"
+            />
+    </content>
 
-  <utility
-      factory=".browser.BugSubscriptionContainer"
-      provides=".interfaces.IBugSubscriptionContainer" />
+    <utility
+        factory=".browser.BugSubscriptionContainer"
+        provides=".interfaces.IBugSubscriptionContainer" />
 
-  <content class=".browser.ProjectContainer">
-    <allow interface=".interfaces.IProjectContainer" />
-  </content>
+    <content class=".browser.ProjectContainer">
+        <allow interface=".interfaces.IProjectContainer" />
+    </content>
 
-  <utility
-      factory=".browser.ProjectContainer"
-      provides=".interfaces.IProjectContainer" />
+    <utility
+        factory=".browser.ProjectContainer"
+        provides=".interfaces.IProjectContainer" />
 
-  <content class=".browser.SourcepackageContainer">
-      <allow interface=".interfaces.ISourcepackageContainer" />
-  </content>
+    <content class=".browser.SourcepackageContainer">
+        <allow interface=".interfaces.ISourcepackageContainer" />
+    </content>
 
-  <utility
-      factory=".browser.SourcepackageContainer"
-      provides=".interfaces.ISourcepackageContainer" />
+    <utility
+        factory=".browser.SourcepackageContainer"
+        provides=".interfaces.ISourcepackageContainer" />
 
 </configure>

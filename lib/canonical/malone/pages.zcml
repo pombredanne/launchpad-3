@@ -55,8 +55,8 @@
         <page name="activity"
             template="templates/bug-activity.pt"
             lp:url="malone/bugs/$Bugs.id/activity" />
-        <page name="assignments"
-            template="templates/bug-assignment.pt" />
+        <!--<page name="assignments"
+            template="templates/bug-assignment.pt" />-->
     </pages>
 
     <traverse 
@@ -154,10 +154,11 @@
 
     <pages
         for="canonical.malone.interfaces.IBugSubscriptionContainer"
-        permission="zope.Public">
+        permission="zope.Public"
+        lp:url="malone/bugs/$Bug.id/people">
         <page name="index"
-            template="templates/bug-people.pt"
-            lp:url="malone/bugs/$Bug.id/people" />
+            template="templates/people-index.pt"
+            lp:url="malone/bugs/$Bug.id/people/index" />
     </pages>
 
     <traverse

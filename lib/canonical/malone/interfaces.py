@@ -52,6 +52,28 @@ class IBugExternalRefContainer(Interface):
     def __iter__():
         """Iterate through BugExternalRefs for a given bug."""
 
+class IProductBugAssignmentContainer(Interface):
+    """A container for IProductBugAssignment objects."""
+
+    bug = Int(title=_("Bug id"), readonly=True)
+
+    def __getitem__(key):
+        """Get a ProductBugAssignment"""
+
+    def __iter__():
+        """Iterate through ProductBugAssignments for a given bug."""
+
+class ISourcepackageBugAssignmentContainer(Interface):
+    """A container for ISourcepackageBugAssignment objects."""
+
+    bug = Int(title=_("Bug id"), readonly=True)
+
+    def __getitem__(key):
+        """Get a SourcepackageBugAssignment"""
+
+    def __iter__():
+        """Iterate through SourcepackageBugAssignments for a given bug."""
+
 class IBugWatchContainer(Interface):
     """A container for IBugWatch objects."""
 
