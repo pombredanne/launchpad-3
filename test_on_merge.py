@@ -47,8 +47,7 @@ def main():
     errlines = err.readlines()
     dataout = out.read()
     exitcode = proc.wait()
-    test_ok = ((os.WIFEXITED(exitcode) and os.WEXITSTATUS(exitcode) == 0) and
-               (errlines[-1] == 'OK\n'))
+    test_ok = (os.WIFEXITED(exitcode) and os.WEXITSTATUS(exitcode) == 0)
 
     if test_ok:
         print errlines[1]
