@@ -39,14 +39,17 @@
           <a tal:attributes="href view/prevURL">&lt;- Previous</a>
           <a tal:attributes="href view/nextURL">Next -&gt;</a>
 
-      <table border="1">
+      <table class="cal-table">
         <tr tal:repeat="row view/layout" valign="top">
           <tal:block tal:repeat="daynum row">
-          <td tal:condition="daynum"
+          <td class="cal-daycell"
+              tal:condition="daynum"
               tal:attributes="rowspan python:view.rowspans[daynum-1]">
             <tal:block tal:define="day python:view.days[daynum-1]">
-            <h2><a tal:attributes="href day/dayURL"
-                   tal:content="day/dayname">Monday</a></h2>
+            <div class="cal-dayhead">
+              <a tal:attributes="href day/dayURL"
+                     tal:content="day/dayname">Monday</a>
+            </div>
             <ul>
               <li tal:repeat="event day/events">
                 <a tal:attributes="href string:../events/${event/event/id}/">

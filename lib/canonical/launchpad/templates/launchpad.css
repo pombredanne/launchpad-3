@@ -309,3 +309,44 @@ label.fuzzy-checkbox {
     background-color: #93bee2;
 }
 
+/*
+Calendar stuff.
+*/
+.cal-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cal-table th, .cal-table td.cal-daycell {
+  border: 1px solid black;
+}
+
+.cal-table th {
+  text-align: center;
+  color: black;
+  background-color: #eee;
+}
+
+.cal-daycell {
+}
+
+.cal-dayhead {
+  text-align: right;
+  border-bottom: 1px dashed #999;
+
+}
+.cal-dayhead a {
+  display: block;
+  color: black;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.cal-freeday, .cal-busyday {
+  display: block;
+  text-align: right;
+}
+.cal-busyday {
+  font-weight: bold;
+  background-color: #ff9;
+}

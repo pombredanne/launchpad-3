@@ -178,6 +178,7 @@ class CalendarViewBase(object):
 class MonthInfo(object):
     def __init__(self, year, month):
         self.monthname = monthnames[month-1]
+        self.monthURL = '../%04d-%02d' % (year, month)
         self.days = []
         for i in range(calendar.monthrange(year, month)[1]):
             self.days.append(DayInfo(date(year, month, i+1)))

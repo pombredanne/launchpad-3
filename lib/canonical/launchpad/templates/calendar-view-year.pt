@@ -39,26 +39,30 @@
           <a tal:attributes="href view/prevURL">&lt;- Previous</a>
           <a tal:attributes="href view/nextURL">Next -&gt;</a>
 
-          <table>
+          <table width="100%">
             <tr tal:repeat="row view/layout" valign="top">
-              <td tal:repeat="monthnum row">
+              <td tal:repeat="monthnum row" width="30%">
                 <div tal:define="month python:view.months[monthnum-1]">
 
-                <h2 tal:content="month/monthname">Month</h2>
+                <h2><a tal:attributes="href month/monthURL"
+                       tal:content="month/monthname">Month</a></h2>
 
-                <table border="1">
+                <table class="cal-table">
                   <tr>
                     <th tal:repeat="day view/daynames"
                         tal:content="day">Day of Week</th>
                   </tr>
                   <tr tal:repeat="row month/layout">
-                    <td tal:repeat="daynum row">
-                      <div tal:condition="daynum"
-                           tal:define="day python:month.days[daynum-1]">
-                      <a tal:attributes="href day/dayURL"
+                    <tal:block tal:repeat="daynum row">
+                      <td tal:condition="daynum"
+                          tal:define="day python:month.days[daynum-1]"
+                          class="cal-daycell">
+                      <a tal:attributes="href day/dayURL;
+                                         class python:day.hasEvents and 'cal-busyday' or 'cal-freeday'"
                          tal:content="day/date/day">1</a>
-                      </div>
-                    </td>
+                      </td>
+                      <td tal:condition="not:daynum"></td>
+                    </tal:block>
                   </tr>
                 </table>
                 </div>
