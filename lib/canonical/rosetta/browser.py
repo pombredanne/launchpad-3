@@ -294,7 +294,7 @@ class TranslatePOTemplate:
     def _messageID(self, messageID):
         add = lambda x, y: x + y
         lineCeiling = lambda x: int(ceil(float(len(x)) / self.charactersPerLine))
-        lines = reduce(add, map(lines, messageID.msgid.split('\n')))
+        lines = reduce(add, map(lineCeiling, messageID.msgid.split('\n')))
 
         return {
             'lines' : lines,
