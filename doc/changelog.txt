@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-07 18:41:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1282
+
+    Summary:
+      Cleanup of team/person creation code. Moving some docstring doctests to launchpad/doc/. Lots of fixes in docstrings.
+    Revision:
+      launchpad--devel--0--patch-1282
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-116
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-117
+       Teams don't need to have access to the edit email stuff
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/team-index.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-116
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-117
+
+
 2005-02-07 17:41:40 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1281
 
     Summary:
