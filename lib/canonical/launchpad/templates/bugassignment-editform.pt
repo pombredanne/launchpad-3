@@ -125,7 +125,9 @@
                 <legend>New comment on this bug</legend>
     
                 <div class="field">
-                    <form action="+messages/+new" method="post">
+                    <form action="#"
+                       tal:attributes="action string:/malone/bugs/${context/bug/id}/+messages/+new" 
+                       method="post">
                         <label>Comment</label>
                         <div class="formHelp">
                             If you have additional relevant information,

@@ -53,7 +53,7 @@
     <browser:editform
         name="+edit"
         for="canonical.launchpad.interfaces.IProductBugAssignment"
-        class="canonical.launchpad.browser.bug.BugView"
+        class="canonical.launchpad.browser.bug.BugAssignmentEditView"
         schema="canonical.launchpad.interfaces.IProductBugAssignment"
         fields="product bugstatus priority severity assignee"
         label="Edit Product Bug Assignment"
@@ -110,7 +110,7 @@
     <browser:editform
         name="+edit"
         for="canonical.launchpad.interfaces.ISourcePackageBugAssignment"
-        class="canonical.launchpad.browser.bug.BugView"
+        class="canonical.launchpad.browser.bug.BugAssignmentEditView"
         schema="canonical.launchpad.interfaces.ISourcePackageBugAssignment"
         fields="sourcepackage bugstatus priority severity assignee"
         label="Edit SourcePackage Bug Assignment"

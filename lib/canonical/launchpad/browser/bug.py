@@ -8,6 +8,8 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile, \
 from zope.app.form.browser.add import AddView
 from zope.interface import implements
 
+from canonical.launchpad.interfaces import IPerson, ILaunchBag
+from canonical.lp import dbschema
 from canonical.launchpad.database import BugAttachmentSet, \
         BugExternalRefSet, BugSubscriptionSet, \
         BugWatchSet, ProductBugAssignmentSet, \
@@ -15,10 +17,7 @@ from canonical.launchpad.database import BugAttachmentSet, \
         BugProductInfestationSet, \
         BugPackageInfestationSet, Person, Bug, \
         BugsAssignedReport, BugSet, CVERefSet
-
-from canonical.launchpad.interfaces import IPerson, ILaunchBag
-
-from canonical.lp import dbschema
+from canonical.launchpad.browser.editview import SQLObjectEditView
 
 def traverseBug(bug, request, name):
     if name == 'attachments':
@@ -72,57 +71,37 @@ class BugPortlet:
 # (I think the browser:view directive allows this already -- stub)
 class BugView:
     # TODO
-    # These will all become actual Portlet objects.
     # The default path for the templates will be
     # lib/canonical/launchpad/templates.
-    # In each case, we're interested in
-    # 1. what the "context" of the page template needs to be.
-    # 2. whether it will change its presentation depending on whether
-    #    it is used for a Bug's view or for an Assignment's view.
-    
-    # Context is a Bug.  Same in bug and in assignment.
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
     watchPortlet = BugPortlet(
         '../templates/portlet-bug-watch.pt')
-
-    # Not totally sure what this even is.
     productAssignmentPortlet = BugPortlet(
         '../templates/portlet-bug-productassignments.pt')
-
-    # Not totally sure what this even is.
     sourcepackageAssignmentPortlet = BugPortlet(
         '../templates/portlet-bug-packageassignments.pt')
-
-    # Show all infestations in a Bug.  Show infested releases
-    # in an Assignment.
     productInfestationPortlet = BugPortlet(
         '../templates/portlet-bug-productinfestation.pt')
-
-    # Show all infestations in a Bug.  Show infested releases
-    # in an Assignment.
     packageInfestationPortlet = BugPortlet(
         '../templates/portlet-bug-sourcepackageinfestation.pt')
-
-    # Context is a Bug.  Same in bug and in assignment.
     referencePortlet = BugPortlet(
         '../templates/portlet-bug-reference.pt')
-
-    # Context is a Bug.  Same in bug and in assignment.
     cvePortlet = BugPortlet(
         '../templates/portlet-bug-cve.pt')
-    
-    # Context is a Bug.  Same in bug and in assignment.
     peoplePortlet = BugPortlet(
         '../templates/portlet-bug-people.pt')
-
-    # That's not even a portlet any more.
     assignmentsHeadline = BugPortlet(
         '../templates/portlet-bug-assignments-headline.pt')
-
-    # Context is a Bug.  Same in bug and in assignment.
-    # Maybe in the future we'll want to do some special context
-    # awareness on an inffestation.
     actionsPortlet = BugPortlet(
         '../templates/portlet-bug-actions.pt')
+
+class BugAssignmentEditView(BugView, SQLObjectEditView):
+    def __init__(self, context, request):
+        BugView.__init__(self, context, request)
+        SQLObjectEditView.__init__(self, context, request)
 
 class BugAddView(AddView):
     def add(self, content):
