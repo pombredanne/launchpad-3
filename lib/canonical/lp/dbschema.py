@@ -184,6 +184,31 @@ class DBSchema:
     items = ItemsDescriptor()
 
 
+class ImportTestStatus(DBSchema):
+    """An Arch Import Autotest Result
+
+    This enum tells us whether or not a sourcesource has been put through an
+    attempted import.
+    """
+
+    NEW = Item(0, """
+        Untested
+
+        The sourcesource has not yet been tested by the autotester.
+        """)
+
+    FAILED = Item(1, """
+        Failed
+
+        The sourcesource failed to import cleanly.
+        """)
+
+    SUCCEEDED = Item(2, """
+        Succeeded
+
+        The sourcesource was successfully imported by the autotester.
+        """)
+
 class ProjectStatus(DBSchema):
     """A Project Status
 

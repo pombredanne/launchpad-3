@@ -62,7 +62,7 @@ create:
 # Confirm that launchpad-5-00-0.sql hasn't been messed with - this file
 # is our baseline telling us what was installed into production
 check:
-	@if [ "`md5sum launchpad-5-00-0.sql`" != 'ec9ccdbcdcfc1f15c15368f2642c17ed  launchpad-5-00-0.sql' ]; then echo "* launchpad-5-00-0.sql is corrupt or has been modified"; exit 1; else echo "* Using launchpad-5-00-0 as baseline"; fi
+	@if [ "`md5sum launchpad-5-00-0.sql`" != '5f7922451b4619c7d73a4d0cd5bcefaa  launchpad-5-00-0.sql' ]; then echo "* launchpad-5-00-0.sql is corrupt or has been modified"; exit 1; else echo "* Using launchpad-5-00-0 as baseline"; fi
 
 all: dev test
 	@ echo "* All done"

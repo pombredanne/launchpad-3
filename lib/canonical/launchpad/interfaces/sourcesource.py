@@ -59,6 +59,10 @@ class ISourceSource(Interface):
     owner = Attribute("The owner of this upstream source record.")
     currentgpgkeyd = Attribute("Robert please explain me")
     fileidreference = Attribute("Robert please explain me")
+    autotested = Attribute("""This enum is defined in
+                            dbschema.ImportTestStatus.""")
+    datestarted = Attribute("The timestamp of the last import run start.")
+    datefinished = Attribute("The timestamp of the last import run completion.")
     
     def certifyForSync():
         """enable this to sync"""
@@ -98,6 +102,7 @@ class ISourceSourceSet(Interface):
     def __getitem__(sourcesourcename):
         """Return the specified sourcesource object."""
 
-    def __iter__():
-        """Iterate over the Set."""
+    def filter(sync=None, process=None, tested=None, projecttext=None):
+        """Return a subset of the sourcesources, filtered by the criteria
+        given in the arguments."""
 
