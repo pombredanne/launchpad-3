@@ -53,33 +53,33 @@
             <!-- No search results were found. -->
 
             <h2>No Projects Found</h2>
+
+            <!-- XXX -->
+            <!--
+            <p>
+            <a href="">RSS feed of these search results</a>
+            </p>
+            -->
+
+            <p>
+            No projects were found matching your query.
+            </p>
+
+            <!-- Duplicated below. -->
+            <p>
+            If you wish to translate a project which is not yet in Rosetta, you
+            can <a href="projects/+request">Request a Project</a>.
+            </p>
+
         </div>
 
         <div tal:condition="view/resultCount">
             <!-- Some search results were found. -->
 
             <h2>Search Results</h2>
-        </div>
-    </div>
 
-    <!-- Query string was provided. -->
-
-    <div tal:condition="view/queryProvided">
-        <!-- No search results were found. -->
-
-        <p>
-        <a href="">RSS feed of these search results</a>
-        </p>
-
-        <div tal:condition="not:view/resultCount">
-        No projects were found matching your query.
-        </div>
-
-        <!-- Some search results were found. -->
-
-        <div tal:condition="view/resultCount">
             <strong>
-            Items matching your criteria: <span tal:content="view/resultCount">234</span>
+            Projects matching your query: <span tal:content="view/resultCount">234</span>
             </strong>
 
             <dl>
@@ -104,9 +104,9 @@
 
                     <dd tal:content="project/description">
                     Mozilla offers a full suite of integrated Internet
-                    applications including a web browser, e-mail client, address
-                    book, web page composer, Internet chat software and calendar
-                    application.
+                    applications including a web browser, e-mail client,
+                    address book, web page composer, Internet chat software
+                    and calendar application.
                     </dd>
                 </div>
             </dl>
@@ -116,18 +116,23 @@
             href="">Advanced Search</a> for more precise search options.
             </p>
 
+            <!-- Duplicated above. -->
             <p>
-            If you wish to translate a project which is not in Rosetta yet, you
+            If you wish to translate a project which is not yet in Rosetta, you
             can <a href="projects/+submit">Request a Project</a>.
             </p>
 
             <!-- Batch Navigation -->
+            <!-- XXX -->
+            <!--
             <div class="listingBar">
             Batch navigation
             </div>
-        </div>
+            -->
 
-    </div>
+        </div> <!-- condition: view/resultCount -->
+
+    </div> <!-- condition: view/queryProvided -->
 
 </div>
 

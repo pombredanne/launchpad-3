@@ -5,6 +5,8 @@ __metaclass__ = type
 
 import re, os, popen2
 from math import ceil
+import smtplib
+import sys
 
 from zope.component import getUtility
 from canonical.rosetta.interfaces import ILanguages, IPerson
@@ -50,6 +52,39 @@ class ViewProjects:
         else:
             self.submitted = False
             return ""
+
+    def requestProjectSubmit(self):
+        self.error = None
+
+        if not "SUBMIT" in self.request.form:
+            return False
+
+        if not self.request.method == "POST":
+            return False
+
+        request_email = 'daf@muse.19inch.net'
+
+        try:
+            smtp = smtplib.SMTP('localhost')
+            smtp.sendmail('launchpad@canonical.com', request_email,
+                "From: rosetta\n"
+                "To: %s\n"
+                "Subject: Rosetta project request: %s\n"
+                "\n"
+                "Name: %s\n"
+                "Description:\n"
+                "%s" % (
+                    request_email,
+                    self.request.form['name'],
+                    self.request.form['name'],
+                    self.request.form['description']))
+        except smtplib.SMTPException, e:
+            self.error = e
+        else:
+            smtp.quit()
+
+        return True
+
 
 class ViewProject:
     def thereAreProducts(self):

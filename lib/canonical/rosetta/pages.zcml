@@ -14,9 +14,9 @@
     <page name="index"
           template="templates/projects-index.pt"
           lp:url="Rosetta/projects" />
-    <page name="+submit"
-          template="templates/projects-submit.pt"
-          lp:url="Rosetta/projects/+submit" />
+    <page name="+request"
+          template="templates/projects-request.pt"
+          lp:url="Rosetta/projects/+request" />
   </pages>
 
   <traverse for="canonical.rosetta.domain.RosettaProjects"
