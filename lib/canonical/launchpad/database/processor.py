@@ -19,27 +19,21 @@ from canonical.launchpad.interfaces import IProcessor, \
 
 class Processor(SQLBase):
     implements(IProcessor)
-
     _table = 'Processor'
-    _columns = [
-        ForeignKey(name='family', dbName='family',
-                   foreignKey='ProcessorFamily', notNull=True),
-        StringCol('name', dbName='name', notNull=True),
-        StringCol('title', dbName='title', notNull=True),
-        StringCol('description', dbName='description', notNull=True),
-        ForeignKey(name='owner', dbName='owner',
-                   foreignKey='Person', notNull=True),
-        ]
+
+    family = ForeignKey(dbName='family', foreignKey='ProcessorFamily', 
+                        notNull=True)
+    name = StringCol(dbName='name', notNull=True)
+    title = StringCol(dbName='title', notNull=True)
+    description = StringCol(dbName='description', notNull=True)
+    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
 class ProcessorFamily(SQLBase):
     implements(IProcessorFamily)
-
     _table = 'ProcessorFamily'
-    _columns = [
-        StringCol('name', dbName='name', notNull=True),
-        StringCol('title', dbName='title', notNull=True),
-        StringCol('description', dbName='description', notNull=True),
-        ForeignKey(name='owner', dbName='owner',
-                   foreignKey='Person', notNull=True),
-        ]
+
+    name = StringCol(dbName='name', notNull=True)
+    title = StringCol(dbName='title', notNull=True)
+    description = StringCol(dbName='description', notNull=True)
+    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 

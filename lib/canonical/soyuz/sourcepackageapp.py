@@ -13,10 +13,10 @@ from zope.component import getUtility
 # sqlos and SQLObject imports
 from canonical.database.sqlbase import quote
 
-#Soyuz imports
+# Soyuz imports
 from canonical.soyuz.generalapp import CurrentVersion, builddepsSet
 
-#Launchpad imports
+# Launchpad imports
 
 from canonical.launchpad.interfaces import IBuildSet, \
                                            IDistroSourcesApp, \
@@ -24,7 +24,6 @@ from canonical.launchpad.interfaces import IBuildSet, \
                                            IDistroReleaseSourcesApp, \
                                            IDistroReleaseSourceApp, \
                                            IDistroReleaseSourceReleaseApp
-
 
 #
 # 

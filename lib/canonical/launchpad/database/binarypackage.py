@@ -107,9 +107,7 @@ class BinaryPackage(SQLBase):
 
 class BinaryPackageName(SQLBase):
     _table = 'BinaryPackageName'
-    _columns = [
-        StringCol('name', dbName='name', notNull=True),
-    ]
+    name = StringCol(dbName='name', notNull=True)
 
     # Got from BinaryPackageName class
     binarypackages = MultipleJoin(

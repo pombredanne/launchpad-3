@@ -24,30 +24,27 @@ from canonical.launchpad.interfaces import IBuild, IBuilder, IBuildSet
 class Build(SQLBase):
     implements(IBuild)
     _table = 'Build'
-    _columns = [
-        DateTimeCol('datecreated', dbName='datecreated', notNull=True),
-        ForeignKey(name='processor', dbName='processor',
-                   foreignKey='Processor', notNull=True),
-        ForeignKey(name='distroarchrelease', dbName='distroarchrelease', 
-                   foreignKey='DistroArchRelease', notNull=True),
-        IntCol('buildstate', dbName='buildstate', notNull=True),
-        DateTimeCol('datebuilt', dbName='datebuilt'),
-        DateTimeCol('buildduration', dbName='buildduration'),
-        ForeignKey(name='buildlog', dbName='buildlog',
-                   foreignKey='LibraryFileAlias'),
-        ForeignKey(name='builder', dbName='builder',
-                   foreignKey='Builder'),
-        ForeignKey(name='gpgsigningkey', dbName='gpgsigningkey',
-                   foreignKey='GPGKey'),
-        StringCol('changes', dbName='changes'),
-        ForeignKey(name='sourcepackagerelease', dbName='sourcepackagerelease',
-                   foreignKey='SourcePackageRelease', notNull=True),
 
-    ]
-
+    datecreated = DateTimeCol(dbName='datecreated', notNull=True)
+    processor = ForeignKey(dbName='processor', foreignKey='Processor', 
+                           notNull=True)
+    distroarchrelease = ForeignKey(dbName='distroarchrelease', 
+                                   foreignKey='DistroArchRelease', 
+                                   notNull=True)
+    buildstate = IntCol(dbName='buildstate', notNull=True)
+    datebuilt = DateTimeCol(dbName='datebuilt')
+    buildduration = DateTimeCol(dbName='buildduration')
+    buildlog = ForeignKey(dbName='buildlog', foreignKey='LibraryFileAlias')
+    builder = ForeignKey(dbName='builder', foreignKey='Builder')
+    gpgsigningkey = ForeignKey(dbName='gpgsigningkey', foreignKey='GPGKey')
+    changes = StringCol(dbName='changes')
+    sourcepackagerelease = ForeignKey(dbName='sourcepackagerelease',
+                                      foreignKey='SourcePackageRelease', 
+                                      notNull=True)
 
 class BuildSet(object):
     implements(IBuildSet)
+    
     def getBuildBySRAndArchtag(self, sourcepackagereleaseID, archtag):
         clauseTables = ('DistroArchRelease', )
         query = ('Build.sourcepackagerelease = %i '
@@ -61,17 +58,13 @@ class BuildSet(object):
 
 class Builder(SQLBase):
     implements(IBuilder)
-
     _table = 'Builder'
-    _columns = [
-        ForeignKey(name='processor', dbName='processor',
-                   foreignKey='Processor', notNull=True),
-        StringCol('fqdn', dbName='fqdn'),
-        StringCol('name', dbName='name'),
-        StringCol('title', dbName='title'),
-        StringCol('description', dbName='description'),
-        ForeignKey(name='owner', dbName='owner',
-                   foreignKey='Person', notNull=True),
-        ]
 
+    processor = ForeignKey(dbName='processor', foreignKey='Processor', 
+                           notNull=True)
+    fqdn = StringCol(dbName='fqdn')
+    name = StringCol(dbName='name')
+    title = StringCol(dbName='title')
+    description = StringCol(dbName='description')
+    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     
