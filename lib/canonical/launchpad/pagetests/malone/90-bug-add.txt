@@ -1,0 +1,83 @@
+
+  >>> print http(r"""
+  ... GET /malone/bugs/+new HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Cookie: __ac_name="admin"
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+          <h3>Create A New Bug Record</h3>
+  ...
+
+  >>> print http(r"""
+  ... POST /malone/bugs/+new HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 802
+  ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
+  ... Cookie: __ac_name="admin"
+  ... Referer: http://localhost:9000/malone/bugs/+new
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... testing something
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.shortdesc"
+  ... 
+  ... blah
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... foobar
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.sourcepackage"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.sourcepackage-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.product"
+  ... 
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.product-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... ------------0xKhTmLbOuNdArY--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+          <h3>Create A New Bug Record</h3>
+  ...
+
+  >>> print http(r"""
+  ... GET /malone/bugs/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Cookie: __ac_name="admin"
+  ... Referer: http://localhost:9000/malone/bugs/+new
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+    <h1>Bugs</h1>
+    <table class="listing rowNavigation">
+      <tr>
+        <th>Bug #</th>
+        <th>Title</th>
+        <th>Date Submitted</th>
+        <th>Submitted By</th>
+      </tr>
+      <tr onclick="window.location='4'">
+        <td>4</td>
+        <td><a href="4">testing something</a></td>
+        <td>...</td>
+        <td>Foo Bar</td>
+      </tr>
+      ...
+    </table>
+  ...

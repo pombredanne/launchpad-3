@@ -5,9 +5,11 @@ Part of the Launchpad system.
 (c) 2004 Canonical, Ltd.
 """
 
-# Zope
+from datetime import datetime
+from sets import Set
+
 from zope.interface import implements
-# SQL imports
+
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
@@ -17,21 +19,14 @@ from canonical.launchpad.interfaces import *
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC
 
-from canonical.launchpad.database.bugcontainer \
-        import BugContainerBase
+from canonical.launchpad.database.bugcontainer import BugContainerBase
 from canonical.launchpad.database.bugassignment \
         import SourcePackageBugAssignment, ProductBugAssignment
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.bugactivity import BugActivity
-
-# Python
-from datetime import datetime
-from sets import Set
-
-#
-# CONTENT CLASSES
-#
+from canonical.launchpad.database.bugsubscription import BugSubscription
+from canonical.lp.dbschema import BugSubscription as BugSubscriptionVocab
 
 class Bug(SQLBase):
     """A bug."""
@@ -185,6 +180,11 @@ class BugContainer(BugContainerBase):
             sba = SourcePackageBugAssignment(
                 bug=bug, sourcepackage=sourcepkg, binarypackagename=None)
 
+        BugSubscription(
+            personID = kw['ownerID'], bugID = bug.id,
+            subscription = BugSubscriptionVocab.CC.value)
+
+
         return ob # Return this rather than the bug we created from it,
                   # as the return value must be adaptable to the interface
                   # used to generate the form.
@@ -205,6 +205,7 @@ def MaloneBugFactory(context, **kw):
     #del kw['email']
     #if email:
     #    e = EmailAddress.select(EmailAddress.q.email==email)
+    submitterid = context.request.principal.id
     bug = MaloneBug(
             datecreated=now,
             communityscore=0,
@@ -214,7 +215,7 @@ def MaloneBugFactory(context, **kw):
             hitstimestamp=now,
             activityscore=0,
             activitytimestamp=now,
-            owner=context.request.principal.id,
+            owner=submitterid,
             **kw
             )
     return bug
