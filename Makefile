@@ -8,11 +8,11 @@ TESTFLAGS=-p -v
 TESTOPTS=
 SETUPFLAGS=
 Z3LIBPATH=
+HERE:=$(shell pwd)
 
 check: 
-	# here we should run the soyuz regressions tests.
 	$(MAKE) -C sourcecode check
-
+	PYTHONPATH=$(HERE)/lib ./test.py
 
 .PHONY: check
 
