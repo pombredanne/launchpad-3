@@ -15,7 +15,7 @@ from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 from canonical.database.sqlbase import SQLBase, quote
 
 # Launchpad interfaces
-# XXX: David Allouch 2004-11-25
+# XXX: David Allouche 2004-11-25
 # Why RCSTypeEnum is inside launchpad.interfaces?
 from canonical.launchpad.interfaces import ISourceSource, \
     ISourceSourceAdmin, ISourceSourceSet, \
@@ -141,12 +141,12 @@ class SourceSource(SQLBase):
         return False
 
     def _get_repository(self):
-        if self.rcstype == RCSTypeEnum.cvs:
+        if self.rcstype == RevisionControlSystems.CVS:
             return self.cvsroot
-        elif self.rcstype == RCSTypeEnum.svn:
+        elif self.rcstype == RevisionControlSystems.SVN:
             return self.svnrepository
-        elif self.rcstype == RCSTypeEnum.package:
-            return
+        elif self.rcstype == RevisionControlSystems.PACKAGE:
+            return None
         else:
             logging.critical ("unhandled source rcs type: %s", self.rcstype)
             # FIXME!
