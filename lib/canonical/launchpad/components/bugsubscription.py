@@ -32,7 +32,7 @@ class IBugSubscriptionSetAdapter:
             best_email = _get_best_email_address(prod_ass.assignee)
             if best_email:
                 emails.add(best_email)
-            best_email = _get_best_email_address(prod_ass.owner)
+            best_email = _get_best_email_address(prod_ass.product.owner)
             if best_email:
                 emails.add(best_email)
 
@@ -40,7 +40,7 @@ class IBugSubscriptionSetAdapter:
             best_email = _get_best_email_address(pack_ass.assignee)
             if best_email:
                 emails.add(best_email)
-            best_email = _get_best_email_address(pack_ass.owner)
+            best_email = _get_best_email_address(pack_ass.sourcepackage.maintainer)
             if best_email:
                 emails.add(best_email)
 
