@@ -11,7 +11,7 @@
 
 */
 
-SET client_min_messages TO error;
+SET client_min_messages TO fatal;
 
 CREATE TABLE ScrapedProject (
     id serial PRIMARY KEY,

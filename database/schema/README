@@ -5,6 +5,60 @@ We are now using launchpad-2-00-0.sql as our baseline, which is a
 schema dump of the production server. The old files have all been
 moved to the archive directory
 
+How to make database schema changes
+===================================
+
+First - don't. Unless there is a problem doing so, get Stuart
+or the acting DBA to do it by emailing the launchpad@ mailing list
+with your request. The reason we are currently using launchpad@ is so that
+other launchpad team members can see what the requests are and have a
+chance to comment if it affects their work in any way.
+
+The rest of these instructions are for the acting DBA or for 'we have 
+to do this now' work.
+
+1. `cd launchpad/database/schema; dropdb launchpad_test; make`
+
+    This is the simplest way of making sure your database is clean.
+    Failing to drop your database risks a bad sampledata export.
+
+2.  Create a file launchpad/database/schema/patch-x-yy-0.sql, where
+    'x' is the current major database revision number (and should not be
+    changed except after a push to production) and yy is the next available
+    number. It is important that yy is two digits, as otherwise the patch
+    will be applied in the wrong order.
+
+3.  Put the necessary commands in patch-x-yy-0.sql
+
+4.  Inspect the launchpad_prod database on emperor. Check all affected tables
+    to see if they contain data. If they do, it may be necessary to add extra
+    commands to the patch to ensure data is migrated or else the patch will fail
+    when applied to production.
+
+5.  Run the commands in patch-x-yy-0.sql one at a time in an interactive
+    session. This lets you catch errors and cases where the sample data
+    needs to be migrated. Issue SQL commands as necessary o port sample
+    data to the new schema.
+
+6.  Run `make newsampledata` in launchpad/database/schema.
+
+7.  Run `diff current.sql new-sampledata.sql` in launchpad/database/sampledata
+    to confirm the changes are sane
+
+8.  Move new-sampledata.sql to current.sql
+
+9.  Run `make` in launchpad/database/schema. Alter patch as necessary
+    to minimize noise.
+
+10. Commit
+
+11. Respond to message in launchpad@ informing the group the modification has
+    been made.
+
+Steps 6, 7 & 8 can be ommitted of course if no table modifications are being
+made (eg. just indexes being added).
+
+
 Notes
 =====
 launchpad.sql has been moved from launchpad/database/launchpad.sql
