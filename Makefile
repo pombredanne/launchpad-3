@@ -10,11 +10,17 @@ SETUPFLAGS=
 Z3LIBPATH=$(shell pwd)/sourcecode/zope/src
 HERE:=$(shell pwd)
 
-check: 
+check:
 	$(MAKE) -C sourcecode check
 	PYTHONPATH=$(HERE)/lib ./test.py
 
-.PHONY: check
+debugging-on:
+	cp ./lib/canonical/canonical.debugskin-configure.zcml ./package-includes/
+
+debugging-off:
+	rm ./package-includes/canonical.debugskin-configure.zcml
+
+.PHONY: check debugging-on debugging-off
 
 # XXX What should the default be?
 all: inplace runners
