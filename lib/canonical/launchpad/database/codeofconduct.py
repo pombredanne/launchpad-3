@@ -16,7 +16,7 @@ from zope.exceptions import NotFoundError
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.constants import DEFAULT
 
 # LP Interfaces
@@ -28,6 +28,7 @@ from canonical.launchpad.interfaces import ISignedCodeOfConduct, \
 
 # Python
 import os
+from datetime import datetime
 
 class CodeOfConduct(object):
     """CoC class model.
@@ -93,6 +94,11 @@ class CodeOfConductSet(object):
 
     def __getitem__(self, version):
         """See ICodeOfConductSet."""
+        # Create an entry point for the Admin Console
+        # Obviously we are excluding a CoC version called 'admin'
+        if version == 'admin':
+            return SignedCodeOfConductSet()
+        # in normal conditions return the CoC Release
         return CodeOfConduct(version)
         
     def __iter__(self):
@@ -130,3 +136,80 @@ class CodeOfConductConf(object):
     prefix = 'Ubuntu Code of Conduct - '
     current = '1.0'
 
+
+
+class SignedCodeOfConduct(SQLBase):
+    """Code of Conduct"""
+
+    implements(ISignedCodeOfConduct)
+
+    _table = 'SignedCodeOfConduct'
+
+    person = ForeignKey(foreignKey="Person", dbName="person",
+                        notNull=True)
+    
+    signedcode = StringCol(dbName='signedcode', notNull=False, default=None)
+
+    signingkey = StringCol(dbName='signingkey', notNull=False, default=None)
+
+    datecreated = DateTimeCol(dbName='datecreated', notNull=False,
+                              default=datetime.utcnow())
+
+    recipient = ForeignKey(foreignKey="Person", dbName="recipient",
+                           notNull=False, default=None)
+    
+    admincomment = StringCol(dbName='admincomment', notNull=False,
+                             default=None)
+    
+    active = BoolCol(dbName='active', notNull=False, default=False)
+    
+
+    def _getDisplayName(self):
+        """Build a Fancy Title for CoC."""
+        # XXX: cprov 20040224
+        # We need the proposed field 'version'
+        return '%s (%s)' % (self.person.displayname, self.signingkey)
+
+    displayname = property(_getDisplayName)
+
+class SignedCodeOfConductSet(object):
+    """A set of CodeOfConducts"""
+
+    implements(ISignedCodeOfConductSet)
+
+    def __getitem__(self, id):
+        """Get a Signed CoC Entry."""
+        return SignedCodeOfConduct.get(id)
+
+
+    def __iter__(self):
+        """Iterate through the Signed CoC."""
+        return iter(SignedCodeOfConduct.select())
+
+
+    def verifyAndStore(self, person, signingkey, signedcode):
+        """See ISignedCodeOfConductSet"""
+        # XXX cprov 20050224
+        # Are we missing the version field in SignedCoC table ?
+        # how to figure out how CoC version is signed ?
+        SignedCodeOfConduct(person=person, signingkey=signingkey,
+                            signedcode=signedcode)
+
+    def searchByDisplayname(self, displayname, searchfor=None):
+        """See ISignedCodeOfConductSet"""
+        displayname = displayname.replace('%', '%%')
+
+        clauseTables = ['Person',]
+        
+        # use FTI
+        query = ('SignedCodeOfConduct.person = Person.id AND '
+                 'Person.fti @@ ftq(%s)'
+                 % quote(displayname))
+
+        if searchfor == 'activeonly':
+            query += ' AND SignedCodeOfConduct.active = true'
+            
+        elif searchfor == 'inactiveonly':
+            query += ' AND SignedCodeOfConduct.active = false'
+        
+        return SignedCodeOfConduct.select(query, clauseTables=clauseTables)

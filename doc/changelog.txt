@@ -2,6 +2,51 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-24 23:13:17 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1341
+
+    Summary:
+      SignedCoC Admin Console Prototype
+    Revision:
+      launchpad--devel--0--patch-1341
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-512
+       half-done page to sign a CoC
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-513
+       change type of signedcode from TextLine to Text
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-514
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-515
+       CoC Admin Console Page
+    
+
+    new files:
+     lib/canonical/launchpad/browser/.arch-ids/codeofconduct.py.id
+     lib/canonical/launchpad/browser/codeofconduct.py
+     lib/canonical/launchpad/templates/.arch-ids/codeofconduct-admin.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/signedcodeofconduct-index.pt.id
+     lib/canonical/launchpad/templates/codeofconduct-admin.pt
+     lib/canonical/launchpad/templates/signedcodeofconduct-index.pt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/__init__.py
+     lib/canonical/launchpad/database/codeofconduct.py
+     lib/canonical/launchpad/interfaces/codeofconduct.py
+     lib/canonical/launchpad/templates/codeofconduct-index.pt
+     lib/canonical/launchpad/templates/codeofconduct-list.pt
+     lib/canonical/launchpad/zcml/codeofconduct.zcml
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-512
+     celso.providelo@canonical.com/launchpad--devel--0--patch-513
+     celso.providelo@canonical.com/launchpad--devel--0--patch-514
+     celso.providelo@canonical.com/launchpad--devel--0--patch-515
+
+
 2005-02-24 05:23:18 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1340
 
     Summary:

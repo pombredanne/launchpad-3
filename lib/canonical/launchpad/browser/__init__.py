@@ -25,6 +25,7 @@ from canonical.launchpad.browser.distribution import *
 from canonical.launchpad.browser.distrorelease import *
 from canonical.launchpad.browser.publishedpackage import *
 from canonical.launchpad.browser.logintoken import *
+from canonical.launchpad.browser.codeofconduct import *
 
 from canonical.launchpad.browser.widgets import *
 
