@@ -6,14 +6,23 @@ import canonical.lp
 from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
     RosettaProduct
 from canonical.database.doap import DBProjects
+from canonical.database.sqlbase import SQLBase
 from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
 from optparse import OptionParser
-from transaction import get_transaction
+from sqlobject.dbconnection import Transaction
 
 class PODBBridge(PlacelessSetup):
 
     def __init__(self):
         canonical.lp.initZopeless()
+        self._transaction = Transaction(SQLBase._connection)
+        SQLBase._connection = self._transaction
+
+    def commit(self):
+        self._transaction.commit()
+
+    def rollback(self):
+        self._transaction.rollback()
 
     def imports(self, person, file, projectName, productName, poTemplateName,
         languageCode=None):
@@ -90,9 +99,7 @@ if __name__ == '__main__':
                        options.potemplate, options.language)
     except:
         print "aborting database transaction"
-        get_transaction().abort()
+        bridge.rollback()
         raise
     else:
-        # Explicit commit added in an attempt to fix the fact that message set
-        # sequence numbers are not being written to the database.
-        get_transaction().commit()
+        bridge.commit()

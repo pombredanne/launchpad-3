@@ -402,7 +402,7 @@ class TemplateImporter(object):
             proxy.msgstrPlurals = plurals
             # set obsolete
             proxy.obsolete = kw.get('obsolete', False)
-        except (KeyError, IndexError):
+        except (KeyError, IndexError), e:
             raise POInvalidInputError(
                 msg='Po file: invalid input on entry at line %d: %s'
                 % (kw['_lineno'], str(e)))
@@ -502,7 +502,7 @@ class POFileImporter(object):
             proxy.flags = kw.get('flags', ())
             # store obsolete
             proxy.obsolete = kw.get('obsolete', False)
-        except (KeyError, IndexError):
+        except (KeyError, IndexError), e:
             raise POInvalidInputError(
                 msg='Po file: invalid input on entry at line %d: %s'
                 % (kw['_lineno'], str(e)))

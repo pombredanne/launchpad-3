@@ -429,7 +429,6 @@ class RosettaPOFile(SQLBase):
         IntCol(name='pluralForms', dbName='pluralforms', notNull=True),
         ForeignKey(name='lastTranslator', foreignKey='RosettaPerson', dbName='lasttranslator'),
         DateTimeCol(name='lastParsed', dbName='lastparsed'),
-        StringCol(name='variant', dbName='variant'),
         # XXX: missing fields
     ]
 
@@ -559,6 +558,17 @@ class RosettaPOFile(SQLBase):
 
     def createMessageSetFromText(self, text):
         return createMessageSetFromText(self, text)
+
+    def updateStatistics(self):
+        current = RosettaPOMessageSet.select('''
+            POMsgSet.sequence > 0 AND
+            POMsgSet.fuzzy = FALSE AND
+            PotSet.sequence > 0 AND
+            PotSet.primeMsgID == POMsgSet.primeMsgID AND
+            POMsgSet.pofile = %d AND
+            PotSet.potemplate = POMsgSet.potemplate
+            ''' % self.id, clauseTables=('POMessageSet PotSet',))
+        print current
 
 
 class RosettaPOMessageSet(SQLBase):

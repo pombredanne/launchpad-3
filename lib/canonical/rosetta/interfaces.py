@@ -253,8 +253,6 @@ class IPOFile(Interface):
 
     variant = Attribute("The language variant for this PO file.")
 
-    variant = Attribute("The language variant for this PO file.")
-
     currentCount = Attribute("""
         The number of msgsets matched to the potemplate that have a
         non-fuzzy translation in the PO file when we last parsed it
@@ -317,12 +315,15 @@ class IPOFile(Interface):
         """Check whether a message set with the given message ID exists within
         this PO file."""
 
-
 class IEditPOFile(IPOFile):
     """Edit interface for a PO File."""
 
     def expireAllMessages():
         """Mark our of our message sets as not current (sequence=0)"""
+
+    def updateStatistics():
+        """Update the statistics fields - rosettaCount, updatesCount and
+        currentCount - from the messages currently known"""
 
     def createMessageSetFromMessageID(messageID):
         """See IEditPOTemplate."""
