@@ -270,7 +270,7 @@ class DatabaseUserDetailsStorage(object):
         )
         authorisedKeys.extend(transaction.fetchall())
         # Replace keytype with correct DBSchema items.
-        authorisedKeys = [(dbschema.SSHKeyType.items[keytype], keytext)
+        authorisedKeys = [(dbschema.SSHKeyType.items[keytype].title, keytext)
                           for keytype, keytext in authorisedKeys]
         return authorisedKeys
 

@@ -2,6 +2,41 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-11 06:28:12 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1414
+
+    Summary:
+      Fix authserver's getSSHKeys method, with test.
+    Revision:
+      launchpad--devel--0--patch-1414
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-getSSHKeys-fix--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1413
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-getSSHKeys-fix--0--patch-1
+       Add an SSH public key to the Sample Person user in the sample data
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-getSSHKeys-fix--0--patch-2
+       Fix authserver's getSSHKeys method, with test.
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-getSSHKeys-fix--0--patch-3
+       Update test
+    
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/authserver/database.py
+     lib/canonical/authserver/ftests/test_database.py
+     lib/canonical/authserver/ftests/test_xmlrpc.py
+
+    new patches:
+     andrew.bennetts@canonical.com/launchpad--authserver-getSSHKeys-fix--0--base-0
+     andrew.bennetts@canonical.com/launchpad--authserver-getSSHKeys-fix--0--patch-1
+     andrew.bennetts@canonical.com/launchpad--authserver-getSSHKeys-fix--0--patch-2
+     andrew.bennetts@canonical.com/launchpad--authserver-getSSHKeys-fix--0--patch-3
+
+
 2005-03-10 20:24:39 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1413
 
     Summary:
