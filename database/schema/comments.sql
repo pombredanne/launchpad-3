@@ -270,3 +270,6 @@ COMMENT ON COLUMN Bounty.duration IS 'An estimate of the length of time it shoul
 COMMENT ON COLUMN Bounty.reviewer IS 'The person who will review this bounty regularly for progress. The reviewer is the person who is responsible for establishing when the bounty is complete.';
 COMMENT ON COLUMN Bounty.owner IS 'The person who created the bounty. The owner can update the specification of the bounty, and appoints the reviewer.';
 
+-- SourceSource
+COMMENT ON COLUMN SourceSource.branchpoint IS 'The source specification for an import job to branch from.'
+

@@ -14,15 +14,13 @@ import logging
 from canonical.lp import _
 
 class ISinglePopupWidget(ISimpleInputWidget):
-    formToken = Attribute(
-            'fromToken',
-            'The token representing the value to display, possilby invalid'
-            )
-    popupHref = Attribute(
-            'popupHref',
-            '''The contents to go into the href tag used to popup 
-               the select window'''
-            )
+    def formToken():
+        'The token representing the value to display, possibly invalid'
+    def popupHref():
+        'The contents to go into the href tag used to popup the select window'
+    def matches():
+        'List of tokens matching the current input'
+
 
 class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
     """Window popup widget for single item choices from a huge vocabulary.
@@ -41,19 +39,61 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
     displayMaxWidth = None
     style = None
 
-    def _getFormValue(self):
-        rv = super(SinglePopupWidget, self)._getFormValue()
-        logging.warn('SinglePopupWidget._getFormValue() == %r' % (rv,))
+    def _old_getFormValue(self):
+        # Check to see if there is only one possible match. If so, use it.
+        matches = self.matches()
+        if len(matches) == 1:
+            return matches[0].token
+
+        # Otherwise, return the invalid value the user entered
+        return super(SinglePopupWidget, self)._getFormValue()
         return rv
 
-    def _getFormToken(self):
-        val = self._getFormValue()
-        if isinstance(val, basestring):
-            return val
+    def _getFormInput(self):
+        '''See zope.app.form.browser.widget.SimpleWidget'''
+        matches = self.matches()
+        if len(matches) == 1:
+            return matches[0].token
         else:
+            return super(SinglePopupWidget, self)._getFormInput()
+
+    _matches = None
+    def matches(self):
+        '''Return a list of matches (as ITokenizedTerm) to whatever the
+           user currently has entered in the form. 
+
+        '''
+        # Use a cached version if we have it to avoid repeating expensive
+        # searches
+        if self._matches is not None:
+            return self._matches
+
+        # Pull form value using the parent class to avoid loop
+        formValue = super(SinglePopupWidget, self)._getFormInput()
+        if not formValue:
+            return []
+
+        # Special case - if the entered value is valid, it is an object
+        # rather than a string (I think this is a bug somewhere)
+        if not isinstance(formValue, basestring):
+            self._matches = [self.vocabulary.getTerm(formValue)]
+            return self._matches
+
+        # Cache and return the search
+        self._matches = list(self.vocabulary.search(formValue))
+        return self._matches
+        
+    def formToken(self):
+        val = self._getFormValue()
+
+        # We have a valid object - return the corresponding token
+        if not isinstance(val, basestring):
             return self.vocabulary.getTerm(val).token
 
-    def _getPopupHref(self):
+        # Just return the existing invalid token
+        return val
+
+    def popupHref(self):
         template = (
             '''javascript:'''
             '''popup_window('@@popup-window?'''
@@ -62,10 +102,6 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
             )
         return template % (self.context.vocabularyName, self.name)
             
-
-    formToken = property(_getFormToken)
-    popupHref = property(_getPopupHref)
-
 
 class ISinglePopupView(Interface):
 

@@ -44,7 +44,9 @@ class EndStory(harness.LaunchpadTestCase):
 
 def test_suite():
     suite = unittest.TestSuite()
-    pagetestsdir = os.path.normpath(os.path.join(here, '..', 'pagetests'))
+    pagetestsdir = os.path.abspath(
+            os.path.normpath(os.path.join(here, '..', 'pagetests'))
+            )
 
     stories = [
         os.path.join(pagetestsdir, d) for d in os.listdir(pagetestsdir)

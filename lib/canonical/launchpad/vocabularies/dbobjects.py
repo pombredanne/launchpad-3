@@ -89,12 +89,12 @@ class SQLObjectVocabularyBase(object):
             return self._toTerm(value)
 
         try:
-            int(value)
-        except:
-            raise RuntimeError, 'Got a %r' % (value,)
+            value = int(value)
+        except ValueError:
+            raise LookupError, value
 
         try:
-            objs = list(self._table.select(self._table.q.id==int(value)))
+            objs = list(self._table.select(self._table.q.id==value))
         except ValueError:
             raise LookupError, value
         if len(objs) == 0:
@@ -192,17 +192,15 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         '''
         if not query:
             return []
-        query = quote_like(query.lower())
+        words = [quote_like(word)[:-1]+"%%'" for word in query.lower().split()]
+        sql = []
+        for word in words:
+            sql.append("product.name like %s" % word)
+            sql.append("project.name like %s" % word)
+        sql = 'product.project = project.id AND (%s)' % (' OR '.join(sql))
         t = self._table
         objs = [self._toTerm(r)
-            for r in t.select('''
-                product.project = project.id
-                AND (product.name  like %s || '%%'
-                    OR project.name like %s || '%%'
-                    )
-                ''' % (query, query),
-                ['Product', 'Project']
-                )
+            for r in t.select(sql, ['Product', 'Project'])
             ]
         return objs
 
