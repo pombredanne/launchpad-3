@@ -14,13 +14,18 @@
     project with The Launchpad.</p>
 
 	<ul>
-        <li><a href="projects/">View Projects</a>: see a list of the
-        projects that have been registered in The Launchpad.</li>
-		<li><a href="projects/+search">Search Projects</a>: find a project
-        using a keyword search across the project names, titles and
-        descriptions.</li>
-        <li><a href="projects/+new">Create a New Project</a>: register a new
-        project with The Launchpad.</li>
+
+        <li><a href="projects/">Find Project</a>: find your open source
+        project if it has been registered in The Launchpad.</li>
+
+		<li><a href="projects/+search">Advanced Project Search</a>: 
+        Search for projects that are not only registered in the Launchpad
+        but which are also available for translating, or have bugs listed,
+        or have their source code available as Bazaar branches.</li>
+
+        <li><a href="projects/+new">Register Project</a>: register an open
+        source project with The Launchpad.</li>
+
 	</ul>
 
 </div>
