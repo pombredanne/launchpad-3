@@ -294,19 +294,29 @@ class LanguageTemplates:
                 pass
             else:
                 total = len(template)
-                currentCount = poFile.currentCount
-                rosettaCount = poFile.rosettaCount
-                updatesCount = poFile.updatesCount
+                currentCount = poFile.currentcount
+                rosettaCount = poFile.rosettacount
+                updatesCount = poFile.updatescount
                 nonUpdatesCount = currentCount - updatesCount
                 translated = currentCount  + rosettaCount
                 untranslated = total - translated
 
-                currentPercent = float(currentCount) / total * 100
-                rosettaPercent = float(rosettaCount) / total * 100
-                updatesPercent = float(updatesCount) / total * 100
-                nonUpdatesPercent = float (nonUpdatesCount) / total * 100
-                translatedPercent = float(translated) / total * 100
-                untranslatedPercent = float(untranslated) / total * 100
+                try:
+                    currentPercent = float(currentCount) / total * 100
+                    rosettaPercent = float(rosettaCount) / total * 100
+                    updatesPercent = float(updatesCount) / total * 100
+                    nonUpdatesPercent = float (nonUpdatesCount) / total * 100
+                    translatedPercent = float(translated) / total * 100
+                    untranslatedPercent = float(untranslated) / total * 100
+                except ZeroDivisionError:
+                    # XXX: I think we will see only this case when we don't have
+                    # anything to translate.
+                    currentPercent = 0
+                    rosettaPercent = 0
+                    updatesPercent = 0
+                    nonUpdatesPercent = 0
+                    translatedPercent = 0
+                    untranslatedPercent = 100
 
                 # NOTE: To get a 100% value:
                 # 1.- currentPercent + rosettaPercent + untranslatedPercent
@@ -361,10 +371,10 @@ class ViewPOFile:
 
     def completeness(self):
         return "%.2f%%" % (
-            float(self.context.translatedCount()) / len(self.context.poTemplate) * 100)
+            float(self.context.translatedCount()) / len(self.context.potemplate) * 100)
 
     def untranslated(self):
-        return len(self.context.poTemplate) - len(self.context)
+        return len(self.context.potemplate) - len(self.context)
 
     def editSubmit(self):
         if "SUBMIT" in self.request.form:
@@ -497,7 +507,7 @@ class ViewSearchResults:
 class ViewPOExport:
     def __call__(self):
         pofile = self.context
-        poExport = POExport(pofile.poTemplate)
+        poExport = POExport(pofile.potemplate)
         languageCode = pofile.language.code
         exportedFile = poExport.export(languageCode)
 
@@ -512,7 +522,7 @@ class ViewMOExport:
 
     def __call__(self):
         pofile = self.context
-        poExport = POExport(pofile.poTemplate)
+        poExport = POExport(pofile.potemplate)
         languageCode = pofile.language.code
         exportedFile = poExport.export(languageCode)
 
@@ -617,9 +627,12 @@ class TranslatePOTemplate:
                 # As we don't have teh pofile, the completeness is 0
                 self.completeness[language.code] = 0
             else:
-                self.pluralForms[language.code] = pofile.pluralForms
-                self.completeness[language.code] = \
-                    float(pofile.translatedCount()) / len(pofile.poTemplate) * 100
+                self.pluralForms[language.code] = pofile.pluralforms
+                try:
+                    self.completeness[language.code] = \
+                        float(pofile.translatedCount()) / len(pofile.potemplate) * 100
+                except ZeroDivisionError:
+                    self.completeness[language.code] = 0
 
         self.badLanguages = [ all_languages[x] for x in self.pluralForms
             if self.pluralForms[x] is None ]
@@ -752,6 +765,9 @@ class TranslatePOTemplate:
         }
 
     def _messageSet(self, set):
+        # XXX: Carlos Perello Marin 18/10/04: If a msgset does not have any
+        # sighting this code will fail, it should never happens so it's not a
+        # priority bug, but we should try to be smart about it.
         messageIDs = set.messageIDs()
         isPlural = len(list(messageIDs)) > 1
         messageID = self._messageID(messageIDs[0], set.flags())
@@ -773,9 +789,9 @@ class TranslatePOTemplate:
             'messageID' : messageID,
             'messageIDPlural' : messageIDPlural,
             'sequence' : set.sequence,
-            'fileReferences': set.fileReferences,
-            'commentText' : set.commentText,
-            'sourceComment' : set.sourceComment,
+            'fileReferences': set.filereferences,
+            'commentText' : set.commenttext,
+            'sourceComment' : set.sourcecomment,
             'translations' : translations,
         }
 

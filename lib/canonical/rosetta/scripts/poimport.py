@@ -8,8 +8,7 @@ from zope.component.tests.placelesssetup import PlacelessSetup
 from sqlobject.dbconnection import Transaction
 
 import canonical.lp
-from canonical.launchpad.database import RosettaPerson, RosettaPOTemplate, \
-    RosettaProduct
+from canonical.launchpad.database import Person, POTemplate, Product
 from canonical.launchpad.database import ProjectSet
 from canonical.database.sqlbase import SQLBase
 from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
@@ -43,14 +42,14 @@ class PODBBridge(PlacelessSetup):
         languageCode=None):
         try:
             project = ProjectSet()[projectName]
-            product = RosettaProduct.selectBy(projectID = project.id,
+            product = Product.selectBy(projectID = project.id,
                                               name=productName)[0]
         except (IndexError, KeyError):
             import sys
             t, e, tb = sys.exc_info()
             raise t, "Couldn't find record in database", tb
         try:
-            poTemplate = RosettaPOTemplate.selectBy(productID = product.id,
+            poTemplate = POTemplate.selectBy(productID = product.id,
                                                     name=poTemplateName)[0]
         except IndexError:
             # XXX: should use Product.newPOTemplate when it works
@@ -58,19 +57,19 @@ class PODBBridge(PlacelessSetup):
                 import sys
                 t, e, tb = sys.exc_info()
                 raise t, "Couldn't find record in database", tb
-            poTemplate = RosettaPOTemplate(product=product,
+            poTemplate = POTemplate(product=product,
                                            name=poTemplateName,
                                            title=poTemplateName, # will have to be edited
                                            description=poTemplateName, # will have to be edited
                                            path=fileHandle.name,
-                                           isCurrent=True,
-                                           dateCreated='NOW',
+                                           iscurrent=True,
+                                           datecreated='NOW',
                                            copyright='XXX: FIXME',
                                            priority=2, # XXX: FIXME
-                                           branch=1, # XXX: FIXME
-                                           license=1, # XXX: FIXME
-                                           messageCount=0,
-                                           owner=person)
+                                           branchID=1, # XXX: FIXME
+                                           licenseID=1, # XXX: FIXME
+                                           messagecount=0,
+                                           ownerID=person.id)
         if languageCode is None:
             # We are importing a POTemplate
             importer = TemplateImporter(poTemplate, None)
@@ -86,9 +85,9 @@ class PODBBridge(PlacelessSetup):
     def update_stats(self, projectName, productName, poTemplateName, languageCode):
         try:
             project = DBProjects()[projectName]
-            product = RosettaProduct.selectBy(projectID = project.id,
+            product = Product.selectBy(projectID = project.id,
                                               name=productName)[0]
-            poTemplate = RosettaPOTemplate.selectBy(productID = product.id,
+            poTemplate = POTemplate.selectBy(productID = product.id,
                                                     name=poTemplateName)[0]
             poFile = poTemplate.poFile(languageCode)
         except (IndexError, KeyError):
@@ -150,7 +149,7 @@ if __name__ == '__main__':
         print "Connecting to database..."
         bridge = PODBBridge()
         in_f = file(options.file, 'rU')
-        person = RosettaPerson.get(int(options.owner))
+        person = Person.get(int(options.owner))
         try:
             print "Importing %s ..." % options.file
             bridge.imports(person, in_f, options.project, options.product,

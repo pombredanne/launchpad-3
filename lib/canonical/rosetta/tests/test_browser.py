@@ -70,36 +70,36 @@ def adaptPrincipalToNoLanguagePerson(principal):
     return DummyPerson([])
 
 class DummyPOFile:
-    pluralForms = 4
+    pluralforms = 4
 
     def __init__(self, template):
-        self.poTemplate = template
+        self.potemplate = template
 
     def translatedCount(self):
         return 3
 
 
-class DummyMessageID:
+class DummyMsgID:
     msgid = "foo"
 
 
-class DummyPOMessageSet:
+class DummyPOTMsgSet:
     id = 1
     sequence = 1
-    fileReferences = 'fileReferences'
-    commentText = 'commentText'
-    sourceComment = 'sourceComment'
+    filereferences = 'fileReferences'
+    commenttext = 'commentText'
+    sourcecomment = 'sourceComment'
 
     def flags(self):
         return []
 
     def messageIDs(self):
-        return [DummyMessageID()]
+        return [DummyMsgID()]
 
     def translationsForLanguage(self, language):
         return ['bar']
 
-
+    
 class DummyPOTemplate:
     def poFile(self, language_code):
         self.language_code = language_code
@@ -110,7 +110,7 @@ class DummyPOTemplate:
             raise KeyError
 
     def __getitem__(self, key):
-        return [DummyPOMessageSet(), DummyPOMessageSet()]
+        return [DummyPOTMsgSet(), DummyPOTMsgSet()]
 
     def __len__(self):
         return 16

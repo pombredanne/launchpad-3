@@ -74,7 +74,16 @@ COMMENT ON COLUMN ProductRelease.productseries IS 'A pointer to the Product Seri
 /*
   Rosetta
 */
+-- POTMsgSet
+COMMENT ON TABLE POTMsgSet IS 'POTMsgSet: This table is stores a collection of msgids without their translations and all kind of information associated to that set of messages that could be found in a potemplate file.';
 
+COMMENT ON COLUMN POTMsgSet.primemsgid IS 'The id of a pomgsid that identify this message set.';
+COMMENT ON COLUMN POTMsgSet."sequence" IS 'The position of this message set inside the potemplate.';
+COMMENT ON COLUMN POTMsgSet.potemplate IS 'The potemplate where this message set is stored.';
+COMMENT ON COLUMN POTMsgSet.commenttext IS 'The comment text that is associated to this message set.';
+COMMENT ON COLUMN POTMsgSet.filereferences IS 'The list of files and their line number where this message set was extracted from.';
+COMMENT ON COLUMN POTMsgSet.sourcecomment IS 'The comment that was extracted from the source code.';
+COMMENT ON COLUMN POTMsgSet.flagscomment IS 'The flags associated with this set (like c-format).';
 
 
 /*

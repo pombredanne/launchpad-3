@@ -5,7 +5,15 @@
   </content>
 
   <content class="canonical.launchpad.database.POTemplate">
-    <allow interface="canonical.launchpad.interfaces.IPOTemplate"/>
+    <allow interface="canonical.launchpad.interfaces.IEditPOTemplate"/>
+  </content>
+
+  <content class="canonical.launchpad.database.POTMsgSet">
+    <allow interface="canonical.launchpad.interfaces.IEditPOTMsgSet"/>
+  </content>
+
+  <content class="canonical.launchpad.database.POMsgID">
+    <allow interface="canonical.launchpad.interfaces.IPOMsgID"/>
   </content>
 
   <content class="canonical.launchpad.database.POFile">
@@ -14,18 +22,14 @@
         set_attributes="header pluralForms"/>
   </content>
 
-  <content class="canonical.launchpad.database.POMessageSet">
-    <allow interface="canonical.launchpad.interfaces.IEditPOTemplateOrPOFileMessageSet"/>
+  <content class="canonical.launchpad.database.POMsgSet">
+    <allow interface="canonical.launchpad.interfaces.IEditPOMsgSet"/>
   </content>
 
   <content class="canonical.launchpad.database.POTranslationSighting">
     <allow interface="canonical.launchpad.interfaces.IPOTranslationSighting"/>
   </content>
-
-  <content class="canonical.launchpad.database.POMessageID">
-    <allow interface="canonical.launchpad.interfaces.IPOMessageID"/>
-  </content>
-
+  
   <content class="canonical.launchpad.database.POTranslation">
     <allow interface="canonical.launchpad.interfaces.IPOTranslation"/>
   </content>
