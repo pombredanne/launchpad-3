@@ -56,7 +56,9 @@ class BugTaskSet:
             task = self.table.select(self.table.q.id == id)[0]
             if task.product:
                 # upstream task
-                if principal and principal.id == task.product.owner.id:
+                if principal and (
+                    (principal.id == task.product.owner.id) or
+                    (task.assignee and principal.id == task.assignee.id)):
                     mark_as_editable_upstream_task(task)
                 else:
                     mark_as_readonly_upstream_task(task)

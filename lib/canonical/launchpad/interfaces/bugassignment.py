@@ -7,8 +7,9 @@ from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.lp import dbschema
+from canonical.launchpad.interfaces import IHasProductAndAssignee
 
-class IEditableUpstreamBugTask(Interface):
+class IEditableUpstreamBugTask(IHasProductAndAssignee):
     pass
 
 class IReadOnlyUpstreamBugTask(Interface):

@@ -2,6 +2,42 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-06 21:31:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1156
+
+    Summary:
+      important Malone security fixes
+    Revision:
+      launchpad--devel--0--patch-1156
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-266
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-267
+       improve docstrings in AuthorizationBase as per discussion with SteveA, and rename EditByProductMaintainer to EditByProductOwner for clarity.
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-268
+       fix upstream task edit screen so that maintainer /and/ assignee (if there is one) can edit the task
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/bugassignment.py
+     lib/canonical/launchpad/interfaces/bugassignment.py
+     lib/canonical/launchpad/interfaces/launchpad.py
+     lib/canonical/launchpad/interfaces/milestone.py
+     lib/canonical/launchpad/interfaces/product.py
+     lib/canonical/launchpad/security.py
+     lib/canonical/launchpad/security.zcml
+     lib/canonical/launchpad/zcml/bugassignment.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-266
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-267
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-268
+
+
 2005-01-06 07:59:05 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1155
 
     Summary:

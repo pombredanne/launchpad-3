@@ -3,7 +3,9 @@ _ = MessageIDFactory('launchpad')
 from zope.interface import Interface
 from zope.schema import Choice, TextLine
 
-class IMilestone(Interface):
+from canonical.launchpad.interfaces import IHasProduct
+
+class IMilestone(IHasProduct):
     product = Choice(
         title = _("Product"),
         description = _("The product to which this milestone is associated"),

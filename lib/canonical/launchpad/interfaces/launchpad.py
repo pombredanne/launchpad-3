@@ -134,6 +134,12 @@ class IHasOwner(Interface):
     owner = Attribute("The object's owner, which is an IPerson.")
 
 
+class IHasAssignee(Interface):
+    """An object that has an assignee."""
+
+    assignee = Attribute("The object's assignee, which is an IPerson.")
+
+
 class ILaunchBag(Interface):
     site = Attribute('The application object, or None')
     person = Attribute('Person, or None')

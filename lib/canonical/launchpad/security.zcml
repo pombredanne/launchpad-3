@@ -43,19 +43,14 @@
       provides="canonical.launchpad.interfaces.IAuthorization"
       for="canonical.launchpad.interfaces.IMilestone"
       name="launchpad.Edit"
-      factory="canonical.launchpad.security.EditByProductMaintainer"
+      factory="canonical.launchpad.security.EditByProductOwner"
       />
 
-  <!-- XXX: Brad Bollenbach, 2004-01-04: Tasks should be editable only by the
-  respective product or package maintainers, but I haven't yet come up with a
-  way to make an edit form an edit form for a maintainer, and just a display
-  form for a not-maintainer.
   <adapter
       provides="canonical.launchpad.interfaces.IAuthorization"
-      for="canonical.launchpad.interfaces.IUpstreamBugTask"
+      for="canonical.launchpad.interfaces.IEditableUpstreamBugTask"
       name="launchpad.Edit"
-      factory="canonical.launchpad.security.EditByProductMaintainer"
+      factory="canonical.launchpad.security.EditByProductOwnerOrAssignee"
       />
-  -->
 
 </configure>
