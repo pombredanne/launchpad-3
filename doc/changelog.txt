@@ -2,6 +2,40 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-21 13:20:08 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1466
+
+    Summary:
+      Fix canonical/database/ftests/test*. They were ignoring the PGHOST env var when running mktap.
+    Revision:
+      launchpad--devel--0--patch-1466
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-196
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-197
+       Fix canonical/database/ftests/test*. They were ignoring libpq (specially PGHOST) variables when forwarding ports with mktap
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-198
+       Fix my changes in database/ftests/*
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-199
+       merge from rf
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/database/ftests/__init__.py
+     lib/canonical/database/ftests/test_disconnects.txt
+     lib/canonical/database/ftests/test_reconnector.txt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-196
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-197
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-198
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-199
+
+
 2005-03-21 10:17:22 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1465
 
     Summary:

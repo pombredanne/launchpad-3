@@ -6,8 +6,13 @@ Make a TCP proxy to postgres. Note that the twisted version needs to match
 the Python version.
 
     >>> import os, sys
+    >>> import canonical.lp
+    >>> from canonical.database.ftests import getDBHost
+    >>> dbhost = getDBHost()
     >>> ver = sys.version[:3]
-    >>> os.system('mktap%s portforward --port 5555 --dest_port 5432' % ver)
+    >>> cmd = ('mktap%s portforward --port 5555 --dest_port 5432 '
+    ...        '--host %s' % (ver, dbhost))
+    >>> os.system(cmd)
     0
     >>> os.system('twistd%s -of portforward.tap' % ver)
     0
@@ -19,9 +24,9 @@ Wait for the proxy to start (this is a hack).
 Connect to postgres via the proxy
 
     >>> import psycopg
-    >>> import canonical.lp
-    >>> conn = psycopg.connect('dbname=%s user=%s host=localhost port=5555' % (
-    ...     canonical.lp.dbname, canonical.lp.dbuser))
+    >>> dsn = 'dbname=%s user=%s host=localhost port=5555' % (
+    ...     canonical.lp.dbname, canonical.lp.dbuser)
+    >>> conn = psycopg.connect(dsn)
 
 Check that the connection is working normally
 
