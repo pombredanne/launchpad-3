@@ -146,13 +146,23 @@
 
           <fieldset>
 	     <legend>Bug Count</legend>
-	     <div class="dummy">
+	     <div>
 	        <table>
-		<tr><td>All bugs</td><td>5</td></tr>
-		<tr><td>Release Critical</td><td>0</td></tr>	
-		<tr><td>Important and Normal</td><td>3</td></tr>
-		<tr><td>Minor and Wishlist</td><td>2</td></tr>
-		<tr><td>Fixed and Pending</td><td>0</td></tr>
+		<tr><td>All bugs</td>
+		    <td tal:content="python:context.bugsCounter[0]">N</td>
+		</tr>
+		<tr><td>Release Critical</td>
+		    <td tal:content="python:context.bugsCounter[1]">N</td>
+                </tr>	
+		<tr><td>Important and Normal</td>
+		    <td tal:content="python:context.bugsCounter[2]">N</td>
+		</tr>
+		<tr><td>Minor and Wishlist</td>
+		    <td tal:content="python:context.bugsCounter[3]">N</td>
+		</tr>
+		<tr><td>Fixed and Pending</td>
+		    <td tal:content="python:context.bugsCounter[4]">N</td>
+		</tr>
 		</table>
 	     </div>
 	  </fieldset>    

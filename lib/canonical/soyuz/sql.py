@@ -189,6 +189,18 @@ class DistroReleaseSourceApp(object):
         self.release = release
         self.sourcepackage = sourcepackage
 
+        self.bugsCounter = self._countBugs()
+
+    def _countBugs(self):
+        all, critical, important, \
+        normal, minor, wishlist, \
+        fixed, pending = self.sourcepackage.bugsCounter()
+
+        return (all, critical, important + normal,
+                minor + wishlist, fixed + pending)
+        
+
+
     def __getitem__(self, version):
         return DistroReleaseSourceReleaseApp(self.sourcepackage, version,
                                              self.release)

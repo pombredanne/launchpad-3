@@ -133,7 +133,8 @@ class IDistroReleaseSourceApp(Interface):
     proposed = Attribute("Proposed source package release")
     lastversions = Attribute("Last Release Versions")
     currentversions = Attribute("Current Release Versions")
-    
+    bugsCounter = Attribute("A tuple of bug counters")
+
     def __getitem__(name):
         """Retrieve a package release by version."""
 

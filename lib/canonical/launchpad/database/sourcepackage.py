@@ -51,6 +51,28 @@ class SourcePackage(SQLBase):
             'SourcePackageRelease', joinColumn='sourcepackage'
             )
     ####
+    def bugsCounter(self):
+        from canonical.launchpad.database.bugassignment import SourcePackageBugAssignment
+
+        get = SourcePackageBugAssignment.selectBy
+        all = len(self.bugs)
+        critical = get(severity=int(dbschema.BugSeverity.CRITICAL),
+                       sourcepackageID = self.id).count()
+        important = get(severity = int(dbschema.BugSeverity.MAJOR),
+                       sourcepackageID = self.id).count()
+        normal = get(severity = int(dbschema.BugSeverity.NORMAL),
+                       sourcepackageID = self.id).count()
+        minor = get(severity = int(dbschema.BugSeverity.MINOR),
+                       sourcepackageID = self.id).count()
+        wishlist = get(severity = int(dbschema.BugSeverity.WISHLIST),
+                       sourcepackageID = self.id).count()
+        fixed = get(bugstatus = int(dbschema.BugAssignmentStatus.CLOSED),
+                       sourcepackageID = self.id).count()
+        pending = get(bugstatus = int(dbschema.BugAssignmentStatus.OPEN),
+                       sourcepackageID = self.id).count()
+
+        return (all, critical, important, normal, minor, wishlist, fixed, pending)
+
 
     def name(self):
         return self.sourcepackagename.name

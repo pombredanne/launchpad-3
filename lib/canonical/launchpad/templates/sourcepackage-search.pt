@@ -28,15 +28,17 @@
 
    <h4>Search Results</h4>
 
-  <tal:block tal:define="bn view/searchBinariesBatchNavigator;
+  <tal:block tal:define="bn view/searchSourcesBatchNavigator;
                          prev_url bn/prevBatchURL;
-                         next_url bn/nextBatchURL;">
+                         next_url bn/nextBatchURL;"
+			 tal:condition="bn">
 
-  <table>
+  <div tal:define="batch python:list(bn.currentBatch())">
+  <table tal:condition="batch">
     <tr>
-      <th tal:condition="bn">Binary Packages</th>
+      <th>Source Packages</th>
     </tr>
-    <tr tal:repeat="release python:list(bn.currentBatch())">      
+    <tr tal:repeat="release batch">      
       <tal:dummy tal:define="package release">
       <td><a tal:content="string: ${package/name} : ${package/shortdesc}"
              tal:attributes="href package/name">PACKAGE</a>
@@ -45,7 +47,7 @@
     </tr>    
     <tr>
     <td align="center">
-    <fieldset>
+    <fieldset tal:condition="python:prev_url or next_url">
     <div>
     	  <table>
 	  <tr>
@@ -68,6 +70,10 @@
     </td>
     </tr>
   </table>
+  <b tal:condition="not:batch">
+    <i>No matches for your search</i>
+  </b>
+  </div>
   </tal:block>
 
 
