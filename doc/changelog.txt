@@ -2,6 +2,49 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-31 15:26:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1265
+
+    Summary:
+      Adding a defaultView for LoginToken, which redirects to the right page after checking the tokentype. This way we don't have to send URLs with +validate, +newaccount, etc, and thus making the URL smaller.
+    Revision:
+      launchpad--devel--0--patch-1265
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-110
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-111
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-112
+       Adding a defaultView for LoginToken, which redirects to the right page after checking the tokentype. This way we don't have to send URLs with +validate, +newaccount, etc, and thus making the URL smaller.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-113
+       Adding template for LoginToken's defaultView
+    
+
+    new files:
+     lib/canonical/launchpad/templates/.arch-ids/logintoken-index.pt.id
+     lib/canonical/launchpad/templates/logintoken-index.pt
+
+    modified files:
+     doc/changelog.txt lib/canonical/foaf/configure.zcml
+     lib/canonical/launchpad/browser/logintoken.py
+     lib/canonical/launchpad/database/logintoken.py
+     lib/canonical/launchpad/pagetests/standalone/xx-launchpad-createaccount-and-login.txt
+     lib/canonical/launchpad/templates/forgottenpassword.txt
+     lib/canonical/launchpad/templates/newuser-email.txt
+     lib/canonical/launchpad/templates/validate-email.txt
+     lib/canonical/launchpad/zcml/logintoken.zcml
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-110
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-111
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-112
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-113
+
+
 2005-01-31 10:30:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1264
 
     Summary:

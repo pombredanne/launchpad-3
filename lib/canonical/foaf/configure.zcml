@@ -29,12 +29,12 @@
       permission="zope.Public"
       name="people" />
 
-  <!-- This view registers 'logintoken' as a suburl of RootObject/foaf/. -->
+  <!-- This view registers 'token' as a suburl of RootObject/foaf/. -->
   <browser:suburl
       for="canonical.foaf.FOAFApplication"
       utility="canonical.launchpad.interfaces.ILoginTokenSet"
       permission="zope.Public"
-      name="logintoken" />
+      name="token" />
 
   <!-- pages for the foaf application -->
   <browser:pages 

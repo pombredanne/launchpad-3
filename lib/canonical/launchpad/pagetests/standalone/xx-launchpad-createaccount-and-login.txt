@@ -57,8 +57,9 @@
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
   >>> msg = email.message_from_string(raw_msg)
   >>> body = msg.get_payload()
-  >>> link = re.findall(r'http.*\+newaccount', body)[0]
-  >>> path = re.sub(r'.*9000', '', link)
+  >>> link = re.findall(r'http.*/token/.*', body)[0]
+  >>> token = re.sub(r'.*token/', '', link)
+  >>> base_path = '/foaf/token/%s' % token
 
   Check if the email was sent to the right address.
 
@@ -66,6 +67,18 @@
   ['foo@baz.com']
 
 
+  >>> print http(r"""
+  ... GET %s HTTP/1.1
+  ... """ % base_path)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...<h1>You're being redirected</h1>
+  ...
+
+
+  >>> path = '%s/+newaccount' % base_path
   >>> print http(r"""
   ... GET %s HTTP/1.1
   ... """ % path)
