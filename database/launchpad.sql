@@ -9,7 +9,6 @@
         - re-evalutate some of the "text" field types, they might need
 	  to be "bytea"
 	  unless we can guarantee utf-8
-	- add sample data for the schemas
 	- make sure names are only [a-z][0-9][-.+] and can only start
 	  with [a-z]
 	- set DEFAULT's for datestamps (now) and others
@@ -50,6 +49,8 @@
 	  - move add POMsgSet.current
 	  - add POTranslationSighting.deprecated
 	  - rename POTranslationSighting.lastseen -> .lasttouched
+	- make Project.product NOT NULL
+	- add stats gathering to POTemplate and POFile
   v0.97:
         - rename Membership.label to Membership.role
 	- rename EmailAddress.label to EmailAddress.status
@@ -1260,80 +1261,6 @@ CREATE TABLE TranslationFilter (
 
 
 /*
- The TranslationEffort table. Stores information about each active
- translation effort. Note, a translationeffort is an aggregation of
- resources. For example, the Gnome Translation Project, which aims to
- translate the PO files for many gnome applications. This is a point
- for the translation team to rally around.
-*/
-CREATE TABLE TranslationEffort (
-  id                    serial PRIMARY KEY,
-  owner                 integer NOT NULL REFERENCES Person,
-  project               integer NOT NULL REFERENCES Project,
-  name                  text NOT NULL UNIQUE,
-  title                 text NOT NULL,
-  description           text NOT NULL
-);
-
-
-
-
-
-/*
-  POTInheritance
-  A handle on an inheritance sequence for POT files.
-CREATE TABLE POTInheritance (
-  id                    serial PRIMARY KEY,
-  title                 text,
-  description           text
-);
-*/
-
-
-
-/*
-  License
-  A license. We need quite a bit more in the long term
-  to track licence compatibility etc.
-*/
-CREATE TABLE License (
-  id                    serial PRIMARY KEY,
-  legalese              text NOT NULL
-);
-
-
-
-/*
-  POTemplate
-  A PO Template File, which is the first thing that Rosetta will set
-  about translating.
-*/
-CREATE TABLE POTemplate (
-  id                    serial PRIMARY KEY,
-  project               integer NOT NULL REFERENCES Project,
-  product               integer REFERENCES Product,
-  branch                integer REFERENCES Branch,
-  changeset             integer REFERENCES Changeset,
-  name                  text NOT NULL UNIQUE,
-  title                 text NOT NULL,
-  description           text NOT NULL,
-  copyright             text NOT NULL,
-  license               integer NOT NULL REFERENCES License,
-  datecreated           timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  path                  text NOT NULL,
-  iscurrent             boolean NOT NULL,
-  owner                 integer REFERENCES Person,
-  -- EITHER branch OR changeset:
-  CHECK ( NOT ( branch IS NULL AND changeset IS NULL ) ),
-  CHECK ( NOT ( branch IS NOT NULL AND changeset IS NOT NULL ) ),
-  -- make sure, if we refer to a Product, that it is from
-  -- the same Project
-  FOREIGN KEY ( product, project ) REFERENCES Product ( id, project )
-);
-
-
-
-/*
   POMsgID
   A PO or POT File MessageID
 */
@@ -1398,12 +1325,71 @@ CREATE TABLE SpokenIn (
 
 
 /*
+  POTInheritance
+  A handle on an inheritance sequence for POT files.
+CREATE TABLE POTInheritance (
+  id                    serial PRIMARY KEY,
+  title                 text,
+  description           text
+);
+*/
+
+
+
+/*
+  License
+  A license. We need quite a bit more in the long term
+  to track licence compatibility etc.
+*/
+CREATE TABLE License (
+  id                    serial PRIMARY KEY,
+  legalese              text NOT NULL
+);
+
+
+
+/*
+  POTemplate
+  A PO Template File, which is the first thing that Rosetta will set
+  about translating.
+*/
+CREATE TABLE POTemplate (
+  id                    serial PRIMARY KEY,
+  project               integer NOT NULL REFERENCES Project,
+  product               integer NOT NULL REFERENCES Product,
+  branch                integer REFERENCES Branch,
+  -- see Translation Priority schema
+  priority              integer NOT NULL,
+  changeset             integer REFERENCES Changeset,
+  name                  text NOT NULL UNIQUE,
+  title                 text NOT NULL,
+  description           text NOT NULL,
+  copyright             text NOT NULL,
+  license               integer NOT NULL REFERENCES License,
+  datecreated           timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  path                  text NOT NULL,
+  iscurrent             boolean NOT NULL,
+  -- the total number of POMsgSet's associated with this POTemplate
+  -- when we last parsed the Template.
+  messagecount          integer NOT NULL,
+  owner                 integer REFERENCES Person,
+  -- EITHER branch OR changeset:
+  CHECK ( NOT ( branch IS NULL AND changeset IS NULL ) ),
+  CHECK ( NOT ( branch IS NOT NULL AND changeset IS NOT NULL ) ),
+  -- make sure, if we refer to a Product, that it is from
+  -- the same Project
+  FOREIGN KEY ( product, project ) REFERENCES Product ( id, project )
+);
+
+
+
+/*
   POFile
   A PO File. This is a language-specific set of translations.
 */
 CREATE TABLE POFile (
   id                   serial PRIMARY KEY,
-  potemplate              integer NOT NULL REFERENCES POTemplate,
+  potemplate           integer NOT NULL REFERENCES POTemplate,
   language             integer NOT NULL REFERENCES Language,
   title                text,
   description          text,
@@ -1411,7 +1397,17 @@ CREATE TABLE POFile (
   header               text,  -- the contents of the NULL msgstr
   lasttranslator       integer REFERENCES Person,
   license              integer REFERENCES License,
-  completeness         integer,  -- between 0 and 100
+  -- the number of msgsets matched to the potemplate that have a
+  -- non-fuzzy translation in the PO file when we last parsed it
+  currentcount         integer NOT NULL,
+  -- the number of msgsets where we have a newer translation in
+  -- rosetta than the one in the PO file when we last parsed it
+  updatescount         integer NOT NULL,
+  -- the number of msgsets where we have a translation in rosetta
+  -- but there was no translation in the PO file when we last parsed it
+  rosettacount         integer NOT NULL,
+  -- the timestamp when we last parsed this PO file
+  lastparsed           timestamp,
   owner                integer REFERENCES Person,
   -- the number of plural forms needed to translate this
   -- pofile.
@@ -1528,6 +1524,24 @@ CREATE TABLE POComment (
 
 
 /*
+ The TranslationEffort table. Stores information about each active
+ translation effort. Note, a translationeffort is an aggregation of
+ resources. For example, the Gnome Translation Project, which aims to
+ translate the PO files for many gnome applications. This is a point
+ for the translation team to rally around.
+*/
+CREATE TABLE TranslationEffort (
+  id                    serial PRIMARY KEY,
+  owner                 integer NOT NULL REFERENCES Person,
+  project               integer NOT NULL REFERENCES Project,
+  name                  text NOT NULL UNIQUE,
+  title                 text NOT NULL,
+  description           text NOT NULL
+);
+
+
+
+/*
   TranslationeffortPOTemplateRelationship
   A translation project incorporates a POTfile that is under translation.
   The inheritance pointer allows this project to specify a custom
@@ -1535,7 +1549,9 @@ CREATE TABLE POComment (
 */
 CREATE TABLE TranslationeffortPOTemplateRelationship (
   translationeffort  integer NOT NULL REFERENCES TranslationEffort ON DELETE CASCADE,
-  potemplate            integer NOT NULL REFERENCES POTemplate,
+  potemplate         integer NOT NULL REFERENCES POTemplate,
+  -- see Translation Priority schema
+  priority           integer NOT NULL,
   UNIQUE (translationeffort , potemplate)
 );
 
