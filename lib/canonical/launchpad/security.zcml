@@ -1,0 +1,21 @@
+<!-- XXX: This file will be going away very soon, once the security changes
+          are complete.
+          - Steve Alexander, Mon Dec 13 17:39:46 UTC 2004
+  -->
+<configure xmlns="http://namespaces.zope.org/zope">
+
+  <adapter
+      provides="canonical.launchpad.interfaces.IAuthorization"
+      for="zope.interface.Interface"
+      name="launchpad.Admin"
+      factory="canonical.launchpad.security.AdminByAdminsTeam"
+      />
+
+  <adapter
+      provides="canonical.launchpad.interfaces.IAuthorization"
+      for="canonical.launchpad.interfaces.IHasOwner"
+      name="launchpad.Edit"
+      factory="canonical.launchpad.security.EditByOwners"
+      />
+
+</configure>

@@ -15,7 +15,7 @@ __all__ = ('ILaunchpadApplication', 'IMaloneApplication',
            'IPasswordEncryptor', 'IReadZODBAnnotation',
            'IWriteZODBAnnotation', 'IZODBAnnotation',
            'IAuthorization', 'IObjectAuthorization',
-           'IOpenLaunchBag', 'ILaunchBag')
+           'IHasOwner', 'IOpenLaunchBag', 'ILaunchBag')
 
 class ILaunchpadApplication(Interface):
     """Marker interface for a launchpad application.
@@ -119,6 +119,12 @@ class IAuthorization(Interface):
 
         Otherwise returns False.
         """
+
+
+class IHasOwner(Interface):
+    """An object that has an owner."""
+
+    owner = Attribute("The object's owner.  This object is an IPerson.")
 
 
 class ILaunchBag(Interface):
