@@ -2,6 +2,48 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-03 13:22:28 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1144
+
+    Summary:
+      Added a draft of the legal link, small updates to my script to upload po/pot files and more plural forms additions into our database
+    Revision:
+      launchpad--devel--0--patch-1144
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-454
+       We try the other modules don't mind if they are not using cdbs (at this moment is a closed list of modules not the whole archive)
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-455
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-456
+       Added more plural forms to our database
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-457
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-458
+       Added the initial draft for the legal link
+    
+
+    new files:
+     lib/canonical/launchpad/templates/.arch-ids/launchpad-legal.pt.id
+     lib/canonical/launchpad/templates/launchpad-legal.pt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/configure.zcml
+     lib/canonical/rosetta/scripts/import_from_apt_ugly_hack.py
+     lib/canonical/rosetta/scripts/plural-form-data
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-454
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-455
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-456
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-457
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-458
+
+
 2004-12-30 02:17:34 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1143
 
     Summary:

@@ -1,0 +1,48 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+    <title metal:fill-slot="title">Launchpad - Legalese</title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>Legalese</h1>
+
+        <p>Terms and conditions associated with use of this web site.</p>
+
+    <h2>General Copyright</h2>
+
+        <p>All data that is made available on this website are the property of 
+        someone - the author in the case of content produced elsewhere and 
+        reproduced here with permission, or Canonical or its content 
+        suppliers. Before you use this content in some way please take care 
+        to ensure that you have the relevant rights and permissions from 
+        the copyright holder.</p>
+
+    <h2>Rosetta Copyright</h2>
+
+        <p>All translations imported from external sources are owned by the
+        translator that did it and it's under the same license that the
+        package where that translation belongs.</p>
+
+        <p>All translations submitted into Rosetta are owned by the
+        translator that introduced it, has the same license that the package
+        where that translation belongs and also, by using Rosetta, the
+        translator gives to Canonical Ltd. the right to use it in other
+        packages with other licenses that could be incompatible with the
+        original license for those translations (for instance Python license
+        and GPL).</p>
+
+</div>
+
+</body>
+</html>
