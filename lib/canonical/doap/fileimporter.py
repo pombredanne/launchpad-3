@@ -81,3 +81,16 @@ class ProductReleaseImporter:
             'manifest IS NULL AND product = %d' % self.product
         )
 
+    def getLastManifest(self):
+        """Return the last manifest for this product, or None."""
+        from sourcerer.deb.version import deb_cmp
+
+        releases = list(ProductRelease.select(
+            'manifest IS NOT NULL AND product = %d' % self.product
+        ))
+        if releases:
+            releases.sort(lambda x,y: deb_cmp(x.version, y.version))
+            return releases[-1].manifest
+        else:
+            return None
+

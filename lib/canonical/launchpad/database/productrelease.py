@@ -28,6 +28,8 @@ class ProductRelease(SQLBase):
     changelog = StringCol(notNull=False, default=None)
     owner = ForeignKey(dbName="owner", foreignKey="Person", notNull=True)
     productseries = ForeignKey(dbName='productseries', foreignKey='ProductSeries')
+    
+    files = MultipleJoin('ProductReleaseFile', joinColumn='productrelease')
 
 
 class ProductReleaseFile(SQLBase):

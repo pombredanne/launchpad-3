@@ -23,4 +23,5 @@ class IProductRelease(Interface):
     owner = Attribute("The owner's IPerson")
     productseries = Int(title=_('Product Series'))
 
-
+    files = Attribute(_('Iterable of product release files'))
+    
