@@ -100,7 +100,7 @@ class MessageProxy(POMessage):
         self._msgset = msgset
 
     def _get_msgid(self):
-        return self._msgset.primeMessageID_.text
+        return self._msgset.primeMessageID_.msgid
     def _set_msgid(self):
         raise DatabaseConstraintError("The primary message ID of a messageset can't be changed"
                                       " once it's in the database.  Create a new messageset"
@@ -110,7 +110,7 @@ class MessageProxy(POMessage):
     def _get_msgidPlural(self):
         msgids = list(self._msgset.messageIDs())
         if len(msgids) >= 2:
-            return msgids[1].text
+            return msgids[1].msgid
         return None
     def _set_msgidPlural(self, value):
         # do we already have one?
@@ -207,7 +207,11 @@ class TemplateImporter(object):
         except KeyError:
             msgset = self.potemplate.makeMessageSet(msgid)
         else:
-            msgset.getMessageIDSighting(0).touch()
+            try:
+                msgset.getMessageIDSighting(0).touch()
+            except KeyError:
+                # If we don't have any MessageIDSighting, we shouldn't fail.
+                pass
         self.len += 1
         msgset.sequence = self.len
         proxy = MessageProxy(msgset)
@@ -239,15 +243,15 @@ class POFileImporter(object):
         "Import a file (or similar object)"
         self.pofile.expireAllMessages()
         # what policy here? small bites? lines? how much memory do we want to eat?
-        parser.write(filelike.read())
-        parser.finish()
+        self.parser.write(filelike.read())
+        self.parser.finish()
         if not parser.header:
             raise POInvalidInputError('PO file has no header', 0)
         self.pofile.set(
-            topComment=parser.header.commentText.encode('utf-8'),
-            header=parser.header.msgstr.encode('utf-8'),
-            headerFuzzy='fuzzy' in parser.header.flags,
-            pluralforms=parser.header.nplurals)
+            topComment=self.parser.header.commentText.encode('utf-8'),
+            header=self.parser.header.msgstr.encode('utf-8'),
+            headerFuzzy='fuzzy' in self.parser.header.flags,
+            pluralforms=self.parser.header.nplurals)
 
     def __call__(self, msgid, **kw):
         "Instantiate a single message/messageset"

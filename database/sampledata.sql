@@ -263,15 +263,27 @@ INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Carlos Perel
 INSERT INTO Project ( owner, name, displayname, title, shortdesc, description, homepageurl )
 VALUES ((SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
 	'gnome', 'GNOME', 'The GNOME Project', 'foo', 'bar', 'http://www.gnome.org/' );
+INSERT INTO Project ( owner, name, displayname, title, shortdesc, description, homepageurl )
+VALUES ((SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
+	'iso-codes', 'iso-codes', 'iso-codes', 'foo', 'bar', 'http://www.gnome.org/' );
 INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, description, homepageurl )
 VALUES ((SELECT id FROM Project WHERE name='gnome'),
 	(SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
 	'evolution', 'Evolution', 'The Evolution Groupware', 'foo', 'bar', 'http://www.novell.com/' );
+INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, description, homepageurl )
+VALUES ((SELECT id FROM Project WHERE name='iso-codes'),
+	(SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
+	'iso-codes', 'iso-codes', 'The iso-codes', 'foo', 'bar', 'http://www.novell.com/' );
 INSERT INTO ArchArchive (name, title, description, visible)
 VALUES ('gnome', 'GNOME', 'The GNOME Project', false);
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('iso-codes', 'iso-codes', 'The iso-codes', false);
 INSERT INTO ArchNamespace (archarchive, category, branch, version, visible)
 VALUES ((SELECT id FROM ArchArchive WHERE name = 'gnome'), 'gnome', 'evolution',
 	'2.0', false);
+INSERT INTO ArchNamespace (archarchive, category, branch, version, visible)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'iso-codes'), 'iso-codes', 'iso-codes',
+	'0.35', false);
 INSERT INTO Branch (archnamespace, title, description, owner)
 VALUES ((SELECT id FROM ArchNamespace
 	 WHERE category = 'gnome' AND
@@ -279,7 +291,13 @@ VALUES ((SELECT id FROM ArchNamespace
 	       version = '2.0'),
 	'Evolution 2.0', 'text',
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'));
-
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchNamespace
+	 WHERE category = 'iso-codes' AND
+	       branch = 'iso-codes' AND
+	       version = '0.35'),
+	'Iso-codes 0.35', 'text',
+	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'));
 
 INSERT INTO License (legalese) VALUES ('GPL-2');
 
@@ -299,6 +317,22 @@ VALUES ((SELECT id FROM Product WHERE name = 'evolution'),
 	timestamp '2004-08-17 09:10',
 	'po/', TRUE, 3, 	
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'));
+
+INSERT INTO POTemplate (product, branch, priority, name, title,
+			description, copyright, license, datecreated,
+			path, iscurrent, messagecount, owner)
+VALUES ((SELECT id FROM Product WHERE name = 'iso-codes'),
+        (SELECT id FROM Branch
+	WHERE title = 'Iso-codes 0.35'),
+	2, 'iso_639',
+	'POT file for the iso_639 strings',
+	'I suppose we should create a long description here....',
+	'Copyright',
+	(SELECT id FROM License WHERE legalese = 'GPL-2'),
+	timestamp '2004-08-17 09:10',
+	'iso_639/', TRUE, 3, 	
+	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'));
+
 
 --  1
 INSERT INTO POMsgID (msgid) VALUES ('evolution addressbook');
@@ -643,6 +677,28 @@ VALUES ((SELECT id FROM POTemplate WHERE name = 'evolution-2.0'),
 	FALSE,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	2, 0, 1, 2);
+
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+		    lasttranslator, currentcount, updatescount, rosettacount,
+		    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'iso_639'),
+        (SELECT id FROM Language WHERE code = 'cy'),
+        '\n',
+        '\n',
+	FALSE,
+	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+	0, 0, 0, 0);
+
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+		    lasttranslator, currentcount, updatescount, rosettacount,
+		    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'iso_639'),
+        (SELECT id FROM Language WHERE code = 'es'),
+        '\n',
+        '\n',
+	FALSE,
+	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+	0, 0, 0, 0);
 
 INSERT INTO POTranslation (translation)
 VALUES ('libreta de direcciones de Evolution');

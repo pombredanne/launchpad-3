@@ -456,7 +456,11 @@ class POParser(object):
     def append(self):
         if self._partial_transl:
             for message in self.messages:
-                if message.msgid == self._partial_transl['msgid']:
+                # XXX: message.msgid should be always an unicode object. This
+                # is a temporal fix until Lalo fix it correctly.
+		# Disabled because breaks the unittests
+                #if unicode(message.msgid, self.header.charset) == self._partial_transl['msgid']:
+		if message.msgid == self._partial_transl['msgid']:
                     raise POInvalidInputError('Po file: duplicate msgid on line %d'
                                               % self._lineno)
             transl = self.translation_factory(header=self.header,
