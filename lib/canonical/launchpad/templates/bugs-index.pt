@@ -40,7 +40,7 @@
   <h1>Bugs</h1>
   <small tal:content="python:'displaying matching bugs ' + str(ass_batch.startNumber()) + ' to ' + str(ass_batch.endNumber()) + ' of ' + str(ass_batch.total())">displaying 1 to 20 of 42 </small><small> ::
       <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=unassigned&product=all&sourcepackage=all&search=Search&advanced=0">unassigned</a> .
-      <span tal:omit-tag="" tal:condition="logged_in"><a href="" tal:attributes="href string:${request/URL}/?status=10&status=20&assignee=${request/lp:person/name}&product=all&sourcepackage=all&search=Search&advanced=0">my todo list</a> .
+      <span tal:omit-tag="" tal:condition="logged_in"><a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=${request/lp:person/name}&product=all&sourcepackage=all&search=Search&advanced=0">my todo list</a> .
       </span><a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=all&product=all&sourcepackage=all&severity=50&search=Search">critical</a>
       <span tal:omit-tag="" tal:condition="logged_in">.
           <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=all&submitter=${request/lp:person/name}&product=all&sourcepackage=all&search=Search&advanced=0">submitted by me</a></span>
@@ -119,7 +119,7 @@
           <td tal:condition="request/lp:person">
             <a href=""
                tal:condition="product_name"
-               tal:attributes="onClick string:return accept('${bugid}/productassignments/${assignment/id}/+edit?field.bugstatus=Accepted&field.priority=$priority&field.severity=$severity&field.product=$project_name $product_name&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.assignee=${request/lp:person/name}&UPDATE_SUBMIT=Change', '$statusid', '$assigneeid', '$potential_assignee');">
+               tal:attributes="onClick string:return accept('${bugid}/productassignments/${assignment/id}/+edit?field.bugstatus=Accepted&field.priority=$priority&field.severity=$severity&field.product=$product_name&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.assignee=${request/lp:person/name}&UPDATE_SUBMIT=Change', '$statusid', '$assigneeid', '$potential_assignee');">
                 <small>accept</small>
             </a>
             <a href=""
@@ -130,7 +130,7 @@
             &nbsp;
             <a href=""
                tal:condition="product_name"
-               tal:attributes="onClick string:return reject('${bugid}/productassignments/${assignment/id}/+edit?field.bugstatus=Rejected&field.priority=$priority&field.severity=$severity&field.product=$project_name $product_name&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>reject</small>
+               tal:attributes="onClick string:return reject('${bugid}/productassignments/${assignment/id}/+edit?field.bugstatus=Rejected&field.priority=$priority&field.severity=$severity&field.product=$product_name&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>reject</small>
             </a>
             <a href=""
                tal:condition="package_name"
@@ -139,7 +139,7 @@
             &nbsp;
             <a href=""
                tal:condition="product_name"
-               tal:attributes="onClick string:return fixed('${bugid}/productassignments/${assignment/id}/+edit?field.bugstatus=Fixed&field.priority=$priority&field.severity=$severity&field.product=$project_name $product_name&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>fixed</small>
+               tal:attributes="onClick string:return fixed('${bugid}/productassignments/${assignment/id}/+edit?field.bugstatus=Fixed&field.priority=$priority&field.severity=$severity&field.product=$product_name&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>fixed</small>
             </a>
             <a href=""
                tal:condition="package_name"
