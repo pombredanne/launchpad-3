@@ -255,7 +255,7 @@ class SoyuzProject(object):
 
     def newProduct(self,name, title, description, url):
         """make a new product"""
-        return SoyuzProduct(dbProduct(project=self._project, ownerID=getOwner(), name=name, title=title, description=description, homepageurl=url))
+        return SoyuzProduct(dbProduct(project=self._project, ownerID=getOwner(), name=name, title=title, description=description, homepageurl=url, screenshotsurl="", wikiurl="",programminglang="", downloadurl="",lastdoap=""))
         # FIXME, limi needs to do a find-an-owner wizard
 
     def getProduct(self,name):
