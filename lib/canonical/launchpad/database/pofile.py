@@ -495,7 +495,8 @@ class POTMsgSet(SQLBase):
             POMsgSet.pofile = %d AND
             POMsgSet.potmsgset = POTMsgSet.id AND
             POTMsgSet.primemsgid = %d'''
-           % (pofile.id, self.primemsgid_.id))
+           % (pofile.id, self.primemsgid_.id),
+           clauseTables = ['POTMsgSet', ])
 
         if not (0 <= results.count() <= 1):
             raise AssertionError("Duplicate message ID in PO file.")
@@ -795,9 +796,9 @@ class POFile(SQLBase):
                     RosettaSight.inlastrevision = FALSE AND
                     RosettaSight.active = TRUE)
             ''' % self.id, clauseTables=('POTMsgSet',)).count()
-        self.set(currentCount=current,
-                 updateCount=updates,
-                 rosettaCount=rosetta)
+        self.set(currentcount=current,
+                 updatescount=updates,
+                 rosettacount=rosetta)
         return (current, updates, rosetta)
 
     def createMessageSetFromMessageSet(self, potmsgset):

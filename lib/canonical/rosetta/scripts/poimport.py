@@ -83,7 +83,8 @@ class PODBBridge(PlacelessSetup):
             importer = POFileImporter(poFile, person)
         importer.doImport(fileHandle)
 
-    def update_stats(self, projectName, productName, poTemplateName, languageCode):
+    def update_stats(self, projectName, productName, poTemplateName,
+        languageCode, newImport=False):
         try:
             project = ProjectSet()[projectName]
             product = Product.selectBy(projectID = project.id,
@@ -95,7 +96,7 @@ class PODBBridge(PlacelessSetup):
             import sys
             t, e, tb = sys.exc_info()
             raise t, "Couldn't find record in database", tb
-        current, updates, rosetta = poFile.updateStatistics()
+        current, updates, rosetta = poFile.updateStatistics(newImport)
         print stats_message % (current, updates, rosetta)
 
 if __name__ == '__main__':
@@ -155,6 +156,10 @@ if __name__ == '__main__':
             print "Importing %s ..." % options.file
             bridge.imports(person, in_f, options.project, options.product,
                            options.potemplate, options.language)
+            print "Updating %s pofile for '%s'..." % (
+                options.potemplate, options.language)
+            bridge.update_stats(options.project, options.product,
+                                options.potemplate, options.language, True)
         except:
             print "aborting database transaction"
             bridge.abort()
