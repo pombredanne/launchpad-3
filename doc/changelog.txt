@@ -2,6 +2,58 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-31 10:30:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1264
+
+    Summary:
+      Merge db patch to rename Membership to TeamMembership
+    Revision:
+      launchpad--devel--0--patch-1264
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--membership-rename--0--base-0
+       tag of guilherme.salgado@canonical.com/launchpad--devel--0--patch-109
+    
+     * guilherme.salgado@canonical.com/launchpad--membership-rename--0--patch-1
+       Renames: Membership -> TeamMembership; IMembership -> ITeamMembership; MembershipStatus -> TeamMembershipStatus; MembershipRole -> TeamMembershipRole
+    
+     * guilherme.salgado@canonical.com/launchpad--membership-rename--0--patch-2
+       merge from rf
+    
+     * stuart.bishop@canonical.com/launchpad--membership-rename--0--base-0
+       tag of guilherme.salgado@canonical.com/launchpad--membership-rename--0--patch-2
+    
+     * stuart.bishop@canonical.com/launchpad--membership-rename--0--patch-1
+       Move membership table rename patch from pending and tweak. Regenerate sample data
+    
+     * stuart.bishop@canonical.com/launchpad--membership-rename--0--patch-2
+       Update database revision
+    
+
+    modified files:
+     database/sampledata/current.sql
+     database/schema/patch-6-32-0.sql doc/changelog.txt
+     lib/canonical/launchpad/browser/people.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/zcml/membership.zcml
+     lib/canonical/lp/dbschema.py
+
+    renamed files:
+     database/schema/pending/.arch-ids/salgado-rename-membership.sql.id
+       ==> database/schema/.arch-ids/patch-6-32-0.sql.id
+     database/schema/pending/salgado-rename-membership.sql
+       ==> database/schema/patch-6-32-0.sql
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--membership-rename--0--base-0
+     guilherme.salgado@canonical.com/launchpad--membership-rename--0--patch-1
+     guilherme.salgado@canonical.com/launchpad--membership-rename--0--patch-2
+     stuart.bishop@canonical.com/launchpad--membership-rename--0--base-0
+     stuart.bishop@canonical.com/launchpad--membership-rename--0--patch-1
+     stuart.bishop@canonical.com/launchpad--membership-rename--0--patch-2
+
+
 2005-01-28 16:15:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1263
 
     Summary:

@@ -43,8 +43,8 @@ __all__ = (
 'ImportTestStatus',
 'KarmaField',
 'ManifestEntryType',
-'MembershipRole',
-'MembershipStatus',
+'TeamMembershipRole',
+'TeamMembershipStatus',
 'PackagePublishingPriority',
 'PackagePublishingStatus',
 'Packaging',
@@ -515,8 +515,8 @@ class EmailAddressStatus(DBSchema):
         receiving notifications from Launchpad.
         """)
 
-class MembershipRole(DBSchema):
-    """Membership Role
+class TeamMembershipRole(DBSchema):
+    """TeamMembership Role
 
     Launchpad knows about teams and individuals. People can be a member
     of many teams, and in each team that they are a member they will
@@ -538,8 +538,8 @@ class MembershipRole(DBSchema):
         objects associated with that team accordingly.
         """)
 
-class MembershipStatus(DBSchema):
-    """Membership Status
+class TeamMembershipStatus(DBSchema):
+    """TeamMembership Status
 
     Some teams to not have automatic membership to anybody who wishes to
     join. In this case, a person can be proposed for membership, and the

@@ -6,8 +6,8 @@ from canonical.database.sqlbase import quote
 
 # lp imports
 from canonical.lp.dbschema import EmailAddressStatus, SSHKeyType
-from canonical.lp.dbschema import LoginTokenType, MembershipRole
-from canonical.lp.dbschema import MembershipStatus
+from canonical.lp.dbschema import LoginTokenType, TeamMembershipRole
+from canonical.lp.dbschema import TeamMembershipStatus
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
@@ -16,7 +16,7 @@ from canonical.auth.browser import well_formed_email
 # database imports
 from canonical.launchpad.database import WikiName
 from canonical.launchpad.database import JabberID
-from canonical.launchpad.database import TeamParticipation, Membership
+from canonical.launchpad.database import TeamParticipation, TeamMembership
 from canonical.launchpad.database import EmailAddress, IrcID
 from canonical.launchpad.database import GPGKey, ArchUserID
 from canonical.launchpad.database import createTeam
@@ -477,14 +477,14 @@ class TeamMembersEditView:
             method(int(personID), self.context)
 
     def _getMembership(self, personID, teamID):
-        membership = Membership.selectBy(personID=personID, teamID=teamID)
+        membership = TeamMembership.selectBy(personID=personID, teamID=teamID)
         assert membership.count() == 1
         return membership[0]
 
     def authorizeProposed(self, personID, team):
         membership = self._getMembership(personID, team.id)
-        membership.status = int(MembershipStatus.CURRENT)
-        membership.role = int(MembershipRole.MEMBER)
+        membership.status = int(TeamMembershipStatus.CURRENT)
+        membership.role = int(TeamMembershipRole.MEMBER)
 
     def removeMember(self, personID, team):
         if personID == team.teamowner.id:
@@ -499,9 +499,9 @@ class TeamMembersEditView:
 
     def giveAdminRole(self, personID, team):
         membership = self._getMembership(personID, team.id)
-        membership.role = int(MembershipRole.ADMIN)
+        membership.role = int(TeamMembershipRole.ADMIN)
 
     def revokeAdminiRole(self, personID, team):
         membership = self._getMembership(personID, team.id)
-        membership.role = int(MembershipRole.MEMBER)
+        membership.role = int(TeamMembershipRole.MEMBER)
 
