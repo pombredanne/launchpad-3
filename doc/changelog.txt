@@ -2,6 +2,53 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-25 14:26:28 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1248
+
+    Summary:
+      emailfinder working
+    Revision:
+      launchpad--devel--0--patch-1248
+
+    Patches applied:
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-9
+       merge rocketfuel
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-10
+       Get first cut of emailfinder.py done, including changes to rdfproj to pick up the owner tag instead of authors
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-11
+       merge rocketfuel
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-12
+       emailfinder.py first working version
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-13
+       merge rocketfuel
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-14
+       emailfinder much improved, rdfproj modified accordingly
+    
+
+    new files:
+     lib/canonical/launchpad/scripts/nicole/.arch-ids/emailfinder.py.id
+     lib/canonical/launchpad/scripts/nicole/emailfinder.py
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/scripts/nicole/rdfproj.py
+     lib/canonical/launchpad/scripts/nicole/rdfsplit.py
+     lib/canonical/launchpad/scripts/nicole/sourceforge.py
+
+    new patches:
+     morgan.collett@canonical.com/launchpad--devel--0--patch-9
+     morgan.collett@canonical.com/launchpad--devel--0--patch-10
+     morgan.collett@canonical.com/launchpad--devel--0--patch-11
+     morgan.collett@canonical.com/launchpad--devel--0--patch-12
+     morgan.collett@canonical.com/launchpad--devel--0--patch-13
+     morgan.collett@canonical.com/launchpad--devel--0--patch-14
+
+
 2005-01-25 12:35:26 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1247
 
     Summary:

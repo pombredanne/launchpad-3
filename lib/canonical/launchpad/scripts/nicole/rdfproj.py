@@ -80,18 +80,6 @@ def getProductSpec(directory, productname):
     prod_dict['product'] = productname
     return prod_dict
 
-def getProjectSpec(projname):
-    #rdf = open('fm-projects.rdf').read()
-    rdf = open(XMLDIR + projname + '.xml').read()
-    #start = rdf.find('<projectname_short>'+projname+'</projectname_short>')
-    #start = rdf.rfind('<project>',0,start)
-    #end = rdf.find('<project>',start+1)
-    #project_rdf = rdf[start:end]
-    #del rdf
-    #proj_dict = rdf2dict(project_rdf)
-    proj_dict = rdf2dict(rdf)
-    return proj_dict
-
 def rdf2dict(rdf):
     mydict = {}
     tagdict = {'projectname_full': 'projectname',
@@ -114,38 +102,53 @@ def rdf2dict(rdf):
                'url_homepage': 'url_homepage',
                'url_bugtracker': 'url_bugtracker',
                'license': 'license',
-               'authors': 'devels',
                }
     for tag in tagdict.keys():
-        start = rdf.find('<'+tag+'>')+len('<'+tag+'>')
-        end = rdf.find('</'+tag+'>')
-        if start <> end:
+        item = extract_tag(rdf, tag)
+        if item:
+            mydict[tagdict[tag]] = item
 
-            if mydict.has_key(tagdict[tag]):
-
-                if type(mydict[tagdict[tag]]) <> type([]):
-                    mydict[tagdict[tag]] = [mydict[tagdict[tag]]]
-
-                mydict[tagdict[tag]].append(rdf[start:end])
-            else:
-                mydict[tagdict[tag]] = rdf[start:end]
-
-    mydict['programminglang'] = extractLangs(mydict['programminglang'])    
-    # XXX cprov 20050121
-    # Method extractDevels brakes the rest of the code,
-    # just use when you are perfectly right it is compatible
-    # or propagate the needs in database.py
-    #
-    #mydict['devels'] = extractDevels(mydict['devels'])
-    mydict['devels'] = {}
+    if mydict.has_key('programminglang'):
+        mydict['programminglang'] = extract_langs(mydict['programminglang'])    
+    mydict['devels'] = extract_devels(rdf)
 
     #for tag in ['homepage', 'screenshot', 'list']:
-    #       if mydict[tag]: mydict[tag] = getUrlRedirect(mydict[tag])
+    #       if mydict[tag]: mydict[tag] = get_url_redirect(mydict[tag])
     #for tag in ['list']:
     #       mydict[tag] = [mydict[tag]]
     return mydict
 
-def extractLangs(rdf):
+
+def extract_tag(rdf, tag):
+    """Given a piece of tag-soup, extract the text between
+    <tag> and </tag>"""
+    start = rdf.find('<'+tag+'>')
+    if start == -1: return
+    start = start + len('<'+tag+'>')
+    end = rdf.find('</'+tag+'>', start)
+    if end == -1: return   # We don't handle unbalanced tags
+    return rdf[start:end]
+
+
+def extract_tags(rdf, tag):
+    """Given a piece of tag-soup, extract a list of items
+    where each is the text appearing between one of multiple
+    <tag>...</tag>"""
+    start = 0
+    end = 0
+    result = []
+    while start > -1:
+        start = rdf.find('<'+tag+'>', end)
+        if start == -1:
+            break
+        start = start + len('<'+tag+'>')
+        end = rdf.find('</'+tag+'>', start)
+        if end == -1: break   # We don't handle unbalanced tags
+        result.append(rdf[start:end])
+    return result
+
+
+def extract_langs(rdf):
     programminglangs = []
     start = 0
     end = 0
@@ -161,28 +164,16 @@ def extractLangs(rdf):
                 programminglangs.append(trove_programmingLangs[trove_id])
     return programminglangs
 
-def extractDevels(rdf):
+
+def extract_devels(rdf):
     devels = {}
-    start = 0
-    end = 0
-    tag = 'author_name'
-    oldstart = 0
-    while start > -1 and start >= oldstart:
-        oldstart = start
-        start = rdf.find('<'+tag+'>', start+1)+len('<'+tag+'>')
-        if start > -1 and start >= end:
-            end = rdf.find('</'+tag+'>', start)
-            ### XXX Morgan 20050114:
-            ### Need to replace URL with an email address in the future...
-            urlStart = 0
-            urlEnd = 0
-            urlStart = rdf.find('<author_url>',start)+12
-            urlEnd = rdf.find('</author_url>',urlStart)
-            url = rdf[urlStart:urlEnd]
-            devels[rdf[start:end]]=url
+    for author in extract_tags(rdf, 'author'):
+        name = extract_tag(author, 'author_name')
+        email = extract_tag(author, 'author_email')
+        devels[name] = email
     return devels
 
-def getUrlRedirect(url):
+def get_url_redirect(url):
     try:
         urlobj = urllib2.urlopen(url)
     except urllib2.HTTPError:

@@ -111,13 +111,20 @@ def getHTML(url):
 
 def unobfuscate_fm_email(email):
     # Freshmeat obfuscates email addresses using a simple scheme
-    # like this: user [at] domain [dot] com, or user __dash__ at __dash__ domain __dash__ dot __dash__ com
+    # like this: user [at] domain [dot] com, or
+    # user __dash__ at __dash__ domain __dash__ dot __dash__ com
     # For all known permutations, the following works:
-    delimiters = [[' [', '] '], [' |', '| '], [' (',') '], [' __','__ '], [' __dash__ ',' __dash__ '], [' |dash| ',' |dash| '], [' [dash] ',' [dash] '], [' (dash) ',' (dash) ']]
-    symbols = {'at': '@', 'dot': '.'}
+    delimiters = [[' [', '] '], [' |', '| '], [' (',') '], [' __','__ '],
+                  [' __dash__ ',' __dash__ '], [' |dash| ',' |dash| '],
+                  [' [dash] ',' [dash] '], [' (dash) ',' (dash) '],
+                  ['(', ')'], [' ', ' ']]
+    symbols = {'at': '@', 'dot': '.', 'dash': '-', 'AT': '@', 'DOT': '.'}
     for symbol in symbols.keys():
         for delimiter in delimiters:
             email = string.join(string.split(email, delimiter[0]+symbol+delimiter[1]), symbols[symbol])
+    # Some exceptions to the above
+    email = email.replace('AT(@)', '@')
+    email = email.replace('DOT(.)', '.')
     return email
 
 class ProductPage:
