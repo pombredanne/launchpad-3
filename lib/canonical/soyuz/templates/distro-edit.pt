@@ -25,7 +25,7 @@
       <tr><th>Description</th><th><input type="text" name="description" 
         tal:attributes="value request/description|context/description"/>
         </th></tr>
-      <tr><th></th><th><input type="submit" value="shoot"/></th>
+      <tr><th></th><th><input type="submit" value="ok"/></th>
     </form>
 
 </div>

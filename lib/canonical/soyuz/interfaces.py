@@ -95,6 +95,11 @@ class IDistroReleaseSourceReleaseApp(Interface):
 class IDistroReleaseApp(Interface):
     """A Release Proxy """
     release = Attribute("Release")
+    name = Attribute("Release name")
+    title = Attribute("Release title")
+    description = Attribute("Release description")
+    version = Attribute("Release version")
+
     def getPackageContainer(name):
         """ Returns the associated IPackageSet """
 
@@ -329,16 +334,21 @@ class IBinaryPackageSet(IPackageSet):
 
 # Interfaces from the DB
 
+class IPackagePublishing(Interface):
+    binarypackage = Attribute("BinaryPackage")
+    distroarchrelease = Attribute("Distro Arch Relese")
+    packages = Attribute("XXX")
+
 class IBinaryPackage(Interface):
     """A binary package, e.g apache-utils"""
     # See the BinaryPackage table
+    binarypackagename = Attribute("Binary Package Name")
+    shortdesc = Attribute("Short Description")
+    description = Attribute("Full Description")
 
-    name = Attribute("A string")
-    shortdesc = Attribute("Package Title")
-    description = Attribute("Package Description")
-    maintainer = Attribute("Package maintainer")
-    ##releases = Attribute("List of IBinaryPackageRelease objects")
-
+class IBinaryPackageName(Interface):
+    """A binary package name"""
+    name = Attribute("Binary Package Name")
 
 class IBinaryPackageBuild(Interface):
     """A binary package build, e.g apache-utils 2.0.48-4_i386"""
@@ -353,7 +363,6 @@ class IBinaryPackageBuild(Interface):
     binpackageformat = Attribute("An ISourcePackageRelease")
     datebuilt = Attribute("An ISourcePackageRelease")
 
-
 class ISourcePackage(Interface):
     """A source package, e.g apache-utils"""
     # See the SourcePackage table
@@ -365,7 +374,6 @@ class ISourcePackage(Interface):
     ##releases = Attribute("List of ISourcePackageRelease objects")
     proposed = Attribute("A source package release with upload status of "
                          "PROPOSED, else None")
-
 
 class ISourcePackageRelease(Interface):
     """A source package release, e.g. apache-utils 2.0.48-3"""

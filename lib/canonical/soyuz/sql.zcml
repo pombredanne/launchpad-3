@@ -97,6 +97,10 @@
   <content class="canonical.soyuz.sql.DistroReleaseApp">
     <allow interface="canonical.soyuz.interfaces.IDistroReleaseApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    <require
+     permission="zope.Public"
+     set_attributes="name title description version"
+     />
   </content>
   
 
@@ -142,16 +146,30 @@
 
   <content class="canonical.soyuz.sql.SoyuzSourcePackage">
     <allow interface="canonical.soyuz.interfaces.ISourcePackage"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
 
   <content class="canonical.soyuz.sql.SoyuzSourcePackageRelease">
     <allow interface="canonical.soyuz.interfaces.ISourcePackageRelease"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.sql.SoyuzPerson">
     <allow interface="canonical.soyuz.interfaces.ISoyuzPerson"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
+
+  <content class="canonical.soyuz.sql.PackagePublishing">
+    <allow interface="canonical.soyuz.interfaces.IPackagePublishing"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.sql.BinaryPackageName">
+    <allow interface="canonical.soyuz.interfaces.IBinaryPackageName"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
 
   <!-- UNUSED STUFF YET -->
 

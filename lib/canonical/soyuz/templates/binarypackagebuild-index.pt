@@ -16,7 +16,7 @@
 
 
     <h1> 
-     <tal:block tal:replace="context/binarypackagerelease/title">
+     <tal:block tal:replace="context/binarypackagerelease/binarypackage/shortdesc">
 	TITLE </tal:block>
      <tal:block tal:replace="context/version">
 	Version</tal:block>-
@@ -27,7 +27,7 @@
     <h4>SourcepackageRelease-index (...ubuntu/src/warty/apache2/1.3.6-2/i386) </h4>
 
     <p>
-     <tal:block tal:replace="context/binarypackagerelease/title">
+     <tal:block tal:replace="context/binarypackagerelease/binarypackage/shortdesc">
 	TITLE </tal:block>
      <tal:block tal:replace="context/version">
 	Version</tal:block>-

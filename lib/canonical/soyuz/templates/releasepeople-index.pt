@@ -14,8 +14,29 @@
 
 <div metal:fill-slot="main">
 
-  <h1><span tal:content="context/release/title" /> People Overview</h1>
+  <h1><span tal:content="context/release/title" /> Staff Overview</h1>
 
+  <div>
+  <h3><span tal:content="context/release/title" /> Description </h3>
+  <p> <span tal:content="context/release/description" />
+
+  <h3><span tal:content="context/release/title" /> State </h3>
+  <p> <span tal:content="context/release/releasestate" />
+
+  <h3><span tal:content="context/release/title" /> Datereleased </h3>
+  <p> <span tal:content="context/release/datereleased" />
+
+
+  </div>
+
+  <table width="50%">
+   <tr>
+      <td>
+      <h4><span tal:content="context/release/title" /> Staff</h4>
+      </td>
+  </tr>
+  <tr>
+  <td>
   <table class="listing">	
    <tr> <th> Name</th> <th> Role</th> </tr>
     <tal:block tal:repeat="people context/people">
@@ -23,6 +44,26 @@
 	<td><span tal:content="people/role">ROLE</span></td></tr>
     </tal:block>
   </table>
+  </td>
+  </tr>
+  </table>
+
+  <h3>Package Maintainers for <span tal:content="context/release/title" /></h3>
+
+    <form name="add" action="" method="POST">
+    	<table>
+
+	<tr><td>Maintainer</td> 
+	<td><input type="text" name="name"/></td>
+	<td> <input type="submit" value="Search"/></td>
+	<td> <table>
+	     <tr><td><a href="">View List</a></td></tr>
+	     <tr><td> (350 entries)</td></tr>
+	     </table>
+	</td> 
+	</tr>
+	</table>
+    </form>
 
 </div>
 

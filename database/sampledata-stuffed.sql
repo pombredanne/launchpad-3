@@ -307,7 +307,9 @@ VALUES ((SELECT id FROM ProcessorFamily WHERE name = 'x86'),
 
 -- Distribution
 INSERT INTO Distribution (name, title, description, domainname, owner) 
-	values ('ubuntu', 'Ubuntu Distribution', 'text ...', 'domain', 1);
+	values ('ubuntu', 'Ubuntu Distribution', 
+	'Ubuntu Distribution introducing new concept of Linux Distribution', 
+	'domain', 1);
 
 INSERT INTO Distribution (name, title, description, domainname, owner) 
 	values ('redhat', 'Redhat Advanced Server', 'some text', 'domain', 1);
@@ -319,35 +321,42 @@ INSERT INTO Distribution (name, title, description, domainname, owner)
 	values ('gentoo', 'The Gentoo bits', 'another ...', 'domain', 1);
 
 INSERT INTO Distribution (name, title, description, domainname, owner) 
-	values ('porkypigpolka', 'Porky Pig Polka Distribution', 'blabla',
+	values ('porkypigpolka', 'Porky Pig Polka Distribution', 
+	'Porky Pig Distribution based on SPORK (jblack newest work)',
 	'domain', 1);
 
 
 
 -- Distrorelease
 INSERT INTO Distrorelease (name, title, description, distribution, version, 
-	components, sections, releasestate, owner) 
+	components, sections, releasestate, datereleased, owner) 
 	values 
-	('warty', 'Warty', 'text ...', 1, 'PONG', 1, 1, 0, 1);
+	('warty', 'Warty', 
+	'The Warty Release of Ubuntu Distribution, the first stable release', 
+	1, 'PONG', 1, 1, 0, '2004-08-25', 1);
 
 INSERT INTO Distrorelease (name, title, description, distribution, version, 
-	components, sections, releasestate, owner) 
+	components, sections, releasestate, datereleased, owner) 
 	values 
-	('6.0', 'Six Six Six', 'some text', 2, '12321.XX', 1, 1, 0, 1);
+	('6.0', 'Six Six Six', 'some text', 2, '12321.XX', 1, 1, 0,
+	'2004-08-25', 1);
 
 INSERT INTO Distrorelease (name, title, description, distribution, version, 
-	components, sections, releasestate, owner) 
-	values ('hoary', 'Hoary Crazy-Unstable', 'text ...', 1, 'EWEpp##', 
-	1, 1, 0, 1);
+	components, sections, releasestate, datereleased, owner) 
+	values ('hoary', 'Hoary', 'Hoary Crazy-Unstable Branch from Ubuntu', 
+	1, '0.0.1', 
+	1, 1, 0, '2004-08-25', 1);
 
 INSERT INTO Distrorelease (name, title, description, distribution, version, 
-	components, sections, releasestate, owner) 
-	values ('7.0', 'Seven', 'another ...', 2, 'ACK ACK', 1, 1, 0, 1);
+	components, sections, releasestate, datereleased, owner) 
+	values ('7.0', 'Seven', 'another ...', 2, 'ACK ACK', 1, 1, 0, 
+	'2004-08-25', 1);
 
 INSERT INTO Distrorelease (name, title, description, distribution, version, 
-	components, sections, releasestate, owner) 
-	values ('grumpy', 'G-R-U-M-P-Y', 'blabla', 1, 'PINKPY POLLY', 
-	1, 1, 0, 1);
+	components, sections, releasestate, datereleased, owner) 
+	values ('grumpy', 'G-R-U-M-P-Y', 'does it really exists ???', 1, 
+	'-1e+15', 
+	1, 1, 0, '2004-08-25', 1);
 
 --Distroreleaserole
 

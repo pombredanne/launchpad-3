@@ -371,14 +371,46 @@ class DistroReleaseBinaryApp(object):
     def __getitem__(self, version):
         return DistroReleaseBinaryReleaseApp(self.binarypackage, version)
 
+##SQLObjects for Binaries################
+from canonical.soyuz.interfaces import IPackagePublishing
+class PackagePublishing(SQLBase):
+    """A source package release, e.g. apache 2.0.48-3"""
+    
+    implements(IPackagePublishing)
 
+    _table = 'PackagePublishing'
+    _columns = [
+        ForeignKey(name='binarypackage', foreignKey='BinaryPackage', dbName='Binarypackage', notNull=True),
+        ForeignKey(name='distroarchrelease', foreignKey='DistroArchRelease', dbName='DistroArchRelease', notNull=True)
+    ]
+
+from canonical.soyuz.interfaces import IBinaryPackageName
+class BinaryPackageName(SQLBase):
+    implements(IBinaryPackageName)
+    
+    _table = 'BinaryPackageName'
+    _columns = [
+        StringCol('name', dbName='name', notNull=True),        
+        ]
+    
+class BinaryPackage(SQLBase):
+    implements(IBinaryPackage)
+
+    _table = 'BinaryPackage'
+    _columns = [
+        ForeignKey(name='binarypackagename', foreignKey='BinaryPackageName', dbName='binarypackagename', notNull=True),
+        StringCol('shortdesc', dbName='shortdesc', notNull=True),
+        StringCol('description', dbName='description', notNull=True),        
+    ]
+############################################
+    
 class DistroReleaseBinariesApp(object):
     """Binarypackages from a Distro Release"""
     where = (
         'PackagePublishing.binarypackage = BinaryPackage.id AND '
         'PackagePublishing.distroarchrelease = DistroArchRelease.id AND '
         'DistroArchRelease.distrorelease = %d '
-    )
+        )
     def __init__(self, release):
         self.release = release
         
@@ -388,52 +420,29 @@ class DistroReleaseBinariesApp(object):
             where += (
                 'AND Binarypackage.binarypackagename = BinarypackageName.id '
                 'AND BinarypackageName.name = ' + quote(name)
-            )
+                )
             return DistroReleaseBinaryApp(SoyuzBinaryPackage.select(where)[0])
         except IndexError:
             raise KeyError, name
-        
+         
     def __iter__(self):
         return iter([DistroReleaseBinaryApp(p) for p in 
-                SoyuzBinaryPackage.select(self.where % self.release.id)])
-        
+                     SoyuzBinaryPackage.select(self.where % self.release.id)])
+    
 class DistroBinariesApp(object):
     def __init__(self, distribution):
         self.distribution = distribution
-
+        
     def __getitem__(self, name):
         release = Release.selectBy(distributionID=self.distribution.id,
                                    name=name)[0]
         return DistroReleaseBinariesApp(release)
-
+    
     def __iter__(self):
-    	return iter(Release.selectBy(distributionID=self.distribution.id))
-        
-
-class BinaryPackage:
-    # FIXME: stub
-    """Stub package"""
-    implements(IBinaryPackage)
-
-    def __init__(self, name):
-        self.name = name
-        self.title = self.name + ' stub package title'
-        self.description = self.name + ' stub package description'
-
-# class BinaryPackage(SQLBase):
-#     implements(IBinaryPackage)
-
-#     _table = 'BinaryPackage'
-#     _columns = [
-#         StringCol('name', dbName='Name'),
-#         StringCol('title', dbName='Title'),
-#         StringCol('description', dbName='Description'),        
-#     ]
-#     releases = MultipleJoin('SoyuzBinaryPackageBuild', joinColumn=\
-#                             'binarypackage')
+      	return iter(Release.selectBy(distributionID=self.distribution.id))
 
 # end of binary app component related data ....
-
+  
 
 # SQL Objects .... should be moved !!!!
 class SoyuzPerson(SQLBase):

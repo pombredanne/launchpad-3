@@ -21,18 +21,20 @@
 	<table>
 
 	<tr><th>Name</th> <th><input type="text" name="name" 
-	tal:attributes="value context/release/name|nothing" /></th></tr>
+	tal:attributes="value context/release/name|request/release/name"/>
+	</th></tr>
 
 	<tr><th>Title</th> <th><input type="text" name="title" 
-	tal:attributes="value context/release/title|nothing" /></th></tr>
+	tal:attributes="value context/release/title|request/release/title"/>
+	</th></tr>
 
     	<tr><th> Description</th> <th><input type="text" name="description" 
-	tal:attributes="value context/release/description|nothing" /></th></tr>
+	tal:attributes="value context/release/description|request/release/description"/></th></tr>
 
 	<tr><th>Version</th> <th><input type="text" name="version" 
-        tal:attributes="value context/release/version|nothing" /> </th> </tr>
+        tal:attributes="value context/release/version|request/release/version"/> </th> </tr>
 
-	<tr><th></th><th><input type="submit" value="shoot"/></th></tr>
+	<tr><th></th><th><input type="submit" value="ok"/></th></tr>
 
 	</table>
     </form>

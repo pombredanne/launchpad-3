@@ -14,8 +14,25 @@
 
 <div metal:fill-slot="main">
 
-  <h1><span tal:content="context/distribution/title" /> People Overview</h1>
+  <h1><span tal:content="context/distribution/title" /> Staff Overview</h1>
 
+
+  <div>
+  <h3><span tal:content="context/distribution/title" /> Description </h3>
+  <p> <span tal:content="context/distribution/description" />
+  </div>
+
+  <table width="50%">
+   <tr>
+      <td>
+      <h4><span tal:content="context/distribution/title" /> Staff</h4>
+      </td>
+      <td>
+      <h4>Releases</h4>
+      </td>
+  </tr>
+  <tr>
+  <td>
   <table class="listing">	
    <tr> <th> Name</th> <th> Role</th> </tr>
     <tal:block tal:repeat="people context/people">
@@ -23,17 +40,34 @@
 	<td><span tal:content="people/role">ROLE</span></td></tr>
     </tal:block>
   </table>
-
-  <table class="listing">
-    <tr>
-    <th tal:repeat="release context">
+  </td>
+  <td>
+    <li tal:repeat="release context">
         <a tal:content="release/name"
 	   tal:attributes="href release/name">
 	  distribution title
 	</a>
-      </th>
-    </tr>
-  </table>    
+      </li>
+  </td>
+  </table>
+
+  <h3>Package Maintainers for <span tal:content="context/distribution/title" /></h3>
+
+    <form name="add" action="" method="POST">
+    	<table>
+
+	<tr><td>Maintainer</td> 
+	<td><input type="text" name="name"/></td>
+	<td> <input type="submit" value="Search"/></td>
+	<td> <table>
+	     <tr><td><a href="">View List</a></td></tr>
+	     <tr><td> (350 entries)</td></tr>
+	     </table>
+	</td> 
+	</tr>
+	</table>
+    </form>
+
 
 </div>
 
