@@ -11,6 +11,18 @@ from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
 from optparse import OptionParser
 from sqlobject.dbconnection import Transaction
 
+stats_message = """
+Msgsets matched to the potemplate that have a non-fuzzy translation in
+the PO file when we last parsed it: %d
+
+Msgsets where we have a newer translation in rosetta than the one in
+the PO file when we last parsed it: %d
+
+Msgsets where we have a translation in rosetta but there was no
+translation in the PO file when we last parsed it: %d
+"""
+
+
 class PODBBridge(PlacelessSetup):
 
     def __init__(self):
@@ -68,6 +80,21 @@ class PODBBridge(PlacelessSetup):
             importer = POFileImporter(poFile, person)
         importer.doImport(file)
 
+    def update_stats(self, projectName, productName, poTemplateName, languageCode):
+        try:
+            project = DBProjects()[projectName]
+            product = RosettaProduct.selectBy(projectID = project.id,
+                                              name=productName)[0]
+            poTemplate = RosettaPOTemplate.selectBy(productID = product.id,
+                                                    name=poTemplateName)[0]
+            poFile = poTemplate.poFile(languageCode)
+        except (IndexError, KeyError):
+            import sys
+            t, e, tb = sys.exc_info()
+            raise t, "Couldn't find record in database", tb
+        current, updates, rosetta = poFile.updateStatistics()
+        print stats_message % (current, updates, rosetta)
+
 if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option("-o", "--owner", dest="owner",
@@ -82,24 +109,55 @@ if __name__ == '__main__':
         help="The template the imported file belongs to")
     parser.add_option("-l", "--language", dest="language",
         help="The language code, for importing PO files")
+    parser.add_option("-U", "--update-stats", dest="update_stats",
+        default=False, action="store_true",
+        help="Update the statistics fields, don't import anything")
+    parser.add_option("-n", "--no-op", dest="noop",
+        default=False, action="store_true",
+        help="Don't actually write anything to the database, just "
+                      "see what would happen")
 
     (options, args) = parser.parse_args()
 
-    for name in ('owner', 'file', 'project', 'product', 'potemplate'):
+    for name in ('owner', 'project', 'product', 'potemplate'):
         if getattr(options, name) is None:
             raise RuntimeError("No %s specified." % name)
 
-    print "Connecting to database..."
-    bridge = PODBBridge()
-    in_f = file(options.file, 'rU')
-    person = RosettaPerson.get(int(options.owner))
-    try:
-        print "Importing %s ..." % options.file
-        bridge.imports(person, in_f, options.project, options.product,
-                       options.potemplate, options.language)
-    except:
-        print "aborting database transaction"
-        bridge.rollback()
-        raise
+    if getattr(options, 'update_stats'):
+        print "Connecting to database..."
+        bridge = PODBBridge()
+        try:
+            print "Updating %s pofile for '%s'..." % (
+                options.potemplate, options.language)
+            bridge.update_stats(options.project, options.product,
+                                options.potemplate, options.language)
+        except:
+            print "aborting database transaction"
+            bridge.rollback()
+            raise
+        else:
+            if options.noop:
+                bridge.rollback()
+            else:
+                bridge.commit()
     else:
-        bridge.commit()
+        if not getattr(options, 'file'):
+            raise RuntimeError("No filename specified.")
+
+        print "Connecting to database..."
+        bridge = PODBBridge()
+        in_f = file(options.file, 'rU')
+        person = RosettaPerson.get(int(options.owner))
+        try:
+            print "Importing %s ..." % options.file
+            bridge.imports(person, in_f, options.project, options.product,
+                           options.potemplate, options.language)
+        except:
+            print "aborting database transaction"
+            bridge.rollback()
+            raise
+        else:
+            if options.noop:
+                bridge.rollback()
+            else:
+                bridge.commit()

@@ -564,11 +564,52 @@ class RosettaPOFile(SQLBase):
             POMsgSet.sequence > 0 AND
             POMsgSet.fuzzy = FALSE AND
             PotSet.sequence > 0 AND
-            PotSet.primeMsgID == POMsgSet.primeMsgID AND
+            PotSet.primeMsgID = POMsgSet.primeMsgID AND
             POMsgSet.pofile = %d AND
             PotSet.potemplate = POMsgSet.potemplate
-            ''' % self.id, clauseTables=('POMessageSet PotSet',))
-        print current
+            ''' % self.id, clauseTables=('POMsgSet PotSet',)).count()
+        updates = RosettaPOMessageSet.select('''
+            POMsgSet.sequence > 0 AND
+            POMsgSet.fuzzy = FALSE AND
+            PotSet.sequence > 0 AND
+            PotSet.primeMsgID = POMsgSet.primeMsgID AND
+            POMsgSet.pofile = %d AND
+            PotSet.potemplate = POMsgSet.potemplate AND
+            FileSighting.pomsgset = POMsgSet.id AND
+            RosettaSighting.pomsgset = POMsgSet.id AND
+            FileSighting.inLastRevision = TRUE AND
+            RosettaSighting.inLastRevision = FALSE AND
+            FileSighting.active = TRUE AND
+            RosettaSighting.active = TRUE AND
+            RosettaSighting.dateLastActive > FileSighting.dateLastActive
+            ''' % self.id, clauseTables=(
+                                         'POMsgSet PotSet',
+                                         'POTranslationSighting FileSighting',
+                                         'POTranslationSighting RosettaSighting',
+                                        )).count()
+        rosetta = RosettaPOMessageSet.select('''
+            POMsgSet.fuzzy = FALSE AND
+            PotSet.sequence > 0 AND
+            PotSet.primeMsgID = POMsgSet.primeMsgID AND
+            POMsgSet.pofile = %d AND
+            PotSet.potemplate = POMsgSet.potemplate AND
+            PotSet.pofile IS NULL AND
+            (SELECT COUNT(*) from
+              POTranslationSighting POSighting WHERE
+              POSighting.POMsgSet = POMsgSet.id AND
+              POSighting.active = TRUE AND
+              POSighting.inLastRevision = TRUE) = 0 AND
+            (SELECT COUNT(*) from
+              POTranslationSighting RosettaSighting WHERE
+              RosettaSighting.POMsgSet = POMsgSet.id AND
+              RosettaSighting.active = TRUE) > 0
+            ''' % self.id, clauseTables=(
+                                         'POMsgSet PotSet',
+                                        )).count()
+        self.set(currentCount=current,
+                 updateCount=updates,
+                 rosettaCount=rosetta)
+        return (current, updates, rosetta)
 
 
 class RosettaPOMessageSet(SQLBase):

@@ -264,7 +264,7 @@ class IPOFile(Interface):
         """)
 
     rosettaCount = Attribute("""
-        the number of msgsets where we have a translation in rosetta
+        The number of msgsets where we have a translation in rosetta
         but there was no translation in the PO file when we last parsed it
         """)
 
@@ -323,7 +323,8 @@ class IEditPOFile(IPOFile):
 
     def updateStatistics():
         """Update the statistics fields - rosettaCount, updatesCount and
-        currentCount - from the messages currently known"""
+        currentCount - from the messages currently known.
+        Return a tuple (rosettaCount, updatesCount, currentCount)."""
 
     def createMessageSetFromMessageID(messageID):
         """See IEditPOTemplate."""
