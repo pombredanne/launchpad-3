@@ -66,7 +66,7 @@
           <td tal:content="bugid"
               tal:attributes="onclick string:window.location='${bugid}';">$Bug.title</td>
           <td tal:condition="product_name"
-              tal:content="product_name"
+              tal:content="python: (project_name == product_name) and product_name or (project_name + ' ' + product_name)"
               tal:attributes="onclick string:window.location='${bugid}';">product</td>
           <td tal:condition="not:product_name"
               tal:attributes="onclick string:window.location='${bugid}';">-</td>
