@@ -110,8 +110,11 @@
 
         <ol tal:repeat="release context/releases">
         
-            <li><span tal:content="release/version">version</span>: 
-                "<span tal:content="release/title">title</span>"</li>
+            <li><b><span tal:content="release/version">version</span></b>: 
+                "<span tal:content="release/title">title</span>"
+                [ <a href="" tal:attributes="href release/version">View</a>
+                ]<br />
+                <span tal:replace="release/shortdesc">feature summary</span></li>
 
         </ol>
 

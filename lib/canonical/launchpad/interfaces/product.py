@@ -97,3 +97,6 @@ class IProduct(Interface):
         where we have a translation in Rosetta but there was no translation
         in the PO file for this language when we last parsed it."""
 
+    def getRelease(version):
+        """Returns the release for this product that has the version
+        given."""

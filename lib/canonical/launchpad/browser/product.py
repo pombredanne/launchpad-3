@@ -28,7 +28,7 @@ def traverseProduct(product, request, name):
     elif name == '+series':
         return ProductSeriesSet(product=product)
     else:
-        raise KeyError, name
+        return product.getRelease(name)
 
 #
 # A View Class for Product

@@ -7,11 +7,8 @@
     i18n_domain="launchpad">
 
     <!-- This is class ProductRelease -->
-    <!-- CONTENT CLASSES -->
     <content class="canonical.launchpad.database.ProductRelease">
         <allow interface="canonical.launchpad.interfaces.IProductRelease" />
-        <allow
-            interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
         <require
             permission="zope.View"
             set_schema="canonical.launchpad.interfaces.IProductRelease" />
@@ -27,6 +24,15 @@
         <browser:page
             name="+index"
             template="../templates/productrelease.pt" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProductRelease"
+        class="canonical.launchpad.browser.ProductReleaseView"
+        permission="launchpad.AnyPerson">
+        <browser:page
+            name="+edit"
+            template="../templates/productrelease-edit.pt" />
     </browser:pages>
 
 </configure>

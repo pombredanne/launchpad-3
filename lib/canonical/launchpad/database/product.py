@@ -13,10 +13,9 @@ from canonical.database.sqlbase import SQLBase, quote
 # canonical imports
 from canonical.launchpad.interfaces import *
 
-# XXX Mark Shuttleworth 06/10/06 till we sort out database locations and
-#     import sequence
 from canonical.launchpad.database.sourcesource import SourceSource
 from canonical.launchpad.database.productseries import ProductSeries
+from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.pofile import POTemplate
 from canonical.launchpad.interfaces.product import IProduct
 
@@ -181,4 +180,8 @@ class Product(SQLBase):
         for t in self.poTemplates():
             count += t.rosettaCount(language)
         return count
+
+    def getRelease(self, version):
+        return ProductRelease.selectBy(productID=self.id, version=version)[0]
+
 

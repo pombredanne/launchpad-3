@@ -36,7 +36,8 @@
         name="+index" />
 
     <!--PAGE DECLARATIONS-->
-    <browser:pages for="canonical.launchpad.interfaces.IProduct"
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProduct"
         permission="zope.Public"
         class="canonical.launchpad.browser.ProductView" >
         <browser:page name="+index"
@@ -44,7 +45,8 @@
             lp:url="doap/projects/$Project.name/$Product.name/" />
     </browser:pages>
 
-    <browser:pages for="canonical.launchpad.interfaces.IProduct"
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProduct"
         class="canonical.launchpad.browser.ProductView"
         permission="launchpad.AnyPerson" >
         <browser:page
