@@ -2,6 +2,117 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-06 05:34:35 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1570
+
+    Summary:
+      New database baseline
+    Revision:
+      launchpad--devel--0--patch-1570
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-256
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-257
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-258
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-259
+       New database baseline
+    
+
+    new files:
+     database/schema/.arch-ids/patch-14-00-0.sql.id
+     database/schema/patch-14-00-0.sql
+
+    modified files:
+     database/schema/Makefile database/schema/launchpad-14-00-0.sql
+     database/schema/patch-14-01-0.sql doc/changelog.txt
+
+    renamed files:
+     database/schema/.arch-ids/launchpad-11-00-0.sql.id
+       ==> database/schema/.arch-ids/launchpad-14-00-0.sql.id
+     database/schema/.arch-ids/patch-11-00-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-11-00-0.sql.id
+     database/schema/.arch-ids/patch-11-01-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-11-01-0.sql.id
+     database/schema/.arch-ids/patch-11-02-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-11-02-0.sql.id
+     database/schema/.arch-ids/patch-11-03-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-11-03-0.sql.id
+     database/schema/.arch-ids/patch-11-04-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-11-04-0.sql.id
+     database/schema/.arch-ids/patch-11-05-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-11-05-0.sql.id
+     database/schema/.arch-ids/patch-11-06-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-11-06-0.sql.id
+     database/schema/.arch-ids/patch-11-07-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-11-07-0.sql.id
+     database/schema/.arch-ids/patch-11-08-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-11-08-0.sql.id
+     database/schema/.arch-ids/patch-11-09-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-11-09-0.sql.id
+     database/schema/.arch-ids/patch-11-10-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-11-10-0.sql.id
+     database/schema/.arch-ids/patch-11-11-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-11-11-0.sql.id
+     database/schema/.arch-ids/patch-11-12-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-11-12-0.sql.id
+     database/schema/.arch-ids/patch-11-13-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-11-13-0.sql.id
+     database/schema/.arch-ids/patch-11-14-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-11-14-0.sql.id
+     database/schema/.arch-ids/patch-11-15-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-11-15-0.sql.id
+     database/schema/.arch-ids/patch-11-16-0.sql.id
+       ==> database/schema/.arch-ids/patch-14-01-0.sql.id
+     database/schema/launchpad-11-00-0.sql
+       ==> database/schema/launchpad-14-00-0.sql
+     database/schema/patch-11-00-0.sql
+       ==> database/schema/archive/patch-11-00-0.sql
+     database/schema/patch-11-01-0.sql
+       ==> database/schema/archive/patch-11-01-0.sql
+     database/schema/patch-11-02-0.sql
+       ==> database/schema/archive/patch-11-02-0.sql
+     database/schema/patch-11-03-0.sql
+       ==> database/schema/archive/patch-11-03-0.sql
+     database/schema/patch-11-04-0.sql
+       ==> database/schema/archive/patch-11-04-0.sql
+     database/schema/patch-11-05-0.sql
+       ==> database/schema/archive/patch-11-05-0.sql
+     database/schema/patch-11-06-0.sql
+       ==> database/schema/archive/patch-11-06-0.sql
+     database/schema/patch-11-07-0.sql
+       ==> database/schema/archive/patch-11-07-0.sql
+     database/schema/patch-11-08-0.sql
+       ==> database/schema/archive/patch-11-08-0.sql
+     database/schema/patch-11-09-0.sql
+       ==> database/schema/archive/patch-11-09-0.sql
+     database/schema/patch-11-10-0.sql
+       ==> database/schema/archive/patch-11-10-0.sql
+     database/schema/patch-11-11-0.sql
+       ==> database/schema/archive/patch-11-11-0.sql
+     database/schema/patch-11-12-0.sql
+       ==> database/schema/archive/patch-11-12-0.sql
+     database/schema/patch-11-13-0.sql
+       ==> database/schema/archive/patch-11-13-0.sql
+     database/schema/patch-11-14-0.sql
+       ==> database/schema/archive/patch-11-14-0.sql
+     database/schema/patch-11-15-0.sql
+       ==> database/schema/archive/patch-11-15-0.sql
+     database/schema/patch-11-16-0.sql
+       ==> database/schema/patch-14-01-0.sql
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-256
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-257
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-258
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-259
+
+
 2005-04-05 22:35:22 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1569
 
     Summary:
