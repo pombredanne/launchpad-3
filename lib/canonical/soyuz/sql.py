@@ -290,7 +290,7 @@ class DistroSourcesApp(object):
 ###########################################################
 
 # Team app component (team)
-#YAPS: I shouls be moved to database.py !! and work for instance 
+#FIXME: I shouls be moved to database.py !! and work for instance 
 class DistributionRole(SQLBase):
 
     implements(IDistributionRole)
@@ -319,7 +319,7 @@ class DistroReleaseRole(SQLBase):
         IntCol('role', dbName='role')
         ]
 
-#YAPS: just usefull for STUBs
+#FIXME: just usefull for STUBs
 class Team(object):
     def __init__(self, displayname, role):
         self.displayname = displayname
@@ -330,7 +330,7 @@ class DistroReleaseTeamApp(object):
     def __init__(self, release):
         self.release = release
 
-#YAPS: STUB sucks         
+#FIXME: STUB sucks         
 #        self.team=DistroReleaseRole.select()
         self.team = [Team('Matt Zimmerman', 'Maintainer'),
                        Team('Robert Collins', 'Translator'),
@@ -341,7 +341,7 @@ class DistroReleaseTeamApp(object):
 class DistroTeamApp(object):
     def __init__(self, distribution):
         self.distribution = distribution
-#YAPS: STUB sucks         
+#FIXME: STUB sucks         
 #        self.team=DistributionRole.select()
 
         self.team = [Team('Mark Shuttleworth', 'Maintainer'),
@@ -363,7 +363,7 @@ class PeopleApp(object):
     def __init__(self):
         self.entries = SoyuzPerson.select('teamowner IS NULL').count()
 
-    #YAPS: traverse by ID ?
+    #FIXME: traverse by ID ?
     def __getitem__(self, id):
         print 'PeopleApp, __getitem__,', id
         try:
@@ -378,7 +378,7 @@ class PeopleApp(object):
 class PersonApp(object):
     def __init__(self, id):
         self.id = id
-        # YAPS: I know it seems totally nasty ...
+        # FIXME: I know it seems totally nasty ...
         # it should query By ID ... 
         self.person = SoyuzPerson.get(self.id)
         try:

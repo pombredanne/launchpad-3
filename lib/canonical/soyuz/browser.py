@@ -16,7 +16,7 @@ class DistrosSearchView(object):
         title = self.request.get("title", "")
         description = self.request.get("description", "")
 
-        # YAPS: add operator '%' for query all distros
+        #FIXME: add operator '%' for query all distros
         if name or title or description:
             
             name_like = LIKE(SoyuzDistribution.q.name, "%%"+name+"%%")
@@ -38,9 +38,11 @@ class PeopleSearchView(object):
 
         name = self.request.get("name", "")
 
-        # add operator '%' to query all persons
+        #FIXME: add operator '%' to query all persons
+        #FIXME: use 'UPPER(field) LIKE UPPER('%%name%%') 
         if name:
-            name_like = LIKE(SoyuzPerson.q.displayname, "%%"+name+"%%")
+            name_like = LIKE(SoyuzPerson.q.displayname,
+                             '%%' + name + '%%')
             self.results = SoyuzPerson.select(AND(name_like))
 
             self.entries = self.results.count()
@@ -59,13 +61,13 @@ class DistrosAddView(object):
         description = self.request.get("description", "").encode("ascii")
 
         if name or title or description:
-            #YAPS: verify unique name before insert new distro
-            #YAPS: the owner is hardcoded to Mark !!!!
+            #FIXME: verify unique name before insert new distro
+            #FIXME: the owner is hardcoded to Mark !!!!
             #How will we handler Security/Authentication Issues ?!?!
             self.results = SoyuzDistribution(name=name, title=title, \
                                              description=description,\
                                              domainname='domain', owner=1)
-            #YAPS: verify results
+            #FIXME: verify results
             self.enable_added = True
     
 
@@ -82,7 +84,7 @@ class DistrosEditView(object):
         description = self.request.get("description", "").encode("ascii")
 
         if name or title or description:
-            #YAPS: verify the unique name before update distro
+            #FIXME: verify the unique name before update distro
             self.context.distribution.name = name
             self.context.distribution.title = title
             self.context.distribution.description = description
@@ -103,18 +105,18 @@ class ReleasesAddView(object):
         version = self.request.get("version", "").encode("ascii")
 
         if name or title or description or version:
-            #YAPS: verify unique name before insert a new release
-            #YAPS: get current UTC
-            #YAPS: What about figure out finally what to do with
+            #FIXME: verify unique name before insert a new release
+            #FIXME: get current UTC
+            #FIXME: What about figure out finally what to do with
             #      components, sections ans so on ...
-            #YAPS: parentrelease hardcoded to "warty" 
+            #FIXME: parentrelease hardcoded to "warty" 
             self.results = Release(distribution=self.context.distribution.id,\
                                    name=name, title=title, \
                                    description=description,version=version,\
                                    components=1, releasestate=1,sections=1,\
                                    datereleased='2004-08-15 10:00', owner=1,
                                    parentrelease=1)
-            #YAPS: verify the results 
+            #FIXME: verify the results 
             self.enable_added = True
             
 class ReleasesEditView(object):
@@ -131,12 +133,12 @@ class ReleasesEditView(object):
         version = self.request.get("version", "").encode("ascii")
 
         if name or title or description or version:
-            #YAPS: verify unique name before update release information
+            #FIXME: verify unique name before update release information
             self.context.release.name = name
             self.context.release.title = title
             self.context.release.description = description
             self.context.release.version = version
-            #YAPS: verify the results 
+            #FIXME: verify the results 
             self.enable_edited = True
             
 class DistrosReleaseSourcesSearchView(object):
