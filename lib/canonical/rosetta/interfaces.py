@@ -284,11 +284,20 @@ class IPOMessageSet(Interface):
 class IEditPOMessageSet(IPOMessageSet):
     """Interface for editing a MessageSet."""
 
-    def makeMessageIDSighting(text, plural_form):
-        """Return a new message ID sighting that points back to us."""
+    def makeMessageIDSighting(text, plural_form, update=False):
+        """Return a new message ID sighting that points back to us.
+        If one already exists, behaviour depends on 'update'; if update
+        is allowed, the existing one is "touched" and returned.  If it
+        is not, then a KeyError is raised."""
 
-    def makeTranslationSighting(text, plural_form):
-        """Return a new translation sighting that points back to us."""
+    def makeTranslationSighting(text, plural_form, update=False, fromPOFile=False):
+        """Return a new translation sighting that points back to us.
+        If one already exists, behaviour depends on 'update'; if update
+        is allowed, the existing one is "touched" and returned.  If it
+        is not, then a KeyError is raised.
+        fromPOFile should be true when the sighting is coming from a POFile
+        in the upstream source - so that the inLatestRevision field is
+        set accordingly."""
 
 
 class IPOMessageIDSighting(Interface):
@@ -298,21 +307,14 @@ class IPOMessageIDSighting(Interface):
 
     poMessageID_ = Attribute("")
 
-    firstSeen = Attribute("")
+    dateFirstSeen = Attribute("")
 
-    lastSeen = Attribute("")
+    dateLastSeen = Attribute("")
 
-    inPOFile = Attribute("True if this sighting is currently in the PO file, "
-        "otherwise false.")
+    inLatestRevision = Attribute("True if this sighting is currently in the "
+                                 "upstream template or POFile, otherwise false.")
 
     pluralForm = Attribute("")
-
-
-class IEditPOMessageIDSighting(IPOMessageIDSighting):
-    """Interface for editing a MessageIDSighting."""
-
-    def touch():
-        """Update timestamp of this sighting and mark it as inPOFile."""
 
 
 class IPOMessageID(Interface):
@@ -331,17 +333,18 @@ class IPOTranslationSighting(Interface):
 
     # XXX: license
 
-    firstSeen = Attribute("")
+    dateFirstSeen = Attribute("")
 
-    lastTouched = Attribute("")
+    dateLastActive = Attribute("")
 
-    inPOFile = Attribute("")
+    inLatestRevision = Attribute("True if this sighting is currently in the "
+                                 "upstream POFile, otherwise false.")
 
     origin = Attribute("Where the sighting originally came from.")
 
     pluralForm = Attribute("")
 
-    deprecated = Attribute("")
+    active = Attribute("")
 
     # XXX: rename this to 'owner'?
     person = Attribute("")

@@ -271,11 +271,11 @@ class RosettaPOTemplate(SQLBase):
                                               poMessageID_=messageID,
                                               firstSeen="NOW",
                                               lastSeen="NOW",
-                                              inPOFile=False,
+                                              inLatestRevision=False,
                                               pluralForm=0)
         return msgSet
 
-    def createPOFile(self, language, variant):
+    def createPOFile(self, language, variant=None):
         # assume we are getting a IRosettaLanguage object
         if RosettaPOFile.selectBy(poTemplate=self,
                                   language=language,
@@ -477,7 +477,7 @@ class RosettaPOMessageSet(SQLBase):
             raise ValueError
         translations = RosettaPOTranslationSighting.selectBy(
             poMessageSetID=self.id,
-            inPOFile=True,
+            inLatestRevision=True,
             pluralForm=plural_form)
         if translations.count() == 0:
             raise KeyError, plural_form
@@ -492,12 +492,8 @@ class RosettaPOMessageSet(SQLBase):
 
 
     # IEditPOMessageSet
-    # XXX: refactor the two methods below into a lower-level method
-    #      with the existing name and a higher-level method with the
-    #      existing semantics.  The semantics of the lower-level methods
-    #      should match those of e.g. makePOFile
 
-    def makeMessageIDSighting(self, text, plural_form):
+    def makeMessageIDSighting(self, text, plural_form, update=False):
         """Return a new message ID sighting that points back to us."""
         if type(text) is unicode:
             text = text.encode('utf-8')
@@ -512,18 +508,21 @@ class RosettaPOMessageSet(SQLBase):
             pluralForm=plural_form)
         if existing.count():
             assert existing.count() == 1
+            if not update:
+                raise KeyError, "There is already a message ID sighting for " \
+                      "this message set, text, and plural form"
             existing = existing[0]
-            existing.touch()
+            existing.set(datelastSeen = "NOW", inLatestRevision = True)
             return existing
         return RosettaPOMessageIDSighting(
             poMessageSet=self,
             poMessageID_=messageID,
-            firstSeen="NOW",
-            lastSeen="NOW",
-            #inPOFile=True,
+            dateFirstSeen="NOW",
+            dateLastSeen="NOW",
+            inLatestRevision=True,
             pluralForm=plural_form)
 
-    def makeTranslationSighting(self, text, plural_form):
+    def makeTranslationSighting(self, text, plural_form, update=False, fromPOFile=False):
         """Return a new translation sighting that points back to us."""
         if type(text) is unicode:
             text = text.encode('utf-8')
@@ -539,40 +538,40 @@ class RosettaPOMessageSet(SQLBase):
             #person='XXX FIXME'
             )
         if existing.count():
+            assert existing.count() == 1
+            if not update:
+                raise KeyError, "There is already a translation sighting for " \
+                      "this message set, text, and plural form"
             existing = existing[0]
-            existing.touch()
+            existing.set(lastActive="NOW",
+                         active=True,
+                         inLatestRevision=existing.inLatestRevision or fromPOFile)
             return existing
         return RosettaPOTranslationSighting(
             poMessageSet=self,
             poTranslation=translation,
             firstSeen="NOW",
-            lastTouched="NOW",
-            #inPOFile=True,
+            lastActive="NOW",
+            inLatestRevision=fromPOFile,
             pluralForm=plural_form,
-            deprecated=False,
+            active=True,
             person=0, #'XXX FIXME'
             )
 
 
 class RosettaPOMessageIDSighting(SQLBase):
-    implements(IEditPOMessageIDSighting)
+    implements(IPOMessageIDSighting)
 
     _table = 'POMsgIDSighting'
 
     _columns = [
         ForeignKey(name='poMessageSet', foreignKey='RosettaPOMessageSet', dbName='pomsgset', notNull=True),
         ForeignKey(name='poMessageID_', foreignKey='RosettaPOMessageID', dbName='pomsgid', notNull=True),
-        DateTimeCol(name='firstSeen', dbName='firstseen', notNull=True),
-        DateTimeCol(name='lastSeen', dbName='lastseen', notNull=True),
-        BoolCol(name='inPOFile', dbName='inpofile', notNull=True),
+        DateTimeCol(name='dateFirstSeen', dbName='datefirstseen', notNull=True),
+        DateTimeCol(name='dateLastSeen', dbName='datelastseen', notNull=True),
+        BoolCol(name='inLatestRevision', dbName='inlatestrevision', notNull=True),
         IntCol(name='pluralForm', dbName='pluralform', notNull=True),
     ]
-
-
-    # IEditPOMessageIDSighting
-
-    def touch(self):
-        self.set(lastSeen = "NOW", inPOFile = True)
 
 
 class RosettaPOMessageID(SQLBase):
@@ -598,13 +597,13 @@ class RosettaPOTranslationSighting(SQLBase):
         ForeignKey(name='person', foreignKey='RosettaPerson',
             dbName='person', notNull=True),
         # license
-        DateTimeCol(name='firstSeen', dbName='firstseen', notNull=True),
-        DateTimeCol(name='lastTouched', dbName='lasttouched', notNull=True),
-        BoolCol(name='inPOFile', dbName='inpofile', notNull=True),
+        DateTimeCol(name='dateFirstSeen', dbName='datefirstseen', notNull=True),
+        DateTimeCol(name='dateLastActive', dbName='datelastactive', notNull=True),
+        BoolCol(name='inLatestRevision', dbName='inlatestrevision', notNull=True),
         IntCol(name='pluralForm', dbName='pluralform', notNull=True),
         # See canonical.lp.dbschema.RosettaTranslationOrigin.
         IntCol(name='origin', dbName='origin', notNull=True),
-        BoolCol(name='deprecated', dbName='deprecated', notNull=True),
+        BoolCol(name='active', dbName='active', notNull=True),
     ]
 
 
