@@ -5,7 +5,7 @@
 
 <head>
   <title metal:fill-slot="title">
-    <span tal:replace="context/person/displayname">Name</span>
+    <span tal:replace="context/displayname">Name</span>
     SSH Keys</title>
   <!-- Plone style sheet -->
   <style type="text/css" media="screen">@import url(plone.css);</style>
@@ -17,7 +17,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1 tal:content="context/person/displayname">PERSON</h1> 
+    <h1 tal:content="context/displayname">PERSON</h1> 
 
     <p>You need to register a SSH key with Launchpad to be able to push content
     to our Arch supermirror.</p>
@@ -46,7 +46,7 @@
     </form>
     </div>
 
-    <div tal:condition="view/permission">
+    <div>
     <form name="add" action="" method="POST">
     <input type="hidden" name="action" value="add" />
     <fieldset>
@@ -64,7 +64,7 @@
     </div>
     
     <h3>Back to 
-    <a href="./" tal:content="context/person/displayname">PERSON</a>
+    <a href="./" tal:content="context/displayname">PERSON</a>
     </h3>
 
 </div>

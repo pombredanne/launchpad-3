@@ -48,9 +48,10 @@
         </div>
       </td></tr>
       </form>
-  </table>
-  <p><a href="+peoplelist">View List of Persons</a></p>
-  <p><a href="+teamlist">View List of Teams</a></p>
+    </table>
+
+    <p>View all: <img src="/++resource++user.gif" /><a href="+peoplelist">Persons</a>
+    or <img src="/++resource++user.gif" /><a href="+teamlist">Teams</a></p>
 
   <tal:block tal:define="bn view/searchPeopleBatchNavigator">
 

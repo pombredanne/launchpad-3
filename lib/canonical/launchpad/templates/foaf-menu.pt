@@ -15,11 +15,11 @@
   </li>
 
   <li>
-    <a href="/foaf/people/+new">New Person</a>
+    <a href="/foaf/people/+join">New Person</a>
   </li>
 
   <li>
-    <a href="/foaf/people/+newteam">New Team</a>
+    <a tal:attributes="href string:${home}/+newteam">New Team</a>
   </li>
 </ul>
 </div>

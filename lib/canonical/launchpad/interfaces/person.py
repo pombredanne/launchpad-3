@@ -65,7 +65,10 @@ class IPerson(Interface):
     activities = Attribute("Karma")
     distroroles = Attribute("Distribution Roles")
     translations = Attribute("Translations")
+    preferredemail = Attribute("The preferred email address (status == PREFERRED)")
+    validatedemails = Attribute("Emails with status VALIDATED")
     distroreleaseroles = Attribute("Distrorelase Roles")
+    notvalidatedemails = Attribute("Emails waiting validation (status == NEW)")
 
     def browsername():
         """Return a textual name suitable for display in a browser."""
@@ -80,25 +83,10 @@ class IPerson(Interface):
         """Return true if this person is in the named team."""
 
 
-class ITeam(Interface):
-    id = Int(
-            title=_('ID'), required=True, readonly=True,
-            )
-    name = TextLine(
-            title=_('Unique Launchpad Name'), required=True, readonly=False,
-            )
-    displayname = TextLine(
-            title=_('Display Name'), required=True, readonly=False,
-            )
-    teamowner = Int(
-            title=_('Team Owner'), required=False, readonly=False,
-            )
-    teamdescription = Text(
-            title=_('Team Description'), required=False, readonly=False,
-            )
-    # XXX: salgado: As soon as we manage a way to generate a nickname
-    # without an email address, this shouldn't be required anymore.
-    email = TextLine(title=_('Email'), required=True)
+class ITeam(IPerson):
+    """ITeam extends IPerson.
+    
+    The teamowner should never be None."""
 
 
 class IPersonSet(Interface):
@@ -109,6 +97,9 @@ class IPersonSet(Interface):
 
         Raises KeyError if there is no such person.
         """
+
+    def new(*args, **kwargs):
+        """Create a new person with given keyword arguments."""
 
     def get(personid, default=None):
         """Returns the person with the given id.
@@ -123,8 +114,7 @@ class IPersonSet(Interface):
         """
     
     def getByName(name):
-        """Returns the person with the given name.
-        """
+        """Returns the person with the given name."""
     
     def getAll():
         """Returns all People in a database"""
@@ -139,13 +129,9 @@ class IPersonSet(Interface):
 
 class IEmailAddress(Interface):
     """The object that stores the IPerson's emails."""
-    # XXX Mark Shuttleworth 08/10/04
-    #     commented out to see if it breaks anything, i'd prefer not to
-    #     expose id's unless required. If it hasn't broken anything, plese
-    #     remove after 16/20/04
-    #id = Int(
-    #    title=_('ID'), required=True, readonly=True,
-    #    )
+    id = Int(
+        title=_('ID'), required=True, readonly=True,
+        )
     email = Text(
         title=_('Email Address'), required=True,
         )

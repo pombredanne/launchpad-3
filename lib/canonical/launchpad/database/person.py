@@ -2,18 +2,24 @@
 
 __metaclass__ = type
 
+from datetime import datetime
+
 # Zope interfaces
 from zope.interface import implements
+from zope.interface import directlyProvides, directlyProvidedBy
 from zope.component import ComponentLookupError, getUtility
+
 
 # SQL imports
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, SQLObjectNotFound
+from sqlobject.sqlbuilder import AND
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 
 # canonical imports
-from canonical.launchpad.interfaces import IPerson, IPersonSet, IEmailAddress
+from canonical.launchpad.interfaces import IPerson, ITeam, IPersonSet
+from canonical.launchpad.interfaces import IEmailAddress
 from canonical.launchpad.interfaces import IObjectAuthorization
 from canonical.launchpad.interfaces import IPasswordEncryptor
 from canonical.launchpad.interfaces import ITeamParticipationSet
@@ -27,11 +33,11 @@ from canonical.launchpad.database.pofile import POTemplate
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 from canonical.lp.dbschema import KarmaField
-from canonical.lp import dbschema
+from canonical.lp.dbschema import EmailAddressStatus
+from canonical.lp.dbschema import MembershipRole
+from canonical.lp.dbschema import MembershipStatus
+from canonical.lp.dbschema import GPGKeyAlgorithms
 from canonical.foaf import nickname
-
-# python imports
-from datetime import datetime
 
 
 class Person(SQLBase):
@@ -59,10 +65,26 @@ class Person(SQLBase):
                             otherColumn='language', 
                             intermediateTable='PersonLanguage')
 
+    def get(cls, id, connection=None, selectResults=None):
+        """Override the classmethod get from the base class.
+
+        In this case when we're getting a team we mark it with ITeam.
+        """
+        val = super(Person, cls).get(
+            id, connection=connection, selectResults=selectResults)
+        if val.teamowner is not None:
+            directlyProvides(val, directlyProvidedBy(val) + ITeam)
+        return val
+    get = classmethod(get)
+
     def checkPermission(self, principal, permission):
+        if principal is None:
+            return False
+
         if permission == "launchpad.Edit":
             teamowner = getattr(self.teamowner, 'id', None)
-            if principal.id == teamowner:
+            logged = getattr(principal, 'id', None)
+            if logged and logged == teamowner:
                 # I'm the team owner and want to change the team
                 # information.
                 return True
@@ -193,89 +215,80 @@ class Person(SQLBase):
             raise ValueError, '%s not a team!' % team_name
 
         tp = TeamParticipation.selectBy(teamID=team.id, personID=self.id)
-        if len(tp) > 0:
+        if tp.count() > 0:
             return True
         else:
             return False
+
+    def _getEmailsByStatus(self, status):
+        return EmailAddress.select(AND(EmailAddress.q.personID==self.id,
+                                       EmailAddress.q.status==int(status)))
 
     #
     # Properties
     #
 
-    def _roleset(self):
-        return [item.title for item in dbschema.MembershipRole.items]
-
-    roleset = property(_roleset)
-
-    def _statusset(self):
-        return [item.title for item in dbschema.MembershipStatus.items]
-
-    statusset = property(_statusset)
-
     def _members(self): 
-        members = Membership.selectBy(teamID=self.id)
-        if members.count() == 0:
-            members = None                
-        return members
-
+        return Membership.selectBy(teamID=self.id)
     members = property(_members)
 
     def _teams(self):
-        # FIXME: (my_team) Daniel Debonzi 2004-10-13
-        # My Teams should be:
-        # -> the Teams owned by me
-        # OR
-        # -> the Teams which I'm member (as It is)
-        teams = Membership.selectBy(personID=self.id)
-        if teams.count() == 0:
-            teams = None                
-        return teams
-
+        return Membership.selectBy(personID=self.id)
     teams = property(_teams)
 
     def _subteams(self):
         teampart = getUtility(ITeamParticipationSet)
-        subteams = teampart.getSubTeams(self.id)
-        if subteams.count() == 0:
-            subteams = None                
-        return subteams
-
+        return teampart.getSubTeams(self.id)
     subteams = property(_subteams)
 
     def _distroroles(self):
-        distroroles = DistributionRole.selectBy(personID=self.id)
-        if distroroles.count() == 0:
-            distroroles = None
-        return distroroles
-
+        return DistributionRole.selectBy(personID=self.id)
     distroroles = property(_distroroles)
 
     def _distroreleaseroles(self):
-        distroreleaseroles = DistroReleaseRole.selectBy(personID=self.id)
-        if distroreleaseroles.count() == 0:
-            distroreleaseroles = None
-        return distroreleaseroles
-
+        return DistroReleaseRole.selectBy(personID=self.id)
     distroreleaseroles = property(_distroreleaseroles)
 
-    def _emails(self):
-        return EmailAddress.selectBy(personID=self.id)
+    def _setPreferredemail(self, email):
+        assert email.person == self
+        preferredemail = self.preferredemail
+        if preferredemail:
+            preferredemail.status = int(EmailAddressStatus.VALIDATED)
+        email.status = int(EmailAddressStatus.PREFERRED)
 
-    emails = property(_emails)
+    def _getPreferredemail(self):
+        status = EmailAddressStatus.PREFERRED
+        emails = self._getEmailsByStatus(status)
+        # There can be only one preferred email for a given person at a
+        # given time, and this constraint must be ensured in the DB, but
+        # it's not a problem if we ensure this constraint here as well.
+        length = len(emails)
+        assert length <= 1
+        if length:
+            return emails[0]
+        return None
+    preferredemail = property(_getPreferredemail, _setPreferredemail)
+
+    def _validatedemails(self):
+        status = EmailAddressStatus.VALIDATED
+        return self._getEmailsByStatus(status)
+    validatedemails = property(_validatedemails)
+
+    def _notvalidatedemails(self):
+        status = EmailAddressStatus.NEW
+        return self._getEmailsByStatus(status)
+    notvalidatedemails = property(_notvalidatedemails)
 
     def _bugs(self):
         return Bug.selectBy(ownerID=self.id)
-
     bugs= property(_bugs)
 
     def _translations(self):
         return TranslationEffort.selectBy(ownerID=self.id)
-
     translations = property(_translations)
 
     def _activities(self):
         return Karma.selectBy(personID=self.id)
-
     activities = property(_activities)
 
     def _wiki(self):
@@ -284,7 +297,6 @@ class Person(SQLBase):
         if count:
             assert count == 1
             return wiki[0]
-
     wiki = property(_wiki)
 
     def _jabber(self):
@@ -292,7 +304,6 @@ class Person(SQLBase):
         if jabber.count() == 0:
             return None
         return jabber[0]
-
     jabber = property(_jabber)
 
     def _archuser(self):
@@ -300,7 +311,6 @@ class Person(SQLBase):
         if archuser.count() == 0:
             return None
         return archuser[0]
-
     archuser = property(_archuser)
 
     def _irc(self):
@@ -308,7 +318,6 @@ class Person(SQLBase):
         if irc.count() == 0:
             return None
         return irc[0]
-
     irc = property(_irc)
 
     def _gpg(self):
@@ -316,13 +325,11 @@ class Person(SQLBase):
         if gpg.count() == 0:
             return None
         return gpg[0]
-
     gpg = property(_gpg)
 
     def _getSourcesByPerson(self):
         sputil = getUtility(ISourcePackageSet)
         return sputil.getByPersonID(self.id)
-
     packages = property(_getSourcesByPerson)
 
 
@@ -340,6 +347,11 @@ class PersonSet(object):
             raise KeyError, personid
         else:
             return person
+
+    def new(self, *args, **kw):
+        encryptor = getUtility(IPasswordEncryptor)
+        kw['password'] = encryptor.encrypt(kw['password'])
+        return Person(**kw)
 
     def getByName(self, name):
         results = Person.selectBy(name=name)
@@ -415,7 +427,7 @@ def createPerson(displayname, givenname, familyname, password, email):
 
     EmailAddress(person=person.id,
                  email=email,
-                 status=int(dbschema.EmailAddressStatus.NEW))
+                 status=int(EmailAddressStatus.NEW))
 
     return person
 
@@ -429,8 +441,8 @@ def createTeam(displayname, teamowner, teamdescription, email):
     if Person.selectBy(name=nick).count() > 0:
         return
     
-    role = dbschema.MembershipRole.ADMIN.value
-    status = dbschema.MembershipStatus.CURRENT.value
+    role = MembershipRole.ADMIN.value
+    status = MembershipStatus.CURRENT.value
 
     team = Person(displayname=displayname,
                   givenname=None,
@@ -443,7 +455,7 @@ def createTeam(displayname, teamowner, teamdescription, email):
 
     EmailAddress(person=team.id,
                  email=email,
-                 status=int(dbschema.EmailAddressStatus.NEW))
+                 status=int(EmailAddressStatus.NEW))
 
     Membership(personID=teamowner,
                team=team.id,
@@ -478,12 +490,12 @@ class EmailAddress(SQLBase):
 
     _table = 'EmailAddress'
 
-    email = StringCol(dbName='email', notNull=True, unique=True)
+    email = StringCol(dbName='email', notNull=True, alternateID=True)
     status = IntCol(dbName='status', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
     def _statusname(self):
-        for status in dbschema.EmailAddressStatus.items:
+        for status in EmailAddressStatus.items:
             if status.value == self.status:
                 return status.title
         return 'Unknown (%d)' %self.status
@@ -506,7 +518,7 @@ class GPGKey(SQLBase):
     revoked = BoolCol(dbName='revoked', notNull=True)
 
     def _algorithmname(self):
-        for algorithm in dbschema.GPGKeyAlgorithms.items:
+        for algorithm in GPGKeyAlgorithms.items:
             if algorithm.value == self.algorithm:
                 return algorithm.title
         return 'Unknown (%d)' %self.algorithm
@@ -561,7 +573,7 @@ class Membership(SQLBase):
     status = IntCol(dbName='status', notNull=True)
 
     def _rolename(self):
-        for role in dbschema.MembershipRole.items:
+        for role in MembershipRole.items:
             if role.value == self.role:
                 return role.title
         return 'Unknown (%d)' %self.role
@@ -569,7 +581,7 @@ class Membership(SQLBase):
     rolename = property(_rolename)
 
     def _statusname(self):
-        for status in dbschema.MembershipStatus.items:
+        for status in MembershipStatus.items:
             if status.value == self.status:
                 return status.title
         return 'Unknown (%d)' %self.status

@@ -23,35 +23,26 @@
 <div id="content" class="documentEditable">
 
     <ul class="contentViews">
-      <li id="contentview-view" class="plain">
+      <li id="contentview-profile" class="plain">
         <a href=".">Profile</a>
       </li>
 
-      <!--
       <li tal:condition="context/packages" id="contentview-packages"
-      -->
-      <li id="contentview-packages" class="plain">
+          class="plain">
         <a href="+packages">Packages</a>
       </li>
 
-      <!--
       <li tal:condition="context/bugs" id="contentview-bugs" class="plain">
-      -->
-      <li id="contentview-bugs" class="plain">
         <a href="+bugs">Bugs</a>
       </li>
 
-      <!--
       <li tal:condition="context/translations" id="contentview-translations"
-      -->
-      <li id="contentview-translations" class="plain">
+          class="plain">
         <a href="+translations">Translations</a>
       </li>
 
-      <!--
       <li tal:condition="context/activities" id="contentview-karma"
-      -->
-      <li id="contentview-karma" class="selected">
+          class="selected">
         <a href="+karma">Karma</a>
       </li>
     </ul>

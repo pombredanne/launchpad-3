@@ -1,0 +1,35 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@malone_template/master"
+      i18n:domain="launchpad">
+
+    <title metal:fill-slot="title">FOAF: Create a new Team</title>
+
+  <body>
+
+  <!-- This page uses the launchpad-addform.pt METAL -->
+
+  <div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_addform/addform">
+
+        <h3 tal:condition="view/label" tal:content="view/label"
+            metal:fill-slot="heading">Create a new Team</h3>
+
+        <div metal:fill-slot="extra_info" class="formHelp">
+          Teams are usually a way for grouping people based on a common
+          task. For example, you can create a Team called "Bazaar
+          Translators" to manage who can add new translations for the
+          bazaar product.
+        </div>
+
+        <legend metal:fill-slot="addform_legend">
+          Team Information</legend>
+
+  </div>
+
+  </div>
+  </body>
+
+</html>
+

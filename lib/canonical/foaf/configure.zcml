@@ -29,6 +29,14 @@
       permission="zope.Public"
       name="people" />
 
+  <!-- XXX: Someone help me to find a better name. logintoken is terrible -->
+  <!-- This view registers 'logintoken' as a suburl of RootObject/foaf/. -->
+  <browser:suburl
+      for="canonical.foaf.FOAFApplication"
+      utility="canonical.launchpad.interfaces.ILoginTokenSet"
+      permission="zope.Public"
+      name="logintoken" />
+
   <!-- pages for the foaf application -->
   <browser:pages 
       for="canonical.launchpad.interfaces.IFOAFApplication"
@@ -49,8 +57,8 @@
           lp:url="foaf/+dashboard" />
       <browser:page 
           name="+todo"
-          template="../launchpad/templates/foaf-to-do.pt"
-          lp:url="foaf/+to-do" />
+          template="../launchpad/templates/foaf-todo.pt"
+          lp:url="foaf/+todo" />
   </browser:pages>
 
   <include file="resources.zcml" />

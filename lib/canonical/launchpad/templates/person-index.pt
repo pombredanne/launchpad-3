@@ -23,37 +23,25 @@
 
   <div id="content" class="documentEditable">
     <ul class="contentViews">
-      <li id="contentview-view" class="selected">
+      <li id="contentview-profile" class="selected">
         <a href=".">Profile</a>
       </li>
 
-      <!--
       <li tal:condition="context/packages" id="contentview-packages"
-      -->
-      <li id="contentview-packages"
           class="plain">
         <a href="+packages">Packages</a>
       </li>
 
-      <!--
       <li tal:condition="context/bugs" id="contentview-bugs" class="plain">
-      -->
-      <li id="contentview-bugs" class="plain">
         <a href="+bugs">Bugs</a>
       </li>
 
-      <!--
       <li tal:condition="context/translations" id="contentview-translations"
-      -->
-      <li id="contentview-translations"
           class="plain">
         <a href="+translations">Translations</a>
       </li>
 
-      <!--
       <li tal:condition="context/activities" id="contentview-karma"
-      -->
-      <li id="contentview-karma"
           class="plain">
         <a href="+karma">Karma</a>
       </li>
@@ -82,13 +70,20 @@
             <td tal:content="context/teamdescription">DESCRIPTION</td>
           </tr>
                
-          <tal:dummy tal:condition="context/emails">
-          <tal:block tal:repeat="email context/emails">
+          <tal:dummy tal:condition="context/preferredemail"
+                     tal:define="email context/preferredemail">
           <tr>
             <td>Email:</td>
-            <td tal:content="string:${email/email} (${email/statusname})"></td>
+            <td><span tal:replace="email/email"></span>
+              <a href="+emails">(Edit your emails)</a></td>
           </tr>
-          </tal:block>
+          </tal:dummy>
+
+          <tal:dummy tal:condition="not: context/preferredemail">
+          <tr>
+            <td>Email:</td>
+            <td>Please <a href="+emails">set your preferred email.</a></td>
+          </tr>
           </tal:dummy>
 
           <tr tal:condition="context/wiki">
@@ -121,13 +116,21 @@
 
           <tr tal:condition="context/gpg">
             <td>GPG:</td>
-            <td><a href="+gpg" tal:content="string:${context/gpg/keysize}${context/gpg/algorithmname}/${context/gpg/keyid}"></a></td>
+            <td><a href="+showgpg" 
+                   tal:content="string:${context/gpg/keysize}${context/gpg/algorithmname}/${context/gpg/keyid}">
+                </a></td>
           </tr>
 
-          <tr tal:condition="context/sshkeys">
+          <tr>
             <td>SSH:</td>
-			<td><a href="+sshkey"><span tal:replace="python:
-						len(context.sshkeys)">0</span> SSH key(s)</a></td>
+            <td tal:condition="context/sshkeys">
+              <a href="+sshkey"><span tal:replace="python:
+                  len(context.sshkeys)">0</span> SSH key(s)</a>
+              <a href="+editsshkey">(Edit your ssh key(s))</a>
+            </td>
+            <td tal:condition="not: context/sshkeys">
+              <a href="+editsshkey">Upload your ssh key(s)</a>
+            </td>
           </tr>
 
           <tr>
@@ -164,7 +167,7 @@
           <tr tal:condition="context/distroreleaseroles"
               tal:repeat="role context/distroreleaseroles">
             <td><span tal:content="role/rolename">ROLENAME</span> on 
-              <a tal:attributes="href string:/soyuz/distros/${role/distrorelease/distribution/name}/releases/${role/distrorelease/name}"
+              <a tal:attributes="href string:/soyuz/distros/${role/distrorelease/distribution/name}/${role/distrorelease/name}"
                  tal:content="role/distrorelease/displayname">RELEASE</a>
             </td>
           </tr>
@@ -193,7 +196,7 @@
               <tr tal:condition="context/distroreleaseroles"
                   tal:repeat="role context/distroreleaseroles">
                 <td><span tal:content="role/rolename">ROLENAME</span> on 
-                  <a tal:attributes="href string:/soyuz/distros/${role/distrorelease/distribution/name}/releases/${role/distrorelease/name}"
+                  <a tal:attributes="href string:/soyuz/distros/${role/distrorelease/distribution/name}/${role/distrorelease/name}"
                      tal:content="role/distrorelease/displayname">RELEASE</a>
                 </td>
               </tr>

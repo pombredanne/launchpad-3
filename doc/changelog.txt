@@ -2,6 +2,170 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-07 16:55:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1160
+
+    Summary:
+      FOAF can now handle new accounts, email validation and setting of preffered email. Small summary, huge changeset.
+    Revision:
+      launchpad--devel--0--patch-1160
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-46
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-47
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-48
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-49
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-50
+       Adding a hook to mark all teams with ITeam at runtime
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-51
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-52
+       Display Bugs/Packages/Translations/Karma tabs only if the user have Bugs/Packages/Translations/Karma
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-53
+       Moving code to validate email adresses into a separate function, so it can be used in other places.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-54
+       Fixing method email_is_valid().
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-55
+       Use canonical.auth.browser.well_formed_email instead of nickname.email_is_valid
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-56
+       Moving some stuff from person.zcml to {emailaddress,gpgkey,sshkey}.zcml
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-57
+       Small fixes for the sshkey edit interface
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-58
+       New interface to do almost anything that is possible with email addresses (validate, add, remove and select the preferred one).
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-59
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-60
+       Use getUtility(ILaunchBag).login to find the email address used to login. Also a small fix for setting the preferred email.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-61
+       *really* small fixes
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-62
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-63
+       Another small fix to avoid problems when no preferred email is set.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-64
+       Import only what we want from dbschema.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-65
+       Fix the Person's edit view, which was broken.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-66
+       New link for setting the preffered email.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-67
+       FOAF can now handle the creation of new accounts by sending an email with a token to the user and then finishing the registration process when the user follows the link and type his Name and password.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-68
+       merge from rf
+    
+
+    new files:
+     lib/canonical/foaf/.arch-ids/newuser-email.txt.id
+     lib/canonical/foaf/.arch-ids/validate-email.txt.id
+     lib/canonical/foaf/newuser-email.txt
+     lib/canonical/foaf/validate-email.txt
+     lib/canonical/launchpad/database/.arch-ids/logintoken.py.id
+     lib/canonical/launchpad/database/logintoken.py
+     lib/canonical/launchpad/interfaces/.arch-ids/logintoken.py.id
+     lib/canonical/launchpad/interfaces/logintoken.py
+     lib/canonical/launchpad/templates/.arch-ids/foaf-join.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/foaf-newaccount.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/foaf-newteam.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/foaf-validateemail.pt.id
+     lib/canonical/launchpad/templates/foaf-join.pt
+     lib/canonical/launchpad/templates/foaf-newaccount.pt
+     lib/canonical/launchpad/templates/foaf-newteam.pt
+     lib/canonical/launchpad/templates/foaf-validateemail.pt
+     lib/canonical/launchpad/zcml/.arch-ids/logintoken.zcml.id
+     lib/canonical/launchpad/zcml/logintoken.zcml
+
+    removed files:
+     lib/canonical/launchpad/templates/.arch-ids/portlet-person-packages.pt.id
+     lib/canonical/launchpad/templates/portlet-person-packages.pt
+
+    modified files:
+     doc/changelog.txt lib/canonical/foaf/configure.zcml
+     lib/canonical/foaf/nickname.py
+     lib/canonical/launchpad/browser/people.py
+     lib/canonical/launchpad/database/__init__.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/doc/person.txt
+     lib/canonical/launchpad/interfaces/__init__.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/templates/foaf-menu.pt
+     lib/canonical/launchpad/templates/people-index.pt
+     lib/canonical/launchpad/templates/person-bugs.pt
+     lib/canonical/launchpad/templates/person-emails.pt
+     lib/canonical/launchpad/templates/person-index.pt
+     lib/canonical/launchpad/templates/person-karma.pt
+     lib/canonical/launchpad/templates/person-packages.pt
+     lib/canonical/launchpad/templates/person-sshkey.pt
+     lib/canonical/launchpad/templates/person-translations.pt
+     lib/canonical/launchpad/zcml/archuserid.zcml
+     lib/canonical/launchpad/zcml/configure.zcml
+     lib/canonical/launchpad/zcml/emailaddress.zcml
+     lib/canonical/launchpad/zcml/gpgkey.zcml
+     lib/canonical/launchpad/zcml/ircid.zcml
+     lib/canonical/launchpad/zcml/jabberid.zcml
+     lib/canonical/launchpad/zcml/person.zcml
+     lib/canonical/launchpad/zcml/sshkey.zcml
+     lib/canonical/launchpad/zcml/wikiname.zcml
+     lib/canonical/lp/dbschema.py
+
+    renamed files:
+     lib/canonical/launchpad/templates/.arch-ids/foaf-to-do.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/foaf-todo.pt.id
+     lib/canonical/launchpad/templates/foaf-to-do.pt
+       ==> lib/canonical/launchpad/templates/foaf-todo.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-46
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-47
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-48
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-49
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-50
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-51
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-52
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-53
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-54
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-55
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-56
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-57
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-58
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-59
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-60
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-61
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-62
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-63
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-64
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-65
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-66
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-67
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-68
+
+
 2005-01-07 13:59:36 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1159
 
     Summary:
