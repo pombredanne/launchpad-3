@@ -13,8 +13,16 @@ from canonical.lucille.tests.util import FakeDownloadClient, FakeUploadClient
 
 from canonical.lucille.tests import datadir
 
-
 class TestLibrarianWrapper(unittest.TestCase):
+
+    def setUp(self):
+        ## Create archive and cache dir ...
+        os.mkdir(datadir('archive'))
+        os.mkdir(datadir('cache'))
+                
+    def tearDown(self):
+        shutil.rmtree(datadir('archive'))
+        shutil.rmtree(datadir('cache'))
 
     def testImport(self):
         """canonical.lucille.Librarian should be importable"""
@@ -23,17 +31,15 @@ class TestLibrarianWrapper(unittest.TestCase):
     def testInstatiate(self):
         """canonical.lucille.Librarian should be instantiatable"""
         from canonical.lucille import Librarian
-        lib = Librarian('localhost', 9090, 8000, "/tmp/cache")
+        lib = Librarian('localhost', 9090, 8000, datadir('cache'))
 
     def testUpload(self):
         """canonical.lucille.Librarian Upload"""
         name = 'ed_0.2-20.dsc'
-        path = os.path.join (datadir(""), name)
+        path = datadir(name)
 
-        cache = "/tmp/cache" 
-        
         from canonical.lucille import Librarian
-        lib = Librarian('localhost', 9090, 8000, cache)
+        lib = Librarian('localhost', 9090, 8000, datadir('cache'))
 
         fileobj = open(path, 'rb')
         size = os.stat(path).st_size
@@ -48,21 +54,16 @@ class TestLibrarianWrapper(unittest.TestCase):
                                         uploader=uploader)
         print 'ID %s ALIAS %s' %(fileid, filealias)
 
-        cached = os.path.join('/tmp/cache', name)
+        cached = os.path.join(datadir('cache'), name)
         os.path.exists(cached)
 
     def testDownload(self):
         """canonical.lucille.Librarian DownloadToDisk process"""
         filealias = '1'
-        arch_dir = '/tmp/archive'
-        ## Create archive dir ...
-        if not os.access(arch_dir, os.F_OK):
-            os.mkdir(arch_dir)
-            
-        archive = os.path.join (arch_dir, 'test')
+        archive = os.path.join (datadir('archive'), 'test')
 
         from canonical.lucille import Librarian
-        lib = Librarian('localhost', 9090, 8000, "/tmp/cache")
+        lib = Librarian('localhost', 9090, 8000, datadir('cache'))
         ## Use Fake Librarian Class 
         downloader = FakeDownloadClient()
 
