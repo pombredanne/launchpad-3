@@ -16,7 +16,10 @@ class POSyntaxError(Exception):
         self.lno = lno
 
     def __str__(self):
-        return 'Po file: syntax error on entry at line %d' % self.lno
+        if self.lno is None:
+            return 'PO file: syntax error on an unknown line'
+        else:
+            return 'PO file: syntax error on entry at line %d' % self.lno
 
 class POInvalidInputError(Exception):
     """ Syntax error in a po file """
@@ -27,7 +30,10 @@ class POInvalidInputError(Exception):
     def __str__(self):
         if self.msg:
             return self.msg
-        return 'Po file: invalid input on entry at line %d' % self.lno
+        elif self.lno is None:
+            return 'PO file: invalid input on unknown line'
+        else:
+            return 'PO file: invalid input on entry at line %d' % self.lno
 
 class POSyntaxWarning(Warning):
     """ Syntax warning in a po file """
@@ -38,7 +44,10 @@ class POSyntaxWarning(Warning):
     def __str__(self):
         if self.msg:
             return self.msg
-        return 'Po file: syntax warning on entry at line %d' % self.lno
+        elif self.lno is None:
+            return 'PO file: syntax warning on unknown line'
+        else:
+            return 'Po file: syntax warning on entry at line %d' % self.lno
 
 
 # classes
