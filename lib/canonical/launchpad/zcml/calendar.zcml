@@ -71,76 +71,68 @@
       for="canonical.launchpad.interfaces.ICalendarEventCollection"
       getter="__getitem__" />
 
-  <content class="canonical.launchpad.browser.MonthInfo">
-    <allow interface="canonical.launchpad.interfaces.ICalendarMonthInfo" />
-  </content>
-
-  <content class="canonical.launchpad.browser.DayInfo">
-    <allow interface="canonical.launchpad.interfaces.ICalendarDayInfo" />
-  </content>
-
-  <content class="canonical.launchpad.browser.EventInfo">
-    <allow interface="canonical.launchpad.interfaces.ICalendarEventInfo" />
-  </content>
-
-  <content class="canonical.launchpad.browser.DayView">
-    <allow interface="canonical.launchpad.interfaces.ICalendarDayView" />
+  <content class="canonical.launchpad.browser.CalendarDay">
+    <allow interface="canonical.launchpad.interfaces.ICalendarDay" />
   </content>
 
   <browser:defaultView
-      for="canonical.launchpad.interfaces.ICalendarDayView"
+      for="canonical.launchpad.interfaces.ICalendarDay"
       name="+index" />
 
   <browser:pages
-      for="canonical.launchpad.interfaces.ICalendarDayView"
+      for="canonical.launchpad.interfaces.ICalendarDay"
+      class="canonical.launchpad.browser.CalendarDayView"
       permission="zope.Public">
     <browser:page
         template="../templates/calendar-view-day.pt"
         name="+index" />
   </browser:pages>
 
-  <content class="canonical.launchpad.browser.WeekView">
-    <allow interface="canonical.launchpad.interfaces.ICalendarWeekView" />
+  <content class="canonical.launchpad.browser.CalendarWeek">
+    <allow interface="canonical.launchpad.interfaces.ICalendarWeek" />
   </content>
 
   <browser:defaultView
-      for="canonical.launchpad.interfaces.ICalendarWeekView"
+      for="canonical.launchpad.interfaces.ICalendarWeek"
       name="+index" />
 
   <browser:pages
-      for="canonical.launchpad.interfaces.ICalendarWeekView"
+      for="canonical.launchpad.interfaces.ICalendarWeek"
+      class="canonical.launchpad.browser.CalendarWeekView"
       permission="zope.Public">
     <browser:page
         template="../templates/calendar-view-week.pt"
         name="+index" />
   </browser:pages>
 
-  <content class="canonical.launchpad.browser.MonthView">
-    <allow interface="canonical.launchpad.interfaces.ICalendarMonthView" />
+  <content class="canonical.launchpad.browser.CalendarMonth">
+    <allow interface="canonical.launchpad.interfaces.ICalendarMonth" />
   </content>
 
   <browser:defaultView
-      for="canonical.launchpad.interfaces.ICalendarMonthView"
+      for="canonical.launchpad.interfaces.ICalendarMonth"
       name="+index" />
 
   <browser:pages
-      for="canonical.launchpad.interfaces.ICalendarMonthView"
+      for="canonical.launchpad.interfaces.ICalendarMonth"
+      class="canonical.launchpad.browser.CalendarMonthView"
       permission="zope.Public">
     <browser:page
         template="../templates/calendar-view-month.pt"
         name="+index" />
   </browser:pages>
 
-  <content class="canonical.launchpad.browser.YearView">
-    <allow interface="canonical.launchpad.interfaces.ICalendarYearView" />
+  <content class="canonical.launchpad.browser.CalendarYear">
+    <allow interface="canonical.launchpad.interfaces.ICalendarYear" />
   </content>
 
   <browser:defaultView
-      for="canonical.launchpad.interfaces.ICalendarYearView"
+      for="canonical.launchpad.interfaces.ICalendarYear"
       name="+index" />
 
   <browser:pages
-      for="canonical.launchpad.interfaces.ICalendarYearView"
+      for="canonical.launchpad.interfaces.ICalendarYear"
+      class="canonical.launchpad.browser.CalendarYearView"
       permission="zope.Public">
     <browser:page
         template="../templates/calendar-view-year.pt"

@@ -17,11 +17,8 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from schoolbell.interfaces import IEditCalendar, ICalendarEvent
 from schoolbell.simple import SimpleCalendarEvent
 from canonical.launchpad.interfaces import IHasOwner
-from canonical.launchpad.interfaces import ICalendarView, ICalendarWeekView
-from canonical.launchpad.interfaces import ICalendarDayView, ICalendarMonthView
-from canonical.launchpad.interfaces import ICalendarYearView
-from canonical.launchpad.interfaces import ICalendarDayInfo, ICalendarEventInfo
-from canonical.launchpad.interfaces import ICalendarMonthInfo
+from canonical.launchpad.interfaces import ICalendarDay, ICalendarWeek
+from canonical.launchpad.interfaces import ICalendarMonth, ICalendarYear
 from canonical.launchpad.interfaces import ICalendarEventCollection
 
 from canonical.launchpad.database import CalendarEvent
@@ -65,62 +62,102 @@ def traverseCalendar(calendar, request, name):
     match = _year_pat.match(name)
     if match:
         try:
-            return YearView(calendar,
-                            year=int(match.group(1)))
-        except AssertionError:
+            return CalendarYear(calendar,
+                                year=int(match.group(1)))
+        except ValueError:
             return None
     match = _month_pat.match(name)
     if match:
         try:
-            return MonthView(calendar,
-                             year=int(match.group(1)),
-                             month=int(match.group(2)))
-        except AssertionError:
+            return CalendarMonth(calendar,
+                                 year=int(match.group(1)),
+                                 month=int(match.group(2)))
+        except ValueError:
             return None
     match = _week_pat.match(name)
     if match:
         try:
-            return WeekView(calendar,
-                            year=int(match.group(1)),
-                            week=int(match.group(2)))
-        except AssertionError:
+            return CalendarWeek(calendar,
+                                year=int(match.group(1)),
+                                week=int(match.group(2)))
+        except ValueError:
             return None
     match = _day_pat.match(name)
     if match:
         try:
-            return DayView(calendar,
-                           year=int(match.group(1)),
-                           month=int(match.group(2)),
-                           day=int(match.group(3)))
-        except AssertionError:
+            return CalendarDay(calendar,
+                               year=int(match.group(1)),
+                               month=int(match.group(2)),
+                               day=int(match.group(3)))
+        except ValueError:
             return None
     now = datetime.now(user_timezone)
     if name == 'today':
-        return DayView(calendar,
-                       year=now.year,
-                       month=now.month,
-                       day=now.day)
+        return CalendarDay(calendar,
+                           year=now.year,
+                           month=now.month,
+                           day=now.day)
     elif name == 'this-week':
         isoyear, isoweek, isoday = now.isocalendar()
-        return WeekView(calendar,
-                        year=isoyear,
-                        week=isoweek)
+        return CalendarWeek(calendar,
+                            year=isoyear,
+                            week=isoweek)
     elif name == 'this-month':
-        return MonthView(calendar,
-                         year=now.year,
-                         month=now.month)
+        return CalendarMonth(calendar,
+                             year=now.year,
+                             month=now.month)
     elif name == 'this-year':
-        return MonthView(calendar,
-                         year=now.year)
+        return CalendarYear(calendar,
+                            year=now.year)
     elif name == 'events':
         return CalendarEventCollection(calendar)
 
-class CalendarView(object):
-    """Base class for the various calendar views"""
-    implements(ICalendarView)
+class CalendarDay(object):
+    implements(ICalendarDay)
 
-    def __init__(self, calendar, datestring):
+    def __init__(self, calendar, year, month, day):
+        # this will raise an error for invalid dates ...
+        date(year, month, day)
         self.calendar = calendar
+        self.year = year
+        self.month = month
+        self.day = day
+
+class CalendarWeek(object):
+    implements(ICalendarWeek)
+
+    def __init__(self, calendar, year, week):
+        # this will raise an error for invalid dates ...
+        if not check_weeknum(year, week):
+            raise ValueError, 'invalid week number'
+        self.calendar = calendar
+        self.year = year
+        self.week = week
+
+class CalendarMonth(object):
+    implements(ICalendarMonth)
+
+    def __init__(self, calendar, year, month):
+        # this will raise an error for invalid dates ...
+        date(year, month, 1)
+        self.calendar = calendar
+        self.year = year
+        self.month = month
+
+class CalendarYear(object):
+    implements(ICalendarYear)
+
+    def __init__(self, calendar, year):
+        # this will raise an error for invalid dates ...
+        date(year, 1, 1)
+        self.calendar = calendar
+        self.year = year
+
+class CalendarViewBase(object):
+
+    def __init__(self, context, request, datestring):
+        self.context = context
+        self.request = request
         self.datestring = datestring
 
     def _setViewURLs(self, date):
@@ -133,18 +170,8 @@ class CalendarView(object):
         self.monthViewURL = '../%04d-%02d' % (date.year, date.month)
         self.yearViewURL = '../%04d' % date.year
 
-class CalendarEventCollection(object):
-    implements(ICalendarEventCollection)
-
-    def __init__(self, calendar):
-        self.calendar = calendar
-
-    def __getitem__(self, number):
-        return CalendarEvent.get(id=number)
 
 class MonthInfo(object):
-    implements(ICalendarMonthInfo)
-
     def __init__(self, year, month):
         self.monthname = monthnames[month-1]
         self.days = []
@@ -153,8 +180,6 @@ class MonthInfo(object):
         self.layout = calendar.monthcalendar(year, month)
 
 class DayInfo(object):
-    implements(ICalendarDayInfo)
-
     def __init__(self, date):
         self.date = date
         self.dayname = daynames[self.date.weekday()]
@@ -167,43 +192,41 @@ class DayInfo(object):
     hasEvents = property(hasEvents)
 
 class EventInfo(object):
-    implements(ICalendarEventInfo)
     def __init__(self, event):
         self.event = event
         self.dtstart = event.dtstart.astimezone(user_timezone)
         self.timestring = '%02d:%02d' % (self.dtstart.hour,
                                          self.dtstart.minute)
 
-class DayView(CalendarView):
-    """A day view of the calendar."""
-    implements(ICalendarDayView)
+class CalendarDayView(CalendarViewBase):
+    __used_for__ = ICalendarDay
 
-    def __init__(self, calendar, year, month, day):
-        self.day = date(year, month, day)
-        datestring = '%d %s %04d' % (day, monthnames[month-1], year)
-        CalendarView.__init__(self, calendar, datestring)
+    def __init__(self, context, request):
+        CalendarViewBase.__init__(self, context, request,
+                                  '%d %s %04d' % (context.day,
+                                                  monthnames[context.month-1],
+                                                  context.year))
 
-        # navigation links
-        yesterday = self.day - timedelta(days=1)
+        day = date(context.year, context.month, context.day)
+        yesterday = day - timedelta(days=1)
         self.prevURL = '../%04d-%02d-%02d' % (yesterday.year,
                                               yesterday.month,
                                               yesterday.day)
-        tomorrow = self.day + timedelta(days=1)
+        tomorrow = day + timedelta(days=1)
         self.nextURL = '../%04d-%02d-%02d' % (tomorrow.year,
                                               tomorrow.month,
                                               tomorrow.day)
-        self._setViewURLs(self.day)
+        self._setViewURLs(day)
 
-class WeekView(CalendarView):
+class CalendarWeekView(CalendarViewBase):
     """A week view of the calendar."""
-    implements(ICalendarWeekView)
+    __used_for__ = ICalendarWeek
 
-    def __init__(self, cal, year, week):
-        assert check_weeknum(year, week), 'invalid week number'
-        CalendarView.__init__(self, cal, 'Week %d, %04d' % (week, year))
-        self.year = year
-        self.week = week
-        (start, end) = weeknum_bounds(year, week)
+    def __init__(self, context, request):
+        CalendarViewBase.__init__(self, context, request,
+                          _('Week %d, %04d') % (context.week, context.year))
+
+        (start, end) = weeknum_bounds(context.year, context.week)
 
         # navigation links
         (isoyear, isoweek, isoday) = (start - timedelta(days=1)).isocalendar()
@@ -223,7 +246,7 @@ class WeekView(CalendarView):
         start = datetime(start.year, start.month, start.day,
                          0, 0, 0, 0, user_timezone).astimezone(UTC)
         end = start + timedelta(weeks=1)
-        for event in self.calendar.expand(start, end):
+        for event in context.calendar.expand(start, end):
             ev = EventInfo(event)
             self.days[ev.dtstart.weekday()].events.append(ev)
 
@@ -236,73 +259,68 @@ class WeekView(CalendarView):
         # self.layout = [[ 1, 2, 3, 4, 5, 6, 7 ]]
         # self.rowspans = [ None, None, None, None, None, None, None ]
 
-class MonthView(CalendarView):
+class CalendarMonthView(CalendarViewBase):
     """A month view of the calendar."""
-    implements(ICalendarMonthView)
+    __used_for__ = ICalendarMonth
 
     daynames = daynames
 
-    def __init__(self, cal, year, month):
-        assert 1 <= month <= 12, 'invalid month number'
-        datestring = '%s %04d' % (monthnames[month-1], year)
-        CalendarView.__init__(self, cal, datestring)
-        self.year = year
-        self.month = month
-        start = date(year, month, 1)
+    def __init__(self, context, request):
+        datestring = '%s %04d' % (monthnames[context.month-1], context.year)
+        CalendarViewBase.__init__(self, context, request, datestring)
+        start = date(context.year, context.month, 1)
 
         # navigation links
         prev = prev_month(start)
         self.prevURL = '../%04d-%02d' % (prev.year, prev.month)
         next = next_month(start)
         self.nextURL = '../%04d-%02d' % (next.year, next.month)
-
         self._setViewURLs(start)
 
         # create dayinfo instances for each day of the month
         self.days = []
-        for i in range(calendar.monthrange(year, month)[1]):
-            self.days.append(DayInfo(date(year, month, i+1)))
+        for i in range(calendar.monthrange(context.year, context.month)[1]):
+            self.days.append(DayInfo(date(context.year, context.month, i+1)))
 
         # convert to UTC time offsets
-        start = datetime(year, month, 1,
+        start = datetime(start.year, start.month, 1,
                          0, 0, 0, 0, user_timezone).astimezone(UTC)
         end = datetime(next.year, next.month, 1,
                          0, 0, 0, 0, user_timezone).astimezone(UTC)
 
-        for event in self.calendar.expand(start, end):
+        for event in context.calendar.expand(start, end):
             ev = EventInfo(event)
             self.days[ev.dtstart.day - 1].events.append(ev)
 
         # lay out the dayinfo objects in a 2D grid
-        self.layout = calendar.monthcalendar(year, month)
+        self.layout = calendar.monthcalendar(context.year, context.month)
 
-class YearView(CalendarView):
+class CalendarYearView(CalendarViewBase):
     """A month view of the calendar."""
-    implements(ICalendarYearView)
+    __used_for__ = ICalendarYear
 
-    def __init__(self, cal, year):
-        CalendarView.__init__(self, cal, '%04d' % year)
-        self.year = year
-        start = date(year, 1, 1)
-        end = date(year+1, 1, 1) - timedelta(days=1)
+    def __init__(self, context, request):
+        CalendarViewBase.__init__(self, context, request, '%04d'%context.year)
+        start = date(context.year, 1, 1)
+        end = date(context.year+1, 1, 1) - timedelta(days=1)
         self.bounds = [start, end]
 
         # navigation links
-        self.prevURL = '../%04d' % (year - 1)
-        self.nextURL = '../%04d' % (year + 1)
+        self.prevURL = '../%04d' % (context.year - 1)
+        self.nextURL = '../%04d' % (context.year + 1)
 
         self._setViewURLs(start)
 
         self.months = []
         for month in range(1, 13):
-            self.months.append(MonthInfo(year, month))
+            self.months.append(MonthInfo(context.year, month))
 
         # convert to UTC time offsets
-        start = datetime(year, 1, 1,
+        start = datetime(context.year, 1, 1,
                          0, 0, 0, 0, user_timezone).astimezone(UTC)
-        end = datetime(year+1, 1, 1,
+        end = datetime(context.year+1, 1, 1,
                          0, 0, 0, 0, user_timezone).astimezone(UTC)
-        for event in self.calendar.expand(start, end):
+        for event in context.calendar.expand(start, end):
             ev = EventInfo(event)
             self.months[ev.dtstart.month - 1].days[ev.dtstart.day - 1].events.append(ev)
 
@@ -311,6 +329,17 @@ class YearView(CalendarView):
                         [  4,  5,  6 ],
                         [  7,  8,  9 ],
                         [ 10, 11, 12 ] ]
+
+
+class CalendarEventCollection(object):
+    implements(ICalendarEventCollection)
+
+    def __init__(self, calendar):
+        self.calendar = calendar
+
+    def __getitem__(self, number):
+        return CalendarEvent.get(id=number)
+
 
 
 class CalendarEventAddView(AddView):

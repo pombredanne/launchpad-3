@@ -5,7 +5,7 @@
   <head>
     <title metal:fill-slot="title">
       <span tal:replace="context/calendar/title">Calendar Title</span> -
-      <span tal:replace="context/datestring">Time</span>
+      <span tal:replace="view/datestring">Time</span>
     </title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
@@ -17,38 +17,38 @@
       <div id="content" class="documentEditable">
         <ul class="contentViews">
           <li id="contentview-day">
-            <a tal:attributes="href context/dayViewURL">Day</a>
+            <a tal:attributes="href view/dayViewURL">Day</a>
           </li>
           <li id="contentview-week">
-            <a tal:attributes="href context/weekViewURL">Week</a>
+            <a tal:attributes="href view/weekViewURL">Week</a>
           </li>
           <li id="contentview-month">
-            <a tal:attributes="href context/monthViewURL">Month</a>
+            <a tal:attributes="href view/monthViewURL">Month</a>
           </li>
           <li id="contentview-year" class="selected">
-            <a tal:attributes="href context/yearViewURL">Year</a>
+            <a tal:attributes="href view/yearViewURL">Year</a>
           </li>
         </ul>
         <div class="documentContent">
           <h1>
             <span tal:replace="context/calendar/title">Calendar Title</span> -
-            <span tal:replace="context/datestring">Time</span>
+            <span tal:replace="view/datestring">Time</span>
           </h1>
 
 
-          <a tal:attributes="href context/prevURL">&lt;- Previous</a>
-          <a tal:attributes="href context/nextURL">Next -&gt;</a>
+          <a tal:attributes="href view/prevURL">&lt;- Previous</a>
+          <a tal:attributes="href view/nextURL">Next -&gt;</a>
 
           <table>
-            <tr tal:repeat="row context/layout" valign="top">
+            <tr tal:repeat="row view/layout" valign="top">
               <td tal:repeat="monthnum row">
-                <div tal:define="month python:context.months[monthnum-1]">
+                <div tal:define="month python:view.months[monthnum-1]">
 
                 <h2 tal:content="month/monthname">Month</h2>
 
                 <table border="1">
                   <tr>
-                    <th tal:repeat="day context/daynames"
+                    <th tal:repeat="day view/daynames"
                         tal:content="day">Day of Week</th>
                   </tr>
                   <tr tal:repeat="row month/layout">
