@@ -102,6 +102,15 @@
               <a href="/bazaar">Bazaar</a>
             </li>
 
+            <li class="selected"
+                tal:condition="python:'/calendar' in path_info">
+              <a href="/calendar">Calendar</a>
+            </li>
+            <li class="plain"
+                tal:condition="python:'/calendar' not in path_info">
+              <a href="/calendar">Calendar</a>
+            </li>
+
           </ul>
 
       <div id="portal-personaltools"

@@ -400,7 +400,9 @@ class CalendarDayView(CalendarViewBase):
           (2 * 4) + (15 / 15) = 9
 
         """
-        dtstart = event.dtstart.astimezone(self.user_timezone)
+        daystart = datetime(self.context.year, self.context.month,
+                            self.context.day, 0, 0, 0, 0, self.user_timezone)
+        dtstart = max(event.dtstart.astimezone(self.user_timezone), daystart)
         top = ((dtstart.hour - self.starthour) * 4
                + dtstart.minute / 15)
         return top
@@ -411,7 +413,14 @@ class CalendarDayView(CalendarViewBase):
         Each hour is made up of 4 units ('em' currently).  Need to round 1 -
         14 minute intervals up to 1 display unit.
         """
-        minutes = event.duration.seconds / 60
+        daystart = datetime(self.context.year, self.context.month,
+                            self.context.day, 0, 0, 0, 0, self.user_timezone)
+        dayend = daystart + timedelta(days=1)
+
+        duration = (min(dayend, event.dtstart + event.duration) -
+                    max(daystart, event.dtstart))
+        minutes = (duration.days * 1440) + (duration.seconds / 60)
+
         return max(1, (minutes + 14) / 15)
 
 
