@@ -71,6 +71,8 @@ fieldset.message-strings input {
     width: 100%;
 }
 
+fieldset.message-strings input[type=checkbox] { width: auto !important; }
+
 .messageSourceString {
     padding: 0.5em 1em;
     background-color: #93bee2;

@@ -165,11 +165,10 @@
                 <div class="field" tal:repeat="language view/languages">
                     <label class="language-code"
                         tal:content="language/englishName">pt_BR</label>:
-                    <label><input type="checkbox" value="fuzzy"
+                    <input type="checkbox" value="fuzzy"
                         tal:attributes="checked python:set['fuzzy'][language];
                         name string:set_${set/id}_fuzzy_${language/code};" />
-                        Needs review
-                    </label>
+                    <label>Needs review</label>
                     <br/>
 
                     <input type="text"
