@@ -10,6 +10,10 @@ class UnknownUserError(Exception):
     pass
 
 
+SINGULAR = 0
+PLURAL = 1
+
+
 # XXX: if you *modify* the adapted pofile "object", it assumes you're updating
 #      it from the latest revision (for the purposes of inLastRevision fields).
 #      That should probably be optional.
@@ -211,24 +215,24 @@ class MessageProxy(POMessage):
     msgid = property(_get_msgid, _set_msgid)
 
     # property: msgidPlural
-    # in rosetta: messageIDs()[1] points to it
+    # in rosetta: messageIDs()[PLURAL] points to it
     def _get_msgidPlural(self):
         msgids = self._master_msgset.messageIDs()
         if len(list(msgids)) >= 2:
-            return msgids[1].msgid
+            return msgids[PLURAL].msgid
         return None
     def _set_msgidPlural(self, value):
         # do we already have one?
         old_plural = self.msgidPlural
         if old_plural is not None:
             # yes; outdate it
-            old_plural = self._msgset.getMessageIDSighting(1)
+            old_plural = self._msgset.getMessageIDSighting(PLURAL)
             old_plural.inPOFile = False
         # if value is empty or None, we don't need a sighting
         if value:
             # value is not empty; make a sighting for it
             # (or update an existing old sighting)
-            self._msgset.makeMessageIDSighting(value, 1, update=True)
+            self._msgset.makeMessageIDSighting(value, PLURAL, update=True)
     msgidPlural = property(_get_msgidPlural, _set_msgidPlural)
 
     # property: msgstr (pofile.py only uses that when it's not plural)
@@ -238,23 +242,22 @@ class MessageProxy(POMessage):
             return None
         translations = list(self._msgset.translations())
         if len(translations) == 1:
-            return translations[0]
+            return translations[SINGULAR]
     def _set_msgstr(self, value):
         # let's avoid duplication of code; TranslationsList has
         # all the code necessary to do this
-        self._translations[0] = value
+        self._translations[SINGULAR] = value
     msgstr = property(_get_msgstr, _set_msgstr)
 
     # property: msgstrPlurals (a list)
     # in rosetta: set of translations sightings that point back here
     # we use the helper class TranslationsList for both reading and writing
     def _get_msgstrPlurals(self):
-        if self._msgset.poFile is None:
-            return None
-        translations = list(self._msgset.translations())
-        if len(translations) > 1:
+        if len(list(self._master_msgset.messageIDs())) > 1:
             # test is necessary because the interface says when
-            # there are no plurals, msgstrPlurals is None
+            # message is not plural, msgstrPlurals is None
+            if self._msgset.poFile is None:
+                return ('', '')
             return self._translations
     def _set_msgstrPlurals(self, value):
         for index, item in enumerate(value):
@@ -370,14 +373,14 @@ class TemplateImporter(object):
             msgset = self.potemplate.createMessageSetFromText(msgid)
         else:
             # it was in the db - update the timestamp
-            msgset.getMessageIDSighting(0, allowOld=True).dateLastSeen = "NOW"
+            msgset.getMessageIDSighting(SINGULAR, allowOld=True).dateLastSeen = "NOW"
         # set sequence
         self.len += 1
         msgset.sequence = self.len
         # set inLastRevision for the primary msgid
         # (the primary msgid is such an special case that we can't trust
         # that task to the proxy)
-        msgset.getMessageIDSighting(0, allowOld=True).inLastRevision = True
+        msgset.getMessageIDSighting(SINGULAR, allowOld=True).inLastRevision = True
         # create the proxy
         proxy = MessageProxy(msgset, person=self.person)
         # capture all exceptions - we want (do we?) our IndexError, KeyError,
@@ -484,14 +487,14 @@ class POFileImporter(object):
             msgset = self.pofile.createMessageSetFromText(msgid)
         else:
             # it was in the db - update the timestamp
-            msgset.getMessageIDSighting(0, allowOld=True).dateLastSeen = "NOW"
+            msgset.getMessageIDSighting(SINGULAR, allowOld=True).dateLastSeen = "NOW"
         # set sequence
         self.len += 1
         msgset.sequence = self.len
         # set inLastRevision for the primary msgid
         # (the primary msgid is such an special case that we can't trust
         # that task to the proxy)
-        msgset.getMessageIDSighting(0, allowOld=True).inLastRevision = True
+        msgset.getMessageIDSighting(SINGULAR, allowOld=True).inLastRevision = True
         # create the proxy
         proxy = MessageProxy(msgset, person=self.person)
         # capture all exceptions - we want (do we?) our IndexError, KeyError,

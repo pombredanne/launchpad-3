@@ -73,19 +73,12 @@ if __name__ == '__main__':
         help="The template the imported file belongs to")
     parser.add_option("-l", "--language", dest="language",
         help="The language code, for importing PO files")
-    parser.add_option("-D", "--debug", dest="debug",
-        action="store_true", default=False,
-        help="Activate extra debug output")
 
     (options, args) = parser.parse_args()
 
     for name in ('owner', 'file', 'project', 'product', 'potemplate'):
         if getattr(options, name) is None:
             raise RuntimeError("No %s specified." % name)
-
-    if options.debug:
-        from canonical.rosetta import pofile
-        pofile.DEBUG=True
 
     print "Connecting to database..."
     bridge = PODBBridge()
