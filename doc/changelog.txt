@@ -2,6 +2,51 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-18 11:37:12 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1332
+
+    Summary:
+      Refactored VSourcePackageReleasePublishing for Keybuk
+    Revision:
+      launchpad--devel--0--patch-1332
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-133
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-134
+       Tweak diagrams and add poexport view to pending
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-135
+       tweak diagrams
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-136
+       Revert diagrams to rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-137
+       Refactored VSourcePacakgeReleasePublishing for Keybuk
+    
+
+    new files:
+     database/schema/.arch-ids/patch-10-05-0.sql.id
+     database/schema/patch-10-05-0.sql
+     database/schema/pending/.arch-ids/stub-poexport.sql.id
+     database/schema/pending/stub-poexport.sql
+
+    modified files:
+     database/schema/Makefile database/schema/diagram.cfg
+     database/schema/diagram.py database/schema/dot.tmpl
+     database/schema/launchpad.html database/schema/tst.dot
+     doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-133
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-134
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-135
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-136
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-137
+
+
 2005-02-17 20:37:36 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1331
 
     Summary:
