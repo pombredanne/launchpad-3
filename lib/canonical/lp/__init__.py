@@ -3,3 +3,4 @@
 # Empty __init__.py module to make this into a Package.
 
 dbname = "launchpad_test"
+dbhost = ""

@@ -281,7 +281,7 @@ def clearDatabase():
     ArchArchive.clearTable()
 
 def main(filelist):
-    SQLBase.initZopeless(connectionForURI('postgres:///' + canonical.lp.dbname))
+    SQLBase.initZopeless(connectionForURI('postgres://'+ canonical.lp.dbhost + '/' + canonical.lp.dbname))
 
     # clearDatabase() ## XXX: For testing
 
