@@ -235,16 +235,16 @@ class BrowserPublication(BrowserPub):
     def handleException(self, object, request, exc_info, retry_allowed=True,
                         counter=[0]):
         # XXX: Debugging code.  Please leave.  SteveAlexander 2005-03-23
-        counter[0] += 1
-        import traceback, sys
-        f = open('/tmp/traceback.txt', 'a')
-        print >>f, '----------------------------------------'
-        print >>f, 'Count:', counter[0]
-        print >>f, 'Request: %r' % request
-        print >>f
-        etype, value, tb = sys.exc_info()
-        traceback.print_exception(etype, value, tb, file=f)
-        f.close()
+        #counter[0] += 1
+        #import traceback, sys
+        #f = open('/tmp/traceback.txt', 'a')
+        #print >>f, '----------------------------------------'
+        #print >>f, 'Count:', counter[0]
+        #print >>f, 'Request: %r' % request
+        #print >>f
+        #etype, value, tb = sys.exc_info()
+        #traceback.print_exception(etype, value, tb, file=f)
+        #f.close()
         BrowserPub.handleException(self, object, request, exc_info,
                                    retry_allowed)
         # If it's a HEAD request, we don't care about the body, regardless of

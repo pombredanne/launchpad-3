@@ -2,6 +2,38 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-01 14:39:35 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1544
+
+    Summary:
+      made security.py use launchpad celebs.
+    Revision:
+      launchpad--devel--0--patch-1544
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-350
+       commented out debug code in publication.py
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-351
+       use celebrities in security.py
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-352
+       refuel
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/doc/celebrities.txt
+     lib/canonical/launchpad/interfaces/launchpad.py
+     lib/canonical/launchpad/security.py
+     lib/canonical/launchpad/utilities/celebrities.py
+     lib/canonical/publication.py
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--devel--0--patch-350
+     steve.alexander@canonical.com/launchpad--devel--0--patch-351
+     steve.alexander@canonical.com/launchpad--devel--0--patch-352
+
+
 2005-04-01 14:29:34 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1543
 
     Summary:

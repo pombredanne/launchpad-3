@@ -16,3 +16,7 @@ class LaunchpadCelebrities:
         return getUtility(IPersonSet).getByName('buttsource')
     buttsource = property(buttsource)
 
+    def admin(self):
+        return getUtility(IPersonSet).getByName('admins')
+    admin = property(admin)
+

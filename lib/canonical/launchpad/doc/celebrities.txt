@@ -22,6 +22,15 @@ which we want to give easy access to in the code.
   >>> celebs.buttsource.id == buttsource.id
   True
 
+The admins team will be renamed to the 'super' team in due course.  Meanwhile,
+we need to have the admins team in ILaunchpadCelebrities.
+
+  >>> admins = personset.getByName('admins')
+  >>> celebs.admin.__class__ == admins.__class__
+  True
+  >>> celebs.admin.id == admins.id
+  True
+
   TODO: add interface verification test.
         ask debonzi to add these in general.
 

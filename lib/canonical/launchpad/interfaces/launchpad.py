@@ -23,6 +23,7 @@ __all__ = ('ILaunchpadApplication', 'IMaloneApplication',
 class ILaunchpadCelebrities(Interface):
 
     buttsource = Attribute("The 'buttsource' team.")
+    admin = Attribute("The 'admins' team.")
 
 
 class ICrowd(Interface):

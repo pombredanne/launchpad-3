@@ -8,17 +8,16 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IAuthorization, IHasOwner
-from canonical.launchpad.interfaces import IPerson, ITeam, IPersonSet
+from canonical.launchpad.interfaces import IPerson, ITeam
 from canonical.launchpad.interfaces import ITeamMembershipSubset
 from canonical.launchpad.interfaces import ITeamMembership
 from canonical.launchpad.interfaces import ISourceSource, ISourceSourceAdmin
 from canonical.launchpad.interfaces import IMilestone, IBug, IBugTask
 from canonical.launchpad.interfaces import IUpstreamBugTask, IDistroBugTask
-from canonical.launchpad.interfaces import IHasProduct, IHasProductAndAssignee
 from canonical.launchpad.interfaces import IReadOnlyUpstreamBugTask
-from canonical.launchpad.interfaces import IEditableUpstreamBugTask, IProduct
+from canonical.launchpad.interfaces import IProduct
 from canonical.launchpad.interfaces import IPOTemplate, IPOFile
-from canonical.lp.dbschema import BugSubscription
+from canonical.launchpad.interfaces import ILaunchpadCelebrities
 
 
 class AuthorizationBase:
@@ -45,7 +44,7 @@ class AdminByAdminsTeam(AuthorizationBase):
     usedfor = Interface
 
     def checkAuthenticated(self, user):
-        admins = getUtility(IPersonSet).getByName('admins')
+        admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
 
 
@@ -54,7 +53,7 @@ class EditByOwnersOrAdmins(AuthorizationBase):
     usedfor = IHasOwner
 
     def checkAuthenticated(self, user):
-        admins = getUtility(IPersonSet).getByName('admins')
+        admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.obj.owner) or user.inTeam(admins)
 
 
@@ -67,7 +66,7 @@ class AdminSourceSourceByButtSource(AuthorizationBase):
     usedfor = ISourceSourceAdmin
 
     def checkAuthenticated(self, user):
-        buttsource = getUtility(IPersonSet).getByName('buttsource')
+        buttsource = getUtility(ILaunchpadCelebrities).buttsource
         return user.inTeam(buttsource)
 
 
@@ -76,7 +75,7 @@ class EditSourceSourceByButtSource(AuthorizationBase):
     usedfor = ISourceSource
 
     def checkAuthenticated(self, user):
-        buttsource = getUtility(IPersonSet).getByName('buttsource')
+        buttsource = getUtility(ILaunchpadCelebrities).buttsource
         if user.inTeam(buttsource):
             return True
         elif not self.obj.syncCertified():
@@ -103,7 +102,7 @@ class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
 
         The admin team also has launchpad.Edit on all teams.
         """
-        admins = getUtility(IPersonSet).getByName('admins')
+        admins = getUtility(ILaunchpadCelebrities).admin
         if user.inTeam(self.obj.teamowner) or user.inTeam(admins):
             return True
         else:
@@ -119,7 +118,7 @@ class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     usedfor = ITeamMembership
 
     def checkAuthenticated(self, user):
-        admins = getUtility(IPersonSet).getByName('admins')
+        admins = getUtility(ILaunchpadCelebrities).admin
         if user.inTeam(self.obj.team.teamowner) or user.inTeam(admins):
             return True
         else:
@@ -145,7 +144,7 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
 
         The admin team can also edit any Person.
         """
-        admins = getUtility(IPersonSet).getByName('admins')
+        admins = getUtility(ILaunchpadCelebrities).admin
         return self.obj.id == user.id or user.inTeam(admins)
 
 
@@ -214,7 +213,8 @@ class PublicToAllOrPrivateToExplicitSubscribersForROBugTask(
     usedfor = IReadOnlyUpstreamBugTask
 
 
-class EditPublicByLoggedInUserAndPrivateByExplicitSubscribers(AuthorizationBase):
+class EditPublicByLoggedInUserAndPrivateByExplicitSubscribers(
+    AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IBug
 
@@ -268,6 +268,7 @@ class UseApiDoc(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return True
+
 
 class EditPOTemplateDetails(AuthorizationBase):
     permission = 'launchpad.Edit'
