@@ -62,11 +62,8 @@ class SourceSource(SQLBase):
     branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
     lastsynced = DateTimeCol(dbName='lastsynced', default=None)
     syncinterval = DateTimeCol(dbName='syncinterval', default=None)
-    # WARNING: syncinterval column type is "interval", not "integer"
-    # WARNING: make sure the data is what buildbot expects
     #IntCol('rcstype', dbName='rcstype', default=RCSTypeEnum.cvs,
     #       notNull=True),
-    # FIXME: use 'RCSTypeEnum.cvs' rather than '1'
     rcstype = EnumCol(dbName='rcstype',
                       default=RevisionControlSystems.CVS,
                       schema=RevisionControlSystems,
@@ -141,6 +138,8 @@ class SourceSource(SQLBase):
         return False
 
     def _get_repository(self):
+        # XXX: Is that used anywhere but in buildJob? If not, that should
+        # probably be moved to buildbot as well. -- David Allouche 2005-03-25
         if self.rcstype == RevisionControlSystems.CVS:
             return self.cvsroot
         elif self.rcstype == RevisionControlSystems.SVN:
@@ -152,39 +151,15 @@ class SourceSource(SQLBase):
             # FIXME!
             return None
 
-    # Translate importd.Job.Job's instance variables to database columns by
-    # creating some simple properties.  [Note that SQLObject turns _get_* and
-    # _sets_* methods into properties automagically]
-    #FIXME: buildbot should updated this on mirror completion.
-    def _get_TYPE(self):
-        # TODO: That is broken, that is cruft, and should be removed at
-        # earliest convenience. -- 2005-02-17 David Allouche
- #       if self.lastsynced is None:
-        if self.syncinterval is None or _interval_to_seconds(self.syncinterval) == 0:
-            return 'import'
-        else:
-            return 'sync'
     def _get_package_files(self):
+        # XXX: Not used anywhere but in buildJob. Should that be moved to
+        # buildbot? -- David Allouche 2005-03-25
         if self.package_files_collapsed is None: return None
         return self.package_files_collapsed.split()
-    def _get_RCS(self): return RCSNames[self.rcstype]
-    def _set_RCS(self, value): self.rcstype = getattr(RCSTypeEnum, value)
-    def _get_module(self): return self.cvsmodule
-    def _set_module(self, value): self.cvsmodule = value
-    def _get_category(self): return self.newbranchcategory
-    def _set_category(self, value): return self.newbranchcategory
-    def _get_archivename(self): return self.newarchive
-    def _set_archivename(self, value): self.archivename = value
-    def _get_branchfrom(self): return self.cvsbranch # FIXME: assumes cvs!
-    def _set_branchfrom(self, value): self.cvsbranch = value # FIXME: ditto
-    def _get_branchto(self): return self.newbranchbranch
-    def _set_branchto(self, value): self.newbranchbranch = value
-    def _get_archversion(self): return self.newbranchversion
-    def _set_archversion(self, value): self.newbranchversion = value
 
     def buildJob(self):
-        # OLD: The rest of this method can probably be deleted now.
-        # NEW: it so can't, inheritance doesn't work here due to the RPC constraints.
+        """Create an importd job from the sourcesource data."""
+        # XXX: Should that be moved to buildbot? -- David Allouche 2005-03-25
         from importd.Job import CopyJob
         job = CopyJob()
         job.repository = str(self.repository)
@@ -226,6 +201,8 @@ class SourceSource(SQLBase):
 
 
 def _interval_to_seconds(interval):
+    # XXX: only used in bulidJob, should probably moved to buildbot
+    # -- David Allouche 2005-03-25
     try:
         return interval.days * 24 * 60 * 60 + interval.seconds
     except AttributeError:
