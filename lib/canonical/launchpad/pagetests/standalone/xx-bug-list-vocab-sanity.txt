@@ -1,7 +1,7 @@
 
 
   >>> print http(r"""
-  ... GET /malone/bugs HTTP/1.1
+  ... GET /malone/bugs?advanced=1 HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Cookie: launchpad=c41BwfVgfCmQ8qwVR0nF6ljP5Wopo45G87IQC0L77W2JGL1e3-L4Z8
   ... """)

@@ -38,7 +38,26 @@
 
   <form action="" method="GET">
   <h1>Bugs</h1>
-  <small tal:content="python:'displaying matching bugs ' + str(ass_batch.startNumber()) + ' to ' + str(ass_batch.endNumber()) + ' of ' + str(ass_batch.total())">displaying 1 to 20 of 42 </small><small> :: <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=unassigned&product=all&sourcepackage=all&search=Search">unassigned</a> . <span tal:omit-tag="" tal:condition="logged_in"><a href="" tal:attributes="href string:${request/URL}/?status=10&status=20&assignee=${request/lp:person/name}&product=all&sourcepackage=all&search=Search">my todo list</a> . </span><a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=all&product=all&sourcepackage=all&severity=50&search=Search">critical</a> <span tal:omit-tag="" tal:condition="logged_in">. <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=all&submitter=${request/lp:person/name}&product=all&sourcepackage=all&search=Search">submitted by me</a></span> :: bug id or text <input style="border-style: solid; border-width: 1px; border-color: grey;" type="text" name="searchtext" tal:attributes="value request/searchtext|nothing;"/> <input type="submit" style="border-style: solid; border-width: 1px; border-color: grey; background-color: #DCDCDC; " name="search" value="Search" /></small>
+  <small tal:content="python:'displaying matching bugs ' + str(ass_batch.startNumber()) + ' to ' + str(ass_batch.endNumber()) + ' of ' + str(ass_batch.total())">displaying 1 to 20 of 42 </small><small> ::
+      <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=unassigned&product=all&sourcepackage=all&search=Search&advanced=0">unassigned</a> .
+      <span tal:omit-tag="" tal:condition="logged_in"><a href="" tal:attributes="href string:${request/URL}/?status=10&status=20&assignee=${request/lp:person/name}&product=all&sourcepackage=all&search=Search&advanced=0">my todo list</a> .
+      </span><a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=all&product=all&sourcepackage=all&severity=50&search=Search">critical</a>
+      <span tal:omit-tag="" tal:condition="logged_in">.
+          <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=all&submitter=${request/lp:person/name}&product=all&sourcepackage=all&search=Search&advanced=0">submitted by me</a></span>
+      :: bug id or text
+      <input style="border-style: solid; border-width: 1px; border-color: grey;" type="text" name="searchtext" tal:attributes="value request/searchtext|nothing;"/>
+      <input type="submit" style="border-style: solid; border-width: 1px; border-color: grey; background-color: #DCDCDC; " name="search" value="Search" />
+    <input
+        tal:condition="not:view/advanced"
+        style="border-style: solid; border-width: 1px; border-color: grey; background-color: #DCDCDC; "
+        type="submit" name="advanced_submit" value="Advanced" />
+    <input
+        tal:condition="view/advanced"
+        style="border-style: solid; border-width: 1px; border-color: grey; background-color: #DCDCDC; "
+        type="submit" name="simple_submit" value="Simple" />
+    <input type="hidden"
+        name="advanced" tal:attributes="value view/advanced" />
+  </small>
   <table id="ass_listing" class="listing rowNavigation">
     <tr>
       <th>Bug #</th>
@@ -147,8 +166,16 @@
   </table>
   <input type="button" value="Submit a Bug" onclick="window.location='/malone/bugs/+new'" />
 
-    <fieldset>
-        <legend>Filter Criteria</legend>
+  <tal:x condition="not:view/advanced">
+      <input type="hidden" name="status" value="10" />
+      <input type="hidden" name="status" value="20" />
+      <input type="hidden" name="assignee" value="all" />
+      <input type="hidden" name="product" value="all" />
+      <input type="hidden" name="sourcepackage" value="all" />
+  </tal:x>
+
+  <fieldset tal:condition="view/advanced">
+    <legend>Filter Criteria</legend>
 
         <div class="field">
           <table>

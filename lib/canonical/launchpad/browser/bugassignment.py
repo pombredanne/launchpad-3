@@ -282,6 +282,20 @@ class BugAssignmentsView(object):
         """Return the list of source packages."""
         return SourcePackageVocabulary(None)
 
+    def advanced(self):
+        '''Return 1 if the form should be rendered in advanced mode, 0
+        otherwise'''
+        req = self.request
+        marker = object()
+        if req.get('advanced_submit', marker) is not marker:
+            return 1
+        if req.get('simple_submit', marker) is not marker:
+            return 0
+        if int(req.get('advanced', 0)):
+            return 1
+        return 0
+    advanced = property(advanced)
+
     def products(self):
         """Return the list of products."""
         return ProductVocabulary(None)
