@@ -111,8 +111,12 @@ class DBSchemaValidator(validators.Validator):
 
         """
         if isinstance(value, int):
-            return value
-        if not isinstance(value, Item):
+            raise TypeError(
+                'Need to set a dbschema Enum column to a dbschema Item,'
+                ' not an int')
+        # Allow this to work in the presence of security proxies.
+        ##if not isinstance(value, Item):
+        if value.__class__ != Item:
             raise TypeError('Not a DBSchema Item: %r' % value)
         if value.schema is not self.schema:
             raise TypeError('DBSchema Item from wrong class')
@@ -256,7 +260,9 @@ class Item:
     def __eq__(self, other):
         if isinstance(other, int):
             return self.value == other
-        elif isinstance(other, Item):
+        # Cannot use isinstance, because 'other' might be security proxied.
+        ##elif isinstance(other, Item):
+        elif other.__class__ == Item:
             return self.value == other.value and self.schema == other.schema
         else:
             return False

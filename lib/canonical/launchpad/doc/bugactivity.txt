@@ -191,7 +191,7 @@ EVENT: product infestation gets documented
   ...     creatorID=user.id, dateverified=right_now,
   ...     verifiedbyID=user.id, lastmodified=right_now,
   ...     lastmodifiedbyID=user.id, productrelease=4,
-  ...     infestationstatus=60)
+  ...     infestationstatus=BugInfestationStatus.AFFECTED)
   >>> product_infesation_added = ObjectCreatedEvent(product_infestation)
   >>> notify(product_infesation_added)
   >>> latest_activity = bug.activity[-1]

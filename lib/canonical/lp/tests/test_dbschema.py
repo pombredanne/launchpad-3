@@ -62,6 +62,19 @@ def test_constructor():
     >>> SomeClass._items[2] is SomeClass.attribute
     True
 
+    An Item compares properly when security proxied.
+
+    >>> item = SomeClass.attribute
+    >>> from zope.security.checker import ProxyFactory, NamesChecker
+    >>> checker = NamesChecker(['value', 'schema'])
+    >>> proxied_item = ProxyFactory(item, checker=checker)
+    >>> proxied_item is item
+    False
+    >>> proxied_item == item
+    True
+    >>> item == proxied_item
+    True
+
     An Item has an informative representation.
 
     >>> print repr(SomeClass.attribute)
