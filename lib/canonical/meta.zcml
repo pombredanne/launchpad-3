@@ -16,4 +16,11 @@
       handler="canonical.metazcml.traverse"
       />
 
+  <meta:directive
+      namespace="http://namespaces.zope.org/browser"
+      name="favicon"
+      schema="canonical.metazcml.IFaviconDirective"
+      handler="canonical.metazcml.favicon"
+      />
+
 </configure>
