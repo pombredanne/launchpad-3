@@ -98,7 +98,8 @@ class TestSQLOS(FunctionalTestCase, PgTestCase):
         transaction.commit()
 
     def test_percent(self):
-        # Trying to reproduce a '%' bug
+        # A psycopg bug was being triggered by Zope3, where queries with
+        # a single % were raising exceptions
         b = Beer(name='100%', rating=2)
         id = b.id
 
