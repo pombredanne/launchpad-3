@@ -335,7 +335,7 @@ class Projects(object):
 
         Returns that project.
         """
-        return SoyuzProject(dbProject(name=name, title=title, description=description, url=url))
+        return SoyuzProject(dbProject(name=name, title=title, description=description, ownerID=getOwner(), homepageurl=url))
 
 def getOwner():
     return 1
@@ -362,7 +362,7 @@ class SoyuzProject(object):
 
     def newProduct(self,name, title, description, url):
         """make a new product"""
-        return SoyuzProduct(infoProduct(project=self._project, ownerID=getOwner(), name=name, title=title, description=description, homepageurl=url))
+        return SoyuzProduct(dbProduct(project=self._project, ownerID=getOwner(), name=name, title=title, description=description, homepageurl=url, screenshotsurl="", wikiurl="",programminglang="", downloadurl="",lastdoap=""))
         # FIXME, limi needs to do a find-an-owner wizard
 
     def getProduct(self,name):
@@ -476,23 +476,19 @@ class Sync(object):
 #                    default=None),
     def update(self, **kwargs):
         """update a Sync, possibly reparenting"""
-#        self._update('name', 'name', kwargs)
-#        self._update('title', 'title', kwargs)
-        if kwargs.has_key('title'):
-            import pdb; pdb.set_trace()
-            self._sync.set(title=kwargs['title'])
-            print self._sync.title, "AAA"
-        print self._sync, "%r" % self._sync
-#        self._update('description', 'description', kwargs)
-#        self._update('cvsroot', 'cvsroot', kwargs)
-#        self._update('cvsmodule', 'cvsmodule', kwargs)
-#        self._update('cvstarfile', 'cvstarfileurl', kwargs)
-#        self._update('branchfrom', 'cvsbranch', kwargs)
-#        self._update('svnrepository','svnrepository', kwargs)
-#        self._update('category', 'newbranchcategory', kwargs)
-#        self._update('branchto', 'newbranchbranch', kwargs)
-#        self._update('archversion', 'newbranchversion', kwargs)
-#        self._update('archarchive', 'newarchive', kwargs)
+        self._update('name', 'name', kwargs)
+        self._update('title', 'title', kwargs)
+        self._update('description', 'description', kwargs)
+        self._update('cvsroot', 'cvsroot', kwargs)
+        self._update('cvsmodule', 'cvsmodule', kwargs)
+        self._update('cvstarfile', 'cvstarfileurl', kwargs)
+        self._update('branchfrom', 'cvsbranch', kwargs)
+        self._update('svnrepository','svnrepository', kwargs)
+        self._update('category', 'newbranchcategory', kwargs)
+        self._update('branchto', 'newbranchbranch', kwargs)
+        self._update('archversion', 'newbranchversion', kwargs)
+        self._update('archarchive', 'newarchive', kwargs)
+        #    "archsourcegpgkeyid","archsourcename","archsourceurl"]:
     def _update(self, myattr, dbattr, source):
         """update myattr & dbattr from source's myattr"""
         if not source.has_key(myattr):

@@ -176,7 +176,8 @@ class ViewSync(View):
         if not self.request.method == "POST":
             return
         kwargs={}
-        for param in ["name", "title", "description", "cvsroot", "cvsmodule","cvstarfile"]:
+        for param in ["name", "title", "description", "cvsroot", "cvsmodule","cvstarfile",
+            "branchfrom","svnrepository","archarchive","category","branchto","archversion","archsourcegpgkeyid","archsourcename","archsourceurl"]:
             self.setArg(param, kwargs)
         newurl=kwargs.get('name', self.context.name) != self.context.name
         print newurl
