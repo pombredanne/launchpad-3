@@ -13,7 +13,6 @@ from canonical.rosetta.sql import RosettaLanguage, RosettaPerson
 from canonical.rosetta.poexport import POExport
 from canonical.rosetta.pofile import POHeader
 
-
 charactersPerLine = 50
 
 def count_lines(text):
@@ -23,6 +22,11 @@ def count_lines(text):
         count += int(ceil(float(len(line)) / charactersPerLine))
 
     return count
+
+def fake_person():
+    # XXX: Temporary hack, to be removed as soon as we have the login template
+    # working.
+    return RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
 
 
 class ViewProjects:
@@ -54,10 +58,8 @@ class ViewProject:
     def products(self):
         person = IPerson(self.request.principal, None)
         if person is None:
-            # XXX: Temporal hack, to be removed as soon as we have the login
-            # template working.
-            person = RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
-        
+            person = fake_person()
+
         for product in self.context.rosettaProducts():
             total = 0
             currentCount = 0
@@ -125,10 +127,8 @@ class ViewProduct:
             for language in person.languages():
                 yield LanguageTemplates(language, self.context.poTemplates())
         else:
-            # XXX: Temporal hack, to be removed as soon as we have the login
-            # template working. The code duplication is just to be easier to
-            # remove this hack when is not needed anymore.
-            person = RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
+            # XXX
+            person = fake_person()
             for language in person.languages():
                 yield LanguageTemplates(language, self.context.poTemplates())
 
@@ -296,11 +296,9 @@ class TranslatorDashboard:
     def selectedLanguages(self):
         person = IPerson(self.request.principal, None)
         if person is None:
-            # XXX: Temporal hack, to be removed as soon as we have the login
-            # template working. The code duplication is just to be easier to
-            # remove this hack when is not needed anymore.
-            person = RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
-                
+            # XXX
+            person = fake_person()
+
         return list(person.languages())
 
     def submit(self):
@@ -308,11 +306,9 @@ class TranslatorDashboard:
             if self.request.method == "POST":
                 person = IPerson(self.request.principal, None)
                 if person is None:
-                    # XXX: Temporal hack, to be removed as soon as we have the login
-                    # template working. The code duplication is just to be easier to
-                    # remove this hack when is not needed anymore.
-                    person = RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
-                
+                    # XXX
+                    person = fake_person()
+
                 oldInterest = list(person.languages())
                 
                 if 'selectedlanguages' in self.request.form:
@@ -411,11 +407,8 @@ class TranslatePOTemplate:
         else:
             person = IPerson(request.principal, None)
             if person is None:
-                # XXX: Temporal hack, to be removed as soon as we have the login
-                # template working. The code duplication is just to be easier to
-                # remove this hack when is not needed anymore.
-                person = RosettaPerson.selectBy(
-                    displayName='Dafydd Harries')[0]
+                # XXX
+                person = fake_person()
 
             self.languages = list(person.languages())
 
@@ -562,9 +555,9 @@ class TranslatePOTemplate:
         if not "SUBMIT" in self.request.form:
             return None
 
-        self.submitted = True
-
         sets = {}
+
+        # Extract msgids from form.
 
         for key in self.request.form:
             match = re.match('set_(\d+)_msgid$', key)
@@ -572,8 +565,10 @@ class TranslatePOTemplate:
             if match:
                 id = int(match.group(1))
                 sets[id] = {}
-                sets[id]['msgid'] = self.request.form[key]
+                sets[id]['msgid'] = self.request.form[key].replace('\r', '')
                 sets[id]['translations'] = {}
+
+        # Extract translations from form.
 
         for key in self.request.form:
             match = re.match(r'set_(\d+)_translation_([a-z]+)$', key)
@@ -583,17 +578,8 @@ class TranslatePOTemplate:
                 code = match.group(2)
 
                 sets[id]['translations'][code] = {}
-                sets[id]['translations'][code][0] = self.request.form[key]
-
-                #msgid = msgids[index]
-                #set = potemplate[msgid]
-
-                # Validation goes here.
-
-                # Database update goes here.
-                # If the PO file doesn't exist, we need to create it first.
-
-                # set.submitRosettaTranslation(language, person, msgstrs)
+                sets[id]['translations'][code][0] = (
+                    self.request.form[key].replace('\r', ''))
 
                 continue
 
@@ -608,6 +594,84 @@ class TranslatePOTemplate:
                     sets[id]['translations'][code] = {}
 
                 sets[id]['translations'][code][pluralform] = self.request.form[key]
+
+        # Get/create a PO file for each language.
+        # XXX: This should probably be done more lazily.
+
+        pofiles = {}
+
+        person = IPerson(self.request.principal, None)
+
+        if person is None:
+            person = fake_person()
+
+        for language in self.languages:
+            try:
+                pofiles[language.code] = self.context.poFile(language.code)
+            except KeyError:
+                pofiles[language.code] = self.context.newPOFile(
+                    person, language.code)
+
+        # Put the translations in the database.
+
+        for set in sets.values():
+            # XXX: Handle the case where the set is not already in the PO
+            # file.
+
+            msgid_text = set['msgid']
+
+            for code in set['translations'].keys():
+                new_translations = set['translations'][code]
+
+                # Skip if there are no non-empty translations.
+
+                if not [ x for x in new_translations if x != '' ]:
+                    continue
+
+                # Check that this is a translation for a message set that's
+                # actually in the template.
+
+                try:
+                    pot_set = self.context[msgid_text]
+                except KeyError:
+                    raise RuntimeError(
+                        "Got translation for msgid %s which is not in "
+                        "the template." % repr(msgid_text))
+
+                # Get hold of an appropriate message set in the PO file.
+                # XXX: Message set creation should probably be lazier also.
+
+                try:
+                    po_set = pofiles[code][msgid_text]
+                    print ">>> msgid found (%s, %s)" % (code, msgid_text)
+                except KeyError:
+                    po_set = pofiles[code].createMessageSetFromText(msgid_text)
+                    print ">>> msgid created (%s, %s)" % (code, msgid_text)
+
+                old_translations = po_set.translations()
+                print ">>> old_translations:\n", old_translations
+
+                for index in new_translations:
+                    if (new_translations[index] is not None and
+                            new_translations[index] != '' and
+                            new_translations[index] !=
+                            old_translations[index]):
+                        print "accepting translation:\n", (index, old_translations[index],
+                            new_translations[index])
+                        po_set.makeTranslationSighting(
+                            person = person,
+                            text = new_translations[index],
+                            pluralForm = index,
+                            update = True,
+                            fromPOFile = False
+                            )
+                        new_translations = po_set.translations()
+                        print ">>> new_translations:\n", new_translations
+
+                print
+                print
+
+        self.submitted = True
 
         from pprint import pformat
         from xml.sax.saxutils import escape
@@ -626,10 +690,8 @@ class ViewTranslationEffort:
                 yield LanguageTranslationEffortCategories(language,
                     self.context.categories())
         else:
-            # XXX: Temporal hack, to be removed as soon as we have the login
-            # template working. The code duplication is just to be easier to
-            # remove this hack when is not needed anymore.
-            person = RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
+            # XXX
+            person = fake_person()
             for language in person.languages():
                 yield LanguageTranslationEffortCategories(language,
                     self.context.categories())
@@ -668,7 +730,7 @@ class LanguageTranslationEffortCategories:
                 nonUpdatesPercent = 0
                 translatedPercent = 0
                 untranslatedPercent = 100
-           
+
             # NOTE: To get a 100% value:
             # 1.- currentPercent + rosettaPercent + untranslatedPercent
             # 2.- translatedPercent + untranslatedPercent 
@@ -707,10 +769,8 @@ class ViewTranslationEffortCategory:
             for language in person.languages():
                 yield LanguageTemplates(language, self.context.poTemplates())
         else:
-            # XXX: Temporal hack, to be removed as soon as we have the login
-            # template working. The code duplication is just to be easier to
-            # remove this hack when is not needed anymore.
-            person = RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
+            # XXX
+            person = fake_person()
             for language in person.languages():
                 yield LanguageTemplates(language, self.context.poTemplates())
 

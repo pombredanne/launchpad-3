@@ -180,6 +180,9 @@
         <input type="hidden" name="offset"
             tal:condition="not: view/atEnd"
             tal:attributes="value python: view.offset + view.count" />
+        <input type="hidden" name="languages"
+            tal:condition="view/codes"
+            tal:attributes="value view/codes" />
         <input type="submit" name="SUBMIT" value="Submit" />
     </form>
 

@@ -337,7 +337,7 @@ class IPOMessageSet(Interface):
     def messageIDs():
         """Return an iterator over this set's message IDs."""
 
-    def getMessageIDSighting(plural_form):
+    def getMessageIDSighting(pluralForm):
         """Return the message ID sighting that is current and has the
         plural form provided."""
 
@@ -345,7 +345,7 @@ class IPOMessageSet(Interface):
 class IEditPOMessageSet(IPOMessageSet):
     """Interface for editing a MessageSet."""
 
-    def makeMessageIDSighting(text, plural_form, update=False):
+    def makeMessageIDSighting(text, pluralForm, update=False):
         """Return a new message ID sighting that points back to us.
         If one already exists, behaviour depends on 'update'; if update
         is allowed, the existing one is "touched" and returned.  If it
@@ -419,7 +419,7 @@ class IPOFileMessageSet(IPOMessageSet):
     def translations():
         """Return an iterator over this set's translations."""
 
-    def getTranslationSighting(plural_form, allowOld=False):
+    def getTranslationSighting(pluralForm, allowOld=False):
         """Return the translation sighting that is current and has the
         plural form provided.  If allowOld is True, include non-current."""
 
@@ -430,7 +430,7 @@ class IPOFileMessageSet(IPOMessageSet):
 class IEditPOFileMessageSet(IPOFileMessageSet):
     """Interface for editing a MessageSet."""
 
-    def makeTranslationSighting(person, text, plural_form, update=False, fromPOFile=False):
+    def makeTranslationSighting(person, text, pluralForm, update=False, fromPOFile=False):
         """Return a new translation sighting that points back to us.
         If one already exists, behaviour depends on 'update'; if update
         is allowed, the existing one is "touched" and returned.  If it

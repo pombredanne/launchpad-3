@@ -13,7 +13,9 @@
   </content>
 
   <content class="canonical.rosetta.sql.RosettaPOFile">
-    <require permission="zope.Public" interface="canonical.rosetta.interfaces.IPOFile" set_attributes="header pluralForms"/>
+    <require permission="zope.Public"
+        interface="canonical.rosetta.interfaces.IEditPOFile"
+        set_attributes="header pluralForms"/>
   </content>
 
   <content class="canonical.rosetta.sql.RosettaPOMessageSet">
