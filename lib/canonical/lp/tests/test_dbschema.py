@@ -80,15 +80,15 @@ def test_decorator():
     ...     assert isinstance(s, Item)
     ...     print s.name
     ...
-    CRITICAL
-    MAJOR
-    NORMAL
-    MINOR
     WISHLIST
+    MINOR
+    NORMAL
+    MAJOR
+    CRITICAL
 
     We can retrieve an Item by value
 
-    >>> BugSeverity.items[1].name
+    >>> BugSeverity.items[50].name
     'CRITICAL'
 
     """
