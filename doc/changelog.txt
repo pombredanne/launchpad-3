@@ -2,6 +2,18 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-03 15:13:12 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1275
+
+    Summary:
+      Add a hack to resync the db connection after putting a file in the librarian
+    Revision:
+      launchpad--devel--0--patch-1275
+
+
+    modified files:
+     doc/changelog.txt
+
+
 2005-02-03 15:06:04 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1274
 
     Summary:
