@@ -95,8 +95,12 @@ COMMENT ON COLUMN POTMsgSet.flagscomment IS 'The flags associated with this set 
 /*
   Malone
 */
-COMMENT ON COLUMN Bug.name IS 
-    'A lowercase name uniquely identifying the bug';
+COMMENT ON TABLE Bug IS 'A software bug that requires fixing. This particular bug may be linked to one or more products or sourcepackages to identify the location(s) that this bug is found.';
+COMMENT ON COLUMN Bug.name IS 'A lowercase name uniquely identifying the bug';
+COMMENT ON TABLE ProductBugAssignment IS 'Links a given Bug to a particular product.';
+COMMENT ON COLUMN ProductBugAssignment.datecreated IS 'A timestamp for the creation of this bug assignment. Note that this is not the date the bug was created (though it might be), it\'s the date the bug was assigned to this product, which could have come later.';
+COMMENT ON TABLE SourcepackageBugAssignment IS 'Links a given Bug to a particular sourcepackage.';
+COMMENT ON COLUMN SourcePackageBugAssignment.datecreated IS 'A timestamp for the creation of this bug assignment. Note that this is not the date the bug was created (though it might be), it\'s the date the bug was assigned to this product, which could have come later.';
 
 
 /*
