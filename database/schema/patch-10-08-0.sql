@@ -15,9 +15,11 @@ CREATE TABLE SignedCodeOfConduct(
 ALTER table gpgkey ADD CONSTRAINT gpgkey_person_idx UNIQUE(person,id); 
 
 ALTER TABLE SignedCodeOfConduct
-    ADD CONSTRAINT recipient_fkey FOREIGN KEY (recipient) references person(id);
+    ADD CONSTRAINT recipient_person_fk FOREIGN KEY (recipient)
+    REFERENCES person(id);
 
-ALTER TABLE SignedCodeOfConduct ADD CONSTRAINT person_gpg_fkey FOREIGN KEY (person, signingkey) references gpgkey(person, id);
+ALTER TABLE SignedCodeOfConduct ADD CONSTRAINT person_gpg_fk
+    FOREIGN KEY (person, signingkey) references gpgkey(person, id);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (10,8,0);
 

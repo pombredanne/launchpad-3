@@ -70,13 +70,25 @@ class BugSubscriptionSetAdapter:
 # XXX, Brad Bollenbach, 2004-12-07: move this into an adapter for IPerson
 def _get_best_email_address(person):
     if person:
-        valid_email_addresses = list(EmailAddress.selectBy(
+        # Should never be more than 1, but just in case
+        preferred_email_addresses = list(EmailAddress.selectBy(
             personID=person.id,
-            status=dbschema.EmailAddressStatus.VALIDATED.value
-        ))
+            status=dbschema.EmailAddressStatus.PREFERRED.value
+            ))
+        if len(preferred_email_addresses) > 0:
+            return preferred_email_addresses[0].email
+        return None
 
-        best_email = None
-        if valid_email_addresses:
-            best_email = valid_email_addresses[0].email
+        # valid_email_addresses = list(EmailAddress.selectBy(
+        #     personID=person.id,
+        #     status=dbschema.EmailAddressStatus.VALIDATED.value
+        #     ))
 
-        return best_email
+        # best_email = None
+        # if valid_email_addresses:
+        #     best_email = valid_email_addresses[0].email
+
+        # return best_email
+
+    return None
+

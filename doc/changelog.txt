@@ -2,6 +2,49 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-03 21:50:42 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1363
+
+    Summary:
+      Create an empty launchpad database as part of db setup
+    Revision:
+      launchpad--devel--0--patch-1363
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-150
+       Naming conventions
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-151
+       Handle existing TeamMembership rows
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-152
+       Create an empty launchpad database as part of db setup
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-153
+       Creating the launchpad_dev database would still be helpful too...
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-154
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-155
+       Only send emails to PREFERRED email addresses. Update sampledata too.
+    
+
+    modified files:
+     database/sampledata/current.sql database/schema/Makefile
+     database/schema/patch-10-07-0.sql
+     database/schema/patch-10-08-0.sql doc/changelog.txt
+     lib/canonical/launchpad/components/bugsubscription.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-150
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-151
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-152
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-153
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-154
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-155
+
+
 2005-03-02 23:25:36 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1362
 
     Summary:

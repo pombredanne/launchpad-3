@@ -23,8 +23,9 @@ ALTER TABLE TeamMembership ADD COLUMN dateexpires timestamp without time zone;
 ALTER TABLE TeamMembership ADD COLUMN reviewer integer;
 ALTER TABLE TeamMembership ADD COLUMN reviewercomment text;
 
-ALTER TABLE TeamMembership ALTER COLUMN datejoined SET NOT NULL;
 ALTER TABLE TeamMembership ALTER COLUMN datejoined SET DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone);
+UPDATE TeamMembership SET datejoined=DEFAULT WHERE datejoined IS NULL;
+ALTER TABLE TeamMembership ALTER COLUMN datejoined SET NOT NULL;
 ALTER TABLE TeamMembership ALTER COLUMN dateexpires SET DEFAULT NULL;
 ALTER TABLE TeamMembership ADD CONSTRAINT reviewer_fk FOREIGN KEY (reviewer)
 REFERENCES Person(id);
