@@ -2,6 +2,46 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-22 14:33:58 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1241
+
+    Summary:
+      New pagetest that covers the account creation and login.
+    Revision:
+      launchpad--devel--0--patch-1241
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-99
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-100
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-101
+       New pagetest that covers the account creation and login.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-102
+       Check if the email was sent to the right address on launchpad-createaccount-and-login pagetest.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-103
+       merge from rf
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-launchpad-createaccount-and-login.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-launchpad-createaccount-and-login.txt
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-99
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-100
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-101
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-102
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-103
+
+
 2005-01-22 13:12:42 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1240
 
     Summary:
