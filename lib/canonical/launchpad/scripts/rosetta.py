@@ -7,7 +7,8 @@ from StringIO import StringIO
 
 from canonical.launchpad import helpers
 from canonical.launchpad.database import DistributionSet, \
-    SourcePackageNameSet, POTemplateSet, POTemplateNameSet, PersonSet
+    SourcePackageNameSet, POTemplateSet, POTemplateNameSet, PersonSet, \
+    BinaryPackageNameSet
 from canonical.sourcerer.deb.version import Version
 
 def fetch_date_list(archive_uri, logger):
@@ -300,15 +301,14 @@ class AttachTranslationCatalog:
         self.catalog = catalog
         self.logger = logger
 
-        self.distributionset = DistributionSet()
-
-
     def get_distrorelease(self, distribution_name, release_name):
         """Get the distrorelease object for a distribution and a release."""
 
+        distributionset = DistributionSet()
+
         # Check that we have the needed distribution.
         try:
-            distribution = self.distributionset[distribution_name]
+            distribution = distributionset[distribution_name]
         except KeyError:
             # We don't have this distribution in our database, print a
             # warning so we can add it later and return.
@@ -329,7 +329,7 @@ class AttachTranslationCatalog:
             return None
 
     def get_sourcepackagename(self, sourcepackagename):
-        """Get the sourcepackagename object for a given name."""
+        """Get the SourcePackageName object for a given name."""
 
         sourcepackagenameset = SourcePackageNameSet()
         try:
@@ -337,7 +337,7 @@ class AttachTranslationCatalog:
         except KeyError:
             # We don't have this sourcepackage in our database, print
             # a warning so we can add it later and return.
-            self.logger.warning("No sourcepackagename %s in the "
+            self.logger.warning("No source package name '%s' in the "
                                 "database" % sourcepackagename)
             return None
 
@@ -351,7 +351,8 @@ class AttachTranslationCatalog:
         try:
             tarfile = urllib2.urlopen(uri)
         except urllib2.HTTPError, e:
-            self.logger.error('Got an error fetching the file %s: %s' % (uri, e))
+            self.logger.error('Got an error fetching the file %s: %s' %
+                (uri, e))
             return
 
         self.logger.debug("%s attached to %s sourcepackage" % (
@@ -361,9 +362,11 @@ class AttachTranslationCatalog:
         # inside this sourcepackagename and distrorelease.
         # We do it before the tarfile.read() so we don't download the file if
         # it's not needed.
-        potemplateset = POTemplateSet(sourcepackagename=sourcepackagename,
-                            distrorelease=release)
-        for pot in potemplateset:
+        potemplateset = POTemplateSet()
+        potemplatesubset = potemplateset.getSubset(
+            sourcepackagename=sourcepackagename, distrorelease=release)
+
+        for pot in potemplatesubset:
             if pot.sourcepackageversion is not None:
                 # The Version class comes from Sourcerer and helps us to
                 # compare .deb package version strings. That class has a
@@ -378,7 +381,7 @@ class AttachTranslationCatalog:
         tarball = helpers.string_to_tarfile(tarfile.read())
 
         domains = get_domains_from_tarball(
-            release.name, sourcepackagename.name, potemplateset, tarball)
+            release.name, sourcepackagename.name, potemplatesubset, tarball)
 
         potemplatenameset = POTemplateNameSet()
 
@@ -389,7 +392,7 @@ class AttachTranslationCatalog:
 
         for domain in domains:
             try:
-                template = potemplateset[domain.name]
+                template = potemplatesubset[domain.name]
             except KeyError:
                 # Get or create the PO template name.
                 try:
@@ -404,7 +407,7 @@ class AttachTranslationCatalog:
                 self.logger.warning(
                     "Creating new PO template '%s' for %s/%s" % (
                     domain.name, release.name, sourcepackagename.name))
-                template = potemplateset.new(
+                template = potemplatesubset.new(
                     potemplatename=name,
                     title='%s template for %s in %s' % (
                         name, sourcepackagename.name, release.displayname),
@@ -415,27 +418,34 @@ class AttachTranslationCatalog:
 
             # Choosing the shortest is used as a heuristic for selecting among
             # binary package names and domain paths.
-            if domains.binary_packages:
+            if domain.binary_packages:
                 binarypackagenameset = BinaryPackageNameSet()
                 best_binarypackage = helpers.getRosettaBestBinaryPackageName(
-                    domains.binary_packages)
-                template.binarypackagename = (
-                    binarypackagenameset[best_binarypackage])
+                    domain.binary_packages)
 
-            template.path = helpers.getRosettaBestDomainPath(domain.domain_paths)
+                try:
+                    template.binarypackagename = (
+                        binarypackagenameset[best_binarypackage])
+                except KeyError:
+                    self.logger.warning(
+                        "No binary package name '%s' in the database." %
+                        best_binarypackage)
+
+                # Since the domain has binary packages, set this flag on the
+                # PO template so that it's included in language pack exports.
+                template.languagepack = True
+
+            template.path = helpers.getRosettaBestDomainPath(
+                domain.domain_paths)
 
             template.filename = domain.pot_filename
-
-            # If the domain has any binary packages, set this flag on the PO
-            # template so that it's included in language pack exports.
-            if domain.binary_packages:
-                template.languagepack = True
 
             # Attach all the PO files.
 
             for language_code in domain.po_files:
                 if '@' in language_code:
                     code, variant = language_code.split('@', 1)
+                    variant = unicode(variant)
                 else:
                     code, variant = language_code, None
 

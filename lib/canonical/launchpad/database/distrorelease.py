@@ -143,8 +143,8 @@ class DistroRelease(SQLBase):
         elif name  == '+packages':
             return PublishedPackageSet()
         elif name == '+rosetta':
-            pts = getUtility(IPOTemplateSet)
-            return pts.distrorelease_subset(distrorelease=self)
+            potemplateset = getUtility(IPOTemplateSet)
+            return potemplateset.getSubset(distrorelease=self)
         else:
             return self.__getitem__(name)
 

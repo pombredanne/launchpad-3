@@ -61,9 +61,10 @@ class VSourcePackageReleasePublishing(SourcePackageRelease):
     def traverse(self, name):
         """See ISourcePackageReleasePublishing."""
         if name == '+rosetta':
-            pts = getUtility(IPOTemplateSet)
-            return pts.distrorelease_sourcepackagename_subset(
-                self.distrorelease, self.sourcepackage.sourcepackagename)
+            potemplateset = getUtility(IPOTemplateSet)
+            return potemplateset.getSubset(
+                distrorelease=self.distrorelease,
+                sourcepackagename=self.sourcepackage.sourcepackagename)
         else:
             return self[name]
 

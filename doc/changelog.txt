@@ -2,6 +2,35 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-23 19:41:47 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1485
+
+    Summary:
+      Added missing bits from the review and fixed a couple of bugs
+    Revision:
+      launchpad--devel--0--patch-1485
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-18
+       Forgotten patch
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-19
+       Final changes
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/database/vsourcepackagereleasepublishing.py
+     lib/canonical/launchpad/interfaces/pofile.py
+     lib/canonical/launchpad/scripts/rosetta.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-18
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-19
+
+
 2005-03-23 18:31:52 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1484
 
     Summary:

@@ -284,15 +284,25 @@ class POTemplateSet:
         else:
             return res[0]
 
-    def distrorelease_sourcepackagename_subset(self, distrorelease,
-                                               sourcepackagename):
+    def getSubset(self, **kw):
         """See IPOTemplateSet."""
-        return POTemplateSubset(distrorelease=distrorelease,
-                                sourcepackagename=sourcepackagename)
+        if kw.get('distrorelease'):
+            assert 'productrelease' not in kw
 
-    def distrorelease_subset(self, distrorelease):
-        """See IPOTemplateSet."""
-        return POTemplateSubset(distrorelease=distrorelease)
+            distrorelease = kw['distrorelease']
+
+            if kw.get('sourcepackagename'):
+                sourcepackagename = kw['sourcepackagename']
+
+                return POTemplateSubset(
+                    distrorelease=distrorelease,
+                    sourcepackagename=sourcepackagename)
+            else:
+                return POTemplateSubset(distrorelease=distrorelease)
+
+        assert kw.get('productrelease')
+
+        return POTemplateSubset(productrelease=kw['productrelease'])
 
     def getTemplatesPendingImport(self):
         """See IPOTemplateSet."""
@@ -718,8 +728,8 @@ class POTemplate(SQLBase, RosettaStats):
             # later in case it's a bug in our code.
             self.rawimportstatus = RosettaImportStatus.FAILED
             if logger:
-                logger.warning('We got an error importing %s' , self.name,
-                    exc_info = 1)
+                logger.warning('We got an error importing %s' ,
+                    self.potemplatename.name, exc_info = 1)
 
 
 class POTMsgSet(SQLBase):

@@ -113,14 +113,10 @@ class IPOTemplateSet(Interface):
     def __getitem__(name):
         """Get a PO template by its name."""
 
-    def distrorelease_sourcepackagename_subset(distrorelease,
-                                               sourcepackagename):
-        """Return a POTemplateSubset object for a source package name and a
-        distro release.
+    def getSubset(distrorelease=None, sourcepackagename=None,
+                  productrelease=None):
+        """Return a POTemplateSubset object depending on the given arguments.
         """
-
-    def distrorelease_subset(distrorelease):
-        """Return a POTemplateSubset object for this distrorelease."""
 
     def getTemplatesPendingImport():
         """Return a list of PO templates that have data to be imported."""
