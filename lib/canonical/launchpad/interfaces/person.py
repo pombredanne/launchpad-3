@@ -138,6 +138,14 @@ class IPerson(Interface):
                 "again. A value of 0 (zero) means that subscription renewal "
                 "periods will be the same as the membership period."))
 
+    defaultexpirationdate = Attribute(
+            "The date, according to team's default values in which a newly "
+            "approved membership will expire.")
+
+    defaultrenewedexpirationdate = Attribute(
+            "The date, according to team's default values in which a just "
+            "renewed membership will expire.")
+
     subscriptionpolicy = Choice(
             title=_('Subscription Policy'),
             required=True, vocabulary='TeamSubscriptionPolicy',
@@ -216,25 +224,26 @@ class IPerson(Interface):
         a team administrator.
         """
 
-    def addMember(person, status=TeamMembershipStatus.APPROVED, expires=None,
-                  reviewer=None, comment=None):
+    def addMember(person, status=TeamMembershipStatus.APPROVED, reviewer=None,
+                  comment=None):
         """Add person as a member of this team.
 
         Make sure status is either APPROVED or PROPOSED and add a
         TeamMembership entry for this person with the given status, reviewer,
-        expiration date and reviewer comment. This method is also responsible
-        for filling the TeamParticipation table in case the status is APPROVED.
+        and reviewer comment. This method is also responsible for filling 
+        the TeamParticipation table in case the status is APPROVED.
         """
 
-    def setMembershipStatus(person, status, expires=None, reviewer=None,
+    def setMembershipStatus(person, status, expires, reviewer=None,
                             comment=None):
         """Set the status of the person's membership on this team.
 
-        This method will ensure that we only allow the status transitions
-        specified in the TeamMembership spec. It's also responsible for
-        filling/cleaning the TeamParticipation table when the transition
-        requires it and setting the expiration date, reviewer and
-        reviewercomment.
+        Also set all other attributes of TeamMembership, which are <comment>,
+        <reviewer> and <dateexpires>. This method will ensure that we only 
+        allow the status transitions specified in the TeamMembership spec.
+        It's also responsible for filling/cleaning the TeamParticipation 
+        table when the transition requires it and setting the expiration 
+        date, reviewer and reviewercomment.
         """
 
     def getSubTeams():

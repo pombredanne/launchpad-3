@@ -2,6 +2,29 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-04 23:00:56 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1558
+
+    Summary:
+      Fixing a problem carlos noticed which prevented us to set a expiration date for a team member and later setting this membership to never expire.
+    Revision:
+      launchpad--devel--0--patch-1558
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-250
+       Fixing a problem carlos noticed which prevented us to set a expiration date for a team member and later setting this membership to never expire.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/team.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/doc/teamparticipation.txt
+     lib/canonical/launchpad/interfaces/person.py
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-250
+
+
 2005-04-04 22:42:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1557
 
     Summary:

@@ -254,18 +254,12 @@ class ProposedTeamMembersEditView:
     def allPeople(self):
         return getUtility(IPersonSet).getAll()
 
-    def defaultExpirationDate(self):
-        days = self.team.defaultmembershipperiod
-        if days:
-            return (datetime.utcnow() + timedelta(days)).date()
-        else:
-            return None
-
     def processProposed(self):
         if self.request.method != "POST":
             return
 
         team = self.team
+        expires = team.defaultexpirationdate
         for person in team.proposedmembers:
             action = self.request.form.get('action_%d' % person.id)
             membership = _getMembership(person.id, team.id)
@@ -276,7 +270,8 @@ class ProposedTeamMembersEditView:
             elif action == "hold":
                 continue
 
-            team.setMembershipStatus(person, status, reviewer=self.user)
+            team.setMembershipStatus(person, status, expires,
+                                     reviewer=self.user)
 
         # Need to flush all changes we made, so subsequent queries we make
         # with this transaction will see this changes and thus they'll be
@@ -329,12 +324,13 @@ class AddTeamMemberView(AddView):
             # Do not add this team as a member of itself, please.
             return
 
+        expires = team.defaultexpirationdate
         if member.hasMembershipEntryFor(team):
             membership = _getMembership(member.id, team.id)
             if membership.status in (approved, admin):
                 self.alreadyMember = member
             else:
-                team.setMembershipStatus(member, approved,
+                team.setMembershipStatus(member, approved, expires,
                                          reviewer=self.user)
                 self.addedMember = member
         else:
@@ -400,12 +396,12 @@ class TeamMembershipEditView(object):
         member = self.context.person
         comment = self.request.form.get('comment')
         try:
-            date = self._getExpirationDate()
+            expires = self._getExpirationDate()
         except ValueError, err:
             self.errormessage = 'Expiration date: %s' % err
             return
 
-        team.setMembershipStatus(member, status, expires=date,
+        team.setMembershipStatus(member, status, expires,
                                  reviewer=self.user, comment=comment)
 
     def processInactiveMember(self):
@@ -435,8 +431,9 @@ class TeamMembershipEditView(object):
             member = self.context.person
             deactivated = TeamMembershipStatus.DEACTIVATED
             comment = self.request.form.get('comment')
-            team.setMembershipStatus(member, deactivated, reviewer=self.user,
-                                     comment=comment)
+            expires = self.context.dateexpires
+            team.setMembershipStatus(member, deactivated, expires,
+                                     reviewer=self.user, comment=comment)
             self.request.response.redirect('../')
             return
             
@@ -471,17 +468,11 @@ class TeamMembershipEditView(object):
             self.processInactiveMember()
 
     def dateChooserForExpiredMembers(self):
-        days = self.context.team.defaultrenewalperiod
-        expires = None
-        if days is not None:
-            expires = datetime.utcnow() + timedelta(days=days)
+        expires = self.context.team.defaultrenewedexpirationdate
         return self.buildDateChooser(expires)
 
     def dateChooserForProposedMembers(self):
-        days = self.context.team.defaultmembershipperiod
-        expires = None
-        if days is not None:
-            expires = datetime.utcnow() + timedelta(days=days)
+        expires = self.context.team.defaultexpirationdate
         return self.buildDateChooser(expires)
 
     def dateChooserWithCurrentExpirationSelected(self):
