@@ -8,7 +8,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.management import newInteraction
 import transaction
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-import canonical.zodb
+import canonical.launchpad.webapp.zodb
 
 from zope.app import zapi
 from zope.publisher.interfaces.browser import IDefaultSkin
@@ -223,7 +223,7 @@ class BrowserPublication(BrowserPub):
         self.openedConnection(conn)
 
         root = conn.root()
-        canonical.zodb.handle_before_traversal(root)
+        canonical.launchpad.webapp.zodb.handle_before_traversal(root)
 
         self.clearSQLOSCache()
 

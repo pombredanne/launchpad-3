@@ -3,7 +3,7 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     i18n_domain="canonical.launchpad">
 
-    <include file="meta.zcml" />
+    <include package="canonical.launchpad.webapp" file="meta.zcml" />
     <includeOverrides file="defaultview-meta.zcml" />
 
     <browser:skin name="launchpad"
@@ -136,10 +136,5 @@
             template="launchpad/templates/errorservice-tbentry.pt"
             />
     </browser:pages>
-
-  <subscriber
-      for="zope.app.appsetup.IDatabaseOpenedEvent"
-      factory="canonical.zodb.bootstrapSubscriber"
-      />
 
 </configure>

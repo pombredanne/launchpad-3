@@ -3,6 +3,32 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     i18n_domain="canonical.launchpad">
 
+  <!-- Annotations -->
+
+  <content class="canonical.launchpad.webapp.annotation.SQLObjectAnnotation">
+    <require
+        permission="zope.Public"
+        interface="canonical.launchpad.interfaces.IReadZODBAnnotation"
+        />
+    <require
+        permission="launchpad.AnyPerson"
+        interface="canonical.launchpad.interfaces.IWriteZODBAnnotation"
+        />
+  </content>
+
+  <adapter
+      for="sqlobject.main.SQLObject"
+      provides="canonical.launchpad.interfaces.IZODBAnnotation"
+      factory="canonical.launchpad.webapp.annotation.SQLObjectAnnotation"
+      />
+
+  <!-- ZODB -->
+
+  <subscriber
+      for="zope.app.appsetup.IDatabaseOpenedEvent"
+      factory="canonical.launchpad.webapp.zodb.bootstrapSubscriber"
+      />
+
   <!-- TALES namespaces. -->
 
   <adapter

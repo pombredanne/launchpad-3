@@ -9,7 +9,7 @@ import re
 from canonical.launchpad.database import EmailAddress
 from canonical.launchpad.interfaces import IPasswordEncryptor
 from canonical.auth import AuthApplication
-from canonical.zodb import zodbconnection
+from canonical.launchpad.webapp.zodb import zodbconnection
 
 # Note that this appears as "valid email" in the UI, because that term is
 # more familiar to users, even if it is less correct.

@@ -6,7 +6,7 @@ __metaclass__ = type
 from zope.app.session.session import PersistentSessionDataContainer
 from zope.app.session.http import CookieClientIdManager
 
-from canonical.zodb import zodbconnection
+from canonical.launchpad.webapp.zodb import zodbconnection
 
 
 class LaunchpadCookieClientIdManager(CookieClientIdManager):

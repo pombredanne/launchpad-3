@@ -12,7 +12,8 @@ _ = MessageIDFactory('launchpad')
 __all__ = ('ILaunchpadApplication', 'IMaloneApplication',
            'IRosettaApplication', 'ISoyuzApplication',
            'IDOAPApplication', 'IFOAFApplication',
-           'IPasswordEncryptor')
+           'IPasswordEncryptor', 'IReadZODBAnnotation',
+           'IWriteZODBAnnotation', 'IZODBAnnotation')
 
 class ILaunchpadApplication(Interface):
     """Marker interface for a launchpad application.
@@ -56,3 +57,31 @@ class IPasswordEncryptor(Interface):
         self.encrypt(plaintext) will compare equal to 'encrypted'.
         """
 
+
+class IReadZODBAnnotation(Interface):
+
+    def __getitem__(namespace):
+        """Get the annotation for the given dotted-name namespace."""
+
+    def get(namespace, default=None):
+        """Get the annotation for the given dotted-name namespace.
+
+        If there is no such annotation, return the default value.
+        """
+
+    def __contains__(namespace):
+        """Returns true if there is an annotation with the given namespace.
+
+        Otherwise, returns false.
+        """
+
+    def __delitem__(namespace):
+        """Removes annotation at the given namespace."""
+
+class IWriteZODBAnnotation(Interface):
+
+    def __setitem__(namespace, value):
+        """Set a value as the annotation for the given namespace."""
+
+class IZODBAnnotation(IReadZODBAnnotation, IWriteZODBAnnotation):
+    pass

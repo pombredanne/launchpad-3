@@ -4,7 +4,7 @@
 
 To use:
 
->>> from canonical.zodb import zodbconnection
+>>> from canonical.launchpad.webapp.zodb import zodbconnection
 >>> resets = zodbconnection.passwordresets
 
 """
@@ -20,6 +20,7 @@ class ZODBConnection(zope.thread.local):
     """Thread local that stores the top-level ZODB object we care about."""
     passwordresets = None
     sessiondata = None
+    annotations = None
 
 zodbconnection = ZODBConnection()
 
@@ -39,6 +40,8 @@ def set_up_zodb_if_needed(root):
         app['passwordresets'] = PasswordResets()
     if app.get('sessiondata') is None:
         app['sessiondata'] = OOBTree()
+    if app.get('annotations') is None:
+        app['annotations'] = OOBTree()
 
 def bootstrapSubscriber(event):
     """Subscriber to the IDataBaseOpenedEvent.
@@ -57,4 +60,5 @@ def handle_before_traversal(root):
     # Put the stuff we want access to in the thread local.
     zodbconnection.passwordresets = ProxyFactory(app['passwordresets'])
     zodbconnection.sessiondata = app['sessiondata']
+    zodbconnection.annotations = app['annotations']
 

@@ -5,30 +5,28 @@
 
 __metaclass__ = type
 
+import sets
 from zope.interface import Interface, implements
+from zope.component import queryView, getDefaultViewName, getUtility
+from zope.component.interfaces import IDefaultViewName
 from zope.schema import TextLine
 from zope.configuration.fields import GlobalObject, PythonIdentifier, Path
-from zope.app.security.fields import Permission
-from zope.app.component.fields import LayerField
-from canonical.launchpad.layers import setAdditionalLayer
-
-from zope.component import queryView, getDefaultViewName, getUtility
-from zope.app.component.metaconfigure import view, PublicPermission
-from zope.app.publisher.browser.viewmeta import page
 from zope.security.checker import CheckerPublic
-from zope.app.file.image import Image
 from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces import NotFound
-import zope.app.publisher.browser.metadirectives
-from canonical.publication import ISubURLDispatch, SubURLTraverser
-
 from zope.app import zapi
-import sets
-from zope.component.interfaces import IDefaultViewName
-
 from zope.app.component.metaconfigure import handler
 from zope.app.component.interface import provideInterface
+from zope.app.security.fields import Permission
+from zope.app.component.fields import LayerField
+from zope.app.component.metaconfigure import view, PublicPermission
+from zope.app.publisher.browser.viewmeta import page
+from zope.app.file.image import Image
+import zope.app.publisher.browser.metadirectives
+
+from canonical.publication import ISubURLDispatch, SubURLTraverser
+from canonical.launchpad.layers import setAdditionalLayer
 
 
 class IDefaultViewDirective(

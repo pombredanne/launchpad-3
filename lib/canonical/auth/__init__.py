@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces import IPersonSet
 
 from canonical.launchpad.database import EmailAddress
 
-from canonical.zodb import zodbconnection
+from canonical.launchpad.webapp.zodb import zodbconnection
 
 from datetime import datetime, timedelta
 import random

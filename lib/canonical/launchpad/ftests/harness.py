@@ -13,7 +13,7 @@ class LaunchpadTestCase(PgTestCase):
 
 class LaunchpadFunctionalTestCase(LaunchpadTestCase):
     """Launchpad harness for Launchpad functional tests
-    
+
     Just like LaunchpadTestCase, but bootstraps the Z3 machinery
     so Utilities, Adapters etc. are all available.
 
@@ -22,6 +22,7 @@ class LaunchpadFunctionalTestCase(LaunchpadTestCase):
     def setUp(self):
         super(LaunchpadFunctionalTestCase, self).setUp()
         FunctionalTestSetup().setUp()
+        self.zodb_db = FunctionalTestSetup().db
 
     def tearDown(self):
         FunctionalTestSetup().tearDown()
