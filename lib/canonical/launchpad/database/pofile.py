@@ -752,7 +752,7 @@ class POFile(SQLBase):
                 return poresults[0]
 
     def __getitem__(self, msgid_text):
-        return self.messageSet(msgid_text, onlyCurrent=True)
+        return self.messageSet(msgid_text)
 
     def messageSetsNotInTemplate(self):
         return iter(POMsgSet.select('''
