@@ -113,15 +113,18 @@ class IObjectAuthorization(Interface):
 
 
 class IAuthorization(Interface):
-    """Authorization policy for a particular object and permission"""
+    """Authorization policy for a particular object and permission."""
+
+    def checkUnauthenticated():
+        """Returns True if an unauthenticated user has that permission
+        on the adapted object.  Otherwise returns False.
+        """
 
     def checkPermission(person):
         """Returns True if the person has that permission on the adapted
         object.  Otherwise returns False.
 
-        The argument person is the person who is authenticated, or None if
-        the principal is not adaptable to a Person.  So, person is None when
-        no-one is logged in.
+        The argument `person` is the person who is authenticated.
         """
 
 
