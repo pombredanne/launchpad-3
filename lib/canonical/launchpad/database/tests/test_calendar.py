@@ -3,6 +3,7 @@ Unit tests for canonical.launchpad.database.calendar
 """
 
 import unittest
+import datetime
 from zope.testing import doctest
 
 
@@ -17,7 +18,7 @@ class ConnectionStub:
     def __init__(self):
         self._dm = self
         self.cache = self
-        self._objects = {}
+        self._tables = {}  # tables[tableName][numeric_id] == {field: value}
         self._next_id = 1
 
     def ignore(self, *args, **kw):
@@ -30,16 +31,33 @@ class ConnectionStub:
     finishPut = ignore # connection.cache.finishPut()
 
     def queryInsertID(self, soInstance, id, names, values):
-        id = self._next_id
-        self._next_id += 1
-        self._objects[id] = dict(zip(names, values))
+        table = self._tables.setdefault(soInstance._table, {})
+        if id is None:
+            id = self._next_id
+            self._next_id += 1
+        table[id] = dict(zip(names, values))
+        table[id][soInstance._idName] = id
         return id
 
     def _SO_selectOne(self, so, columnNames):
-        values = self._objects.get(so.id)
-        if values is None:
+        table = self._tables.setdefault(so._table, {})
+        record = table.get(so.id)
+        if record is None:
             return []
-        return [values[name] for name in columnNames]
+        return tuple([record[name] for name in columnNames])
+
+    def _SO_selectOneAlt(self, so, columnNames, column, value):
+        table = self._tables.setdefault(so._table, {})
+        for record in table.values():
+            if record[column] == value:
+                return tuple([record[name] for name in columnNames])
+        return None
+
+    def _SO_selectJoin(self, soClass, column, value):
+        table = self._tables.setdefault(soClass._table, {})
+        for record in table.values():
+            if record[column] == value:
+                yield (record[soClass._idName], )
 
 
 def setUp(doctest):
@@ -78,12 +96,72 @@ def doctest_Calendar():
     ICalendar).
 
         >>> from zope.interface.verify import verifyObject
+        >>> from schoolbell.interfaces import ICalendar
         >>> from canonical.launchpad.interfaces.calendar \
         ...     import ILaunchpadCalendar
         >>> verifyObject(ILaunchpadCalendar, cal)
         True
+        >>> verifyObject(ICalendar, cal)
+        True
 
-    TODO: actually test those methods
+    Calendars are iterable
+
+        >>> list(cal)
+        []
+
+    Let us actually create some events so iteration becomes more interesting.
+
+        >>> from canonical.launchpad.database import CalendarEvent
+        >>> e1 = CalendarEvent(unique_id="e1", calendar=cal, title="Hack",
+        ...                    dtstart=datetime.datetime(2004, 12, 15, 0, 35),
+        ...                    duration=datetime.timedelta(minutes=1))
+        >>> e2 = CalendarEvent(unique_id="e2", calendar=cal, title="ditto",
+        ...                    dtstart=datetime.datetime(2004, 12, 15, 0, 37),
+        ...                    duration=datetime.timedelta(minutes=2))
+
+        >>> [e.unique_id for e in cal]
+        [u'e1', u'e2']
+
+    You can also look for an event by its unique ID:
+
+        >>> cal.find('e1').title
+        u'Hack'
+        >>> cal.find('e3')
+        Traceback (most recent call last):
+          ...
+        KeyError: 'e3'
+
+    TODO: test the expand method
+
+    """
+
+
+def doctest_CalendarEvent():
+    r"""Test CalendarEvent.
+
+    A CalendarEvent needs to belong to a Calendar.  A Calendar needs an owner,
+    so we have to create a Person.
+
+        >>> from canonical.launchpad.database import Person
+        >>> from canonical.launchpad.database import Calendar
+        >>> person = Person(name='Joe Developer')
+        >>> calendar = Calendar(owner=person, title="Sample calendar")
+
+    We can now create a CalendarEvent
+
+        >>> from canonical.launchpad.database import CalendarEvent
+        >>> e1 = CalendarEvent(unique_id="e1", calendar=calendar, title="Hack",
+        ...                    dtstart=datetime.datetime(2004, 12, 15, 1, 42),
+        ...                    duration=datetime.timedelta(minutes=1))
+
+    Calendar events should implement ICalendarEvent.
+
+        >>> from zope.interface.verify import verifyObject
+        >>> from schoolbell.interfaces import ICalendarEvent
+        >>> verifyObject(ICalendarEvent, e1)
+        True
+
+    TODO: test hasOccurrences and other methods
 
     """
 

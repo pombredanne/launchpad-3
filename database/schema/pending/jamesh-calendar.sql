@@ -20,15 +20,15 @@ CREATE TABLE CalendarEvent (
     calendar integer NOT NULL,
     dtstart timestamp without time zone NOT NULL,
     duration interval NOT NULL,
+    title text NOT NULL,
     location text NOT NULL,
     recurrence varchar(10) NOT NULL,
     count integer, /* if count is not positive, use until */
-    until timestamp without time zone, /* until is set if recurrence rule set */
+    until timestamp without time zone,
     exceptions text,
     interval integer,
     rec_list text,
 
-    CONSTRAINT until_set_if_recurs CHECK (recurrence='' OR until IS NOT NULL),
     CONSTRAINT unique_unique_id UNIQUE (unique_id)
 );
 

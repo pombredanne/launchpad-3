@@ -17,6 +17,7 @@ def doctest_interfaces():
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(doctest.DocTestSuite())
+    suite.addTest(doctest.DocTestSuite('schoolbell.mixins'))
     return suite
 
 if __name__ == '__main__':

@@ -5,9 +5,9 @@ There are two interfaces for calendars: `ICalendar` for read-only calendars,
 and `IEditCalendar` for read-write calendars.
 
 Semantically calendars are unordered sets of events.  Events themselves
-(`ICalendarEvent`) are immutable, comparable and hashable.  If you have
-an editable calendar, and want to change an event in it, you need to create
-a new event object and put it into the calendar:
+(`ICalendarEvent`) are immutable and comparable.  If you have an editable
+calendar, and want to change an event in it, you need to create a new event
+object and put it into the calendar:
 
     calendar.removeEvent(event)
     replacement_event = event.replace(title=u"New title", ...)
@@ -102,7 +102,7 @@ class IRecurrenceRule(Interface):
     """Base interface of the recurrence rules.
 
     Recurrence rules are stored as attributes of ICalendarEvent.  They
-    are also immutable, comparable, and hashable.  To modify the recurrence
+    are also immutable and comparable.  To modify the recurrence
     rule of an event, you need to create a new recurrence rule, and a new
     event:
 
@@ -162,13 +162,6 @@ class IRecurrenceRule(Interface):
 
     def __ne__(other):
         """See if self != other."""
-
-    def __hash__():
-        """Return the hash value of this recurrence rule.
-
-        It is guaranteed that if recurrence rules compare equal, hash will
-        return the same value.
-        """
 
     def apply(event, enddate=None):
        """Apply this rule to an event.
@@ -243,8 +236,7 @@ class IMonthlyRecurrenceRule(IRecurrenceRule):
 class ICalendarEvent(Interface):
     """A calendar event.
 
-    Calendar events are immutable, hashable and comparable, so they can be
-    stored in sets.
+    Calendar events are immutable and comparable.
 
     Events are compared in chronological order, so lists of events can be
     sorted.  If two events start at the same time, they are ordered according
@@ -336,13 +328,6 @@ class ICalendarEvent(Interface):
 
     def __ge__(other):
         """See if self >= other."""
-
-    def __hash__():
-        """Return the hash value of this event.
-
-        It is guaranteed that if calendar events compare equal, hash will
-        return the same value.
-        """
 
     def hasOccurrences():
         """Does the event have any occurrences?
