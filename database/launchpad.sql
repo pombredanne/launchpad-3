@@ -37,6 +37,7 @@
 	- add ArchNamespace and move attributes there from Branch
 	- Add BugActivity.id as a primary key for Andrew Veitch
 	- Fix typo BugInfestation.createor -> BugInfestation.creator
+	- add an owner to SourceSource
 	- major Rosetta changes:
 	  - remove Filters and Inheritance (don't need it for phase 1)
 	  - rename POTFile -> POTemplate
@@ -44,6 +45,11 @@
 	  - add POTemplate.product
 	  - add POMsgSet table
 	  - rename POTMsgIDSighting -> POMsgIDSighting
+	  - add owner and pluralforms to POFile
+	  - merge RosettaPOTranslationSighting and POTranslationSighting
+	  - move add POMsgSet.current
+	  - add POTranslationSighting.deprecated
+	  - rename POTranslationSighting.lastseen -> .lasttouched
   v0.97:
         - rename Membership.label to Membership.role
 	- rename EmailAddress.label to EmailAddress.status
@@ -162,7 +168,6 @@ DROP TABLE BranchRelationship;
 DROP TABLE ProjectBugsystem;
 DROP TABLE BugWatch;
 DROP TABLE BugSystem;
-DROP TABLE RosettaPOTranslationSighting;
 DROP TABLE BugattachmentContent;
 DROP TABLE BugAttachment;
 DROP TABLE POTranslationSighting;
@@ -1406,7 +1411,11 @@ CREATE TABLE POFile (
   header               text,  -- the contents of the NULL msgstr
   lasttranslator       integer REFERENCES Person,
   license              integer REFERENCES License,
-  completeness         integer  -- between 0 and 100
+  completeness         integer,  -- between 0 and 100
+  owner                integer REFERENCES Person,
+  -- the number of plural forms needed to translate this
+  -- pofile.
+  pluralforms          integer NOT NULL
 );
 
 
@@ -1422,9 +1431,10 @@ CREATE TABLE POMsgSet (
   sequence            integer,
   potemplate          integer REFERENCES POTemplate,
   pofile              integer REFERENCES POFile,
-  commenttext         text,
-  fuzzy               boolean NOT NULL,
+  iscurrent           boolean NOT NULL,
   obsolete            boolean NOT NULL,
+  fuzzy               boolean NOT NULL,
+  commenttext         text,
   filereferences      text,
   sourcecomment       text
 );
@@ -1452,22 +1462,23 @@ CREATE TABLE POMsgIDSighting (
 
 /*
   POTranslationSighting
-  A sighting of a translation in a PO file IN REVISION CONTROL. This
-  is contrasted with a RosettaPOTranslationSighting, which is a
-  translation given to us for a potemplate/language.
+  A sighting of a translation in a PO file. Could have come
+  from the web or from an actual PO file in RCS.
 */
 CREATE TABLE POTranslationSighting (
   id                    serial PRIMARY KEY,
   pomsgset              integer NOT NULL REFERENCES POMsgSet,
   potranslation         integer NOT NULL REFERENCES POTranslation,
   license               integer NOT NULL REFERENCES License,
-  rosettaprovided       boolean NOT NULL,
   firstseen             timestamp NOT NULL,
-  lastseen              timestamp NOT NULL,
+  lasttouched           timestamp NOT NULL,
   iscurrent             boolean NOT NULL,
   pluralform            integer NOT NULL,
+  deprecated            boolean NOT NULL DEFAULT FALSE,
   person                integer REFERENCES Person,
-  CHECK ( pluralform >= 0 )
+  CHECK ( pluralform >= 0 ),
+  -- these are the things that really define a translation
+  UNIQUE ( pomsgset, potranslation, license, person )
 );
 
 
@@ -1476,7 +1487,9 @@ CREATE TABLE POTranslationSighting (
   RosettaPOTranslationSighting
   A record of a translation given to Rosetta through the web, or
   web service, or otherwise.
-*/
+  
+  DEPRECATED, this is all handled in POTranslationSighting.
+  
 CREATE TABLE RosettaPOTranslationSighting (
   id                   serial PRIMARY KEY,
   person               integer NOT NULL REFERENCES Person,
@@ -1490,6 +1503,7 @@ CREATE TABLE RosettaPOTranslationSighting (
   pluralform           integer,
   CHECK ( pluralform >= 0 )
 );
+*/
 
 
 
@@ -1891,7 +1905,8 @@ CREATE TABLE SourceSource (
   newarchive                text,
   newbranchcategory         text,
   newbranchbranch           text,
-  newbranchversion          text
+  newbranchversion          text,
+  owner                     integer NOT NULL REFERENCES Person
 );
 
 
