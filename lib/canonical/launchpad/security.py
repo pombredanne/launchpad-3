@@ -180,7 +180,21 @@ class EditDistroBugTask(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         """Allow all authenticated users to edit the task."""
-        return True
+        if not self.obj.bug.private:
+            # public bug
+            return True
+        else:
+            # private bug
+            for subscription in self.obj.bug.subscriptions:
+                subscriber = subscription.person
+                if ITeam.providedBy(subscriber):
+                    if user.inTeam(subscriber):
+                        return True
+                else:
+                    if subscriber.id == user.id:
+                        return True
+
+            return False
 
 
 class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):

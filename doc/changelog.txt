@@ -2,6 +2,36 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-24 18:16:26 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1495
+
+    Summary:
+      fix the adapter that protects distro bugtasks, so that it actually restricts editability to explicit subscribers when the bug is private.
+    Revision:
+      launchpad--devel--0--patch-1495
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-447
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-448
+       fix the adapter that protects distro bugtasks, so that it actually restricts editability to explicit subscribers when the bug is private.
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-449
+       merge from rf
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/doc/bugtask.txt
+     lib/canonical/launchpad/interfaces/bugtask.py
+     lib/canonical/launchpad/security.py
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-447
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-448
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-449
+
+
 2005-03-24 17:51:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1494
 
     Summary:

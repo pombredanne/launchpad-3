@@ -41,7 +41,8 @@ to access those other objects:
 
 Next, we need to grab some values to provide for priority, severity and status.
 
-    >>> from canonical.lp.dbschema import BugTaskStatus, BugSeverity, BugPriority
+    >>> from canonical.lp.dbschema import BugTaskStatus, BugSeverity, \
+    ...     BugPriority
     >>> STATUS_NEW = BugTaskStatus.NEW
     >>> STATUS_ACCEPTED = BugTaskStatus.ACCEPTED
     >>> STATUS_FIXED = BugTaskStatus.FIXED
@@ -71,7 +72,7 @@ Next, we need to grab some values to provide for priority, severity and status.
     ...     severity = SEVERITY_NORMAL)
     >>> distro_task.distribution == ubuntu
     True
-    
+
     >>> from canonical.launchpad.interfaces import IDistroBugTask
     >>> IDistroBugTask.providedBy(distro_task)
     True
@@ -87,7 +88,7 @@ Next, we need to grab some values to provide for priority, severity and status.
     ...     severity = SEVERITY_NORMAL)
     >>> distro_release_task.distrorelease == hoary
     True
-    
+
     >>> from canonical.launchpad.interfaces import IDistroReleaseBugTask
     >>> IDistroReleaseBugTask.providedBy(distro_release_task)
     True
@@ -284,8 +285,8 @@ Now Sample Person is allowed to edit the bug task again:
 Distro and Distro Release Bug Tasks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The policy for editing distro and distro release bug tasks is more
-relaxed. Anonymous may not edit the task:
+Any logged-in user can edit tasks filed on distros as long as the bug
+is not marked private. So, as an anonymous user, we can edit anything:
 
     >>> login('launchpad.anonymous')
     >>> distro_task.status = STATUS_FIXED
@@ -298,12 +299,16 @@ relaxed. Anonymous may not edit the task:
       ...
     Unauthorized: ('assignee', 'launchpad.Edit')
 
-But all authenticated users may, even though they're neither a
-maintainer nor an assignee:
+But once authenticated:
 
     >>> login('test@canonical.com')
+
+We can edit the task:
+
     >>> distro_task.status = STATUS_FIXED
     >>> distro_release_task.assignee = sample_person
+
+For bugs that *are* marked private, see the next section...
 
 
 Bug Privacy
@@ -313,6 +318,10 @@ A bug is either private or public. Private bugs are only visible (e.g. in
 search listings) to explicit subscribers. Public bugs are visible to
 anyone.
 
+    >>> from zope.event import notify
+    >>> from canonical.launchpad.event.sqlobjectevent import SQLObjectToBeModifiedEvent, \
+    ...     SQLObjectModifiedEvent
+
 Let's log in as the user Foo Bar (to be allowed to edit bugs):
 
     >>> login('foo.bar@canonical.com')
@@ -320,15 +329,31 @@ Let's log in as the user Foo Bar (to be allowed to edit bugs):
 and mark one of the Firefox bugs private:
 
     >>> bug_firefox_no_svg_support = bugtaskset.get(2)
+    >>> notify(SQLObjectToBeModifiedEvent(
+    ...     bug_firefox_no_svg_support.bug, {'private' : True}))
+
+    >>> def capture_state(obj, *fields):
+    ...     class State: pass
+    ...     state = State()
+    ...     for field in fields:
+    ...         setattr(state, field, getattr(obj, field))
+    ...     return state
+    >>> old_state = capture_state(
+    ...     bug_firefox_no_svg_support.bug, "id", "title", "private")
     >>> bug_firefox_no_svg_support.bug.private = True
+    >>> bug_set_private = SQLObjectModifiedEvent(
+    ...     bug_firefox_no_svg_support.bug, old_state,
+    ...     ["id", "title", "private"],
+    ...     getUtility(IPersonSet).get(16))
+    >>> notify(bug_set_private)
     >>> transaction.commit()
 
-Now the same search as above yields only three bugs, because Foo Bar can't see
-the private bug (XXX: Brad Bollenbach, 2005-02-04: admittedly, this example is
-a bit contrived; setting a bug private and then not being able to see it
-anymore is not something one could do through the UI. I'm stumbling through
-this test this way until bug #104/production gets fixed so that one doesn't
-require so much boilerplate to simulate logins in tests.)
+Now, if we log in as David Allouche:
+
+    >>> login("david.allouche@canonical.com")
+
+The same search as above yields only three bugs, because David
+Allouche can't see the private bug.
 
     >>> bugtasks = bugtaskset.search(
     ...     status = any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
@@ -344,12 +369,22 @@ Trying to retrieve the bug directly will work fine:
 
     >>> bug_firefox_no_svg_support = bugtaskset.get(2)
 
-But attribute access on the IBugTask will raise an authorization exception:
+But attribute access on the IBugTask will raise an authorization
+exception:
 
     >>> bug_firefox_no_svg_support.bug
     Traceback (most recent call last):
       ...
     Unauthorized: ('bug', 'launchpad.View')
+
+As well, trying to edit a distro task as David Allouche will also
+raise an Unauthorized exception:
+
+    >>> bug_debian_firefox_no_svg_support = bugtaskset.get(4)
+    >>> bug_debian_firefox_no_svg_support.status = BugTaskStatus.FIXED
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ('status', 'launchpad.Edit')
 
 But, logged in as the Firefox maintainer:
 
