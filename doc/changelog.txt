@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-01 19:20:38 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1353
+
+    Summary:
+      Update BugTask constraints for bradb
+    Revision:
+      launchpad--devel--0--patch-1353
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-149
+       Update BugTask constraints for bradb
+    
+
+    new files:
+     database/schema/.arch-ids/patch-10-09-0.sql.id
+     database/schema/patch-10-09-0.sql
+
+    modified files:
+     database/schema/patch-10-08-0.sql doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-149
+
+
 2005-03-01 18:31:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1352
 
     Summary:
