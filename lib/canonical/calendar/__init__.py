@@ -4,6 +4,9 @@ Calendaring for Launchpad
 This package is a prototype of calendaring for launchpad.
 """
 
+import re
+import datetime
+
 from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.app import zapi
@@ -94,3 +97,30 @@ def calendarFromCalendarOwner(calendarowner):
 def calendarFromPersonApp(personapp):
     """Adapt IPersonApp to ICalendar."""
     return ICalendar(personapp.person)
+
+# XXXX we don't actually have any of these view classes yet ...
+_year_pat  = re.compile(r'(\d\d\d\d)')
+_month_pat = re.compile(r'(\d\d\d\d)-(\d\d)')
+_week_pat  = re.compile(r'(\d\d\d\d)-W(\d\d)')
+_day_pat   = re.compile(r'(\d\d\d\d)-(\d\d)-(\d\d)')
+def traverseCalendar(calendar, request, name):
+    match = _year_pat.match(name)
+    if match:
+        return YearView(calendar,
+                        year=int(match.group(1)))
+    match = _month_pat.match(name)
+    if match:
+        return MonthView(calendar,
+                         year=int(match.group(1)),
+                         month=int(match.group(2)))
+    match = _week_pat.match(name)
+    if match:
+        return WeekView(calendar,
+                        year=int(match.group(1)),
+                        week=int(match.group(2)))
+    match = _day_pat.match(name)
+    if match:
+        return DayView(calendar,
+                       year=int(match.group(1)),
+                       week=int(match.group(2)),
+                       day=int(match.group(3)))
