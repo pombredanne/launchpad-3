@@ -2,6 +2,40 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-09 18:27:38 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1297
+
+    Summary:
+      fix the bug reporting link in the newlook skin,
+ persist search criteria, make the global search box appear in the top right
+ corner when it's supposed to, and integrate the menu with the browser menu
+ service so that, among other things, top-level tab highlighting Just Works (TM)
+    Revision:
+      launchpad--devel--0--patch-1297
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-345
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-346
+       fix the bug reporting link in the newlook skin, persist search criteria, make the global search box appear in the top right corner when it's supposed to, and integrate the menu with the browser menu service so that, among other things, top-level tab highlighting Just Works (TM)
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-347
+       merge from rf
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/templates/malone_skin/malone-index.pt
+     lib/canonical/launchpad/templates/malone_skin/malone-standard-page.pt
+     lib/canonical/malone/configure.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-345
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-346
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-347
+
+
 2005-02-09 14:57:36 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1296
 
     Summary:

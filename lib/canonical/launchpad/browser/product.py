@@ -160,7 +160,15 @@ class ProductBugsView:
             self.bugtask_search(), int(request.get('batch_start', 0)))
         self.batchnav = BatchNavigator(self.batch, request)
 
+    def showGlobalSearchBox(self):
+        """Should the global search box be shown on the page?"""
+        if self.request.form.get("searchtext"):
+            return True
+        else:
+            return False
+
     def bugtask_search(self):
+        """Search for bug tasks, pulling the params out of the request."""
         params = {}
         searchtext = self.request.form.get("searchtext")
         if searchtext:
@@ -199,10 +207,12 @@ class ProductBugsView:
         return bugtaskset.search(**params)
 
     def task_columns(self):
+        """The columns to show in the bug task listing."""
         return [
             "id", "title", "milestone", "status", "submittedby", "assignedto"]
 
     def assign_to_milestones(self):
+        """Assign bug tasks to the given milestone."""
         if self.request.principal:
             if self.context.owner.id == self.request.principal.id:
                 milestone_name = self.request.get('milestone')
