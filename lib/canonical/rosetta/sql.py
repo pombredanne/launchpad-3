@@ -8,6 +8,7 @@ from sqlobject import ForeignKey, MultipleJoin, IntCol, BoolCol, StringCol, \
     DateTimeCol
 from zope.interface import implements
 from canonical.rosetta import pofile
+from types import NoneType
 
 __metaclass__ = type
 
@@ -19,7 +20,13 @@ class RosettaProjects:
 
     def __getitem__(self, name):
         # XXX: encoding should not be necessary
-        return RosettaProject.selectBy(name=name.encode('ascii'))[0]
+        ret = RosettaProject.selectBy(name=name.encode('ascii'))
+
+        if ret.count() == 0:
+            raise KeyError, name
+        else:
+            return ret[0]
+
 
     def new(self, name, title, url, description, owner):
         if type(url) != NoneType:
@@ -132,7 +139,7 @@ class RosettaPOTemplate(SQLBase):
             POFile.potemplate = %d AND
             POFile.language = Language.id AND
             Language.code = %s
-            """ % (self.id, quote(code)),
+            """ % (self.id, quote(code).encode('ascii')),
             clauseTables=('Language',))
 
         if ret.count() == 0:
@@ -171,7 +178,8 @@ class RosettaPOTemplate(SQLBase):
                                             primeMessageID_=msgid_obj)
         if sets.count() == 0:
             raise KeyError, msgid
-        return sets[0]
+        else:
+            return sets[0]
 
     def __len__(self):
         '''Same query as __iter__, but with COUNT.'''
@@ -301,8 +309,13 @@ class RosettaPOMessageSet(SQLBase):
     def getMessageIDSighting(self, plural_form):
         """Return the message ID sighting that is current and has the
         plural form provided."""
-        return RosettaPOMessageIdSighting.selectBy(poMessageSet=self,
-                                                   pluralForm=plural_form)[0]
+        ret = RosettaPOMessageIdSighting.selectBy(poMessageSet=self,
+                                                   pluralForm=plural_form)
+        if ret.count() == 0:
+            raise KeyError, plural_form
+        else:
+            return ret[0]
+
 
     def translations(self):
         return RosettaPOTranslation.select('''
@@ -445,10 +458,11 @@ class RosettaLanguages:
     implements(ILanguages)
 
     def __getitem__(self, code):
-        return Language.selectBy(code=code)
+        return RosettaLanguage.selectBy(code=code)
 
     def keys(self):
-        for code in Language.select()[0]:
+        code = RosettaLanguage.select()
+        for code in iter(RosettaLanguage.select()):
             yield code
 
 class RosettaLanguage(SQLBase):
@@ -494,9 +508,15 @@ class RosettaPerson(SQLBase):
             ORDER BY ???
             '''
 
-    # XXX: not implemented
-    def languages():
-        '''languages = getUtility(ILanguages)
-        for code in ('cy', 'no', 'es'):
-            yield languages[code]
-        '''
+    # XXX: not fully implemented
+    def languages(self):
+        for code in ('cy', 'es'):
+            yield RosettaLanguage.selectBy(code=code)[0]
+
+# XXX: Should we use principal instead of hard code Joe Example?
+def personFromPrincipal(principal):
+    ret = RosettaPerson.selectBy(presentationName = 'Joe Example')
+    if ret.count() == 0:
+        raise KeyError, principal
+    else:
+        return ret[0]

@@ -21,7 +21,7 @@
     Completeness: <span tal:replace="view/completeness">N%</span>
     <br/>
     Messages in the POT file:
-        <span tal:replace="context/potTemplate/__len__">N</span>
+        <span tal:replace="context/poTemplate/__len__">N</span>
     <br/>
     Untranslated messages: <span tal:replace="view/untranslated">N</span>
     </p>

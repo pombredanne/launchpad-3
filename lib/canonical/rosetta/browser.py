@@ -5,6 +5,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 from canonical.rosetta.interfaces import IProjects, ILanguages, IPerson
+from canonical.rosetta.sql import RosettaLanguage
 from canonical.rosetta.poexport import POExport
 
 class ViewProjects:
@@ -85,14 +86,13 @@ class ViewPOTemplate:
 
     def languages(self):
         codes = self.request.form.get('languages')
-        languages = getUtility(ILanguages)
         if codes:
             for code in codes.split(','):
-                yield languages[code]
+                yield RosettaLanguage.selectBy(code=code)[0]
         else:
             # XXX: hardcoded default
             for code in ('cy',):
-                yield languages[code]
+                yield RosettaLanguage.selectBy(code=code)[0]
 
 
     def isPlural(self):
@@ -103,10 +103,10 @@ class ViewPOTemplate:
 
 
 def traverseIPOTemplate(potemplate, request, name):
-    try:
-        return potemplate.sighting(name)
-    except KeyError:
-        pass
+#    try:
+#        return potemplate.sighting(name)
+#    except KeyError:
+#        pass
     try:
         return potemplate.poFile(name)
     except KeyError:
@@ -119,7 +119,7 @@ class ViewPOFile:
             float(len(self.context)) / len(self.context.poTemplate) * 100)
 
     def untranslated(self):
-        return len(self.context.potTemplate) - len(self.context)
+        return len(self.context.poTemplate) - len(self.context)
 
 class TranslatorDashboard:
     def projects(self):
@@ -131,9 +131,8 @@ class ViewPOTSighting:
     def translations(self):
         langs = self.request.form.get('languages')
         if langs:
-            languages = getUtility(ILanguages)
             for code in langs.split(','):
-                language = languages[code]
+                language = RosettaLanguage.selectBy(code=code)[0]
                 yield self.context.currentTranslation(language)
 
 
@@ -155,3 +154,4 @@ class ViewPOExport:
             'attachment; filename="%s"' % 'cy.po')
 
         return self.pofile
+

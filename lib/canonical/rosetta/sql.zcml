@@ -40,6 +40,19 @@
   <content class="canonical.rosetta.sql.RosettaLanguage">
     <allow interface="canonical.rosetta.interfaces.ILanguage"/>
   </content>
+ 
+  <content class="canonical.rosetta.stub.Languages">
+    <allow interface="canonical.rosetta.interfaces.ILanguages"/>
+  </content>
+
+  <utility
+      factory="canonical.rosetta.sql.RosettaLanguages"
+      provides="canonical.rosetta.interfaces.ILanguages"
+      />
+
+  <adapter for="zope.app.security.interfaces.IPrincipal"
+      provides="canonical.rosetta.interfaces.IPerson"
+      factory="canonical.rosetta.sql.personFromPrincipal" />
 </configure>
 
 <!-- arch-tag: 28211a91-fd78-4f20-ae6a-63703792a48b -->
