@@ -373,12 +373,55 @@ class Sync(object):
         self.title=self._sync.title
         self.description=self._sync.description
         self.cvsroot=self._sync.cvsroot
+        self.cvsmodule=self._sync.cvsmodule
+        self.cvstarfile=self._sync.cvstarfileurl
+        self.branchfrom=self._sync.cvsbranch
+        self.svnrepository = self._sync.svnrepository
+        self.archarchive = self._sync.newarchive
+        self.category = self._sync.newbranchcategory
+        self.branchto = self._sync.newbranchbranch
+        self.archversion = self._sync.newbranchversion
+#    category = Attribute("duh")
+#    branchto = Attribute("duh")
+#    archversion = Attribute("duh")
+#    archsourcegpgkeyid = Attribute("duh")
+#    archsourcename = Attribute("duh")
+#    archsourceurl = Attribute("duh")
+#        DateTimeCol('lastsynced', dbName='lastsynced', default=None),
+#        IntCol('frequency', dbName='syncinterval', default=None),
+#        # WARNING: syncinterval column type is "interval", not "integer"
+#        # WARNING: make sure the data is what buildbot expects
+#
+#        IntCol('rcstype', dbName='rcstype', default=RCSTypeEnum.cvs,
+#               notNull=True),
+#
+#        StringCol('hosted', dbName='hosted', default=None),
+#        StringCol('upstreamname', dbName='upstreamname', default=None),
+#        DateTimeCol('processingapproved', dbName='processingapproved',
+#                    notNull=False, default=None),
+#        DateTimeCol('syncingapproved', dbName='syncingapproved', notNull=False,
+#                    default=None),
     def update(self, **kwargs):
         """update a Sync, possibly reparenting"""
-        for attribute,value in kwargs.items():
-            print "updating ", attribute, value
-            setattr(self._sync, attribute, value)
-            setattr(self, attribute, getattr(self._sync, attribute))
+        self._update('name', 'name', kwargs)
+        self._update('title', 'title', kwargs)
+        self._update('description', 'description', kwargs)
+        self._update('cvsroot', 'cvsroot', kwargs)
+        self._update('cvsmodule', 'cvsmodule', kwargs)
+        self._update('cvstarfile', 'cvstarfileurl', kwargs)
+        self._update('branchfrom', 'cvsbranch', kwargs)
+        self._update('svnrepository','svnrepository', kwargs)
+        self._update('category', 'newbranchcategory', kwargs)
+        self._update('branchto', 'newbranchbranch', kwargs)
+        self._update('archversion', 'newbranchversion', kwargs)
+        self._update('archarchive', 'newarchive', kwargs)
+    def _update(self, myattr, dbattr, source):
+        """update myattr & dbattr from source's myattr"""
+        if not source.has_key(myattr):
+            return
+        print "updating ", myattr, source[value]
+        setattr(self._sync, dbattr, source[value])
+        setattr(self, myattr, getattr(self._sync, dbattr))
  
 
 # arch-tag: 8dbe3bd2-94d8-4008-a03e-f5c848d6cfa7
