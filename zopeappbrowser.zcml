@@ -14,8 +14,6 @@
   <include package="zope.app.basicskin" />
   <include package="zope.app.rotterdam" />
 
-  <browser:defaultSkin name="Rotterdam" />
-
   <include package="zope.app.form.browser" />
 
   <!--  Don't need this stuff.

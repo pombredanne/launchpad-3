@@ -5,6 +5,12 @@
 
   <include file="meta.zcml" />
 
+  <browser:skin name="launchpad"
+                interface="canonical.launchpad.skins.launchpad"/>
+  <browser:skin name="rosetta"
+                interface="canonical.launchpad.skins.rosetta"/>
+  <browser:defaultSkin name="launchpad" />
+
   <!-- This needs to be included early on because it defines permissions. -->
   <include package="canonical.lp" />
 

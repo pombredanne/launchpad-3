@@ -17,6 +17,13 @@
       for="canonical.publication.RootObject"
       class="canonical.rosetta.RosettaApplication"
       name="rosetta"
+      newskin="canonical.launchpad.skins.rosetta"
+      />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IProduct"
+      layer="canonical.launchpad.skins.rosetta"
+      name="+rosetta-index"
       />
 
   <!-- This view registers 'projects' as a suburl of IRosettaApplication.

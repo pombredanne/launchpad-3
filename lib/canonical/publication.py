@@ -7,12 +7,19 @@ __metaclass__ = type
 
 from zope.security.interfaces import Unauthorized
 from zope.security.management import newInteraction
-from transaction import get_transaction
+import transaction
 from canonical.lp.placelessauth.interfaces import IPlacelessAuthUtility
 import canonical.zodb
 
+from zope.app import zapi
+from zope.publisher.interfaces.browser import IDefaultSkin
+
 from zope.event import notify
 from zope.interface import implements, Interface
+from zope.interface import providedBy
+
+from canonical.launchpad.skins import setAdditionalSkin
+
 from zope.component import queryView, getDefaultViewName, queryMultiView
 from zope.component import getUtility
 
@@ -156,7 +163,7 @@ class BrowserPublication(BrowserPub):
 
     def beforeTraversal(self, request):
         newInteraction(request)
-        get_transaction().begin()
+        transaction.begin()
 
         # Open the ZODB.
         conn = self.db.open('')
@@ -188,6 +195,12 @@ class BrowserPublication(BrowserPub):
         #t = transaction.get_transaction()
         #t.join(con._dm)
 
+        # Set the default skin.
+        adapters = zapi.getService(zapi.servicenames.Adapters)
+        skin = adapters.lookup((providedBy(request),), IDefaultSkin, '')
+        if skin is not None:
+            setAdditionalSkin(request, skin)
+
         # Try to authenticate against our registry
         prin_reg = getUtility(IPlacelessAuthUtility)
         p = prin_reg.authenticate(request)
@@ -197,6 +210,10 @@ class BrowserPublication(BrowserPub):
                 raise Unauthorized # If there's no default principal
 
         request.setPrincipal(p)
+
+
+
+
 
     def callTraversalHooks(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does
