@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-08 10:06:26 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1286
+
+    Summary:
+      Add id column to the Packaging table
+    Revision:
+      launchpad--devel--0--patch-1286
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-126
+       Update database docs
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-127
+       Add id column to Packaging table
+    
+
+    new files:
+     database/schema/.arch-ids/patch-10-02-0.sql.id
+     database/schema/patch-10-02-0.sql
+
+    modified files:
+     database/schema/launchpad.html doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-126
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-127
+
+
 2005-02-08 09:46:44 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1285
 
     Summary:

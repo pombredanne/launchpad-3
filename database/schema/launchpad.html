@@ -111,7 +111,7 @@
   <body>
 
     <!-- Primary Index -->
-	<p><br><br>Dumped on 2005-02-07</p>
+	<p><br><br>Dumped on 2005-02-08</p>
 <h1><a name="index">Index of database - launchpad_dev</a></h1>
 <ul>
     
@@ -11083,6 +11083,30 @@ generating archives for this distribution
 				</td>
 			 </tr>
             
+            <tr class="tr1">
+				<td>
+                
+                  
+                  <a href="#public.table.libraryfilealias">public.libraryfilealias.id</a>
+                  
+                
+                </td>
+            	<td>chroot</td>
+            	<td>integer</td>
+                <td><i>
+				
+					
+
+					
+				
+
+				
+				
+				</i>
+				<br><br>The chroot tarball used to build packages for this distroarchrelease. Without this, the buildd master is unable to schedule builds for this distroarchrelease.
+				</td>
+			 </tr>
+            
         </table>
 
 		
@@ -14155,6 +14179,10 @@ generating archives for this distro release
 			</ul>
 		
 			<ul>	
+				<li><a href="#public.table.distroarchrelease">public.distroarchrelease</a></li>
+			</ul>
+		
+			<ul>	
 				<li><a href="#public.table.productreleasefile">public.productreleasefile</a></li>
 			</ul>
 		
@@ -16866,6 +16894,22 @@ generating archives for this distro release
 
 				NOT NULL
 				
+				</i>
+				
+				</td>
+			 </tr>
+            
+            <tr class="tr1">
+				<td>
+                
+                </td>
+            	<td>id</td>
+            	<td>integer</td>
+                <td><i>
+				
+
+				
+				DEFAULT nextval(&#39;packaging_id_seq&#39;::text)
 				</i>
 				
 				</td>
