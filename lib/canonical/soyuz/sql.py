@@ -28,6 +28,7 @@ from canonical.soyuz.interfaces import IDistroBinariesApp
 
 from canonical.soyuz.database import SoyuzBinaryPackage
 
+from canonical.lp import dbschema
 
 try:
     from canonical.arch.infoImporter import SourceSource as infoSourceSource,\
@@ -588,6 +589,42 @@ class Release(SQLBase):
         ForeignKey(name='owner', dbName='owner', foreignKey='SoyuzPerson',
                    notNull=True)
     ]
+
+    def parent(self):
+        if self.parentrelease:
+            return self.parentrelease.title
+        return ''
+
+    parent = property(parent)
+
+    def _getState(self, value):
+        for status in dbschema.DistributionReleaseState.items:
+            if status.value == value:
+                return status.title
+        return 'Unknown'
+
+    def state(self):
+        return self._getState(self.releasestate)
+
+    state = property(state)
+
+    def sourcecount(self):
+        query = 'SourcePackageUpload.sourcepackagerelease=SourcePackageRelease.id '
+        query += 'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
+        query += 'AND SourcePackageUpload.distrorelease = %d '% (self.id)
+
+## FIXME: How to make it return count for distinct sourcepackages?
+##        return SoyuzSourcePackage.select(query).count()
+
+##DUMMY Counter
+        tmp = SoyuzSourcePackage.select(query)
+        sourcelist = []
+        for source in tmp:
+            if source.id not in sourcelist:
+                sourcelist.append(source.id)
+        return len(sourcelist)
+###############        
+    sourcecount = property(sourcecount)
 
 
 class SourcePackages(object):

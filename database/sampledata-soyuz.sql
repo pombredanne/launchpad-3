@@ -752,7 +752,7 @@ INSERT INTO Distrorelease (name, title, description, distribution, version,
 	(SELECT id FROM Distribution WHERE name = 'ubuntu'), 
 	'1.0.0', 
 	'2004-08-20',
-	1, 1, 0, 1);
+	1, 1, 3, 1);
 
 INSERT INTO Distrorelease (name, title, description, distribution, version, 
 	datereleased, components, sections, releasestate, owner) 
@@ -761,7 +761,7 @@ INSERT INTO Distrorelease (name, title, description, distribution, version,
 	(SELECT id FROM Distribution WHERE name = 'redhat'), 
 	'6.0.1', 
 	'2004-03-21',
-	1, 1, 0, 8);
+	1, 1, 4, 8);
 
 INSERT INTO Distrorelease (name, title, description, distribution, version, 
 	datereleased, components, sections, releasestate, parentrelease, 
@@ -771,7 +771,7 @@ INSERT INTO Distrorelease (name, title, description, distribution, version,
 	(SELECT id FROM Distribution WHERE name = 'ubuntu'), 
 	'0.0.1',
 	'2004-08-25', 
-	1, 1, 0, 
+	1, 1, 2, 
 	(SELECT id FROM Distrorelease WHERE name = 'warty'),
 	1);
 
@@ -783,7 +783,7 @@ INSERT INTO Distrorelease (name, title, description, distribution, version,
 	(SELECT id FROM Distribution WHERE name = 'redhat'), 
 	'7.0.1', 
 	'2004-04-01',
-	1, 1, 0, 
+	1, 1, 3, 
 	(SELECT id FROM Distrorelease WHERE name = 'six'),
 	7);
 
@@ -795,7 +795,7 @@ INSERT INTO Distrorelease (name, title, description, distribution, version,
 	(SELECT id FROM Distribution WHERE name = 'ubuntu'),
 	'-0.0.1', 
 	'2004-08-29',
-	1, 1, 0, 
+	1, 1, 1, 
 	(SELECT id FROM Distrorelease WHERE name = 'warty'),
 	1);
 
@@ -806,7 +806,7 @@ INSERT INTO Distrorelease (name, title, description, distribution, version,
 	(SELECT id FROM Distribution WHERE name = 'debian'),
 	'3.0', 
 	'2003-01-01',
-	1, 1, 0, 2);
+	1, 1, 4, 2);
 
 INSERT INTO Distrorelease (name, title, description, distribution, version, 
 	datereleased, components, sections, releasestate, parentrelease,
@@ -816,7 +816,7 @@ INSERT INTO Distrorelease (name, title, description, distribution, version,
 	(SELECT id FROM Distribution WHERE name = 'debian'),
 	'3.1', 
 	'2004-09-29',
-	1, 1, 0, 
+	1, 1, 3, 
 	(SELECT id FROM Distrorelease WHERE name = 'woody'),
 	5);
 
@@ -828,7 +828,7 @@ INSERT INTO Distrorelease (name, title, description, distribution, version,
 	(SELECT id FROM Distribution WHERE name = 'debian'),
 	'3.2', 
 	'2004-12-29',
-	1, 1, 0, 
+	1, 1, 1, 
 	(SELECT id FROM Distrorelease WHERE name = 'woody'),
 	6);
 

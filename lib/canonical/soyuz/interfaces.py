@@ -293,6 +293,9 @@ class IRelease(Interface):
     datereleased = Attribute("The datereleased.")
     parentrelease = Attribute("Parent Release")
     owner =Attribute("Owner")
+    sourcecount = Attribute("Source Packages Counter")
+    state = Attribute("DistroRelease Status")
+    parent = Attribute("DistroRelease Parent")
 
 ################################################################
    
@@ -421,9 +424,10 @@ class IPackagePublishing(Interface):
 class IBinaryPackage(Interface):
     """A binary package, e.g apache-utils"""
     # See the BinaryPackage table
-    binarypackagename = Attribute("Binary Package Name")
+    binarypackagename = Attribute("Binary Package Name ID")
     shortdesc = Attribute("Short Description")
     description = Attribute("Full Description")
+    name = Attribute("Binary Package Name")
 
 class IBinaryPackageName(Interface):
     """A binary package name"""

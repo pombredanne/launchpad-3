@@ -90,9 +90,9 @@
        </tr>
        </table>
       </td>
-      <td tal:content="release/releasestate">RELEASESTATE</td>
+      <td tal:content="release/state">RELEASESTATE</td>
       <td tal:content="release/datereleased">DATERELEASED</td>      
-      <td>xxxx</td>          
+      <td tal:content="release/parent"> PARENT</td>          
       <td tal:content="release/owner/displayname">OWNER</td>            
     </tr>
     </table>    

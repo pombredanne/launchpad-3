@@ -23,17 +23,14 @@
   <p> 
    <li>
     <a tal:content="release/title" tal:attributes="href release/name"> RELEASENAME </a>
-    <!--  FIXME How to get the package status -->
-    <!--     <spam tal:content="release/releasestate"> STATUS </spam> -->
-    (XXX: STATUS)
+    (Status: <spam tal:content="release/state"> STATUS </spam>)
   </li>
   <p> <span tal:content="release/description"> DESCRIPTION </span>
 
   <table cellspacing="2">
    <tr>
     <td align="right">
-    <!-- FIXME How to get the sourcepackages counter for this release here?? -->
-     XXXX Packages
+    <span tal:content="release/sourcecount"> COUNTER </span> Packages
     </td>
    </tr>
    <tr>
