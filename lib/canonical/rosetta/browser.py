@@ -30,11 +30,6 @@ def count_lines(text):
 
     return count
 
-def fake_person():
-    # XXX: Temporary hack, to be removed as soon as we have the login template
-    # working.
-    return Person.selectBy(displayname='Foo Bar')[0]
-
 def canonicalise_code(code):
     '''Convert a language code to a standard xx_YY form.'''
 
@@ -172,10 +167,6 @@ class ViewProject:
         return len(list(self.context.products)) > 0
 
     def products(self):
-        person = IPerson(self.request.principal, None)
-        if person is None:
-            person = fake_person()
-
         for product in self.context.rosettaProducts():
             total = 0
             currentCount = 0
@@ -903,20 +894,9 @@ class ViewTranslationEffort:
         return len(list(self.context.categories())) > 0
 
     def languageTranslationEffortCategories(self):
-        person = IPerson(self.request.principal, None)
-        if person is not None:
-            # XXX: Use request_languages().
-            for language in person.languages():
-                yield LanguageTranslationEffortCategories(language,
-                    self.context.categories())
-        else:
-            # XXX
-            person = fake_person()
-            # XXX: Use request_languages().
-            for language in person.languages():
-                yield LanguageTranslationEffortCategories(language,
-                    self.context.categories())
-
+        for language in request_languages(self.request):
+            yield LanguageTranslationEffortCategories(language,
+                self.context.categories())
 
 class LanguageTranslationEffortCategories:
     def __init__(self, language, translationEffortCategories):
@@ -985,17 +965,8 @@ class ViewTranslationEffortCategory:
         return len(list(self.context.poTemplates())) > 0
 
     def languageTemplates(self):
-        person = IPerson(self.request.principal, None)
-        if person is not None:
-            # XXX: Use request_languages().
-            for language in person.languages():
-                yield LanguageTemplates(language, self.context.poTemplates())
-        else:
-            # XXX
-            person = fake_person()
-            # XXX: Use request_languages().
-            for language in person.languages():
-                yield LanguageTemplates(language, self.context.poTemplates())
+        for language in request_languages(self.request):
+            yield LanguageTemplates(language, self.context.poTemplates())
 
 #
 # XXX Mark Shuttleworth 02/10/04 I've copied this into Doap, maybe Login
