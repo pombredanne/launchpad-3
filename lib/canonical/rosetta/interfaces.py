@@ -537,6 +537,8 @@ class IPerson(Interface):
 
     familyName = Attribute("""The surname of this person.""")
 
+    password = Attribute("""SSHA encrypted password.""")
+
     # XXX: These attributes disabled because there is no support for them in
     # the database schema.
 

@@ -1117,6 +1117,7 @@ class RosettaPerson(SQLBase):
         StringCol(name='displayName', dbName='displayname'),
         StringCol(name='givenName', dbName='givenname'),
         StringCol(name='familyName', dbName='familyname'),
+        StringCol(name='password', dbName='password'),
     ]
 
 #    isMaintainer
