@@ -47,10 +47,12 @@ def test_constructor():
     >>> print "SELECT * from Foo where Foo.id = '%s';" % SomeClass.attribute
     SELECT * from Foo where Foo.id = '2';
 
-    An Item is not comparable to ints.
+    An Item is comparable to ints.
 
     >>> 1 == SomeClass.attribute
     False
+    >>> 1 != SomeClass.attribute
+    True
     >>> 2 == SomeClass.attribute
     True
     >>> SomeClass.attribute == 1
@@ -74,6 +76,8 @@ def test_constructor():
     True
     >>> item == proxied_item
     True
+    >>> item != proxied_item
+    False
 
     An Item has an informative representation.
 

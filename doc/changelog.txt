@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-14 14:41:45 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1428
+
+    Summary:
+      Test __ne__() for dbschema.Item
+    Revision:
+      launchpad--devel--0--patch-1428
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-167
+       Test __ne__() for dbschema.Item
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/lp/tests/test_dbschema.py
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-167
+
+
 2005-03-12 15:49:47 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1427
 
     Summary:
