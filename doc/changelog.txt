@@ -2,6 +2,62 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-19 12:54:48 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1219
+
+    Summary:
+      Merge in more buildd notes to garner comments
+    Revision:
+      launchpad--devel--0--patch-1219
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1164
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-1
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-2
+       notes update for buildd, rename protocol portions
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-3
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-4
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-5
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-6
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-7
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-8
+       Add sbuild notes so I can garner more comments
+    
+
+    new files:
+     lib/canonical/buildd/.arch-ids/sbuild-notes.txt.id
+     lib/canonical/buildd/sbuild-notes.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/buildd/notes.txt
+
+    new patches:
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--base-0
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-1
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-2
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-3
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-4
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-5
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-6
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-7
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-8
+
+
 2005-01-19 11:10:05 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1218
 
     Summary:
