@@ -51,6 +51,12 @@
         <h1>
             <span tal:replace="context/title" />
         </h1>
+        <div class="discreet">
+            Below is a list of source packages and upstream products in which
+            this bug should be fixed. The state, severity, priority and person
+            assigned to fix a bug is determined by the maintainer(s) of each
+            product or source package in which this bug should be fixed.
+        </div>
 
         <div tal:replace="structure view/assignmentsHeadline" />
 
@@ -60,7 +66,7 @@
                 Bugname: <a href="" tal:content="context/name">$Bug.name</a>,
             </span>
 
-            Created
+            Submitted
             <span tal:replace="python:context.datecreated.strftime(
                 '%d %b %y %H:%M')">13 Sep 04 12:15</span>.
         </div>

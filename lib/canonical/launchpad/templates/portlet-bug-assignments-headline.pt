@@ -16,8 +16,8 @@
                      title="Package Assignment" />
                      Package</th>
             <th title="State">State</th>
-            <th title="Severity">Sev</th>
-            <th title="Priority">Pri</th>
+            <th title="Severity">Severity</th>
+            <th title="Priority">Priority</th>
             <th title="Assignee">Assigned to</th>
         </tr>
     </thead>
