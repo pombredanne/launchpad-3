@@ -189,12 +189,16 @@ class Product(SQLBase):
             return results[0]
 
     def newPOTemplate(self, person, name, title):
-        # XXX: we have to fill up a lot of other attributes
         if POTemplate.selectBy(
                 productID=self.id, name=name).count():
             raise KeyError(
                   "This product already has a template named %s" % name)
-        return POTemplate(name=name, title=title, product=self)
+        return POTemplate(
+                name=name,
+                title=title,
+                product=self,
+                owner=person,
+                iscurrent=False)
 
     def messageCount(self):
         count = 0

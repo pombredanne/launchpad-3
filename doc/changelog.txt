@@ -2,6 +2,58 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-13 11:44:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1194
+
+    Summary:
+      Fixed and added tests to the potemplate creation from the web and improved the error checks
+    Revision:
+      launchpad--devel--0--patch-1194
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-484
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-485
+       When we create a POTemplate we should store also the owner
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-486
+       Added two new doc tests to test the potemplate creation from the web
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-487
+       Fixed so new tests pass
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-488
+       Added a check in case we have already a potemplate with the name we are creating
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-489
+       Fixed the newPOTemplate method, seems like I'm the first using it...
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-490
+       We don't need this assignation here
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-491
+       Done needed changes so the security proxy is happy
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/interfaces/pofile.py
+     lib/canonical/launchpad/zcml/potemplate.zcml
+     lib/canonical/rosetta/browser.py
+     lib/canonical/rosetta/tests/test_browser.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-484
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-485
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-486
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-487
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-488
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-489
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-490
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-491
+
+
 2005-01-13 09:47:18 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1193
 
     Summary:

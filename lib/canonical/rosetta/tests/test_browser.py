@@ -5,12 +5,37 @@
 __metaclass__ = type
 
 import unittest
+from cStringIO import StringIO
+
 from zope.testing.doctestunit import DocTestSuite
 
-from canonical.launchpad.interfaces import IProjectSet, ILanguageSet, IPerson
+from canonical.launchpad.interfaces import IProjectSet, ILanguageSet, \
+    IPerson, ISourcePackageNameSet, IDistributionSet
 from zope.interface import implements
 from zope.app.security.interfaces import IPrincipal
 from zope.publisher.interfaces.browser import IBrowserRequest
+
+class DummySourcePackageNameSet:
+    implements(ISourcePackageNameSet)
+
+    def __getitem__(self, name):
+        return DummySourcePackageName()
+
+class DummySourcePackageName:
+    id = 1
+
+class DummyDistributionSet:
+    implements(IDistributionSet)
+
+    def __getitem__(self, name):
+        return DummyDistribution()
+
+class DummyDistribution:
+    def __getitem__(self, name):
+        return DummyDistroRelease()
+
+class DummyDistroRelease:
+    id = 1
 
 class DummyProjectSet:
     implements(IProjectSet)
@@ -25,7 +50,15 @@ class DummyProject:
 
 
 class DummyProduct:
-    pass
+    id = 1
+
+    def __init__(self):
+        self.potemplates = []
+
+    def newPOTemplate(self, person, name, title):
+        potemplate = DummyPOTemplate(name=name)
+        self.potemplates.append(potemplate)
+        return potemplate
 
 
 class DummyLanguage:
@@ -60,6 +93,12 @@ class DummyPerson:
         all_languages = DummyLanguageSet()
 
         self.languages = [ all_languages[code] for code in self.codes ]
+
+class DummyFileUploadItem:
+    def __init__(self, name, content):
+        self.headers = ''
+        self.filename = name
+        self.file = StringIO(content)
 
 
 def adaptPrincipalToPerson(principal):
@@ -114,6 +153,9 @@ class DummyPOTMsgSet:
 
 
 class DummyPOTemplate:
+    def __init__(self, name='foo'):
+        self.name = name
+
     def getPOFileByLang(self, language_code):
         self.language_code = language_code
 
@@ -132,6 +174,10 @@ class DummyPOTemplate:
         return True
 
 
+class DummyResponse:
+    def redirect(self, url):
+        pass
+
 class DummyRequest:
     implements(IBrowserRequest)
 
@@ -139,6 +185,7 @@ class DummyRequest:
         self.principal = DummyPrincipal()
         self.form = form_data
         self.URL = "http://this.is.a/fake/url"
+        self.response = DummyResponse()
 
     def get(self, key, default):
         raise key
@@ -158,6 +205,27 @@ class DummyRequestLanguages:
         return [DummyLanguage('da', 4),
             DummyLanguage('as', 5),
             DummyLanguage('sr', 6),]
+
+
+potfile = '''# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Valient Gough
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\\n"
+"Report-Msgid-Bugs-To: vgough@pobox.com\\n"
+"POT-Creation-Date: 2004-12-29 22:12+0100\\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\\n"
+"Language-Team: LANGUAGE <LL@li.org>\\n"
+"MIME-Version: 1.0\\n"
+"Content-Type: text/plain; charset=CHARSET\\n"
+"Content-Transfer-Encoding: 8bit\\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\\n"
+'''
 
 
 def test_count_lines():
@@ -681,6 +749,68 @@ def test_TabIndexGenerator():
     >>> tig.generate()
     2
     '''
+
+def test_ProductView_newpotemplate():
+    '''
+    Test POTemplate creation from website.
+
+    >>> from zope.app.tests.placelesssetup import setUp, tearDown
+    >>> from zope.app.tests import ztapi
+    >>> from zope.publisher.browser import FileUpload
+    >>> from canonical.rosetta.browser import ProductView
+
+    >>> setUp()
+    >>> ztapi.provideUtility(IDistributionSet, DummyDistributionSet())
+    >>> ztapi.provideUtility(ISourcePackageNameSet, DummySourcePackageNameSet())
+    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
+
+    >>> context = DummyProduct()
+    >>> fui = DummyFileUploadItem(name='foo.pot', content=potfile)
+    >>> fu = FileUpload(fui)
+    >>> request = DummyRequest(file=fu, name='template_name',
+    ...     title='template_title', Register='Register POTemplate')
+    >>> request.method = 'POST'
+    >>> pv = ProductView(context, request)
+
+    >>> pv.status_message
+
+    >>> len(pv._templates)
+    1
+    >>> tearDown()
+    '''
+
+def test_ProductView_newpotemplate_hidden_fields():
+    '''
+    Test POTemplate creation from website using hidden fields.
+
+    >>> from zope.app.tests.placelesssetup import setUp, tearDown
+    >>> from zope.app.tests import ztapi
+    >>> from zope.publisher.browser import FileUpload
+    >>> from canonical.rosetta.browser import ProductView
+
+    >>> setUp()
+    >>> ztapi.provideUtility(IDistributionSet, DummyDistributionSet())
+    >>> ztapi.provideUtility(ISourcePackageNameSet, DummySourcePackageNameSet())
+    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
+
+    >>> context = DummyProduct()
+    >>> fui = DummyFileUploadItem(name='foo.pot', content=potfile)
+    >>> fu = FileUpload(fui)
+    >>> request = DummyRequest(file=fu, name='template_name',
+    ...     title='template_title', Register='Register POTemplate',
+    ...     _distribution='ubuntu', _release='hoary',
+    ...     _sourcepackage='evolution')
+    >>> request.method = 'POST'
+    >>> pv = ProductView(context, request)
+
+    >>> pv.status_message
+
+    >>> len(pv._templates)
+    1
+    >>> tearDown()
+    '''
+
+
 
 def test_suite():
     return DocTestSuite()

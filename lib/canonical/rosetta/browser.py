@@ -344,7 +344,7 @@ class ProductView:
                 parser.finish()
             except:
                 # The file is not correct
-                self.status_message= 'Please, review the po file seems to have a problem'
+                self.status_message= 'Please, review the pot file seems to have a problem'
 
             # This part is only used for our internal script to upload .po and
             # .pot files from the web interface. If we don't have all fields,
@@ -373,25 +373,29 @@ class ProductView:
             else:
                 distrorelease = None
                 sourcepackagename = None
-            # XXX Carlos Perello Marin 27/11/04 this check is not yet being done.
-            # check to see if there is an existing potemplate with
-            # this name.
+
             # Now create a new potemplate in the db
-            potemplate = POTemplate(
-                product=self.context.id,
-                name=name,
-                title=title,
-                iscurrent=False,
-                owner=owner,
-                distrorelease=distrorelease.id,
-                sourcepackagename=sourcepackagename.id)
+            try:
+                potemplate = self.context.newPOTemplate(
+                    name=name,
+                    title=title,
+                    person=owner)
+            except KeyError:
+                # We already have a potemplate with that name in the database
+                self.status_message = (
+                    'There is already a potemplate named %s' % name)
+                return
 
-            self._templates.append(potemplate)
-
+            if distrorelease:
+                potemplate.distrorelease = distrorelease.id
+            if sourcepackagename:
+                potemplate.sourcepackagename = sourcepackagename.id
             potemplate.rawfile = base64.encodestring(potfile)
             potemplate.daterawimport = UTC_NOW
             potemplate.rawimporter = owner
             potemplate.rawimportstatus = RosettaImportStatus.PENDING.value
+
+            self._templates.append(potemplate)
         else:
             self.status_message = 'You must upload a .pot file'
             return
