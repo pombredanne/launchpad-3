@@ -108,7 +108,7 @@ class FileDownloadClient(object):
 
     def findLinksByDigest(self, hexdigest):
         """Return a list of URIs to file aliases matching 'hexdigest'"""
-        return [('http://%s:%d/%s' % (self.host, self.port, path)
+        return [('http://%s:%d/%s' % (self.host, self.port, path))
                 for path in self._findByDigest(hexdigest)]
 
     
@@ -124,9 +124,10 @@ if __name__ == '__main__':
     fileid, filealias = uploader.addFile(name, size, fileobj,
                                          contentType='test/test', digest=digest)
     print 'Done.  File ID:',  fileid
+    print 'File AliasID:', filealias
 
     downloader = FileDownloadClient('localhost', 8000)
     fp = downloader.getFile(fileid, filealias, name)
     print 'First 50 bytes:', repr(fp.read(50))
     print
-    print downloader.findByDigest('b61a38a7322e78fe54edf93eb4cc2747fda96678')
+    print downloader.findByDigest(digest)

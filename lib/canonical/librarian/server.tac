@@ -1,7 +1,7 @@
 # Twisted Application Configuration file.
 # Use with "twistd -y <file.tac>", e.g. "twistd -noy server.tac"
 
-from canonical.arch.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase
 from sqlobject import connectionForURI
 
 from twisted.application import service, internet
