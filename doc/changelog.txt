@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-15 12:03:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1436
+
+    Summary:
+      if chunkydiff cannot help, then do not use it and present the whole text for diffing.
+    Revision:
+      launchpad--devel--0--patch-1436
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-321
+       make functional tests output the non-chunkydiffed diff if there is no difference between chunkydiff output and what is wanted.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/functional.py
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--devel--0--patch-321
+
+
 2005-03-15 10:49:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1435
 
     Summary:

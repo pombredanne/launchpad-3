@@ -553,8 +553,12 @@ class SpecialOutputChecker(doctest.OutputChecker):
     def output_difference(self, example, got, optionflags):
         if optionflags & doctest.ELLIPSIS:
             normalize_whitespace = optionflags & doctest.NORMALIZE_WHITESPACE
-            got = elided_source(example.want, got,
-                                normalize_whitespace=normalize_whitespace)
+            newgot = elided_source(example.want, got,
+                                   normalize_whitespace=normalize_whitespace)
+            if newgot == example.want:
+                # There was no difference.  May be an error in elided_source().
+                # In any case, return the whole thing.
+                newgot = got
         return doctest.OutputChecker.output_difference(
             self, example, got, optionflags)
 
