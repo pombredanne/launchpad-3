@@ -114,9 +114,21 @@ class TranslatorDashboard:
 
 
 class ViewSearchResults:
-    def projects(self):
-        return getUtility(IProjects)
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
 
+        self.projects = getUtility(IProjects)
+        self.queryProvided = 'q' in request.form and \
+            request.form.get('q')
+        self.query = request.form.get('q')
+
+        if self.queryProvided:
+            self.results = self.projects.search(self.query)
+            self.resultCount = self.results.count()
+        else:
+            self.results = []
+            self.resultCount = 0
 
 class ViewPOExport:
     def __call__(self):

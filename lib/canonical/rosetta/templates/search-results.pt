@@ -16,8 +16,7 @@
 
     <h1>Search</h1>
 
-    <form action="search-results"
-          method="get">
+    <form action="search-results" method="GET">
     <fieldset>
         <legend>Search</legend>
 
@@ -26,7 +25,7 @@
             <div class="formHelp">
             Enter the name or type of project.
             </div>
-            <input type="text" />
+            <input name="q" type="text" tal:attributes="value view/query" />
             <a href="search">Advanced Search</a>
         </div>
 
@@ -35,59 +34,97 @@
         </div>
     </form>
 
-    <h1>Search results</h1>
+    <!-- No query string was provided. -->
 
-    <p>
-    Did you not find what you were looking for? Try the
-    <a href="">Advanced Search</a>
-    for more precise search options.
-    </p>
+    <div tal:condition="not:view/queryProvided">
+        <h2>No Query Provided</h2>
 
-    <strong>
-    <span>234</span> items matching your criteria.
-    </strong>
+        <p>
+        Please provide some text to search for.
+        </p>
+    </div>
 
-    <a href="">
-    RSS feed of these search results
-    </a>
+    <!-- Query string was provided. -->
 
-    <!-- Search results -->
+    <div tal:condition="view/queryProvided">
+        <div tal:condition="not:view/resultCount">
+            <!-- No search results were found. -->
 
-    <dl>
-        <div tal:repeat="project view/projects">
-            <dt>
-                <a tal:attributes="href string:projects/${project/name}"
-                    tal:content="project/title">Project page</a>
-
-                <span class="discreet"
-                      title="Relevance">
-                    [<span>85</span>%]
-                </span>
-
-                <span class="discreet">
-                last updated by
-                <span>Author</span>,
-                <span>24th of March, 2004</span>
-                </span>
-
-            </dt>
-
-            <dd tal:content="project/description">
-            Mozilla offers a full suite of integrated Internet applications
-            including a web browser, e-mail client, address book, web page
-            composer, Internet chat software and calendar application.
-            </dd>
+            <h2>No Projects Found</h2>
         </div>
-    </dl>
 
-    <p>
-    If you wish to translate a project which is not in Rosetta yet, you can
-    <a href="projects/+submit">request a project</a>.
-    </p>
+        <div tal:condition="view/resultCount">
+            <!-- Some search results were found. -->
 
-    <!-- Batch Navigation -->
-    <div class="listingBar">
-    Batch navigation
+            <h2>Search Results</h2>
+        </div>
+    </div>
+
+    <!-- Query string was provided. -->
+
+    <div tal:condition="view/queryProvided">
+        <!-- No search results were found. -->
+
+        <p>
+        <a href="">RSS feed of these search results</a>
+        </p>
+
+        <div tal:condition="not:view/resultCount">
+        No projects were found matching your query.
+        </div>
+
+        <!-- Some search results were found. -->
+
+        <div tal:condition="view/resultCount">
+            <strong>
+            Items matching your criteria: <span tal:content="view/resultCount">234</span>
+            </strong>
+
+            <dl>
+                <div tal:repeat="project view/results">
+                    <dt>
+                        <a tal:attributes="href string:projects/${project/name}"
+                            tal:content="project/title">Project page</a>
+
+                        <!--
+                        <span class="discreet"
+                              title="Relevance">
+                            [<span>85</span>%]
+                        </span>
+
+                        <span class="discreet">
+                        last updated by
+                        <span>Author</span>,
+                        <span>24th of March, 2004</span>
+                        </span>
+                        -->
+                    </dt>
+
+                    <dd tal:content="project/description">
+                    Mozilla offers a full suite of integrated Internet
+                    applications including a web browser, e-mail client, address
+                    book, web page composer, Internet chat software and calendar
+                    application.
+                    </dd>
+                </div>
+            </dl>
+
+            <p>
+            Did you not find what you were looking for? Try the <a
+            href="">Advanced Search</a> for more precise search options.
+            </p>
+
+            <p>
+            If you wish to translate a project which is not in Rosetta yet, you
+            can <a href="projects/+submit">Request a Project</a>.
+            </p>
+
+            <!-- Batch Navigation -->
+            <div class="listingBar">
+            Batch navigation
+            </div>
+        </div>
+
     </div>
 
 </div>

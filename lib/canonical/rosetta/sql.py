@@ -47,7 +47,6 @@ class RosettaProjects:
         else:
             return ret[0]
 
-
     def new(self, name, title, url, description, owner):
         if type(url) != NoneType:
             url = url.encode('ascii')
@@ -55,6 +54,12 @@ class RosettaProjects:
             title=title.encode('ascii'), url=url,
             description=description.encode('ascii'),
             owner=owner, datecreated='now')
+
+    def search(self, query):
+        query = quote('%%' + query + '%%')
+        #query = quote(query)
+        return RosettaProject.select('''title ILIKE %s  OR description ILIKE %s''' %
+            (query, query))
 
 
 class RosettaProject(SQLBase):

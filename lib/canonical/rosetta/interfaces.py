@@ -19,6 +19,9 @@ class IProjects(Interface):
         Returns that project.
         """
 
+    def search(query):
+        """Search for projects matching a certain strings."""
+
 
 class IProject(Interface):
     """A Project.  For example 'mozilla'."""
