@@ -161,12 +161,15 @@ class Doap(SQLThing):
         # collisions, we just add addresses because there is no way to
         # validate them. Bad bad kiko.
         people = self.getPersonByDisplayName(name)
+
         if people:
             print "@\tAdding address <%s> for %s" % (email, name)
             self.createEmail(people[0], email)
             return people
+
         self.createPeople(name, email)
-    
+
+        return self.getPersonByEmail(email)
     #
     # Project
     #
@@ -277,9 +280,7 @@ class Doap(SQLThing):
             
         if self.getProduct(project_id, data['project']):        
             print '@\tSkipping Already Added Project'        
-            data_sf = None
-            data_fm = None
-            return data_sf, data_fm
+            return 
 
         ## both have devels        
         try:
@@ -332,7 +333,8 @@ class Doap(SQLThing):
         ## support several plangs
         try:
             plang_list = data['programminglang']
-            for plang in planglist:
+            temp_plang = ''
+            for plang in plang_list:
                 temp_plang += ' ' + plang  
 
             plang = self.ensure_string_format(temp_plang)
@@ -347,6 +349,7 @@ class Doap(SQLThing):
         ## support several lists
         try:
             orig_list = data['list']
+            temp_list = '' 
             for url in orig_list:
                 temp_list += ' ' + url                
             listurl = self.ensure_string_format(temp_list)

@@ -457,10 +457,11 @@ class IBinaryPackageBuild(Interface):
     binpackageformat = Attribute("An ISourcePackageRelease")
     datebuilt = Attribute("An ISourcePackageRelease")
 
+
 class ISourcePackage(Interface):
     """A source package, e.g apache-utils"""
     # See the SourcePackage table
-
+    
     maintainer = Attribute("Maintainer")
     name = Attribute("A string")
     shortdesc = Attribute("Package Shortdesc")
@@ -470,6 +471,8 @@ class ISourcePackage(Interface):
     proposed = Attribute("A source package release with upload status of "
                          "PROPOSED, else None")
     product = Attribute("A Product, or None")
+
+
 
 class ISourcePackageRelease(Interface):
     """A source package release, e.g. apache-utils 2.0.48-3"""
@@ -549,7 +552,12 @@ class ISourcepackage(Interface):
     distro = Int(title=_("Distribution"), required=False)
     sourcepackagename = Int(title=_("Sourcepackage Name"), required=True)
     bugs = Attribute("bugs")
-
+    ##XXX: (interface+attr) cprov 20041010
+    ## I'm confused about how to declare new (abstract) attributes as
+    ## following.
+    product = Attribute("Product, or None")
+    proposed = Attribute("A source package release with upload status of "
+                         "PROPOSED, else None")
 
 
 #
@@ -590,6 +598,9 @@ class IBinarypackage(Interface):
     licence = Text(required=False)
 
     title = TextLine(required=True, readonly=True)
+    ##XXX: (interface+attr) cprov 20041010
+    name = Attribute("Binary Package Name")
+    pkgpriority = Attribute("Package Priority")
 
 
 class IBinarypackageName(Interface):

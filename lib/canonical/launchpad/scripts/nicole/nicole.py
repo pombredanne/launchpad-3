@@ -58,7 +58,6 @@ def get_current_packages(doap):
         packagenames.append(sources.Section['Package'])
         index += 1
 
-
     print '@ %d Sourcepackages from Soyuz' % index        
     return index, packagenames
 

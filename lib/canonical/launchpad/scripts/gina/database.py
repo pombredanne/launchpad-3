@@ -192,7 +192,7 @@ class Launchpad(SQLThing):
             "sourcepackagerelease":    release[0],
             "uploadstatus":            4,
         }
-        self._insert("sourcepackageupload", data)
+        self._insert("sourcepackagepublishing", data)
 
     #
     # Build

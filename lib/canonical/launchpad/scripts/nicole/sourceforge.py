@@ -4,7 +4,55 @@
 # Retrieve project details from sourceforge / freshmeat
 #
 
-# Version 20041001
+# Version 20041004
+
+##############################################################
+# Primary way to use this library is using:
+#
+#       getProjectSpec(projname, repository)
+#
+# Where:
+#    projname is a string like 'python', and 
+#    repository is either 'sf' for SourceForge, or 'fm' for FreshMeat.
+#
+# If no repository is passed, the default is 'sf'.
+#
+# getProjectSpec() returns a dictionary with the following keys:
+#
+# projectname: This is the official name of the project (not the unixname).
+#              Example: 'Python'
+#
+# homepage: This is the URL to the home page of the project
+#           Example: 'http://www.python.org'
+#
+# programminglang: This is a list of programming languages used by the project.
+#                  If none are found, an empty list will be present.
+#                  Example: ['C++','Python']
+#
+# description: This is a description of the project - a paragraph or two.
+#              Example: 'This is the Python programming language...'
+#
+# list: This is a list of mailing list URLs for the project.
+#       * ONLY IMPLEMENTED FOR SOURCEFORGE *
+#       Note: This retrieves an additional page from sf.net to get the list URLs.
+#       Example: ['http://lists.sourceforge.net/mailman/listinfo/mediaportal-cvs']
+#
+# screenshot: This is the URL of a screenshot of the project.
+#             * ONLY IMPLEMENTED FOR FRESHMEAT *
+#             Example: 'http://freshmeat.net/screenshots/40861/43540/'
+#
+# devels: A dictionary of the project's significant developers.
+#         For SorceForge, this returns all the *admins* of the project.
+#             Note: This retrieves 1 additional page for each admin.
+#         For Freshmeat, this returns only the project's author since admins are not defined for all projects.
+#         The keys are the authors' names, and the values are email addresses.
+#         Where possible, email addresses from FreshMeat are de-obfuscated: me (at) domain (dot) com -> me@domain.com
+#         Example: {'Morgan Collett':'morgan@mcode.co.za'}
+#
+# naturallang: This is a list of natural languages that the project supports.
+#              * ONLY IMPLEMENTED FOR SOURCEFORGE *
+#              Example: ['English','Chinese (Simplified)']
+#################################################################
 
 import urllib2
 import re
@@ -15,7 +63,7 @@ Error = 'sourceforge.py error'
 
 def getProjectSpec(project, repository='sf'):
 	page = ProjectPage(project, repository)
-	#page.makeDict()
+	#page.makeDict() # --- the ProjectPage now does this automatically
 	return page.getDict()
 
 def makeURL(project, repository='sf'):
@@ -34,6 +82,9 @@ def getHTML(url):
 	return html
 
 def unobfuscate_fm_email(email):
+	# Freshmeat obfuscates email addresses using a simple scheme
+	# like this: user [at] domain [dot] com, or user __dash__ at __dash__ domain __dash__ dot __dash__ com
+	# For all known permutations, the following works:
 	delimiters = [[' [', '] '], [' |', '| '], [' (',') '], [' __','__ '], [' __dash__ ',' __dash__ '], [' |dash| ',' |dash| '], [' [dash] ',' [dash] '], [' (dash) ',' (dash) ']]
 	symbols = {'at': '@', 'dot': '.'}
 	for symbol in symbols.keys():
@@ -42,6 +93,9 @@ def unobfuscate_fm_email(email):
 	return email
 
 class ProjectPage:
+	# A possible rewrite of this could be done by making classes 'SFPage' and 'FMPage' (and others for
+	# any other repositories) inherit from a generic class, and putting the 'sf' or 'fm' specific code
+	# in those classes...
 	def __init__(self, project, repository='sf'):
 		self.project = project
 		self.repository = repository
@@ -61,6 +115,12 @@ class ProjectPage:
 		if self.repository == 'sf':
 			result = re.search('Project: .*Summary', self.html)
 			s = self.html[result.start()+9:result.end()-9]
+			return s
+		elif self.repository == 'fm':
+			start = string.find(self.html, '<title>freshmeat.net: Project details for ')
+			start = start + 42
+			end = string.find(self.html, '</title>', start)
+			s = string.strip(self.html[start:end])
 			return s
 		else:
 			return None
@@ -138,6 +198,29 @@ class ProjectPage:
 				lang = lang[start:end]
 				langlist.append(lang)
 			return langlist
+		else:
+			return None
+
+	def getNaturallang(self):
+		if self.repository == 'sf':
+			result = re.search('Natural\ Language.*BR>', self.html)
+			if result == None: return None
+			langstring = self.html[result.start()+22:result.end()]
+			# Find first BR
+			end = string.find(langstring, '<BR>')
+			langstring = langstring[:end]
+			# split up, remove <A...> tags
+			langlist1 = string.split(langstring, ',')
+			langlist = []
+			for lang in langlist1:
+				start = string.find(lang, '>')
+				lang = lang[start+1:]
+				end = string.find(lang, '<')
+				lang = lang[:end]
+				langlist.append(lang)
+			return langlist
+		elif self.repository == 'fm':
+			return None
 		else:
 			return None
 
@@ -280,6 +363,9 @@ class ProjectPage:
 		devels = self.getDevels()
 		if devels: self.theDict['devels'] = devels
 		else: self.theDict['devels'] = {}
+		#
+		naturallang = self.getNaturallang()
+		if naturallang: self.theDict['naturallang'] = naturallang
 
 	def getDict(self):
 		return self.theDict
