@@ -25,31 +25,3 @@ class MessagesView(object):
 
     def nextURL(self):
         return '..'
-
-
-class IAddMessage(Interface):
-    """This schema is used to generate the add comment form"""
-    title = TextLine(title=_("Subject"), required=True)
-    content = Text(title=_("Body"), required=True)
-
-
-class Dummy(object):
-    """This object exists to satisfy the Z3 dependancy that the
-    result of the addform's add method is adaptable to the schema
-    that was supplied. This seems arbitrary and needs to be fixed
-    in Z3, but for the time being work around"""
-    implements(IAddMessage)
-    title = None
-    content = None
-
-
-def BugMessageFactory(addview=None, title=None, content=None):
-    """Create a BugMessage.
-
-    Just like canonical.launchpad.database.message.BugMessageFactory, 
-    except it returns a dummy value to keep Z3 happy.
-    """
-    bugmessage.BugMessageFactory(
-            addview=addview, title=title, content=content
-            )
-    return Dummy()

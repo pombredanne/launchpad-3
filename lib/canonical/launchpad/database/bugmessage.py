@@ -43,8 +43,7 @@ def BugMessageFactory(addview=None, title=None, content=None):
         parent=None, ownerID=zapi.getUtility(ILaunchBag).user.id,
         rfc822msgid=make_msgid('malone'), title=title)
     chunk = MessageChunk(
-            messageID=msg.id, content=content, sequence=1,
-            )
+            messageID=msg.id, content=content, sequence=1)
     bmsg = BugMessage(
         bug=zapi.getUtility(ILaunchBag).bug.id, message=msg.id)
 

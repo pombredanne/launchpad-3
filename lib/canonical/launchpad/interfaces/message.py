@@ -10,7 +10,6 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
-
 class IMessagesView(IAddFormCustomization):
     """Message views"""
 
@@ -64,3 +63,8 @@ class IMessageChunk(Interface):
     content = Text(title=_('Text content'), required=False, readonly=True)
     blob = Int(title=_('Binary content'), required=False, readonly=True)
 
+
+class IAddMessage(Interface):
+    """This schema is used to generate the add comment form"""
+    title = TextLine(title=_("Subject"), required=True)
+    content = Text(title=_("Body"), required=True)

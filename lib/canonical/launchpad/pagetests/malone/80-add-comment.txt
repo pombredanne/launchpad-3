@@ -1,8 +1,17 @@
 Comments are intended to be contributions to a bug report that further
 the goal of solving the problem at hand. Any logged in user can add a
-to a bug.
+comment to a bug.
 
-In this case, let's add a simple comment to bug #2 as user Foo Bar.
+In this case, let's add a simple comment to bug #2 as user Foo
+Bar. Before we do, let's pull out our test mailer, to demonstrate that
+submitting a comment through the web UI generates a notification
+email.
+
+  >>> from canonical.launchpad.mail import stub
+
+  >>> stub.test_emails = []
+  >>> len(stub.test_emails)
+  0
 
   >>> print http(r"""
   ... POST /malone/bugs/2/+messages/+new HTTP/1.1
@@ -29,3 +38,8 @@ In this case, let's add a simple comment to bug #2 as user Foo Bar.
           <h2>
             Description
   ...
+
+After the comment has been submitted, the notification email is sent:
+
+  >>> len(stub.test_emails)
+  1

@@ -2,6 +2,33 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-06 23:38:46 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1577
+
+    Summary:
+      unbreak a regression in comment notifications. modify the page test to
+ prove that notification email really gets sent.
+    Revision:
+      launchpad--devel--0--patch-1577
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-494
+       unbreak a regression in comment notifications. modify the page test to prove that notification email really gets sent.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/message.py
+     lib/canonical/launchpad/components/bugmessage.py
+     lib/canonical/launchpad/database/bugmessage.py
+     lib/canonical/launchpad/interfaces/message.py
+     lib/canonical/launchpad/pagetests/malone/80-add-comment.txt
+     lib/canonical/launchpad/zcml/bugmessage.zcml
+     lib/canonical/launchpad/zcml/message.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-494
+
+
 2005-04-06 21:00:04 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1576
 
     Summary:

@@ -29,14 +29,15 @@
         template="../templates/messages-index.pt"
         permission="zope.Public"
         lp:url="malone/projects/$Bug.id/messages/index" />
-        
+
     <browser:addform
         name="+new"
         for="canonical.launchpad.interfaces.IMessagesView"
-        schema="canonical.launchpad.browser.message.IAddMessage"
+        schema="canonical.launchpad.interfaces.message.IAddMessage"
+        class="canonical.launchpad.browser.addview.SQLObjectAddView"
         label="Add a Comment"
         fields="title content"
-        content_factory="canonical.launchpad.browser.message.BugMessageFactory"
+        content_factory="canonical.launchpad.database.bugmessage.BugMessageFactory"
         arguments=""
         keyword_arguments="title content"
         permission="launchpad.AnyPerson"
