@@ -17,6 +17,9 @@ class ILanguage(Interface):
     pluralexpression = Attribute("""The expression that relates a number of
         items to the appropriate plural form.""")
 
+    translatable = Attribute("""Whether this language is one which is translated
+        into.""")
+
     translators = Attribute("""A list of Persons that are interested on 
         translate into this language.""")
 

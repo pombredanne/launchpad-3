@@ -118,7 +118,7 @@ class DummyPOTemplate:
         return [DummyPOTMsgSet(), DummyPOTMsgSet()]
 
     def __len__(self):
-        return 16
+        return 31
 
 
 class DummyRequest:
@@ -293,7 +293,7 @@ def test_TranslatePOTemplate_init():
     >>> t.offset
     0
     >>> t.count
-    5
+    10
     >>> t.error
     False
     >>> t.show
@@ -319,7 +319,7 @@ def test_TranslatePOTemplate_init():
     >>> t.offset
     0
     >>> t.count
-    5
+    10
     >>> t.error
     False
     >>> t.show
@@ -345,7 +345,7 @@ def test_TranslatePOTemplate_init():
     >>> t.offset
     0
     >>> t.count
-    5
+    10
     >>> t.error
     False
     >>> t.show
@@ -429,7 +429,7 @@ def test_TranslatePOTemplate_atBeginning_atEnd():
     False
 
     >>> context = DummyPOTemplate()
-    >>> request = DummyRequest(offset=15)
+    >>> request = DummyRequest(offset=30)
     >>> t = TranslatePOTemplate(context, request)
 
     >>> t.atBeginning()
@@ -465,12 +465,12 @@ def test_TranslatePOTemplate_URLs():
     'http://this.is.a/fake/url'
 
     >>> t.endURL()
-    'http://this.is.a/fake/url?offset=15'
+    'http://this.is.a/fake/url?offset=30'
 
     Test with offset > 0.
 
     >>> context = DummyPOTemplate()
-    >>> request = DummyRequest(offset=5)
+    >>> request = DummyRequest(offset=10)
     >>> t = TranslatePOTemplate(context, request)
 
     >>> t.beginningURL()
@@ -480,10 +480,10 @@ def test_TranslatePOTemplate_URLs():
     'http://this.is.a/fake/url'
 
     >>> t.nextURL()
-    'http://this.is.a/fake/url?offset=10'
+    'http://this.is.a/fake/url?offset=20'
 
     >>> t.endURL()
-    'http://this.is.a/fake/url?offset=15'
+    'http://this.is.a/fake/url?offset=30'
 
     Test with interesting parameters.
 

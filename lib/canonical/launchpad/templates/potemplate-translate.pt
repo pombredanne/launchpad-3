@@ -45,16 +45,18 @@
     <div tal:condition="context/hasPluralMessage">
 
         <p class="portalMessage" tal:condition="view/badLanguages">
-        This template contains plural messages. These require special
-        information for each language, and we do not yet have this
-        information on record for 
+        This template contains plural messages. To be able to translate these
+        messages, we need to have special information for each language.
+        However, we do not have this information for
             <span tal:repeat="language view/badLanguages" tal:omit-tag>
                <span tal:replace="language/englishname">language</span>,
             </span>
         please contact the <a
         href="mailto:rosetta-users@lists.ubuntu.com">Rosetta users
-        mailing list</a> to resolve this - it only ever needs to be done
-        once per language!</p>
+        mailing list</a> to resolve this. This procedure only ever needs to be
+        done once per language. Once we have the information, you can
+        translate into these languages.
+        </p>
 
     </div>
 
@@ -280,7 +282,7 @@
         <input type="hidden" name="languages"
             tal:condition="view/codes"
             tal:attributes="value view/codes" />
-        <input type="submit" name="SUBMIT" value="Submit"
+        <input type="submit" name="SUBMIT" value="Save"
             tal:attributes="tabindex: view/makeTabIndex" />
     </form>
 

@@ -8,7 +8,7 @@ languages: az,ca,da,nn,nl,en,eu,fo,gu,de,no,sv,es,fi,el,hi,he,it,ro,sq,pt,es,eo,
 nplurals:  2
 plural:    n != 1
 
-languages: fr,pt_BR
+languages: fr,pt_BR,am
 nplurals:  2
 plural:    n > 1
 

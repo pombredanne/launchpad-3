@@ -558,10 +558,9 @@ class ViewMOExport:
 
 
 class TranslatePOTemplate:
-    DEFAULT_COUNT = 5
+    DEFAULT_COUNT = 10
     SPACE_CHAR = u'<span style="color:white">\u2022</span>'
     NEWLINE_CHAR = u'<span style="color:white">\u21b5</span><br/>\n'
-
 
     def __init__(self, context, request):
         # This sets up the following instance variables:

@@ -2,7 +2,7 @@
 from zope.interface import implements
 
 # SQL imports
-from sqlobject import ForeignKey, StringCol, IntCol, MultipleJoin
+from sqlobject import ForeignKey, BoolCol, StringCol, IntCol, MultipleJoin
 from sqlobject import RelatedJoin, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote
 
@@ -36,6 +36,7 @@ class Language(SQLBase):
     englishname = StringCol(dbName='englishname')
     pluralforms = IntCol(dbName='pluralforms')
     pluralexpression = StringCol(dbName='pluralexpression')
+    translatable = BoolCol(dbName='translatable')
 
     translators = RelatedJoin('Person', joinColumn='language',
         otherColumn='person', intermediateTable='PersonLanguage')
