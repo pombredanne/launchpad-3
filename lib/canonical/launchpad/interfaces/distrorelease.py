@@ -29,3 +29,5 @@ class IDistroRelease(Interface):
     bugCounter = Attribute("The distro bug counter")
     role_users = Attribute("Roles inside this Releases")
 
+    def getBugSourceRelease():
+        """ xxx """

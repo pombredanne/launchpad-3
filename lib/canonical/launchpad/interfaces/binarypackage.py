@@ -38,10 +38,11 @@ class IBinaryPackage(Interface):
     licence = Text(required=False)
 
     title = TextLine(required=True, readonly=True)
-    ##XXX: (interface+attr) cprov 20041010
     name = Attribute("Binary Package Name")
     pkgpriority = Attribute("Package Priority")
 
+    def currrent():
+        """ xxx """
 
 class IBinaryPackageName(Interface):
     id = Int(title=_('ID'), required=True)
@@ -69,7 +70,7 @@ class IBinaryPackageBuild(Interface):
 class IPackagePublishing(Interface):
     binarypackage = Attribute("BinaryPackage")
     distroarchrelease = Attribute("Distro Arch Relese")
-    packages = Attribute("XXX")
+    packages = Attribute("Set of Packages inside a DistroRelease")
 
 class IBinaryPackageSet(Interface):
     """A set of binary packages"""

@@ -14,7 +14,9 @@ from canonical.lp import dbschema
 # interfaces and database 
 from canonical.launchpad.interfaces import IDistroRelease
 from canonical.launchpad.database import SourcePackageName, \
-        BinaryPackageName
+                                         BinaryPackageName,\
+                                         SourcePackageInDistro
+               
 
 
 class DistroRelease(SQLBase):

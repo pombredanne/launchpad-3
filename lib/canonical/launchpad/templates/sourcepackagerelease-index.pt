@@ -142,7 +142,7 @@
       </table>
       </td><td valign="top">
 
-       <h4>Build Dependencies Indep</h4>
+       <h5>Platform Independent</h5>
        <table>		
         <tr tal:condition="not:view/builddependsindep"><td>No
        Platform Independent Dependencies</td></tr>

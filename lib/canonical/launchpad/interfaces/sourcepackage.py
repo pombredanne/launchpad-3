@@ -39,27 +39,31 @@ class ISourcePackage(Interface):
     product = Attribute("Product, or None")
     proposed = Attribute("A source package release with upload status of "
                          "PROPOSED, else None")
-
-
-    ## XXX: cprov 20041110
-    ## Big Big Mistake I suppose SourcePackageinDistro class (PG VIEW)
-    ## uses the ISourcepackage interface, then we have many unimplemented
-    ## attributes !!! we should have ISourcePackageinDistro and move following
-
-    distrorelease = Int(title=_("DistroRelease"), required=False)
-
     def getBugSourcePackages(distrorelease):
         """Get SourcePackages in a DistroRelease with BugAssignement"""
+        
+class ISourcePackageinDistro(Interface):
+    """A SourcePackage in Distro PG View"""
+    id = Int(title=_("ID"), required=True)
+    name = TextLine(title=_("Name"), required=True)
+    distrorelease = Int(title=_("DistroRelease"), required=False)
+    maintainer = Int(title=_("Maintainer"), required=True)
+    title = TextLine(title=_("Title"), required=True)
+    shortdesc = Text(title=_("Description"), required=True)
+    description = Text(title=_("Description"), required=True)
+    manifest = Int(title=_("Manifest"), required=False)
+    distro = Int(title=_("Distribution"), required=False)
+    sourcepackagename = Int(title=_("SourcePackage Name"), required=True)
+    bugs = Attribute("bugs")
+    product = Attribute("Product, or None")
+    proposed = Attribute("A source package release with upload status of "
+                         "PROPOSED, else None")
 
-    # XXX: What do the following methods and attributes do?
-    #      These were missing from the interfaces, but being used
-    #      in application code.
-    #      -- Steve Alexander, Fri Dec 10 14:28:41 UTC 2004
     def bugsCounter():
-        """XXX"""
-    releases = Attribute("XXX")
-    current = Attribute("XXX")
-    lastversions = Attribute("XXX")
+        """A bug counter widget for sourcepackage"""
+    releases = Attribute("Set of releases tha this package is inside")
+    current = Attribute("Set of current versions")
+    lastversions = Attribute("set of lastversions")
 
 
 #
@@ -153,8 +157,7 @@ class ISourcePackageReleasePublishing(ISourcePackageRelease):
     aggregates data from sourcepackagerelease, sourcepackagepublishing,
     sourcepackagename, component and distrorelease.
     """
-    # XXX: salgado: make all attributes readonly (including the ones
-    # inherited from ISourcePackageRelease). Is this possible?
+    id = Int(title=_("ID"), required=True)
     publishingstatus = Attribute("The status of this publishing record")
     datepublished = Attribute("The date on which this record was published")
     name = Attribute("The SourcePackage name")

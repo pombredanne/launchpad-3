@@ -21,7 +21,7 @@
 
     <!-- SourcePackageInDistro -->
     <content class="canonical.launchpad.database.SourcePackageInDistro">
-        <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
+        <allow interface="canonical.launchpad.interfaces.ISourcePackageinDistro" />
         <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
 
