@@ -116,11 +116,16 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
 
     owner = Attribute("The owner of the template.")
 
-    sourcepackagename = Attribute("""The name of the sourcepackage from where
-        this PO template is.""")
+    sourcepackagename = Attribute(
+        "The name of the sourcepackage from where this PO template is.")
 
-    distrorelease = Attribute("""The distribution where this PO template
-        belongs""")
+    sourcepackageversion = Attribute(
+        "The version of the sourcepackage from where this PO template comes.")
+
+    distrorelease = Attribute(
+        "The distribution where this PO template belongs.")
+
+    header = Attribute("The header of this .pot file.")
 
 
     # A "current" messageset is one that was in the latest version of

@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 import os
+import apt_pkg
 
 from sets import Set
 from datetime import datetime
@@ -102,7 +103,7 @@ class Product(SQLBase):
                              orderBy='-datereleased')
 
     milestones = MultipleJoin('Milestone', joinColumn = 'product')
-    
+
     def newseries(self, form):
         # Extract the details from the form
         name = form['name']
@@ -283,6 +284,25 @@ class Product(SQLBase):
         # processing them.
         errors = []
 
+        # Check to see if we have already imported this tarball successfully.
+        # We do it before the tarfile.read() so we don't download the file if
+        # it's not needed.
+        for pot in self.potemplates:
+            if (pot.distrorelease == distrorelease and
+                version is not None and
+                pot.sourcepackageversion is not None):
+                # Initialization of apt_pkg to be able to compare two .deb
+                # versions:
+                apt_pkg.InitSystem()
+                if apt_pkg.VersionCompare(
+                    version, pot.sourcepackageversion) != 1:
+                    # The version we are importing is minor or equal to
+                    # last one imported. The tarball is ignored.
+                    if logger is not None:
+                        logger.info("This tarball or a newer one is already"
+                                    " imported. Ignoring it...")
+                    return updated, added, errors
+
         tf = string_to_tarfile(tarfile.read())
         pot_paths, po_paths = examine_tarfile(tf)
 
@@ -293,6 +313,9 @@ class Product(SQLBase):
 
             return updated, added, errors
         else:
+            # It's the first time we import this tarball or last try gave us
+            # an error, we should retry it until the system accepts it.
+
             # Get the list of domains
             domains = []
             try:
@@ -337,10 +360,45 @@ class Product(SQLBase):
                 try:
                     potemplate = self.poTemplate(potname)
                     updated.append(pot_path)
+                    # Check to detect pot files moved. It's not usual and
+                    # logging it could help us to detect problems with the
+                    # import.
+                    if (potemplate.path is not None and
+                       potemplate.path != pot_base_dir):
+                        # The template has moved from its previous location,
+                        # log it so it helps to detect errors.
+                        if logger is not None:
+                            logger.warning("The POTemplate %s has been moved"
+                                           "from %s to %s" % (
+                                            potname,
+                                            potemplate.path,
+                                            pot_base_dir))
+                        # Update new path.
+                        potemplate.path = pot_base_dir
                 except KeyError:
-                    # It's a new pot file.
-                    potemplate = self.newPOTemplate(potname, potname)
-                    added.append(pot_path)
+                    # The POTemplate was not found, before creating a new one,
+                    # we look for it based on the path.
+                    potemplate = None
+                    for pot in self.potemplates:
+                        if (pot.distrorelease == distrorelease and
+                           pot.path is not None and
+                           pot.path == pot_base_dir):
+                            # We have found a potemplate using this path so we
+                            # log it, as always to be able to detect any
+                            # problem and continue the normal process with it.
+                            if logger is not None:
+                                logger.warning("The POTemplate %s has been"
+                                               " detected as beeing the same"
+                                               " than %s because both share"
+                                               " the same path." % (
+                                                pot.name, potname))
+                            potemplate = pot
+                            updated.append(pot_path)
+                            break
+                    if potemplate is None:
+                        # It's a new pot file.
+                        potemplate = self.newPOTemplate(potname, potname)
+                        added.append(pot_path)
 
                 try:
                     potemplate.attachRawFileData(tf.extractfile(pot_path).read())
@@ -358,6 +416,10 @@ class Product(SQLBase):
                 potemplate.sourcepackagename = sourcepackagename
                 potemplate.distrorelease = distrorelease
 
+                # The path from where the .pot file was extracted is also
+                # stored inside the POTemplate object.
+                potemplate.path = pot_base_dir
+
                 for po_path in po_paths:
                     po_base_dir = os.path.dirname(po_path)
                     po_file = os.path.basename(po_path)
@@ -367,12 +429,7 @@ class Product(SQLBase):
                         root, extension = os.path.splitext(po_file)
 
                         if '@' in root:
-                            # PO files with variants are not currently supported. If they
-                            # were, we would use some code like this:
-                            #
-                            #   code, variant = [ unicode(x) for x in root.split('@', 1) ]
-                            errors.append(po_path)
-                            continue
+                            code, variant = [unicode(field) for field in root.split('@', 1)]
                         else:
                             code, variant = root, None
 
@@ -401,14 +458,21 @@ class Product(SQLBase):
                         # XXX: Carlos Perello Marin 2005-01-28, Implement
                         # support for Python/PHP like trees.
                         # https://dogfood.ubuntu.com/malone/bugs/235
-                        pass
+                        errors.append(po_path)
+                        continue
 
-                if version is not None and len(errors) == 0:
-                    # The list of errors is empty, the potemplate could be
-                    # marked as being in sync with the tarball attached. If
-                    # the version field is not None, we store that information
-                    # inside the potemplate.
-                    potemplate.sourcepackageversion = version
+            if version is not None and len(errors) == 0:
+                # If the list of errors is empty, the potemplates can be
+                # marked as being in sync with the tarball attached. If
+                # the version field is not None, we store that information
+                # inside the potemplate.
+                # This lets us prevent import a tar.gz twice or import an old
+                # tarball.
+                for potemplate in self.potemplates:
+                    if potemplate.distrorelease == distrorelease:
+                        # The version is stored only if the potemplate is
+                        # related to the current distrorelease.
+                        potemplate.sourcepackageversion = version
 
             return updated, added, errors
 

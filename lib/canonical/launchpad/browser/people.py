@@ -2,7 +2,7 @@
 
 # sqlobject/sqlos
 from sqlobject import LIKE, AND, SQLObjectNotFound
-from canonical.database.sqlbase import quote
+from canonical.database.sqlbase import quote, flushUpdates
 
 # lp imports
 from canonical.lp.dbschema import EmailAddressStatus, SSHKeyType
@@ -303,10 +303,6 @@ class EmailAddressEditView(object):
                             "the instructions on that message to validate "
                             "your email address.") % newemail
 
-        # XXX: salgado 2005-01-12: If we change the preferred email address,
-        # the view is displaying the old preferred one, even that the change
-        # is stored in the DB, as one can see by Reloading/Opening the page
-        # again.
         id = self.request.form.get("PREFERRED_EMAIL")
         if id is not None:
             # XXX: salgado 2005-01-06: Ideally, any person that is able to
@@ -346,6 +342,7 @@ class EmailAddressEditView(object):
                         # one, so we can delete it.
                         email.destroySelf()
 
+        flushUpdates()
 
     def processValidationRequest(self):
         id = self.request.form.get("NOT_VALIDATED_EMAIL")

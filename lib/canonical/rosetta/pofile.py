@@ -324,6 +324,9 @@ class POHeader(dict, POMessage):
                                           'string is not in declared charset %r'
                                           % self.charset))
             v = unicode(v, self.charset, 'replace')
+        except LookupError:
+            raise POInvalidInputError(msg='Unknown charset %s' % self.charset)
+
         return v
 
     def get(self, item, default=None):
@@ -411,7 +414,11 @@ class POHeader(dict, POMessage):
                 try:
                     field, value = l.split(':', 1)
                 except ValueError:
-                    raise POSyntaxError
+                    # The header has an entry without ':' that's an error in
+                    # the header, log it and continue with next entry.
+                    warnings.warn(
+                        POSyntaxWarning(self._lineno, 'Invalid header entry.'))
+                    continue
                 field = field.strip()
                 value = self[field]
                 text.append(u'%s: %s' % (field, self[field]))

@@ -364,6 +364,35 @@ def quote_like(x):
     return quote(x).replace('%', r'\\%').replace('_', r'\\_')
 
 
+def flushUpdates():
+    """Flushes all pending database updates for the current connection.
+    
+    When SQLObject's _lazyUpdate flag is set, then it's possible to have
+    changes written to objects that aren't flushed to the database, leading to
+    inconsistencies when doing e.g.::
+        
+        # Assuming the Beer table already has a 'Victoria Bitter' row...
+        assert Beer.select("name LIKE 'Vic%'").count() == 1  # This will pass
+        beer = Beer.byName('Victoria Bitter')
+        beer.name = 'VB'
+        assert Beer.select("name LIKE 'Vic%'").count() == 0  # This will fail
+
+    To avoid this problem, use this function::
+
+        # Assuming the Beer table already has a 'Victoria Bitter' row...
+        assert Beer.select("name LIKE 'Vic%'").count() == 1  # This will pass
+        beer = Beer.byName('Victoria Bitter')
+        beer.name = 'VB'
+        flushUpdates()
+        assert Beer.select("name LIKE 'Vic%'").count() == 0  # This will pass
+
+    """
+    # XXX: turn that comment into a doctest
+    #        - Andrew Bennetts, 2005-02-16
+    for object in list(SQLBase._connection._dm.objects):
+        object.syncUpdate()
+
+
 # Some helpers intended for use with initZopeless.  These allow you to avoid
 # passing the transaction manager all through your code.  Also, this begin()
 # does an implicit rollback() for convenience. 
