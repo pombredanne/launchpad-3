@@ -25,6 +25,7 @@ from canonical.launchpad.database.processor import *
 from canonical.launchpad.database.manifest import *
 from canonical.launchpad.database.branch import *
 from canonical.launchpad.database.build import *
+from canonical.launchpad.database.publishing import *
 
 #
 # Now the older ones that need to be cleaned out

@@ -31,6 +31,7 @@ from canonical.launchpad.interfaces.manifest import *
 from canonical.launchpad.interfaces.processor import *
 from canonical.launchpad.interfaces.team import *
 from canonical.launchpad.interfaces.wikiname import *
+from canonical.launchpad.interfaces.publishing import *
 
 # these will go...
 from canonical.launchpad.iandrew import *

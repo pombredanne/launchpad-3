@@ -22,23 +22,6 @@ from canonical.launchpad.database import Product, Project
 from canonical.launchpad.database.person import Person
 
 
-class PackagePublishing(SQLBase):
-
-    _table = 'PackagePublishing'
-    
-    _columns = [
-        ForeignKey(name='binaryPackage', foreignKey='Binarypackage', 
-                   dbName='binarypackage', notNull=True),
-        ForeignKey(name='distroarchrelease', dbName='distroArchrelease',
-                   foreignKey='Distroarchrelease', notNull=True),
-        ForeignKey(name='component', dbName='component',
-                   foreignKey='Component', notNull=True),
-        ForeignKey(name='section', dbName='section', foreignKey='Section',
-                   notNull=True),
-        IntCol('priority', dbName='priority', notNull=True),
-    ]
-
-
 class Binarypackage(SQLBase):
     implements(IBinarypackage)
     _table = 'BinaryPackage'
