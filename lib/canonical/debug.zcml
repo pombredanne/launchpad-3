@@ -3,7 +3,6 @@
   <layer name="debug" />
   <skin name="Debug" layers="debug rotterdam default" />
 
-  <!--
   <page
       for="zope.exceptions.IUnauthorized"
       name="index.html"
@@ -11,7 +10,6 @@
       template="debug-unauthorized.pt"
       class="zope.app.exception.browser.unauthorized.Unauthorized"
       layer="debug" />
-  -->
 
   <page 
       name="index.html"

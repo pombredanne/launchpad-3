@@ -22,7 +22,6 @@ from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 # TODO: Move this wrapper here
 from canonical.database.sqlbase import SQLBase
 
-
 class IPerson(Interface):
     """A Person."""
 
@@ -71,6 +70,18 @@ class Person(SQLBase):
         IntCol('karma'),
         DateTimeCol('karmatimestamp')
     ]
+
+def personFromPrincipal(principal):
+    """Adapt canonical.lp.placelessauth.interfaces.ILaunchpadPrincipal 
+        to IPerson
+
+    """
+    # Adapter shouldn't return None
+    #if IUnauthenticatedPrincipal.providedBy(principal):
+    #    return None
+
+    return Person.get(principal.id)
+
 
 class IEmailAddress(Interface):
     id = Int(

@@ -29,6 +29,8 @@ from interfaces import \
 
 from canonical.interfaces import IProjectContainer
 
+from canonical.database.foaf import IPerson
+
 # TODO: Anything that relies on these imports should not be in this file!
 from canonical.database.malone import \
         Bug, BugAttachment, BugExternalRef, BugSubscription, BugMessage, \
@@ -152,7 +154,7 @@ class IMaloneBugAddForm(IMaloneBug):
             title=_("Binary Package"), required=False,
             vocabulary="Binarypackage"
             )
-
+    owner = Int(title=_("Owner"), required=True)
 
 class MaloneBugAddForm(object):
     implements(IMaloneBugAddForm)
@@ -221,18 +223,15 @@ class BugContainer(BugContainerBase):
     def __iter__(self):
         for row in self.table.select():
             yield row
-
+    
     def add(self, ob):
         '''Add a bug from an IMaloneBugAddForm'''
         kw = {}
-        attrs = [
-            'name', 'title', 'shortdesc', 'description',
-            'duplicateof',
-            ]
+        attrs = ['name', 'title', 'shortdesc', 'description', 'duplicateof',]
         for a in attrs:
             kw[a] = getattr(ob, a, None)
-        # TODO: Get real owner when auth system is in place
-        kw['ownerID'] = 1
+        kw['ownerID'] = ob.owner.id
+
         bug = MaloneBug(**kw)
 
         # If the user has specified a product, create the ProductBugAssignment
@@ -260,6 +259,44 @@ class BugContainer(BugContainerBase):
         return ob # Return this rather than the bug we created from it,
                   # as the return value must be adaptable to the interface
                   # used to generate the form.
+
+def BugAdder(object):
+    def createAndAdd(self, *args, **kw):
+        '''Add a bug from an IMaloneBugAddForm'''
+        import pdb; pdb.set_trace()
+        kw = {}
+        attrs = ['name', 'title', 'shortdesc', 'description', 'duplicateof',]
+        for a in attrs:
+            kw[a] = getattr(ob, a, None)
+        #kw['ownerID'] = IPerson(self.request.principal).id
+        bug = MaloneBug(**kw)
+
+        # If the user has specified a product, create the ProductBugAssignment
+        productid = getattr(ob, 'product', None)
+        if productid:
+            product = Product.get(productid)
+            pba = ProductBugAssignment(bug=bug, product=product)
+
+        # If the user has specified a sourcepackage, create the 
+        # SourcepackageBugAssignment. This might also link to the
+        # binary package if it was specified.
+        sourcepkgid = getattr(ob, 'sourcepackage', None)
+        binarypkgid = getattr(ob, 'binarypackage', None)
+        if sourcepkgid:
+            sourcepkg = Sourcepackage.get(sourcepkgid)
+            if binarypkgid:
+                binarypkg = Binarypackage.get(binarypkgid)
+            else:
+                binarypkg = None
+            sba = SourcepackageBugAssignment(
+                    bug=bug, sourcepackage=sourcepkg,
+                    binarypackage=binarypkg,
+                    )
+
+        return ob # Return this rather than the bug we created from it,
+                  # as the return value must be adaptable to the interface
+                  # used to generate the form.
+
 
 
 def MaloneBugFactory(context, **kw):

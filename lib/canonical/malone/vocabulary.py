@@ -63,6 +63,13 @@ class TitledTableVocabulary(object):
 
 class SourcepackageVocabulary(TitledTableVocabulary):
     _table = Sourcepackage
+    _orderBy = 'id'
+    def _toTerm(self, pkg):
+        name = pkg.sourcepackagename.name
+        return SimpleTerm(pkg.id, str(pkg.id), name)
+    def getTermByToken(self, token):
+        return self.getTerm(token)
+
 
 class ProductVocabulary(TitledTableVocabulary):
     _table = Product

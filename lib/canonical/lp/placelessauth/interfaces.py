@@ -1,4 +1,4 @@
-from zope.app.security.interfaces import IAuthenticationService
+from zope.app.security.interfaces import IAuthenticationService, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
 from zope.interface import Interface
 
@@ -31,4 +31,7 @@ class IPasswordEncryptor(Interface):
         method returns true, it can also be assumed that the value of
         self.encrypt(plaintext) will compare equal to 'encrypted'.
         """
-        
+  
+class ILaunchpadPrincipal(IPrincipal):
+    """Placeholder interface"""
+

@@ -27,15 +27,17 @@
         for=".interfaces.IBugContainer"
         schema=".browser.IMaloneBugAddForm"
         label="Add a Bug"
-        fields="title shortdesc description product sourcepackage binarypackage"
+        fields="title shortdesc description product
+            sourcepackage binarypackage owner"
         content_factory=".browser.MaloneBugAddForm"
         arguments=""
         keyword_arguments="title shortdesc description 
-            product sourcepackage binarypackage"
+            product sourcepackage binarypackage owner"
         permission="launchpad.AnyPerson"
         template="templates/default-addform.pt"
-        lp:url="malone/bugs/+new"
-        />
+        lp:url="malone/bugs/+new">
+        <widget field="owner" class="canonical.widgets.OwnerWidget" />
+    </addform>
 
     <editform
         name="+edit"

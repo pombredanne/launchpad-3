@@ -1,11 +1,10 @@
 from canonical.lp.placelessauth.interfaces import IPlacelessLoginSource
 from canonical.lp.placelessauth.interfaces import IPasswordEncryptor
+from canonical.lp.placelessauth.interfaces import ILaunchpadPrincipal
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from sqlos.interfaces import IConnectionName
 from zope.interface import implements
 from zope.app import zapi
-
-from zope.app.security.interfaces import IPrincipal
 
 class LaunchpadLoginSource(object):
     """
@@ -78,7 +77,7 @@ class LaunchpadLoginSource(object):
 
 class LaunchpadPrincipal(object):
 
-    implements(IPrincipal)
+    implements(ILaunchpadPrincipal)
 
     def __init__(self, id, title, description, pwd=None):
         self.id = id

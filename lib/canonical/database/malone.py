@@ -419,20 +419,19 @@ class ProductBugAssignment(SQLBase):
     implements(IProductBugAssignment)
 
     _table = 'ProductBugAssignment'
-    _columns = [
-        ForeignKey(name='bug', dbName='bug', foreignKey='Bug'),
-        ForeignKey(name='product', dbName='product', foreignKey='Product'),
-        IntCol('bugstatus', notNull=True,
-                default=int(dbschema.BugAssignmentStatus.NEW),
-                ),
-        IntCol('priority', notNull=True,
-                default=int(dbschema.BugPriority.MEDIUM),
-                ),
-        IntCol('severity', notNull=True,
-                default=int(dbschema.BugSeverity.NORMAL),
-                ),
-        ForeignKey(name='assignee', dbName='assignee', foreignKey='Person'),
-    ]
+
+    bug = ForeignKey(dbName='bug', foreignKey='Bug')
+    product = ForeignKey(dbName='product', foreignKey='Product')
+    bugstatus = IntCol(
+            notNull=True, default=int(dbschema.BugAssignmentStatus.NEW)
+            )
+    priority = IntCol(
+            notNull=True, default=int(dbschema.BugPriority.MEDIUM),
+            )
+    severity = IntCol(
+            notNull=True, default=int(dbschema.BugSeverity.NORMAL),
+            )
+    assignee = ForeignKey(dbName='assignee', foreignKey='Person', default=None)
 
 
 class ISourcepackageBugAssignment(Interface):
@@ -468,17 +467,18 @@ class SourcepackageBugAssignment(SQLBase):
     implements(ISourcepackageBugAssignment)
 
     _table = 'SourcepackageBugAssignment'
-    _columns = [
-        ForeignKey(name='bug', dbName='bug', foreignKey='Bug'),
-        ForeignKey(name='sourcepackage', dbName='sourcepackage',
-                   foreignKey='Sourcepackage'),
-        IntCol('bugstatus', default=int(dbschema.BugAssignmentStatus.NEW)),
-        IntCol('priority', default=int(dbschema.BugPriority.MEDIUM)),
-        IntCol('severity', default=int(dbschema.BugSeverity.NORMAL)),
-        ForeignKey(name='binarypackage', dbName='binarypackage',
-                foreignKey='Binarypackage'),
-        ForeignKey(name='assignee', dbName='assignee', foreignKey='Person'),
-    ]
+
+    bug = ForeignKey(dbName='bug', foreignKey='Bug')
+    sourcepackage = ForeignKey(
+            dbName='sourcepackage', foreignKey='Sourcepackage'
+            )
+    bugstatus = IntCol(default=int(dbschema.BugAssignmentStatus.NEW))
+    priority = IntCol(default=int(dbschema.BugPriority.MEDIUM))
+    severity = IntCol(default=int(dbschema.BugSeverity.NORMAL))
+    binarypackage = ForeignKey(
+            dbName='binarypackage', foreignKey='Binarypackage', default=None
+            )
+    assignee = ForeignKey(dbName='assignee', foreignKey='Person', default=None)
 
 class IBugInfestation(Interface):
     """The bug status scorecard."""

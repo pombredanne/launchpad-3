@@ -12,7 +12,8 @@
     <mail:smtpMailer name="smtp" hostname="localhost" port="25" />
     -->
 
-    <mail:queuedDelivery permission="zope.SendMail" queuePath="./queue"
-        mailer="sendmail" />
+    <!-- queuePath appears to be relative to this file -->
+    <mail:queuedDelivery permission="zope.SendMail"
+        queuePath="/var/tmp/launchpad_mailqueue" mailer="sendmail" />
 
 </configure>

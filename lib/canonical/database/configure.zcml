@@ -100,4 +100,8 @@
         <allow interface="canonical.database.foaf.IPerson" />
     </content>
 
+    <adapter for="canonical.lp.placelessauth.interfaces.ILaunchpadPrincipal"
+        provides="canonical.database.foaf.IPerson"
+        factory="canonical.database.foaf.personFromPrincipal" />
+
 </configure>

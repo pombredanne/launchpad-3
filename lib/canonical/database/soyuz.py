@@ -141,7 +141,7 @@ class SourcepackageRelease(SQLBase):
 #
 class IBinarypackage(Interface):
     id = Int(title=_('ID'), required=True)
-    sourcepackagerelease = Int(required=True)
+    #sourcepackagerelease = Int(required=True)
     binarypackagename = Int(required=True)
     version = TextLine(required=True)
     shortdesc = Text(required=True)
@@ -171,10 +171,10 @@ class IBinarypackage(Interface):
 class Binarypackage(SQLBase):
     implements(IBinarypackage)
     _columns = [
-        ForeignKey(
-                name='sourcepackagerelease', dbName='sourcepackagerelease',
-                foreignKey='SourcepackageRelease', notNull=True,
-                ),
+        #ForeignKey(
+        #        name='sourcepackagerelease', dbName='sourcepackagerelease',
+        #        foreignKey='SourcepackageRelease', notNull=True,
+        #        ),
         ForeignKey(
                 name='binarypackagename', dbName='binarypackagename',
                 foreignKey='BinarypackageName', notNull=True,
