@@ -175,6 +175,14 @@ class Person(SQLBase):
         self.removeLabel(label)
 
 
+class PersonSet(object):
+    """The set of persons."""
+    implements(IPersonSet)
+
+    def __getitem__(self, personid):
+        """See IPersonSet."""
+	return Person.get(personid)
+
 
 def personFromPrincipal(principal):
     """Adapt canonical.lp.placelessauth.interfaces.ILaunchpadPrincipal 

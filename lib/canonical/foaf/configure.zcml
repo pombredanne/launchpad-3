@@ -27,6 +27,14 @@
       permission="zope.Public"
       name="projects" />
 
+  <content class="canonical.launchpad.database.PersonSet">
+      <allow interface="canonical.launchpad.interfaces.IPersonSet" />
+  </content>
+
+  <utility provides="canonical.launchpad.interfaces.IPersonSet"
+           factory="canonical.launchpad.database.PersonSet"
+           permission="zope.Public" />
+
   <include file="pages.zcml" />
   <include file="forms.zcml" />
   <include file="resources.zcml" />

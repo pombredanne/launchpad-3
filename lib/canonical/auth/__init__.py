@@ -7,42 +7,60 @@
 
 from persistent import Persistent
 from zope.interface import implements
-from canonical.auth.app import passwordChangeApp
+from zope.component import getUtility
+
+from BTrees.OOBTree import OOBTree
+
+from canonical.auth.app import PasswordChangeApp
 
 from canonical.launchpad.interfaces import IAuthApplication
-from canonical.launchpad.interfaces import IPasswordReminders
+from canonical.launchpad.interfaces import IPasswordResets
+from canonical.launchpad.interfaces import IPersonSet
 
 from datetime import datetime, timedelta
+import random
 
 __metaclass__ = type
 
-class PasswordReminders(Persistent):    
-    """The object that manages password reminders.
+class PasswordResetsExpired(Exception):
+    """This is raised when you use an expired URL"""
 
-    Get hold of this object by using the zodb connection:
 
-    >>> from canonical.zodb import zodbconnection
-    >>> reminders = zodbconnection.passwordreminders
-    """
-    implements(IPasswordReminders)
+class PasswordResets(Persistent):
+    implements(IPasswordResets)
 
-    def __init__(self):
-        ##FIXME: Perhaps its a good Ideia to use BTree
-        ##Daniel Debonzi 2004-10-03
-        self.change_list = {}
+    characters = '0123456789bcdfghjklmnpqrstvwxz'
+    urlLength = 40
+    lifetime = timedelta(hours=3)
     
-    def append(self, personId, code):
-        self.change_list[code] = [personId, datetime.now()]
+    def __init__(self):
+        self.lookup = OOBTree()
+        
+    def newURL(self, person):
+        long_url = self._makeURL()
+        self.lookup[long_url] = (person.id, datetime.utcnow())
+        return long_url
+    
+    def getPerson(self, long_url, _currenttime=None):
+        if _currenttime is None:
+            currenttime = datetime.utcnow()
+        else:
+            currenttime = _currenttime
 
-    def retrieve(self, code):
-        if code not in self.change_list.keys():
-            return None
+        person_id, whencreated = self.lookup[long_url]
 
-        personId, request_time = self.change_list[code]
-        del self.change_list[code]
-        ##TODO check if time has not expired
-        ##Daniel Debonzi 2004-10-03
-        return personId
+        if currenttime > whencreated + self.lifetime:
+            raise PasswordResetsExpired
+        if currenttime < whencreated:
+            raise AssertionError("Current time is before when the URL was created")
+
+        person = getUtility(IPersonSet)[person_id]
+
+        return person
+    
+
+    def _makeURL(self):
+        return ''.join([random.choice(self.characters) for count in range(self.urlLength)])
 
 
 class AuthApplication:
@@ -50,4 +68,4 @@ class AuthApplication:
     implements(IAuthApplication)
 
     def __getitem__(self, name):
-        return passwordChangeApp(name)
+        return PasswordChangeApp(name)

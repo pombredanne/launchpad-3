@@ -105,7 +105,12 @@
     </content>
 
     <content class="canonical.launchpad.database.Person">
-        <allow interface="canonical.launchpad.interfaces.IPerson" />
+        <allow interface="canonical.launchpad.interfaces.IPerson"/>
+	<require
+	permission="zope.Public"
+	set_attributes="password"
+	/>
+
     </content>
 
     <adapter for="canonical.lp.placelessauth.interfaces.ILaunchpadPrincipal"

@@ -15,14 +15,14 @@
 
 <div metal:fill-slot="main">
 
-<h2> Change password</h2>
+<h2> Reset password</h2>
 
 <fieldset>
   <legend>
-    Change password
+    Reset password
   </legend>
   <form name="chpasswd" method="POST">
-    <div class="formHelp">Enter your email address from the change password request.</div>
+    <div class="formHelp">Enter the email address you used to request a new password.</div>
     <input type="text" size="50" name="email" tal:attributes="value request/email|nothing" />
 
     <div class="formHelp"> Type your new password </div>
@@ -33,12 +33,19 @@
     <input type="hidden" name="code" tal:attributes="value context/code" />
 
     <input type="submit" value="Submit"/>
+    <input type="reset" value="Cancel"/>
   </form>
 
 </fieldset>
 
-<h4 tal:content="view/getResult"> MESSAGE </h4>
-
+<tal:block tal:define="result view/getResult">
+<h4 tal:content="result"> MESSAGE </h4>
+<h4 tal:condition="not:view/success"> 
+   Sorry, there has been a problem in resetting your password. 
+   Please try again, using the Forgotten password 
+   <a href="../forgottenpassword"> form </a>
+</h4>
+</tal:block>
 </div>
 
 

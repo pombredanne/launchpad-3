@@ -5,7 +5,7 @@
   <traverse for="canonical.auth.AuthApplication" getter="__getitem__" />
   <pages for="canonical.auth.AuthApplication"
          permission="zope.Public"
-	 class="canonical.auth.browser.sendPasswordToEmail">
+	 class="canonical.auth.browser.SendPasswordToEmail">
 
   <page  name="index.html"
 	 template="../launchpad/templates/auth-index.pt"
@@ -14,7 +14,7 @@
 
   </pages>
 
-  <pages for="canonical.auth.app.passwordChangeApp"
+  <pages for="canonical.auth.app.PasswordChangeApp"
          permission="zope.Public"
 	 class="canonical.auth.browser.changeEmailPassword">
 	 

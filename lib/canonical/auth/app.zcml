@@ -9,13 +9,13 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.auth.PasswordReminders">
-    <allow interface="canonical.launchpad.interfaces.IPasswordReminders"/>
+  <content class="canonical.auth.PasswordResets">
+    <allow interface="canonical.launchpad.interfaces.IPasswordResets"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.auth.app.passwordChangeApp">
-    <allow interface="canonical.launchpad.interfaces.IpasswordChangeApp"/>
+  <content class="canonical.auth.app.PasswordChangeApp">
+    <allow interface="canonical.launchpad.interfaces.IPasswordChangeApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 

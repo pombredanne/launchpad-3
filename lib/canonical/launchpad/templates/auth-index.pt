@@ -23,10 +23,8 @@
     User Email
   </legend>
   Enter your valid registration email address below.  
-  You will receive an email on changing your password.
-  If you have forgotten the email address you used to 
-  sign up with Ubuntu, please notify us at 
-  <a href="mailto:webmaster@ubuntulinux.org">
+  You will receive an email on how to reset your password. 
+ <a href="mailto:webmaster@ubuntulinux.org">
     webmaster@ubuntulinux.org 
   </a>
   <form name="passwdretrive" method="POST">
@@ -38,13 +36,6 @@
 </fieldset>
 
   <span tal:content="view/getResult"> MESSAGE </span>
-  <!--   XXX: Tal dummy is just a test before send email is working -->
-  <!--   <tal:dummy tal:condition="view/success"> -->
-  <!--     <li><a class="dummy" tal:content="view/success" -->
-  <!--     tal:attributes="href view/success" /></li> -->
-  <!--   </tal:dummy> -->
-  <!--   XXX -->
-
 
 </div>
 

@@ -13,14 +13,27 @@ class IAuthApplication(Interface):
     def __getitem__(name):
         """ The __getitem__ method used to traversing """
 
-class IPasswordReminders(IPersistent):
-    """ Interface for PasswordReminders"""
-    def append(personId, code):
-        """ Append a request in PasswordReminders """
+class IPasswordResets(IPersistent):
+    """Interface for PasswordResets"""
 
-    def retrieve(code):
-        """ Retrieves the personId by code from PasswordReminders"""
+    lifetime = Attribute("Maximum time between request and reset password")
+    
+    def newURL(person):
+        """Create a new URL and store person and creation time"""
         
-class IpasswordChangeApp(Interface):
-    """ Interface for passwdChangeApp """
+        
+    def getPerson(long_url):
+        """Get the person object using the long_url if not expired"""
+
+class IPasswordChangeApp(Interface):
+    """Interface for PasswdChangeApp."""
     code = Attribute("The transaction code")
+
+class IPersonSet(Interface):
+    """The set of Persons."""
+
+    def __getitem__(personid):
+        """Returns the person with the given id.
+
+	Raises KeyError if there is no such person.
+	"""
