@@ -28,6 +28,7 @@ all: inplace runners
 inplace:
 
 build:
+	$(MAKE) -C sourcecode build
 
 runners:
 	echo "#!/bin/sh" > bin/runzope;
