@@ -112,9 +112,13 @@ class BugAssignmentsView(object):
         if self.request.get('assignee', None) and self.request['assignee'] != 'all':
             assignees = []
             if isinstance(self.request['assignee'], (list, tuple)):
-                assignees = self.request['assignee']
+                people = Person.select(IN(Person.q.name, self.request['assignee']))
             else:
-                assignees = [self.request['assignee']]
+                people = Person.select(Person.q.name == self.request['assignee'])
+
+            if people:
+                assignees = [p.id for p in people]
+
             pba_params.append(
                 IN(ProductBugAssignment.q.assigneeID, assignees))
             spba_params.append(
