@@ -38,7 +38,7 @@ def monkey_patch_doctest():
     import zope.testing.doctest
     import canonical.doctest
     zope.testing.doctest.OutputChecker = canonical.doctest.OutputChecker
-# monkey_patch_doctest()
+monkey_patch_doctest()
 
 # This is a terrible hack to divorce the FunctionalTestSetup from
 # its assumptions about the ZODB.
