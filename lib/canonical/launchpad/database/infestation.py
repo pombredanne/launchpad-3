@@ -1,13 +1,14 @@
-
 """Launchpad Bug-related Database Table Objects
 
 Part of the Launchpad system.
 
 (c) 2004 Canonical, Ltd.
 """
+from datetime import datetime
 
 # Zope
 from zope.interface import implements
+
 # SQL imports
 from canonical.database.sqlbase import SQLBase
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
@@ -96,7 +97,7 @@ class BugPackageInfestationContainer(BugContainerBase):
 
 def BugProductInfestationFactory(context, **kw):
     now = datetime.utcnow()
-    bpi = BugProductInfestation(
+    return BugProductInfestation(
         bug=context.context.bug,
         explicit=True,
         datecreated=now,
@@ -106,15 +107,10 @@ def BugProductInfestationFactory(context, **kw):
         lastmodified=now,
         lastmodifiedbyID=1,
         **kw)
-    product_infested = BugProductInfestationAddedEvent(
-        Bug.get(context.context.bug), bpi)
-    notify(product_infested)
-    return bpi
-
 
 def BugPackageInfestationFactory(context, **kw):
     now = datetime.utcnow()
-    bpi = BugPackageInfestation(
+    return BugPackageInfestation(
         bug=context.context.bug,
         explicit=True,
         datecreated=now,
@@ -124,8 +120,3 @@ def BugPackageInfestationFactory(context, **kw):
         lastmodified=now,
         lastmodifiedbyID=1,
         **kw)
-    package_infested = BugPackageInfestationAddedEvent(
-        Bug.get(context.context.bug), bpi)
-    notify(package_infested)
-    return bpi
-

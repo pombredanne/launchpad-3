@@ -7,7 +7,6 @@ from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.interfaces import *
-
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.bugcontainer import BugContainerBase
@@ -62,11 +61,7 @@ class ProductBugAssignmentContainer(BugContainerBase):
 
 
 def ProductBugAssignmentFactory(context, **kw):
-    pba = ProductBugAssignment(bug=context.context.bug, **kw)
-    product_assigned = BugAssignedProductAddedEvent(
-        Bug.get(context.context.bug), pba)
-    notify(product_assigned)
-    return pba
+    return ProductBugAssignment(bug=context.context.bug, **kw)
 
 class SourcePackageBugAssignmentContainer(BugContainerBase):
     """A container for SourcePackageBugAssignment"""
@@ -76,12 +71,8 @@ class SourcePackageBugAssignmentContainer(BugContainerBase):
 
 
 def SourcePackageBugAssignmentFactory(context, **kw):
-    sa = SourcePackageBugAssignment(bug=context.context.bug,
-                                    binarypackagename=None,
-                                    **kw)
-    package_assignment = bugassignedpackageaddedevent(
-        bug.get(context.context.bug), sa)
-    notify(package_assignment)
-    return sa
+    return SourcePackageBugAssignment(bug=context.context.bug,
+                                      binarypackagename=None,
+                                      **kw)
 
 

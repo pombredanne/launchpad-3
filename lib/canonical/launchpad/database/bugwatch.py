@@ -1,6 +1,8 @@
+from datetime import datetime
 
 # Zope
 from zope.interface import implements
+
 # SQL imports
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
@@ -8,10 +10,7 @@ from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 from canonical.launchpad.interfaces.bugwatch import IBugWatch, \
         IBugWatchContainer
 from canonical.launchpad.database.bug import BugContainerBase
-
 from canonical.database.sqlbase import SQLBase
-
-from datetime import datetime
 
 class BugWatch(SQLBase):
     implements(IBugWatch)
@@ -34,16 +33,10 @@ class BugWatchContainer(BugContainerBase):
     implements(IBugWatchContainer)
     table = BugWatch
 
-
 def BugWatchFactory(context, **kw):
     bug = context.context.bug
     owner = 1 # XXX: Will be id of logged in user
     now = datetime.utcnow()
-    bw = BugWatch(
-            bug=bug, owner=owner, datecreated=now, lastchanged=now,
-           lastchecked=now, **kw)
-    watch_added = BugWatchAddedEvent(Bug.get(bug), bw)
-    notify(watch_added)
-    return bw
-
-
+    return BugWatch(
+        bug=bug, owner=owner, datecreated=now, lastchanged=now,
+        lastchecked=now, **kw)

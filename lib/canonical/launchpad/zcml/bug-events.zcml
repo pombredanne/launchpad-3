@@ -3,31 +3,38 @@
     i18n_domain="launchpad">
 
 <subscriber
-   for="canonical.launchpad.interfaces.IBugCommentAddedEvent"
+   for="canonical.launchpad.interfaces.IBugMessage
+        zope.app.event.interfaces.IObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_comment_added" />
 
 <subscriber
-   for="canonical.launchpad.interfaces.IBugAssignedProductAddedEvent"
+   for="canonical.launchpad.interfaces.IProductBugAssignment
+        zope.app.event.interfaces.IObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_assigned_product_added" />
 
 <subscriber
-   for="canonical.launchpad.interfaces.IBugAssignedPackageAddedEvent"
+   for="canonical.launchpad.interfaces.ISourcePackageBugAssignment
+        zope.app.event.interfaces.IObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_assigned_package_added" />
 
 <subscriber
-   for="canonical.launchpad.interfaces.IBugProductInfestationAddedEvent"
+   for="canonical.launchpad.interfaces.IBugProductInfestation
+        zope.app.event.interfaces.IObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_product_infestation_added" />
 
 <subscriber
-   for="canonical.launchpad.interfaces.IBugPackageInfestationAddedEvent"
+   for="canonical.launchpad.interfaces.IBugPackageInfestation
+        zope.app.event.interfaces.IObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_package_infestation_added" />
 
 <subscriber
-   for="canonical.launchpad.interfaces.IBugExternalRefAddedEvent"
+   for="canonical.launchpad.interfaces.IBugExternalRef
+        zope.app.event.interfaces.IObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_external_ref_added" />
 
 <subscriber
-   for="canonical.launchpad.interfaces.IBugWatchAdded"
+   for="canonical.launchpad.interfaces.IBugWatch
+        zope.app.event.interfaces.IObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_watch_added" />
 
 </configure>

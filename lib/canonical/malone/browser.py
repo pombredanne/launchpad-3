@@ -24,10 +24,6 @@ from canonical.launchpad.database import \
         BugProductInfestation, BugPackageInfestation, BugContainerBase
 
 from canonical.database import sqlbase
-from canonical.launchpad.events import BugCommentAddedEvent, \
-     BugAssignedProductAddedEvent, BugAssignedPackageAddedEvent, \
-     BugProductInfestationAddedEvent, BugPackageInfestationAddedEvent, \
-     BugExternalRefAddedEvent, BugWatchAddedEvent
 
 # I18N support for Malone
 from zope.i18nmessageid import MessageIDFactory

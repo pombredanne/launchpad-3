@@ -14,39 +14,38 @@ def get_cc_list(bug):
     """Return the list of people that are CC'd on this bug."""
     return ['test@bbnet.ca']
 
-def notify_bug_assigned_product_added(event):
+def notify_bug_assigned_product_added(product_assignment, event):
     """Notify CC'd list that this bug has been assigned to
     a product."""
-    pba = event.cause
+    product_assignment = event.object
     assignee_name = "(not assigned)"
-    if pba.assignee:
-        assignee_name = pba.assignee.displayname
+    if product_assignment.assignee:
+        assignee_name = product_assignment.assignee.displayname
     msg = """\
 Product: %(product)s
 Status: %(status)s
 Priority: %(priority)s
 Severity: %(severity)s
 Assigned: %(assigned)s
-""" % {'product' : pba.product.displayname,
-       'status' : BugAssignmentStatus.items[int(pba.bugstatus)].title,
-       'priority' : BugPriority.items[int(pba.priority)].title,
-       'severity' : BugSeverity.items[int(pba.severity)].title,
+""" % {'product' : product_assignment.product.displayname,
+       'status' : BugAssignmentStatus.items[int(product_assignment.bugstatus)].title,
+       'priority' : BugPriority.items[int(product_assignment.priority)].title,
+       'severity' : BugSeverity.items[int(product_assignment.severity)].title,
        'assigned' : assignee_name}
 
     sendmail(
-        FROM_MAIL, get_cc_list(event.object),
-        '"%s" product assignment' % event.object.title, msg)
+        FROM_MAIL, get_cc_list(product_assignment.bug),
+        '"%s" product assignment' % product_assignment.bug.title, msg)
 
-def notify_bug_assigned_package_added(event):
+def notify_bug_assigned_package_added(package_assignment, event):
     """Notify CC'd list that this bug has been assigned to
     a source package."""
-    pba = event.cause
     assignee_name = "(not assigned)"
     binary = "(none)"
-    if pba.assignee:
-        assignee_name = pba.assignee.displayname
-    if pba.binarypackagename:
-        binary = pba.binarypackagename.name
+    if package_assignment.assignee:
+        assignee_name = package_assignment.assignee.displayname
+    if package_assignment.binarypackagename:
+        binary = package_assignment.binarypackagename.name
 
     msg = """\
 Source Package: %(package)s
@@ -55,91 +54,85 @@ Status: %(status)s
 Priority: %(priority)s
 Severity: %(severity)s
 Assigned: %(assigned)s
-""" % {'package' : pba.sourcepackage.sourcepackagename.name,
+""" % {'package' : package_assignment.sourcepackage.sourcepackagename.name,
        'binary' : binary,
-       'status' : BugAssignmentStatus.items[int(pba.bugstatus)].title,
-       'priority' : BugPriority.items[int(pba.priority)].title,
-       'severity' : BugSeverity.items[int(pba.severity)].title,
+       'status' : BugAssignmentStatus.items[int(package_assignment.bugstatus)].title,
+       'priority' : BugPriority.items[int(package_assignment.priority)].title,
+       'severity' : BugSeverity.items[int(package_assignment.severity)].title,
        'assigned' : assignee_name}
 
     sendmail(
-        FROM_MAIL, get_cc_list(event.object),
-        '"%s" package assignment' % event.object.title, msg)
+        FROM_MAIL, get_cc_list(package_assignment.bug),
+        '"%s" package assignment' % package_assignment.bug.title, msg)
 
-def notify_bug_product_infestation_added(event):
+def notify_bug_product_infestation_added(product_infestation, event):
     """Notify CC'd list that this bug has infested a
     product release."""
-    bpi = event.cause
-
     msg = """\
 Product: %(product)s
 Infestation: %(infestation)s
-""" % {'product' : bpi.productrelease.product.name + " " + bpi.productrelease.version,
-       'infestation' : BugInfestationStatus.items[bpi.infestationstatus].title}
+""" % {'product' :
+         product_infestation.productrelease.product.name + " " +
+         product_infestation.productrelease.version,
+       'infestation' : BugInfestationStatus.items[product_infestation.infestationstatus].title}
 
     sendmail(
-        FROM_MAIL, get_cc_list(event.object),
-        '"%s" product infestation' % event.object.title, msg)
+        FROM_MAIL, get_cc_list(product_infestation.bug),
+        '"%s" product infestation' % product_infestation.bug.title, msg)
 
-def notify_bug_package_infestation_added(event):
+def notify_bug_package_infestation_added(package_infestation, event):
     """Notify CC'd list that this bug has infested a
     source package release."""
-    bpi = event.cause
-
     msg = """\
 Source Package: %(package)s
 Infestation: %(infestation)s
 """ % {'package' :
-         bpi.sourcepackagerelease.sourcepackage.name + " " +
-         bpi.sourcepackagerelease.version,
-       'infestation' : BugInfestationStatus.items[bpi.infestationstatus].title}
+         package_infestation.sourcepackagerelease.sourcepackage.name + " " +
+         package_infestation.sourcepackagerelease.version,
+       'infestation' : BugInfestationStatus.items[package_infestation.infestationstatus].title}
 
     sendmail(
-        FROM_MAIL, get_cc_list(event.object),
-        '"%s" package infestation' % event.object.title, msg)
+        FROM_MAIL, get_cc_list(package_infestation.bug),
+        '"%s" package infestation' % package_infestation.bug.title, msg)
 
-def notify_bug_comment_added(event):
+def notify_bug_comment_added(comment, event):
     """Notify CC'd list that a comment was added to this bug."""
     msg = """\
 %s said:
 
 %s
 
-%s""" % (event.cause.owner.displayname,
-         event.cause.title,
-         event.cause.contents)
+%s""" % (comment.owner.displayname,
+         comment.title,
+         comment.contents)
 
     sendmail(
-        FROM_MAIL, get_cc_list(event.object),
-        'Comment on "%s"' % event.object.title, msg)
+        FROM_MAIL, get_cc_list(comment.bug),
+        'Comment on "%s"' % comment.bug.title, msg)
 
-def notify_bug_external_ref_added(event):
+def notify_bug_external_ref_added(ext_ref, event):
     """Notify CC'd list that a new external reference has
     been added for this bug."""
-    ber = event.cause
-
     msg = """\
 Bug Ref Type: %(ref_type)s
 Data: %(data)s
 Description: %(description)s
-""" % {'ref_type' : BugExternalReferenceType.items[int(ber.bugreftype)].title,
-       'data' : ber.data,
-       'description' : ber.description}
+""" % {'ref_type' : BugExternalReferenceType.items[int(ext_ref.bugreftype)].title,
+       'data' : ext_ref.data,
+       'description' : ext_ref.description}
 
     sendmail(
-        FROM_MAIL, get_cc_list(event.object),
-        '"%s" external reference added' % event.object.title, msg)
+        FROM_MAIL, get_cc_list(ext_ref.bug),
+        '"%s" external reference added' % ext_ref.bug.title, msg)
 
-def notify_bug_watch_added(event):
+def notify_bug_watch_added(watch, event):
     """Notify CC'd list that a new watch has been added for this
     bug."""
-    bw = event.cause
-
     msg = """\
 Bug Tracker: %(bug_tracker)s
 Remote Bug: %(remote_bug)s
-""" % {'bug_tracker' : bw.bugtracker.title, 'remote_bug' : bw.remotebug}
+""" % {'bug_tracker' : watch.bugtracker.title, 'remote_bug' : watch.remotebug}
 
     sendmail(
-        FROM_MAIL, get_cc_list(event.object),
-        '"%s" watch added' % event.object.title, msg)
+        FROM_MAIL, get_cc_list(watch.bug),
+        '"%s" watch added' % watch.bug.title, msg)

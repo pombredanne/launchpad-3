@@ -1,6 +1,8 @@
+from datetime import datetime
 
 # Zope
 from zope.interface import implements
+
 # SQL imports
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
@@ -52,10 +54,4 @@ def BugExternalRefFactory(context, **kw):
     bug = context.context.bug
     owner = 1 # Will be id of logged in user
     datecreated = datetime.utcnow()
-    ber = BugExternalRef(bug=bug, owner=owner, datecreated=datecreated, **kw)
-
-    ext_ref_added = BugExternalRefAddedEvent(Bug.get(bug), ber)
-    notify(ext_ref_added)
-    return ber
-
-
+    return BugExternalRef(bug=bug, owner=owner, datecreated=datecreated, **kw)

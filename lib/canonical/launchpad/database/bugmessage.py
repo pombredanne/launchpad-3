@@ -1,3 +1,5 @@
+from datetime import datetime
+from email.Utils import make_msgid
 
 # Zope
 from zope.interface import implements
@@ -34,11 +36,8 @@ class BugMessage(SQLBase):
 def BugMessageFactory(context, **kw):
     bug = context.context.context.id # view.comments.bug
     # XXX Brad Bollenbach this bug message is being set to owner 1
-    bm =  BugMessage(
+    return BugMessage(
             bug=bug, parent=None, datecreated=datetime.utcnow(),
             ownerID=1, rfc822msgid=make_msgid('malone'), **kw)
-    comment_added = BugCommentAddedEvent(Bug.get(bug), bm)
-    notify(comment_added)
-    return bm
 
 
