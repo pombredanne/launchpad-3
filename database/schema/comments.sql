@@ -11,6 +11,8 @@ COMMENT ON COLUMN Project.lastdoap IS 'This column stores a cached copy of the l
 COMMENT ON COLUMN Project.name IS 'A short lowercase name uniquely identifying the product. Use cases include being used as a key in URL traversal.';
 COMMENT ON COLUMN Project.sourceforgeproject IS 'The SourceForge project name for this project. This is not unique as SourceForge doesn\'t use the same project/product structure as DOAP.';
 COMMENT ON COLUMN Project.freshmeatproject IS 'The FreshMeat project name for this project. This is not unique as FreshMeat does not have the same project/product structure as DOAP';
+COMMENT ON COLUMN Project.reviewed IS 'Whether or not someone at Canonical has reviewed this project.';
+COMMENT ON COLUMN Project.active IS 'Whether or not this project should be considered active.';
 
 
 -- ProjectRelationship
@@ -40,7 +42,8 @@ COMMENT ON COLUMN Product.lastdoap IS 'This column stores a cached copy of the l
 -- COMMENT ON COLUMN Product.manifest IS 'The Product manifest, if it exists, tells us exactly which branches are combined to make up the source of this product. Manifests are a Sourcerer invention, mainly used for distribution packaging, but they can apply equally well to an upstream Product. If a manifest exists for this product then this field points to it.';
 COMMENT ON COLUMN Product.sourceforgeproject IS 'The SourceForge project name for this product. This is not unique as SourceForge doesn\'t use the same project/product structure as DOAP.';
 COMMENT ON COLUMN Product.freshmeatproject IS 'The FreshMeat project name for this product. This is not unique as FreshMeat does not have the same project/product structure as DOAP';
-
+COMMENT ON COLUMN Product.reviewed IS 'Whether or not someone at Canonical has reviewed this product.';
+COMMENT ON COLUMN Product.active IS 'Whether or not this product should be considered active.';
 
 
 -- ProductLabel
@@ -85,6 +88,19 @@ COMMENT ON COLUMN POTMsgSet.filereferences IS 'The list of files and their line 
 COMMENT ON COLUMN POTMsgSet.sourcecomment IS 'The comment that was extracted from the source code.';
 COMMENT ON COLUMN POTMsgSet.flagscomment IS 'The flags associated with this set (like c-format).';
 
+-- POTemplate
+COMMENT ON TABLE POTemplate IS 'This table stores a pot file for a given product.';
+COMMENT ON COLUMN POTemplate.rawfile IS 'The pot file itself in raw mode.';
+COMMENT ON COLUMN POTemplate.rawimporter IS 'The person that attached the rawfile.';
+COMMENT ON COLUMN POTemplate.daterawimport IS 'The date when the rawfile was attached.';
+COMMENT ON COLUMN POTemplate.rawimportstatus IS 'The status of the import: 0 pending import, 1 imported, 2 failed.';
+
+-- POFile
+COMMENT ON TABLE POFile IS 'This table stores a po file for a given product.';
+COMMENT ON COLUMN POFile.rawfile IS 'The pot file itself in raw mode.';
+COMMENT ON COLUMN POFile.rawimporter IS 'The person that attached the rawfile.';
+COMMENT ON COLUMN POFile.daterawimport IS 'The date when the rawfile was attached.';
+COMMENT ON COLUMN POFile.rawimportstatus IS 'The status of the import: 0 pending import, 1 imported, 2 failed.';
 
 /*
   Buttress
@@ -113,35 +129,6 @@ COMMENT ON COLUMN CVERef.owner IS 'This refers to the person who created the ent
 COMMENT ON TABLE BugExternalRef IS 'A table to store web links to related content for bugs.';
 COMMENT ON COLUMN BugExternalRef.bug IS 'The bug to which this URL is relevant.';
 COMMENT ON COLUMN BugExternalRef.owner IS 'This refers to the person who created the link.';
-
-/*
-  Soyuz
-*/
--- Are these soyuz or butress?
-COMMENT ON COLUMN SourcePackage.sourcepackagename IS 
-    'A lowercase name identifying the sourcepackage';
-COMMENT ON COLUMN SourcePackageName.name IS
-    'A lowercase name identifying one or more sourcepackages';
-COMMENT ON COLUMN BinaryPackageName.name IS
-    'A lowercase name identifying one or more binarypackages';
-COMMENT ON COLUMN SourcePackage.srcpackageformat IS 
-    'The format of this source package, e.g. DPKG, RPM, EBUILD, etc.';
-COMMENT ON COLUMN BinaryPackage.architecturespecific IS 'This field indicates whether or not a binarypackage is architecture-specific. If it is not specific to any given architecture then it can automatically be included in all the distroarchreleases which pertain.';
-
-
-/* Lucille's configuration */
-
-COMMENT ON COLUMN distribution.lucilleconfig IS 'Configuration
-information which lucille will use when processing uploads and
-generating archives for this distribution';
-
-COMMENT ON COLUMN distrorelease.lucilleconfig IS 'Configuration
-information which lucille will use when processing uploads and
-generating archives for this distro release';
-
-
-COMMENT ON COLUMN ArchArchive.name IS 'The archive name, usually in the format of an email address';
-
 
 /* BugInfestation */
 
@@ -185,6 +172,36 @@ COMMENT ON COLUMN BugPackageInfestation.dateverified IS 'The timestamp when the 
 COMMENT ON COLUMN BugPackageInfestation.lastmodified IS 'The timestamp when this infestation report was last modified in any way. For example, when the infestation was adjusted, or it was verified, or otherwise modified.';
 
 COMMENT ON COLUMN BugPackageInfestation.lastmodifiedby IS 'The person who touched this infestation report last, in any way.';
+
+
+/*
+  Soyuz
+*/
+-- Are these soyuz or butress?
+COMMENT ON COLUMN SourcePackage.sourcepackagename IS 
+    'A lowercase name identifying the sourcepackage';
+COMMENT ON COLUMN SourcePackageName.name IS
+    'A lowercase name identifying one or more sourcepackages';
+COMMENT ON COLUMN BinaryPackageName.name IS
+    'A lowercase name identifying one or more binarypackages';
+COMMENT ON COLUMN SourcePackage.srcpackageformat IS 
+    'The format of this source package, e.g. DPKG, RPM, EBUILD, etc.';
+COMMENT ON COLUMN BinaryPackage.architecturespecific IS 'This field indicates whether or not a binarypackage is architecture-specific. If it is not specific to any given architecture then it can automatically be included in all the distroarchreleases which pertain.';
+
+
+/* Lucille's configuration */
+
+COMMENT ON COLUMN distribution.lucilleconfig IS 'Configuration
+information which lucille will use when processing uploads and
+generating archives for this distribution';
+
+COMMENT ON COLUMN distrorelease.lucilleconfig IS 'Configuration
+information which lucille will use when processing uploads and
+generating archives for this distro release';
+
+
+COMMENT ON COLUMN ArchArchive.name IS 'The archive name, usually in the format of an email address';
+
 
 
 -- DistroQueue
@@ -298,4 +315,5 @@ COMMENT ON VIEW SourcePackageFilePublishing IS 'This view is used mostly by Luci
 COMMENT ON VIEW BinaryPackageFilePublishing IS 'This view is used mostly by Lucille while performing publishing and unpublishing operations. It lists all the files associated with a binarypackage and collates all the textual representations needed for publishing components etc to allow rapid queries from SQLObject.';
 COMMENT ON VIEW SourcePackagePublishingView IS 'This view is used mostly by Lucille while performing publishing¸ unpublishing, domination, superceding and other such operations. It provides an ID equal to the underlying SourcePackagePublishing record to permit as direct a change to publishing details as is possible. The view also collates useful textual data to permit override generation etc.';
 COMMENT ON VIEW BinaryPackagePublishingView IS 'This view is used mostly by Lucille while performing publishing¸ unpublishing, domination, superceding and other such operations. It provides an ID equal to the underlying PackagePublishing record to permit as direct a change to publishing details as is possible. The view also collates useful textual data to permit override generation etc.';
+
 
