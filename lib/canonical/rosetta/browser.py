@@ -158,17 +158,17 @@ class ViewProduct:
         description = self.form['description']
         copyright = self.form['copyright']
         path = self.form['path']
-        priority = self.form['priority']
+        
         # XXX Carlos Perello Marin 27/11/04 this check is not yet being done.
         # check to see if there is an existing product with
         # this name.
         # get the launchpad person who is creating this product
         # XXX: Carlos Perello Marin 27/11/04 We should force this page to be
         # used under authenticated users.
-#        owner = IPerson(self.request.principal)
+        owner = IPerson(self.request.principal)
         # Now create a new product in the db
         potemplate = POTemplate(product=self.context.id,
-                                priority=priority,
+                                priority=1,
                                 branch=1,
                                 name=name,
                                 title=title,
@@ -178,10 +178,44 @@ class ViewProduct:
                                 datecreated=UTC_NOW,
                                 path=path,
                                 iscurrent=False,
-                                messagecount=0)
-#                                owner=owner)
+                                messagecount=0,
+                                owner=owner)
+
         # now redirect to view the page
         self.request.response.redirect(name)
+        
+        return
+
+        # XXX: Carlos Perello Marin 02/12/2004 Disabled the file upload
+        # because we are not getting the upload :-?
+
+        file = self.form['file']
+
+        # I've seen this happen with Epiphany once, so it seemed worth it to
+        # put a check in. Restarting Epiphany fixed it, though.
+        # -- Dafydd, 2004/11/25
+
+        if file == u'':
+            return
+
+        filename = file.filename
+
+        if filename.endswith('.pot'):
+
+            potfile = file.read()
+
+            from canonical.rosetta.pofile import POParser
+            
+            parser = POParser()
+
+            parser.write(potfile)
+            parser.finish()
+            
+
+            potemplate.rawfile = base64.encodestring(potfile)
+            potemplate.daterawimport = UTC_NOW
+            potemplate.context.rawimporter = owner
+            potemplate.context.rawimportstatus = RosettaImportStatus.PENDING.value
 
 
 class TemplateLanguages:

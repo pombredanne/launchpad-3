@@ -33,12 +33,18 @@
             name="+index"
             template="../templates/potemplate-index.pt"
             lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/+index" />
+    </browser:pages>
+    
+    <browser:pages
+        for="canonical.launchpad.interfaces.IPOTemplate"
+        permission="launchpad.AnyPerson"
+        class="canonical.rosetta.browser.ViewPOTemplate">
         <browser:page
             name="+edit"
             template="../templates/potemplate-edit.pt"
             lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/+edit" />
-    </browser:pages>
-
+    </browser:pages> 
+        
     <browser:pages for="canonical.launchpad.interfaces.IPOTemplate"
         permission="launchpad.AnyPerson"
         class="canonical.rosetta.browser.TranslatePOTemplate"

@@ -31,7 +31,7 @@
 
         <legend>POTemplate Details</legend>
 
-        <form action="+newpotemplate" method="post">
+        <form action="+newpotemplate" method="POST" enctype="multipart/form-data">
 
         <div class="field">
 
@@ -112,20 +112,17 @@
                        value="po/" />
         </div>
 
-        <div class="field">
+<!--        <div class="field">
 
-            <label>priority</label>
-
-            <span class="fieldRequired" title="Required">(Required)</span>
+            <label>file</label>
 
                 <div class="formHelp">
-                  The priority this template has over other po templates
+                  The po template file we want to translate
                 </div>
 
-                <input type="text" name="priority" size="10"
-                       value="" />
+                <input name="file" type="file" />
         </div>
-
+-->
 
 
         <div class="formControls">
