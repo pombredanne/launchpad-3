@@ -1722,7 +1722,7 @@ CREATE TABLE BugActivity (
   whatchanged   text NOT NULL,
   oldvalue      text NOT NULL,
   newvalue      text NOT NULL,
-  message       text NOT NULL
+  message       text
 );
 
 
