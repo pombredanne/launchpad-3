@@ -65,8 +65,7 @@ class RosettaProjects:
         return iter(RosettaProject.select())
 
     def __getitem__(self, name):
-        # XXX: encoding should not be necessary
-        ret = RosettaProject.selectBy(name=name.encode('ascii'))
+        ret = RosettaProject.selectBy(name=name)
 
         if ret.count() == 0:
             raise KeyError, name
@@ -75,11 +74,11 @@ class RosettaProjects:
 
     def new(self, name, displayName, title, url, description, owner):
         if type(url) != NoneType:
-            url = url.encode('ascii')
-        return RosettaProject(name=name.encode('ascii'),
-            displayName=displayName.encode('ascii'),
-            title=title.encode('ascii'), url=url,
-            description=description.encode('ascii'),
+            url = url
+        return RosettaProject(name=name,
+            displayName=displayName,
+            title=title, url=url,
+            description=description,
             owner=owner, datecreated='now')
 
     def search(self, query):
@@ -142,7 +141,7 @@ class RosettaProduct(SQLBase):
             POTemplate.product = %d AND
             POTemplate.name = %s''' %
             # XXX: encoding should not be necessary
-            (self.id, quote(name.encode('ascii'))))
+            (self.id, quote(name)))
 
         if results.count() == 0:
             raise KeyError, name
@@ -202,11 +201,11 @@ class RosettaPOTemplate(SQLBase):
             Language.code = %s
             """ % (self.id,
                    variantspec,
-                   quote(language_code).encode('ascii')),
+                   quote(language_code)),
             clauseTables=('Language',))
 
         if ret.count() == 0:
-            raise KeyError, code
+            raise KeyError, language_code
         else:
             return ret[0]
 
@@ -622,7 +621,7 @@ class RosettaLanguages:
     implements(ILanguages)
 
     def __getitem__(self, code):
-        results = RosettaLanguage.selectBy(code=code.encode('ascii'))
+        results = RosettaLanguage.selectBy(code=code)
 
         if results.count() == 0:
             raise KeyError, code
@@ -650,7 +649,7 @@ class RosettaPerson(SQLBase):
     _table = 'Person'
 
     _columns = [
-        StringCol(name='presentationName', dbName='presentationname'),
+        StringCol(name='displayName', dbName='displayname'),
     ]
 
 #    isMaintainer
