@@ -1,0 +1,53 @@
+Introduction
+============
+
+Vocabularies are lists of terms. In Launchpad's Component Architecture (CA), a
+vocabulary is a list of terms that a widget (normally a selection style widget)
+"speaks", i.e. its allowed values.
+
+This document is about some of the vocabularies found in Launchpad.
+
+Values, Tokens, and Titles
+==========================
+
+In Launchpad, we generally use "tokenized vocabularies." Each term in a
+vocabulary has a value, token and title. In human terms, a term would be
+rendered in a select widget like this:
+
+<option value="$token">$title</option>
+
+The Value is probably the data you would store in your DB. The Token is used to
+uniquely identify a Term, and the Title is the thing you display to the user.
+
+Have a look at a few of the vocabularies below for clarification.
+
+Launchpad Vocabularies
+======================
+
+There are two kinds of vocabularies in Launchpad: enumerable and
+non-enumerable. In human terms, enumerable vocabularies are short and sweet
+enough to render in a select widget, where non-enumerable vocabularies require
+a special query interface to make it easy to choose just one or a couple of
+options from several hundred, or several thousand, or more.
+
+Enumerable Vocabularies
+=======================
+
+XXX: document your vocabularies here please!
+
+Non-Enumerable Vocabularies
+===========================
+
+o ProductVocabulary - the list of selectable products.
+
+    >>> from zope.schema.vocabulary import getVocabularyRegistry
+    >>> vocabulary_registry = getVocabularyRegistry()
+    >>> product_vocabulary = vocabulary_registry.get(None, "Product")
+    >>> gnome_products = product_vocabulary.search("gnome")
+    >>> [product_term.title for product_term in gnome_products]
+    [u'The Evolution Groupware Application', u'The GNOME Terminal Emulator', u'python gnome2 dev', u'The Gnome Panel Applets', u'Ubuntu']
+    >>> arch = product_vocabulary.getTermByToken("arch-mirrors")
+    >>> arch.title 
+    u'Arch archive mirrors'
+
+XXX: document more vocabularies here, particularly when they break!

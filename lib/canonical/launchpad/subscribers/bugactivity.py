@@ -35,11 +35,11 @@ def what_changed(sqlobject_modified_event):
                 val_after.version)
         if isinstance(val_before, ProductRelease):
             val_before = "%s %s" % (
-                val_before.product.fullname(),
+                val_before.product.name,
                 val_before.version)
         if isinstance(val_after, ProductRelease):
             val_after = "%s %s" % (
-                val_after.product.fullname(),
+                val_after.product.name,
                 val_after.version)
         if val_before != val_after:
             changes[f] = [val_before, val_after]
@@ -93,12 +93,12 @@ def record_product_assignment_added(product_assignment, object_created_event):
         bug=product_assignment.bugID,
         datechanged=datetime.utcnow(),
         person=int(product_assignment.ownerID),
-        whatchanged='assigned to product ' + product_assignment.product.fullname())
+        whatchanged='assigned to product ' + product_assignment.product.name)
 
 def record_product_assignment_edited(product_assignment_edited, sqlobject_modified_event):
     changes = what_changed(sqlobject_modified_event)
     if changes:
-        product_name = sqlobject_modified_event.object_before_modification.product.fullname()
+        product_name = sqlobject_modified_event.object_before_modification.product.name
         right_now = datetime.utcnow()
         for changed_field in changes.keys():
             BugActivity(
@@ -139,7 +139,7 @@ def record_package_infestation_edited(package_infestation_edited, sqlobject_modi
 
 def record_product_infestation_added(product_infestation, object_created_event):
     product_release_name = "%s %s" % (
-        product_infestation.productrelease.product.fullname(),
+        product_infestation.productrelease.product.name,
         product_infestation.productrelease.version)
     BugActivity(
         bug=product_infestation.bugID,
@@ -151,7 +151,7 @@ def record_product_infestation_edited(product_infestation_edited, sqlobject_modi
     changes = what_changed(sqlobject_modified_event)
     if changes:
         product_release_name = "%s %s" % (
-            sqlobject_modified_event.object_before_modification.productrelease.product.fullname(),
+            sqlobject_modified_event.object_before_modification.productrelease.product.name,
             sqlobject_modified_event.object_before_modification.productrelease.version)
         right_now = datetime.utcnow()
         for changed_field in changes.keys():

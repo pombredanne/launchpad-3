@@ -187,55 +187,31 @@ class ProductVocabulary(SQLObjectVocabularyBase):
     _table = Product
 
     def _toTerm(self, obj):
-        product = obj.name
-        project = obj.project.name
-        if product == project:
-            token = product
-        else:
-            token = '%s %s' % (project, product)
-        return SimpleTerm(obj, token, obj.title)
+        return SimpleTerm(obj, obj.name, obj.title)
 
     def getTermByToken(self, token):
-        try:
-            project, product = token.split(None,1)
-        except ValueError:
-            project = product = token # If no project, assume it eq product
-        tab = self._table
-        objs = list(tab.select('''
-            product.project = project.id
-            AND product.name = %s AND project.name = %s
-            ''' % (quote(product), quote(project)),
-            ['Product', 'Project']
-            ))
+        objs = self._table.select(self._table.q.name == token)
         if len(objs) != 1:
             raise LookupError, token
         return self._toTerm(objs[0])
 
     def search(self, query):
-        '''Returns products where the product name contains the given
-        query. Returns an empty list if query is None or an empty string.
+        '''Returns products where the product name, displayname, title,
+        shortdesc, or description contain the given query. Returns an empty list
+        if query is None or an empty string.
 
         Note that this cannot use an index - if it is too slow we need
         full text searching.
 
         '''
-        if not query:
-            return []
-        query = query.lower()
-        like_query = quote('%%%s%%' % quote_like(query)[1:-1])
-        fti_query = quote(query)
-        sql = """
-            product.project = project.id AND (
-                project.fti @@ ftq(%s) 
-                OR product.fti @@ ftq(%s)
-                OR product.name LIKE %s
-                OR project.name LIKE %s
-                )""" % (fti_query, fti_query, like_query, like_query)
-        objs = [
-            self._toTerm(r)
-            for r in self._table.select(sql, ['Product', 'Project'])
-            ]
-        return objs
+        if query:
+            query = query.lower()
+            like_query = quote('%%%s%%' % quote_like(query)[1:-1])
+            fti_query = quote(query)
+            sql = "fti @@ ftq(%s)" % fti_query
+            return [self._toTerm(r) for r in self._table.select(sql)]
+
+        return []
 
 # We cannot refer to a BinaryPackage unambiguously by a name, as
 # we have no assurace that a generated name using $BinaryPackageName.name

@@ -43,16 +43,16 @@
   ...
                   <select name="product" size="5" multiple>
   ...
-                      <option value="launchpad-mirrors arch-mirrors">Arch archive mirrors</option>
+                      <option value="arch-mirrors">Arch archive mirrors</option>
   <BLANKLINE>
   <BLANKLINE>
-                      <option value="mozilla firefox">Mozilla Firefox</option>
+                      <option value="firefox">Mozilla Firefox</option>
   <BLANKLINE>
   <BLANKLINE>
                       <option value="iso-codes">The iso-codes</option>
   <BLANKLINE>
   <BLANKLINE>
-                      <option value="mozilla thunderbird">Mozilla Thunderbird</option>
+                      <option value="thunderbird">Mozilla Thunderbird</option>
   ...
                   </select>
   ...

@@ -97,26 +97,6 @@ class Product(SQLBase):
     releases = MultipleJoin('ProductRelease', joinColumn='product',
                              orderBy='-datereleased')
 
-    def fullname(self):
-        """Helper to generate a unique name based on product and project name.
-
-        Products cannot be identified uniquely by name, so use this helper
-        to generate a unique name based on product name and project name.
-        """
-        # XXX: This is clearly wrong.
-        #      1. use full variable names, not abbreviations like "prod"
-        #         except when the name would be very long.
-        #         Let's use "productname" instead of "prod".
-        #      2. This will always return self.name.  That's the bit that
-        #         is clearly wrong.
-        # - Steve Alexander, Tue Nov 30 16:46:36 UTC 2004
-        prod = self.name
-        proj = self.name
-        if prod == proj:
-            return prod
-        else:
-            return '%s %s' % (proj, prod)
-
     def checkPermission(self, principal, permission):
         if permission == 'launchpad.Edit':
             if self.id == principal.id:
