@@ -7,7 +7,8 @@ __metaclass__ = type
 
 import sets
 from zope.interface import Interface, implements
-from zope.component import queryView, getDefaultViewName, getUtility
+from zope.component import queryView, queryMultiView, getDefaultViewName, \
+    getUtility
 from zope.component.interfaces import IDefaultViewName
 from zope.schema import TextLine
 from zope.configuration.fields import GlobalObject, PythonIdentifier, Path
