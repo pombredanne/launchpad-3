@@ -2,6 +2,33 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-04 21:17:38 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1146
+
+    Summary:
+      setup the permissions properly so that only the product maintainer can
+ view, add and edit milestones
+    Revision:
+      launchpad--devel--0--patch-1146
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-259
+       setup the permissions properly so that only the product maintainer can view, add and edit milestones
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/milestone.py
+     lib/canonical/launchpad/security.py
+     lib/canonical/launchpad/security.zcml
+     lib/canonical/launchpad/templates/portlet-product-actions.pt
+     lib/canonical/launchpad/templates/product-index.pt
+     lib/canonical/launchpad/zcml/milestone.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-259
+
+
 2005-01-04 17:38:21 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1145
 
     Summary:

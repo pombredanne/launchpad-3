@@ -9,6 +9,7 @@
     <!-- CONTENT CLASSES -->
     <content class="canonical.launchpad.database.Milestone">
         <allow interface="canonical.launchpad.interfaces.IMilestone" />
+        <allow interface="canonical.launchpad.interfaces.IAuthorization" />
         <require
             permission="launchpad.AnyPerson"
             set_attributes="name title" />
@@ -38,8 +39,8 @@
         fields="name title"
         content_factory="canonical.launchpad.database.milestone.ProductMilestoneFactory"
         keyword_arguments="name title"
-        permission="launchpad.AnyPerson"
-        template="../templates/default-addform.pt"
+        permission="launchpad.Edit"
+        template="../templates/launchpad-addform.pt"
         lp:url="doap/products/$Product.name/+milestone">
         <browser:widget
            field="title"
@@ -53,8 +54,8 @@
         schema="canonical.launchpad.interfaces.IMilestone"
         fields="name title"
         label="Edit Product Milestone"
-        permission="launchpad.AnyPerson"
-        template="../templates/default-editform.pt"
+        permission="launchpad.Edit"
+        template="../templates/launchpad-editform.pt"
         lp:url="doap/products/$Product.name/milestones/$Milestone.name/+edit">
         <browser:widget
            field="title"

@@ -16,9 +16,11 @@
         <a href="+addseries">Add Series</a><br />
         <img src="/++resource++edit.gif">
         <a href="+addrelease">Add Release</a><br />
-        <img src="/++resource++edit.gif">
-        <a href="+milestone">Add Milestone</a>
-
+        <span tal:omit-tag=""
+              tal:condition="python:request.principal and request.principal.id == context.owner.id">
+            <img src="/++resource++edit.gif">
+            <a href="+milestone">Add Milestone</a>
+        </span>
         </div>
     </div>
 </div>
