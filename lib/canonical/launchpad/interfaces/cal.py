@@ -9,8 +9,6 @@ from schoolbell.interfaces import IEditCalendar
 
 class ILaunchpadCalendar(IEditCalendar):
     """Launchpad specific calendar.
-
-    TODO: make it inherit IEditCalendar.
     """
 
     owner = Attribute(_("The person who can edit this calendar"))
@@ -36,6 +34,19 @@ class ICalendarOwner(Interface):
         title=_('Calendar'),
         schema=ILaunchpadCalendar,
         description=_("""The calendar for this object."""))
+
+class ICalendarSubscriptionSet(Interface):
+    """A list of calendars a user is subscribed to."""
+    owner = Attribute(_("The owner of the subscriptions"))
+    def __iter__():
+        """Iterate over the calendars the user is subscribed to."""
+    def __contains__(calendar):
+        """Returns True if the calendar has been subscribed to."""
+    def subscribe(calendar):
+        """Subscribe to a calendar."""
+    def unsubscribe(calendar):
+        """Unsubscribe from a calendar.  Raises an exception if the
+        calendar hasn't been subscribed to."""
 
 
 class ICalendarView(Interface):

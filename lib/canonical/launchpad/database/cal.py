@@ -63,7 +63,6 @@ class CalendarSubscription(SQLBase):
     calendar = ForeignKey(dbName='calendar', notNull=True,
                           foreignKey='Calendar')
 
-
 class CalendarEvent(SQLBase, CalendarEventMixin):
     implements(ICalendarEvent)
 
