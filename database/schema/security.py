@@ -20,6 +20,9 @@ class DbObject(object):
         self.arguments = arguments
         self.language = language
 
+    def __eq__(self, other):
+        return self.schema == other.schema and self.name == other.name
+
     def fullname(self):
         fn = "%s.%s" % (
                 quote_identifier(self.schema), quote_identifier(self.name)

@@ -2,6 +2,104 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-11 22:07:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1308
+
+    Summary:
+      Add generated database diagrams (initial cut)
+    Revision:
+      launchpad--devel--0--patch-1308
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--dbdiagrams--0--base-0
+       tag of stuart.bishop@canonical.com/launchpad--devel--1--patch-124
+    
+     * stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-1
+       Example to demonstrate postgresql_autodoc output
+    
+     * stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-2
+       Work in progress
+    
+     * stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-3
+       Work in progress
+    
+     * stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-4
+       Post-processing proof of concept working
+    
+     * stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-5
+       Work in progress
+    
+     * stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-6
+       Work in progress
+    
+     * stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-7
+       Work in progress
+    
+     * stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-8
+       tweaking
+    
+     * stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-9
+       tweaking
+    
+     * stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-10
+       Switch to postscript
+    
+     * stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-11
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-12
+       Add generated database diagrams (initial cut)
+    
+
+    new files:
+     database/schema/.arch-ids/diagram.cfg.id
+     database/schema/.arch-ids/diagram.py.id
+     database/schema/.arch-ids/dot.tmpl.id
+     database/schema/.arch-ids/hack.py.id
+     database/schema/.arch-ids/tst.dot.id
+     database/schema/diagram.cfg database/schema/diagram.py
+     database/schema/diagrams/.arch-ids/=id
+     database/schema/diagrams/.arch-ids/README.id
+     database/schema/diagrams/.arch-ids/buttress.ps.id
+     database/schema/diagrams/.arch-ids/doap.ps.id
+     database/schema/diagrams/.arch-ids/foaf.ps.id
+     database/schema/diagrams/.arch-ids/malone.ps.id
+     database/schema/diagrams/.arch-ids/misc.ps.id
+     database/schema/diagrams/.arch-ids/rosetta.ps.id
+     database/schema/diagrams/.arch-ids/soyuz.ps.id
+     database/schema/diagrams/README
+     database/schema/diagrams/buttress.ps
+     database/schema/diagrams/doap.ps
+     database/schema/diagrams/foaf.ps
+     database/schema/diagrams/malone.ps
+     database/schema/diagrams/misc.ps
+     database/schema/diagrams/rosetta.ps
+     database/schema/diagrams/soyuz.ps database/schema/dot.tmpl
+     database/schema/hack.py database/schema/tst.dot
+
+    modified files:
+     database/schema/Makefile database/schema/security.py
+     doc/changelog.txt
+
+    new directories:
+     database/schema/diagrams database/schema/diagrams/.arch-ids
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--dbdiagrams--0--base-0
+     stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-1
+     stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-2
+     stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-3
+     stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-4
+     stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-5
+     stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-6
+     stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-7
+     stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-8
+     stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-9
+     stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-10
+     stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-11
+     stuart.bishop@canonical.com/launchpad--dbdiagrams--0--patch-12
+
+
 2005-02-11 16:04:04 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1307
 
     Summary:
