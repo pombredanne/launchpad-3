@@ -359,9 +359,9 @@ class ISourcepackageBugAssignment(Interface):
             title=_('Severity'), vocabulary=BugSeverityVocabulary,
             required=True, default=int(dbschema.BugSeverity.NORMAL),
             )
-    binarypackage = Choice(
-            title=_('Binary Package'), required=False,
-            vocabulary='Binarypackage'
+    binarypackagename = Choice(
+            title=_('Binary Package Name'), required=False,
+            vocabulary='BinarypackageName'
             )
     assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
 

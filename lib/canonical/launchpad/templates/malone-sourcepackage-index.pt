@@ -29,8 +29,7 @@
         <tr tal:repeat="bugass context/bugs"
             tal:attributes="onclick
                 string:window.location='../../bugs/${bugass/bug/id}';">
-            <td tal:content="bugass/bug/id">xxx
-            </td>
+            <td tal:content="bugass/bug/id">#</td>
             <td>
                 <a href="#" 
                     tal:attributes="href string:../../bugs/${bugass/bug/id}"
@@ -46,15 +45,14 @@
             <td tal:content="bugass/priority/lp:BugPriority">
                 $SourcepackageBugAssignment.priority
             </td>
-            <td tal:condition="bugass/binarypackage">
-                <span tal:content="bugass/binarypackage/binarypackagename/name">
+            <td tal:condition="bugass/binarypackagename">
+                <span
+                tal:content="bugass/binarypackage/binarypackagename/name">
                     $BinarypackageName.name
-                </span>&ndash;<span tal:content="bugass/binarypackage/version">
-                    $Binarypackage.version
                 </span>
             </td>
-            <td tal:condition="not:bugass/binarypackage">
-                (none)
+            <td tal:condition="not:bugass/binarypackagename">
+                (not specified)
             </td>
         </tr>
     </table>
