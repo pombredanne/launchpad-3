@@ -17,31 +17,37 @@
             <th>Severity</th>
             <th>Priority</th>
             <th>Source Package</th>
+            <th>Binary Package</th>
         </tr> 
-        <tr xtal:repeat="bugass context/bugs"
-            xtal:attributes="onclick
+        <tr tal:repeat="bugass context/bugassignments"
+            tal:attributes="onclick
                 string:window.location='../../bugs/${bugass/bug/id}';">
             <td>
                 <a href="#" 
-                    xtal:attributes="href string:../../bugs/${bugass/bug/id}"
-                    xtal:content="bugass/bug/title">
-                    $Bug.title</a>
+                    tal:attributes="href string:../../bugs/${bugass/bug/id}"
+                    tal:content="bugass/bug/title">$Bug.title</a>
             </td>
-            <td xtal:content="bugass/bugstatus/lp:BugAssignmentStatus">
+            <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">
                 $SourcepackageBugAssignment.bugstatus
             </td>
-            <td xtal:content="bugass/severity/lp:BugSeverity">
+            <td tal:content="bugass/severity/lp:BugSeverity">
                 $SourcepackageBugAssignment.severity
             </td>
-            <td xtal:content="bugass/priority/lp:BugPriority">
+            <td tal:content="bugass/priority/lp:BugPriority">
                 $SourcepackageBugAssignment.priority
             </td>
-            <td xtal:content="bugass/binarypackage">
-                $SourcepackageBugAssignment.binarypackage
+            <td tal:content="bugass/sourcepackage/name">
+                $Sourcepackage.name
+            </td>
+            <td>
+                <span tal:content="bugass/binarypackage/binarypackagename/name">
+                    $BinarypackageName.name
+                </span>&ndash;<span tal:content="bugass/binarypackage/version">
+                    $Binarypackage.version
+                </span>
             </td>
         </tr>
     </table>
-
 
 </div>
 

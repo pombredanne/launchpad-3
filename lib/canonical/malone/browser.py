@@ -404,6 +404,11 @@ class SourcepackageContainer(object):
         for row in self.table.select():
             yield row
 
+    _bugassignments = SourcepackageBugAssignment
+
+    def bugassignments(self, orderby='-id'):
+        # TODO: Ordering
+        return self._bugassignments.select(orderBy=orderby)
 
 class BugExternalRefsView(object):
     implements(IBugExternalRefsView)

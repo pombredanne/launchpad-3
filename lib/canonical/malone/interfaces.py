@@ -2,7 +2,7 @@
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('malone')
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
 
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
@@ -72,6 +72,9 @@ class ISourcepackageContainer(Interface):
 
     def __iter__():
         """Iterate through Sourcepacages."""
+
+    def bugassignments(self, orderby='-id'):
+        """Sequence of SourcepackageBugAssignment, in order"""
 
 class IBugSubscriptionContainer(Interface):
     """A container for IBugSubscription objects."""
