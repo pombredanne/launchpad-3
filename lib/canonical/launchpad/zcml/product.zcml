@@ -56,16 +56,6 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"
         permission="zope.Public"
-        class="canonical.launchpad.browser.ProductView" 
-        layer="malone">
-        <browser:page name="+malone-index"
-            template="../templates/malone_skin/malone-index.pt"
-            lp:url="malone/products/$Product.name/" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProduct"
-        permission="zope.Public"
         class="canonical.rosetta.browser.ProductView"
         lp:url="Rosetta/projects/$Project.name/$Product.name">
         <browser:page
@@ -92,6 +82,16 @@
             name="+malone-index"
             template="../templates/product-bugs.pt"
             lp:url="malone/projects/$Project.name/$Product.name/" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProduct"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ProductBugsView" 
+        layer="malone">
+        <browser:page name="+malone-index"
+            template="../templates/malone_skin/malone-index.pt"
+            lp:url="malone/products/$Product.name/" />
     </browser:pages>
 
     <browser:pages

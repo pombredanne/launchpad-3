@@ -2,12 +2,12 @@
 <metal:block fill-slot="main">
     <form class="central">
         <div>
-            <label for="q">
+            <label for="searchtext">
                 Search Ubuntu bug reports:
             </label>
         </div>
         <div>
-            <input type="text" id="q" size="36">
+            <input type="text" name="searchtext" id="searchtext" size="36" />
         </div>
         <ul class="navigation">
             <li>
@@ -18,6 +18,10 @@
             </li>
         </ul>
     </form>
+ 
+    <!-- XXX: Brad Bollenbach, 2005-02-08: I'd like to see this in a small
+    font, with a thin line separating this from the search results. I'm
+    commenting it out for right now because it's too visible in the page.
     <div class="stats">
         <div>
             48 974 bugs and 110 092 tasks filed
@@ -26,5 +30,132 @@
             Last 24 hours: 3402 bugs and 2778 tasks filed, 23 tasks reopened, 1104 resolved
         </div>
     </div>
+    -->
+
+    <tal:searchresults define="bugtasks view/bugtask_search">
+		<form class="list manipulation" tal:condition="bugtasks">
+			<table>
+				<tbody>
+					<tr>
+						<th>
+							<label for="viewas">View as:</label>
+						</th>
+						<td>
+							<label><input type="radio" name="viewas" checked="checked" />list</label>
+							<label><input type="radio" name="viewas" />table</label>
+						</td>
+						<th>
+							<label for="sortby">Sort by:</label>
+						</th>
+						<td>
+							<select
+								id="sortby"
+								title="Sets the order in which bug reports are displayed. To do one sort within another, perform the secondary sort then the primary one. For example, to sort by priority and by severity within each priority, choose &#8220;Severity&#8221;, &#8220;Change&#8221;, then &#8220;Priority&#8221;, &#8220;Change&#8221;."
+							>
+							<!-- if XMLRPC, title="To do one sort within another, perform the secondary sort then the primary one. For example, to sort by priority and by severity within each priority, choose &#8220;Severity&#8221;, then &#8220;Priority&#8221;." -->
+								<option>Age</option>
+								<option>Assignee</option>
+								<option>Package</option>
+								<option>Severity</option>
+							</select>
+							<input
+								type="submit"
+								value="Change"
+								title="To change the list display, click this button."
+							>
+							<!-- + "If you upgrade to currentBrowser versionNumber or higher, you won&#8217;t need to do this any more." -->
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</form>
+		<form id="changemultiple" tal:condition="bugtasks">
+			<table class="buglist data">
+				<tbody>
+					<tr>
+						<td><input type="checkbox" value="38"></td>
+						<td class="bugnumber">38.</td>
+						<td>
+							<div>
+								<strong><a href="38">Pride and prejudice in About box</a></strong>
+								<small>(7 months old)</small>
+							</div>
+							<div>
+								<small>
+									In
+									<code>ubuntu-filer</code>,
+									assigned to
+									<a class="doomed" href="?assignee=jdub&amp;milestone=1.1">jdub for 1.1</a>
+									<!-- class="doomed" because it's a future milestone -->
+									&#8212;
+									<em>medium</em>
+								</small>
+							</div>
+							<div>
+								<small>
+									Fixed in
+									<a href="whatever" class="behind">1 other distribution</a>
+									<!--- class="behind" because it's fixed elsewhere but not here -->
+								</small>
+							</div>
+						</td>
+					</tr>
+                    <!--
+					<tr>
+						<td><input type="checkbox" value="43"></td>
+						<td class="bugnumber">43.</td>
+						<td>
+							<div>
+								<strong><a href="38">About window in Firefox doesn't list contributors</a></strong>
+								<small>(1 week old)</small>
+							</div>
+							<div>
+								<small>In <code>mozilla-firefox</code>,
+								fixed by
+								<a href="?assignee=ben@bengoodger.com&amp;milestone=0.9">Ben Goodger in 0.9</a>
+								<small>&#8212;</small>
+								high
+							</div>
+							<div>
+								<small>Fixed in <a href="whatever">2 other distributions</a></small>
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<td><input type="checkbox" value="38"></td>
+						<td class="bugnumber">51.</td>
+						<td>
+							<div>
+								<strong><a href="51">Something silly about "File Roller" name</a></strong>
+								<small>(5 hours old)</small>
+							</div>
+							<div>
+								<small>
+									In no product,
+									not assigned
+									&#8212; no priority
+								</small>
+							</div>
+							<div>
+								<small>Not filed elsewhere</small>
+							</div>
+						</td>
+					</tr>
+                    -->
+				</tbody>
+			</table>
+			<div class="change">
+				<input type="submit" value="Change Selected Reports">
+			</div>
+			<div class="nav">
+				<a href="1-10">&larr; 1-10</a>
+				&bull;
+				<strong>11-20</strong>
+				&bull;
+				<a href="21-30">21-30 &rarr;</a>
+			</div>
+		</form>
+    </tal:searchresults>
+
 </metal:block>
 </html>
