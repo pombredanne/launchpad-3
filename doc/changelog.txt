@@ -2,6 +2,52 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-08 20:05:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1292
+
+    Summary:
+      Small fixes for the team's index page and a new pagetest for the team creation page.
+    Revision:
+      launchpad--devel--0--patch-1292
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-118
+       Cleanup of team/person creation code. Moving some docstring doctests to launchpad/doc/. Lots of fixes in docstrings.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-119
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-120
+       Small fixes for the team's index page and a new pagetest for the team creation page.
+    
+
+    new files:
+     lib/canonical/launchpad/doc/.arch-ids/nickname.txt.id
+     lib/canonical/launchpad/doc/nickname.txt
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-foaf-newteam.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-foaf-newteam.txt
+
+    removed files:
+     lib/canonical/foaf/tests/.arch-ids/test_nickname.py.id
+     lib/canonical/foaf/tests/test_nickname.py
+
+    modified files:
+     doc/changelog.txt lib/canonical/foaf/nickname.py
+     lib/canonical/foaf/utility.py
+     lib/canonical/launchpad/browser/logintoken.py
+     lib/canonical/launchpad/browser/people.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/templates/team-index.pt
+     lib/canonical/malone/debsync/malone.py
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-118
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-119
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-120
+
+
 2005-02-08 18:35:56 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1291
 
     Summary:

@@ -130,42 +130,49 @@ class IPersonSet(Interface):
     """The set of Persons."""
 
     def __getitem__(personid):
-        """Returns the person with the given id.
+        """Return the person with the given id.
 
-        Raises KeyError if there is no such person.
+        Raise KeyError if there is no such person.
         """
 
-    def new(*args, **kwargs):
+    def newPerson(*args, **kwargs):
         """Create a new Person with given keyword arguments.
         These keyword arguments will be passed to Person, which is an
         SQLBase class and will do all the checks needed before inserting
         anything in the database. Please refer to the Person implementation
         to see what keyword arguments are allowed."""
 
-    def get(personid, default=None):
-        """Returns the person with the given id.
+    def newTeam(*args, **kwargs):
+        """Create a new Team with given keyword arguments.
+        These keyword arguments will be passed to Person, which is an
+        SQLBase class and will do all the checks needed before inserting
+        anything in the database. Please refer to the Person implementation
+        to see what keyword arguments are allowed."""
 
-        Returns the default value if there is no such person.
+    def get(personid, default=None):
+        """Return the person with the given id.
+
+        Return the default value if there is no such person.
         """
 
     def getByEmail(email, default=None):
-        """Returns the person with the given email address.
+        """Return the person with the given email address.
 
-        Returns the default value if there is no such person.
+        Return the default value if there is no such person.
+        """
+
+    def getByName(name, default=None):
+        """Return the person with the given name.
+
+        Return the default value if there is no such person.
         """
     
-    def getByName(name):
-        """Returns the person with the given name."""
-    
     def getAll():
-        """Returns all People in a database"""
+        """Return all People in a database"""
 
     def getContributorsForPOFile(pofile):
-        """Returns the list of persons that have an active contribution for a
+        """Return the list of persons that have an active contribution for a
         concrete POFile."""
-
-    def createPerson(displayname, givenname, familyname, password, email):
-        """Creates a new person."""
 
 
 class IEmailAddress(Interface):

@@ -1128,7 +1128,8 @@ class POFile(SQLBase, RosettaStats):
                 person = self.rawimporter
             else:
                 # This import is here to prevent circular dependencies.
-                from canonical.launchpad.database.person import PersonSet
+                from canonical.launchpad.database.person import PersonSet, \
+                                                                createPerson
 
                 person_set = PersonSet()
 
@@ -1149,8 +1150,8 @@ class POFile(SQLBase, RosettaStats):
 
                     # We create a new user without a password.
                     try:
-                        person = person_set.createPerson(name, givenname,
-                            familyname, None, email)
+                        person = createPerson(email, name, givenname,
+                                              familyname, password=None)
                     except:
                         # We had a problem creating the person...
                         person = None

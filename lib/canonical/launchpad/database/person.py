@@ -93,7 +93,7 @@ class Person(SQLBase):
             return self.id == principal.id
 
     def browsername(self):
-        """Returns a name suitable for display on a web page.
+        """Return a name suitable for display on a web page.
 
         1. If we have a displayname, then browsername is the displayname.
 
@@ -388,16 +388,32 @@ class PersonSet(object):
         else:
             return person
 
-    def new(self, *args, **kw):
+    def newTeam(self, *args, **kw):
         """See IPersonSet."""
-        encryptor = getUtility(IPasswordEncryptor)
-        kw['password'] = encryptor.encrypt(kw['password'])
+        assert kw.get('teamownerID')
         return Person(**kw)
 
-    def getByName(self, name):
+    def newPerson(self, *args, **kw):
+        """See IPersonSet."""
+        assert not kw.get('teamownerID')
+        if kw.has_key('password'):
+            # encryptor = getUtility(IPasswordEncryptor)
+            # XXX: Carlos Perello Marin 22/12/2004 We cannot use getUtility
+            # from initZopeless scripts and Rosetta's import_daemon.py
+            # calls indirectly to this function :-(
+            from canonical.launchpad.webapp.authentication \
+                import SSHADigestEncryptor
+            encryptor = SSHADigestEncryptor()
+            kw['password'] = encryptor.encrypt(kw['password'])
+        return Person(**kw)
+
+    def getByName(self, name, default=None):
+        """See IPersonSet."""
         results = Person.selectBy(name=name)
-        assert results.count() == 1
-        return results[0]
+        if results.count() == 1:
+            return results[0]
+        else:
+            return default
 
     def get(self, personid, default=None):
         """See IPersonSet."""
@@ -433,101 +449,33 @@ class PersonSet(object):
             clauseTables=('POTranslationSighting', 'POMsgSet',),
             distinct=True, orderBy='displayname')
 
-    # XXX: Carlos Perello Marin 20/12/2004 We need this method from
-    # pofile.py, I think we should remove the function and use it as this
-    # method always.
-    def createPerson(self, displayname, givenname=None,
-                           familyname=None, password=None, email=None):
-        """Creates a new person"""
-        return createPerson(displayname=displayname,
-                            givenname=givenname,
-                            familyname=familyname,
-                            password=password,
-                            email=email)
 
-
-def registeredPersonName(name):
-    try:
-        Person.selectBy(name=name)[0]
-        return True
-    except IndexError:
-        return False
-
-def createPerson(displayname=None, givenname=None, familyname=None,
-                 password=None, email=None):
-    """Creates a new person"""
-
-    if email:
-        email = email.lower()
-
-    nick = nickname.generate_nick(email, registeredPersonName)
-    now = datetime.utcnow()
-
-    existing = Person.selectBy(name=nick)
-    if existing.count() > 0:
-        raise Error, 'Cannot create another person with name %s' % nick
+def createPerson(email, displayname=None, givenname=None, familyname=None,
+                 password=None):
+    """Create a new Person and an EmailAddress for that Person.
     
-    if password:
-        # password = getUtility(IPasswordEncryptor).encrypt(password)
-        # XXX: Carlos Perello Marin 22/12/2004 We cannot use getUtility
-        # from initZopeless scripts and Rosetta's import_daemon.py
-        # calls indirectly to this function :-(
-        from canonical.launchpad.webapp.authentication \
-            import SSHADigestEncryptor
-        password = SSHADigestEncryptor().encrypt(password)
- 
-    person = Person(displayname=displayname,
-                    givenname=givenname,
-                    familyname=familyname,
-                    password=password,
-                    teamownerID=None,
-                    teamdescription=None,
-                    karma=0,
-                    karmatimestamp=now,
-                    name=nick)
+    Generate a unique nickname from the email address provided, create a
+    Person with that nickname and then create the EmailAddress for the new
+    Person. This function is provided mainly for nicole, debsync and POFile raw
+    importer, which generally have only the email and displayname to create a
+    new Person.
+    """
+    kw = {}
+    try:
+        kw['name'] = nickname.generate_nick(email)
+    except NicknameGenerationError:
+        return None
 
-    if email:
-        EmailAddress(person=person.id,
-                     email=email.lower(),
-                     status=int(EmailAddressStatus.NEW))
+    kw['displayname'] = displayname
+    kw['givenname'] = givenname
+    kw['familyname'] = familyname
+    kw['password'] = password
+    person = PersonSet().newPerson(**kw)
+
+    new = int(EmailAddressStatus.NEW)
+    EmailAddress(person=person.id, email=email.lower(), status=new)
 
     return person
-
-def createTeam(displayname, teamowner, teamdescription, email=None):
-    """Creates a new team"""
-
-    # XXX: salgado, 2005-01-17: I don't think we should require an email
-    # address for the creation of a team, and in this case, we need to
-    # generate the team name without using the email address.
-    nick = nickname.generate_nick(email, registeredName)
-    now = datetime.utcnow()
-
-    if Person.selectBy(name=nick).count() > 0:
-        raise Error, 'Should not create another team with name %s' % nick
-    
-    role = TeamMembershipRole.ADMIN.value
-    status = TeamMembershipStatus.CURRENT.value
-
-    team = Person(displayname=displayname,
-                  givenname=None,
-                  familyname=None,
-                  teamownerID=teamowner,
-                  teamdescription=teamdescription,
-                  karma=0,
-                  karmatimestamp=now,
-                  name=nick)
-
-    if email:
-        new = int(EmailAddressStatus.NEW)
-        EmailAddress(person=team.id, email=email, status=new)
-
-    # XXX: salgado, 2005-01-14: The owner should be added to the list of
-    # members of that team?
-    TeamMembership(personID=teamowner, team=team.id, role=role, status=status)
-
-    TeamParticipation(personID=teamowner, teamID=team.id)
-
-    return team
 
 
 def personFromPrincipal(principal):

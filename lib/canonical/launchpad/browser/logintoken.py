@@ -184,9 +184,8 @@ class NewAccountView(AddView):
         if errors:
             raise WidgetsError(errors)
 
-        nick = generate_nick(self.context.email)
-        kw['name'] = nick
-        person = getUtility(IPersonSet).new(**kw)
+        kw['name'] = generate_nick(self.context.email)
+        person = getUtility(IPersonSet).newPerson(**kw)
         notify(ObjectCreatedEvent(person))
 
         email = EmailAddress(person=person.id, email=self.context.email,

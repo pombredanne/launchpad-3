@@ -12,6 +12,7 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
 from canonical.auth.browser import well_formed_email
+from canonical.foaf.nickname import generate_nick
 
 # database imports
 from canonical.launchpad.database import WikiName
@@ -19,7 +20,6 @@ from canonical.launchpad.database import JabberID
 from canonical.launchpad.database import TeamParticipation, TeamMembership
 from canonical.launchpad.database import EmailAddress, IrcID
 from canonical.launchpad.database import GPGKey, ArchUserID
-from canonical.launchpad.database import createTeam
 from canonical.launchpad.database import Person
 from canonical.launchpad.database import SSHKey
 
@@ -134,9 +134,13 @@ class TeamAddView(AddView):
         for key, value in data.items():
             kw[str(key)] = value
 
-        person = IPerson(self.request.principal, None)
-        team = createTeam(kw['displayname'], person.id,
-                          kw['teamdescription'], kw['email'])
+        # XXX: salgado, 2005-02-04: For now, we're using the email only for 
+        # generating the nickname. We must decide if we need or not to 
+        # require an email address for each team.
+        email = kw.pop('email')
+        kw['name'] = generate_nick(email)
+        kw['teamownerID'] = getUtility(ILaunchBag).user.id
+        team = getUtility(IPersonSet).newTeam(**kw)
         notify(ObjectCreatedEvent(team))
         self._nextURL = '/foaf/people/%s' % team.name
         return team

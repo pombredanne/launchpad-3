@@ -39,7 +39,7 @@
             <td tal:content="context/teamdescription">DESCRIPTION</td>
           </tr>
 
-          <tr tal:condition="context/teamowner">
+          <tr>
             <td>Owner:</td>
             <td><a tal:attributes="href string:../${context/teamowner/name}"
                    tal:content="context/teamowner/browsername"></a></td>
@@ -47,10 +47,10 @@
 
           <tr>
             <td>Members:</td>
-            <td tal:content="python: len(context.members)">123</td>
+            <td tal:content="python: len(context.currentmembers)">123</td>
           </tr>
 
-          <tr>
+          <tr tal:condition="context/preferredemail">
             <td>Email:</td>
             <td><span tal:replace="context/preferredemail/email"></span></td>
           </tr>

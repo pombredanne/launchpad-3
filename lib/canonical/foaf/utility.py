@@ -26,7 +26,3 @@ class Foaf:
     def getPersonByEmail(self, email):
         return self.people.get(email=email)
 
-    def createPerson(self, name, givenname=None, familyname=None,
-                     displayname=None, emails=None):
-
-
