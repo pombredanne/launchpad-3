@@ -22,8 +22,8 @@ class POExport:
         poFile = self.potfile.poFile(language)
 
         header = POHeader(
-            commentText = unicode(poFile.topComment, 'UTF-8'),
-            msgstr = unicode(poFile.header, 'UTF-8'))
+            commentText = poFile.topComment,
+            msgstr = poFile.header)
         
         if poFile.headerFuzzy:
             header.flags.add('fuzzy')

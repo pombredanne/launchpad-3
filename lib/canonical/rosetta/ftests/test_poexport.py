@@ -141,11 +141,11 @@ class POExportTestCase(PlacelessSetup, unittest.TestCase):
         try:
             project = RosettaProject.selectBy(name = 'gnome')[0]
             product = RosettaProduct.selectBy(projectID = project.id, name = 'evolution')[0]
-            poTemplate = RosettaPOTemplate.selectBy(productID = product.id, name='evolution-1.5.90')[0]
+            poTemplate = RosettaPOTemplate.selectBy(productID = product.id, name='evolution-2.0')[0]
         except IndexError, e:
             raise IndexError, "Couldn't find record in database, please import populate.sql to do the tests."
         export = POExport(poTemplate)
-        dump = export.export('cy')
+        dump = export.export('es')
         print dump
         import difflib, sys
         if dump != expected:

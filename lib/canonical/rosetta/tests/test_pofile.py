@@ -1,7 +1,5 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
-__metaclass__ = type
-
 from canonical.rosetta import pofile
 import unittest, doctest
 import warnings

@@ -8,13 +8,16 @@ from zope.component.tests.placelesssetup import PlacelessSetup
 from canonical.arch.sqlbase import SQLBase
 from canonical.rosetta.interfaces import ILanguages
 from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
-    RosettaProject, RosettaProduct, RosettaLanguages
+     RosettaProject, RosettaProduct, RosettaLanguages
 from sqlobject import connectionForURI
-from canonical.rosetta.pofile_adapters import MessageProxy, TemplateImporter
+from canonical.rosetta.pofile_adapters import MessageProxy, \
+     TemplateImporter, POFileImporter
 import os
 
-# XXX:
-from canonical.rosetta.pofile_adapters import XXXperson
+# XXX: not using Person at all, probably should
+class FakePerson(object):
+    id = 1
+XXXperson = FakePerson()
 
 here = os.path.dirname(os.path.abspath(__file__))
 
@@ -63,7 +66,10 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
                                            license=1,
                                            messageCount=0,
                                            owner=XXXperson)
-        importer = TemplateImporter(poTemplate, None)
+        importer = TemplateImporter(poTemplate, None, XXXperson)
+        importer.doImport(self.pot)
+        get_transaction().commit()
+        # try a second time to see if it breaks
         importer.doImport(self.pot)
         return
         # TODO: add some code that actually tests the database
@@ -118,8 +124,11 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
             poFile = poTemplate.poFile('cy')
         except KeyError:
             poFile = poTemplate.newPOFile(XXXperson, 'cy')
-        importer = TemplateImporter(poTemplate, None)
-        importer.doImport(self.pot)
+        importer = POFileImporter(poFile, None, XXXperson)
+        importer.doImport(self.po)
+        get_transaction().commit()
+        # try a second time to see if it breaks
+        importer.doImport(self.po)
 
 
 def test_suite():

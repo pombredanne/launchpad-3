@@ -11,8 +11,6 @@ from types import NoneType
 from datetime import datetime
 from sets import Set
 
-__metaclass__ = type
-
 standardTemplateCopyright = 'Canonical Ltd'
 
 # XXX: in the four strings below, we should fill in owner information
@@ -59,7 +57,7 @@ msgstr ""
 '''
 
 
-class RosettaProjects:
+class RosettaProjects(object):
     implements(IProjects)
 
     def __iter__(self):
@@ -74,13 +72,6 @@ class RosettaProjects:
             return ret[0]
 
     def new(self, name, title, url, description, owner):
-        name = name.encode('ascii')
-        displayName = displayName.encode('ascii')
-        title = title.encode('ascii')
-        if type(url) != NoneType:
-            url = url.encode('ascii')
-        description = description.encode('ascii')
-
         if RosettaProject.selectBy(name=name).count():
             raise KeyError, "There is already a project with that name"
 
@@ -301,9 +292,9 @@ class RosettaPOTemplate(SQLBase):
 
     def __iter__(self, offset=0, count=None):
         if count == None:
-            return self.currentMessageSets()[offset:]
+            return iter(self.currentMessageSets()[offset:])
         else:
-            return self.currentMessageSets()[offset:offset+count]
+            return iter(self.currentMessageSets()[offset:offset+count])
 
     def __len__(self):
         '''Return the number of CURRENT MessageSets in this POTemplate.'''
@@ -821,7 +812,7 @@ class RosettaPOTranslation(SQLBase):
         StringCol(name='translation', dbName='translation', notNull=True, unique=True)
     ]
 
-class RosettaLanguages:
+class RosettaLanguages(object):
     implements(ILanguages)
 
     def __getitem__(self, code):

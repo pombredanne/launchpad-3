@@ -5,17 +5,9 @@ import sets
 
 class DatabaseConstraintError(Exception):
     pass
+class UnknownUserError(Exception):
+    pass
 
-
-# XXX: not using Person at all yet
-class FakePerson(object):
-    id = 1
-XXXperson = FakePerson()
-
-# XXX: not using Person at all yet
-class FakePerson(object):
-    id = 1
-XXXperson = FakePerson()
 
 # XXX: if you *modify* the adapted pofile "object", it assumes you're updating
 #      it from the latest revision (for the purposes of inLatestRevision fields).
@@ -76,8 +68,9 @@ class WatchedSet(sets.Set):
 
 
 class TranslationsList(object):
-    def __init__(self, messageset):
+    def __init__(self, messageset, person):
         self._msgset = messageset
+        self._who = person
         # cache, as we use that value a lot
         self._nplurals = messageset.nplurals()
 
@@ -103,7 +96,10 @@ class TranslationsList(object):
         if self._msgset.poFile is None:
             # template
             raise pofile.POSyntaxError(msg="PO Template has translations!")
-        self._msgset.makeTranslationSighting(XXXperson, value, index,
+        if self._who is None:
+            raise UnknownUserError, \
+                  "Tried to create objects but have no Person to associate it with"
+        self._msgset.makeTranslationSighting(self._who, value, index,
                                              update=True, fromPOFile=True)
 
     def __getitem__(self, index):
@@ -120,16 +116,20 @@ class TranslationsList(object):
     def append(self, value):
         if len(self) >= self._nplurals:
             raise ValueError, "Too many plural forms"
-        self._msgset.makeTranslationSighting(XXXperson, value, len(self),
+        if self._who is None:
+            raise UnknownUserError, \
+                  "Tried to create objects but have no Person to associate it with"
+        self._msgset.makeTranslationSighting(self._who, value, len(self),
                                              update=True, fromPOFile=True)
 
 
 class MessageProxy(POMessage):
     implements(IPOMessage)
 
-    def __init__(self, msgset):
+    def __init__(self, msgset, person=None):
         self._msgset = msgset
-        self._translations = TranslationsList(msgset)
+        self._who = person
+        self._translations = TranslationsList(msgset, person)
 
     def _get_msgid(self):
         return self._msgset.primeMessageID_.msgid
@@ -209,11 +209,12 @@ class MessageProxy(POMessage):
 
 
 class TemplateImporter(object):
-    def __init__(self, potemplate, changeset):
+    def __init__(self, potemplate, changeset, person):
         self.potemplate = potemplate
         self.changeset = changeset # are we going to use this?
         self.len = 0
         self.parser = POParser(translation_factory=self)
+        self.person = person
 
     def doImport(self, filelike):
         "Import a file (or similar object)"
@@ -238,7 +239,7 @@ class TemplateImporter(object):
                 pass
         self.len += 1
         msgset.sequence = self.len
-        proxy = MessageProxy(msgset)
+        proxy = MessageProxy(msgset, self.person)
         proxy.msgidPlural = kw.get('msgidPlural', '')
         if kw.get('msgstr'):
             raise POInvalidInputError('PO template has msgstrs', 0)
@@ -257,11 +258,12 @@ class TemplateImporter(object):
 
 
 class POFileImporter(object):
-    def __init__(self, pofile, changeset):
+    def __init__(self, pofile, changeset, person):
         self.pofile = pofile
         self.changeset = changeset # are we going to use this?
         self.len = 0
         self.parser = POParser(translation_factory=self)
+        self.person = person
 
     def doImport(self, filelike):
         "Import a file (or similar object)"
@@ -287,7 +289,7 @@ class POFileImporter(object):
             msgset.getMessageIDSighting(0, allowOld=True).dateLastSeen = "NOW"
         self.len += 1
         msgset.sequence = self.len
-        proxy = MessageProxy(msgset)
+        proxy = MessageProxy(msgset, self.person)
         proxy.msgidPlural = kw.get('msgidPlural', '')
         if kw.get('msgstr'):
             proxy.msgstr = kw['msgstr']
