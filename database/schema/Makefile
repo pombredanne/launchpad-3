@@ -8,7 +8,7 @@ base: check
 	@ echo "* Creating database \"$(DBNAME)\" with sample data."
 	@ echo "* This will hang if another process is accessing the database"
 	createdb -E UNICODE ${DBNAME} || echo ${DBNAME} already exists
-	createlang -d ${DBNAME} plpgsql
+#	createlang -d ${DBNAME} plpgsql
 	@ echo "* Loading base database schema"
 	psql -d ${DBNAME} -f launchpad-2-00-0.sql
 	@ echo "* Patching the database schema"
