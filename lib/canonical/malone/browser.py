@@ -2,11 +2,6 @@
 #
 # arch-tag: FA3333EC-E6E6-11D8-B7FE-000D9329A36C
 
-# XXX: 2004-10-08 Brad Bollenbach: I've noticed several hardcodings of
-# owner ID being set to 1 in this module (and to do some quick
-# testing, I've just done the same once more myself.) This needs
-# immediate fixing.
-
 from datetime import datetime
 from email.Utils import make_msgid
 
@@ -33,7 +28,7 @@ from canonical.lp import dbschema
 
 # Interface imports
 from canonical.launchpad.interfaces import \
-        IMaloneBug, IMaloneBugAttachment, \
+        IBug, IBugAttachment, \
         IBugContainer, IBugAttachmentContainer, IBugExternalRefContainer, \
         IBugSubscriptionContainer, ISourcePackageContainer, \
         IBugWatchContainer, IProductBugAssignmentContainer, \

@@ -8,7 +8,7 @@ from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 from canonical.launchpad.database.bug import BugContainerBase
 
 from canonical.launchpad.interfaces.bugattachment import \
-        IBugAttachment, IBugAttachmentContainer, IMaloneBugAttachment
+        IBugAttachment, IBugAttachmentContainer, IBugAttachment
 
 from canonical.database.sqlbase import SQLBase
 
@@ -27,17 +27,11 @@ class BugAttachment(SQLBase):
                              dbName='libraryfile', notNull=False)
     datedeactivated = DateTimeCol(notNull=False, default=None)
 
-
-class MaloneBugAttachment(BugAttachment, BugContainerBase):
-    implements(IMaloneBugAttachment)
-    _table = 'BugAttachment'
-
-
 class BugAttachmentContainer(BugContainerBase):
     """A container for bug attachments."""
 
     implements(IBugAttachmentContainer)
-    table = MaloneBugAttachment
+    table = BugAttachment
 
     def __init__(self, bug=None):
         self.bug = bug
@@ -56,7 +50,7 @@ class BugAttachmentContainer(BugContainerBase):
 
 def BugAttachmentFactory(context, **kw):
     bug = context.context.bug # view.attachmentcontainer.bug
-    return MaloneBugAttachment(bug=bug, **kw)
+    return BugAttachment(bug=bug, **kw)
 
 
 def BugAttachmentContentFactory(context, **kw):

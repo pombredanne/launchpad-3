@@ -80,30 +80,9 @@ class Bug(SQLBase):
                             message='Message here')
         self._SO_set_title(value)
 
-
-class MaloneBug(Bug):
-    implements(IMaloneBug)
-
-    _table = 'Bug'
-
-    def __init__(self, **kw):
-        # TODO: Fix Z3 so these can use defaults set in the schema.
-        # Currently can't use a callable.
-        kw['datecreated'] = datetime.utcnow()
-        kw['communitytimestamp'] = datetime.utcnow()
-        kw['hitstimestamp'] = datetime.utcnow()
-        kw['activitytimestamp'] = datetime.utcnow()
-        Bug.__init__(self, **kw)
-
-    def add(self, ob):
-        return ob
-
-    def nextURL(self):
-        return '.'
-
 def BugFactory(*args, **kw):
     """Create a bug from an IBugAddForm"""
-    bug = MaloneBug(
+    bug = Bug(
         title = kw['title'],
         shortdesc = kw['shortdesc'],
         description = kw['description'],
@@ -136,7 +115,7 @@ class BugContainer(BugContainerBase):
     """A container for bugs."""
 
     implements(IBugContainer)
-    table = MaloneBug
+    table = Bug
 
     def __getitem__(self, id):
         try:
@@ -149,44 +128,9 @@ class BugContainer(BugContainerBase):
         for row in self.table.select():
             yield row
 
-def MaloneBugFactory(context, **kw):
-    now = datetime.utcnow()
-    # TODO: How do we handle this email address?
-    # If the user is not logged in, we might want to create a Person for
-    # them (although we really want to link their email address to their
-    # existing Person).
-    # If the user is not logged in, and the email address they entered is
-    # already in the system, do we create the Bug as that Person?
-    # If the user is logged in, we want to validate the email address is one
-    # of theirs.
-    #
-    #email = kw.get('email', None)
-    #del kw['email']
-    #if email:
-    #    e = EmailAddress.select(EmailAddress.q.email==email)
-    submitterid = context.request.principal.id
-    bug = MaloneBug(
-            datecreated=now,
-            communityscore=0,
-            communitytimestamp=now,
-            duplicateof=None,
-            hits=0,
-            hitstimestamp=now,
-            activityscore=0,
-            activitytimestamp=now,
-            owner=submitterid,
-            **kw
-            )
-    return bug
-
-
-
-
 # REPORTS
 # TODO: Mark Shuttleworth 24/10/04 this should be in bugassignment.py but
 # it creates circular imports
-
-
 class BugsAssignedReport(object):
 
     implements(IBugsAssignedReport)
@@ -242,5 +186,3 @@ class BugsAssignedReport(object):
         for bug in self.productAssigneeBugs():
             bugs.add(bug)
         return bugs
-
-

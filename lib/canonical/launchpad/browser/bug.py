@@ -45,8 +45,8 @@ def traverseBugs(bugcontainer, request, name):
 
 
 # TODO: It should be possible to specify all this via ZCML and not require
-# the MaloneBugView class with its ViewPageTemplateFile attributes
-class MaloneBugView(object):
+# the BugView class with its ViewPageTemplateFile attributes
+class BugView(object):
     # XXX fix these horrific relative paths
     watchPortlet = ViewPageTemplateFile(
         '../templates/portlet-bug-watch.pt')

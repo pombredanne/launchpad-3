@@ -95,13 +95,7 @@ class IBug(Interface):
     externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
 
-# XXX Mark Shuttleworth comments: we can probably get rid of this and
-# consolidate around IBug
-class IMaloneBug(IBug, IAddFormCustomization):
-    pass
-
-
-class IBugAddForm(IMaloneBug):
+class IBugAddForm(IBug):
     """Information we need to create a bug"""
     id = Int(title=_("Bug #"), required=False)
     product = Choice(

@@ -4,19 +4,18 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
-    
-    <!-- BugAttachment -->
-    <content class="canonical.launchpad.database.MaloneBugAttachment">
-        <allow interface="canonical.launchpad.interfaces.IMaloneBugAttachment" />
-        <require permission="zope.View" set_schema="canonical.launchpad.interfaces.IMaloneBug" />
+
+    <content class="canonical.launchpad.database.BugAttachment">
+        <allow interface="canonical.launchpad.interfaces.IBugAttachment" />
+        <require permission="zope.View" set_schema="canonical.launchpad.interfaces.IBug" />
     </content>
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IMaloneBugAttachment"
+        for="canonical.launchpad.interfaces.IBugAttachment"
         name="index" />
 
     <browser:traverse
-        for="canonical.launchpad.interfaces.IMaloneBugAttachment"
+        for="canonical.launchpad.interfaces.IBugAttachment"
         function="canonical.launchpad.browser.traverseBugAttachment" />
 
     <browser:pages
@@ -29,7 +28,7 @@
 
     <browser:addform
         name="+new"
-        schema="canonical.launchpad.interfaces.IMaloneBugAttachment"
+        schema="canonical.launchpad.interfaces.IBugAttachment"
         for="canonical.launchpad.interfaces.IBugAttachmentContainer"
         label="Add a Bug Attachment"
         fields="name description libraryfile"
@@ -42,7 +41,7 @@
         />
 
     <browser:editform
-        schema="canonical.launchpad.interfaces.IMaloneBugAttachment"
+        schema="canonical.launchpad.interfaces.IBugAttachment"
         label="Change Bug Attachment Information"
         name="+edit"
         permission="launchpad.AnyPerson"
