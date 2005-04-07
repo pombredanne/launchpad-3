@@ -202,6 +202,13 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
         """Same as messageSet(), with onlyCurrent=True
         """
 
+    def getPOTMsgSetByID(id):
+        """Return the POTMsgSet object related to this POTemplate with the id.
+
+        If there is no POTMsgSet with that id and for that POTemplate, return
+        None.
+        """
+
     def filterMessageSets(current, translated, languages, slice):
         '''
         Return message sets from this PO template, filtered by various

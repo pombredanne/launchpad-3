@@ -367,29 +367,6 @@ def test_parse_cformat_string():
     ValueError: %
     '''
 
-def test_escape_unescape_msgid():
-    r'''
-    >>> from canonical.rosetta.browser import escape_msgid, unescape_msgid
-    >>> escape_msgid('foo')
-    'foo'
-    >>> escape_msgid('foo\\bar')
-    'foo\\\\bar'
-    >>> escape_msgid('foo\nbar')
-    'foo\\nbar'
-    >>> escape_msgid('foo\tbar')
-    'foo\\tbar'
-    >>> unescape_msgid('foo')
-    'foo'
-    >>> unescape_msgid('foo\\\\bar')
-    'foo\\bar'
-    >>> unescape_msgid('foo\\nbar')
-    'foo\nbar'
-    >>> unescape_msgid('foo\\tbar')
-    'foo\tbar'
-    >>> unescape_msgid('foo\\\\n')
-    'foo\\n'
-    '''
-
 def test_parse_translation_form():
     r'''
     >>> from canonical.rosetta.browser import parse_translation_form
@@ -401,9 +378,9 @@ def test_parse_translation_form():
 
     A message ID with no translations.
 
-    >>> x = parse_translation_form({'set_3_msgid' : 'bar' })
+    >>> x = parse_translation_form({'set_3_msgid' : 3 })
     >>> x[3]['msgid']
-    'bar'
+    3
     >>> x[3]['translations']
     {}
     >>> x[3]['fuzzy']
@@ -419,7 +396,7 @@ def test_parse_translation_form():
     A message ID with some translations.
 
     >>> x = parse_translation_form({
-    ...     'set_1_msgid' : 'foo',
+    ...     'set_1_msgid' : 1,
     ...     'set_1_translation_cy_0' : 'aaa',
     ...     'set_1_translation_cy_1' : 'bbb',
     ...     'set_1_translation_cy_2' : 'ccc',
@@ -428,7 +405,7 @@ def test_parse_translation_form():
     ...     'set_1_fuzzy_es' : True
     ...     })
     >>> x[1]['msgid']
-    'foo'
+    1
     >>> x[1]['translations']['cy'][2]
     'ccc'
     >>> x[1]['translations']['es'][0]
@@ -442,7 +419,7 @@ def test_parse_translation_form():
     test.
 
     >>> x = parse_translation_form({
-    ... 'set_1_msgid' : 'foo',
+    ... 'set_1_msgid' : 1,
     ... 'set_1_translation_pt_BR_0' : 'bar',
     ... })
     >>> x[1]['translations']['pt_BR'][0]

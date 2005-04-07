@@ -457,6 +457,15 @@ class POTemplate(SQLBase, RosettaStats):
             '''
             % self.id, orderBy='sequence')
 
+    def getPOTMsgSetByID(self, id):
+        """See IPOTemplate."""
+        results = POTMsgSet.select("POTMsgSet.potemplate = %d AND"
+                                   " POTMsgSet.id = %d" % (self.id, id))
+        if results.count():
+            return results[0]
+        else:
+            return None
+
     def filterMessageSets(self, current, translated, languages, slice = None):
         '''
         Return message sets from this PO template, filtered by various

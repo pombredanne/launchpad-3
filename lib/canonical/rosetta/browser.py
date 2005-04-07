@@ -27,7 +27,7 @@ from canonical.launchpad.interfaces import ILanguageSet,  \
     ILaunchBag, IRawFileData, ICountrySet, IGeoIP, \
     IRequestPreferredLanguages, IPOTemplateSet
 
-from canonical.launchpad.database import Person, POTemplate, POFile
+from canonical.launchpad.database import POTemplate, POFile
 
 from canonical.rosetta.poexport import POExport
 from canonical.rosetta.pofile import POHeader, POSyntaxError, \
@@ -146,7 +146,7 @@ def parse_translation_form(form):
         if match:
             id = int(match.group(1))
             sets[id] = {}
-            sets[id]['msgid'] = form[key].replace('\r', '')
+            sets[id]['msgid'] = id
             sets[id]['translations'] = {}
             sets[id]['fuzzy'] = {}
 
@@ -198,18 +198,6 @@ def parse_translation_form(form):
 
 def escape_msgid(s):
     return s.replace('\\', '\\\\').replace('\n', '\\n').replace('\t', '\\t')
-
-def unescape_msgid(s):
-    escapes = (('\\t', '\t'), ('\\n', '\n'), ('\\\\', '\\'))
-
-    if s == "":
-        return ""
-    else:
-        for original, replacement in escapes:
-            if s.startswith(original):
-                return replacement + unescape_msgid(s[len(original):])
-
-        return s[0] + unescape_msgid(s[1:])
 
 def msgid_html(text, flags, space=SPACE_CHAR, newline=NEWLINE_CHAR):
     '''Convert a message ID to a HTML representation.'''
@@ -1114,7 +1102,15 @@ class TranslatePOTemplate:
         # Put the translations in the database.
 
         for set in sets.values():
-            msgid_text = unescape_msgid(set['msgid'])
+            pot_set = self.context.getPOTMsgSetByID(set['msgid'])
+            if pot_set is None:
+                # This should only happen if someone tries to POST its own
+                # form instead of our and they use a POTMsgSet id that does
+                # not exists for this POTemplate.
+                raise RuntimeError(
+                    "Got translation for POTMsgID %d which is not in the"
+                    " template." % set['msgid'])
+            msgid_text = pot_set.primemsgid_.msgid
 
             for code in set['translations'].keys():
                 new_translations = set['translations'][code]
@@ -1123,24 +1119,6 @@ class TranslatePOTemplate:
 
                 if not [ x for x in new_translations if x != '' ]:
                     continue
-
-                # Check that this is a translation for a message set that's
-                # actually in the template.
-
-                # XXX
-                # This code is rather ugly. It would be much nicer if there
-                # was a method for POTemplate which indicates whether there is
-                # a messageID with the given text in the template.
-                #
-                # See https://launchpad.ubuntu.com/malone/bugs/95.
-                # -- Dafydd Harries, 2005/01/20
-
-                try:
-                    pot_set = self.context[msgid_text]
-                except KeyError:
-                    raise RuntimeError(
-                        "Got translation for msgid %s which is not in "
-                        "the template." % repr(msgid_text))
 
                 # Get hold of an appropriate message set in the PO file,
                 # creating it if necessary.

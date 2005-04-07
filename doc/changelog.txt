@@ -2,6 +2,61 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-07 23:34:26 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1585
+
+    Summary:
+      Fixed https://launchpad.ubuntu.com/malone/bugs/81 (an error in our translation form with long msgid)
+    Revision:
+      launchpad--devel--0--patch-1585
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-81--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1580
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-81--0--patch-1
+       Killed the unescaped_string function so we use the potmsgset's id directly and added more sample data
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-81--0--patch-2
+       Fixed tests
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-81--0--patch-3
+       Added a page test for this bug
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-81--0--patch-4
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-81--0--patch-5
+       Applied code review comments from Steve
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-81--0--patch-6
+       Merge from rocketfuel
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-potemplate-translation-form-long-msgid.data.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-potemplate-translation-form-long-msgid.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-translation-form-long-msgid.data
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-translation-form-long-msgid.txt
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/doc/potemplate.txt
+     lib/canonical/launchpad/interfaces/pofile.py
+     lib/canonical/rosetta/browser.py
+     lib/canonical/rosetta/tests/test_browser.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--bug-81--0--base-0
+     carlos.perello@canonical.com--2004/launchpad--bug-81--0--patch-1
+     carlos.perello@canonical.com--2004/launchpad--bug-81--0--patch-2
+     carlos.perello@canonical.com--2004/launchpad--bug-81--0--patch-3
+     carlos.perello@canonical.com--2004/launchpad--bug-81--0--patch-4
+     carlos.perello@canonical.com--2004/launchpad--bug-81--0--patch-5
+     carlos.perello@canonical.com--2004/launchpad--bug-81--0--patch-6
+
+
 2005-04-07 17:05:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1584
 
     Summary:

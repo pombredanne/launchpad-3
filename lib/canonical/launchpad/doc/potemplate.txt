@@ -26,7 +26,7 @@
 
 >>> pomsgset = pofile[u'evolution addressbook']
 >>> pomsgset.translations()
-[None]
+[u'libreta de direcciones de Evolution']
 
 # Get a person to create a translation with.
 
