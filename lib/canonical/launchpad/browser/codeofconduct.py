@@ -155,8 +155,8 @@ class SignedCodeOfConductAckView(AddView):
 
         # XXX cprov 20050323
         # rename unused key:value
-        kw['user'] = kw['person']
-        del kw['person']
+        kw['user'] = kw['owner']
+        del kw['owner']
 
         recipient = IPerson(self.request.principal, None)
         kw['recipient'] = recipient

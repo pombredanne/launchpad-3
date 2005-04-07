@@ -2,6 +2,40 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-07 13:25:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1582
+
+    Summary:
+      Small issues in CoC pages solved
+    Revision:
+      launchpad--devel--0--patch-1582
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-570
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-571
+       Forgotten wrong field name when acknowledging CoCs.
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-572
+       Bug on displaying PAPER submmited SignedCoC solved.
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-573
+       Merge from RF
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/codeofconduct.py
+     lib/canonical/launchpad/templates/person-codesofconduct.pt
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-570
+     celso.providelo@canonical.com/launchpad--devel--0--patch-571
+     celso.providelo@canonical.com/launchpad--devel--0--patch-572
+     celso.providelo@canonical.com/launchpad--devel--0--patch-573
+
+
 2005-04-07 13:07:23 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1581
 
     Summary:
