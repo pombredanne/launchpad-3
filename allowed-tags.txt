@@ -5,7 +5,7 @@ lib/canonical/arch/broker.py 27f07153-69b6-4ddb-b704-eaabcca57e3e
 lib/canonical/arch/infoUpdater.py 5ce06dae-6ab3-4397-8ff2-e7fec441857f
 lib/canonical/arch/tests/test_broker.py a1262849-780c-4124-9a58-19256ca74c1b
 lib/canonical/arch/tests/test_database.py 794e491c-ce40-4a66-a325-72984e7dbbbd
-lib/canonical/arch/tests/test_framework.py 7dec9a9d-a8c2-465e-8843-7b2204c1f85c
+lib/canonical/arch/tests/framework.py 7dec9a9d-a8c2-465e-8843-7b2204c1f85c
 lib/canonical/arch/tests/test_interfaces.py d7be3bf8-9f05-401c-9ffc-06f4dd19af48
 lib/canonical/lucille/GPGV.py f230218f-d4b6-42f6-ac6a-0f15373476da
 lib/canonical/lucille/TagFiles.py 65403237-d8df-4ffa-a7e7-9d55cc4722fd
