@@ -136,7 +136,7 @@
                     <input name="field.title" type="text" size="50" 
                         tal:attributes="value context/followup_title" /><br />
                     <b>Information:</b>
-                    <textarea name="field.contents" rows="10"></textarea>
+                    <textarea name="field.content" rows="10"></textarea>
                     <p>
                       Please only add information that will help resolve the bug.
                     </p>

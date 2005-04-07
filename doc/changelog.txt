@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-07 15:29:12 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1583
+
+    Summary:
+      small fix for regression in comment submission (field name was changed)
+    Revision:
+      launchpad--devel--0--patch-1583
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-495
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-496
+       small fix for regression in comment submission (field name was changed)
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/bug-index.pt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-495
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-496
+
+
 2005-04-07 13:25:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1582
 
     Summary:
