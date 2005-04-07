@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-07 17:05:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1584
+
+    Summary:
+      The session will be valid for 6 hours now
+    Revision:
+      launchpad--devel--0--patch-1584
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-590
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-591
+       The session will be valid for 6 hours now
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/webapp/session.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-590
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-591
+
+
 2005-04-07 15:29:12 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1583
 
     Summary:
