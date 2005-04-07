@@ -2,6 +2,58 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-07 07:12:01 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1579
+
+    Summary:
+      sourcesource.productseries patch update
+    Revision:
+      launchpad--devel--0--patch-1579
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-262
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-263
+       Make DistroRelease.name not UNIQUE, fix vocabulary and write vocabulary tests
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-264
+       Fix and improve vocabulary search
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-265
+       Unbreak other vocabularies
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-266
+       DB patch in pending to change SourceSource.product->SourceSource.productseries
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-267
+       Update sourcesource patch to cope with no rows to update
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-268
+       Need to use a valid default name
+    
+
+    new files:
+     database/schema/.arch-ids/patch-14-04-0.sql.id
+     database/schema/patch-14-04-0.sql
+     database/schema/pending/.arch-ids/stub-sourcesource-productseries.sql.id
+     database/schema/pending/stub-sourcesource-productseries.sql
+
+    modified files:
+     database/schema/launchpad.html doc/changelog.txt
+     lib/canonical/launchpad/doc/vocabularies.txt
+     lib/canonical/launchpad/vocabularies/dbobjects.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-262
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-263
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-264
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-265
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-266
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-267
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-268
+
+
 2005-04-07 05:47:13 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1578
 
     Summary:

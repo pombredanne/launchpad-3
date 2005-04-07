@@ -54,6 +54,34 @@ in configure.zcml.
 o PackagingVocabulary - reflects the available constants for
   Packaging.packaging field.
 
+In cases where we won't have many rows, some of the database
+vocabularies can be enumerated over.
+
+o DistroReleaseVocabulary - reflects the available distribution releases.
+  Results are ordered by `name`
+
+    >>> distrorelease_vocabulary = vocabulary_registry.get(
+    ...     None,"DistroRelease")
+    >>> for term in distrorelease_vocabulary:
+    ...     print "%s %13s %s" % (term.value, term.token, term.title)
+    7 debian/sarge  Sarge
+    8 debian/sid    Sid
+    6 debian/woody  WOODY
+    4 redhat/7.0    Seven
+    2 redhat/six    Six Six Six
+    5 ubuntu/grumpy The Grumpy Groundhog Release
+    3 ubuntu/hoary  The Hoary Hedgehog Release
+    1 ubuntu/warty  The Warty Warthog Release
+    >>> distrorelease_vocabulary.getTermByToken('ubuntu/hoary').value
+    3
+    >>> [term.token for term in distrorelease_vocabulary.search('woody')]
+    ['debian/woody']
+    >>> [term.token for term in distrorelease_vocabulary.search('debian')]
+    ['debian/sarge', 'debian/sid', 'debian/woody']
+    >>> [term.token for term in distrorelease_vocabulary.search('invalid')]
+    []
+    >>> [term.token for term in distrorelease_vocabulary.search('')]
+    []
 
 Non-Enumerable Vocabularies
 ===========================

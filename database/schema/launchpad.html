@@ -8794,7 +8794,7 @@ etc.</p>
 "#public.table.distribution">public.distribution.id</a></td>
 <td>distribution</td>
 <td>integer</td>
-<td><i>NOT NULL</i><br />
+<td><i>UNIQUE#1 NOT NULL</i><br />
 <br />
 The distribution which contains this distrorelease.</td>
 </tr>
@@ -8802,7 +8802,7 @@ The distribution which contains this distrorelease.</td>
 <td></td>
 <td>name</td>
 <td>text</td>
-<td><i>UNIQUE NOT NULL</i><br />
+<td><i>UNIQUE#1 NOT NULL</i><br />
 <br />
 The unique name of the distrorelease. This is a short name in lower
 case and would be used in sources.list configuration and in

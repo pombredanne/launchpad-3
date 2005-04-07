@@ -132,12 +132,12 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
 
     def search(self, query):
         """Return terms where query is a subtring of the name"""
-        if not query:
-            return []
-        objs = self._table.select(
-            CONTAINSSTRING(self._table.q.name, query)
-            )
-        return [self._toTerm(obj) for obj in objs]
+        if query:
+            objs = self._table.select(
+                CONTAINSSTRING(self._table.q.name, query)
+                )
+            for o in objs:
+                yield self._toTerm(o)
 
 
 class BinaryPackageNameVocabulary(NamedSQLObjectVocabulary):
@@ -416,19 +416,51 @@ class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
     implements(IHugeVocabulary)
 
     _table = DistroRelease
-    _orderBy = 'name'
+    _orderBy = [Distribution.q.name, DistroRelease.q.name]
+    _clauseTables = ['Distribution']
+
+    def __iter__(self):
+        for obj in self._table.select(
+                DistroRelease.q.distributionID == Distribution.q.id,
+                orderBy=self._orderBy,
+                clauseTables=self._clauseTables,
+                ):
+            yield self._toTerm(obj)
+
+    def _toTerm(self, obj):
+        # NB: We use '/' as the seperater because '-' is valid in
+        # a distribution.name
+        token = '%s/%s' % (obj.distribution.name, obj.name)
+        return SimpleTerm(obj.id, token, obj.title)
+
+    def getTermByToken(self, token):
+        try:
+            distroname, distroreleasename = token.split('/',1)
+        except ValueError:
+            raise LookupError, token
+
+        objs = DistroRelease.select(AND(Distribution.q.name == distroname,
+                DistroRelease.q.name == distroreleasename
+                ))
+        try:
+            return self._toTerm(objs[0])
+        except IndexError:
+            raise LookupError, token
 
     def search(self, query):
         """Return terms where query is a substring of the name"""
         if query:
             query = query.lower()
-            like_query = quote('%%%s%%' % quote_like(query)[1:-1])
-            fti_query = quote(query)
-            kw = {}
-            if self._orderBy:
-                kw['orderBy'] = self._orderBy
-            objs = self._table.select("name LIKE %s" % like_query, **kw)
-            return [self._toTerm(obj) for obj in objs]
-
-        return []
+            objs = self._table.select(
+                    AND(
+                        Distribution.q.id == DistroRelease.q.distributionID,
+                        OR(
+                            CONTAINSSTRING(Distribution.q.name, query),
+                            CONTAINSSTRING(DistroRelease.q.name, query)
+                            )
+                        ),
+                    orderBy=self._orderBy
+                    )
+            for o in objs:
+                yield self._toTerm(o)
 
