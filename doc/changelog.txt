@@ -2,6 +2,47 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-07 13:07:23 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1581
+
+    Summary:
+      Turn back on fancydiff.  Make login page handle form data in the URL for GETs and fail with an internal server error for POSTs.
+    Revision:
+      launchpad--devel--0--patch-1581
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-359
+       refuel
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-360
+       made +login cope with query data on GET.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-361
+       refuel, plus fix conflict in launchpad-login.pt
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-362
+       reenabled fancy diffs
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-363
+       fix up tests to cope with new login page form variables
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/functional.py
+     lib/canonical/launchpad/pagetests/foaf/00-createaccount.txt
+     lib/canonical/launchpad/pagetests/foaf/01-login.txt
+     lib/canonical/launchpad/pagetests/foaf/99-resetpassword.txt
+     lib/canonical/launchpad/templates/launchpad-login.pt
+     lib/canonical/launchpad/webapp/login.py
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--devel--0--patch-359
+     steve.alexander@canonical.com/launchpad--devel--0--patch-360
+     steve.alexander@canonical.com/launchpad--devel--0--patch-361
+     steve.alexander@canonical.com/launchpad--devel--0--patch-362
+     steve.alexander@canonical.com/launchpad--devel--0--patch-363
+
+
 2005-04-07 09:20:38 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1580
 
     Summary:

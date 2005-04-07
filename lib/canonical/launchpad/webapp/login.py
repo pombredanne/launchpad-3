@@ -3,6 +3,8 @@
 
 __metaclass__ = type
 
+import cgi
+import urllib
 from datetime import datetime
 
 from zope.component import getUtility
@@ -27,7 +29,24 @@ class UnauthorizedView:
 
     def __call__(self):
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
-            target = self.request.getURL() + '/+login'
+            if self.request.method == 'POST':
+                # If we got a POST then that's a problem.  We can only
+                # redirect with a GET, so when we redirect after a successful
+                # login, the wrong method would be used.
+                # If we get a POST here, it is an application error.  We
+                # must ensure that form pages require the same rights
+                # as the pages that process those forms.  So, we should never
+                # need to newly authenticate on a POST.
+                self.request.response.setStatus(500) # Internal Server Error
+                self.request.response.setHeader('Content-type', 'text/plain')
+                return ('Application error.  Unauthenticated user POSTing to '
+                        'page that requires authentication.')
+            # If we got any query parameters, then preserve them in the
+            # new URL.
+            query_string = self.request.get('QUERY_STRING', '')
+            if query_string:
+                query_string = '?' + query_string
+            target = self.request.getURL() + '/+login' + query_string
             self.request.response.redirect(target)
             # Maybe render page with a link to the redirection?
             return ''
@@ -59,8 +78,21 @@ class BasicLoginPage:
 class LoginOrRegister:
     """Merges the former CookieLoginPage and JoinLaunchpadView classes
     to allow the two forms to appear on a single page.
+
+    This page is a self-posting form.  Actually, there are two forms
+    on the page.  The first time this page is loaded, when there's been
+    no POST of its form, we want to preserve any query parameters, and put
+    them into hidden inputs.
     """
 
+    # Names used in the template's HTML form.
+    form_prefix = 'loginpage_'
+    submit_login = form_prefix + 'submit_login'
+    submit_registration = form_prefix + 'submit_registration'
+    input_email = form_prefix + 'email'
+    input_password = form_prefix + 'password'
+
+    # Instance variables that represent the state of the form.
     login_error = None
     registration_error = None
     submitted = False
@@ -74,9 +106,9 @@ class LoginOrRegister:
             return 
 
         self.submitted = True
-        if self.request.form.get('submit_login'):
+        if self.request.form.get(self.submit_login):
             self.process_login_form()
-        elif self.request.form.get('submit_registration'):
+        elif self.request.form.get(self.submit_registration):
             self.process_registration_form()
 
     def process_login_form(self):
@@ -85,8 +117,8 @@ class LoginOrRegister:
         If there is an error, assign a string containing a description
         of the error to self.login_error for presentation to the user.
         """
-        email = self.request.form.get('email')
-        password = self.request.form.get('password')
+        email = self.request.form.get(self.input_email)
+        password = self.request.form.get(self.input_password)
         if not email or not password:
             self.login_error = "Enter your email address and password."
             return
@@ -95,19 +127,13 @@ class LoginOrRegister:
         principal = loginsource.getPrincipalByLogin(email)
         if principal is not None and principal.validate(password):
             logInPerson(self.request, principal, email)
-            self.redirectMinusLogin()
+            # Redirect only when we're not at the root /+login.
+            # If we're on the root page, then show the page which will say
+            # "You're logged in".
+            if not self.request.URL[1].endswith('+login'):
+                self.redirectMinusLogin()
         else:
             self.login_error = "The email address and password do not match."
-
-    def redirectMinusLogin(self):
-        """Redirect to the URL with the '/+login' removed from the end.
-
-        Do this only if we're not the root /+login.
-        If we're the root /+login, then show the "you are logged in" message.
-        """
-        if not self.request.URL[1].endswith('+login'):
-            target = self.request.URL[-1]
-            self.request.response.redirect(target)
 
     def process_registration_form(self):
         """A user has asked to join launchpad.
@@ -115,20 +141,21 @@ class LoginOrRegister:
         Check if everything is ok with the email address and send an email
         with a link to the user complete the registration process.
         """
-        self.email = self.request.form.get("email").strip()
+        self.email = self.request.form.get(self.input_email).strip()
         person = getUtility(IPersonSet).getByEmail(self.email)
         if person is not None:
             msg = ('The email address %s is already registered in our system. '
                    'If you are sure this is your email address, please go to '
                    'the <a href="+forgottenpassword">Forgotten Password</a> '
                    'page and follow the instructions to retrieve your '
-                   'password.') % self.email
+                   'password.') % cgi.escape(self.email)
             self.registration_error = msg
             return
 
         if not well_formed_email(self.email):
-            self.registration_error = ("The email address you provided isn't "
-                "valid. Please verify it and try again.")
+            self.registration_error = (
+                "The email address you provided isn't valid. "
+                "Please verify it and try again.")
             return
 
         logintokenset = getUtility(ILoginTokenSet)
@@ -139,13 +166,39 @@ class LoginOrRegister:
         sendNewUserEmail(token, self.request.getApplicationURL())
 
     def login_success(self):
-        return (self.submitted and self.request.form.get('submit_login') and 
+        return (self.submitted and
+                self.request.form.get(self.submit_login) and 
                 not self.login_error)
 
     def registration_success(self):
         return (self.submitted and 
-                self.request.form.get('submit_registration') and 
+                self.request.form.get(self.submit_registration) and 
                 not self.registration_error)
+
+    def redirectMinusLogin(self):
+        """Redirect to the URL with the '/+login' removed from the end.
+
+        Also, take into account the preserved query from the URL.
+        """
+        target = self.request.URL[-1]
+
+        # Collect up the form inputs that don't start with self.form_prefix.
+        # If there are any, then make a query string out of them and add
+        # this to the redirect URL.
+        query_params = ['%s=%s' % (name, urllib.quote_plus(value))
+                        for name, value in self.request.form.items()
+                        if not name.startswith(self.form_prefix)]
+        if query_params:
+            target += '?' + '&'.join(query_params)
+        self.request.response.redirect(target)
+
+    def preserve_query(self):
+        """Returns zero or more hidden inputs that preserve the URL's query."""
+        L = ['<input type="hidden" name="%s" value="%s" />'
+                 % (name, cgi.escape(value, quote=True))
+             for name, value in self.request.form.items()
+             if not name.startswith(self.form_prefix)]
+        return ''.join(L)
 
 
 def logInPerson(request, principal, email):

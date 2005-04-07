@@ -18,7 +18,7 @@
   ... Content-Type: application/x-www-form-urlencoded
   ... Cookie: launchpad=eBes5vRt2aAQaTWWVKrSoTp3JS8WXuf1Xt8W7Xzt1MM3GPTSy7o1aA
   ... 
-  ... email=foo%40baz.com&password=f&submit_login=Log+In""")
+  ... loginpage_email=foo%40baz.com&loginpage_password=f&loginpage_submit_login=Log+In""")
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8

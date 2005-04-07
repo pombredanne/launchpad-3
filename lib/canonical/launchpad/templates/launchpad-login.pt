@@ -86,7 +86,7 @@
                   </th>
                   <td>
                     <input type="text"
-                      name="email"
+                      name="loginpage_email"
                       id="email"
                       size="30"
                       tal:attributes="value request/email | nothing"
@@ -99,7 +99,7 @@
                     <input
                       type="password"
                       id="password"
-                      name="password"
+                      name="loginpage_password"
                     />
                   </td>
                 </tr>
@@ -107,12 +107,17 @@
                   <th></th>
                   <td>
                     <div>
-                      <input type="submit" name="submit_login" value="Log In" />
+                      <input
+                        type="submit"
+                        name="loginpage_submit_login"
+                        value="Log In" />
                       [<a href="+forgottenpassword">Forgot your password?</a>]
                     </div>
                   </td>
                 </tr>
               </table>
+              <!-- Preserve extra query parameters as hidden fields. -->
+              <tal:replacement tal:replace="structure view/preserve_query" />
             </form>
             <!-- 5a. didn't try to register last time: -->
             <h1 tal:condition="not: view/registration_error">
@@ -143,7 +148,7 @@
                     <label for="email">E-mail address:</label>
                   </th>
                   <td>
-                    <input type="text" size="30" name="email"
+                    <input type="text" size="30" name="loginpage_email"
                       tal:attributes="value view/email|nothing"
                     />
                   </td>
@@ -151,10 +156,15 @@
                 <tr>
                   <th></th>
                   <td>
-                    <input type="submit" name="submit_registration" value="Register" />
+                    <input
+                      type="submit"
+                      name="loginpage_submit_registration"
+                      value="Register" />
                   </td>
                 </tr>
               </table>
+              <!-- Preserve extra query parameters as hidden fields. -->
+              <tal:replacement tal:replace="structure view/preserve_query" />
             </form>
           </div>
         </div>
