@@ -16,6 +16,7 @@
         name="+new"
         schema="canonical.launchpad.interfaces.IBugWatch"
         for="canonical.launchpad.interfaces.IBugWatchSet"
+        class="canonical.launchpad.browser.addview.SQLObjectAddView"
         label="Add Watch"
         fields="bugtracker remotebug"
         content_factory="canonical.launchpad.database.BugWatchFactory"

@@ -13,9 +13,10 @@
   <browser:page
       for="canonical.launchpad.interfaces.ILaunchpadApplication"
       class="canonical.launchpad.webapp.login.BasicLoginPage"
-      permission="launchpad.AnyPerson"
       name="+basiclogin"
+      permission="zope.Public"
       attribute="login"
+      layer="canonical.launchpad.layers.DebugLayer"
       />
 
   <browser:page

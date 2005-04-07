@@ -35,7 +35,8 @@ class Manifest(SQLBase):
 
     uuid = StringCol(notNull=True, default=uuidgen(), alternateID=True)
 
-    entries = MultipleJoin('ManifestEntry', joinColumn='manifest')
+    entries = MultipleJoin('ManifestEntry', joinColumn='manifest',
+                           orderBy='sequence')
     
     def __iter__(self):
         return self.entries

@@ -85,7 +85,6 @@ fieldset.two-column {
 /* Plone elements that should be changed */
 
 h1, h2, h3, h4, h5, h6 {
-    text-shadow: #999999 3px 3px 3px;
     border-bottom: none;
 }
 
@@ -429,11 +428,87 @@ label.fuzzy-checkbox {
     margin: 1em;
 }
 
-
 /* === Undo bugs in plone.css === */
 
-body {
+/* -- Stop accessing resources on plone.org -- */
+/* XXX change "http://plone.org/" to "/@@/" once they work */
+
+ul {
+  list-style-image: none;
+}
+#portal-logo {
+  background-image: url(http://plone.org/logo.jpg);
+}
+#portal-personaltools .portalUser, .link-user {
+  background-image: url(/@@/user.gif);
+}
+#portal-personaltools li {
+  background-image: url(http://plone.org/linkOpaque.gif);
+}
+.contentActions li {
+  background-image: url(/@@/arrowDownAlternative.gif);
+}
+#error-handling {
+  background-image: url(/@@/info_icon.gif);
+}
+.standalone, .documentEditable * .standalone {
+  background-image: url(http://plone.org/linkOpaque.gif);
+}
+.context, .documentEditable * .context, .destructive,
+.documentEditable * .destructive {
+  background-image: url(/@@/linkTransparent.gif);
+}
+input.searchButton {
+  background-image: url(/@@/search_icon.gif);
+}
+.fieldRequired {
+  background-image: url(/@@/required.gif);
+}
+.link-parent {
+  background-image: url(/@@/arrowUp.gif);
+}
+.link-external {
+  background-image: url(/@@/link_icon.gif);
+}
+.link-https {
+  background-image: url(/@@/lock_icon.gif);
+}
+.link-mailto {
+  background-image: url(http://plone.org/mail_icon.gif);
+}
+.link-news {
+  background-image: url(http://plone.org/topic_icon.gif);
+}
+.link-ftp {
+  background-image: url(http://plone.org/file_icon.gif);
+}
+.link-irc, .link-comment {
+  background-image: url(http://plone.org/discussionitem_icon.gif);
+}
+.link-callto {
+  background-image: url(http://plone.org/phone_icon.gif);
+}
+
+/* -- Other bugs -- */
+
+body, .listing {
   font-size: 100%;
+}
+.listing td {
+  padding: 0.125em 0.25em;
+}
+
+code {
+  font-family: monospace;
+  font-size: 100%;
+  color: inherit;
+  background: transparent;
+  border: none;
+  padding: inherit;
+}
+
+.formHelp, .formHelp:hover {
+  color: #666666;
 }
 
 .portlet, #portal-top, #portal-footer {
@@ -448,8 +523,17 @@ li.edit, ul.edit li {
     list-style-image: url(/++resource++edit.gif);
 }
 
+#portal-personaltools .portalUser {
+    background: transparent url(/++resource++user.gif)
+}
+
 .portlet li a {
     text-decoration: none
+}
+
+pre {
+  font-family: monospace;
+  font-size: 100%;
 }
 
 /* === New design === */
@@ -470,7 +554,61 @@ thead {
   vertical-align: bottom;
 }
 
-/* Launchpad-wide */
+/* -- Launchpad-wide -- */
+
+h1, h2, h3, h4, h5, h6 {
+  clear: both;
+	color: #000066;
+	font-family: "Lucida Grande", sans-serif;
+	font-weight: normal;
+	margin-top: 0;
+	text-align: left;
+}
+h2 {
+	text-transform: uppercase;
+	margin: 0.5em 0;
+}
+h2, h3, h4, h5, h6 {
+	font-size: 1em;
+}
+/* temporary while page-header exists: */
+.page-header h2 {
+  clear: none;
+  margin: 0;
+  text-transform: none;
+  font-size: 1.5em;
+}
+h3, h4, h5, h6 {
+	margin-bottom: 0;
+}
+table {
+	border-collapse: collapse;
+}
+table.data, table.data thead, table.data tfoot {
+	border: solid #999;
+	border-width: 1pt 0;
+}
+table.data tr {
+	border: dotted #999;
+	border-width: 1pt 0;
+}
+table.data th, table.data td {
+  padding: 0.25em 0.125em;
+}
+td p, td ol:first-child, td blockquote:first-child {
+	margin-top: 0;
+}
+th {
+	text-align: right;
+}
+thead th {
+	text-align: center;
+}
+tr {
+	vertical-align: top;
+}
+
+
 
 .user {
 	float: right;
@@ -503,6 +641,7 @@ address.app {
 }
 .navigation li:before {
 	content: '\2022';
+	margin-right: 0.25em;
 }
 #main {
 	border-top: 2pt solid black;
@@ -536,6 +675,17 @@ address.app {
     float: right;
 }
 .launchpad-apps td {
+}
+
+.bugid {
+  text-align: left;
+  width: 50%;
+  float: left;
+}
+.created {
+  text-align: right;
+  width: 50%;
+  float: right;
 }
 
 td.plain {

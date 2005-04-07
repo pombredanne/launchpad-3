@@ -491,6 +491,9 @@ class IBranch(ICategoryItem, IPackage, IVersionIterable):
         :precondition: `self.iter_versions` yields at least one object.
         """
 
+    def getPackageName():
+        """Arch package name for the branch."""
+
     '''extension interfaces for launchpad, to move into a sub interface'''
     id = Int(title=_('The database identifier for this branch.'))
 

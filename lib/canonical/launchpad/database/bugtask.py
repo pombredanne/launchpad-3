@@ -90,7 +90,10 @@ class BugTask(SQLBase):
     maintainer = property(maintainer)
 
     def maintainer_displayname(self):
-        return self.maintainer.displayname
+        if self.maintainer:
+            return self.maintainer.displayname
+        else:
+            return None
     maintainer_displayname = property(maintainer_displayname)
 
     def bugdescription(self):

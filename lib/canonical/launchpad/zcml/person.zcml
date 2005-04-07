@@ -65,6 +65,10 @@
           attribute="showSSHKeys"
           lp:url="/people/$Person.name/+sshkey" />
       <browser:page
+          name="+gpgkey"
+          attribute="showGPGKeys"
+          lp:url="/people/$Person.name/+gpgkey" />
+      <browser:page
           name="+bounties"
           template="../templates/person-bounties.pt"
           lp:url="/people/$Person.name/+bounties" />
@@ -78,16 +82,14 @@
           name="+codesofconduct"
           template="../templates/person-codesofconduct.pt"
           lp:url="/people/$Person.name/+codesofconduct" />
-  </browser:pages>
-
-  <browser:pages
-      for="canonical.launchpad.interfaces.IPerson"
-      permission="launchpad.Edit"
-      class="canonical.launchpad.browser.PersonSSHKeyEditView">
       <browser:page
           name="+editsshkey"
           template="../templates/person-sshkey.pt"
           lp:url="/people/$person.id/+editsshkey" />
+      <browser:page
+          name="+editgpgkey"
+          template="../templates/person-gpgkey.pt"
+          lp:url="/people/$person.id/+editgpgkey" />
   </browser:pages>
 
   <browser:pages
@@ -118,6 +120,18 @@
           name="+index"
           template="../templates/team-index.pt"
           lp:url="/people/$person.id/index" />
+      <browser:page
+          name="+packages"
+          template="../templates/person-packages.pt"
+          lp:url="/people/$Person.name/+packages" />
+      <browser:page
+          name="+translations"
+          template="../templates/person-translations.pt"
+          lp:url="/people/$Person.name/+translations" />
+      <browser:page
+          name="+bounties"
+          template="../templates/person-bounties.pt"
+          lp:url="/people/$Person.name/+bounties" />
   </browser:pages>
 
   <browser:editform

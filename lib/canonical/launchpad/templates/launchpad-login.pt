@@ -13,7 +13,7 @@
       This page handles cases in this order:
       1.  already logged in and shouldn't be here
       2.  just logged in successfully
-      3.  just aplied for registration successfully
+      3.  just applied for registration successfully
       4.  might want to log in
           4a. didn't try to log in last time
           4b. just tried to log in and failed
@@ -29,14 +29,16 @@
 
         <!-- 2. just logged in successfully: -->
         <p tal:condition="view/login_success">
-          You are now logged in as <strong tal:content="request/lp:person/displayname">someone, but Launchpad doesn't know who</strong>.
+          You are now logged in as <strong
+          tal:content="request/lp:person/displayname">Person Name</strong>.
         </p>
 
         <div tal:condition="not: view/login_success" tal:omit-tag>        
-          <h1>You&#8217;re already logged in</h1>
+          <h1>You&#8217;re Already Logged In</h1>
           <p>
-            You are already logged in as <strong tal:content="request/lp:person/displayname">someone, but Launchpad doesn't know who</strong>.
-            If this is not you, please
+            You are already logged in the the Launchpad as
+            <strong tal:content="request/lp:person/displayname">person
+            name</strong>.  If this is not you, please
             <a href="/+logout">log out now</a>.
           </p>
         </div>
@@ -48,31 +50,38 @@
         
           <!-- 3. just registered successfully: -->
           <div tal:condition="view/registration_success" tal:omit-tag>
-            <h1>Thanks</h1>
-            <p>
-              Your registration URL has been sent to
-              <code tal:content="view/email">your e-mail address</code>.
-              Thanks for signing up
-            </p>
+            <h1>Done!</h1>
+            <p>Your registration URL has been sent to
+            <code tal:content="view/email">email@domain.com</code>.
+            Once you have followed the link included in that email
+            your Launchpad account will be activated.</p>
+            
+            <p>Thanks for signing up and welcome to the Launchpad user
+            community. We are always interested to hear new ideas and bug
+            fixes, so please feel free to join <code>#launchpad</code> on
+            <code>irc.freenode.net</code> and share your ideas for
+            improvements to the Launchpad!</p>
           </div>
+
           <div tal:condition="not: view/registration_success" tal:omit-tag>
             <!-- 4a. didn't try to log in last time: -->
             <h1 tal:condition="not: view/login_error">
-              Already registered with Launchpad?
+              Already Registered?
             </h1>
             <!-- 4b. just tried to log in and failed: -->
             <div tal:condition="view/login_error">
-              <h1>Your login was unsuccessful</h1>
+              <h1>Your Login was Unsuccessful</h1>
               <p class="error" tal:content="view/login_error" />
             </div>
             <!-- 4. might want to log in: -->
             <p>
-              To log in, enter your e-mail address and password.
+              To log in to the Launchpad, enter your e-mail address
+              and Launchpad password.
             </p>
             <form name="login" method="POST">
               <table>
                 <tr>
-                  <th><label for="email">E-mail address:</label></th>
+                  <th><label for="email">E-mail:</label></th>
                   <td>
                     <input type="text"
                       name="email"
@@ -90,7 +99,7 @@
                       id="password"
                       name="password"
                     />
-                    [<a href="+forgottenpassword">Forgotten your password?</a>]
+                    [<a href="+forgottenpassword">Forgotten Password?</a>]
                   </td>
                 </tr>
                 <tr>
@@ -103,21 +112,27 @@
             </form>
             <!-- 5a. didn't try to register last time: -->
             <h1 tal:condition="not: view/registration_error">
-              Not registered yet? 
+              Not Registered Yet? 
             </h1>
             <!-- 5b. just tried to register and failed: -->
             <div tal:condition="view/registration_error">
-              <h1>Your registration was unsuccessful</h1>
-              <p class="error" tal:content="structure view/registration_error" />
+              <h1>Your Registration was Unsuccessful</h1>
+              <p class="error"
+                 tal:content="structure view/registration_error" />
             </div>
             <!-- 5. might want to register: -->
             <p>
-              To create a Launchpad account, enter your e-mail address. Launchpad will e-mail you to verify your address and give you instructions on how to finish registration. We will never disclose, share, or sell your personal information.
+              To create your Launchpad account, enter your e-mail address.
+              Launchpad will e-mail you to verify your address and give
+              you instructions on how to complete registration. We will
+              never disclose, share, or sell your personal information,
+              or send you email that is not directly related to your actions
+              in Launchpad, such as bug alerts or translation reports.
             </p>
             <form name="join" method="POST">
               <table>
                 <tr>
-                  <th>E-mail address:</th>
+                  <th>Your E-mail:</th>
                   <td>
                     <input type="text" size="30" name="email"
                       tal:attributes="value view/email|nothing"

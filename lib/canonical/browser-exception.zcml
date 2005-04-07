@@ -14,8 +14,8 @@
       for="zope.exceptions.IUnauthorized"
       name="index.html"
       permission="zope.Public"
-      template="launchpad/templates/unauthorized.pt"
-      class="zope.app.exception.browser.unauthorized.Unauthorized" 
+      class="canonical.launchpad.webapp.login.UnauthorizedView"
+      attribute="__call__"
       />
 
   <page
@@ -48,6 +48,7 @@
       layer="canonical.launchpad.skins.DebugLayer"
       />
   -->
+  <!--
   <page
       layer="canonical.launchpad.layers.DebugLayer"
       for="zope.exceptions.IUnauthorized"
@@ -55,6 +56,16 @@
       permission="zope.Public"
       template="launchpad/templates/unauthorized.pt"
       class="zope.app.exception.browser.unauthorized.Unauthorized" 
+      />
+    -->
+
+  <page
+      layer="canonical.launchpad.layers.DebugLayer"
+      for="zope.exceptions.IUnauthorized"
+      name="index.html"
+      permission="zope.Public"
+      class="canonical.launchpad.webapp.login.UnauthorizedView"
+      attribute="__call__"
       />
 
 <!-- Note: debug view for exceptions. -->

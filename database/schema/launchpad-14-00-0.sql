@@ -1,4 +1,4 @@
--- Generated Tue Mar  8 10:31:59 GMT 2005
+-- Generated Wed Apr  6 05:39:54 BST 2005
 SET client_min_messages=ERROR;
 
 SET client_encoding = 'UNICODE';
@@ -23,6 +23,7 @@ CREATE TABLE person (
     defaultmembershipperiod integer,
     defaultrenewalperiod integer,
     subscriptionpolicy integer DEFAULT 1 NOT NULL,
+    merged integer,
     CONSTRAINT no_loops CHECK ((id <> teamowner)),
     CONSTRAINT valid_name CHECK (valid_name(name))
 );
@@ -40,7 +41,7 @@ CREATE TABLE emailaddress (
 
 CREATE TABLE gpgkey (
     id serial NOT NULL,
-    person integer NOT NULL,
+    "owner" integer NOT NULL,
     keyid text NOT NULL,
     fingerprint text NOT NULL,
     pubkey text NOT NULL,
@@ -167,15 +168,6 @@ CREATE TABLE projectrelationship (
 
 
 
-CREATE TABLE projectrole (
-    id serial NOT NULL,
-    person integer NOT NULL,
-    role integer NOT NULL,
-    project integer NOT NULL
-);
-
-
-
 CREATE TABLE product (
     id serial NOT NULL,
     project integer,
@@ -208,15 +200,6 @@ CREATE TABLE productlabel (
     id serial NOT NULL,
     product integer NOT NULL,
     label integer NOT NULL
-);
-
-
-
-CREATE TABLE productrole (
-    id serial NOT NULL,
-    person integer NOT NULL,
-    role integer NOT NULL,
-    product integer NOT NULL
 );
 
 
@@ -394,7 +377,6 @@ CREATE TABLE productbranchrelationship (
 CREATE TABLE manifest (
     id serial NOT NULL,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
-    "owner" integer NOT NULL,
     uuid text NOT NULL
 );
 
@@ -497,16 +479,8 @@ CREATE TABLE distribution (
     lucilleconfig text,
     displayname text NOT NULL,
     summary text NOT NULL,
+    members integer NOT NULL,
     CONSTRAINT valid_name CHECK (valid_name(name))
-);
-
-
-
-CREATE TABLE distributionrole (
-    person integer NOT NULL,
-    distribution integer NOT NULL,
-    role integer NOT NULL,
-    id integer DEFAULT nextval('DistributionRole_id_seq'::text) NOT NULL
 );
 
 
@@ -520,7 +494,7 @@ CREATE TABLE distrorelease (
     "version" text NOT NULL,
     components integer NOT NULL,
     sections integer NOT NULL,
-    releasestate integer NOT NULL,
+    releasestatus integer NOT NULL,
     datereleased timestamp without time zone,
     parentrelease integer,
     "owner" integer NOT NULL,
@@ -529,15 +503,6 @@ CREATE TABLE distrorelease (
     displayname text NOT NULL,
     CONSTRAINT valid_name CHECK (valid_name(name)),
     CONSTRAINT valid_version CHECK (valid_version("version"))
-);
-
-
-
-CREATE TABLE distroreleaserole (
-    person integer NOT NULL,
-    distrorelease integer NOT NULL,
-    role integer NOT NULL,
-    id integer DEFAULT nextval('DistroreleaseRole_id_seq'::text) NOT NULL
 );
 
 
@@ -590,49 +555,18 @@ CREATE TABLE sourcepackagename (
 
 
 
-CREATE TABLE sourcepackage (
-    id serial NOT NULL,
-    maintainer integer NOT NULL,
-    shortdesc text NOT NULL,
-    description text NOT NULL,
-    manifest integer,
-    distro integer,
-    sourcepackagename integer NOT NULL,
-    srcpackageformat integer NOT NULL,
-    fti ts2.tsvector
-);
-
-
-
-CREATE TABLE sourcepackagerelationship (
-    subject integer NOT NULL,
-    label integer NOT NULL,
-    object integer NOT NULL,
-    id integer DEFAULT nextval('sourcepackagerelationship_id_seq'::text) NOT NULL,
-    CONSTRAINT "$1" CHECK ((subject <> object))
-);
-
-
-
-CREATE TABLE sourcepackagelabel (
-    sourcepackage integer NOT NULL,
-    label integer NOT NULL
-);
-
-
-
 CREATE TABLE packaging (
-    sourcepackage integer NOT NULL,
     packaging integer NOT NULL,
     product integer NOT NULL,
-    id integer DEFAULT nextval('packaging_id_seq'::text)
+    id integer DEFAULT nextval('packaging_id_seq'::text),
+    sourcepackagename integer,
+    distrorelease integer
 );
 
 
 
 CREATE TABLE sourcepackagerelease (
     id serial NOT NULL,
-    sourcepackage integer NOT NULL,
     creator integer NOT NULL,
     "version" text NOT NULL,
     dateuploaded timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
@@ -648,6 +582,8 @@ CREATE TABLE sourcepackagerelease (
     manifest integer,
     maintainer integer NOT NULL,
     sourcepackagename integer NOT NULL,
+    uploaddistrorelease integer NOT NULL,
+    format integer NOT NULL,
     CONSTRAINT valid_version CHECK (valid_version("version"))
 );
 
@@ -836,11 +772,7 @@ CREATE TABLE license (
 
 CREATE TABLE potemplate (
     id serial NOT NULL,
-    product integer NOT NULL,
     priority integer,
-    branch integer,
-    changeset integer,
-    name text NOT NULL,
     title text NOT NULL,
     description text,
     copyright text,
@@ -849,18 +781,21 @@ CREATE TABLE potemplate (
     "path" text,
     iscurrent boolean NOT NULL,
     messagecount integer NOT NULL,
-    "owner" integer,
-    rawfile text,
-    rawimporter integer,
-    daterawimport timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone),
+    "owner" integer NOT NULL,
+    rawfile text NOT NULL,
+    rawimporter integer NOT NULL,
+    daterawimport timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     rawimportstatus integer DEFAULT 1 NOT NULL,
     sourcepackagename integer,
     distrorelease integer,
-    sourcepackagerelease integer,
     sourcepackageversion text,
     header text,
-    CONSTRAINT potemplate_rawimportstatus_valid CHECK ((((rawfile IS NULL) AND (rawimportstatus <> 2)) OR (rawfile IS NOT NULL))),
-    CONSTRAINT valid_name CHECK (valid_name(name))
+    potemplatename integer NOT NULL,
+    productrelease integer,
+    binarypackagename integer,
+    languagepack boolean DEFAULT false NOT NULL,
+    filename text,
+    CONSTRAINT valid_link CHECK ((((productrelease IS NULL) <> (distrorelease IS NULL)) AND ((distrorelease IS NULL) = (sourcepackagename IS NULL))))
 );
 
 
@@ -880,7 +815,7 @@ CREATE TABLE pofile (
     updatescount integer NOT NULL,
     rosettacount integer NOT NULL,
     lastparsed timestamp without time zone,
-    "owner" integer,
+    "owner" integer NOT NULL,
     pluralforms integer NOT NULL,
     variant text,
     filename text,
@@ -1014,37 +949,6 @@ CREATE TABLE bugsubscription (
 
 
 
-CREATE TABLE sourcepackagebugassignment (
-    id serial NOT NULL,
-    bug integer NOT NULL,
-    sourcepackage integer NOT NULL,
-    bugstatus integer NOT NULL,
-    priority integer NOT NULL,
-    severity integer NOT NULL,
-    binarypackagename integer,
-    assignee integer,
-    dateassigned timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
-    datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
-    "owner" integer NOT NULL
-);
-
-
-
-CREATE TABLE productbugassignment (
-    id serial NOT NULL,
-    bug integer NOT NULL,
-    product integer NOT NULL,
-    bugstatus integer NOT NULL,
-    priority integer NOT NULL,
-    severity integer NOT NULL,
-    assignee integer,
-    dateassigned timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
-    datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
-    "owner" integer NOT NULL
-);
-
-
-
 CREATE TABLE bugactivity (
     id serial NOT NULL,
     bug integer NOT NULL,
@@ -1148,7 +1052,7 @@ CREATE TABLE message (
 
 CREATE TABLE bugattachment (
     id serial NOT NULL,
-    bugmessage integer NOT NULL,
+    message integer NOT NULL,
     name text,
     description text,
     libraryfile integer NOT NULL,
@@ -1174,7 +1078,6 @@ CREATE TABLE sourcesource (
     releaseverstyle integer,
     releasefileglob text,
     releaseparentbranch integer,
-    sourcepackage integer,
     branch integer,
     lastsynced timestamp without time zone,
     syncinterval interval,
@@ -1195,7 +1098,9 @@ CREATE TABLE sourcesource (
     branchpoint text,
     autotested integer DEFAULT 0 NOT NULL,
     datestarted timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone),
-    datefinished timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone)
+    datefinished timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone),
+    sourcepackagename integer,
+    distrorelease integer
 );
 
 
@@ -1393,7 +1298,7 @@ CREATE TABLE cveref (
 
 CREATE TABLE karma (
     id serial NOT NULL,
-    karmafield integer NOT NULL,
+    karmatype integer NOT NULL,
     datecreated timestamp without time zone NOT NULL,
     person integer NOT NULL,
     points integer NOT NULL
@@ -1528,13 +1433,98 @@ CREATE SEQUENCE packaging_id_seq
 
 CREATE TABLE signedcodeofconduct (
     id serial NOT NULL,
-    person integer NOT NULL,
+    "owner" integer NOT NULL,
     signingkey integer,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     signedcode text,
     recipient integer,
     active boolean DEFAULT false NOT NULL,
     admincomment text
+);
+
+
+
+CREATE TABLE bountysubscription (
+    id serial NOT NULL,
+    bounty integer NOT NULL,
+    person integer NOT NULL,
+    subscription integer
+);
+
+
+
+CREATE TABLE productbounty (
+    id serial NOT NULL,
+    bounty integer NOT NULL,
+    product integer NOT NULL
+);
+
+
+
+CREATE TABLE distrobounty (
+    id serial NOT NULL,
+    bounty integer NOT NULL,
+    distribution integer NOT NULL
+);
+
+
+
+CREATE TABLE projectbounty (
+    id serial NOT NULL,
+    bounty integer NOT NULL,
+    project integer NOT NULL
+);
+
+
+
+CREATE TABLE mirror (
+    id serial NOT NULL,
+    "owner" integer NOT NULL,
+    baseurl text NOT NULL,
+    country integer NOT NULL,
+    name text NOT NULL,
+    description text NOT NULL,
+    freshness integer DEFAULT 99 NOT NULL,
+    lastcheckeddate timestamp without time zone,
+    approved boolean DEFAULT false NOT NULL
+);
+
+
+
+CREATE TABLE mirrorcontent (
+    id serial NOT NULL,
+    mirror integer NOT NULL,
+    distroarchrelease integer NOT NULL,
+    component integer NOT NULL
+);
+
+
+
+CREATE TABLE mirrorsourcecontent (
+    id serial NOT NULL,
+    mirror integer NOT NULL,
+    distrorelease integer NOT NULL,
+    component integer NOT NULL
+);
+
+
+
+CREATE TABLE potemplatename (
+    id serial NOT NULL,
+    name text NOT NULL,
+    title text NOT NULL,
+    description text,
+    translationdomain text NOT NULL,
+    CONSTRAINT potemplate_valid_name CHECK (valid_name(name))
+);
+
+
+
+CREATE TABLE maintainership (
+    id serial NOT NULL,
+    distribution integer NOT NULL,
+    sourcepackagename integer NOT NULL,
+    maintainer integer NOT NULL
 );
 
 
@@ -1563,10 +1553,6 @@ CREATE INDEX pomsgidsighting_pluralform_idx ON pomsgidsighting USING btree (plur
 
 
 
-CREATE INDEX pomsgset_index_pofile ON pomsgset USING btree (pofile);
-
-
-
 CREATE UNIQUE INDEX person_name_key ON person USING btree (name);
 
 
@@ -1579,15 +1565,7 @@ CREATE INDEX packagepublishing_binarypackage_key ON packagepublishing USING btre
 
 
 
-CREATE INDEX binarypackage_binarypackagename_key2 ON binarypackage USING btree (binarypackagename);
-
-
-
 CREATE INDEX sourcepackageupload_sourcepackagerelease_key ON sourcepackagepublishing USING btree (sourcepackagerelease);
-
-
-
-CREATE INDEX sourcepackagerelease_sourcepackage_key ON sourcepackagerelease USING btree (sourcepackage);
 
 
 
@@ -1599,23 +1577,11 @@ CREATE INDEX distroreleasequeue_distrorelease_key ON distroreleasequeue USING bt
 
 
 
-CREATE INDEX sourcepackage_maintainer_key ON sourcepackage USING btree (maintainer);
-
-
-
 CREATE INDEX sourcepackagepublishing_distrorelease_key ON sourcepackagepublishing USING btree (distrorelease);
 
 
 
 CREATE INDEX sourcepackagepublishing_status_key ON sourcepackagepublishing USING btree (status);
-
-
-
-CREATE INDEX productbugassignment_owner_idx ON productbugassignment USING btree ("owner");
-
-
-
-CREATE INDEX sourcepackagebugassignment_owner_idx ON sourcepackagebugassignment USING btree ("owner");
 
 
 
@@ -1644,10 +1610,6 @@ CREATE INDEX distroarchrelease_processorfamily_idx ON distroarchrelease USING bt
 
 
 CREATE INDEX binarypackage_build_idx ON binarypackage USING btree (build);
-
-
-
-CREATE INDEX sourcepackage_sourcepackagename_idx ON sourcepackage USING btree (sourcepackagename);
 
 
 
@@ -1744,10 +1706,6 @@ CREATE INDEX product_fti ON product USING gist (fti ts2.gist_tsvector_ops);
 
 
 CREATE INDEX project_fti ON project USING gist (fti ts2.gist_tsvector_ops);
-
-
-
-CREATE INDEX sourcepackage_fti ON sourcepackage USING gist (fti ts2.gist_tsvector_ops);
 
 
 
@@ -1855,11 +1813,6 @@ ALTER TABLE ONLY projectrelationship
 
 
 
-ALTER TABLE ONLY projectrole
-    ADD CONSTRAINT projectrole_pkey PRIMARY KEY (id);
-
-
-
 ALTER TABLE ONLY product
     ADD CONSTRAINT product_pkey PRIMARY KEY (id);
 
@@ -1872,11 +1825,6 @@ ALTER TABLE ONLY productlabel
 
 ALTER TABLE ONLY productlabel
     ADD CONSTRAINT productlabel_product_key UNIQUE (product, label);
-
-
-
-ALTER TABLE ONLY productrole
-    ADD CONSTRAINT productrole_pkey PRIMARY KEY (id);
 
 
 
@@ -2085,11 +2033,6 @@ ALTER TABLE ONLY sourcepackagename
 
 
 
-ALTER TABLE ONLY sourcepackage
-    ADD CONSTRAINT sourcepackage_pkey PRIMARY KEY (id);
-
-
-
 ALTER TABLE ONLY sourcepackagerelease
     ADD CONSTRAINT sourcepackagerelease_pkey PRIMARY KEY (id);
 
@@ -2170,11 +2113,6 @@ ALTER TABLE ONLY potemplate
 
 
 
-ALTER TABLE ONLY potemplate
-    ADD CONSTRAINT potemplate_product_key UNIQUE (product, name);
-
-
-
 ALTER TABLE ONLY pofile
     ADD CONSTRAINT pofile_pkey PRIMARY KEY (id);
 
@@ -2237,26 +2175,6 @@ ALTER TABLE ONLY bug
 
 ALTER TABLE ONLY bugsubscription
     ADD CONSTRAINT bugsubscription_pkey PRIMARY KEY (id);
-
-
-
-ALTER TABLE ONLY sourcepackagebugassignment
-    ADD CONSTRAINT sourcepackagebugassignment_pkey PRIMARY KEY (id);
-
-
-
-ALTER TABLE ONLY sourcepackagebugassignment
-    ADD CONSTRAINT sourcepackagebugassignment_bug_key UNIQUE (bug, sourcepackage);
-
-
-
-ALTER TABLE ONLY productbugassignment
-    ADD CONSTRAINT productbugassignment_pkey PRIMARY KEY (id);
-
-
-
-ALTER TABLE ONLY productbugassignment
-    ADD CONSTRAINT productbugassignment_bug_key UNIQUE (bug, product);
 
 
 
@@ -2332,16 +2250,6 @@ ALTER TABLE ONLY potranslationsighting
 
 ALTER TABLE ONLY bug
     ADD CONSTRAINT bug_name_key UNIQUE (name);
-
-
-
-ALTER TABLE ONLY distributionrole
-    ADD CONSTRAINT distributionrole_pkey PRIMARY KEY (id);
-
-
-
-ALTER TABLE ONLY distroreleaserole
-    ADD CONSTRAINT distroreleaserole_pkey PRIMARY KEY (id);
 
 
 
@@ -2490,11 +2398,6 @@ ALTER TABLE ONLY spokenin
 
 
 
-ALTER TABLE ONLY sourcepackagerelationship
-    ADD CONSTRAINT sourcepackagerelationship_pkey PRIMARY KEY (id);
-
-
-
 ALTER TABLE ONLY sshkey
     ADD CONSTRAINT sshkey_pkey PRIMARY KEY (id);
 
@@ -2502,11 +2405,6 @@ ALTER TABLE ONLY sshkey
 
 ALTER TABLE ONLY bugtask
     ADD CONSTRAINT bugtask_pkey PRIMARY KEY (id);
-
-
-
-ALTER TABLE ONLY sourcepackage
-    ADD CONSTRAINT sourcepackage_distro_key UNIQUE (distro, sourcepackagename);
 
 
 
@@ -2570,8 +2468,108 @@ ALTER TABLE ONLY distrorelease
 
 
 
+ALTER TABLE ONLY bountysubscription
+    ADD CONSTRAINT bountysubscription_pkey PRIMARY KEY (id);
+
+
+
+ALTER TABLE ONLY bountysubscription
+    ADD CONSTRAINT bountysubscription_person_key UNIQUE (person, bounty);
+
+
+
+ALTER TABLE ONLY productbounty
+    ADD CONSTRAINT productbounty_pkey PRIMARY KEY (id);
+
+
+
+ALTER TABLE ONLY productbounty
+    ADD CONSTRAINT productbounty_bounty_key UNIQUE (bounty, product);
+
+
+
+ALTER TABLE ONLY distrobounty
+    ADD CONSTRAINT distrobounty_pkey PRIMARY KEY (id);
+
+
+
+ALTER TABLE ONLY distrobounty
+    ADD CONSTRAINT distrobounty_bounty_key UNIQUE (bounty, distribution);
+
+
+
+ALTER TABLE ONLY projectbounty
+    ADD CONSTRAINT projectbounty_pkey PRIMARY KEY (id);
+
+
+
+ALTER TABLE ONLY projectbounty
+    ADD CONSTRAINT projectbounty_bounty_key UNIQUE (bounty, project);
+
+
+
+ALTER TABLE ONLY mirror
+    ADD CONSTRAINT mirror_pkey PRIMARY KEY (id);
+
+
+
+ALTER TABLE ONLY mirror
+    ADD CONSTRAINT mirror_name_key UNIQUE (name);
+
+
+
+ALTER TABLE ONLY mirrorcontent
+    ADD CONSTRAINT mirrorcontent_pkey PRIMARY KEY (id);
+
+
+
+ALTER TABLE ONLY mirrorsourcecontent
+    ADD CONSTRAINT mirrorsourcecontent_pkey PRIMARY KEY (id);
+
+
+
+ALTER TABLE ONLY sourcesource
+    ADD CONSTRAINT sourcesource_name_key UNIQUE (name);
+
+
+
+ALTER TABLE ONLY potemplatename
+    ADD CONSTRAINT potemplatename_pkey PRIMARY KEY (id);
+
+
+
+ALTER TABLE ONLY potemplatename
+    ADD CONSTRAINT potemplate_name_key UNIQUE (name);
+
+
+
+ALTER TABLE ONLY potemplate
+    ADD CONSTRAINT potemplate_productrelease_key UNIQUE (productrelease, potemplatename);
+
+
+
+ALTER TABLE ONLY potemplate
+    ADD CONSTRAINT potemplate_distrorelease_key UNIQUE (distrorelease, sourcepackagename, potemplatename);
+
+
+
+ALTER TABLE ONLY potemplate
+    ADD CONSTRAINT potemplate_sourcepackagename_key UNIQUE (sourcepackagename, "path", filename, distrorelease);
+
+
+
+ALTER TABLE ONLY potemplatename
+    ADD CONSTRAINT potemplate_translationdomain_key UNIQUE (translationdomain);
+
+
+
 ALTER TABLE ONLY gpgkey
-    ADD CONSTRAINT gpgkey_person_idx UNIQUE (person, id);
+    ADD CONSTRAINT gpgkey_owner_key UNIQUE ("owner", id);
+
+
+
+ALTER TABLE ONLY maintainership
+    ADD CONSTRAINT maintainership_pkey PRIMARY KEY (id);
 
 
 
@@ -2581,16 +2579,6 @@ ALTER TABLE ONLY person
 
 
 ALTER TABLE ONLY emailaddress
-    ADD CONSTRAINT "$1" FOREIGN KEY (person) REFERENCES person(id);
-
-
-
-ALTER TABLE ONLY gpgkey
-    ADD CONSTRAINT "$1" FOREIGN KEY (person) REFERENCES person(id);
-
-
-
-ALTER TABLE ONLY archuserid
     ADD CONSTRAINT "$1" FOREIGN KEY (person) REFERENCES person(id);
 
 
@@ -2660,16 +2648,6 @@ ALTER TABLE ONLY projectrelationship
 
 
 
-ALTER TABLE ONLY projectrole
-    ADD CONSTRAINT "$1" FOREIGN KEY (person) REFERENCES person(id);
-
-
-
-ALTER TABLE ONLY projectrole
-    ADD CONSTRAINT "$2" FOREIGN KEY (project) REFERENCES project(id);
-
-
-
 ALTER TABLE ONLY productlabel
     ADD CONSTRAINT "$1" FOREIGN KEY (product) REFERENCES product(id);
 
@@ -2677,16 +2655,6 @@ ALTER TABLE ONLY productlabel
 
 ALTER TABLE ONLY productlabel
     ADD CONSTRAINT "$2" FOREIGN KEY (label) REFERENCES label(id);
-
-
-
-ALTER TABLE ONLY productrole
-    ADD CONSTRAINT "$1" FOREIGN KEY (person) REFERENCES person(id);
-
-
-
-ALTER TABLE ONLY productrole
-    ADD CONSTRAINT "$2" FOREIGN KEY (product) REFERENCES product(id);
 
 
 
@@ -2717,31 +2685,6 @@ ALTER TABLE ONLY productbkbranch
 
 ALTER TABLE ONLY productsvnmodule
     ADD CONSTRAINT "$1" FOREIGN KEY (product) REFERENCES product(id);
-
-
-
-ALTER TABLE ONLY archarchive
-    ADD CONSTRAINT "$1" FOREIGN KEY ("owner") REFERENCES person(id);
-
-
-
-ALTER TABLE ONLY archarchivelocation
-    ADD CONSTRAINT "$1" FOREIGN KEY (archive) REFERENCES archarchive(id);
-
-
-
-ALTER TABLE ONLY archarchivelocationsigner
-    ADD CONSTRAINT "$1" FOREIGN KEY (archarchivelocation) REFERENCES archarchivelocation(id);
-
-
-
-ALTER TABLE ONLY archarchivelocationsigner
-    ADD CONSTRAINT "$2" FOREIGN KEY (gpgkey) REFERENCES gpgkey(id);
-
-
-
-ALTER TABLE ONLY archnamespace
-    ADD CONSTRAINT "$1" FOREIGN KEY (archarchive) REFERENCES archarchive(id);
 
 
 
@@ -2820,11 +2763,6 @@ ALTER TABLE ONLY productbranchrelationship
 
 
 
-ALTER TABLE ONLY manifest
-    ADD CONSTRAINT "$1" FOREIGN KEY ("owner") REFERENCES person(id);
-
-
-
 ALTER TABLE ONLY manifestentry
     ADD CONSTRAINT "$3" FOREIGN KEY (manifest) REFERENCES manifest(id);
 
@@ -2847,36 +2785,6 @@ ALTER TABLE ONLY manifestentry
 
 ALTER TABLE ONLY manifestentry
     ADD CONSTRAINT "$7" FOREIGN KEY (manifest, patchon) REFERENCES manifestentry(manifest, "sequence");
-
-
-
-ALTER TABLE ONLY archconfig
-    ADD CONSTRAINT "$1" FOREIGN KEY (productrelease) REFERENCES productrelease(id);
-
-
-
-ALTER TABLE ONLY archconfig
-    ADD CONSTRAINT "$2" FOREIGN KEY ("owner") REFERENCES person(id);
-
-
-
-ALTER TABLE ONLY archconfigentry
-    ADD CONSTRAINT "$1" FOREIGN KEY (archconfig) REFERENCES archconfig(id);
-
-
-
-ALTER TABLE ONLY archconfigentry
-    ADD CONSTRAINT "$2" FOREIGN KEY (branch) REFERENCES branch(id);
-
-
-
-ALTER TABLE ONLY archconfigentry
-    ADD CONSTRAINT "$3" FOREIGN KEY (changeset) REFERENCES changeset(id);
-
-
-
-ALTER TABLE ONLY archconfigentry
-    ADD CONSTRAINT "$4" FOREIGN KEY (branch, changeset) REFERENCES changeset(branch, id);
 
 
 
@@ -2910,16 +2818,6 @@ ALTER TABLE ONLY distribution
 
 
 
-ALTER TABLE ONLY distributionrole
-    ADD CONSTRAINT "$1" FOREIGN KEY (person) REFERENCES person(id);
-
-
-
-ALTER TABLE ONLY distributionrole
-    ADD CONSTRAINT "$2" FOREIGN KEY (distribution) REFERENCES distribution(id);
-
-
-
 ALTER TABLE ONLY distrorelease
     ADD CONSTRAINT "$1" FOREIGN KEY (distribution) REFERENCES distribution(id);
 
@@ -2942,16 +2840,6 @@ ALTER TABLE ONLY distrorelease
 
 ALTER TABLE ONLY distrorelease
     ADD CONSTRAINT "$5" FOREIGN KEY ("owner") REFERENCES person(id);
-
-
-
-ALTER TABLE ONLY distroreleaserole
-    ADD CONSTRAINT "$1" FOREIGN KEY (person) REFERENCES person(id);
-
-
-
-ALTER TABLE ONLY distroreleaserole
-    ADD CONSTRAINT "$2" FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
 
 
 
@@ -2985,53 +2873,8 @@ ALTER TABLE ONLY productreleasefile
 
 
 
-ALTER TABLE ONLY sourcepackage
-    ADD CONSTRAINT "$1" FOREIGN KEY (maintainer) REFERENCES person(id);
-
-
-
-ALTER TABLE ONLY sourcepackage
-    ADD CONSTRAINT "$2" FOREIGN KEY (manifest) REFERENCES manifest(id);
-
-
-
-ALTER TABLE ONLY sourcepackage
-    ADD CONSTRAINT "$3" FOREIGN KEY (distro) REFERENCES distribution(id);
-
-
-
-ALTER TABLE ONLY sourcepackagerelationship
-    ADD CONSTRAINT "$2" FOREIGN KEY (subject) REFERENCES sourcepackage(id);
-
-
-
-ALTER TABLE ONLY sourcepackagerelationship
-    ADD CONSTRAINT "$3" FOREIGN KEY (object) REFERENCES sourcepackage(id);
-
-
-
-ALTER TABLE ONLY sourcepackagelabel
-    ADD CONSTRAINT "$1" FOREIGN KEY (sourcepackage) REFERENCES sourcepackage(id);
-
-
-
-ALTER TABLE ONLY sourcepackagelabel
-    ADD CONSTRAINT "$2" FOREIGN KEY (label) REFERENCES label(id);
-
-
-
-ALTER TABLE ONLY packaging
-    ADD CONSTRAINT "$1" FOREIGN KEY (sourcepackage) REFERENCES sourcepackage(id);
-
-
-
 ALTER TABLE ONLY packaging
     ADD CONSTRAINT "$2" FOREIGN KEY (product) REFERENCES product(id);
-
-
-
-ALTER TABLE ONLY sourcepackagerelease
-    ADD CONSTRAINT "$1" FOREIGN KEY (sourcepackage) REFERENCES sourcepackage(id);
 
 
 
@@ -3087,36 +2930,6 @@ ALTER TABLE ONLY build
 
 ALTER TABLE ONLY build
     ADD CONSTRAINT "$5" FOREIGN KEY (gpgsigningkey) REFERENCES gpgkey(id);
-
-
-
-ALTER TABLE ONLY binarypackage
-    ADD CONSTRAINT "$2" FOREIGN KEY (binarypackagename) REFERENCES binarypackagename(id);
-
-
-
-ALTER TABLE ONLY binarypackage
-    ADD CONSTRAINT "$3" FOREIGN KEY (build) REFERENCES build(id);
-
-
-
-ALTER TABLE ONLY binarypackage
-    ADD CONSTRAINT "$4" FOREIGN KEY (component) REFERENCES component(id);
-
-
-
-ALTER TABLE ONLY binarypackage
-    ADD CONSTRAINT "$5" FOREIGN KEY (section) REFERENCES section(id);
-
-
-
-ALTER TABLE ONLY binarypackagefile
-    ADD CONSTRAINT "$1" FOREIGN KEY (binarypackage) REFERENCES binarypackage(id);
-
-
-
-ALTER TABLE ONLY binarypackagefile
-    ADD CONSTRAINT "$2" FOREIGN KEY (libraryfile) REFERENCES libraryfilealias(id);
 
 
 
@@ -3182,61 +2995,6 @@ ALTER TABLE ONLY spokenin
 
 ALTER TABLE ONLY spokenin
     ADD CONSTRAINT "$2" FOREIGN KEY (country) REFERENCES country(id);
-
-
-
-ALTER TABLE ONLY potemplate
-    ADD CONSTRAINT "$1" FOREIGN KEY (product) REFERENCES product(id);
-
-
-
-ALTER TABLE ONLY potemplate
-    ADD CONSTRAINT "$2" FOREIGN KEY (branch) REFERENCES branch(id);
-
-
-
-ALTER TABLE ONLY potemplate
-    ADD CONSTRAINT "$3" FOREIGN KEY (changeset) REFERENCES changeset(id);
-
-
-
-ALTER TABLE ONLY potemplate
-    ADD CONSTRAINT "$4" FOREIGN KEY (license) REFERENCES license(id);
-
-
-
-ALTER TABLE ONLY potemplate
-    ADD CONSTRAINT "$5" FOREIGN KEY ("owner") REFERENCES person(id);
-
-
-
-ALTER TABLE ONLY potemplate
-    ADD CONSTRAINT "$6" FOREIGN KEY (changeset, branch) REFERENCES changeset(id, branch);
-
-
-
-ALTER TABLE ONLY pofile
-    ADD CONSTRAINT "$1" FOREIGN KEY (potemplate) REFERENCES potemplate(id);
-
-
-
-ALTER TABLE ONLY pofile
-    ADD CONSTRAINT "$2" FOREIGN KEY ("language") REFERENCES "language"(id);
-
-
-
-ALTER TABLE ONLY pofile
-    ADD CONSTRAINT "$3" FOREIGN KEY (lasttranslator) REFERENCES person(id);
-
-
-
-ALTER TABLE ONLY pofile
-    ADD CONSTRAINT "$4" FOREIGN KEY (license) REFERENCES license(id);
-
-
-
-ALTER TABLE ONLY pofile
-    ADD CONSTRAINT "$5" FOREIGN KEY ("owner") REFERENCES person(id);
 
 
 
@@ -3355,21 +3113,6 @@ ALTER TABLE ONLY bugsubscription
 
 
 
-ALTER TABLE ONLY sourcepackagebugassignment
-    ADD CONSTRAINT "$1" FOREIGN KEY (bug) REFERENCES bug(id);
-
-
-
-ALTER TABLE ONLY sourcepackagebugassignment
-    ADD CONSTRAINT "$2" FOREIGN KEY (sourcepackage) REFERENCES sourcepackage(id);
-
-
-
-ALTER TABLE ONLY productbugassignment
-    ADD CONSTRAINT "$1" FOREIGN KEY (bug) REFERENCES bug(id);
-
-
-
 ALTER TABLE ONLY bugactivity
     ADD CONSTRAINT "$1" FOREIGN KEY (bug) REFERENCES bug(id);
 
@@ -3455,11 +3198,6 @@ ALTER TABLE ONLY message
 
 
 
-ALTER TABLE ONLY bugattachment
-    ADD CONSTRAINT "$2" FOREIGN KEY (libraryfile) REFERENCES libraryfilealias(id);
-
-
-
 ALTER TABLE ONLY sourcesource
     ADD CONSTRAINT "$1" FOREIGN KEY (product) REFERENCES product(id);
 
@@ -3476,22 +3214,12 @@ ALTER TABLE ONLY sourcesource
 
 
 ALTER TABLE ONLY sourcesource
-    ADD CONSTRAINT "$4" FOREIGN KEY (sourcepackage) REFERENCES sourcepackage(id);
-
-
-
-ALTER TABLE ONLY sourcesource
     ADD CONSTRAINT "$5" FOREIGN KEY (branch) REFERENCES branch(id);
 
 
 
 ALTER TABLE ONLY sourcesource
     ADD CONSTRAINT "$6" FOREIGN KEY ("owner") REFERENCES person(id);
-
-
-
-ALTER TABLE ONLY sourcepackage
-    ADD CONSTRAINT "$4" FOREIGN KEY (sourcepackagename) REFERENCES sourcepackagename(id);
 
 
 
@@ -3515,28 +3243,8 @@ ALTER TABLE ONLY sectionselection
 
 
 
-ALTER TABLE ONLY productbugassignment
-    ADD CONSTRAINT "$3" FOREIGN KEY (assignee) REFERENCES person(id);
-
-
-
-ALTER TABLE ONLY sourcepackagebugassignment
-    ADD CONSTRAINT "$4" FOREIGN KEY (assignee) REFERENCES person(id);
-
-
-
 ALTER TABLE ONLY build
     ADD CONSTRAINT "$6" FOREIGN KEY (sourcepackagerelease) REFERENCES sourcepackagerelease(id);
-
-
-
-ALTER TABLE ONLY productbugassignment
-    ADD CONSTRAINT "$2" FOREIGN KEY (product) REFERENCES product(id);
-
-
-
-ALTER TABLE ONLY sourcepackagebugassignment
-    ADD CONSTRAINT "$3" FOREIGN KEY (binarypackagename) REFERENCES binarypackagename(id);
 
 
 
@@ -3670,33 +3378,8 @@ ALTER TABLE ONLY sourcepackagerelease
 
 
 
-ALTER TABLE ONLY bounty
-    ADD CONSTRAINT "$1" FOREIGN KEY (reviewer) REFERENCES person(id);
-
-
-
-ALTER TABLE ONLY bounty
-    ADD CONSTRAINT "$2" FOREIGN KEY ("owner") REFERENCES person(id);
-
-
-
-ALTER TABLE ONLY bounty
-    ADD CONSTRAINT "$3" FOREIGN KEY (claimant) REFERENCES person(id);
-
-
-
 ALTER TABLE ONLY person
     ADD CONSTRAINT person_language_fk FOREIGN KEY ("language") REFERENCES "language"(id);
-
-
-
-ALTER TABLE ONLY productbugassignment
-    ADD CONSTRAINT productbugassignment_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
-
-
-
-ALTER TABLE ONLY sourcepackagebugassignment
-    ADD CONSTRAINT sourcepackagebugassignment_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 
 
@@ -3712,16 +3395,6 @@ ALTER TABLE ONLY cveref
 
 ALTER TABLE ONLY cveref
     ADD CONSTRAINT "$2" FOREIGN KEY ("owner") REFERENCES person(id);
-
-
-
-ALTER TABLE ONLY potemplate
-    ADD CONSTRAINT "$7" FOREIGN KEY (rawimporter) REFERENCES person(id);
-
-
-
-ALTER TABLE ONLY pofile
-    ADD CONSTRAINT "$6" FOREIGN KEY (rawimporter) REFERENCES person(id);
 
 
 
@@ -3732,11 +3405,6 @@ ALTER TABLE ONLY message
 
 ALTER TABLE ONLY bugmessage
     ADD CONSTRAINT bugmessage_message_fk FOREIGN KEY (message) REFERENCES message(id);
-
-
-
-ALTER TABLE ONLY bugattachment
-    ADD CONSTRAINT bugattachment_bugmessage_fk FOREIGN KEY (bugmessage) REFERENCES message(id);
 
 
 
@@ -3855,11 +3523,6 @@ ALTER TABLE ONLY pushmirroraccess
 
 
 
-ALTER TABLE ONLY potemplate
-    ADD CONSTRAINT potemplate_sourcepackagerelease_fk FOREIGN KEY (sourcepackagerelease) REFERENCES sourcepackagerelease(id);
-
-
-
 ALTER TABLE ONLY buildqueue
     ADD CONSTRAINT "$1" FOREIGN KEY (build) REFERENCES build(id);
 
@@ -3880,13 +3543,318 @@ ALTER TABLE ONLY teammembership
 
 
 
-ALTER TABLE ONLY signedcodeofconduct
-    ADD CONSTRAINT recipient_person_fk FOREIGN KEY (recipient) REFERENCES person(id);
+ALTER TABLE ONLY bugattachment
+    ADD CONSTRAINT bugattachment_message_fk FOREIGN KEY (message) REFERENCES message(id);
+
+
+
+ALTER TABLE ONLY bugattachment
+    ADD CONSTRAINT bugattachment_libraryfile_fk FOREIGN KEY (libraryfile) REFERENCES libraryfilealias(id);
+
+
+
+ALTER TABLE ONLY bountysubscription
+    ADD CONSTRAINT bountysubscription_bounty_fk FOREIGN KEY (bounty) REFERENCES bounty(id);
+
+
+
+ALTER TABLE ONLY bountysubscription
+    ADD CONSTRAINT bountysubscription_person_fk FOREIGN KEY (person) REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY productbounty
+    ADD CONSTRAINT productbounty_bounty_fk FOREIGN KEY (bounty) REFERENCES bounty(id);
+
+
+
+ALTER TABLE ONLY productbounty
+    ADD CONSTRAINT productbounty_product_fk FOREIGN KEY (product) REFERENCES product(id);
+
+
+
+ALTER TABLE ONLY distrobounty
+    ADD CONSTRAINT distrobounty_bounty_fk FOREIGN KEY (bounty) REFERENCES bounty(id);
+
+
+
+ALTER TABLE ONLY distrobounty
+    ADD CONSTRAINT distrobounty_distribution_fk FOREIGN KEY (distribution) REFERENCES distribution(id);
+
+
+
+ALTER TABLE ONLY projectbounty
+    ADD CONSTRAINT projectbounty_bounty_fk FOREIGN KEY (bounty) REFERENCES bounty(id);
+
+
+
+ALTER TABLE ONLY projectbounty
+    ADD CONSTRAINT projectbounty_project_fk FOREIGN KEY (project) REFERENCES project(id);
+
+
+
+ALTER TABLE ONLY mirror
+    ADD CONSTRAINT mirror_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY mirror
+    ADD CONSTRAINT mirror_country_fk FOREIGN KEY (country) REFERENCES country(id);
+
+
+
+ALTER TABLE ONLY mirrorcontent
+    ADD CONSTRAINT mirrorcontent_mirror_fk FOREIGN KEY (mirror) REFERENCES mirror(id);
+
+
+
+ALTER TABLE ONLY mirrorcontent
+    ADD CONSTRAINT mirrorcontent_distroarchrelease_fk FOREIGN KEY (distroarchrelease) REFERENCES distroarchrelease(id);
+
+
+
+ALTER TABLE ONLY mirrorcontent
+    ADD CONSTRAINT mirrorcontent_component_fk FOREIGN KEY (component) REFERENCES component(id);
+
+
+
+ALTER TABLE ONLY mirrorsourcecontent
+    ADD CONSTRAINT mirrorsourcecontent_mirror_fk FOREIGN KEY (mirror) REFERENCES mirror(id);
+
+
+
+ALTER TABLE ONLY mirrorsourcecontent
+    ADD CONSTRAINT mirrorsourcecontent_distrorelease_fk FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
+
+
+
+ALTER TABLE ONLY mirrorsourcecontent
+    ADD CONSTRAINT mirrorsourcecontent_component_fk FOREIGN KEY (component) REFERENCES component(id);
+
+
+
+ALTER TABLE ONLY archarchive
+    ADD CONSTRAINT archarchive_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY archarchivelocation
+    ADD CONSTRAINT archarchivelocation_archive_fk FOREIGN KEY (archive) REFERENCES archarchive(id);
+
+
+
+ALTER TABLE ONLY archarchivelocationsigner
+    ADD CONSTRAINT archarchivelocationsigner_archarchivelocation_fk FOREIGN KEY (archarchivelocation) REFERENCES archarchivelocation(id);
+
+
+
+ALTER TABLE ONLY archarchivelocationsigner
+    ADD CONSTRAINT archarchivelocationsigner_gpgkey_fk FOREIGN KEY (gpgkey) REFERENCES gpgkey(id);
+
+
+
+ALTER TABLE ONLY archconfig
+    ADD CONSTRAINT archconfig_productrelease_fk FOREIGN KEY (productrelease) REFERENCES productrelease(id);
+
+
+
+ALTER TABLE ONLY archconfig
+    ADD CONSTRAINT archconfig_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY archconfigentry
+    ADD CONSTRAINT archconfigentry_archconfig_fk FOREIGN KEY (archconfig) REFERENCES archconfig(id);
+
+
+
+ALTER TABLE ONLY archconfigentry
+    ADD CONSTRAINT archconfigentry_branch_fk FOREIGN KEY (branch) REFERENCES branch(id);
+
+
+
+ALTER TABLE ONLY archconfigentry
+    ADD CONSTRAINT archconfigentry_changeset_fk FOREIGN KEY (changeset, branch) REFERENCES changeset(id, branch);
+
+
+
+ALTER TABLE ONLY archnamespace
+    ADD CONSTRAINT archnamespace_archarchive_fk FOREIGN KEY (archarchive) REFERENCES archarchive(id);
+
+
+
+ALTER TABLE ONLY archuserid
+    ADD CONSTRAINT archuserid_person_fk FOREIGN KEY (person) REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY binarypackage
+    ADD CONSTRAINT binarypackage_binarypackagename_fk FOREIGN KEY (binarypackagename) REFERENCES binarypackagename(id);
+
+
+
+ALTER TABLE ONLY binarypackage
+    ADD CONSTRAINT binarypackage_build_fk FOREIGN KEY (build) REFERENCES build(id);
+
+
+
+ALTER TABLE ONLY binarypackage
+    ADD CONSTRAINT binarypackage_component_fk FOREIGN KEY (component) REFERENCES component(id);
+
+
+
+ALTER TABLE ONLY binarypackage
+    ADD CONSTRAINT binarypackage_section_fk FOREIGN KEY (section) REFERENCES section(id);
+
+
+
+ALTER TABLE ONLY binarypackagefile
+    ADD CONSTRAINT binarypackagefile_binarypackage_fk FOREIGN KEY (binarypackage) REFERENCES binarypackage(id);
+
+
+
+ALTER TABLE ONLY binarypackagefile
+    ADD CONSTRAINT binarypackagefile_libraryfile_fk FOREIGN KEY (libraryfile) REFERENCES libraryfilealias(id);
+
+
+
+ALTER TABLE ONLY bounty
+    ADD CONSTRAINT bounty_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY bounty
+    ADD CONSTRAINT bounty_reviewer_fk FOREIGN KEY (reviewer) REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY bounty
+    ADD CONSTRAINT bounty_claimant_fk FOREIGN KEY (claimant) REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY potemplate
+    ADD CONSTRAINT potemplate_potemplatename_fk FOREIGN KEY (potemplatename) REFERENCES potemplatename(id);
+
+
+
+ALTER TABLE ONLY potemplate
+    ADD CONSTRAINT potemplate_productrelease_fk FOREIGN KEY (productrelease) REFERENCES productrelease(id);
+
+
+
+ALTER TABLE ONLY potemplate
+    ADD CONSTRAINT potemplate_license_fk FOREIGN KEY (license) REFERENCES license(id);
+
+
+
+ALTER TABLE ONLY potemplate
+    ADD CONSTRAINT potemplate_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY potemplate
+    ADD CONSTRAINT potemplate_rawimporter_fk FOREIGN KEY (rawimporter) REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY potemplate
+    ADD CONSTRAINT potemplate_binarypackagename_fk FOREIGN KEY (binarypackagename) REFERENCES binarypackagename(id);
+
+
+
+ALTER TABLE ONLY distribution
+    ADD CONSTRAINT "$2" FOREIGN KEY (members) REFERENCES person(id);
 
 
 
 ALTER TABLE ONLY signedcodeofconduct
-    ADD CONSTRAINT person_gpg_fk FOREIGN KEY (person, signingkey) REFERENCES gpgkey(person, id);
+    ADD CONSTRAINT signedcodeofconduct_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY pofile
+    ADD CONSTRAINT pofile_potemplate_fk FOREIGN KEY (potemplate) REFERENCES potemplate(id);
+
+
+
+ALTER TABLE ONLY pofile
+    ADD CONSTRAINT pofile_language_fk FOREIGN KEY ("language") REFERENCES "language"(id);
+
+
+
+ALTER TABLE ONLY pofile
+    ADD CONSTRAINT pofile_lasttranslator_fk FOREIGN KEY (lasttranslator) REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY pofile
+    ADD CONSTRAINT pofile_license_fk FOREIGN KEY (license) REFERENCES license(id);
+
+
+
+ALTER TABLE ONLY pofile
+    ADD CONSTRAINT pofile_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY pofile
+    ADD CONSTRAINT pofile_rawimporter_fk FOREIGN KEY (rawimporter) REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY maintainership
+    ADD CONSTRAINT maintainership_distribution_fk FOREIGN KEY (distribution) REFERENCES distribution(id);
+
+
+
+ALTER TABLE ONLY maintainership
+    ADD CONSTRAINT maintainership_sourcepackagename_fk FOREIGN KEY (sourcepackagename) REFERENCES sourcepackagename(id);
+
+
+
+ALTER TABLE ONLY maintainership
+    ADD CONSTRAINT maintainership_maintainer_fk FOREIGN KEY (maintainer) REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY packaging
+    ADD CONSTRAINT packaging_sourcepackagename_fk FOREIGN KEY (sourcepackagename) REFERENCES sourcepackagename(id);
+
+
+
+ALTER TABLE ONLY packaging
+    ADD CONSTRAINT packaging_distrorelease_fk FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
+
+
+
+ALTER TABLE ONLY sourcepackagerelease
+    ADD CONSTRAINT sourcepackagerelease_uploaddistrorelease_fk FOREIGN KEY (uploaddistrorelease) REFERENCES distrorelease(id);
+
+
+
+ALTER TABLE ONLY sourcesource
+    ADD CONSTRAINT sourcesource_sourcepackagename_fk FOREIGN KEY (sourcepackagename) REFERENCES sourcepackagename(id);
+
+
+
+ALTER TABLE ONLY sourcesource
+    ADD CONSTRAINT sourcesource_distrorelease_fk FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
+
+
+
+ALTER TABLE ONLY gpgkey
+    ADD CONSTRAINT gpgkey_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY signedcodeofconduct
+    ADD CONSTRAINT signedcodeofconduct_signingkey_fk FOREIGN KEY ("owner", signingkey) REFERENCES gpgkey("owner", id) ON UPDATE CASCADE;
+
+
+
+ALTER TABLE ONLY person
+    ADD CONSTRAINT person_merged_fk FOREIGN KEY (merged) REFERENCES person(id);
 
 
 
@@ -3926,31 +3894,16 @@ CREATE TRIGGER tsvectorupdate
 
 
 CREATE TRIGGER tsvectorupdate
-    BEFORE INSERT OR UPDATE ON sourcepackage
-    FOR EACH ROW
-    EXECUTE PROCEDURE ts2.tsearch2('fti', 'shortdesc', 'description');
-
-
-
-CREATE TRIGGER tsvectorupdate
     BEFORE INSERT OR UPDATE ON binarypackage
     FOR EACH ROW
     EXECUTE PROCEDURE ts2.tsearch2('fti', 'shortdesc', 'description');
 
 
 
-CREATE VIEW sourcepackagefilepublishing AS
-    SELECT (((libraryfilealias.id)::text || '.'::text) || (sourcepackagepublishing.id)::text) AS id, distrorelease.distribution, sourcepackagepublishing.id AS sourcepackagepublishing, sourcepackagereleasefile.libraryfile AS libraryfilealias, libraryfilealias.filename AS libraryfilealiasfilename, sourcepackagename.name AS sourcepackagename, component.name AS componentname, distrorelease.name AS distroreleasename, sourcepackagepublishing.status AS publishingstatus FROM sourcepackagepublishing, sourcepackagerelease, sourcepackagereleasefile, libraryfilealias, distrorelease, sourcepackage, sourcepackagename, component WHERE (((((((sourcepackagepublishing.distrorelease = distrorelease.id) AND (sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id)) AND (sourcepackagereleasefile.sourcepackagerelease = sourcepackagerelease.id)) AND (libraryfilealias.id = sourcepackagereleasefile.libraryfile)) AND (sourcepackagerelease.sourcepackage = sourcepackage.id)) AND (sourcepackagename.id = sourcepackage.sourcepackagename)) AND (component.id = sourcepackagepublishing.component));
-
-
-
-CREATE VIEW binarypackagefilepublishing AS
-    SELECT (((libraryfilealias.id)::text || '.'::text) || (packagepublishing.id)::text) AS id, distrorelease.distribution, packagepublishing.id AS packagepublishing, component.name AS componentname, libraryfilealias.filename AS libraryfilealiasfilename, sourcepackagename.name AS sourcepackagename, binarypackagefile.libraryfile AS libraryfilealias, distrorelease.name AS distroreleasename, distroarchrelease.architecturetag, packagepublishing.status AS publishingstatus FROM packagepublishing, sourcepackage, sourcepackagerelease, sourcepackagename, build, binarypackage, binarypackagefile, libraryfilealias, distroarchrelease, distrorelease, component WHERE ((((((((((distrorelease.id = distroarchrelease.distrorelease) AND (packagepublishing.distroarchrelease = distroarchrelease.id)) AND (packagepublishing.binarypackage = binarypackage.id)) AND (binarypackagefile.binarypackage = binarypackage.id)) AND (binarypackagefile.libraryfile = libraryfilealias.id)) AND (binarypackage.build = build.id)) AND (build.sourcepackagerelease = sourcepackagerelease.id)) AND (sourcepackagerelease.sourcepackage = sourcepackage.id)) AND (component.id = packagepublishing.component)) AND (sourcepackagename.id = sourcepackage.sourcepackagename));
-
-
-
-CREATE VIEW sourcepackagepublishingview AS
-    SELECT sourcepackagepublishing.id, distrorelease.name AS distroreleasename, sourcepackagename.name AS sourcepackagename, component.name AS componentname, section.name AS sectionname, distrorelease.distribution, sourcepackagepublishing.status AS publishingstatus FROM sourcepackagepublishing, distrorelease, sourcepackagerelease, sourcepackage, sourcepackagename, component, section WHERE ((((((sourcepackagepublishing.distrorelease = distrorelease.id) AND (sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id)) AND (sourcepackagerelease.sourcepackage = sourcepackage.id)) AND (sourcepackage.sourcepackagename = sourcepackagename.id)) AND (sourcepackagepublishing.component = component.id)) AND (sourcepackagepublishing.section = section.id));
+CREATE TRIGGER you_are_your_own_member
+    AFTER INSERT ON person
+    FOR EACH ROW
+    EXECUTE PROCEDURE you_are_your_own_member();
 
 
 
@@ -3959,17 +3912,32 @@ CREATE VIEW binarypackagepublishingview AS
 
 
 
-CREATE VIEW publishedpackageview AS
-    SELECT packagepublishing.id, distrorelease.distribution, distrorelease.id AS distrorelease, distrorelease.name AS distroreleasename, processorfamily.id AS processorfamily, processorfamily.name AS processorfamilyname, packagepublishing.status AS packagepublishingstatus, component.name AS component, section.name AS section, binarypackage.id AS binarypackage, binarypackagename.name AS binarypackagename, binarypackage.shortdesc AS binarypackageshortdesc, binarypackage.description AS binarypackagedescription, binarypackage."version" AS binarypackageversion, build.id AS build, build.datebuilt, sourcepackagerelease.id AS sourcepackagerelease, sourcepackagerelease."version" AS sourcepackagereleaseversion, sourcepackagerelease.sourcepackage, sourcepackagename.name AS sourcepackagename, binarypackage.fti AS binarypackagefti FROM distrorelease, distroarchrelease, processorfamily, packagepublishing, component, section, binarypackage, binarypackagename, build, sourcepackagerelease, sourcepackage, sourcepackagename WHERE (((((((((((distroarchrelease.distrorelease = distrorelease.id) AND (distroarchrelease.processorfamily = processorfamily.id)) AND (distroarchrelease.id = packagepublishing.distroarchrelease)) AND (packagepublishing.binarypackage = binarypackage.id)) AND (packagepublishing.component = component.id)) AND (packagepublishing.section = section.id)) AND (binarypackage.binarypackagename = binarypackagename.id)) AND (binarypackage.build = build.id)) AND (build.sourcepackagerelease = sourcepackagerelease.id)) AND (sourcepackagerelease.sourcepackage = sourcepackage.id)) AND (sourcepackage.sourcepackagename = sourcepackagename.id));
-
-
-
 CREATE VIEW vsourcepackageindistro AS
-    SELECT DISTINCT sourcepackage.id, sourcepackage.shortdesc, sourcepackage.description, sourcepackage.distro, sourcepackage.manifest, sourcepackage.maintainer, sourcepackage.srcpackageformat, sourcepackagename.id AS sourcepackagename, sourcepackagename.name, distrorelease.id AS distrorelease FROM sourcepackagepublishing, sourcepackagerelease, sourcepackage, distrorelease, sourcepackagename WHERE ((((sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id) AND (sourcepackagerelease.sourcepackage = sourcepackage.id)) AND (sourcepackagepublishing.distrorelease = distrorelease.id)) AND (sourcepackage.sourcepackagename = sourcepackagename.id)) ORDER BY sourcepackage.id, sourcepackage.shortdesc, sourcepackage.description, sourcepackage.distro, sourcepackage.manifest, sourcepackage.maintainer, sourcepackage.srcpackageformat, sourcepackagename.id, sourcepackagename.name, distrorelease.id;
+    SELECT sourcepackagerelease.id, sourcepackagerelease.manifest, sourcepackagerelease.format, sourcepackagerelease.sourcepackagename, sourcepackagename.name, sourcepackagepublishing.distrorelease, distrorelease.distribution FROM (((sourcepackagepublishing JOIN sourcepackagerelease ON ((sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id))) JOIN distrorelease ON ((sourcepackagepublishing.distrorelease = distrorelease.id))) JOIN sourcepackagename ON ((sourcepackagerelease.sourcepackagename = sourcepackagename.id)));
 
 
 
 CREATE VIEW vsourcepackagereleasepublishing AS
-    SELECT sourcepackagerelease.id, sourcepackagename.name, sourcepackage.shortdesc, sourcepackage.maintainer, sourcepackage.description, sourcepackage.id AS sourcepackage, sourcepackagepublishing.status AS publishingstatus, sourcepackagepublishing.datepublished, sourcepackagerelease.architecturehintlist, sourcepackagerelease."version", sourcepackagerelease.creator, sourcepackagerelease.section, sourcepackagerelease.component, sourcepackagerelease.changelog, sourcepackagerelease.builddepends, sourcepackagerelease.builddependsindep, sourcepackagerelease.manifest, sourcepackagerelease.urgency, sourcepackagerelease.dateuploaded, sourcepackagerelease.dsc, sourcepackagerelease.dscsigningkey, distrorelease.id AS distrorelease, component.name AS componentname FROM sourcepackagepublishing, sourcepackagerelease, component, sourcepackage, distrorelease, sourcepackagename WHERE (((((sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id) AND (sourcepackagerelease.sourcepackage = sourcepackage.id)) AND (sourcepackagepublishing.distrorelease = distrorelease.id)) AND (sourcepackage.sourcepackagename = sourcepackagename.id)) AND (component.id = sourcepackagerelease.component));
+    SELECT DISTINCT sourcepackagerelease.id, sourcepackagename.name, maintainership.maintainer, sourcepackagepublishing.status AS publishingstatus, sourcepackagepublishing.datepublished, sourcepackagepublishing.distrorelease, component.name AS componentname, sourcepackagerelease.architecturehintlist, sourcepackagerelease."version", sourcepackagerelease.creator, sourcepackagerelease.format, sourcepackagerelease.manifest, sourcepackagerelease.section, sourcepackagerelease.component, sourcepackagerelease.changelog, sourcepackagerelease.builddepends, sourcepackagerelease.builddependsindep, sourcepackagerelease.urgency, sourcepackagerelease.dateuploaded, sourcepackagerelease.dsc, sourcepackagerelease.dscsigningkey, sourcepackagerelease.uploaddistrorelease, sourcepackagerelease.sourcepackagename FROM (((((sourcepackagepublishing JOIN sourcepackagerelease ON ((sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id))) JOIN sourcepackagename ON ((sourcepackagerelease.sourcepackagename = sourcepackagename.id))) JOIN distrorelease ON ((sourcepackagepublishing.distrorelease = distrorelease.id))) JOIN component ON ((sourcepackagepublishing.component = component.id))) LEFT JOIN maintainership ON (((sourcepackagerelease.sourcepackagename = maintainership.sourcepackagename) AND (distrorelease.distribution = maintainership.distribution)))) ORDER BY sourcepackagerelease.id, sourcepackagename.name, maintainership.maintainer, sourcepackagepublishing.status, sourcepackagepublishing.datepublished, sourcepackagepublishing.distrorelease, component.name, sourcepackagerelease.architecturehintlist, sourcepackagerelease."version", sourcepackagerelease.creator, sourcepackagerelease.format, sourcepackagerelease.manifest, sourcepackagerelease.section, sourcepackagerelease.component, sourcepackagerelease.changelog, sourcepackagerelease.builddepends, sourcepackagerelease.builddependsindep, sourcepackagerelease.urgency, sourcepackagerelease.dateuploaded, sourcepackagerelease.dsc, sourcepackagerelease.dscsigningkey, sourcepackagerelease.uploaddistrorelease, sourcepackagerelease.sourcepackagename;
+
+
+
+CREATE VIEW publishedpackageview AS
+    SELECT packagepublishing.id, distrorelease.distribution, distrorelease.id AS distrorelease, distrorelease.name AS distroreleasename, processorfamily.id AS processorfamily, processorfamily.name AS processorfamilyname, packagepublishing.status AS packagepublishingstatus, component.name AS component, section.name AS section, binarypackage.id AS binarypackage, binarypackagename.name AS binarypackagename, binarypackage.shortdesc AS binarypackageshortdesc, binarypackage.description AS binarypackagedescription, binarypackage."version" AS binarypackageversion, build.id AS build, build.datebuilt, sourcepackagerelease.id AS sourcepackagerelease, sourcepackagerelease."version" AS sourcepackagereleaseversion, sourcepackagename.name AS sourcepackagename, binarypackage.fti AS binarypackagefti FROM ((((((((((packagepublishing JOIN distroarchrelease ON ((distroarchrelease.id = packagepublishing.distroarchrelease))) JOIN distrorelease ON ((distroarchrelease.distrorelease = distrorelease.id))) JOIN processorfamily ON ((distroarchrelease.processorfamily = processorfamily.id))) JOIN component ON ((packagepublishing.component = component.id))) JOIN binarypackage ON ((packagepublishing.binarypackage = binarypackage.id))) JOIN section ON ((packagepublishing.section = section.id))) JOIN binarypackagename ON ((binarypackage.binarypackagename = binarypackagename.id))) JOIN build ON ((binarypackage.build = build.id))) JOIN sourcepackagerelease ON ((build.sourcepackagerelease = sourcepackagerelease.id))) JOIN sourcepackagename ON ((sourcepackagerelease.sourcepackagename = sourcepackagename.id)));
+
+
+
+CREATE VIEW sourcepackagepublishingview AS
+    SELECT sourcepackagepublishing.id, distrorelease.name AS distroreleasename, sourcepackagename.name AS sourcepackagename, component.name AS componentname, section.name AS sectionname, distrorelease.distribution, sourcepackagepublishing.status AS publishingstatus FROM (((((sourcepackagepublishing JOIN distrorelease ON ((sourcepackagepublishing.distrorelease = distrorelease.id))) JOIN sourcepackagerelease ON ((sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id))) JOIN sourcepackagename ON ((sourcepackagerelease.sourcepackagename = sourcepackagename.id))) JOIN component ON ((sourcepackagepublishing.component = component.id))) JOIN section ON ((sourcepackagepublishing.section = section.id)));
+
+
+
+CREATE VIEW binarypackagefilepublishing AS
+    SELECT (((libraryfilealias.id)::text || '.'::text) || (packagepublishing.id)::text) AS id, distrorelease.distribution, packagepublishing.id AS packagepublishing, component.name AS componentname, libraryfilealias.filename AS libraryfilealiasfilename, sourcepackagename.name AS sourcepackagename, binarypackagefile.libraryfile AS libraryfilealias, distrorelease.name AS distroreleasename, distroarchrelease.architecturetag, packagepublishing.status AS publishingstatus FROM (((((((((packagepublishing JOIN binarypackage ON ((packagepublishing.binarypackage = binarypackage.id))) JOIN build ON ((binarypackage.build = build.id))) JOIN sourcepackagerelease ON ((build.sourcepackagerelease = sourcepackagerelease.id))) JOIN sourcepackagename ON ((sourcepackagerelease.sourcepackagename = sourcepackagename.id))) JOIN binarypackagefile ON ((binarypackagefile.binarypackage = binarypackage.id))) JOIN libraryfilealias ON ((binarypackagefile.libraryfile = libraryfilealias.id))) JOIN distroarchrelease ON ((packagepublishing.distroarchrelease = distroarchrelease.id))) JOIN distrorelease ON ((distroarchrelease.distrorelease = distrorelease.id))) JOIN component ON ((packagepublishing.component = component.id)));
+
+
+
+CREATE VIEW sourcepackagefilepublishing AS
+    SELECT (((libraryfilealias.id)::text || '.'::text) || (sourcepackagepublishing.id)::text) AS id, distrorelease.distribution, sourcepackagepublishing.id AS sourcepackagepublishing, sourcepackagereleasefile.libraryfile AS libraryfilealias, libraryfilealias.filename AS libraryfilealiasfilename, sourcepackagename.name AS sourcepackagename, component.name AS componentname, distrorelease.name AS distroreleasename, sourcepackagepublishing.status AS publishingstatus FROM ((((((sourcepackagepublishing JOIN sourcepackagerelease ON ((sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id))) JOIN sourcepackagename ON ((sourcepackagerelease.sourcepackagename = sourcepackagename.id))) JOIN sourcepackagereleasefile ON ((sourcepackagereleasefile.sourcepackagerelease = sourcepackagerelease.id))) JOIN libraryfilealias ON ((libraryfilealias.id = sourcepackagereleasefile.libraryfile))) JOIN distrorelease ON ((sourcepackagepublishing.distrorelease = distrorelease.id))) JOIN component ON ((sourcepackagepublishing.component = component.id)));
 
 

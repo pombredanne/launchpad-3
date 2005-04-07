@@ -20,7 +20,10 @@ Check if it gets an Unauthorized status.
   ... Cookie: CP=null*; gallery_sessionadd_photos_mode=url; tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"
   ... Referer: http://localhost:9000/distros/ubuntu/+members
   ... """)
-  HTTP/1.1 401 Unauthorized
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:.../distros/ubuntu/+selectmemberteam/+login
+  
   ...
 
 

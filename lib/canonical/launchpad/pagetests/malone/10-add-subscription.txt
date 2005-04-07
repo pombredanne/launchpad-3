@@ -1,4 +1,5 @@
-
+Foo Bar visits the bug subscription page, to subscribe sabdfl to this
+bug:
 
   >>> print http(r"""
   ... GET /malone/bugs/2/people/+new HTTP/1.1
@@ -13,6 +14,7 @@
           <h1>Add Person</h1>
   ...
 
+Foo Bar subscribes sabdfl to this bug:
 
   >>> print http(r"""
   ... POST /malone/bugs/2/people/+new HTTP/1.1
@@ -56,6 +58,8 @@
   <input type="text" name="field.person" value="sabdfl" ... />
   ...
 
+Foo Bar gets redirected back to the bug index page after adding the
+subscription:
 
   >>> print http(r"""
   ... GET /malone/bugs/2/people/ HTTP/1.1
@@ -67,6 +71,7 @@
   <BLANKLINE>
   ...
 
+And sees that sabdfl has been added as a subscriber on this bug:
 
   >>> print http(r"""
   ... GET /malone/bugs/2/ HTTP/1.1
@@ -78,7 +83,6 @@
                     <a href="/malone/bugs/2/people/6/+edit">...</a>
                   </li>
   ...
-      <h1>Bug Description and Discussion</h1>
+      <h2>
+        Description
   ...
-
-

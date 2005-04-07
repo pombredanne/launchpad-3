@@ -13,6 +13,10 @@
             set_schema="canonical.launchpad.interfaces.IMessage" />
     </content>
 
+    <content class="canonical.launchpad.database.MessageChunk">
+        <allow interface="canonical.launchpad.interfaces.IMessageChunk" />
+    </content>
+
     <adapter
         for="canonical.launchpad.interfaces.IBugMessage"
         provides="canonical.launchpad.interfaces.IMessage"
@@ -25,19 +29,28 @@
         template="../templates/messages-index.pt"
         permission="zope.Public"
         lp:url="malone/projects/$Bug.id/messages/index" />
-        
+
     <browser:addform
         name="+new"
-        schema="canonical.launchpad.interfaces.IMessage"
         for="canonical.launchpad.interfaces.IMessagesView"
+        schema="canonical.launchpad.interfaces.message.IAddMessage"
+        class="canonical.launchpad.browser.addview.SQLObjectAddView"
         label="Add a Comment"
-        fields="title contents"
-        content_factory="canonical.launchpad.database.BugMessageFactory"
+        fields="title content"
+        content_factory="canonical.launchpad.database.bugmessage.BugMessageFactory"
         arguments=""
-        keyword_arguments="title contents"
+        keyword_arguments="title content"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
         lp:url="malone/bugs/$Bug.id/messages/+new"
+        />
+
+    <!-- Page to render a HTML snippet for a single MessageChunk -->
+    <browser:page
+        name="+snippet"
+        for="canonical.launchpad.interfaces.IMessageChunk"
+        template="../templates/messagechunk-snippet.pt"
+        permission="launchpad.AnyPerson"
         />
 
 </configure>

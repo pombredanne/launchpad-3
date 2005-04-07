@@ -1,4 +1,4 @@
-
+The bug activity page is where you find the "changelog" of a bug.
 
   >>> print http(r"""
   ... GET /malone/bugs/3/activity HTTP/1.1

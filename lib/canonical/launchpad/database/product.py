@@ -273,6 +273,13 @@ class Product(SQLBase):
             count += t.rosettaCount(language)
         return count
 
+    def getSeries(self, name):
+        """See IProduct."""
+        try:
+            return ProductSeries.selectBy(productID=self.id, name=name)[0]
+        except IndexError:
+            raise NotFoundError
+
     def getRelease(self, version):
         #return ProductRelease.selectBy(productID=self.id, version=version)[0]
         return ProductRelease.select(
@@ -280,6 +287,17 @@ class Product(SQLBase):
                         ProductSeries.q.productID == self.id,
                         ProductRelease.q.version == version),
                     clauseTables=['ProductSeries'])[0]
+
+    def getPackage(self, distro_release):
+        """See IProduct."""
+        pkging = Packaging.selectBy(productID=self.id,
+                                    distroreleaseID=distro_release.id)
+        if pkging.count() == 0:
+            raise NotFoundError
+
+        from canonical.launchpad.database import SourcePackage
+        return SourcePackage(sourcepackagename=pkging[0].sourcepackagename,
+                             distrorelease=pkging[0].distrorelease)
 
     def packagedInDistros(self):
         # This function-local import is so we avoid a circular import
@@ -434,18 +452,13 @@ class ProductSet:
         return Product.selectBy(reviewed=True, active=True).count()
 
     def count_bounties(self):
-        # XXX: This should be using .count(), but it doesn't work with
-        # distinct=True at the moment -- StuartBishop 20050401
-        return len(list(Product.select("ProductBounty.product=Product.id",
+        return Product.select("ProductBounty.product=Product.id",
                               distinct=True,
-                              clauseTables=['ProductBounty'])))
+                              clauseTables=['ProductBounty']).count()
 
     def count_buggy(self):
-        # XXX: This should be using .count(), but it doesn't work with
-        # distinct=True at the moment -- StuartBishop 20050401
-        return len(list(Product.select(
+        return Product.select(
                 "BugTask.product=Product.id", distinct=True,
-                clauseTables=['BugTask'],
-                )))
+                clauseTables=['BugTask']).count()
 
 

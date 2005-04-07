@@ -45,12 +45,10 @@
           </tr>
                
           <tal:dummy tal:condition="request/lp:person">
-          <tal:dummy tal:condition="context/preferredemail"
-                     tal:define="email context/preferredemail">
+          <tal:dummy tal:condition="context/preferredemail">
           <tr>
             <td>Email:</td>
-            <td><span tal:replace="email/email"></span>
-              <a href="+emails">(Edit)</a></td>
+            <td><span tal:replace="structure view/htmlEmail"></span></td>
           </tr>
           </tal:dummy>
 
@@ -102,33 +100,30 @@
             <td tal:content="context/karma"></td>
           </tr>
 
-          <tr tal:condition="context/gpg">
+          <!-- 
+          <tr>
             <td>GPG:</td>
-            <td><a href="+showgpg" 
-                   tal:content="string:${context/gpg/keysize}${context/gpg/algorithmname}/${context/gpg/keyid}">
-                </a></td>
-          </tr>
-
-          <tr>
-            <td>SSH:</td>
-            <td tal:condition="context/sshkeys">
-              <a href="+sshkey"><span tal:replace="view/sshkeysCount">0</span>SSH key(s)</a>
-              <a href="+editsshkey">(Edit)</a>
+            <td>
+              <a href="+gpgkey"><span tal:replace="view/gpgkeysCount">0</span> GPG key(s)</a>
+              <a href="+editgpgkey">(Handle GPGs)</a>
             </td>
-            <td tal:condition="not: context/sshkeys">
-              <a href="+editsshkey">(Upload)</a>
+          </tr>
+          -->
+
+          <tr tal:condition="context/sshkeys">
+            <td>SSH Keys:</td>
+            <td>
+              <a href="+sshkey"><span tal:replace="view/sshkeysCount">0</span> SSH key(s)</a>
             </td>
           </tr>
 
-	  <tr>
-	    <td>Signed Codes of Conduct:</td>
-	    <td><a href="+codesofconduct">Handle CoCs</a></td>
-	  </tr>
-
+          <!--
           <tr>
-            <td></td>
-            <td class="listingNext"><a href="+edit">Edit Profile</a></td>
+            <td>Signed Codes of Conduct:</td>
+            <td><a href="+codesofconduct">Handle CoCs</a></td>
           </tr>
+          -->
+
         </table>
 
 

@@ -5,7 +5,6 @@ This document describes what a Bug is in Malone, and provides some (currently
 rather incomplete) info on how to poke at bugs through the Component
 Architecture.
 
-
 Working with Bugs
 =================
 
@@ -28,6 +27,19 @@ To retrieve a specific Bug, use IBugSet.get:
     >>> print firefox_crashes.title
     Firefox crashes when Save As dialog for a nonexistent window is closed
 
+Absolute URLs
+=============
+
+For things like bug notification emails, it's handy to be able to
+include a URL to the bug inside the email. In Launchpad, the absolute
+URL of a bug is found by using zapi.absoluteURL.
+
+    >>> from zope.app import zapi
+    >>> from zope.publisher.browser import TestRequest
+    >>> request = TestRequest()
+
+    >>> zapi.absoluteURL(firefox_crashes, request)
+    'http://127.0.0.1/malone/bugs/6'
 
 Bug Privacy
 ===========
@@ -84,7 +96,8 @@ marked private. So, when we mark bug #15 private:
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     firefox_crashes, old_state,
     ...     ["id", "title", "private"],
-    ...     getUtility(IPersonSet).get(12))
+    ...     getUtility(IPersonSet).get(12),
+    ...     request)
 
     >>> notify(bug_set_private)
 
@@ -143,7 +156,8 @@ And again, let's fake setting the bug private:
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     blackhole_trash_folder, old_state,
     ...     ["id", "title", "private"],
-    ...     getUtility(IPersonSet).get(16))
+    ...     getUtility(IPersonSet).get(16),
+    ...     request)
 
     >>> notify(bug_set_private)
 
@@ -214,7 +228,7 @@ u'blah blah blah'
 >>> public_bug.bugtasks[0].bugdescription
 u'a new description'
 
-But when a private bug is filed:
+When a private bug is filed:
 
 >>> added_bug = BugFactory(
 ...     product = firefox, title = "test firefox bug",
@@ -223,13 +237,13 @@ But when a private bug is filed:
 >>> notify(ObjectCreatedEvent(added_bug))
 >>> private_bug = bugset.get(added_bug.id)
 
-both the submitter and the maintainer are explicitly subscribed:
+*only* the submitter is explicitly subscribed:
 
 >>> print [subscription.person.id for subscription in private_bug.subscriptions]
-[12, 16]
+[16]
 
-to ensure that both the submitter and maintainer can actually see the bug that
-was filed!
+It's up to the submitter to explicitly subscribe the maintainer, if
+they so choose.
 
 Note that this works similarly for distributions; in this case the
 "maintainer" is considered the person who maintains the applicable
@@ -248,4 +262,4 @@ sourcepackage. E.g.
 >>> notify(ObjectCreatedEvent(added_bug))
 >>> private_bug = bugset.get(added_bug.id)
 >>> print [subscription.person.id for subscription in private_bug.subscriptions]
-[1, 16]
+[16]

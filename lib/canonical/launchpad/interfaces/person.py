@@ -75,7 +75,7 @@ class IPerson(Interface):
     # Properties of the Person object.
     ubuntite = Attribute("Ubuntite Flag")
     unvalidatedEmails = Attribute("The unvalidated emails requested by this person")
-    gpg = Attribute("GPG")
+    gpgkeys = Attribute("List of GPGkeys")
     irc = Attribute("IRC")
     bugs = Attribute("Bug")
     wiki = Attribute("Wiki")
@@ -86,12 +86,20 @@ class IPerson(Interface):
     maintainerships = Attribute("This person's Maintainerships")
     activities = Attribute("Karma")
     memberships = Attribute(("List of TeamMembership objects for Teams this "
-                             "Person is a member of. Either as a PROPOSED "
-                             "or CURRENT member."))
+                             "Person is a member of. Either active, inactive "
+                             "or proposed member."))
     translations = Attribute("Translations")
+    guessedemails = Attribute("List of emails with status NEW. These email "
+                              "addresses probably came from a gina or "
+                              "POFileImporter run.")
     validatedemails = Attribute("Emails with status VALIDATED")
-    notvalidatedemails = Attribute("Emails waiting validation.")
+    unvalidatedemails = Attribute("Emails this person added in Launchpad "
+                                  "but are not yet validated.")
 
+    allmembers = Attribute("List of all direct/indirect members of this team. "
+                           "If you want a method to check if a given person is "
+                           "a member of a team, you should probably look at "
+                           "IPerson.inTeam().")
     activemembers = Attribute("List of members with ADMIN or APPROVED status")
     administrators = Attribute("List of members with ADMIN status")
     expiredmembers = Attribute("List of members with EXPIRED status")
@@ -129,6 +137,14 @@ class IPerson(Interface):
                 "period the subscription is expired and must be renewed "
                 "again. A value of 0 (zero) means that subscription renewal "
                 "periods will be the same as the membership period."))
+
+    defaultexpirationdate = Attribute(
+            "The date, according to team's default values in which a newly "
+            "approved membership will expire.")
+
+    defaultrenewedexpirationdate = Attribute(
+            "The date, according to team's default values in which a just "
+            "renewed membership will expire.")
 
     subscriptionpolicy = Choice(
             title=_('Subscription Policy'),
@@ -208,25 +224,26 @@ class IPerson(Interface):
         a team administrator.
         """
 
-    def addMember(person, status=TeamMembershipStatus.APPROVED, expires=None,
-                  reviewer=None, comment=None):
+    def addMember(person, status=TeamMembershipStatus.APPROVED, reviewer=None,
+                  comment=None):
         """Add person as a member of this team.
 
         Make sure status is either APPROVED or PROPOSED and add a
         TeamMembership entry for this person with the given status, reviewer,
-        expiration date and reviewer comment. This method is also responsible
-        for filling the TeamParticipation table in case the status is APPROVED.
+        and reviewer comment. This method is also responsible for filling 
+        the TeamParticipation table in case the status is APPROVED.
         """
 
-    def setMembershipStatus(person, status, expires=None, reviewer=None,
+    def setMembershipStatus(person, status, expires, reviewer=None,
                             comment=None):
         """Set the status of the person's membership on this team.
 
-        This method will ensure that we only allow the status transitions
-        specified in the TeamMembership spec. It's also responsible for
-        filling/cleaning the TeamParticipation table when the transition
-        requires it and setting the expiration date, reviewer and
-        reviewercomment.
+        Also set all other attributes of TeamMembership, which are <comment>,
+        <reviewer> and <dateexpires>. This method will ensure that we only 
+        allow the status transitions specified in the TeamMembership spec.
+        It's also responsible for filling/cleaning the TeamParticipation 
+        table when the transition requires it and setting the expiration 
+        date, reviewer and reviewercomment.
         """
 
     def getSubTeams():
@@ -314,7 +331,7 @@ class IPersonSet(Interface):
         """
 
     def getByName(name, default=None):
-        """Return the person with the given name.
+        """Return the person with the given name, ignoring merged persons.
 
         Return the default value if there is no such person.
         """
@@ -334,7 +351,6 @@ class IPersonSet(Interface):
         * personset.search(arg = NULL): Match all the IPersons where
           IPerson.arg IS NULL.
         """
-        pass
 
     def getAll():
         """Return all Persons and Teams."""
@@ -343,13 +359,13 @@ class IPersonSet(Interface):
         """Return all Teams."""
 
     def getAllPersons():
-        """Return all Persons."""
+        """Return all Persons, ignoring the merged ones."""
 
     def findByName(name):
-        """Return all Persons and Teams with name matching."""
+        """Return all not-merged Persons and Teams with name matching."""
 
     def findPersonByName(name):
-        """Return all Persons with name matching."""
+        """Return all not-merged Persons with name matching."""
 
     def findTeamByName(name):
         """Return all Teams with name matching."""

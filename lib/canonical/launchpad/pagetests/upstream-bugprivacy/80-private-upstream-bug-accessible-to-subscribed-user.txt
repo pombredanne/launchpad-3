@@ -1,4 +1,5 @@
-
+Sample Person accesses the bug page of a private bug. He is allowed to
+view the page because he is an explicit subscriber on the bug.
 
   >>> print http(r"""
   ... GET /malone/bugs/7 HTTP/1.1

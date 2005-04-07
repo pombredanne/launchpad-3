@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces import IEmailAddress, IWikiName
 from canonical.launchpad.interfaces import IIrcID, IArchUserID, IJabberID
 from canonical.launchpad.interfaces import IIrcIDSet, IArchUserIDSet
 from canonical.launchpad.interfaces import ISSHKeySet, IJabberIDSet
-from canonical.launchpad.interfaces import IWikiNameSet
+from canonical.launchpad.interfaces import IWikiNameSet, IGPGKeySet
 from canonical.launchpad.interfaces import ISSHKey, IGPGKey, IKarma
 from canonical.launchpad.interfaces import IKarmaPointsManager
 from canonical.launchpad.interfaces import IPasswordEncryptor
@@ -43,8 +43,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.searchbuilder import NULL
 
-from canonical.lp.dbschema import EnumCol
-from canonical.lp.dbschema import KarmaType
+from canonical.lp.dbschema import EnumCol, SSHKeyType, KarmaType
 from canonical.lp.dbschema import EmailAddressStatus
 from canonical.lp.dbschema import TeamSubscriptionPolicy
 from canonical.lp.dbschema import TeamMembershipStatus
@@ -97,6 +96,7 @@ class Person(SQLBase):
     subscribedBounties = RelatedJoin('Bounty', joinColumn='person',
                                      otherColumn='bounty',
                                      intermediateTable='BountySubscription')
+    gpgkeys = MultipleJoin('GPGKey', joinColumn='owner')
 
     def get(cls, id, connection=None, selectResults=None):
         """Override the classmethod get from the base class.
@@ -225,7 +225,7 @@ class Person(SQLBase):
         return bool(results.count())
 
     def leave(self, team):
-        assert self.teamowner is None
+        assert not ITeam.providedBy(self)
 
         results = TeamMembership.selectBy(personID=self.id, teamID=team.id)
         assert results.count() == 1
@@ -234,29 +234,39 @@ class Person(SQLBase):
         assert tm.status in (TeamMembershipStatus.ADMIN,
                              TeamMembershipStatus.APPROVED)
 
-        team.setMembershipStatus(self, TeamMembershipStatus.DEACTIVATED)
+        team.setMembershipStatus(self, TeamMembershipStatus.DEACTIVATED,
+                                 tm.dateexpires)
         return True
 
     def join(self, team):
-        assert self.teamowner is None
+        assert not ITeam.providedBy(self)
+
+        expired = TeamMembershipStatus.EXPIRED
+        proposed = TeamMembershipStatus.PROPOSED
+        approved = TeamMembershipStatus.APPROVED
+        declined = TeamMembershipStatus.DECLINED
+        deactivated = TeamMembershipStatus.DEACTIVATED
 
         if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
             return False
         elif team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
-            status = TeamMembershipStatus.PROPOSED
+            status = proposed
         elif team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
-            status = TeamMembershipStatus.APPROVED
+            status = approved
 
         results = TeamMembership.selectBy(personID=self.id, teamID=team.id)
+        expires = team.defaultexpirationdate
         if results.count() == 1:
             tm = results[0]
-            if tm.status == TeamMembershipStatus.DECLINED:
+            if (tm.status == declined and
+                team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED):
                 # The user is a DECLINED member, we just have to change the
-                # status according to the team's subscriptionpolicy.
-                team.setMembershipStatus(self, status)
+                # status to PROPOSED.
+                team.setMembershipStatus(self, status, expires)
+            elif (tm.status in [expired, deactivated, declined] and
+                  team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN):
+                team.setMembershipStatus(self, status, expires)
             else:
-                # The user is a member and the status is not DECLINED, there's
-                # nothing we can do for it.
                 return False
         else:
             team.addMember(self, status)
@@ -279,18 +289,13 @@ class Person(SQLBase):
         return list(Person.select(query, clauseTables=['TeamParticipation']))
 
     def addMember(self, person, status=TeamMembershipStatus.APPROVED,
-                  expires=None, reviewer=None, comment=None):
+                  reviewer=None, comment=None):
         assert self.teamowner is not None
         assert not person.hasMembershipEntryFor(self)
         assert status in [TeamMembershipStatus.APPROVED,
                           TeamMembershipStatus.PROPOSED]
 
-        now = datetime.utcnow()
-        if expires is None and self.defaultmembershipperiod:
-            expires = now + timedelta(self.defaultmembershipperiod)
-        elif expires is not None:
-            assert expires > now
-
+        expires = self.defaultexpirationdate
         TeamMembership(personID=person.id, teamID=self.id, status=status,
                        dateexpires=expires, reviewer=reviewer, 
                        reviewercomment=comment)
@@ -298,7 +303,7 @@ class Person(SQLBase):
         if status == TeamMembershipStatus.APPROVED:
             _fillTeamParticipation(person, self)
 
-    def setMembershipStatus(self, person, status, expires=None, reviewer=None,
+    def setMembershipStatus(self, person, status, expires, reviewer=None,
                             comment=None):
         results = TeamMembership.selectBy(personID=person.id, teamID=self.id)
         assert results.count() == 1
@@ -330,9 +335,7 @@ class Person(SQLBase):
             assert status in [proposed, approved]
 
         now = datetime.utcnow()
-        if expires is None and self.defaultmembershipperiod:
-            expires = now + timedelta(self.defaultmembershipperiod)
-        elif expires is not None and expires <= now:
+        if expires is not None and expires <= now:
             expires = now
             status = expired
 
@@ -366,15 +369,13 @@ class Person(SQLBase):
     # Properties
     #
 
-    def unvalidatedEmails(self):
-        tokens = LoginToken.select("requester=%d AND email IS NOT NULL"
-                % self.id)
-        return [token.email for token in tokens]
-    unvalidatedEmails = property(unvalidatedEmails)
-
     def title(self):
         return self.browsername()
     title = property(title)
+
+    def allmembers(self):
+        return _getAllMembers(self)
+    allmembers = property(allmembers)
 
     def deactivatedmembers(self):
         return self._getMembersByStatus(TeamMembershipStatus.DEACTIVATED)
@@ -412,6 +413,22 @@ class Person(SQLBase):
         return list(TeamMembership.selectBy(personID=self.id))
     memberships = property(memberships)
 
+    def defaultexpirationdate(self):
+        days = self.defaultmembershipperiod
+        if days:
+            return datetime.utcnow() + timedelta(days)
+        else:
+            return None
+    defaultexpirationdate = property(defaultexpirationdate)
+
+    def defaultrenewedexpirationdate(self):
+        days = self.defaultrenewalperiod
+        if days:
+            return datetime.utcnow() + timedelta(days)
+        else:
+            return None
+    defaultrenewedexpirationdate = property(defaultrenewedexpirationdate)
+
     def _setPreferredemail(self, email):
         assert email.person == self
         preferredemail = self.preferredemail
@@ -437,10 +454,15 @@ class Person(SQLBase):
         return self._getEmailsByStatus(status)
     validatedemails = property(validatedemails)
 
-    def notvalidatedemails(self):
-        status = EmailAddressStatus.NEW
-        return self._getEmailsByStatus(status)
-    notvalidatedemails = property(notvalidatedemails)
+    def unvalidatedemails(self):
+        tokens = LoginToken.select("requester=%d AND email IS NOT NULL"
+                % self.id)
+        return [token.email for token in tokens]
+    unvalidatedemails = property(unvalidatedemails)
+
+    def guessedemails(self):
+        return self._getEmailsByStatus(EmailAddressStatus.NEW)
+    guessedemails = property(guessedemails)
 
     def bugs(self):
         return list(Bug.selectBy(ownerID=self.id))
@@ -493,16 +515,6 @@ class Person(SQLBase):
             return None
         return irc[0]
     irc = property(irc)
-
-    def gpg(self):
-        # XXX: salgado, 2005-01-14: This method will probably be replaced
-        # by a MultipleJoin since we have a good UI to add multiple
-        # GPGKeys. 
-        gpg = GPGKey.selectBy(ownerID=self.id)
-        if gpg.count() == 0:
-            return None
-        return gpg[0]
-    gpg = property(gpg)
 
     def maintainerships(self):
         maintainershipsutil = getUtility(IMaintainershipSet)
@@ -564,7 +576,8 @@ class PersonSet(object):
 
     def getByName(self, name, default=None):
         """See IPersonSet."""
-        results = Person.selectBy(name=name)
+        query = AND(Person.q.name==name, Person.q.mergedID==None)
+        results = Person.select(query)
         if results.count() == 1:
             return results[0]
         else:
@@ -588,18 +601,19 @@ class PersonSet(object):
             return True
 
     def getAllPersons(self):
-        return list(Person.select(Person.q.teamownerID==None))
+        query = AND(Person.q.teamownerID==None, Person.q.mergedID==None)
+        return list(Person.select(query))
 
     def getAllTeams(self):
         return list(Person.select(Person.q.teamownerID!=None))
 
     def findByName(self, name):
-        query = "fti @@ ftq(%s)" % quote(name)
+        query = "fti @@ ftq(%s) AND merged is NULL" % quote(name)
         return list(Person.select(query))
 
     def findPersonByName(self, name):
-        query = "fti @@ ftq(%s) AND teamowner is NULL" % quote(name)
-        return list(Person.select(query))
+        query = "fti @@ ftq(%s) AND teamowner is NULL AND merged is NULL"
+        return list(Person.select(query % quote(name)))
 
     def findTeamByName(self, name):
         query = "fti @@ ftq(%s) AND teamowner is not NULL" % quote(name)
@@ -667,7 +681,8 @@ class PersonSet(object):
         # Verify the the SignedCoC version too
         # we can't do it before add the field version on
         # SignedCoC version.
-        query = ('Person.id = SignedCodeOfConduct.person AND '
+        # Needs DISTINCT or check to prevent Sign CoC twice.
+        query = ('Person.id = SignedCodeOfConduct.owner AND '
                  'SignedCodeOfConduct.active = True')
 
         return Person.select(query, clauseTables=clauseTables)
@@ -933,15 +948,44 @@ class GPGKey(SQLBase):
     algorithmname = property(_algorithmname)
 
 
+class GPGKeySet(object):
+    implements(IGPGKeySet)
+
+    def new(self, ownerID, keyid, pubkey, fingerprint, keysize,
+            algorithm, revoked):
+        return GPGKey(owner=ownerID, keyid=keyid, pubkey=pubkey,
+                      figerprint=fingerprint, keysize=keysize,
+                      algorithm=algorithm, revoked=revoked)
+
+    def get(self, id, default=None):
+        try:
+            return GPGKey.get(id)
+        except SQLObjectNotFound:
+            return default
+
+
 class SSHKey(SQLBase):
     implements(ISSHKey)
 
     _table = 'SSHKey'
 
     person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
-    keytype = StringCol(dbName='keytype', notNull=True)
+    keytype = EnumCol(dbName='keytype', notNull=True, schema=SSHKeyType)
     keytext = StringCol(dbName='keytext', notNull=True)
     comment = StringCol(dbName='comment', notNull=True)
+
+    def keytypename(self):
+        return self.keytype.title
+    keytypename = property(keytypename)
+
+    def keykind(self):
+        if self.keytype == SSHKeyType.DSA:
+            return 'ssh-dss'
+        elif self.keytype == SSHKeyType.RSA:
+            return 'ssh-rsa'
+        else:
+            return 'Unknown key type'
+    keykind = property(keykind)
 
 
 class SSHKeySet(object):

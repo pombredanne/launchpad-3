@@ -7,7 +7,7 @@
 
 <div tal:omit-tag
      tal:define="bug_url string:/malone/bugs/${context/id}">
-<table class="listing rowNavigation" style="width: 100%;">
+<table class="data rowNavigation" style="width: 100%;">
     <thead>
         <tr>
             <th>Upstream / Package</th>

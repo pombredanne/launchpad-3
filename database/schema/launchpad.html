@@ -120,7 +120,7 @@
 <!-- Primary Index -->
 <p><br />
 <br />
-Dumped on 2005-03-29</p>
+Dumped on 2005-04-07</p>
 <h1><a name="index" id="index">Index of database -
 launchpad_dev</a></h1>
 <ul>
@@ -211,9 +211,11 @@ launchpad_dev</a></h1>
 "#public.table.libraryfilecontent">libraryfilecontent</a></li>
 <li><a href="#public.table.license">license</a></li>
 <li><a href="#public.table.logintoken">logintoken</a></li>
+<li><a href="#public.table.maintainership">maintainership</a></li>
 <li><a href="#public.table.manifest">manifest</a></li>
 <li><a href="#public.table.manifestentry">manifestentry</a></li>
 <li><a href="#public.table.message">message</a></li>
+<li><a href="#public.table.messagechunk">messagechunk</a></li>
 <li><a href="#public.table.milestone">milestone</a></li>
 <li><a href="#public.table.mirror">mirror</a></li>
 <li><a href="#public.table.mirrorcontent">mirrorcontent</a></li>
@@ -253,8 +255,6 @@ launchpad_dev</a></h1>
 <li><a href=
 "#public.table.productbranchrelationship">productbranchrelationship</a></li>
 <li><a href=
-"#public.table.productbugassignment">productbugassignment</a></li>
-<li><a href=
 "#public.table.productcvsmodule">productcvsmodule</a></li>
 <li><a href="#public.table.productlabel">productlabel</a></li>
 <li><a href="#public.table.productrelease">productrelease</a></li>
@@ -279,21 +279,16 @@ launchpad_dev</a></h1>
 "#public.table.sectionselection">sectionselection</a></li>
 <li><a href=
 "#public.table.signedcodeofconduct">signedcodeofconduct</a></li>
-<li><a href="#public.table.sourcepackage">sourcepackage</a></li>
-<li><a href=
-"#public.table.sourcepackagebugassignment">sourcepackagebugassignment</a></li>
 <li><a href=
 "#public.view.sourcepackagefilepublishing">sourcepackagefilepublishing</a></li>
-<li><a href=
-"#public.table.sourcepackagelabel">sourcepackagelabel</a></li>
 <li><a href=
 "#public.table.sourcepackagename">sourcepackagename</a></li>
 <li><a href=
 "#public.table.sourcepackagepublishing">sourcepackagepublishing</a></li>
 <li><a href=
-"#public.view.sourcepackagepublishingview">sourcepackagepublishingview</a></li>
+"#public.table.sourcepackagepublishinghistory">sourcepackagepublishinghistory</a></li>
 <li><a href=
-"#public.table.sourcepackagerelationship">sourcepackagerelationship</a></li>
+"#public.view.sourcepackagepublishingview">sourcepackagepublishingview</a></li>
 <li><a href=
 "#public.table.sourcepackagerelease">sourcepackagerelease</a></li>
 <li><a href=
@@ -2233,18 +2228,7 @@ SELECT (
 , distrorelease.name AS distroreleasename
 , distroarchrelease.architecturetag
 , packagepublishing.status AS publishingstatus 
-FROM packagepublishing
-, sourcepackage
-, sourcepackagerelease
-, sourcepackagename
-, build
-, binarypackage
-, binarypackagefile
-, libraryfilealias
-, distroarchrelease
-, distrorelease
-, component 
-WHERE (
+FROM (
      (
            (
                  (
@@ -2252,25 +2236,51 @@ WHERE (
                              (
                                    (
                                          (
-                                               (
-                                                     (distrorelease.id = distroarchrelease.distrorelease)
-                                                   AND (packagepublishing.distroarchrelease = distroarchrelease.id)
+                                               (packagepublishing 
+                                                  JOIN binarypackage 
+                                                    ON (
+                                                           (packagepublishing.binarypackage = binarypackage.id)
+                                                     )
                                                )
-                                             AND (packagepublishing.binarypackage = binarypackage.id)
+                                            JOIN build 
+                                              ON (
+                                                     (binarypackage.build = build.id)
+                                               )
                                          )
-                                       AND (binarypackagefile.binarypackage = binarypackage.id)
+                                      JOIN sourcepackagerelease 
+                                        ON (
+                                               (build.sourcepackagerelease = sourcepackagerelease.id)
+                                         )
                                    )
-                                 AND (binarypackagefile.libraryfile = libraryfilealias.id)
+                                JOIN sourcepackagename 
+                                  ON (
+                                         (sourcepackagerelease.sourcepackagename = sourcepackagename.id)
+                                   )
                              )
-                           AND (binarypackage.build = build.id)
+                          JOIN binarypackagefile 
+                            ON (
+                                   (binarypackagefile.binarypackage = binarypackage.id)
+                             )
                        )
-                     AND (build.sourcepackagerelease = sourcepackagerelease.id)
+                    JOIN libraryfilealias 
+                      ON (
+                             (binarypackagefile.libraryfile = libraryfilealias.id)
+                       )
                  )
-               AND (sourcepackagerelease.sourcepackage = sourcepackage.id)
+              JOIN distroarchrelease 
+                ON (
+                       (packagepublishing.distroarchrelease = distroarchrelease.id)
+                 )
            )
-         AND (component.id = packagepublishing.component)
+        JOIN distrorelease 
+          ON (
+                 (distroarchrelease.distrorelease = distrorelease.id)
+           )
      )
-   AND (sourcepackagename.id = sourcepackage.sourcepackagename)
+  JOIN component 
+    ON (
+           (packagepublishing.component = component.id)
+     )
 );
 </pre>
 <!-- List off permissions -->
@@ -2437,10 +2447,6 @@ A lowercase name identifying one or more binarypackages</td>
 </ul>
 <ul>
 <li><a href="#public.table.potemplate">public.potemplate</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.sourcepackagebugassignment">public.sourcepackagebugassignment</a></li>
 </ul>
 <!-- View Definition -->
 <!-- List off permissions -->
@@ -3825,14 +3831,6 @@ to see it</td>
 </ul>
 <ul>
 <li><a href="#public.table.cveref">public.cveref</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.productbugassignment">public.productbugassignment</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.sourcepackagebugassignment">public.sourcepackagebugassignment</a></li>
 </ul>
 <!-- View Definition -->
 <!-- List off permissions -->
@@ -7589,6 +7587,10 @@ public</a></p>
 </ul>
 <ul>
 <li><a href=
+"#public.table.sourcepackagepublishinghistory">public.sourcepackagepublishinghistory</a></li>
+</ul>
+<ul>
+<li><a href=
 "#public.table.sourcepackagerelease">public.sourcepackagerelease</a></li>
 </ul>
 <!-- View Definition -->
@@ -8312,11 +8314,11 @@ future.</td>
 "#public.table.distrorelease">public.distrorelease</a></li>
 </ul>
 <ul>
-<li><a href="#public.table.message">public.message</a></li>
+<li><a href=
+"#public.table.maintainership">public.maintainership</a></li>
 </ul>
 <ul>
-<li><a href=
-"#public.table.sourcepackage">public.sourcepackage</a></li>
+<li><a href="#public.table.message">public.message</a></li>
 </ul>
 <!-- View Definition -->
 <!-- List off permissions -->
@@ -8853,12 +8855,12 @@ distrorelease.</td>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>releasestate</td>
+<td>releasestatus</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-The current state of this distrorelease. E.g. "pre-release freeze"
-or "released"</td>
+The current release status of this distrorelease. E.g. "pre-release
+freeze" or "released"</td>
 </tr>
 <tr class="tr1">
 <td></td>
@@ -8956,6 +8958,9 @@ uploads and generating archives for this distro release</td>
 "#public.table.packageselection">public.packageselection</a></li>
 </ul>
 <ul>
+<li><a href="#public.table.packaging">public.packaging</a></li>
+</ul>
+<ul>
 <li><a href="#public.table.potemplate">public.potemplate</a></li>
 </ul>
 <ul>
@@ -8965,6 +8970,18 @@ uploads and generating archives for this distro release</td>
 <ul>
 <li><a href=
 "#public.table.sourcepackagepublishing">public.sourcepackagepublishing</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.sourcepackagepublishinghistory">public.sourcepackagepublishinghistory</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.sourcepackagerelease">public.sourcepackagerelease</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.sourcesource">public.sourcesource</a></li>
 </ul>
 <!-- View Definition -->
 <!-- List off permissions -->
@@ -10421,10 +10438,6 @@ public</a></p>
 </ul>
 <ul>
 <li><a href=
-"#public.table.sourcepackagelabel">public.sourcepackagelabel</a></li>
-</ul>
-<ul>
-<li><a href=
 "#public.table.translationeffortpotemplate">public.translationeffortpotemplate</a></li>
 </ul>
 <!-- View Definition -->
@@ -10954,6 +10967,13 @@ The mime type of the file. E.g. "application/x-debian-package"</td>
 <ul>
 <li><a href=
 "#public.table.distroarchrelease">public.distroarchrelease</a></li>
+</ul>
+<ul>
+<li><a href="#public.table.message">public.message</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.messagechunk">public.messagechunk</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -11627,6 +11647,165 @@ clicked on will continue a workflow.</td>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.maintainership" id=
+"public.table.maintainership">maintainership</a></h2>
+<p>Stores the maintainer information for a sourcepackage in a
+particular distribution. Note that this does not store the
+information per-distrorelease, but for the overall "distribution",
+which generally refers to the current development release of the
+distro.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.maintainership Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.distribution">public.distribution.id</a></td>
+<td>distribution</td>
+<td>integer</td>
+<td><i>NOT NULL</i></td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.sourcepackagename">public.sourcepackagename.id</a></td>
+<td>sourcepackagename</td>
+<td>integer</td>
+<td><i>NOT NULL</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>maintainer</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+Refers to the person responsible for this sourcepackage inside this
+distribution. Note that the "maintainer" for a package varies over
+time, so the person who was responsible in a previous distrorelease
+may no longer be listed as a maintainer.</td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.maintainership</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.manifest" id=
 "public.table.manifest">manifest</a></h2>
 <p>A Manifest describes the branches that go into making up a
@@ -11675,10 +11854,6 @@ not end up with orphaned manifests.</p>
 <ul>
 <li><a href=
 "#public.table.productrelease">public.productrelease</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.sourcepackage">public.sourcepackage</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -12031,21 +12206,12 @@ The title text of the message, or the subject if it was an
 email.</td>
 </tr>
 <tr class="tr1">
-<td></td>
-<td>contents</td>
-<td>text</td>
-<td><i>NOT NULL</i><br />
-<br />
-The complete message. If this was an email message then this would
-include all the headers.</td>
-</tr>
-<tr class="tr0">
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>owner</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td><a href="#public.table.message">public.message.id</a></td>
 <td>parent</td>
 <td>integer</td>
@@ -12054,7 +12220,7 @@ include all the headers.</td>
 A "parent message". This allows for some level of threading in
 Messages.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href=
 "#public.table.distribution">public.distribution.id</a></td>
 <td>distribution</td>
@@ -12064,17 +12230,27 @@ Messages.</td>
 The distribution in which this message originated, if we know
 it.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>rfc822msgid</td>
 <td>text</td>
 <td><i>UNIQUE NOT NULL</i></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>fti</td>
 <td>tsvector</td>
 <td></td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.libraryfilealias">public.libraryfilealias.id</a></td>
+<td>raw</td>
+<td>integer</td>
+<td><br />
+<br />
+The original unadulterated message if it arrived via email. This is
+required to provide access to the original, undecoded message.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -12089,6 +12265,10 @@ it.</td>
 </ul>
 <ul>
 <li><a href="#public.table.message">public.message</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.messagechunk">public.messagechunk</a></li>
 </ul>
 <!-- View Definition -->
 <!-- List off permissions -->
@@ -12166,6 +12346,191 @@ it.</td>
 <td>
 <center>&diams;</center>
 </td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.messagechunk" id=
+"public.table.messagechunk">messagechunk</a></h2>
+<p>This table stores a single chunk of a possibly multipart
+message. There will be at least one row in this table for each
+message. text/* parts are stored in the content column. All other
+parts are stored in the Librarian and referenced via the blob
+column. If both content and blob are NULL, then this chunk has been
+removed (eg. offensive, legal reasons, virus etc.)</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.messagechunk Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.message">public.message.id</a></td>
+<td>message</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>sequence</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+Order of a particular chunk. Chunks are orders in ascending order
+starting from 1.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>content</td>
+<td>text</td>
+<td><br />
+<br />
+Text content for this chunk of the message. This content is full
+text searchable.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.libraryfilealias">public.libraryfilealias.id</a></td>
+<td>blob</td>
+<td>integer</td>
+<td><br />
+<br />
+Binary content for this chunk of the message.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>fti</td>
+<td>tsvector</td>
+<td></td>
+</tr>
+</table>
+<!-- Constraint List -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.messagechunk Constraints</caption>
+<tr>
+<th>Name</th>
+<th>Constraint</th>
+</tr>
+<tr class="tr0">
+<td>text_or_content</td>
+<td>CHECK ((((blob IS NULL) AND (content IS NULL)) OR ((blob IS
+NULL) &lt;&gt; (content IS NULL))))</td>
+</tr>
+</table>
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.messagechunk</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -13627,29 +13992,36 @@ public</a></p>
 <th>Description</th>
 </tr>
 <tr class="tr0">
-<td><a href=
-"#public.table.sourcepackage">public.sourcepackage.id</a></td>
-<td>sourcepackage</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
 <td></td>
 <td>packaging</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href="#public.table.product">public.product.id</a></td>
 <td>product</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>id</td>
 <td>integer</td>
 <td><i>DEFAULT nextval('packaging_id_seq'::text)</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.sourcepackagename">public.sourcepackagename.id</a></td>
+<td>sourcepackagename</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.distrorelease">public.distrorelease.id</a></td>
+<td>distrorelease</td>
+<td>integer</td>
+<td></td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -13898,6 +14270,12 @@ displayed in this language wherever possible.</td>
 <td>integer</td>
 <td><i>NOT NULL DEFAULT 1</i></td>
 </tr>
+<tr class="tr1">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>merged</td>
+<td>integer</td>
+<td></td>
+</tr>
 </table>
 <!-- Constraint List -->
 <p> </p>
@@ -14004,6 +14382,10 @@ displayed in this language wherever possible.</td>
 <li><a href="#public.table.logintoken">public.logintoken</a></li>
 </ul>
 <ul>
+<li><a href=
+"#public.table.maintainership">public.maintainership</a></li>
+</ul>
+<ul>
 <li><a href="#public.table.message">public.message</a></li>
 </ul>
 <ul>
@@ -14048,10 +14430,6 @@ displayed in this language wherever possible.</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.productbugassignment">public.productbugassignment</a></li>
-</ul>
-<ul>
-<li><a href=
 "#public.table.productrelease">public.productrelease</a></li>
 </ul>
 <ul>
@@ -14067,14 +14445,6 @@ displayed in this language wherever possible.</td>
 <ul>
 <li><a href=
 "#public.table.signedcodeofconduct">public.signedcodeofconduct</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.sourcepackage">public.sourcepackage</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.sourcepackagebugassignment">public.sourcepackagebugassignment</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -17270,19 +17640,11 @@ Whether or not this product should be considered active.</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.productbugassignment">public.productbugassignment</a></li>
-</ul>
-<ul>
-<li><a href=
 "#public.table.productcvsmodule">public.productcvsmodule</a></li>
 </ul>
 <ul>
 <li><a href=
 "#public.table.productlabel">public.productlabel</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.productrelease">public.productrelease</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -17846,198 +18208,6 @@ public.productbranchrelationship</caption>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.productbugassignment" id=
-"public.table.productbugassignment">productbugassignment</a></h2>
-<p>Links a given Bug to a particular product.</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.productbugassignment Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>serial</td>
-<td><i>PRIMARY KEY</i></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.bug">public.bug.id</a></td>
-<td>bug</td>
-<td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td><a href="#public.table.product">public.product.id</a></td>
-<td>product</td>
-<td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>bugstatus</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>priority</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>severity</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td><a href="#public.table.person">public.person.id</a></td>
-<td>assignee</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>dateassigned</td>
-<td>timestamp without time zone</td>
-<td><i>NOT NULL DEFAULT timezone('UTC'::text,
-('now'::text)::timestamp(6) with time zone)</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>datecreated</td>
-<td>timestamp without time zone</td>
-<td><i>NOT NULL DEFAULT timezone('UTC'::text,
-('now'::text)::timestamp(6) with time zone)</i><br />
-<br />
-A timestamp for the creation of this bug assignment. Note that this
-is not the date the bug was created (though it might be), it's the
-date the bug was assigned to this product, which could have come
-later.</td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.person">public.person.id</a></td>
-<td>owner</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<!-- View Definition -->
-<!-- List off permissions -->
-<p> </p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to
-public.productbugassignment</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.productcvsmodule" id=
 "public.table.productcvsmodule">productcvsmodule</a></h2>
 <table width="100%" cellspacing="0" cellpadding="3">
@@ -18357,27 +18527,21 @@ Evolution 1.5.4.</p>
 <td><i>PRIMARY KEY</i></td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.product">public.product.id</a></td>
-<td>product</td>
-<td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
-</tr>
-<tr class="tr0">
 <td></td>
 <td>datereleased</td>
 <td>timestamp without time zone</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>version</td>
 <td>text</td>
-<td><i>UNIQUE#1 NOT NULL</i><br />
+<td><i>NOT NULL</i><br />
 <br />
 This is a text field containing the version string for this
 release, such as '1.2.4' or '2.0.38' or '7.4.3'.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>title</td>
 <td>text</td>
@@ -18388,25 +18552,25 @@ Release' or 'All your base-0 are belong to us'. Many upstream
 projects are assigning fun names to their releases - these go in
 this field.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>description</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>changelog</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>owner</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>shortdesc</td>
 <td>text</td>
@@ -18416,19 +18580,19 @@ A short description of this ProductRelease. This should be a very
 brief overview of changes and highlights, just a short paragraph of
 text.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td><a href=
 "#public.table.productseries">public.productseries.id</a></td>
 <td>productseries</td>
 <td>integer</td>
-<td><br />
+<td><i>NOT NULL</i><br />
 <br />
 A pointer to the Product Series this release forms part of. Using a
 Product Series allows us to distinguish between releases on stable
 and development branches of a product even if they are interspersed
 in time.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href="#public.table.manifest">public.manifest.id</a></td>
 <td>manifest</td>
 <td>integer</td>
@@ -19928,17 +20092,11 @@ in the distribution, but may be more widely used.</p>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>sourcepackage</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
 <td>sourcepackagename</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>binarypackagefti</td>
 <td>tsvector</td>
@@ -19967,22 +20125,9 @@ SELECT packagepublishing.id
 , build.datebuilt
 , sourcepackagerelease.id AS sourcepackagerelease
 , sourcepackagerelease."version" AS sourcepackagereleaseversion
-, sourcepackagerelease.sourcepackage
 , sourcepackagename.name AS sourcepackagename
 , binarypackage.fti AS binarypackagefti 
-FROM distrorelease
-, distroarchrelease
-, processorfamily
-, packagepublishing
-, component
-, section
-, binarypackage
-, binarypackagename
-, build
-, sourcepackagerelease
-, sourcepackage
-, sourcepackagename 
-WHERE (
+FROM (
      (
            (
                  (
@@ -19991,27 +20136,56 @@ WHERE (
                                    (
                                          (
                                                (
-                                                     (
-                                                           (distroarchrelease.distrorelease = distrorelease.id)
-                                                         AND (distroarchrelease.processorfamily = processorfamily.id)
+                                                     (packagepublishing 
+                                                        JOIN distroarchrelease 
+                                                          ON (
+                                                                 (distroarchrelease.id = packagepublishing.distroarchrelease)
+                                                           )
                                                      )
-                                                   AND (distroarchrelease.id = packagepublishing.distroarchrelease)
+                                                  JOIN distrorelease 
+                                                    ON (
+                                                           (distroarchrelease.distrorelease = distrorelease.id)
+                                                     )
                                                )
-                                             AND (packagepublishing.binarypackage = binarypackage.id)
+                                            JOIN processorfamily 
+                                              ON (
+                                                     (distroarchrelease.processorfamily = processorfamily.id)
+                                               )
                                          )
-                                       AND (packagepublishing.component = component.id)
+                                      JOIN component 
+                                        ON (
+                                               (packagepublishing.component = component.id)
+                                         )
                                    )
-                                 AND (packagepublishing.section = section.id)
+                                JOIN binarypackage 
+                                  ON (
+                                         (packagepublishing.binarypackage = binarypackage.id)
+                                   )
                              )
-                           AND (binarypackage.binarypackagename = binarypackagename.id)
+                          JOIN section 
+                            ON (
+                                   (packagepublishing.section = section.id)
+                             )
                        )
-                     AND (binarypackage.build = build.id)
+                    JOIN binarypackagename 
+                      ON (
+                             (binarypackage.binarypackagename = binarypackagename.id)
+                       )
                  )
-               AND (build.sourcepackagerelease = sourcepackagerelease.id)
+              JOIN build 
+                ON (
+                       (binarypackage.build = build.id)
+                 )
            )
-         AND (sourcepackagerelease.sourcepackage = sourcepackage.id)
+        JOIN sourcepackagerelease 
+          ON (
+                 (build.sourcepackagerelease = sourcepackagerelease.id)
+           )
      )
-   AND (sourcepackage.sourcepackagename = sourcepackagename.id)
+  JOIN sourcepackagename 
+    ON (
+           (sourcepackagerelease.sourcepackagename = sourcepackagename.id)
+     )
 );
 </pre>
 <!-- List off permissions -->
@@ -20501,6 +20675,10 @@ public</a></p>
 </ul>
 <ul>
 <li><a href=
+"#public.table.sourcepackagepublishinghistory">public.sourcepackagepublishinghistory</a></li>
+</ul>
+<ul>
+<li><a href=
 "#public.table.sourcepackagerelease">public.sourcepackagerelease</a></li>
 </ul>
 <!-- View Definition -->
@@ -20929,433 +21107,6 @@ public.signedcodeofconduct</caption>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
 <hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.sourcepackage" id=
-"public.table.sourcepackage">sourcepackage</a></h2>
-<p>SourcePackage: A soyuz source package representation. This table
-represents the presence of a given source package in a
-distribution. It gives no indication of what distrorelease a
-package may be in.</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.sourcepackage Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>serial</td>
-<td><i>PRIMARY KEY</i></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.person">public.person.id</a></td>
-<td>maintainer</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The maintainer of a sourcepackage in a given distribution.</td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>shortdesc</td>
-<td>text</td>
-<td><i>NOT NULL</i><br />
-<br />
-The title or short name of a sourcepackage. E.g. "Mozilla Firefox
-Browser"</td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>description</td>
-<td>text</td>
-<td><i>NOT NULL</i><br />
-<br />
-A description of the sourcepackage. Typically longer and more
-detailed than shortdesc.</td>
-</tr>
-<tr class="tr0">
-<td><a href="#public.table.manifest">public.manifest.id</a></td>
-<td>manifest</td>
-<td>integer</td>
-<td><br />
-<br />
-The head HCT manifest for the sourcepackage</td>
-</tr>
-<tr class="tr1">
-<td><a href=
-"#public.table.distribution">public.distribution.id</a></td>
-<td>distro</td>
-<td>integer</td>
-<td><i>UNIQUE#1</i><br />
-<br />
-The distribution in which this package "belongs", if any. It is
-possible for a package to have no home distribution, in the sense
-that it is just a package produced by an individual, and not yet
-published.</td>
-</tr>
-<tr class="tr0">
-<td><a href=
-"#public.table.sourcepackagename">public.sourcepackagename.id</a></td>
-<td>sourcepackagename</td>
-<td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i><br />
-<br />
-A lowercase name identifying the sourcepackage</td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>srcpackageformat</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The format of this source package, e.g. DPKG, RPM, EBUILD,
-etc.</td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>fti</td>
-<td>tsvector</td>
-<td></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<p>Tables referencing this one via Foreign Key Constraints:</p>
-<ul>
-<li><a href="#public.table.packaging">public.packaging</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.sourcepackagebugassignment">public.sourcepackagebugassignment</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.sourcepackagelabel">public.sourcepackagelabel</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.sourcepackagerelationship">public.sourcepackagerelationship</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.sourcepackagerelease">public.sourcepackagerelease</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.sourcesource">public.sourcesource</a></li>
-</ul>
-<!-- View Definition -->
-<!-- List off permissions -->
-<p> </p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to public.sourcepackage</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.sourcepackagebugassignment" id=
-"public.table.sourcepackagebugassignment">sourcepackagebugassignment</a></h2>
-<p>Links a given Bug to a particular sourcepackage.</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.sourcepackagebugassignment Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>serial</td>
-<td><i>PRIMARY KEY</i></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.bug">public.bug.id</a></td>
-<td>bug</td>
-<td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td><a href=
-"#public.table.sourcepackage">public.sourcepackage.id</a></td>
-<td>sourcepackage</td>
-<td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>bugstatus</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>priority</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>severity</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td><a href=
-"#public.table.binarypackagename">public.binarypackagename.id</a></td>
-<td>binarypackagename</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.person">public.person.id</a></td>
-<td>assignee</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>dateassigned</td>
-<td>timestamp without time zone</td>
-<td><i>NOT NULL DEFAULT timezone('UTC'::text,
-('now'::text)::timestamp(6) with time zone)</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>datecreated</td>
-<td>timestamp without time zone</td>
-<td><i>NOT NULL DEFAULT timezone('UTC'::text,
-('now'::text)::timestamp(6) with time zone)</i><br />
-<br />
-A timestamp for the creation of this bug assignment. Note that this
-is not the date the bug was created (though it might be), it's the
-date the bug was assigned to this product, which could have come
-later.</td>
-</tr>
-<tr class="tr0">
-<td><a href="#public.table.person">public.person.id</a></td>
-<td>owner</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<!-- View Definition -->
-<!-- List off permissions -->
-<p> </p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to
-public.sourcepackagebugassignment</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
 <h2>View: <a href="#public.schema">public</a>.<a name=
 "public.view.sourcepackagefilepublishing" id=
 "public.view.sourcepackagefilepublishing">sourcepackagefilepublishing</a></h2>
@@ -21445,32 +21196,41 @@ SELECT (
 , component.name AS componentname
 , distrorelease.name AS distroreleasename
 , sourcepackagepublishing.status AS publishingstatus 
-FROM sourcepackagepublishing
-, sourcepackagerelease
-, sourcepackagereleasefile
-, libraryfilealias
-, distrorelease
-, sourcepackage
-, sourcepackagename
-, component 
-WHERE (
+FROM (
      (
            (
                  (
                        (
-                             (
-                                   (sourcepackagepublishing.distrorelease = distrorelease.id)
-                                 AND (sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id)
+                             (sourcepackagepublishing 
+                                JOIN sourcepackagerelease 
+                                  ON (
+                                         (sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id)
+                                   )
                              )
-                           AND (sourcepackagereleasefile.sourcepackagerelease = sourcepackagerelease.id)
+                          JOIN sourcepackagename 
+                            ON (
+                                   (sourcepackagerelease.sourcepackagename = sourcepackagename.id)
+                             )
                        )
-                     AND (libraryfilealias.id = sourcepackagereleasefile.libraryfile)
+                    JOIN sourcepackagereleasefile 
+                      ON (
+                             (sourcepackagereleasefile.sourcepackagerelease = sourcepackagerelease.id)
+                       )
                  )
-               AND (sourcepackagerelease.sourcepackage = sourcepackage.id)
+              JOIN libraryfilealias 
+                ON (
+                       (libraryfilealias.id = sourcepackagereleasefile.libraryfile)
+                 )
            )
-         AND (sourcepackagename.id = sourcepackage.sourcepackagename)
+        JOIN distrorelease 
+          ON (
+                 (sourcepackagepublishing.distrorelease = distrorelease.id)
+           )
      )
-   AND (component.id = sourcepackagepublishing.component)
+  JOIN component 
+    ON (
+           (sourcepackagepublishing.component = component.id)
+     )
 );
 </pre>
 <!-- List off permissions -->
@@ -21478,143 +21238,6 @@ WHERE (
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>Permissions which apply to
 public.sourcepackagefilepublishing</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.sourcepackagelabel" id=
-"public.table.sourcepackagelabel">sourcepackagelabel</a></h2>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.sourcepackagelabel Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td><a href=
-"#public.table.sourcepackage">public.sourcepackage.id</a></td>
-<td>sourcepackage</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.label">public.label.id</a></td>
-<td>label</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<!-- View Definition -->
-<!-- List off permissions -->
-<p> </p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to
-public.sourcepackagelabel</caption>
 <tr>
 <th>User</th>
 <th>
@@ -21766,18 +21389,25 @@ A lowercase name identifying one or more sourcepackages</td>
 </ul>
 <ul>
 <li><a href=
+"#public.table.maintainership">public.maintainership</a></li>
+</ul>
+<ul>
+<li><a href=
 "#public.table.packageselection">public.packageselection</a></li>
+</ul>
+<ul>
+<li><a href="#public.table.packaging">public.packaging</a></li>
 </ul>
 <ul>
 <li><a href="#public.table.potemplate">public.potemplate</a></li>
 </ul>
 <ul>
 <li><a href=
-"#public.table.sourcepackage">public.sourcepackage</a></li>
+"#public.table.sourcepackagerelease">public.sourcepackagerelease</a></li>
 </ul>
 <ul>
 <li><a href=
-"#public.table.sourcepackagerelease">public.sourcepackagerelease</a></li>
+"#public.table.sourcesource">public.sourcesource</a></li>
 </ul>
 <!-- View Definition -->
 <!-- List off permissions -->
@@ -22121,6 +21751,244 @@ public.sourcepackagepublishing</caption>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
 <hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.sourcepackagepublishinghistory" id=
+"public.table.sourcepackagepublishinghistory">sourcepackagepublishinghistory</a></h2>
+<p>SourcePackagePublishingHistory: The history of a
+SourcePackagePublishing record. This table represents the lifetime
+of a publishing record from inception to deletion. Records are
+never removed from here and in time the publishing table may become
+a view onto this table. A column being NULL indicates there's no
+data for that state transition. E.g. a package which is removed
+without being superseded won't have datesuperseded or supersededby
+filled in.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.sourcepackagepublishinghistory Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.sourcepackagerelease">public.sourcepackagerelease.id</a></td>
+<td>sourcepackagerelease</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The sourcepackagerelease being published.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.distrorelease">public.distrorelease.id</a></td>
+<td>distrorelease</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The distrorelease into which the sourcepackagerelease is being
+published.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>status</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The current status of the publishing.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.component">public.component.id</a></td>
+<td>component</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The component into which the publishing takes place.</td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.section">public.section.id</a></td>
+<td>section</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The section into which the publishing takes place.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>datecreated</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL</i><br />
+<br />
+The date/time on which the publishing record was created.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>datepublished</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The date/time on which the source was actually published into an
+archive.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>datesuperseded</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The date/time on which the source was superseded by a new
+source.</td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.sourcepackagerelease">public.sourcepackagerelease.id</a></td>
+<td>supersededby</td>
+<td>integer</td>
+<td><br />
+<br />
+The source which superseded this one.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>datemadepending</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The date/time on which this publishing record was made to be
+pending removal from the archive.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>scheduleddeletiondate</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The date/time at which the source is/was scheduled to be
+deleted.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>dateremoved</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The date/time at which the source was actually deleted.</td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.sourcepackagepublishinghistory</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>gina</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr0">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
 <h2>View: <a href="#public.schema">public</a>.<a name=
 "public.view.sourcepackagepublishingview" id=
 "public.view.sourcepackagepublishingview">sourcepackagepublishingview</a></h2>
@@ -22192,28 +22060,35 @@ SELECT sourcepackagepublishing.id
 , section.name AS sectionname
 , distrorelease.distribution
 , sourcepackagepublishing.status AS publishingstatus 
-FROM sourcepackagepublishing
-, distrorelease
-, sourcepackagerelease
-, sourcepackage
-, sourcepackagename
-, component
-, section 
-WHERE (
+FROM (
      (
            (
                  (
-                       (
-                             (sourcepackagepublishing.distrorelease = distrorelease.id)
-                           AND (sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id)
+                       (sourcepackagepublishing 
+                          JOIN distrorelease 
+                            ON (
+                                   (sourcepackagepublishing.distrorelease = distrorelease.id)
+                             )
                        )
-                     AND (sourcepackagerelease.sourcepackage = sourcepackage.id)
+                    JOIN sourcepackagerelease 
+                      ON (
+                             (sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id)
+                       )
                  )
-               AND (sourcepackage.sourcepackagename = sourcepackagename.id)
+              JOIN sourcepackagename 
+                ON (
+                       (sourcepackagerelease.sourcepackagename = sourcepackagename.id)
+                 )
            )
-         AND (sourcepackagepublishing.component = component.id)
+        JOIN component 
+          ON (
+                 (sourcepackagepublishing.component = component.id)
+           )
      )
-   AND (sourcepackagepublishing.section = section.id)
+  JOIN section 
+    ON (
+           (sourcepackagepublishing.section = section.id)
+     )
 );
 </pre>
 <!-- List off permissions -->
@@ -22322,186 +22197,12 @@ public.sourcepackagepublishingview</caption>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.sourcepackagerelationship" id=
-"public.table.sourcepackagerelationship">sourcepackagerelationship</a></h2>
-<p>SourcePackageRelationship: A soyuz relationship between
-sourcepackages. This table represents relationships between
-sourcepackages such as inheritance</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.sourcepackagerelationship Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td><a href=
-"#public.table.sourcepackage">public.sourcepackage.id</a></td>
-<td>subject</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The sourcepackage which acts as the subject in the sentence
-'Package A &lt;verbs&gt; Package B'</td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>label</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The verb in the sentence 'Package A &lt;verbs&gt; Package B' E.g.
-'derives from' or 'effectively implements'</td>
-</tr>
-<tr class="tr0">
-<td><a href=
-"#public.table.sourcepackage">public.sourcepackage.id</a></td>
-<td>object</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The sourcepackage which acts as the object in the sentence 'Package
-A &lt;verbs&gt; Package B'</td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>id</td>
-<td>integer</td>
-<td><i>PRIMARY KEY DEFAULT
-nextval('sourcepackagerelationship_id_seq'::text)</i></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<p> </p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.sourcepackagerelationship Constraints</caption>
-<tr>
-<th>Name</th>
-<th>Constraint</th>
-</tr>
-<tr class="tr0">
-<td>$1</td>
-<td>CHECK ((subject &lt;&gt; object))</td>
-</tr>
-</table>
-<!-- Foreign Key Discovery -->
-<!-- View Definition -->
-<!-- List off permissions -->
-<p> </p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to
-public.sourcepackagerelationship</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.sourcepackagerelease" id=
 "public.table.sourcepackagerelease">sourcepackagerelease</a></h2>
-<p>SourcePackageRelease: A soyuz source package release. This table
-represents a given release of a source package. Source package
-releases may be published into a distrorelease if relevant.</p>
+<p>SourcePackageRelease: A source package release. This table
+represents a specific release of a source package. Source package
+releases may be published into a distrorelease, or even multiple
+distroreleases.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.sourcepackagerelease Structure</caption>
 <tr>
@@ -22517,43 +22218,43 @@ releases may be published into a distrorelease if relevant.</p>
 <td><i>PRIMARY KEY</i></td>
 </tr>
 <tr class="tr1">
-<td><a href=
-"#public.table.sourcepackage">public.sourcepackage.id</a></td>
-<td>sourcepackage</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The sourcepackage related to this release.</td>
-</tr>
-<tr class="tr0">
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>creator</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-The creator of this sourcepackagerelease. I.E. the person who
-uploaded the release.</td>
+The creator of this sourcepackagerelease. This is the person
+referred to in the top entry in the package changelog in debian
+terms. Note that a source package maintainer in Ubuntu might be
+person A, but a particular release of that source package might in
+fact have been created by a different person B. The maintainer
+would be recorded in the Maintainership table, while the creator of
+THIS release would be recorded in the SourcePackageRelease.creator
+field.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>version</td>
 <td>text</td>
 <td><i>NOT NULL</i><br />
 <br />
-The version string for this release. E.g. "1.0-2" or
-"1.4-5ubuntu9.1"</td>
+The version string for this source package release. E.g. "1.0-2" or
+"1.4-5ubuntu9.1". Note that, in ubuntu-style and redhat-style
+distributions, the version+sourcepackagename is unique, even across
+distroreleases. In other words, you cannot have a foo-1.2-1 package
+in Hoary that is different from foo-1.2-1 in Warty.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>dateuploaded</td>
 <td>timestamp without time zone</td>
 <td><i>NOT NULL DEFAULT timezone('UTC'::text,
 ('now'::text)::timestamp(6) with time zone)</i><br />
 <br />
-The date/time that this sourcepackagerelease was uploaded to
-soyuz</td>
+The date/time that this sourcepackagerelease was first uploaded to
+the Launchpad.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>urgency</td>
 <td>integer</td>
@@ -22561,72 +22262,75 @@ soyuz</td>
 <br />
 The urgency of the upload. This is generally used to prioritise
 buildd activity but may also be used for "testing" systems or
-security work in the future</td>
+security work in the future. The "urgency" is set by the uploader,
+in the DSC file.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href="#public.table.gpgkey">public.gpgkey.id</a></td>
 <td>dscsigningkey</td>
 <td>integer</td>
 <td><br />
 <br />
 The GPG key used to sign the DSC. This is not necessarily the
-maintainer's key, the creator's key if for example a sponsor
-uploaded the package.</td>
+maintainer's key, or the creator's key. For example, it's possible
+to produce a package, then ask a sponsor to upload it.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td><a href="#public.table.component">public.component.id</a></td>
 <td>component</td>
 <td>integer</td>
 <td><br />
 <br />
-The component in which this sourcepackagerelease is meant to
-reside. E.g. main, universe, restricted</td>
+The component in which this sourcepackagerelease is intended (by
+the uploader) to reside. E.g. main, universe, restricted. Note that
+the distribution managers will often override this data and publish
+the package in an entirely different component.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>changelog</td>
 <td>text</td>
 <td><br />
 <br />
-The changelog entries relevant to this sourcepackagerelease</td>
+The changelog of this source package release.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>builddepends</td>
 <td>text</td>
 <td><br />
 <br />
-The build dependencies for this sourcepackagerelease</td>
+The build dependencies for this source package release.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>builddependsindep</td>
 <td>text</td>
 <td><br />
 <br />
-The architecture-independant build dependancies for the
-sourcepackagerelease</td>
+The architecture-independant build dependancies for this source
+package release.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>architecturehintlist</td>
 <td>text</td>
 <td><br />
 <br />
-The architectures which this sourcepackagerelease believes it
-should be built on. This is used as a hint to the buildds when
-looking for work to do.</td>
+The architectures which this source package release believes it
+should be built. This is used as a hint to the build management
+system when deciding what builds are still needed.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>dsc</td>
 <td>text</td>
 <td><br />
 <br />
-The "Debian source control" file for the sourcepackagerelease.
-(*OBSOLETE* ???)</td>
+The "Debian Source Control" file for the sourcepackagerelease, from
+its upload into Ubuntu for the first time.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td><a href="#public.table.section">public.section.id</a></td>
 <td>section</td>
 <td>integer</td>
@@ -22635,24 +22339,48 @@ The "Debian source control" file for the sourcepackagerelease.
 This integer field references the Section which the source package
 claims to be in</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href="#public.table.manifest">public.manifest.id</a></td>
 <td>manifest</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>maintainer</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href=
 "#public.table.sourcepackagename">public.sourcepackagename.id</a></td>
 <td>sourcepackagename</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.distrorelease">public.distrorelease.id</a></td>
+<td>uploaddistrorelease</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The distrorelease into which this source package release was
+uploaded into Launchpad / Ubuntu for the first time. In general,
+this will be the development Ubuntu release into which this package
+was uploaded. For a package which was unchanged between warty and
+hoary, this would show Warty. For a package which was uploaded into
+Hoary, this would show Hoary.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>format</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The format of this sourcepackage release, e.g. DPKG, RPM, EBUILD,
+etc. This is an enum, and the values are listed in
+dbschema.SourcePackageFormat</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -22684,6 +22412,10 @@ claims to be in</td>
 <ul>
 <li><a href=
 "#public.table.sourcepackagepublishing">public.sourcepackagepublishing</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.sourcepackagepublishinghistory">public.sourcepackagepublishinghistory</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -22962,6 +22694,11 @@ public</a></p>
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.sourcesource" id=
 "public.table.sourcesource">sourcesource</a></h2>
+<p>The SourceSource table identifies upstream revision control
+systems that can be imported and re-published as bazaar (baz)
+archives. So, for example, there is an entry in this table for each
+upstream CVS or SVN branch that we want to sync-and-publish as a
+baz branch.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.sourcesource Structure</caption>
 <tr>
@@ -23062,115 +22799,108 @@ public</a></p>
 <td></td>
 </tr>
 <tr class="tr1">
-<td><a href=
-"#public.table.sourcepackage">public.sourcepackage.id</a></td>
-<td>sourcepackage</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
 <td><a href="#public.table.branch">public.branch.id</a></td>
 <td>branch</td>
 <td>integer</td>
 <td><i>UNIQUE</i></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>lastsynced</td>
 <td>timestamp without time zone</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>syncinterval</td>
 <td>interval</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>rcstype</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>hosted</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>upstreamname</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>processingapproved</td>
 <td>timestamp without time zone</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>syncingapproved</td>
 <td>timestamp without time zone</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>newarchive</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>newbranchcategory</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>newbranchbranch</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>newbranchversion</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>packagedistro</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>packagefiles_collapsed</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>owner</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>currentgpgkey</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>fileidreference</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>branchpoint</td>
 <td>text</td>
@@ -23178,13 +22908,13 @@ public</a></p>
 <br />
 The source specification for an import job to branch from.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>autotested</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>datestarted</td>
 <td>timestamp without time zone</td>
@@ -23194,7 +22924,7 @@ with time zone)</i><br />
 The timestamp of the last time an import or sync was started on
 this sourcesource.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>datefinished</td>
 <td>timestamp without time zone</td>
@@ -23203,6 +22933,20 @@ with time zone)</i><br />
 <br />
 The timestamp of the last time an import or sync finished on this
 sourcesource.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.sourcepackagename">public.sourcepackagename.id</a></td>
+<td>sourcepackagename</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.distrorelease">public.distrorelease.id</a></td>
+<td>distrorelease</td>
+<td>integer</td>
+<td></td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -23577,7 +23321,9 @@ public</a></p>
 <td>
 <center>&diams;</center>
 </td>
-<td></td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -24291,37 +24037,13 @@ we don't want to go down that route).</p>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>shortdesc</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>description</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>distro</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
 <td>manifest</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr1">
-<td></td>
-<td>maintainer</td>
-<td>integer</td>
-<td></td>
-</tr>
 <tr class="tr0">
 <td></td>
-<td>srcpackageformat</td>
+<td>format</td>
 <td>integer</td>
 <td></td>
 </tr>
@@ -24343,46 +24065,42 @@ we don't want to go down that route).</p>
 <td>integer</td>
 <td></td>
 </tr>
+<tr class="tr0">
+<td></td>
+<td>distribution</td>
+<td>integer</td>
+<td></td>
+</tr>
 </table>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
 <!-- View Definition -->
 <pre>
-SELECT DISTINCT sourcepackage.id
-, sourcepackage.shortdesc
-, sourcepackage.description
-, sourcepackage.distro
-, sourcepackage.manifest
-, sourcepackage.maintainer
-, sourcepackage.srcpackageformat
-, sourcepackagename.id AS sourcepackagename
+SELECT sourcepackagerelease.id
+, sourcepackagerelease.manifest
+, sourcepackagerelease.format
+, sourcepackagerelease.sourcepackagename
 , sourcepackagename.name
-, distrorelease.id AS distrorelease 
-FROM sourcepackagepublishing
-, sourcepackagerelease
-, sourcepackage
-, distrorelease
-, sourcepackagename 
-WHERE (
+, sourcepackagepublishing.distrorelease
+, distrorelease.distribution 
+FROM (
      (
-           (
-                 (sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id)
-               AND (sourcepackagerelease.sourcepackage = sourcepackage.id)
+           (sourcepackagepublishing 
+              JOIN sourcepackagerelease 
+                ON (
+                       (sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id)
+                 )
            )
-         AND (sourcepackagepublishing.distrorelease = distrorelease.id)
+        JOIN distrorelease 
+          ON (
+                 (sourcepackagepublishing.distrorelease = distrorelease.id)
+           )
      )
-   AND (sourcepackage.sourcepackagename = sourcepackagename.id)
-)
-ORDER BY sourcepackage.id
-, sourcepackage.shortdesc
-, sourcepackage.description
-, sourcepackage.distro
-, sourcepackage.manifest
-, sourcepackage.maintainer
-, sourcepackage.srcpackageformat
-, sourcepackagename.id
-, sourcepackagename.name
-, distrorelease.id;
+  JOIN sourcepackagename 
+    ON (
+           (sourcepackagerelease.sourcepackagename = sourcepackagename.id)
+     )
+);
 </pre>
 <!-- List off permissions -->
 <p> </p>
@@ -24518,92 +24236,92 @@ using a View in place of a real table is bizarre).</p>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>shortdesc</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
 <td>maintainer</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr0">
-<td></td>
-<td>description</td>
-<td>text</td>
-<td></td>
-</tr>
 <tr class="tr1">
-<td></td>
-<td>sourcepackage</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
 <td></td>
 <td>publishingstatus</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>datepublished</td>
 <td>timestamp without time zone</td>
 <td></td>
 </tr>
+<tr class="tr1">
+<td></td>
+<td>distrorelease</td>
+<td>integer</td>
+<td></td>
+</tr>
 <tr class="tr0">
+<td></td>
+<td>componentname</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td></td>
 <td>architecturehintlist</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>version</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>creator</td>
 <td>integer</td>
 <td></td>
 </tr>
+<tr class="tr0">
+<td></td>
+<td>format</td>
+<td>integer</td>
+<td></td>
+</tr>
 <tr class="tr1">
+<td></td>
+<td>manifest</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td></td>
 <td>section</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>component</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>changelog</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>builddepends</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>builddependsindep</td>
 <td>text</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>manifest</td>
-<td>integer</td>
 <td></td>
 </tr>
 <tr class="tr1">
@@ -24632,14 +24350,14 @@ using a View in place of a real table is bizarre).</p>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>distrorelease</td>
+<td>uploaddistrorelease</td>
 <td>integer</td>
 <td></td>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>componentname</td>
-<td>text</td>
+<td>sourcepackagename</td>
+<td>integer</td>
 <td></td>
 </tr>
 </table>
@@ -24647,48 +24365,85 @@ using a View in place of a real table is bizarre).</p>
 <!-- Foreign Key Discovery -->
 <!-- View Definition -->
 <pre>
-SELECT sourcepackagerelease.id
+SELECT DISTINCT sourcepackagerelease.id
 , sourcepackagename.name
-, sourcepackage.shortdesc
-, sourcepackage.maintainer
-, sourcepackage.description
-, sourcepackage.id AS sourcepackage
+, maintainership.maintainer
 , sourcepackagepublishing.status AS publishingstatus
 , sourcepackagepublishing.datepublished
+, sourcepackagepublishing.distrorelease
+, component.name AS componentname
 , sourcepackagerelease.architecturehintlist
 , sourcepackagerelease."version"
 , sourcepackagerelease.creator
+, sourcepackagerelease.format
+, sourcepackagerelease.manifest
 , sourcepackagerelease.section
 , sourcepackagerelease.component
 , sourcepackagerelease.changelog
 , sourcepackagerelease.builddepends
 , sourcepackagerelease.builddependsindep
-, sourcepackagerelease.manifest
 , sourcepackagerelease.urgency
 , sourcepackagerelease.dateuploaded
 , sourcepackagerelease.dsc
 , sourcepackagerelease.dscsigningkey
-, distrorelease.id AS distrorelease
-, component.name AS componentname 
-FROM sourcepackagepublishing
-, sourcepackagerelease
-, component
-, sourcepackage
-, distrorelease
-, sourcepackagename 
-WHERE (
+, sourcepackagerelease.uploaddistrorelease
+, sourcepackagerelease.sourcepackagename 
+FROM (
      (
            (
                  (
-                       (sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id)
-                     AND (sourcepackagerelease.sourcepackage = sourcepackage.id)
+                       (sourcepackagepublishing 
+                          JOIN sourcepackagerelease 
+                            ON (
+                                   (sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id)
+                             )
+                       )
+                    JOIN sourcepackagename 
+                      ON (
+                             (sourcepackagerelease.sourcepackagename = sourcepackagename.id)
+                       )
                  )
-               AND (sourcepackagepublishing.distrorelease = distrorelease.id)
+              JOIN distrorelease 
+                ON (
+                       (sourcepackagepublishing.distrorelease = distrorelease.id)
+                 )
            )
-         AND (sourcepackage.sourcepackagename = sourcepackagename.id)
+        JOIN component 
+          ON (
+                 (sourcepackagepublishing.component = component.id)
+           )
      )
-   AND (component.id = sourcepackagerelease.component)
-);
+LEFT JOIN maintainership 
+    ON (
+           (
+                 (sourcepackagerelease.sourcepackagename = maintainership.sourcepackagename)
+               AND (distrorelease.distribution = maintainership.distribution)
+           )
+     )
+)
+ORDER BY sourcepackagerelease.id
+, sourcepackagename.name
+, maintainership.maintainer
+, sourcepackagepublishing.status
+, sourcepackagepublishing.datepublished
+, sourcepackagepublishing.distrorelease
+, component.name
+, sourcepackagerelease.architecturehintlist
+, sourcepackagerelease."version"
+, sourcepackagerelease.creator
+, sourcepackagerelease.format
+, sourcepackagerelease.manifest
+, sourcepackagerelease.section
+, sourcepackagerelease.component
+, sourcepackagerelease.changelog
+, sourcepackagerelease.builddepends
+, sourcepackagerelease.builddependsindep
+, sourcepackagerelease.urgency
+, sourcepackagerelease.dateuploaded
+, sourcepackagerelease.dsc
+, sourcepackagerelease.dscsigningkey
+, sourcepackagerelease.uploaddistrorelease
+, sourcepackagerelease.sourcepackagename;
 </pre>
 <!-- List off permissions -->
 <p> </p>

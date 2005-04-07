@@ -1,4 +1,4 @@
-
+Anonymous users cannot see private bugs filed on distros, of course!
 
   >>> print http(r"""
   ... GET /malone/distros/ubuntu/ HTTP/1.1

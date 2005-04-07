@@ -8,8 +8,8 @@
       <span tal:replace="context/displayname">Name</span></title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Soyuz style sheet -->
-    <style type="text/css" media="screen">@import url(soyuz.css);</style>
+    <!-- Launchpad style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
@@ -31,23 +31,25 @@
       currently recorded as the maintainer of any packages in the Launchpad
       system.</p>
 
-         <table tal:condition="context/maintainerships">
-           <tr tal:repeat="maintainership context/maintainerships">
-             <span tal:define="spname maintainership/sourcepackagename/name; 
-                               distro maintainership/distribution;
-                               distrorelease distro/currentrelease;"
-                   tal:omit-tag>
-             <td>
-               <a tal:attributes="href string:/distros/${distro/name}"
-                  tal:content="distro/title">DISTRO</a>
-             </td>
-             <td>
-               <a tal:attributes="href string:/distros/${distro/name}/${distrorelease/name}/+sources/${spname}"
-                  tal:content="spname">PACKAGE</a> ::
-             </td>
-             </span>
-          </tr>
-     </table>
+      <tal:block tal:repeat="maintainership context/maintainerships">
+      <tal:block tal:define="spname maintainership/sourcepackagename/name; 
+                             distro maintainership/distribution;
+                             currentrelease distro/currentrelease;"
+          tal:condition="currentrelease">
+
+        <a tal:attributes="href string:/distros/${distro/name}"
+           tal:content="distro/title">DISTRO</a> ::
+
+        <a tal:attributes="href string:/distros/${distro/name}/${currentrelease/name}"
+           tal:content="currentrelease/name">Distrorelease</a> ::
+
+        <a tal:attributes="href string:/distros/${distro/name}/${currentrelease/name}/+sources/${spname}"
+           tal:content="spname">PACKAGE</a>
+
+        <br />
+
+      </tal:block>
+      </tal:block>
 
   </div>
 

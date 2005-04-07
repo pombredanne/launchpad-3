@@ -18,7 +18,8 @@ from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC, DEFAULT
 from canonical.lp import dbschema
 from canonical.launchpad.database.bugset import BugSetBase
-from canonical.launchpad.database.message import Message, MessageSet
+from canonical.launchpad.database.message \
+        import Message, MessageSet, MessageChunk
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.bugsubscription import BugSubscription
@@ -203,26 +204,6 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
         description = description, private = private,
         owner = owner.id, datecreated=datecreated)
 
-    if private:
-        if product:
-            # subscribe the upstream maintainer on a private bug, to
-            # ensure they can actually see it!
-            BugSubscription(
-                person = product.owner.id, bug = bug.id,
-                subscription = dbschema.BugSubscription.CC)
-        elif sourcepackagename:
-            # subscribe the sourcepackage maintainer on a private bug,
-            # to ensure they can actually see it!
-            if sourcepackagename and distribution:
-                maintainerships = Maintainership.selectBy(
-                    sourcepackagenameID=sourcepackagename.id,
-                    distributionID=distribution)
-                if maintainerships.count():
-                    BugSubscription(
-                        person = maintainerships[0].maintainer.id,
-                        bug = bug.id,
-                        subscription = dbschema.BugSubscription.CC)
-
     BugSubscription(
         person = owner.id, bug = bug.id,
         subscription = dbschema.BugSubscription.CC)
@@ -237,9 +218,11 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
         msg = MessageSet().get(rfc822msgid=rfc822msgid)
     except IndexError:
         msg = Message(
-            title = title, contents = comment,
+            title = title,
             distribution = distribution,
             rfc822msgid = rfc822msgid, owner = owner)
+        chunk = MessageChunk(
+                messageID=msg.id, sequence=1, content = comment, blobID=None)
 
     # link the bug to the message
     bugmsg = BugMessage(bugID=bug.id, messageID=msg.id)

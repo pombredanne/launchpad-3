@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 
 # zope imports
 from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 from zope.component import getUtility
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -16,6 +15,8 @@ from canonical.launchpad.interfaces import ITeamMembershipSubset
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
+from canonical.launchpad.event.team import JoinTeamRequestEvent
+
 # lp imports
 from canonical.lp.dbschema import TeamMembershipStatus
 from canonical.lp.dbschema import TeamSubscriptionPolicy
@@ -23,33 +24,14 @@ from canonical.lp.dbschema import TeamSubscriptionPolicy
 from canonical.database.sqlbase import flush_database_updates
 
 
-class TeamAddView(AddView):
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        AddView.__init__(self, context, request)
-        self._nextURL = '.'
-
-    def nextURL(self):
-        return self._nextURL
-
-    def createAndAdd(self, data):
-        kw = {}
-        for key, value in data.items():
-            kw[str(key)] = value
-
-        kw['teamownerID'] = getUtility(ILaunchBag).user.id
-        team = getUtility(IPersonSet).newTeam(**kw)
-        notify(ObjectCreatedEvent(team))
-        self._nextURL = '/people/%s' % team.name
-        return team
-
-
 class TeamEditView(SQLObjectEditView):
+
+    actionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-team-actions.pt')
 
     def __init__(self, context, request):
         SQLObjectEditView.__init__(self, context, request)
+        self.team = self.context
 
 
 class TeamView(object):
@@ -63,6 +45,7 @@ class TeamView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self.team = self.context
 
     def activeMembersCount(self):
         return len(self.context.approvedmembers + self.context.administrators)
@@ -190,6 +173,8 @@ class TeamJoinView(TeamView):
         user = getUtility(ILaunchBag).user
         if self.request.form.get('join'):
             user.join(self.context)
+            appurl = self.request.getApplicationURL()
+            notify(JoinTeamRequestEvent(user, self.context, appurl))
 
         self.request.response.redirect('./')
 
@@ -208,7 +193,7 @@ class TeamLeaveView(TeamView):
         self.request.response.redirect('./')
 
 
-class TeamMembersView(object):
+class TeamMembersView(TeamView):
 
     def __init__(self, context, request):
         self.context = context
@@ -250,18 +235,12 @@ class ProposedTeamMembersEditView:
     def allPeople(self):
         return getUtility(IPersonSet).getAll()
 
-    def defaultExpirationDate(self):
-        days = self.team.defaultmembershipperiod
-        if days:
-            return (datetime.utcnow() + timedelta(days)).date()
-        else:
-            return None
-
     def processProposed(self):
         if self.request.method != "POST":
             return
 
         team = self.team
+        expires = team.defaultexpirationdate
         for person in team.proposedmembers:
             action = self.request.form.get('action_%d' % person.id)
             membership = _getMembership(person.id, team.id)
@@ -272,7 +251,8 @@ class ProposedTeamMembersEditView:
             elif action == "hold":
                 continue
 
-            team.setMembershipStatus(person, status, reviewer=self.user)
+            team.setMembershipStatus(person, status, expires,
+                                     reviewer=self.user)
 
         # Need to flush all changes we made, so subsequent queries we make
         # with this transaction will see this changes and thus they'll be
@@ -325,12 +305,13 @@ class AddTeamMemberView(AddView):
             # Do not add this team as a member of itself, please.
             return
 
+        expires = team.defaultexpirationdate
         if member.hasMembershipEntryFor(team):
             membership = _getMembership(member.id, team.id)
             if membership.status in (approved, admin):
                 self.alreadyMember = member
             else:
-                team.setMembershipStatus(member, approved,
+                team.setMembershipStatus(member, approved, expires,
                                          reviewer=self.user)
                 self.addedMember = member
         else:
@@ -396,12 +377,12 @@ class TeamMembershipEditView(object):
         member = self.context.person
         comment = self.request.form.get('comment')
         try:
-            date = self._getExpirationDate()
+            expires = self._getExpirationDate()
         except ValueError, err:
             self.errormessage = 'Expiration date: %s' % err
             return
 
-        team.setMembershipStatus(member, status, expires=date,
+        team.setMembershipStatus(member, status, expires,
                                  reviewer=self.user, comment=comment)
 
     def processInactiveMember(self):
@@ -431,8 +412,9 @@ class TeamMembershipEditView(object):
             member = self.context.person
             deactivated = TeamMembershipStatus.DEACTIVATED
             comment = self.request.form.get('comment')
-            team.setMembershipStatus(member, deactivated, reviewer=self.user,
-                                     comment=comment)
+            expires = self.context.dateexpires
+            team.setMembershipStatus(member, deactivated, expires,
+                                     reviewer=self.user, comment=comment)
             self.request.response.redirect('../')
             return
             
@@ -467,17 +449,11 @@ class TeamMembershipEditView(object):
             self.processInactiveMember()
 
     def dateChooserForExpiredMembers(self):
-        days = self.context.team.defaultrenewalperiod
-        expires = None
-        if days is not None:
-            expires = datetime.utcnow() + timedelta(days=days)
+        expires = self.context.team.defaultrenewedexpirationdate
         return self.buildDateChooser(expires)
 
     def dateChooserForProposedMembers(self):
-        days = self.context.team.defaultmembershipperiod
-        expires = None
-        if days is not None:
-            expires = datetime.utcnow() + timedelta(days=days)
+        expires = self.context.team.defaultexpirationdate
         return self.buildDateChooser(expires)
 
     def dateChooserWithCurrentExpirationSelected(self):

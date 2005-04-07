@@ -167,6 +167,9 @@ class IProduct(IHasOwner):
         where we have a translation in Rosetta but there was no translation
         in the PO file for this language when we last parsed it."""
 
+    def getSeries(name):
+        """Returns the series for this product that has the name given."""
+
     def getRelease(version):
         """Returns the release for this product that has the version
         given."""
@@ -191,6 +194,8 @@ class IProduct(IHasOwner):
         Log any error/warning into the logger object, if it's not None.
         """
 
+    def getPackage(distro):
+        """Return the SourcePackage for this product in the supplied distro."""
 
 class IProductSet(Interface):
     """The collection of products."""

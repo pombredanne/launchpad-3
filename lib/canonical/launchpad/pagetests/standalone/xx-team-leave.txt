@@ -1,4 +1,5 @@
 
+  Logged in as 'name16', go to the team named 'name17' home page.
 
   >>> print http(r"""
   ... GET /people/name17 HTTP/1.1
@@ -12,6 +13,8 @@
   ...
 
 
+  Click on the "Leave" link, to leave the team.
+
   >>> print http(r"""
   ... GET /people/name17/+leave HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
@@ -23,6 +26,8 @@
   ...Are you sure you want to leave...
   ...
 
+
+  Confirm that wants to leave the team.
 
   >>> print http(r"""
   ... POST /people/name17/+leave HTTP/1.1
@@ -36,6 +41,8 @@
   Content-Type: text/html;charset=utf-8
   ...
 
+
+  Got redirected to team's home page and see that now he can join.
 
   >>> print http(r"""
   ... GET /people/name17/ HTTP/1.1

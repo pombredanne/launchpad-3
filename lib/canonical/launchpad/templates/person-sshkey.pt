@@ -9,8 +9,8 @@
     SSH Keys</title>
   <!-- Plone style sheet -->
   <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Soyuz style sheet -->
-  <style type="text/css" media="screen">@import url(soyuz.css);</style>
+  <!-- Launchpad style sheet -->
+  <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
@@ -35,13 +35,13 @@
     
     <div tal:repeat="sshkey context/sshkeys"> 
     <form name="remove" action="" method="POST">
-    <input type="hidden" name="action" value="remove" />
+    <input type="hidden" name="action" value="remove_ssh" />
     <input type="hidden" name="key" tal:attributes="value sshkey/id" />
     <fieldset> 
     <legend>SSH Key Information </legend>
     <dl>
     <dt>Key type</dt>
-        <dd tal:content="sshkey/keytype/lp:SSHKeyType">DSA</dd>
+        <dd tal:content="sshkey/keytypename">DSA</dd>
     <dt>Key text</dt>
         <dd style="overflow: auto;" tal:content="sshkey/keytext">aaaaAAAA...</dd>
     <dt>Comment</dt>
@@ -54,7 +54,7 @@
 
     <div>
     <form name="add" action="" method="POST">
-    <input type="hidden" name="action" value="add" />
+    <input type="hidden" name="action" value="add_ssh" />
     <fieldset>
     <legend>Add SSH Key</legend>
     <div>

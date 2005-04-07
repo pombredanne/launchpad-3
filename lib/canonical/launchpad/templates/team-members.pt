@@ -8,11 +8,15 @@
     <span tal:replace="context/team/browsername" /></title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Soyuz style sheet -->
+    <!-- Launchpad style sheet -->
     <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
+
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/actionsPortlet" />
+</metal:rightportlets>
 
 <div metal:fill-slot="main">
 

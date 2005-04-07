@@ -41,5 +41,5 @@ ALTER TABLE ProductRelease ALTER COLUMN ProductSeries SET NOT NULL;
 ALTER TABLE ProductRelease DROP COLUMN product;
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (11,16,0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (14,1,0);
 

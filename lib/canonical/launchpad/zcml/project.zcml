@@ -44,7 +44,7 @@
         <browser:page
             name="+index"
             template="../templates/project-index.pt"
-            lp:url="doap/projects/$Project.name/" />
+            lp:url="/projects/$Project.name/" />
         <browser:page name="+malone-index"
             template="../templates/project-bugs.pt"
             lp:url="malone/projects/$Project.name/" />
@@ -75,7 +75,7 @@
         <browser:page
             name="+newbugtracker"
             template="../templates/bugtracker-new.pt"
-            lp:url="doap/projects/$Project.name/+newbugtracker" />
+            lp:url="/projects/$Project.name/+newbugtracker" />
     </browser:pages>
 
     <browser:editform
@@ -87,7 +87,7 @@
                 wikiurl sourceforgeproject freshmeatproject"
         permission="launchpad.Edit"
         template="../templates/project-edit.pt"
-        lp:url="doap/projects/$Project.name/+edit">
+        lp:url="/projects/$Project.name/+edit">
     </browser:editform>
 
     <browser:editform
@@ -100,7 +100,7 @@
                 reviewed"
         permission="launchpad.Admin"
         template="../templates/launchpad-editform.pt"
-        lp:url="doap/projects/$Project.name/+review">
+        lp:url="/projects/$Project.name/+review">
     </browser:editform>
 
     <browser:addform
@@ -114,7 +114,7 @@
         class="canonical.launchpad.browser.ProjectAddProductView"
         permission="launchpad.AnyPerson"
         template="../templates/product-add.pt"
-        lp:url="doap/projects/$Project.name/+newproduct">
+        lp:url="/projects/$Project.name/+newproduct">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
     </browser:addform>
 
@@ -142,15 +142,15 @@
         for="canonical.launchpad.interfaces.IProjectSet"
         permission="zope.Public"
         class="canonical.launchpad.browser.ProjectSetView"
-        lp:url="doap/projects/">
+        lp:url="/projects/">
         <browser:page
             name="+index" 
             template="../templates/projects-index.pt"
-            lp:url="doap/projects/+index" />
+            lp:url="/projects/+index" />
         <browser:page
             name="+search"
             template="../templates/projects-search.pt"
-            lp:url="doap/projects/+search" />
+            lp:url="/projects/+search" />
     </browser:pages>
 
     <browser:pages
@@ -158,13 +158,13 @@
         class="canonical.launchpad.browser.ProjectSetView"
         permission="launchpad.AnyPerson">
         <browser:page
-            name="+contentreview"
+            name="+review"
             template="../templates/doap-review.pt"
-            lp:url="doap/projects/+contentreview" />
+            lp:url="/projects/+review" />
         <browser:page
             name="+syncreview"
             template="../templates/bazaar-sync-review.pt"
-            lp:url="doap/projects/+syncreview" />
+            lp:url="/projects/+syncreview" />
     </browser:pages>
 
     <browser:page
@@ -173,7 +173,7 @@
         class="canonical.launchpad.browser.ProjectSetView"
         permission="launchpad.AnyPerson"
         template="../templates/project-new.pt"
-        lp:url="doap/projects/+new" />
+        lp:url="/projects/+new" />
 
     <browser:pages for="canonical.launchpad.interfaces.IProjectSet"
         permission="zope.Public"

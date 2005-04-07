@@ -14,7 +14,6 @@ from canonical.lp import dbschema
 # interfaces and database 
 from canonical.launchpad.interfaces import IDistroArchRelease
 from canonical.launchpad.interfaces import IBinaryPackageSet
-from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.publishing import PackagePublishing
 
 class DistroArchRelease(SQLBase):

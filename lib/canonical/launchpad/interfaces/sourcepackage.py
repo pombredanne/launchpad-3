@@ -95,7 +95,6 @@ class ISourcePackage(Interface):
           other types of distribution, such as Gentoo.
         """
 
-
 class ISourcePackageSet(Interface):
     """A set for ISourcePackage objects."""
 

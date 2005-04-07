@@ -5,7 +5,7 @@
 To use:
 
 >>> from canonical.launchpad.webapp.zodb import zodbconnection
->>> resets = zodbconnection.passwordresets
+>>> resets = zodbconnection.annotations
 
 """
 __metaclass__ = type
@@ -18,7 +18,6 @@ from transaction import get_transaction
 
 class ZODBConnection(zope.thread.local):
     """Thread local that stores the top-level ZODB object we care about."""
-    passwordresets = None
     sessiondata = None
     annotations = None
 
@@ -31,13 +30,6 @@ def set_up_zodb_if_needed(root):
     if app is None:
         root[root_name] = PersistentDict()
         app = root[root_name]
-    if app.get('passwordresets') is None:
-        # import is here because the set-up of PasswordResets should be
-        # moved into canonical.auth, by means of a start-up event.
-        # (Ideally, a special start-up event that doesn't occur on all
-        #  zeo clients.)
-        from canonical.auth import PasswordResets
-        app['passwordresets'] = PasswordResets()
     if app.get('sessiondata') is None:
         app['sessiondata'] = OOBTree()
     if app.get('annotations') is None:
@@ -58,7 +50,6 @@ def bootstrapSubscriber(event):
 def handle_before_traversal(root):
     app = root[root_name]
     # Put the stuff we want access to in the thread local.
-    zodbconnection.passwordresets = ProxyFactory(app['passwordresets'])
     zodbconnection.sessiondata = app['sessiondata']
     zodbconnection.annotations = app['annotations']
 

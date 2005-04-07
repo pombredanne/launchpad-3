@@ -1,3 +1,5 @@
+A bug watch models the status of a bug, as it appears in an external
+bug tracking system (e.g. debbugs.)
 
   >>> print http(r"""
   ... POST /malone/bugs/2/watches/+new HTTP/1.1
@@ -11,6 +13,9 @@
           <h1>Add Watch</h1>
   ...
 
+Adding a bug watch is as simple as selecting the bug tracking system
+in which the bug is to be watched and, of course, providing the ID of
+the bug to be watched in that system.
 
   >>> print http(r"""
   ... POST /malone/bugs/2/watches/+new HTTP/1.1
@@ -65,9 +70,12 @@
   ...
   <BLANKLINE>
   ...
-      <h1>Bug Description and Discussion</h1>
+      <h2>
+        Description
   ...
 
+If you make a mistake when entering the bug watch information, the
+watch can be edited.
 
   >>> print http(r"""
   ... GET /malone/bugs/2/watches/5/+edit HTTP/1.1

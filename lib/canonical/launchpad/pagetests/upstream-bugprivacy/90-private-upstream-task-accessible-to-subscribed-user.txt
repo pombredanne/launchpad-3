@@ -1,4 +1,6 @@
-
+Sample Person accesses the task page of a task on a private bug. He is
+allowed to view the task page because he is explicitly subscribed to
+the bug.
 
   >>> print http(r"""
   ... GET /malone/tasks/16/+edit HTTP/1.1

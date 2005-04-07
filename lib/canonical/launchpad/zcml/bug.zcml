@@ -62,6 +62,14 @@
         <defaultPage name="+index" />
     </browser:view>
 
+    <view
+        for="canonical.launchpad.interfaces.IBug"
+        factory="canonical.launchpad.browser.bug.BugAbsoluteURL"
+        type="zope.publisher.interfaces.http.IHTTPRequest"
+        permission="zope.Public"
+        provides="zope.app.traversing.browser.interfaces.IAbsoluteURL">
+    </view>
+
     <!-- this is class BugSet -->
     <content class="canonical.launchpad.database.BugSet">
         <allow interface="canonical.launchpad.interfaces.IBugSet" />

@@ -152,6 +152,14 @@ class IBugAddForm(IBug):
     comment = Text(title=_('Comment'), required=True,
             description=_("""A detailed description of the problem you are
             seeing."""))
+    private = Bool(
+            title=_("Should this bug be kept confidential?"), required=False,
+            description=_(
+                "Check this box if, for example, this bug exposes a security "
+                "vulnerability. If you select this option, you must manually "
+                "CC the people to whom this bug should be visible."),
+            default=False)
+
 
 # Interfaces for set
 class IBugSet(IAddFormCustomization):

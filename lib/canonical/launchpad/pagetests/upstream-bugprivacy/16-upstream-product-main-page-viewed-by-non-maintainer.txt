@@ -1,4 +1,4 @@
-
+View the product main page in DOAP as user Foo Bar.
 
   >>> print http(r"""
   ... GET /products/firefox HTTP/1.1

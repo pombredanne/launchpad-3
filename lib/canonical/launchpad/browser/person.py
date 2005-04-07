@@ -4,6 +4,8 @@
 from canonical.database.sqlbase import flush_database_updates
 
 # zope imports
+from zope.event import notify
+from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form.browser.add import AddView
 from zope.component import getUtility
@@ -13,7 +15,6 @@ from canonical.lp.dbschema import LoginTokenType, SSHKeyType
 from canonical.lp.dbschema import EmailAddressStatus
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
-from canonical.auth.browser import well_formed_email
 
 # interface import
 from canonical.launchpad.interfaces import ISSHKeySet
@@ -24,7 +25,10 @@ from canonical.launchpad.interfaces import ILaunchBag, ILoginTokenSet
 from canonical.launchpad.interfaces import IPasswordEncryptor, \
                                            ISignedCodeOfConduct,\
                                            ISignedCodeOfConductSet
+from canonical.launchpad.interfaces import IGPGKeySet
 
+from canonical.launchpad.helpers import well_formed_email, obfuscateEmail
+from canonical.launchpad.helpers import convertToHtmlCode
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.browser.emailaddress import sendEmailValidationRequest
 
@@ -120,67 +124,8 @@ class FOAFSearchView(object):
         return getUtility(IPersonSet).findByName(name)
 
 
-# XXX sabdfl 21/03/05 debonzi please merge PersonSSHKeyEditView with
-# PersonView
-class PersonSSHKeyEditView(object):
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-person-actions.pt')
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
-
-    def form_action(self):
-        if self.request.method != "POST":
-            # Nothing to do
-            return ''
-
-        action = self.request.form.get('action')
-        if action == 'add':
-            return self.add_action()
-        elif action == 'remove':
-            return self.remove_action()
-
-    def add_action(self):
-        sshkey = self.request.form.get('sshkey')
-        try:
-            kind, keytext, comment = sshkey.split(' ', 2)
-        except ValueError:
-            return 'Invalid public key'
-        
-        if kind == 'ssh-rsa':
-            keytype = SSHKeyType.RSA
-        elif kind == 'ssh-dss':
-            keytype = SSHKeyType.DSA
-        else:
-            return 'Invalid public key'
-        
-        getUtility(ISSHKeySet).new(self.user.id, keytype, keytext, comment)
-        return 'SSH public key added.'
-
-    def remove_action(self):
-        try:
-            id = self.request.form.get('key')
-        except ValueError:
-            return "Can't remove key that doesn't exist"
-
-        sshkey = getUtility(ISSHKeySet).get(id)
-        if sshkey is None:
-            return "Can't remove key that doesn't exist"
-
-        if sshkey.person != self.user:
-            return "Cannot remove someone else's key"
-
-        comment = sshkey.comment
-        sshkey.destroySelf()
-        return 'Key "%s" removed' % comment
-
-
 class PersonView(object):
-    """A simple View class to be used in Person's pages where we don't have
-    actions and all we need is the context/request."""
+    """A simple View class to be used in all Person's pages."""
 
     actionsPortlet = ViewPageTemplateFile(
         '../templates/portlet-person-actions.pt')
@@ -191,12 +136,32 @@ class PersonView(object):
         self.message = None
         self.user = getUtility(ILaunchBag).user
 
+    def obfuscatedEmail(self):
+        if self.context.preferredemail is not None:
+            return obfuscateEmail(self.context.preferredemail.email)
+        else:
+            return None
+
+    def htmlEmail(self):
+        if self.context.preferredemail is not None:
+            return convertToHtmlCode(self.context.preferredemail.email)
+        else:
+            return None
+
     def showSSHKeys(self):
         self.request.response.setHeader('Content-Type', 'text/plain')
-        return "\n".join([key.keytext for key in self.context.sshkeys])
-
+        return "\n".join(["%s %s %s" % (key.keykind, key.keytext, key.comment)
+                          for key in self.context.sshkeys])
+    
     def sshkeysCount(self):
         return len(self.context.sshkeys)
+
+    def showGPGKeys(self):
+        self.request.response.setHeader('Content-Type', 'text/plain')
+        return "\n".join([key.pubkey for key in self.context.gpgkeys])
+
+    def gpgkeysCount(self):
+        return len(self.context.gpgkeys)
 
     def signatures(self):
         """Return a list of code-of-conduct signatures on record for this
@@ -227,6 +192,79 @@ class PersonView(object):
                 sCoC_util.modifySignature(sign_id, self.user, comment, False)
 
             return True
+
+    def form_action(self):
+        if self.request.method != "POST":
+            # Nothing to do
+            return ''
+        action = self.request.form.get('action')
+        # standart action reflected in our local methods
+        try:
+            return getattr(self, action)()
+        except AttributeError:
+            return None
+        
+
+    # XXX cprov 20050401
+    # As "Claim GPG key" takes a lot of time, we should process it
+    # throught the NotificationEngine.
+    def claim_gpg(self):
+        fpr = self.request.form.get('fpr')
+
+        #XXX cprov 20050401
+        # Add fingerprint checks before claim.
+        
+        return 'DEMO: GPG key "%s" claimed.' % fpr
+
+    def import_gpg(self):
+        pubkey = self.request.form.get('pubkey')
+
+        #XXX cprov 20050401
+        # Add pubkey checks before import.
+        
+        return 'DEMO: GPG key "%s" imported.' % pubkey
+
+    # XXX cprov 20050401
+    # is it possible to remove permanently a key from our keyring
+    # The best bet should be DEACTIVE it.
+    def remove_gpg(self):
+        keyid = self.request.form.get('keyid')
+        gpgkey = getUtility(IGPGKeySet).get(keyid)
+        return 'DEMO: GPG key removed ("%s")' % gpgkey.keyid
+
+    def add_ssh(self):
+        sshkey = self.request.form.get('sshkey')
+        try:
+            kind, keytext, comment = sshkey.split(' ', 2)
+        except ValueError:
+            return 'Invalid public key'
+        
+        if kind == 'ssh-rsa':
+            keytype = SSHKeyType.RSA
+        elif kind == 'ssh-dss':
+            keytype = SSHKeyType.DSA
+        else:
+            return 'Invalid public key'
+        
+        getUtility(ISSHKeySet).new(self.user.id, keytype, keytext, comment)
+        return 'SSH public key added.'
+
+    def remove_ssh(self):
+        try:
+            id = self.request.form.get('key')
+        except ValueError:
+            return "Can't remove key that doesn't exist"
+
+        sshkey = getUtility(ISSHKeySet).get(id)
+        if sshkey is None:
+            return "Can't remove key that doesn't exist"
+
+        if sshkey.person != self.user:
+            return "Cannot remove someone else's key"
+
+        comment = sshkey.comment
+        sshkey.destroySelf()
+        return 'Key "%s" removed' % comment
 
 
 class PersonEditView(object):
@@ -541,4 +579,31 @@ def sendMergeRequestEmail(token, dupename, appurl):
 
     subject = "Launchpad: Merge of Accounts Requested"
     simple_sendmail(fromaddress, token.email, subject, message)
+
+
+class TeamAddView(AddView):
+
+    actionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-person-actions.pt')
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        AddView.__init__(self, context, request)
+        self._nextURL = '.'
+
+    def nextURL(self):
+        return self._nextURL
+
+    def createAndAdd(self, data):
+        kw = {}
+        for key, value in data.items():
+            kw[str(key)] = value
+
+        kw['teamownerID'] = getUtility(ILaunchBag).user.id
+        team = getUtility(IPersonSet).newTeam(**kw)
+        notify(ObjectCreatedEvent(team))
+        self._nextURL = '/people/%s' % team.name
+        return team
+
 

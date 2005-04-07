@@ -21,6 +21,8 @@ from canonical.launchpad.interfaces import IDistribution, \
         IDistributionSet, IPerson, IBugTaskSet, ILaunchBag
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.helpers import is_maintainer
+from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 
 class DistributionView:
 
@@ -52,7 +54,7 @@ class DistributionView:
         return []
 
 
-class DistributionFileBugView(AddView):
+class DistributionFileBugView(SQLObjectAddView):
 
     __used_for__ = IDistribution
 
@@ -77,7 +79,7 @@ class DistributionFileBugView(AddView):
             title = kw['title'], comment = kw['comment'],
             private = kw['private'], owner = kw['owner'])
 
-        notify(ObjectCreatedEvent(bug))
+        notify(SQLObjectCreatedEvent(bug, self.request))
 
         return bug
 
@@ -162,11 +164,11 @@ class DistributionSetSearchView:
     def count(self):
         return 3
 
-class DistrosSearchView(object):
+class DistrosSearchView:
     """
     DistroSearchView:
     This Views able the user to search on all distributions hosted on
-    Soyuz by Name Distribution Title (Dispalyed name),  
+    Soyuz by Name Distribution Title (Dispalyed name),
     """
     # TODO: (class+doc) cprov 20041003
     # This is the EpyDoc Class Document Format,
@@ -192,12 +194,12 @@ class DistrosSearchView(object):
         title_like = LIKE(Distribution.q.title, "%%" + title + "%%")
         description_like = LIKE(Distribution.q.description,
                                 "%%" + description + "%%")
-        query = AND(name_like, title_like, description_like) 
+        query = AND(name_like, title_like, description_like)
 
 ##XXX: (case+insensitive) cprov 20041003
 ## Performe case insensitive queries using ILIKE doesn't work
 ## properly, since we don't have ILIKE method on SQLObject
-## ===============================================================            
+## ===============================================================
 #            name_like = ("name ILIKE %s" % "%%" + name + "%%")
 #            title_like = ("title ILIKE %s" % "%%" + title + "%%")
 #            description_like = ("description ILIKE %s" % "%%"\
@@ -208,7 +210,7 @@ class DistrosSearchView(object):
         self.entries = self.results.count()
         return True
 
-class DistrosAddView(object):
+class DistrosAddView:
 
     def __init__(self, context, request):
         self.context = context
@@ -223,10 +225,10 @@ class DistrosAddView(object):
         domain = self.request.get("domain", "")
         person = IPerson(self.request.principal, None)
 
-        
+
         if not person:
             return False
-        
+
         if not title:
             return False
 
@@ -236,7 +238,7 @@ class DistrosAddView(object):
         self.results = res
         return res
 
-class DistrosEditView(object):
+class DistrosEditView:
 
     def __init__(self, context, request):
         self.context = context

@@ -115,10 +115,10 @@ class POExport:
                 # As our second choice, get one of the validated email
                 # addresses of this translator.
                 email = last_changed.person.validatedemails[0].email
-            elif len(last_changed.person.notvalidatedemails) > 0:
+            elif len(last_changed.person.guessedemails) > 0:
                 # We don't have preferred or validated address so we choose
                 # any other email address we could have.
-                email = last_changed.person.notvalidatedemails[0].email
+                email = last_changed.person.guessedemails[0].email
             else:
                 # We should never reach this line because we are supposed to
                 # have always an email address for all our users.

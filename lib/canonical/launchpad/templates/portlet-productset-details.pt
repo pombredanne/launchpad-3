@@ -1,6 +1,6 @@
 <div class="portlet">
 
-    <h4 tal:content="context/title">launchpad products:</h4>
+    <h4>launchpad product registry statistics:</h4>
 
     <div class="portletBody">
         <div class="portletContent even">

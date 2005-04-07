@@ -34,7 +34,9 @@ class ISignedCodeOfConduct(Interface):
                     Person inside Launchpad context."""))
     
     signedcode = Text(title=_("Signed Code"), 
-                      description=_("GPG Signed Code of Conduct.")
+                      description=_("""GPG Signed Code of Conduct.
+                      It should contain a clearsigned copy of current
+                      Code of Conduct version (use: `gpg --clearsign`).""")
                       )
 
     signingkey = Choice(title=_('Signing GPG Key'), 

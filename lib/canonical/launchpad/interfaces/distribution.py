@@ -67,6 +67,16 @@ class IDistribution(IHasOwner):
     def __iter__():
         """Iterate over the distribution releases for this distribution."""
 
+    def getDevelopmentReleases():
+        """Return the DistroReleases which are marked as in development."""
+
+    def getRelease(name_or_version):
+        """Return the source package release with the name or version given."""
+
+    def getSourcePackage(self, name):
+        """Return the source package with the name given."""
+
+
 class IDistributionSet(Interface):
     """Interface for DistrosSet"""
 

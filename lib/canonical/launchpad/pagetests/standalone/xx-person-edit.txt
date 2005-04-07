@@ -1,4 +1,5 @@
 
+  Test person's edit page for user 'name16'.
 
   >>> print http(r"""
   ... POST /people/name16/+edit HTTP/1.1

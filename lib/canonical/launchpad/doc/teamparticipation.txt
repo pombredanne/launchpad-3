@@ -22,7 +22,7 @@ First of all, create some teams:
 
 >>> o = TeamSubscriptionPolicy.OPEN
 >>> m = TeamSubscriptionPolicy.MODERATED
->>> expires = datetime(2010, 12, 01)
+>>> expires = datetime(2110, 12, 01)
 
 >>> p = Person.byName('name16')
 >>> t1 = Person(subscriptionpolicy=o, name='t1', displayname='t1', teamowner=p)
@@ -110,7 +110,7 @@ True
 t2 can't leave() t5 because it's a team and teams take no actions. We have to
 call setMembershipStatus() for t2 in t5, to make it a DEACTIVATED member.
 
->>> t5.setMembershipStatus(t2, TeamMembershipStatus.DEACTIVATED)
+>>> t5.setMembershipStatus(t2, TeamMembershipStatus.DEACTIVATED, expires)
 >>> len(_getAllMembers(t5))
 0
 

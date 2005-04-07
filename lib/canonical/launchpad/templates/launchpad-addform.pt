@@ -62,18 +62,13 @@
 
         </fieldset>
 
-        <div class="separator"></div>
-
         <div class="row"
             metal:define-slot="extra_bottom" tal:replace="nothing">
           <div class="label">Extra bottom</div>
           <div class="field"><input type="text" style="width:100%" /></div>
         </div>
 
-        <div class="separator"></div>
-
       </div>
-      <br/><br/>
       <div class="row">
         <div class="controls"><hr />
           <input type='submit' value='Add'
@@ -85,7 +80,6 @@
       <div class="row" metal:define-slot="extra_buttons" tal:replace="nothing">
       </div>
 
-      <div class="separator"></div>
     </form>
   </div>
 

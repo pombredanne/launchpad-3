@@ -1,4 +1,5 @@
 
+  Test /people.
 
   >>> print http(r"""
   ... GET /people HTTP/1.1

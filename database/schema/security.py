@@ -260,8 +260,12 @@ def main(options):
                     obj.fullname,
                     ))
                 if schema.has_key(obj.seqname):
+                    if 'INSERT' in perm or 'UPDATE' in perm:
+                        seqperm = 'SELECT, INSERT, UPDATE'
+                    else:
+                        seqperm = perm
                     cur.execute('GRANT %s ON %s TO %s' % (
-                        perm, obj.seqname, who,
+                        seqperm, obj.seqname, who,
                         ))
                     cur.execute('GRANT SELECT ON %s TO GROUP read' % (
                         obj.fullname,

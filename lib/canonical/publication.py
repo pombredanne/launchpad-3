@@ -12,7 +12,7 @@ import canonical.launchpad.webapp.zodb
 
 from zope.app import zapi
 from zope.publisher.interfaces.browser import IDefaultSkin
-from zope.publisher.interfaces import NotFound
+from zope.publisher.interfaces import NotFound, IPublishTraverse
 
 from zope.event import notify
 from zope.interface import implements, Interface
@@ -22,6 +22,7 @@ import canonical.launchpad.layers as layers
 from canonical.launchpad.interfaces import ILaunchpadApplication
 
 from zope.component import getUtility
+from zope.component import queryView
 
 from zope.publisher.http import HTTPRequest
 from zope.publisher.browser import BrowserRequest
@@ -110,6 +111,23 @@ class ErrorReportingService(RootErrorReportingService):
     copy_to_zlog = True
 
 
+class LoginRoot:
+    """Object that provides IPublishTraverse to return only itself.
+
+    We anchor the +login view to this object.  This allows other
+    special namespaces to be traversed, but doesn't traverse other
+    normal names.
+    """
+    implements(IPublishTraverse)
+
+    def publishTraverse(self, request, name):
+        if not request.getTraversalStack():
+            view = queryView(rootObject, name, request)
+            return view
+        else:
+            return self
+
+
 class BrowserPublication(BrowserPub):
     """Subclass of z.a.publication.BrowserPublication that removes ZODB.
 
@@ -141,6 +159,9 @@ class BrowserPublication(BrowserPub):
 
         return txn
 
+    def getDefaultTraversal(self, request, ob):
+        return BrowserPub.getDefaultTraversal(self, request, ob)
+
     def getApplication(self, request):
         # If the first name is '++etc++process', then we should
         # get it rather than look in the database!
@@ -149,10 +170,14 @@ class BrowserPublication(BrowserPub):
         if '++etc++process' in stack:
             return applicationControllerRoot
 
-        bag = getUtility(IOpenLaunchBag)
-        assert bag.site is None, 'Argh! Steve was wrong!'
-        bag.add(rootObject)
-        return rootObject
+        end_of_traversal_stack = request.getTraversalStack()[:1]
+        if end_of_traversal_stack == ['+login']:
+            return LoginRoot()
+        else:
+            bag = getUtility(IOpenLaunchBag)
+            assert bag.site is None, 'Argh! Steve was wrong!'
+            bag.add(rootObject)
+            return rootObject
 
     # the below ovverrides to zopepublication (callTraversalHooks,
     # afterTraversal, and _maybePlacefullyAuthenticate) make the
@@ -334,4 +359,5 @@ globalErrorUtility = ProxyFactory(
     NamesChecker(ILocalErrorReportingService.names())
     )
 
-rootObject = ProxyFactory(RootObject(), NamesChecker("__class__"))
+rootObject = ProxyFactory(RootObject(), NamesChecker(["__class__"]))
+

@@ -63,7 +63,7 @@
         <input tal:attributes="value email/id" name="REMOVE_EMAIL" type="checkbox" />
       </td>
     </tr>
-    <tr tal:repeat="newemail context/unvalidatedEmails">
+    <tr tal:repeat="newemail context/unvalidatedemails">
       <td>
         unvalidated
       </td>
@@ -91,15 +91,15 @@
     </tr>
   </table>
 
-  <tal:block define="notvalidatedemails context/notvalidatedemails">
-  <fieldset tal:condition="notvalidatedemails">
+  <tal:block define="guessedemails context/guessedemails">
+  <fieldset tal:condition="guessedemails">
     <legend>Detected Emails</legend>
     <p>The following email addresses have been detected by our system as 
     probably being yours. In order to use them on Launchpad, you must 
     validate them. To do so, just select one from the list below and 
     click on the Validate button.</p>
     <select name="NOT_VALIDATED_EMAIL">
-      <option tal:repeat="email notvalidatedemails"
+      <option tal:repeat="email guessedemails"
               tal:attributes="value email/id"
               tal:content="email/email">email</option>
     </select>

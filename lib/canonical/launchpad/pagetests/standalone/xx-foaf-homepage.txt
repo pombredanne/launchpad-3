@@ -1,4 +1,5 @@
 
+  Test /foaf.
 
   >>> print http(r"""
   ... GET /foaf HTTP/1.1

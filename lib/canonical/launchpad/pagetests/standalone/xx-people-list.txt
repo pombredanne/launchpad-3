@@ -1,4 +1,5 @@
 
+  Test the list of all persons in launchpad.
 
   >>> print http(r"""
   ... GET /people/+peoplelist HTTP/1.1
