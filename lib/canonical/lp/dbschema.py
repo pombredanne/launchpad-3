@@ -694,9 +694,16 @@ class HashAlgorithms(DBSchema):
     We use "hash" or "digest" cryptographic algorithms in a number of
     places in Launchpad. Usually these are a way of verifying the
     integrity of a file, but they can also be used to check if a file
-    has been seen before. We support only "sha1" initially, if this
-    is no longer trusted at some time we will add other algorithms.
+    has been seen before.
     """
+
+    MD5 = Item(0, """
+        The MD5 Digest Algorithm
+
+        A widely-used cryptographic hash function with a 128-bit hash value. As
+        an Internet standard (RFC 1321), MD5 has been employed in a wide
+        variety of security applications.
+        """)
 
     SHA1 = Item(1, """
         The SHA-1 Digest Algorithm
@@ -1727,7 +1734,7 @@ class ArchArchiveType(DBSchema):
     documents those states.
     """
 
-    READWRITE = Item(1, """
+    READWRITE = Item(0, """
         ReadWrite Archive
 
         This archive can be written to with new changesets, it
@@ -1739,14 +1746,14 @@ class ArchArchiveType(DBSchema):
         repository.
         """)
 
-    READONLY = Item(2, """
+    READONLY = Item(1, """
         Read Only Archive
 
         An archive in the "readonly" state can only be published
         and read from, it cannot be written to.
         """)
 
-    MIRRORTARGET = Item(3, """
+    MIRRORTARGET = Item(2, """
         Mirror Target
 
         We can write into this archive, but we can only write

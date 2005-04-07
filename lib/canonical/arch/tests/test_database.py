@@ -12,7 +12,7 @@ import unittest
 import sys
 from zope.interface.verify import verifyClass, verifyObject
 
-from canonical.arch.tests.test_framework import DatabaseTestCase
+from canonical.arch.tests.framework import DatabaseTestCase
 
 from canonical.launchpad.interfaces import VersionAlreadyRegistered
 from canonical.launchpad.interfaces import VersionAlreadyRegistered
@@ -20,24 +20,6 @@ from canonical.launchpad.interfaces import BranchAlreadyRegistered
 from canonical.launchpad.interfaces import CategoryAlreadyRegistered
 from canonical.launchpad.interfaces import ArchiveLocationDoublyRegistered
 
-def _archive_purge(archive_name, cursor):
-    """I purge an archive from the database. I AM ONLY for use during testing.
-    once in production the database fields are update-once."""
-    from canonical.arch import broker
-    from canonical.launchpad.database import ArchiveMapper
-    from canonical.launchpad.interfaces import ArchiveNotRegistered
-    c = cursor
-    m = ArchiveMapper()
-    try:
-        archive_id = m._getId(broker.Archive(archive_name), c)
-    except ArchiveNotRegistered, e:
-        return
-    c.execute("SELECT archnamespace.id from archnamespace inner join archarchive on archnamespace.archarchive=archarchive.id where archarchive.name like '%s'" % archive_id)
-    namespaces=c.fetchall()
-    for namespace in namespaces:
-        c.execute("DELETE FROM Branch WHERE archnamespace = %d" % namespace[0])
-    c.execute("DELETE FROM ArchArchiveLocation WHERE archive like '%s'" % archive_id)
-    c.execute("DELETE FROM ArchArchive WHERE name like '%s'" % archive_name)
 
 
 class Database(DatabaseTestCase):
@@ -59,75 +41,43 @@ class Database(DatabaseTestCase):
         self.failIf(canonical.launchpad.database.archive_present(archive_name))
     tests.append('test_archive_doesnt_exist')
 
-    def test__archive_purge_missing(self):
-        """test unconditional purging of an archive not present."""
-        # this test is incomplete. we should add categories etc
-        # and check they are nuked too.
-        import canonical.launchpad.database
-        cursor = self.cursor()
-        archive_name = "test@example.com--archive"
-        cursor.execute("DELETE FROM ArchArchive WHERE name = '%s'" % archive_name)
-        self.commit()
-        _archive_purge(archive_name, cursor)
-        self.failIf(canonical.launchpad.database.archive_present(archive_name))
-        self.commit()
-    tests.append('test__archive_purge_missing')
-        
-    def test__archive_purge_present(self):
-        """test unconditional purging of an archive that is present."""
-        # this test is incomplete. we should add categories etc
-        # and check they are nuked too.
-        import canonical.launchpad.database
-        cursor = self.cursor()
-        archive_name = "test@example.com--archive"
-        cursor.execute("DELETE FROM ArchArchive WHERE name = '%s'" % archive_name)
-        cursor.execute("INSERT INTO ArchArchive (name, title, description, visible) VALUES ('%s', 'a title', 'a description', true)" % archive_name)
-        self.commit()
-        _archive_purge(archive_name, cursor)
-        self.failIf(canonical.launchpad.database.archive_present(archive_name))
-    tests.append('test__archive_purge_present')
-
 
 class ArchiveMapper(DatabaseTestCase):
-    
-    tests = []
 
     def test_ArchiveMapperFindMissing(self):
         """test ArchiveMapper.findByName("foo") returns a MissingArchive"""
         from canonical.launchpad.database import ArchiveMapper
         from canonical.arch.broker import MissingArchive
         name="foo@bar"
-        cursor = self.cursor()
-        _archive_purge(name, cursor)
         mapper=ArchiveMapper()
         self.failUnless(isinstance(mapper.findByName(name), MissingArchive))
-    tests.append('test_ArchiveMapperFindMissing')
+
+    def insertArchive(self, name):
+        from canonical.launchpad.database.archarchive import ArchArchive
+        return ArchArchive(name = name,
+                           title = 'a title', description = 'a description',
+                           visible = True, owner = None)
 
     def test_ArchiveMapperFindPresent(self):
         """test ArchiveMapper.findByName("foo") returns an Archive"""
         from canonical.launchpad.database import ArchiveMapper
         from canonical.arch.broker import MissingArchive
         name="foo@bar"
-        cursor = self.cursor()
-        cursor.execute("INSERT INTO ArchArchive (name, title, description, visible) VALUES ('%s', 'a title', 'a description', true)" % name)
-        self.commit()
+        self.insertArchive(name)
         mapper=ArchiveMapper()
         archive=mapper.findByName(name)
         self.failIf(isinstance(archive, MissingArchive))
         self.assertEqual(archive.name, name)
         self.failUnless(archive.exists())
-    tests.append('test_ArchiveMapperFindPresent')
 
     def test_ArchiveMapperFindMultiple(self):
-        """test ArchiveMapper.findByName("foo@%") returns an list of archives"""
+        """test ArchiveMapper.findByName("foo@%") returns a list of archives"""
         from canonical.launchpad.database import ArchiveMapper
         from canonical.arch.broker import MissingArchive
         name1="foo@bar"
         name2="foo@gam"
-        cursor = self.cursor()
-        cursor.execute("INSERT INTO ArchArchive (name, title, description, visible) VALUES ('%s', 'a title', 'a description', true)" % name1)
-        cursor.execute("INSERT INTO ArchArchive (name, title, description, visible) VALUES ('%s', 'a title', 'a description', true)" % name2)
-        self.commit()
+        self.insertArchive(name1)
+        self.insertArchive(name2)
         mapper=ArchiveMapper()
         archives=mapper.findByMatchingName('foo@%')
         self.failIf(isinstance(archives, MissingArchive))
@@ -135,48 +85,36 @@ class ArchiveMapper(DatabaseTestCase):
         self.assertEqual(archives[1].name, name2)
         self.failUnless(archives[0].exists())
         self.failUnless(archives[1].exists())
-    tests.append('test_ArchiveMapperFindMultiple')
 
     def test_ArchiveMapperInsertPresent(self):
         """test canonical.arch.ArchiveMapper.insert fails when an archive already exists."""
         from canonical.launchpad.database import ArchiveMapper
         from canonical.arch.broker import Archive
         name="foo@bar"
-        cursor = self.cursor()
-        cursor.execute("INSERT INTO ArchArchive (name, title, description, visible) VALUES ('%s', 'a title', 'a description', true)" % name)
-        self.commit()
+        self.insertArchive(name)
         mapper=ArchiveMapper()
         self.assertRaises(KeyError, mapper.insert, Archive(name))
-    tests.append('test_ArchiveMapperInsertPresent')
-    
+
     def test_ArchiveMapperInsertNew(self):
         """test ArchiveMapper.insert works when an archive is new."""
         from canonical.launchpad.database import ArchiveMapper
         from canonical.arch.broker import MissingArchive
         name="foo@bar"
-        _archive_purge(name, cursor)
-        cursor = self.cursor()
-        cursor.execute("INSERT INTO ArchArchive (name, title, description, visible) VALUES ('%s', 'a title', 'a description', true)" % name)
-        self.commit()
         mapper=ArchiveMapper()
-        mapper.insert(Archive(name))
+        mapper.insert(MissingArchive(name))
         archive=mapper.findByName(name)
         self.failUnless(archive.exists())
-    tests.append('test_ArchiveMapperFindPresent')
 
     def test_ArchiveMapperGetId(self):
         """test we can get the archive id correctly"""
         from canonical.launchpad.database import ArchiveMapper
         from canonical.arch.broker import Archive
         name="foo@bar"
-        cursor = self.cursor()
-        cursor.execute("INSERT INTO ArchArchive (name, title, description, visible) VALUES ('%s', 'a title', 'a description', true)" % name)
-        cursor.execute("SELECT currval('archarchive_id_seq')");
-        new_id = cursor.fetchone()[0]
-        self.commit()
+        archive = self.insertArchive(name)
+        new_id = archive.id
         mapper=ArchiveMapper()
-        self.assertEqual(new_id, mapper._getId(Archive(name), cursor))
-    tests.append('test_ArchiveMapperGetId')
+        self.assertEqual(new_id, mapper._getId(Archive(name)))
+
 
 class ArchiveLocationMapper(DatabaseTestCase):
 
@@ -213,14 +151,19 @@ class ArchiveLocationMapper(DatabaseTestCase):
             self.assertEqual(l, r.url)
     #tests.append('test_ArchiveLocationMapperGetAllLots')
 
+    def makeLocation(self, archive, url):
+        from canonical.lp.dbschema import ArchArchiveType
+        from canonical.arch.broker import ArchiveLocation
+        return ArchiveLocation(archive, url, ArchArchiveType.READWRITE)
+
     def test_ArchiveLocationMapperInsertLocation(self):
         """test that we can insert a location"""
         url = "http://googo.com/foo"
-        from canonical.arch.broker import Archive, ArchiveLocation
+        from canonical.arch.broker import Archive
         from canonical.launchpad.database import ArchiveMapper, ArchiveLocationMapper
         archive = self.getTestArchive()
         archiveLocationMapper = ArchiveLocationMapper()
-        location = ArchiveLocation(archive, url, 0)
+        location = self.makeLocation(archive, url)
         archiveLocationMapper.insertLocation(location)
         self.commit()
         cursor = self.cursor()
@@ -228,7 +171,7 @@ class ArchiveLocationMapper(DatabaseTestCase):
         self.assertEqual(cursor.fetchone()[0], 1)
         self.failUnless(archiveLocationMapper.locationExists(location))
     tests.append('test_ArchiveLocationMapperInsertLocation')
-    
+
     def test_ArchiveLocationMapperExistsNone(self):
         """Test we can tell if a location is not in the db"""
         from canonical.launchpad.database import ArchiveMapper, ArchiveLocationMapper
@@ -236,7 +179,7 @@ class ArchiveLocationMapper(DatabaseTestCase):
         location = "http://foo.com/"
         archive = self.getTestArchive()
         archiveLocationMapper = ArchiveLocationMapper()
-        location = ArchiveLocation(archive, location, 0)
+        location = self.makeLocation(archive, location)
         self.commit()
         self.failIf(archiveLocationMapper.locationExists(location))
     tests.append('test_ArchiveLocationMapperExistsNone')
@@ -244,11 +187,11 @@ class ArchiveLocationMapper(DatabaseTestCase):
     def test_ArchiveLocationMapperExistsOne(self):
         """Test we can tell if a location is in the db"""
         from canonical.launchpad.database import ArchiveMapper, ArchiveLocationMapper
-        from canonical.arch.broker import Archive, ArchiveLocation
+        from canonical.arch.broker import Archive
         location = "http://foo.com/"
         archive = self.getTestArchive()
         archiveLocationMapper = ArchiveLocationMapper()
-        location = ArchiveLocation(archive, location, 0)
+        location = self.makeLocation(archive, location)
         archiveLocationMapper.insertLocation(location)
         self.commit()
         self.failUnless(archiveLocationMapper.locationExists(location))
@@ -257,15 +200,15 @@ class ArchiveLocationMapper(DatabaseTestCase):
     def test_ArchiveLocationMapperExistsTwo(self):
         """Test that duplicated urls are an error"""
         from canonical.launchpad.database import ArchiveMapper, ArchiveLocationMapper
-        from canonical.arch.broker import Archive, ArchiveLocation
+        from canonical.arch.broker import Archive
         location = "http://foo.com/"
         archive = self.getTestArchive()
         archiveLocationMapper = ArchiveLocationMapper()
 
-        location1 = ArchiveLocation(archive, location, 0)
+        location1 = self.makeLocation(archive, location)
         archiveLocationMapper.insertLocation(location1)
 
-        location2 = ArchiveLocation(archive, location, 0)
+        location2 = self.makeLocation(archive, location)
         archiveLocationMapper.insertLocation(location2)
 
         self.commit()
@@ -275,43 +218,44 @@ class ArchiveLocationMapper(DatabaseTestCase):
 
     def test_ArchiveLocationMapperGetSomeNone(self):
         """Test that we can get no locations with a criteria"""
+        from canonical.lp.dbschema import ArchArchiveType
         from canonical.launchpad.database import ArchiveMapper, ArchiveLocationMapper
         from canonical.arch.broker import Archive, ArchiveLocation
         location = "http://foo.com/"
         archive = self.getTestArchive()
-        archiveLocationMapper = ArchiveLocationMapper()
+        mapper = ArchiveLocationMapper()
         self.commit()
-        self.assertEqual(archiveLocationMapper.getSome(archive, 0), [])
+        self.assertEqual(mapper.getSome(archive, ArchArchiveType.READWRITE), [])
     tests.append('test_ArchiveLocationMapperGetSomeNone')
 
     def test_ArchiveLocationMapperGetSomeMore(self):
         """Test that we can get some locations with criteria"""
+        from canonical.lp.dbschema import ArchArchiveType
         from canonical.launchpad.database import ArchiveMapper, ArchiveLocationMapper
         from canonical.arch.broker import Archive, ArchiveLocation
         locations = ["http://googo.com/foo", "http://fooboo.com/bar", "http://barbar.com/bleh"]
-
         archive = self.getTestArchive()
-        archiveLocationMapper = ArchiveLocationMapper()
-
-        locs = []
-        
-        for i in range(0,2):
-            for location in locations:
-                locs.append(ArchiveLocation(archive, location, i))
-                archiveLocationMapper.insertLocation(locs[-1])
-                self.commit()
+        mapper = ArchiveLocationMapper()
+        archive_locations = []
+        archive_types = [getattr(ArchArchiveType, X)
+                         for X in ('READWRITE', 'READONLY', 'MIRRORTARGET')]
+        for archive_type, location in zip(archive_types, locations):
+            archive_location = ArchiveLocation(archive, location, archive_type)
+            archive_locations.append(archive_location)
+            mapper.insertLocation(archive_location)
+        for archive_type, location in zip(archive_types, locations):
+            locs = mapper.getSome(archive, archive_type)
+            self.assertEqual(len(locs), 1)
+            self.assertEqual(locs[0].url, location)
 
     tests.append('test_ArchiveLocationMapperGetSomeMore')
 
 class CategoryMapper(DatabaseTestCase):
 
-    tests = []
-
     def test_CategoryMapperInstantiation(self):
         """Test that we can create a CategoryMapper object"""
         from canonical.launchpad.database import CategoryMapper
         foo = CategoryMapper()
-    tests.append('test_CategoryMapperInstantiation')
 
     def test_CategoryMapperInsertNew(self):
         """Test that CategoryMapper.insert works for non-existent categories"""
@@ -325,7 +269,6 @@ class CategoryMapper(DatabaseTestCase):
         self.commit()
         # FIXME: read the category back in and check that the data matches
         self.failUnless(category.exists())
-    tests.append('test_CategoryMapperInsertNew')
 
     def test_CategoryMapperInsertExisting(self):
         """Test that inserting an existing Category raises an exception"""
@@ -339,7 +282,6 @@ class CategoryMapper(DatabaseTestCase):
         self.commit()
         self.assertRaises(CategoryAlreadyRegistered, mapper.insert, category)
         self.failUnless(mapper.exists(category))
-    tests.append('test_CategoryMapperInsertExisting')
 
     def test_category_exist_missing(self):
         """Test that we can tell that a category doesn't exist."""
@@ -351,8 +293,7 @@ class CategoryMapper(DatabaseTestCase):
         category = Category(name, archive)
         self.commit()
         self.failIf(mapper.exists(category))
-    tests.append('test_category_exist_missing')
-        
+
     def test_category_exist_present(self):
         """Test that we can tell that a category does exist."""
         from canonical.arch.broker import Category, Archive
@@ -364,8 +305,7 @@ class CategoryMapper(DatabaseTestCase):
         mapper.insert(category)
         self.commit()
         self.failUnless(mapper.exists(category))
-    tests.append('test_category_exist_present')
-    
+
 
 class BranchMapper(DatabaseTestCase):
 
@@ -510,7 +450,7 @@ class VersionMapper(DatabaseTestCase):
                        (version.branch.category.name, version.branch.name, version.name))
         expected_id = cursor.fetchall()[0][0]
         mapper = VersionMapper()
-        self.assertEqual(expected_id, mapper._getId(version, cursor))
+        self.assertEqual(expected_id, mapper._getId(version))
     tests.append('test_VersionMapperGetId')
     def test_VersionMapperGetDBBranchId(self):
         """test we can get the Version id for the 'Branch' correctly"""
@@ -663,19 +603,7 @@ class RevisionMapper(DatabaseTestCase):
         self.assertEqual(c.fetchone()[0], 1)
 
     tests.append('test_insert_file')
-    
-def test_suite():
-    return unittest.TestSuite()
 
-def main(argv):
-    """Run the full test suite."""
-    suite = unittest.TestSuite()
-    def addTests(klass): suite.addTests(map(klass, klass.tests))
-    # there should be a more elegant way - addClasses or something
-    map(addTests, (Database, ArchiveMapper, ArchiveLocationMapper, CategoryMapper, BranchMapper, VersionMapper, RevisionMapper))
-    runner = unittest.TextTestRunner(verbosity=2)
-    if not runner.run(suite).wasSuccessful(): return 1
-    return 0
 
-if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+import framework
+framework.register(__name__)

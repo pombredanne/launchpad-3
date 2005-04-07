@@ -113,7 +113,7 @@ class ArchiveLocationMapper(object):
         archiveMapper = ArchiveMapper()
         where = 'archive = ' + quote(archiveMapper._getId(archive))
         if type is not None:
-            where += ' AND archivetype = ' + quote(type)
+            where += ' AND archivetype = %d' % type.value
         results = ArchiveLocation.select(where)
         from canonical.arch import broker
         return [broker.ArchiveLocation(archive, r.url, r.archivetype) for r in results]
@@ -181,8 +181,10 @@ class ArchiveMapper(object):
             raise RuntimeError, "Name %r found several: %r" % (name, results)
 
     def _getId(self, archive, cursor=None):
-        #warnings.warn('Passing a cursor to ArchiveMapper._getId is deprecated',
-        #              DeprecationWarning, stacklevel=2)
+        import warnings
+        if cursor is not None:
+            warnings.warn('ArchiveMapper._getId cursor argument is deprecated',
+                          DeprecationWarning, stacklevel=2)
         where = 'name = ' + quote(archive.name)
         results = Archive.select(where)
         try:
