@@ -506,6 +506,13 @@ pre {
   padding-left: 30px;
 } /* need a px value because the image has a pixel size */
 
+/* -- Make headings lay out properly -- */
+
+h1 {
+  margin-bottom: 0.5em;
+  padding-right: 0;
+}
+
 /* -- Other bugs: -- */
 
 .listing td {
@@ -619,7 +626,7 @@ table.data>thead>tr>th, table.data>thead>tr>td,
 table.data>tbody>tr>th, table.data>tbody>tr>td, table.data>tfoot>tr>th,table.data>tfoot>tr>td {
   padding: 0.25em 0.125em 0.5em;
 }
-td p, td ol:first-child, td blockquote:first-child {
+td p:first-child, td ol:first-child, td blockquote:first-child {
 	margin-top: 0;
 }
 th {

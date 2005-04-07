@@ -36,7 +36,7 @@
         <div tal:condition="not: view/login_success" tal:omit-tag>        
           <h1>You&#8217;re Already Logged In</h1>
           <p>
-            You are already logged in the the Launchpad as
+            You are already logged in as
             <strong tal:content="request/lp:person/displayname">person
             name</strong>.  If this is not you, please
             <a href="/+logout">log out now</a>.
@@ -75,13 +75,15 @@
             </div>
             <!-- 4. might want to log in: -->
             <p>
-              To log in to the Launchpad, enter your e-mail address
+              To log in, enter your e-mail address
               and Launchpad password.
             </p>
             <form name="login" method="POST">
               <table>
                 <tr>
-                  <th><label for="email">E-mail:</label></th>
+                  <th>
+                    <label for="email">E-mail address:</label>
+                  </th>
                   <td>
                     <input type="text"
                       name="email"
@@ -99,13 +101,15 @@
                       id="password"
                       name="password"
                     />
-                    [<a href="+forgottenpassword">Forgotten Password?</a>]
                   </td>
                 </tr>
                 <tr>
                   <th></th>
                   <td>
-                    <input type="submit" name="submit_login" value="Log In" />
+                    <div>
+                      <input type="submit" name="submit_login" value="Log In" />
+                      [<a href="+forgottenpassword">Forgot your password?</a>]
+                    </div>
                   </td>
                 </tr>
               </table>
@@ -115,24 +119,29 @@
               Not Registered Yet? 
             </h1>
             <!-- 5b. just tried to register and failed: -->
-            <div tal:condition="view/registration_error">
+            <div
+              tal:condition="view/registration_error"
+              tal:omit-tag
+            >
               <h1>Your Registration was Unsuccessful</h1>
               <p class="error"
                  tal:content="structure view/registration_error" />
             </div>
             <!-- 5. might want to register: -->
             <p>
-              To create your Launchpad account, enter your e-mail address.
-              Launchpad will e-mail you to verify your address and give
-              you instructions on how to complete registration. We will
-              never disclose, share, or sell your personal information,
-              or send you email that is not directly related to your actions
-              in Launchpad, such as bug alerts or translation reports.
+              Launchpad will e-mail you to check your address
+              and give instructions on how to complete
+              registration. 
+              We will never disclose, share, or sell your
+              personal information, nor send you e-mail not
+              directly related to Launchpad.
             </p>
             <form name="join" method="POST">
               <table>
                 <tr>
-                  <th>Your E-mail:</th>
+                  <th>
+                    <label for="email">E-mail address:</label>
+                  </th>
                   <td>
                     <input type="text" size="30" name="email"
                       tal:attributes="value view/email|nothing"

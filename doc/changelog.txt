@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-07 09:20:38 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1580
+
+    Summary:
+      move 'Forgot your password?' link, and other design cleanup on login page
+    Revision:
+      launchpad--devel--0--patch-1580
+
+    Patches applied:
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-29
+       move 'Forgot your password?' link, and other design cleanup on login page
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-30
+       fix pagetests
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/pagetests/foaf/01-login.txt
+     lib/canonical/launchpad/pagetests/foaf/99-resetpassword.txt
+     lib/canonical/launchpad/templates/launchpad-login.pt
+     lib/canonical/launchpad/templates/launchpad.css
+
+    new patches:
+     mpt@canonical.com/launchpad--devel--0--patch-29
+     mpt@canonical.com/launchpad--devel--0--patch-30
+
+
 2005-04-07 07:12:01 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1579
 
     Summary:
