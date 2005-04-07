@@ -2,6 +2,32 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-07 05:47:13 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1578
+
+    Summary:
+      revamp of Rosetta translation form
+    Revision:
+      launchpad--devel--0--patch-1578
+
+    Patches applied:
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-27
+       cleanup of translation page now in a presentable state
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-28
+       merge rocketfuel
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/launchpad.css
+     lib/canonical/launchpad/templates/potemplate-translate.pt
+
+    new patches:
+     mpt@canonical.com/launchpad--devel--0--patch-27
+     mpt@canonical.com/launchpad--devel--0--patch-28
+
+
 2005-04-06 23:38:46 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1577
 
     Summary:
