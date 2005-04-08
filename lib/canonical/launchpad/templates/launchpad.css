@@ -581,6 +581,15 @@ thead {
   color: #ff6699;
   background-color: #ffff00;
 }
+.actions {
+  margin: 0.5em 0;
+}
+.form {
+  text-align: right;
+}
+.list {
+  text-align: left;
+}
 
 h1, h2, h3, h4, h5, h6 {
   clear: both;

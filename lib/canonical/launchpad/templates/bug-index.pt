@@ -2,12 +2,14 @@
       lang="en"
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="rosetta">
-
-    <title metal:fill-slot="title">Malone: Bug #<span
-    tal:replace="context/id">1234</span>
+  <head>
+    <title metal:fill-slot="title">
+      Malone
+      #<span tal:replace="context/id">1234</span>:
+      <span tal:replace="context/title">Can't smegging smeg</span>
     </title>
-
-<body>
+  </head>
+  <body>
 
 <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure view/peoplePortlet" />
@@ -27,7 +29,7 @@
   <div metal:fill-slot="main">
 
     <address class="bugid">
-      Malone #bugnumbergoeshere
+      Malone #<span tal:replace="context/id">1234</span>
       <span tal:condition="context/name" tal:omit-tag>
         (#<a href="" tal:content="context/name">$Bug.name</a>)
       </span>

@@ -2,6 +2,44 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-08 07:34:40 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1587
+
+    Summary:
+      fix titles and headings on bug and task pages, and minor bug in login page
+    Revision:
+      launchpad--devel--0--patch-1587
+
+    Patches applied:
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-31
+       merge rocketfuel
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-32
+       fix my own stupid grammar error; add form button-row CSS classes
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-33
+       fix bug and task <title>s, and bug numbers on bug reports
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-34
+       fix page tests
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/pagetests/foaf/99-resetpassword.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/80-private-upstream-bug-accessible-to-subscribed-user.txt
+     lib/canonical/launchpad/templates/bug-index.pt
+     lib/canonical/launchpad/templates/bugtask-editform.pt
+     lib/canonical/launchpad/templates/launchpad-login.pt
+     lib/canonical/launchpad/templates/launchpad.css
+
+    new patches:
+     mpt@canonical.com/launchpad--devel--0--patch-31
+     mpt@canonical.com/launchpad--devel--0--patch-32
+     mpt@canonical.com/launchpad--devel--0--patch-33
+     mpt@canonical.com/launchpad--devel--0--patch-34
+
+
 2005-04-08 03:58:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1586
 
     Summary:
