@@ -34,6 +34,7 @@
   <p class="documentDescription">A list of the email addresses associated
   with this account in the Launchpad.</p>
   
+  <tal:block tal:condition="view/anyRegisteredEmail">
   <p>Your preferred email address is the only
   one we'll use to communicate with you. There can be only one preferred
   email address at a time, and it cannot be removed.</p>
@@ -73,6 +74,14 @@
     </tr>
   </table>
   <br />
+  </tal:block>
+
+  <tal:block tal:condition="not: view/anyRegisteredEmail">
+  <p>You don't have any registered email address in Launchpad. You can do so
+  by filling in the form bellow with the email address you want and your
+  password. After that, we will e-mail you to check your address and give you
+  instructions on how to complete the registration of your email address.</p>
+  </tal:block>
 
   <table>
     <tr>

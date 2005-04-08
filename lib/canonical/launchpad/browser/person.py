@@ -348,6 +348,13 @@ class PersonEditView(object):
 
         return True
 
+    def anyRegisteredEmail(self):
+        """Return true if this user have any email address that was registered
+        in Launchpad by himself.
+        """
+        return (self.context.preferredemail or self.context.validatedemails or
+                self.context.unvalidatedemails)
+
     def emailFormSubmitted(self):
         if "SUBMIT_CHANGES" in self.request.form:
             self.processEmailChanges()
