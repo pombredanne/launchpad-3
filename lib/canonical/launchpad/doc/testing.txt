@@ -62,6 +62,18 @@ affected.
 >>> cursor.execute("CREATE TABLE Beer (id serial PRIMARY KEY, name text)")
 >>> PgTestSetup().tearDown()
 
+We can also specify a different template to duplicate than the default
+clean one (template1). For example, if you need a launchpad database
+containing no data, you can use `launchpad_empty` as the template.
+
+>>> PgTestSetup('launchpad_empty').setUp()
+>>> connection = PgTestSetup().connect()
+>>> cursor = connection.cursor()
+>>> cursor.execute("SELECT COUNT(*) FROM Person")
+>>> int(cursor.fetchone()[0])
+0
+>>> PgTestSetup().tearDown()
+
 
 LaunchpadTestSetup
 ------------------

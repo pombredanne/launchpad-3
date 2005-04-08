@@ -66,16 +66,6 @@ class LaunchpadTestSetup(PgTestSetup):
     dbuser = 'launchpad'
     dbhost = 'localhost'
 
-    reset_db = True
-
-    def setUp(self):
-        super(LaunchpadTestSetup, self).setUp(LaunchpadTestSetup.reset_db)
-        LaunchpadTestSetup.reset_db = False
-
-    def tearDown(self):
-        if ConnectionWrapper.committed:
-            LaunchpadTestSetup.reset_db = True
-        super(LaunchpadTestSetup, self).tearDown(LaunchpadTestSetup.reset_db)
 
 class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
     txn = None
@@ -89,6 +79,7 @@ class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
         LaunchpadZopelessTestSetup.txn.uninstall()
         super(LaunchpadZopelessTestSetup, self).tearDown()
 
+
 class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
     def setUp(self):
         _disconnect_sqlos()
@@ -101,6 +92,7 @@ class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
         _disconnect_sqlos()
         super(LaunchpadFunctionalTestSetup, self).tearDown()
 
+
 class LaunchpadTestCase(unittest.TestCase):
     def setUp(self):
         LaunchpadTestSetup().setUp()
@@ -110,6 +102,7 @@ class LaunchpadTestCase(unittest.TestCase):
 
     def connect(self):
         return LaunchpadTestSetup().connect()
+
 
 class LaunchpadFunctionalTestCase(unittest.TestCase):
     def setUp(self):

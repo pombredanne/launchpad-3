@@ -41,6 +41,9 @@ warnings.filterwarnings(
         )
 
 from canonical.ftests import pgsql
+# If this is removed, make sure canonical.ftests.pgsql is updated
+# because the test harness there relies on the Connection wrapper being
+# installed.
 pgsql.installFakeConnect()
 
 # This is a terrible hack to divorce the FunctionalTestSetup from
