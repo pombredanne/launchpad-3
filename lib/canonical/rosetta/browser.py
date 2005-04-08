@@ -1104,9 +1104,9 @@ class TranslatePOTemplate:
         for set in sets.values():
             pot_set = self.context.getPOTMsgSetByID(set['msgid'])
             if pot_set is None:
-                # This should only happen if someone tries to POST its own
-                # form instead of our and they use a POTMsgSet id that does
-                # not exists for this POTemplate.
+                # This should only happen if someone tries to POST his own
+                # form instead of ours, and he uses a POTMsgSet id that does
+                # not exist for this POTemplate.
                 raise RuntimeError(
                     "Got translation for POTMsgID %d which is not in the"
                     " template." % set['msgid'])

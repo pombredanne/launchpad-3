@@ -2,6 +2,28 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-08 08:31:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1588
+
+    Summary:
+      Now, the test added yesterday, can be executed from any path.
+    Revision:
+      launchpad--devel--0--patch-1588
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-81--0--patch-7
+       Let the new test be run from any path
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-translation-form-long-msgid.txt
+     lib/canonical/rosetta/browser.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--bug-81--0--patch-7
+
+
 2005-04-08 07:34:40 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1587
 
     Summary:
