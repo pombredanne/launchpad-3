@@ -2,6 +2,33 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-09 06:02:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1591
+
+    Summary:
+      improve /people presentation
+    Revision:
+      launchpad--devel--0--patch-1591
+
+    Patches applied:
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-37
+       improve /people presentation
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-38
+       fix page test
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-people-index.txt
+     lib/canonical/launchpad/templates/people-index.pt
+     lib/canonical/launchpad/templates/people-list.pt
+
+    new patches:
+     mpt@canonical.com/launchpad--devel--0--patch-37
+     mpt@canonical.com/launchpad--devel--0--patch-38
+
+
 2005-04-09 03:02:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1590
 
     Summary:
