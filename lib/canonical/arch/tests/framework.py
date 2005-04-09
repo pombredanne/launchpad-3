@@ -36,12 +36,6 @@ class DatabaseTestCase(unittest.TestCase):
     def tearDown(self):
         self._zopeless.tearDown()
 
-    def commit(self):
-        self._zopeless.txn.commit()
-
-    def cursor(self):
-        return self._zopeless.connect().cursor()
-
     def _getTestArchive(self):
         """Insert a test archive into the db and return it"""
         from canonical.arch.broker import Archive

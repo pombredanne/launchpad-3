@@ -112,7 +112,6 @@ class Archives(DatabaseTestCase):
         mapper=ArchiveMapper()
         self.failIf(mapper.findByName(name).exists())
         archive=Archives().create(name)
-        self.commit()
         self.failUnless(isinstance(archive, Archive))
         self.failUnless(mapper.findByName(name).exists())
     tests.append('test_create')
@@ -133,7 +132,6 @@ class Archives(DatabaseTestCase):
         mapper=ArchiveMapper()
         self.failIf(mapper.findByName(name).exists())
         archive=Archives().create(name, location)
-        self.commit()
         self.failUnless(isinstance(archive, Archive))
         self.failUnless(mapper.findByName(name).exists())
     # FIXME
@@ -173,7 +171,6 @@ class Archives(DatabaseTestCase):
         missing_archive = archives[name]
         self.assert_(isinstance(missing_archive, MissingArchive))
         archives.create(name)
-        self.commit()
         created_archive = archives[name]
         self.assert_(isinstance(created_archive, Archive))
         self.assertEqual(name, created_archive.name)
@@ -502,7 +499,6 @@ class Archive(NamespaceTestCase):
         category = archive.create_category(name)
         from canonical.launchpad.database import CategoryMapper
         mapper = CategoryMapper()
-        self.commit()
         self.failUnless(mapper.exists(category))
         read_back = archive[name]
         self.assertEqual(read_back, category)
@@ -579,7 +575,6 @@ class Category(NamespaceTestCase):
         archive = self.getTestArchive()
         category = Category("bang", archive)
         category.setup()
-        self.commit()
         self.failUnless(category.exists())
     tests.append('test_can_setup')
 
