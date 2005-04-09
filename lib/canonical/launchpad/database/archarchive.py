@@ -59,53 +59,49 @@ def createBranch(repository):
 
 class Archive(SQLBase):
     """ArchArchive table"""
-        
+
     _table = 'ArchArchive'
-    _columns = [
-        StringCol('name', dbName='name', notNull=True),
-        StringCol('title', dbName='title', notNull=True),
-        StringCol('description', dbName='description', notNull=True),
-        BoolCol('visible', dbName='visible', notNull=True),
-        ForeignKey(name='owner', foreignKey='Person', dbName='owner',
-                   default=None),
-    ]
-    
+    name = StringCol(dbName='name', notNull=True)
+    title = StringCol(dbName='title', notNull=True)
+    description = StringCol(dbName='description', notNull=True)
+    visible = BoolCol(dbName='visible', notNull=True)
+    owner = ForeignKey(foreignKey='Person', dbName='owner', default=None)
+
+
 class ArchArchive(SQLBase):
     """ArchArchive table"""
 
     # FIXME: This is a gratuitously stupid duplicate.
     _table = 'ArchArchive'
-    _columns = [
-        StringCol('name', dbName='name', notNull=True),
-        StringCol('title', dbName='title', notNull=True),
-        StringCol('description', dbName='description', notNull=True),
-        BoolCol('visible', dbName='visible', notNull=True),
-        ForeignKey(name='owner', foreignKey='Person', dbName='owner'),
-    ]
+    name = StringCol(dbName='name', notNull=True)
+    title = StringCol(dbName='title', notNull=True)
+    description = StringCol(dbName='description', notNull=True)
+    visible = BoolCol(dbName='visible', notNull=True)
+    owner = ForeignKey(foreignKey='Person', dbName='owner')
+
 
 class ArchiveLocation(SQLBase):
     """ArchArchiveLocation table"""
-    
+
     _table = 'ArchArchiveLocation'
-    _columns = [
-        ForeignKey(name='archive', foreignKey='Archive', dbName='archive'),
-        EnumCol('archivetype', dbName='archivetype', notNull=True,
-                schema=ArchArchiveType),
-        StringCol('url', dbName='url', notNull=True),
-        BoolCol('gpgsigned', dbName='gpgsigned', notNull=True),
-    ]
+    archive = ForeignKey(foreignKey='Archive', dbName='archive')
+    archivetype = EnumCol(dbName='archivetype', notNull=True,
+                          schema=ArchArchiveType)
+    url = StringCol(dbName='url', notNull=True)
+    gpgsigned = BoolCol(dbName='gpgsigned', notNull=True)
+
 
 class ArchNamespace(SQLBase):
     """A namespace in Arch (archive/category--branch--version)"""
+
     _table = 'ArchNamespace'
-    _columns = [
-        ForeignKey(name='archive', foreignKey='Archive', dbName='archarchive',
-                  notNull=True),
-        StringCol('category', dbName='category', notNull=True),
-        StringCol('branch', dbName='branch', default=None),
-        StringCol('version', dbName='version', default=None),
-        BoolCol('visible', dbName='visible', notNull=True),
-    ]
+    archive = ForeignKey(foreignKey='Archive', dbName='archarchive',
+                         notNull=True)
+    category = StringCol(dbName='category', notNull=True)
+    branch = StringCol(dbName='branch', default=None)
+    version = StringCol(dbName='version', default=None)
+    visible = BoolCol(dbName='visible', notNull=True)
+
 
 class ArchiveLocationMapper(object):
     """I map ArchiveLocations to and from the database"""
