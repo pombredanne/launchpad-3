@@ -481,6 +481,16 @@ input.searchButton {
   background-image: url(http://plone.org/phone_icon.gif);
 }
 
+/* -- "Links must look like links." -- SteveA */
+
+a, #portal-footer a {
+  text-decoration: underline;
+}
+/* -- ... except in portlets for now -- */
+a[name], .portlet :link, .portlet :visited {
+  text-decoration: none;
+}
+
 /* -- Don't stomp on people's preferred font sizes: -- */
 
 body, .listing {

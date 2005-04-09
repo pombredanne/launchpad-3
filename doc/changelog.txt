@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-09 03:02:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1590
+
+    Summary:
+      links must look like links
+    Revision:
+      launchpad--devel--0--patch-1590
+
+    Patches applied:
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-35
+       merge rocketfuel
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-36
+       links must look like links
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/launchpad.css
+
+    new patches:
+     mpt@canonical.com/launchpad--devel--0--patch-35
+     mpt@canonical.com/launchpad--devel--0--patch-36
+
+
 2005-04-08 21:36:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1589
 
     Summary:
