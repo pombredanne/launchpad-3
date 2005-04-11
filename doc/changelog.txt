@@ -2,6 +2,38 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-11 09:24:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1592
+
+    Summary:
+      POExport view for testing
+    Revision:
+      launchpad--devel--0--patch-1592
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-271
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-272
+       Move POExport view into rocketfuel for testing
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-273
+       Correct version number
+    
+
+    new files:
+     database/schema/.arch-ids/patch-14-05-0.sql.id
+     database/schema/patch-14-05-0.sql
+
+    modified files:
+     database/schema/security.cfg doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-271
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-272
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-273
+
+
 2005-04-09 06:02:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1591
 
     Summary:
