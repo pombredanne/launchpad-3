@@ -42,9 +42,10 @@ class LoginTokenSet(object):
         characters = '0123456789bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ'
         length = 20
         token = ''.join([random.choice(characters) for count in range(length)])
-        return LoginToken(requester=requester, requesteremail=requesteremail,
-                          email=email, token=token, tokentype=tokentype,
-                          created=datetime.utcnow())
+        reqid = getattr(requester, 'id', None)
+        return LoginToken(requesterID=reqid, requesteremail=requesteremail,
+                email=email, token=token, tokentype=tokentype,
+                created=datetime.utcnow())
 
     def __getitem__(self, tokentext):
         results = LoginToken.selectBy(token=tokentext)

@@ -117,10 +117,6 @@ class IPerson(Interface):
     preferredemail = Int(title=_("The preferred email address for this "
                                  "person. The one we'll use to communicate "
                                  "with him."), readonly=False)
-    email = TextLine(
-            title=_('Email Address'), required=True,
-            description=_("Please give the email address for this Team. "))
-
     defaultmembershipperiod = Int(
             title=_('Number of days a subscription lasts'), required=False,
             description=_("This is the number of days all "

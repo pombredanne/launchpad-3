@@ -309,11 +309,6 @@ class Person(SQLBase):
         assert results.count() == 1
         tm = results[0]
 
-        if reviewer is not None:
-            # Make sure the reviewer is either the team owner or one of the
-            # administrators.
-            assert reviewer in self.administrators + [self.teamowner]
-
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
         expired = TeamMembershipStatus.EXPIRED

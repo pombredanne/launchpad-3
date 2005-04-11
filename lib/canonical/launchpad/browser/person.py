@@ -358,21 +358,19 @@ class PersonEditView(object):
     def emailFormSubmitted(self):
         if "SUBMIT_CHANGES" in self.request.form:
             self.processEmailChanges()
-            self.message = 'Thank you for your email changes.'
             return True
         elif "VALIDATE_EMAIL" in self.request.form:
             self.processValidationRequest()
-            self.message = 'Thank you for your email validation.'
             return True
         else:
             return False
 
     def processEmailChanges(self):
-        user = self.user
+        person = self.context
         emailset = getUtility(IEmailAddressSet)
         password = self.request.form.get("password")
         encryptor = getUtility(IPasswordEncryptor)
-        if not encryptor.validate(password, user.password):
+        if not encryptor.validate(password, person.password):
             self.message = "Wrong password. Please try again."
             return
 
@@ -383,7 +381,7 @@ class PersonEditView(object):
                 return
 
             email = emailset.getByEmail(newemail)
-            if email is not None and email.person.id == user.id:
+            if email is not None and email.person.id == person.id:
                 self.message = ("The email address '%s' is already registered "
                                 "as your email address. This can be either "
                                 "because you already added this email address "
@@ -405,7 +403,7 @@ class PersonEditView(object):
 
             login = getUtility(ILaunchBag).login
             logintokenset = getUtility(ILoginTokenSet)
-            token = logintokenset.new(user, login, newemail, 
+            token = logintokenset.new(person, login, newemail, 
                                       LoginTokenType.VALIDATEEMAIL)
             sendEmailValidationRequest(token, self.request.getApplicationURL())
             self.message = ("A new message was sent to '%s', please follow "
@@ -418,11 +416,11 @@ class PersonEditView(object):
             # login *must* have a PREFERRED email, and this will not be
             # needed anymore. But for now we need this cause id may be "".
             id = int(id)
-            if getattr(user.preferredemail, 'id', None) != id:
+            if getattr(person.preferredemail, 'id', None) != id:
                 email = emailset.get(id)
-                assert email.person == user
+                assert email.person.id == person.id
                 assert email.status == EmailAddressStatus.VALIDATED
-                user.preferredemail = email
+                person.preferredemail = email
 
         ids = self.request.form.get("REMOVE_EMAIL")
         if ids is not None:
@@ -435,18 +433,18 @@ class PersonEditView(object):
 
             for id in ids:
                 email = emailset.get(id)
-                assert email.person == user
-                if user.preferredemail != email:
+                assert email.person.id == person.id
+                if person.preferredemail != email:
                     # The following lines are a *real* hack to make sure we
                     # don't let the user with no validated email address.
                     # Ideally, we wouldn't need this because all users would
                     # have a preferred email address.
-                    if user.preferredemail is None and \
-                       len(user.validatedemails) > 1:
+                    if person.preferredemail is None and \
+                       len(person.validatedemails) > 1:
                         # No preferred email set. We can only delete this
                         # email if it's not the last validated one.
                         email.destroySelf()
-                    elif user.preferredemail is not None:
+                    elif person.preferredemail is not None:
                         # This user has a preferred email and it's not this
                         # one, so we can delete it.
                         email.destroySelf()
@@ -455,6 +453,7 @@ class PersonEditView(object):
         # with this transaction will see this changes and thus they'll be
         # displayed on the page that calls this method.
         flush_database_updates()
+        self.message = 'Thank you for your email changes.'
 
     def processValidationRequest(self):
         id = self.request.form.get("NOT_VALIDATED_EMAIL")
@@ -463,9 +462,10 @@ class PersonEditView(object):
                         "on how to validate it.") % email.email
         login = getUtility(ILaunchBag).login
         logintokenset = getUtility(ILoginTokenSet)
-        token = logintokenset.new(self.user, login, email.email,
+        token = logintokenset.new(self.context, login, email.email,
                                   LoginTokenType.VALIDATEEMAIL)
         sendEmailValidationRequest(token, self.request.getApplicationURL())
+        self.message = 'Thank you for your email changes.'
 
 
 class RequestPeopleMergeView(AddView):
@@ -607,7 +607,7 @@ class TeamAddView(AddView):
         for key, value in data.items():
             kw[str(key)] = value
 
-        kw['teamownerID'] = getUtility(ILaunchBag).user.id
+        kw['teamownerID'] = self.context.id
         team = getUtility(IPersonSet).newTeam(**kw)
         notify(ObjectCreatedEvent(team))
         self._nextURL = '/people/%s' % team.name

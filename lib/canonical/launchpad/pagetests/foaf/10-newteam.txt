@@ -2,7 +2,7 @@
 
 
   >>> print http(r"""
-  ... GET /people/name16/+newteam HTTP/1.1
+  ... GET /people/foo/+newteam HTTP/1.1
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
   ... """)
   HTTP/1.1 200 Ok
@@ -14,7 +14,7 @@
 
 
   >>> print http(r"""
-  ... POST /people/name16/+newteam HTTP/1.1
+  ... POST /people/foo/+newteam HTTP/1.1
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
   ... Content-Length: ...
   ... Content-Type: multipart/form-data; boundary=---------------------------1864281074215564721489467183

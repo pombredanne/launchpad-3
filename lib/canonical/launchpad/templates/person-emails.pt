@@ -39,7 +39,7 @@
   one we'll use to communicate with you. There can be only one preferred
   email address at a time, and it cannot be removed.</p>
 
-  <table id="ass_listing" class="listing rowNavigation" width="100%">
+  <table id="ass_listing" class="listing" width="100%">
     <tr>
       <th>Preferred</th>
       <th>Email</th>

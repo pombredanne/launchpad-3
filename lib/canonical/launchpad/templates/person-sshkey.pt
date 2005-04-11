@@ -63,8 +63,7 @@
             Insert the contents of <tt>~/.ssh/id_dsa.pub</tt> or
             <tt>~/.ssh/id_rsa.pub</tt>.  Only SSH v2 keys are supported.
         </div>
-        <textarea name="sshkey" width="60" height="6">
-        </textarea>
+        <textarea name="sshkey" width="60" height="6"></textarea>
         <input type="submit" value="Import public key">
     </fieldset>
     </form>
