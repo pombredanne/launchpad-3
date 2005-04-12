@@ -12,14 +12,23 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
-"""Start script for Soyuz: loads configuration and starts the server.
+"""Start script for Launchpad: loads configuration and starts the server.
 
 $Id: z3.py 25266 2004-06-04 21:25:45Z jim $
 """
 import os
 import sys
+from zope.app.server.main import main
 
 basepath = filter(None, sys.path)
+
+# Disgusting hack to use our extended config file schema rather than the
+# Z3 one. TODO: Add command line options or other to Z3 to enable overriding
+# this -- StuartBishop 20050406
+from zdaemon.zdoptions import ZDOptions
+ZDOptions.schemafile = os.path.abspath(os.path.join(
+        os.path.dirname(__file__), 'lib', 'canonical',
+        'config', 'schema.xml'))
 
 def run(argv=list(sys.argv)):
 
@@ -37,7 +46,6 @@ def run(argv=list(sys.argv)):
     srcdir = os.path.join(here, src)
     sys.path = [srcdir, here] + basepath
 
-    from zope.app.server.main import main
     main(argv[1:])
 
 

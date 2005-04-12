@@ -24,6 +24,10 @@ sys.path.append(os.path.join(here, 'lib'))
 # Set PYTHONPATH environment variable for spawned processes
 os.environ['PYTHONPATH'] = ':'.join(sys.path)
 
+# Tell canonical.config to use the test config file, not launchpad.conf
+from canonical.config import config
+config.setDefaultSection('testrunner')
+
 # Turn on psycopg debugging wrapper
 #import canonical.database.debug
 #canonical.database.debug.install()

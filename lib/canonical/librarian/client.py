@@ -4,7 +4,9 @@
 from socket import socket, SOCK_STREAM, AF_INET
 from select import select
 
-import urllib, urllib2
+import urllib, urllib2, warnings
+
+from canonical.config import config
 
 __all__ = ['UploadFailed', 'FileUploadClient', 'FileDownloadClient']
 
@@ -19,11 +21,36 @@ class DownloadFailed(Exception):
 class FileUploadClient(object):
     """Simple blocking client for uploading to the librarian."""
 
-    def connect(self, host, port):
-        """Connect this client to a particular host and port"""
+    def connect(self, **kw):
+        # TODO: Nuke this method sometime after May 2005 -- StuartBishop
+        warnings.warn(
+                'FileUploadClient.connect is not needed and will be removed',
+                DeprecationWarning, stacklevel=2
+                )
+
+    def close(self, **kw):
+        # TODO: Nuke this method sometime after May 2005 -- StuartBishop
+        warnings.warn(
+                'FileUploadClient.close is not needed and will be removed',
+                DeprecationWarning, stacklevel=2
+                )
+
+    def _connect(self):
+        """Connect this client.
+        
+        The host and port default to what is specified in the configuration
+        """
+        host = config.librarian.upload_host
+        port = config.librarian.upload_port
+
         self.s = socket(AF_INET, SOCK_STREAM)
         self.s.connect((host, port))
         self.f = self.s.makefile('w+', 0)
+
+    def _close(self):
+        """Close connection"""
+        del self.s
+        del self.f
 
     def _checkError(self):
         if select([self.s], [], [], 0)[0]:
@@ -34,6 +61,9 @@ class FileUploadClient(object):
         self.f.write(line + '\r\n')
         self._checkError()
 
+    # TODO: Change the return value of addFile - it isn't documented,
+    # and should not return the content-id (just the alias id).
+    # -- StuartBishop 20050412
     def addFile(self, name, size, file, contentType=None, digest=None):
         """Add a file to the librarian.
 
@@ -46,46 +76,63 @@ class FileUploadClient(object):
 
         :raises UploadFailed: If the server rejects the upload for some reason
         """
-        # Send command
-        self._sendLine('STORE %d %s' % (size, name))
+        self._connect()
+        try:
+            # Send command
+            self._sendLine('STORE %d %s' % (size, name))
 
-        # Send headers
-        if contentType is not None:
-            self._sendLine('Content-Type: ' + contentType)
-        if digest is not None:
-            self._sendLine('SHA1-Digest: ' + digest)
+            # Send headers
+            if contentType is not None:
+                self._sendLine('Content-Type: ' + contentType)
+            if digest is not None:
+                self._sendLine('SHA1-Digest: ' + digest)
 
-        # Send blank line
-        self._sendLine('')
-        
-        # Send file
-        for chunk in iter(lambda: file.read(4096), ''):
-            self.f.write(chunk)
+            # Send blank line
+            self._sendLine('')
+            
+            # Send file
+            for chunk in iter(lambda: file.read(4096), ''):
+                self.f.write(chunk)
+            self.f.flush()
 
-        # Read response
-        response = self.f.readline().strip()
-        code, value = response.split(' ', 1)
-        if code == '200':
-            return value.split('/', 1)
-        else:
-            raise UploadFailed, 'Server said: ' + response
+            # Read response
+            response = self.f.readline().strip()
+            code, value = response.split(' ', 1)
+            if code == '200':
+                return value.split('/', 1)
+            else:
+                raise UploadFailed, 'Server said: ' + response
+        finally:
+            self._close()
+
 
 def quote(s):
     # TODO: Perhaps filenames with / in them should be disallowed?
     return urllib.quote(s).replace('/', '%2F')
 
+
 class FileDownloadClient(object):
     """A simple client to download files from the librarian"""
 
-    def __init__(self, host, port):
-        self.host = host
-        self.port = port
+    _logger = None
+
+    def __init__(self, host=None, port=None):
+        # TODO: Nuke keyword arguments sometime after May 2005 -- StuartBishop
+        if host is not None or port is not None:
+            warnings.warn(
+                    'FileDownloadClient.__init__ no longer takes arguments. '
+                    'Ignored.', DeprecationWarning, stacklevel=2
+                    )
         self._logger = None
 
     def _warning(self, msg, *args):
         if self._logger is not None:
             self._logger.warning(msg, *args)
 
+    # XXX: This method needs to be refactored - fileID and filename
+    # should not be passed in. In particular, call sights should not
+    # know the fileID as this is the domain of the Librarian
+    # -- StuartBishop 20050412
     def getFile(self, fileID, aliasID, filename):
         """Returns a fd to read the file from
 
@@ -95,19 +142,27 @@ class FileDownloadClient(object):
 
         :returns: file-like object
         """
+        host = config.librarian.download_host
+        port = config.librarian.download_port
         url = ('http://%s:%d/%s/%s/%s'
-               % (self.host, self.port, fileID, aliasID, quote(filename)))
+               % (host, port, fileID, aliasID, quote(filename)))
         return urllib2.urlopen(url)
 
     def _findByDigest(self, hexdigest):
         """Return a list of relative paths to aliases"""
-        url = ('http://%s:%d/search?digest=%s' % (self.host, self.port, hexdigest))
+        host = config.librarian.download_host
+        port = config.librarian.download_port
+        url = ('http://%s:%d/search?digest=%s' % (
+            host, port, hexdigest)
+            )
         results = urllib2.urlopen(url).read()
         lines = results.split('\n')
         count, paths = lines[0], lines[1:]
-        # FIXME: raise exception if count != len(paths)
+        if int(count) != len(paths):
+            raise DownloadFailed, 'Incomplete response'
         return paths
 
+    # TODO: Shouldn't return fileID -- StuartBishop 20050412
     def findByDigest(self, hexdigest):
         """Find a file by its SHA-1 digest
 
@@ -117,9 +172,13 @@ class FileDownloadClient(object):
 
     def findLinksByDigest(self, hexdigest):
         """Return a list of URIs to file aliases matching 'hexdigest'"""
-        return [('http://%s:%d/%s' % (self.host, self.port, path))
+        host = config.librarian.download_host
+        port = config.librarian.download_port
+        return [('http://%s:%d/%s' % (host, port, path))
                 for path in self._findByDigest(hexdigest)]
 
+    # TODO: This probably should exist in the client API?
+    # -- StuartBishop 20040412
     def getPathForAlias(self, aliasID):
         """Returns the path inside the librarian to talk about the given
         alias.
@@ -128,8 +187,10 @@ class FileDownloadClient(object):
 
         :returns: String Path
         """
+        host = config.librarian.download_host
+        port = config.librarian.download_port
         url = ('http://%s:%d/byalias?alias=%s'
-               % (self.host, self.port, aliasID))
+               % (host, port, aliasID))
         self._warning('getPathForAlias: http get %s', url)
         f = urllib2.urlopen(url)
         l = f.read()
@@ -148,8 +209,10 @@ class FileDownloadClient(object):
 
         :returns: String URL
         """
+        host = config.librarian.download_host
+        port = config.librarian.download_port
         l = self.getPathForAlias(aliasID)
-        url = ('http://%s:%d%s' % (self.host, self.port, l))
+        url = ('http://%s:%d%s' % (host, port, l))
         return url
 
     def getFileByAlias(self, aliasID):
@@ -163,22 +226,11 @@ class FileDownloadClient(object):
         return urllib2.urlopen(url)
 
 
-if __name__ == '__main__':
-    import os, sys, sha
-    uploader = FileUploadClient()
-    uploader.connect('localhost', 9090)
-    name = sys.argv[1]
-    print 'Uploading', name, 'to localhost:9090'
-    fileobj = open(name, 'rb')
-    size = os.stat(name).st_size
-    digest = sha.sha(open(name, 'rb').read()).hexdigest()
-    fileid, filealias = uploader.addFile(name, size, fileobj,
-                                         contentType='test/test', digest=digest)
-    print 'Done.  File ID:',  fileid
-    print 'File AliasID:', filealias
+class LibrarianClient(FileUploadClient, FileDownloadClient):
+    """Object combining the upload/download interfaces to the Librarian
+       simplifying access. This object is instantiated as a Utility
+       using getUtility(ILibrarianClient)
+    """
+    def __init__(self):
+        super(LibrarianClient, self).__init__()
 
-    downloader = FileDownloadClient('localhost', 8000)
-    fp = downloader.getFile(fileid, filealias, name)
-    print 'First 50 bytes:', repr(fp.read(50))
-    print
-    print downloader.findByDigest(digest)

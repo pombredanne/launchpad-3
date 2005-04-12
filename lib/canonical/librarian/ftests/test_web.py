@@ -9,11 +9,13 @@ from cStringIO import StringIO
 
 from twisted.python.util import sibpath
 
-from canonical.launchpad.ftests.harness import LaunchpadTestCase
-from canonical.librarian.client import FileUploadClient, FileDownloadClient
+from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+from canonical.librarian.client \
+        import FileUploadClient, FileDownloadClient, DownloadFailed
+from canonical.librarian.ftests.harness import LibrarianTestSetup
 
 
-class LibraryWebTestCase(LaunchpadTestCase):
+class LibraryWebTestCase(unittest.TestCase):
     """Test the librarian's web interface."""
 
     # Add stuff to a librarian via the upload port, then check that it's
@@ -21,42 +23,17 @@ class LibraryWebTestCase(LaunchpadTestCase):
     # 500-error issue).
 
     def setUp(self):
-        super(LibraryWebTestCase, self).setUp()
-        # XXX: twistd test-fu taken from authserver/ftests/test_xmlrpc.py
-        #      It should be refactored and put somewhere reusable.
-        #         - Andrew Bennetts, 2005-02-08
-        ver = sys.version[:3]
-        os.system('kill `cat twistd.pid 2> /dev/null` > /dev/null 2>&1')
-        cmd = 'twistd%s -oy %s' % (ver, sibpath(__file__, 'test.tac'),)
-        rv = os.system(cmd)
-        self.failUnlessEqual(rv, 0)
-
-        self.uploadPort = waitForTwistdPort('upload')
-        self.webPort = waitForTwistdPort('web')
+        LaunchpadTestSetup().setUp()
+        LibrarianTestSetup().setUp()
 
     def tearDown(self):
-        # XXX: twistd test-fu taken from authserver/ftests/test_xmlrpc.py
-        #      It should be refactored and put somewhere reusable.  (i.e. just
-        #      like setUp)
-        #         - Andrew Bennetts, 2005-02-08
-        pid = int(open('twistd.pid').read())
-        ret = os.system('kill `cat twistd.pid`')
-        # Wait for it to actually die
-        while True:
-            try:
-                os.kill(pid, 0)
-            except OSError:
-                break
-            time.sleep(0.1)
-        os.remove('twistd.log')
-        self.failIf(ret)
-        super(LibraryWebTestCase, self).tearDown()
+        LibrarianTestSetup().tearDown()
+        LaunchpadTestSetup().tearDown()
 
     def test_uploadThenDownload(self):
         # Create an uploader and a downloader
         uploader = FileUploadClient()
-        uploader.connect('localhost', self.uploadPort)
-        downloader = FileDownloadClient('localhost', self.webPort)
+        downloader = FileDownloadClient()
 
         # Do this 10 times, to try to make sure we get all the threads in the
         # thread pool involved more than once, in case handling the second
@@ -66,7 +43,7 @@ class LibraryWebTestCase(LaunchpadTestCase):
             # thrown.
             sampleData = 'x' + ('blah' * count)
             fileID, fileAlias = uploader.addFile('sample', len(sampleData),
-                                                 StringIO(sampleData), 
+                                                 StringIO(sampleData),
                                                  contentType='text/plain')
             
             # Search for the file, make sure it's in there
@@ -84,27 +61,9 @@ class LibraryWebTestCase(LaunchpadTestCase):
             fileObj.close()
 
     def test_aliasNotFound(self):
-        downloader = FileDownloadClient('localhost', self.webPort)
-        # XXX: Should be a more specific exception
-        self.assertRaises(Exception, downloader.getPathForAlias, 99)
+        downloader = FileDownloadClient()
+        self.assertRaises(DownloadFailed, downloader.getPathForAlias, 99)
 
-
-def waitForTwistdPort(filePrefix):
-    """Wait for the server to be listening on a port, and find out what that
-    port is."""
-
-    while True:
-        try:
-            # Make sure it's really ready, including having written the port
-            # to a file
-            open(filePrefix + '.ready')
-
-            # Get the file with the port number
-            f = open(filePrefix + '.port')
-        except IOError:
-            pass
-        else:
-            return int(f.read())
 
 def test_suite():
     suite = unittest.TestSuite()

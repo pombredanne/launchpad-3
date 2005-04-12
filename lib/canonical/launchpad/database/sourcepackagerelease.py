@@ -5,13 +5,13 @@ from urllib2 import URLError
 
 # Zope imports
 from zope.interface import implements
+from zope.app import zapi
 
 # SQLObject/SQLBase
 from sqlobject import MultipleJoin
 from sqlobject import SQLObjectNotFound
 from sqlobject import StringCol, ForeignKey, MultipleJoin, DateTimeCol
 
-from canonical.librarian.client import FileDownloadClient
 from canonical.database.sqlbase import SQLBase
 from canonical.lp.dbschema import EnumCol, SourcePackageUrgency, \
         SourcePackageFormat
@@ -23,6 +23,7 @@ from canonical.launchpad.interfaces import \
 from canonical.launchpad.database.binarypackage import BinaryPackage, \
     DownloadURL
 
+from canonical.librarian.interfaces import ILibrarianClient
 
 class SourcePackageRelease(SQLBase):
     implements(ISourcePackageRelease)
@@ -74,14 +75,7 @@ class SourcePackageRelease(SQLBase):
     binaries = property(binaries)
 
     def files_url(self):
-        # XXX: Daniel Debonzi 20050125
-        # Get librarian host and librarian download port from
-        # invironment variables until we have it configurable
-        # somewhere.
-        librarian_host = os.environ.get('LB_HOST', 'localhost')
-        librarian_port = int(os.environ.get('LB_DPORT', '8000'))
-
-        downloader = FileDownloadClient(librarian_host, librarian_port)
+        downloader = zapi.getUtility(ILibrarianClient)
 
         urls = []
 

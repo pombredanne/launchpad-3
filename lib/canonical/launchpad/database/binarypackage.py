@@ -5,11 +5,12 @@ from urllib2 import URLError
 # Zope imports
 from zope.interface import implements
 from zope.component import getUtility
+from zope.app import zapi
 
 # SQLObject/SQLBase
 from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol
 
-from canonical.librarian.client import FileDownloadClient
+from canonical.librarian.interfaces import ILibrarianClient
 from canonical.database.sqlbase import SQLBase, quote
 
 # interfaces and database 
@@ -137,14 +138,7 @@ class BinaryPackage(SQLBase):
 
     def files_url(self):
         """Return an URL to Download this Package"""
-        # XXX: Daniel Debonzi 20050125
-        # Get librarian host and librarian download port from
-        # invironment variables until we have it configurable
-        # somewhere.
-        librarian_host = os.environ.get('LB_HOST', 'localhost')
-        librarian_port = int(os.environ.get('LB_DPORT', '8000'))
-
-        downloader = FileDownloadClient(librarian_host, librarian_port)
+        downloader = zapi.getUtility(ILibrarianClient)
 
         urls = []
 

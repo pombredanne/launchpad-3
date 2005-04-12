@@ -24,20 +24,21 @@ class MockPrincipal:
         self.id = id
         self.groups = []
 
+ANONYMOUS = 'launchpad.anonymous'
 
 def login(email):
     """Simulates a login, using the specified email.
     
-    If 'launchpad.anonymous' is supplied as the email, you'll be logged in as
-    the anonymous user.
+    If the canonical.launchpad.ftests.ANONYMOUS constant is supplied 
+    as the email, you'll be logged in as the anonymous user.
     """
     # First end any running interaction, and start a new one
     zope.security.management.endInteraction()
     participation = MockParticipation()
     zope.security.management.newInteraction(participation)
 
-    if email == 'launchpad.anonymous':
-        principal = MockPrincipal('launchpad.anonymous')
+    if email == ANONYMOUS:
+        principal = MockPrincipal(ANONYMOUS)
         launchbag = MockLaunchBag()
     else:
         login_src = getUtility(IPlacelessLoginSource)

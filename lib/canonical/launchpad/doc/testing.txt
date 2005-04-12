@@ -146,3 +146,33 @@ True
 
 >>> LaunchpadFunctionalTestSetup().tearDown()
 
+LibrarianTestSetup
+------------------
+
+Code that needs to access the Librarian can do so easily. Note that
+LibrarianTestSetup requires the Launchpad database to be available, and
+thus requires LaunchpadTestSetup or similar to be used in tandam.
+You probably really want LaunchpadFunctionalTestSetup so you can access
+the Librarian as a Utility.
+
+>>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+>>> from canonical.launchpad.ftests import login, ANONYMOUS
+>>> from zope.app import zapi
+>>> from canonical.librarian.interfaces import ILibrarianClient
+>>> from StringIO import StringIO
+
+>>> LaunchpadFunctionalTestSetup().setUp()
+>>> LibrarianTestSetup().setUp()
+>>> login(ANONYMOUS)
+
+>>> some_content = StringIO()
+>>> print >> some_content, 'Hi Mum\n'*100
+>>> size = len(some_content.getvalue())
+>>> some_content.seek(0)
+>>> lib = zapi.getUtility(ILibrarianClient)
+>>> lib.addFile('hi.txt', size, some_content) is not None
+True
+
+>>> LibrarianTestSetup().tearDown()
+>>> LaunchpadFunctionalTestSetup().tearDown()
+
