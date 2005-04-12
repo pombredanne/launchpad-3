@@ -13,7 +13,7 @@ from zope.interface import implements
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.launchpad.interfaces import IBug, IBugAddForm, IBugSet
+from canonical.launchpad.interfaces import IBug, IBugAddForm, IBugSet, IBugDelta
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC, DEFAULT
 from canonical.lp import dbschema
@@ -150,6 +150,27 @@ class Bug(SQLBase):
         emails = list(emails)
         emails.sort()
         return emails
+
+
+class BugDelta:
+    """See canonical.launchpad.interfaces.IBugDelta."""
+    implements(IBugDelta)
+    def __init__(self, bug, bugurl, user, title=None, shortdesc=None,
+                 description=None, name=None, private=None,
+                 external_reference=None, bugwatch=None, cveref=None,
+                 bugtask_deltas=None):
+        self.bug = bug
+        self.bugurl = bugurl
+        self.user = user
+        self.title = title
+        self.shortdesc = shortdesc
+        self.description = description
+        self.name = name
+        self.private = private
+        self.external_reference = external_reference
+        self.bugwatch = bugwatch
+        self.cveref = cveref
+        self.bugtask_deltas = bugtask_deltas
 
 
 def BugFactory(addview=None, distribution=None, sourcepackagename=None,

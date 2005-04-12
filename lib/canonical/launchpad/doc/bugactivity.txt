@@ -39,12 +39,14 @@ little functions.
 
   >>> from datetime import datetime
   >>> from zope.event import notify
+  >>> from zope.interface import directlyProvides
   >>> from canonical.launchpad.event.sqlobjectevent import \
   ...     SQLObjectCreatedEvent, SQLObjectModifiedEvent
   >>> from canonical.launchpad.database import Bug, BugActivity, \
   ...     BugPackageInfestation, BugProductInfestation, \
   ...     BugTask
-  >>> from canonical.launchpad.interfaces import IBugAddForm
+  >>> from canonical.launchpad.interfaces import IBugAddForm, \
+  ...     IUpstreamBugTask, IDistroBugTask
   >>> from zope.publisher.browser import TestRequest
 
   >>> request = TestRequest()
@@ -87,7 +89,7 @@ EVENT: user files a bug
 EVENT: bug edited
 
   >>> old_state = capture_state(
-  ...     bug, "id", "title", "shortdesc", "description")
+  ...     bug, "id", "title", "shortdesc", "description", "name", "private")
   >>> bug.title = "new bug title"
   >>> bug_edited = SQLObjectModifiedEvent(
   ...     bug, old_state, ["title", "shortdesc", "description"],
@@ -117,9 +119,12 @@ EVENT: bug gets assigned to a source package
 EVENT: source package assignment edited
 
   >>> from canonical.lp.dbschema import BugTaskStatus
-  >>> edit_fields = ["sourcepackagename", "status", "priority", "severity"]
+  >>> edit_fields = [
+  ...     "distribution", "sourcepackagename", "binarypackagename",
+  ...     "status", "priority", "severity", "assignee"]
   >>> old_source_package_assignment = capture_state(
   ...     source_package_assignment, *edit_fields)
+  >>> directlyProvides(old_source_package_assignment, IDistroBugTask)
   >>> source_package_assignment.status = BugTaskStatus.ACCEPTED
   >>> source_package_assignment_edited = SQLObjectModifiedEvent(
   ...     source_package_assignment, old_source_package_assignment,
@@ -147,8 +152,10 @@ EVENT: bug gets assigned to an upstream product
 
 EVENT: upstream product assignment edited
 
-  >>> edit_fields = ["product", "status", "priority", "severity"]
+  >>> edit_fields = [
+  ...     "product", "status", "priority", "severity", "milestone", "assignee"]
   >>> old_product_assignment = capture_state(product_assignment, *edit_fields)
+  >>> directlyProvides(old_product_assignment, IUpstreamBugTask)
   >>> product_assignment.status = BugTaskStatus.REJECTED
   >>> product_assignment_edited = SQLObjectModifiedEvent(
   ...     product_assignment, old_product_assignment, edit_fields, user,

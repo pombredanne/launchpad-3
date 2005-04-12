@@ -38,6 +38,10 @@ class BugExternalRefSet(BugSetBase):
         if bug:
             self.title += ' for Malone Bug #' + str(bug)
 
+    def createBugExternalRef(self, bug, url, title, owner):
+        """See canonical.launchpad.interfaces.IBugExternalRefSet."""
+        return BugExternalRef(
+            bug = bug, url = url, title = title, owner = owner)
 
 def BugExternalRefFactory(context, **kw):
     bug = context.context.bug

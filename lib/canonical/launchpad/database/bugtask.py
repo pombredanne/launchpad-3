@@ -17,7 +17,7 @@ from zope.interface import implements
 
 from canonical.lp import dbschema
 from canonical.lp.dbschema import EnumCol
-from canonical.launchpad.interfaces import IBugTask
+from canonical.launchpad.interfaces import IBugTask, IBugTaskDelta
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.constants import nowUTC
 from canonical.launchpad.database.maintainership import Maintainership
@@ -143,6 +143,7 @@ class BugTask(SQLBase):
                 mark_task(self, IEditableDistroBugTask)
             else:
                 mark_task(self, IReadOnlyDistroBugTask)
+
 
 class BugTaskSet:
 
@@ -275,11 +276,31 @@ class BugTaskSet:
 
         return BugTask(**bugtask_args)
 
+
+class BugTaskDelta:
+    """See canonical.launchpad.interfaces.IBugTaskDelta."""
+    implements(IBugTaskDelta)
+    def __init__(self, bugtask, product=None, sourcepackagename=None,
+                 binarypackagename=None, status=None, severity=None,
+                 priority=None, assignee=None, target=None):
+        self.bugtask = bugtask
+        self.product = product
+        self.sourcepackagename = sourcepackagename
+        self.binarypackagename = binarypackagename
+        self.status = status
+        self.severity = severity
+        self.priority = priority
+        self.assignee = assignee
+        self.target = target
+
+
 def mark_task(obj, iface):
     directlyProvides(obj, iface + directlyProvidedBy(obj))
 
+
 def BugTaskFactory(context, **kw):
     return BugTask(bugID = getUtility(ILaunchBag).bug.id, **kw)
+
 
 # REPORTS
 class BugTasksReport:

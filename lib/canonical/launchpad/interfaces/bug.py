@@ -126,6 +126,29 @@ class IBug(Interface):
         """
 
 
+class IBugDelta(Interface):
+    """The quantitative change made to a bug that was edited."""
+
+    bug = Attribute("The IBug, after it's been edited.")
+    bugurl = Attribute("The absolute URL to the bug.")
+    user = Attribute("The IPerson that did the editing.")
+
+    # fields on the bug itself
+    title = Attribute("The new bug title or None.")
+    shortdesc = Attribute("The new bug shortdesc or None.")
+    description = Attribute("The new bug description or None.")
+    private = Attribute("A hash with two keys, 'old' and 'new', or None.")
+    name = Attribute("A hash with two keys, 'old' and 'new', or None.")
+
+    # other things linked to the bug
+    external_reference = Attribute(
+        "An IBugExternalRef added to a bug, or None.")
+    bugwatch = Attribute("An IBugWatch added to a bug, or None.")
+    cveref = Attribute("An ICVERef added to a bug, or None.")
+    bugtask_deltas = Attribute(
+        "A tuple of IBugTaskDelta, one IBugTaskDelta or None.")
+
+
 class IBugAddForm(IBug):
     """Information we need to create a bug"""
     id = Int(title=_("Bug #"), required=False)

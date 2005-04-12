@@ -35,7 +35,7 @@ class CVERef(SQLBase):
 
 
 class CVERefSet(BugSetBase):
-    """A set of CVERef."""
+    """A set of ICVERef's."""
 
     implements(ICVERefSet)
     table = CVERef
@@ -45,6 +45,11 @@ class CVERefSet(BugSetBase):
         self.title = 'CVE References'
         if bug:
             self.title += ' for Malone Bug #' + str(bug)
+
+    def createCVERef(self, bug, cveref, title, owner):
+        """See canonical.launchpad.interfaces.ICVERefSet."""
+        return CVERef(
+            bug = bug, cveref = cveref, title = title, owner = owner)
 
 def CVERefFactory(context, **kw):
     bug = context.context.bug

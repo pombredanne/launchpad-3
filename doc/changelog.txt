@@ -2,6 +2,81 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-12 23:52:58 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1603
+
+    Summary:
+      implement most of https://wiki.launchpad.canonical.com/BugEditNotifications. still a couple small asthetic nuances to clarify.
+    Revision:
+      launchpad--devel--0--patch-1603
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-497
+       fix bug notification email subject lines to be of the form: [Bug .id] .title
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-498
+       move the bug URL to the top of a notification email
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-499
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-500
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-501
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-502
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-503
+       implement most of https://wiki.launchpad.canonical.com/BugEditNotifications. still a couple small asthetic nuances to clarify.
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-504
+       merge from rf
+    
+
+    new files:
+     lib/canonical/launchpad/doc/.arch-ids/bugnotification-email.txt.id
+     lib/canonical/launchpad/doc/.arch-ids/bugwatch.txt.id
+     lib/canonical/launchpad/doc/.arch-ids/cveref.txt.id
+     lib/canonical/launchpad/doc/bugnotification-email.txt
+     lib/canonical/launchpad/doc/bugwatch.txt
+     lib/canonical/launchpad/doc/cveref.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/editview.py
+     lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/database/bugextref.py
+     lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/database/bugwatch.py
+     lib/canonical/launchpad/database/cveref.py
+     lib/canonical/launchpad/doc/bug.txt
+     lib/canonical/launchpad/doc/bugactivity.txt
+     lib/canonical/launchpad/doc/bugnotifications.txt
+     lib/canonical/launchpad/doc/bugtask.txt
+     lib/canonical/launchpad/interfaces/bug.py
+     lib/canonical/launchpad/interfaces/bugextref.py
+     lib/canonical/launchpad/interfaces/bugtask.py
+     lib/canonical/launchpad/interfaces/bugtracker.py
+     lib/canonical/launchpad/interfaces/bugwatch.py
+     lib/canonical/launchpad/interfaces/cveref.py
+     lib/canonical/launchpad/mailnotification.py
+     lib/canonical/launchpad/zcml/bug-events.zcml
+     lib/canonical/launchpad/zcml/bug.zcml
+     lib/canonical/launchpad/zcml/bugtask.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-497
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-498
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-499
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-500
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-501
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-502
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-503
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-504
+
+
 2005-04-12 23:20:23 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1602
 
     Summary:

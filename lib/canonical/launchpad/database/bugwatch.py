@@ -2,10 +2,12 @@ from datetime import datetime
 
 # Zope
 from zope.interface import implements
+from zope.exceptions import NotFoundError
 
 # SQL imports
 from sqlobject import DateTimeCol, ForeignKey, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
+from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import IBugWatch, \
         IBugWatchSet
@@ -44,6 +46,13 @@ class BugWatchSet(BugSetBase):
     def __init__(self, bug=None):
         super(BugWatchSet, self).__init__(bug)
         self.title = 'A Set of Bug Watches'
+
+    def get(self, id):
+        """See canonical.launchpad.interfaces.IBugWatchSet."""
+        try:
+            return BugWatch.get(id)
+        except SQLObjectNotFound:
+            raise NotFoundError("BugWatch with ID %d does not exist" % id)
 
 def BugWatchFactory(context, **kw):
     bug = context.context.bug

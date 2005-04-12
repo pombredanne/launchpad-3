@@ -15,20 +15,24 @@ class IEditableUpstreamBugTask(IHasProductAndAssignee):
     user."""
     title = Attribute('Title')
 
+
 class IReadOnlyUpstreamBugTask(IHasProductAndAssignee):
     """A bug assigned to upstream, which is read-only by the current
     user."""
     title = Attribute('Title')
+
 
 class IEditableDistroBugTask(Interface):
     """A bug assigned to a distro package, which is editable by
     the current user."""
     title = Attribute('Title')
 
+
 class IReadOnlyDistroBugTask(Interface):
     """A bug assigned to a distro package, which is read-only by the
     current user."""
     title = Attribute('Title')
+
 
 class IBugTask(IHasDateCreated):
     """A description of a bug needing fixing in a particular product
@@ -74,14 +78,37 @@ class IBugTask(IHasDateCreated):
     # used for the page layout
     title = Attribute("Title")
 
+
+class IBugTaskDelta(Interface):
+    """The change made to a bug task (e.g. in an edit screen.)
+
+    Note that if product is not None, *both* sourcepackagename and
+    binarypackagename must be None. Likewise, if either of
+    sourcepackagename and/or binarypackagename is not None, product
+    must be None.
+    """
+    bugtask = Attribute("The modified IBugTask.")
+    product = Attribute("A has containing two keys, 'old' and 'new' or None.")
+    sourcepackagename = Attribute("A has containing two keys, 'old' and 'new' or None.")
+    binarypackagename = Attribute("A has containing two keys, 'old' and 'new' or None.")
+    target = Attribute("A has containing two keys, 'old' and 'new' or None.")
+    status = Attribute("A has containing two keys, 'old' and 'new' or None.")
+    priority = Attribute("A has containing two keys, 'old' and 'new' or None.")
+    severity = Attribute("A has containing two keys, 'old' and 'new' or None.")
+    assignee = Attribute("A has containing two keys, 'old' and 'new' or None.")
+
+
 class IUpstreamBugTask(IBugTask):
     """Marker interface for upstream bug tasks."""
+
 
 class IDistroBugTask(IBugTask):
     """Marker interface for distro bug tasks."""
 
+
 class IDistroReleaseBugTask(IDistroBugTask):
     """Marker interface for distro release bug tasks."""
+
 
 # XXX: Brad Bollenbach, 2005-02-03: This interface should be removed
 # when spiv pushes a fix upstream for the bug that makes this hackery
@@ -91,6 +118,7 @@ class IDistroReleaseBugTask(IDistroBugTask):
 class ISelectResultsSlicable(ISelectResults):
     def __getslice__(i, j):
         """Called to implement evaluation of self[i:j]."""
+
 
 class IBugTaskSet(Interface):
 
@@ -141,6 +169,7 @@ class IBugTaskSet(Interface):
 
         Exactly one of product, distribution or distrorelease must be provided.
         """
+
 
 class IBugTasksReport(Interface):
 

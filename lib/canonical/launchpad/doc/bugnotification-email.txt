@@ -1,0 +1,223 @@
+Bug Notification Email
+======================
+
+This document describes the internal workings of how bug notification
+emails are generated. Currently, we differentiate between "add"
+notification emails and "edit" notification emails.
+
+Add Notification Emails
+-----------------------
+
+XXX: Brad Bollenbach, 2005-04-08: Not yet spec'd. Will return to this
+once we've hammered out the format of various add emails.
+
+Edit Notification Emails
+------------------------
+
+When something is changed about an existing bug, a notification email
+is sent to the bug notification recipients detailing what changes were
+made.
+
+We're not going to discuss the various rules and semantics surrounding
+the notifications themselves; for that, see bugnotifications.txt.
+
+Here we'll focus on the bits of the framework that actually generate
+the content of the email itself. The spec for what the body of the
+edit email should look like can be found here:
+
+    https://wiki.launchpad.canonical.com/BugEditNotifications
+
+You need to be logged in to edit bugs in Malone, so let's get started:
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login("test@canonical.com")
+
+All the magic happens in
+canonical.launchpad.mailnotification.generate_bug_edit_email:
+
+    >>> from canonical.launchpad.mailnotification import generate_bug_edit_email
+
+generate_bug_edit_email accepts an object that provides IBugDelta, and
+returns the subject and body of the email, as a tuple. Let's
+demonstrate what the edit notification emails will look like, by going
+through each kind of edit that can happen to a bug that would cause a
+notification to be sent:
+
+1. Editing a bug -- an edit notification is sent when the fields of
+   the bug itself are edited.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IBugDelta, IBugSet, IPersonSet
+    >>> from canonical.launchpad.database.bug import BugDelta
+
+    >>> sample_person = getUtility(IPersonSet).get(12)
+    >>> edited_bug = getUtility(IBugSet).get(2)
+
+    >>> edited_bug.title = "the new title"
+    >>> edited_bug.description = """\
+    ... a new description that is quite long. but the nice thing is that the edit notification email generator knows how to indent and wrap descriptions, so this will appear quite nice in the actual email that gets sent"""
+
+    >>> bug_delta = BugDelta(
+    ...     bug = edited_bug,
+    ...     bugurl = "http://www.example.com/bugs/2",
+    ...     user = sample_person,
+    ...     title = edited_bug.title,
+    ...     description = edited_bug.description)
+    >>> IBugDelta.providedBy(bug_delta)
+    True
+
+    >>> subject, body = generate_bug_edit_email(bug_delta)
+    >>> subject
+    u'[Bug 2] the new title'
+    >>> body
+    u'Sample Person <test@canonical.com> made changes to\n\n    http://www.example.com/bugs/2\n\n    - Changed title:\n        the new title\n    - Changed description:\n        a new description that is quite long. but the nice thing is that\n        the edit notification email generator knows how to indent and\n        wrap descriptions, so this will appear quite nice in the actual\n        email that gets sent\n'
+
+Another edit, this time the short description:
+
+    >>> edited_bug.shortdesc = "this short desc isn't particularly short is it? after all, what kind of shortdesc is so long that it needs to be wrapped?"
+
+    >>> bug_delta = BugDelta(
+    ...     bug = edited_bug,
+    ...     bugurl = "http://www.example.com/bugs/2",
+    ...     user = sample_person,
+    ...     shortdesc = edited_bug.shortdesc)
+    >>> subject, body = generate_bug_edit_email(bug_delta)
+    >>> subject
+    u'[Bug 2] the new title'
+    >>> body
+    u"Sample Person <test@canonical.com> made changes to\n\n    http://www.example.com/bugs/2\n\n    - Changed short description:\n        this short desc isn't particularly short is it? after all, what\n        kind of shortdesc is so long that it needs to be wrapped?\n"
+
+Let's set the bug private (for demo purposes, we need to switch logins
+to a user that is explicitly subscribed to this bug):
+
+    >>> login("steve.alexander@ubuntulinux.com")
+
+    >>> edited_bug.private = True
+    >>> bug_delta = BugDelta(
+    ...     bug = edited_bug,
+    ...     bugurl = "http://www.example.com/bugs/2",
+    ...     user = sample_person,
+    ...     private = {'old' : False, 'new' : edited_bug.private})
+    >>> subject, body = generate_bug_edit_email(bug_delta)
+    >>> subject
+    u'[Bug 2] the new title'
+    >>> body
+    u'Sample Person <test@canonical.com> made changes to\n\n    http://www.example.com/bugs/2\n\n    - Changed private:\n        False => True\n'
+
+2. Editing a bug task.
+
+XXX: Brad Bollenbach, 2005-04-08: Should probably include discussion
+of adding bug tasks here too, but at the time of this writing I'm not
+100% clear on how that would be laid out.
+
+    >>> from canonical.launchpad.interfaces import IBugTaskDelta, IBugTaskSet
+    >>> from canonical.launchpad.database.bugtask import BugTaskDelta
+    >>> from canonical.lp.dbschema import BugTaskStatus
+
+    >>> edited_bugtask = getUtility(IBugTaskSet).get(3)
+    >>> edited_bugtask.status = BugTaskStatus.ACCEPTED
+    >>> edited_bugtask.assignee = sample_person.id
+    >>> bugtask_delta = BugTaskDelta(
+    ...     bugtask = edited_bugtask,
+    ...     status = {'old' : BugTaskStatus.NEW, 'new' : BugTaskStatus.ACCEPTED},
+    ...     assignee = {'old' : None, 'new' : sample_person})
+    >>> bug_delta = BugDelta(
+    ...     bug = edited_bug,
+    ...     bugurl = "http://www.example.com/bugs/2",
+    ...     user = sample_person,
+    ...     bugtask_deltas = bugtask_delta)
+    >>> subject, body = generate_bug_edit_email(bug_delta)
+    >>> subject
+    u'[Bug 2] the new title'
+    >>> body
+    u'Sample Person <test@canonical.com> made changes to\n\n    http://www.example.com/bugs/2\n\nTask: Upstream Ubuntu\n       status: New => Accepted\n     assignee: (unassigned) => Sample Person\n'
+
+3. Adding a web link.
+
+Adding a web link can be seen as "editing" a bug. Currently we don't
+send out notification emails when an external reference is changed.
+
+    >>> from zope.interface import implements
+    >>> from canonical.launchpad.interfaces import IBugExternalRef
+    >>> class MockBugExtRef:
+    ...     implements(IBugExternalRef)
+    ...     def __init__(self, bug, url, title, owner):
+    ...         self.bug = bug
+    ...         self.url = url
+    ...         self.title = title
+    ...         self.owner = owner
+    >>> mock_ext_ref = MockBugExtRef(
+    ...     bug = edited_bug,
+    ...     url = "http://www.example.com/foo/bar",
+    ...     title = "some title",
+    ...     owner = sample_person.id)
+
+    >>> bug_delta = BugDelta(
+    ...     bug = edited_bug,
+    ...     bugurl = "http://www.example.com/bugs/2",
+    ...     user = sample_person,
+    ...     external_reference = mock_ext_ref)
+    >>> subject, body = generate_bug_edit_email(bug_delta)
+    >>> subject
+    u'[Bug 2] the new title'
+    >>> body
+    u'Sample Person <test@canonical.com> made changes to\n\n    http://www.example.com/bugs/2\n\n    - Changed web links:\n        Added: http://www.example.com/foo/bar\n'
+
+4. Adding bug watches.
+
+    >>> from canonical.launchpad.interfaces import IBugWatch, IBugTrackerSet
+    >>> bugtrackerset = getUtility(IBugTrackerSet)
+
+    >>> class MockBugWatch:
+    ...     implements(IBugWatch)
+    ...     def __init__(self, bug, bugtracker, remotebug):
+    ...         self.bug = bug
+    ...         self.bugtracker = bugtracker
+    ...         self.remotebug = remotebug
+    >>> mock_bug_watch = MockBugWatch(
+    ...     bug = edited_bug,
+    ...     bugtracker = getUtility(IBugTrackerSet)["mozilla.org"],
+    ...     remotebug = 123)
+
+    >>> bug_delta = BugDelta(
+    ...     bug = edited_bug,
+    ...     bugurl = "http://www.example.com/bugs/2",
+    ...     user = sample_person,
+    ...     bugwatch = mock_bug_watch)
+    >>> subject, body = generate_bug_edit_email(bug_delta)
+    >>> subject
+    u'[Bug 2] the new title'
+    >>> body
+    u'Sample Person <test@canonical.com> made changes to\n\n    http://www.example.com/bugs/2\n\n    - Changed bug watches:\n        Added: Bug 123 [The Mozilla.org Bug Tracker]\n'
+
+5. Add CVE refs.
+
+    >>> from canonical.launchpad.interfaces import ICVERef
+
+    >>> class MockCVERef:
+    ...     implements(ICVERef)
+    ...     def __init__(self, bug, cveref, title):
+    ...         self.bug = bug
+    ...         self.cveref = cveref
+    ...         self.title = title
+    >>> mock_cve_ref = MockCVERef(
+    ...     bug = edited_bug,
+    ...     cveref = "CAN-2004-0718",
+    ...     title = "a test cve ref")
+
+    >>> bug_delta = BugDelta(
+    ...     bug = edited_bug,
+    ...     bugurl = "http://www.example.com/bugs/2",
+    ...     user = sample_person,
+    ...     cveref = mock_cve_ref)
+    >>> subject, body = generate_bug_edit_email(bug_delta)
+    >>> subject
+    u'[Bug 2] the new title'
+    >>> body
+    u'Sample Person <test@canonical.com> made changes to\n\n    http://www.example.com/bugs/2\n\n    - Changed CVE references:\n        Added: CAN-2004-0718 [a test cve ref]\n'
+
+6. Adding an infestation.
+
+   XXX: Brad Bollenbach, 2005-04-11: I'm not going to touch anything
+   infestation-related for the moment, until we have these things
+   better figured out (i.e. how exactly we want to use them, etc.)

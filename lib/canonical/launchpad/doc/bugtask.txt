@@ -372,7 +372,8 @@ and mark one of the Firefox bugs private:
     ...         setattr(state, field, getattr(obj, field))
     ...     return state
     >>> old_state = capture_state(
-    ...     bug_firefox_no_svg_support.bug, "id", "title", "private")
+    ...     bug_firefox_no_svg_support.bug, "id", "title",
+    ...     "shortdesc", "description", "private", "name")
     >>> bug_firefox_no_svg_support.bug.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     bug_firefox_no_svg_support.bug, old_state,

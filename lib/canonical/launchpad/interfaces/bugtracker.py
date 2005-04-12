@@ -34,20 +34,20 @@ class IBugTracker(Interface):
 
 
 class IBugTrackerSet(Interface):
-    """An interface for the BugTrackerSet. This models a set of BugTracker's
-    (either the full set in the db or a subset). Each BugTracker is a
-    distinct instance of a bug tracking tool. For example,
-    bugzilla.mozilla.org is distinct from bugzilla.gnome.org.
+    """A set of IBugTracker's.
+
+    Each BugTracker is a distinct instance of a bug tracking tool. For
+    example, bugzilla.mozilla.org is distinct from bugzilla.gnome.org.
     """
 
     title = Attribute('Title')
 
     def __getitem__(name):
-        """Get a BugTracker by its name in the database. NB! We do not want to
-        expose the BugTracker.id to the world so we use its name.
+        """Get a BugTracker by its name in the database.
+
+        Note: We do not want to expose the BugTracker.id to the world
+        so we use its name.
         """
 
     def __iter__():
         """Iterate through BugTrackers."""
-
-

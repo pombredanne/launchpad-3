@@ -16,6 +16,7 @@ from zope.app.form.utility import setUpEditWidgets, applyWidgetsChanges, \
 from zope.app.form.browser.submit import Update
 from zope.app.form.interfaces import WidgetsError
 from zope.event import notify
+from zope.interface import providedBy, directlyProvides
 
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent, \
     SQLObjectToBeModifiedEvent
@@ -69,6 +70,13 @@ class SQLObjectEditView(EditView):
                     setattr(
                         content_before_modification,
                         name, getattr(content, name))
+                # transfer the provided interfaces to the Snapshot
+                # because there are some places where the provided
+                # interfaces are important (e.g. get_task_delta
+                # ensures that the tasks it's deltaing provide
+                # compatible interfaces.)
+                directlyProvides(
+                    content_before_modification, providedBy(content))
 
                 changed = applyWidgetsChanges(self, self.schema,
                     target=content, names=self.fieldNames)

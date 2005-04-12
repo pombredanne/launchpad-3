@@ -42,6 +42,11 @@
         zope.app.event.interfaces.IObjectCreatedEvent"
    factory="canonical.launchpad.subscribers.karma.bug_comment_added" />
 
+<!-- XXX: Brad Bollenbach, 2005-04-12: Disabling infestation notifications for now
+          because realistically, nobody should be seriously counting on much useful
+          behaviour from these yet, because we haven't yet nailed down exactly what
+          the semantics behind these things are. I'd rather not maintain infestation
+          related code until we are clear on such semantics.
 <subscriber
    for="canonical.launchpad.interfaces.IBugProductInfestation
         zope.app.event.interfaces.IObjectCreatedEvent"
@@ -62,19 +67,31 @@
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_package_infestation_modified" />
 
+-->
+
 <subscriber
    for="canonical.launchpad.interfaces.IBugExternalRef
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_external_ref_added" />
 
 <subscriber
+   for="canonical.launchpad.interfaces.ICVERef
+        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+   factory="canonical.launchpad.mailnotification.notify_bug_cveref_added" />
+
+<subscriber
    for="canonical.launchpad.interfaces.IBugWatch
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_watch_added" />
 
+<!-- XXX: Brad Bollenbach, 2005-04-12: Disabling this for the time being, because
+          it's causing a test failure and I'm not 100% sure that we've nailed
+          down how to show that a watch was /modified/ in a notification email.
+          Will discuss with kiko/sabdfl, etc.
 <subscriber
    for="canonical.launchpad.interfaces.IBugWatch
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_watch_modified" />
+-->
 
 </configure>

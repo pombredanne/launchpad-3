@@ -91,7 +91,8 @@ marked private. So, when we mark bug #15 private:
     ...         setattr(state, field, getattr(obj, field))
     ...     return state
     >>> old_state = capture_state(
-    ...     firefox_crashes, "id", "title", "private")
+    ...     firefox_crashes, "id", "title", "shortdesc", "description", "name",
+    ...     "private")
     >>> firefox_crashes.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     firefox_crashes, old_state,
@@ -151,7 +152,8 @@ And again, let's fake setting the bug private:
     >>> notify(bug_will_be_set_private)
 
     >>> old_state = capture_state(
-    ...     blackhole_trash_folder, "id", "title", "private")
+    ...     blackhole_trash_folder, "id", "title", "shortdesc",
+    ...     "description", "name", "private")
     >>> blackhole_trash_folder.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     blackhole_trash_folder, old_state,

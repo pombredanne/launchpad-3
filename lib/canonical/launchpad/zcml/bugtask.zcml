@@ -176,6 +176,12 @@
         lp:url="malone/tasks/$BugTask.id/+edit">
     </browser:schemadisplay>
 -->
+
+    <!-- BugTaskDelta -->
+    <content class="canonical.launchpad.database.BugTaskDelta">
+        <allow interface="canonical.launchpad.interfaces.IBugTaskDelta" />
+    </content>
+
     <!-- BugTasksReport -->
     <!-- TODO: figure out why we need to give explicit attributes instead of
                using set_schema-->
