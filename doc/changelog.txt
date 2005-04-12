@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-12 11:38:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1598
+
+    Summary:
+      added dbschema.sqlvalues, for use like 'SELECT foo FROM Foo WHERE bar=%s and baz=%s' % sqlvalues(BugSeverity.CRITICAL, 'bad string that needs quoting').
+    Revision:
+      launchpad--devel--0--patch-1598
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-372
+       Add sqlvalues function for great justice.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-373
+       make the syntax better for sqlvalues
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/lp/dbschema.py
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--devel--0--patch-372
+     steve.alexander@canonical.com/launchpad--devel--0--patch-373
+
+
 2005-04-12 11:10:01 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1597
 
     Summary:
