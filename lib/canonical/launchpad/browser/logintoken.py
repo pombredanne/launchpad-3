@@ -144,13 +144,8 @@ class ValidateEmailView(object):
         password = self.request.form.get("password")
         encryptor = getUtility(IPasswordEncryptor)
         if not encryptor.validate(password, requester.password):
-            self.errormessage = "Wrong password. Please try again."
+            self.errormessage = "Wrong password. Please check and try again."
             return 
-
-        emailset = getUtility(IEmailAddressSet)
-        reqemail = emailset.getByEmail(self.context.requesteremail)
-        assert reqemail is not None
-        assert reqemail.person == requester
 
         status = EmailAddressStatus.VALIDATED
         if not requester.preferredemail and not requester.validatedemails:
@@ -159,11 +154,30 @@ class ValidateEmailView(object):
             # with the user.
             status = EmailAddressStatus.PREFERRED
 
+        emailset = getUtility(IEmailAddressSet)
         email = emailset.getByEmail(self.context.email)
         if email is not None:
+            if email.person.id != requester.id:
+                self.errormessage = (
+                        'This email is already registered for another '
+                        'Launchpad user account. This account can be a '
+                        'duplicate of yours, created automatically, and '
+                        'in this case you should be able to '
+                        '<a href="/people/+requestmerge">merge them</a> '
+                        'into a single one.')
+                self.context.destroySelf()
+                return
+
+            if email.status != EmailAddressStatus.NEW:
+                self.errormessage = ("This email is already validated. "
+                                     "There's no need to validate it again.")
+                self.context.destroySelf()
+                return
+
             # This email was obtained via gina or lucille and have been
             # marked as NEW on the DB. In this case all we have to do is
-            # set that email status to VALIDATED.
+            # set that email status to VALIDATED (or PREFERRED, if it's the
+            # first validated).
             email.status = status
             self.context.destroySelf()
             return

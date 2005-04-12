@@ -64,7 +64,7 @@
         <input tal:attributes="value email/id" name="REMOVE_EMAIL" type="checkbox" />
       </td>
     </tr>
-    <tr tal:repeat="unvalidated context/unvalidatedemails">
+    <tr tal:repeat="unvalidated view/unvalidatedAndNotGuessed">
       <td>
         unvalidated
       </td>

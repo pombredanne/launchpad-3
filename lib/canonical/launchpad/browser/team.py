@@ -12,6 +12,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.launchpad.interfaces import IPersonSet, ILaunchBag
 from canonical.launchpad.interfaces import ITeamMembershipSet
 from canonical.launchpad.interfaces import ITeamMembershipSubset
+from canonical.launchpad.interfaces import ILaunchpadCelebrities
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
@@ -330,8 +331,9 @@ class TeamMembershipEditView(object):
         self.user = getUtility(ILaunchBag).user
         self.errormessage = ""
 
-    def userIsTeamOwner(self):
-        return self.user.inTeam(self.context.team.teamowner)
+    def userIsTeamOwnerOrLPAdmin(self):
+        return (self.user.inTeam(self.context.team.teamowner) or
+                self.user.inTeam(getUtility(ILaunchpadCelebrities).admin))
 
     def isActive(self):
         return self.context.status in [TeamMembershipStatus.APPROVED,
@@ -352,6 +354,18 @@ class TeamMembershipEditView(object):
 
     def isDeactivated(self):
         return self.context.status == TeamMembershipStatus.DEACTIVATED
+
+    def canChangeExpirationDate(self):
+        """Return True if the logged in user can change the expiration date of
+        this membership. Team administrators can't change the expiration date
+        of their own membership."""
+        if self.userIsTeamOwnerOrLPAdmin():
+            return True
+
+        if self.user.id == self.context.person.id:
+            return False
+        else:
+            return True
 
     def _getExpirationDate(self):
         """Return a datetime with the expiration date selected on the form.
@@ -431,7 +445,7 @@ class TeamMembershipEditView(object):
                 status = TeamMembershipStatus.APPROVED
         else:
             if (self.request.form.get('admin') == 'yes' and 
-                self.userIsTeamOwner()):
+                self.userIsTeamOwnerOrLPAdmin()):
                 status = TeamMembershipStatus.ADMIN
 
         self._setMembershipData(status)

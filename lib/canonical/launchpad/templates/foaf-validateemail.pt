@@ -20,8 +20,8 @@
     <div tal:condition="not: view/successfullyProcessed">
       <h1>Validate email: <span tal:replace="context/email"></span></h1>
 
-      <div tal:condition="view/errormessage">
-        <p class="portalMessage" tal:content="view/errormessage"></p>
+      <div tal:condition="view/errormessage" class="portalMessage"
+           tal:content="structure view/errormessage">
       </div>
 
       <p>To validate your new email address, just enter your password on the

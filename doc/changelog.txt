@@ -2,6 +2,48 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-12 19:56:16 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1601
+
+    Summary:
+      Fix some UI problems on person-emails. Fix a possible bug that would only be triggered in a very special case. Fix teammembership edit page so we don't allow team administrators to change the expiration date of their own membership.
+    Revision:
+      launchpad--devel--0--patch-1601
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-273
+       Guessed emails that are waiting validation are not show as unvalidated anymore. They're only show as guessed and waiting validation.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-274
+       Fix a possible bug that would be triggered if a user tries to validate an email address and in the meantime another user validates (or gina creates) this same email address.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-275
+       When a team admin is seeing a membership of a non-administrator, show the admin-status as read-only, because team admins should not promote members.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-276
+       Do not allow team administrators to change the expiration date of their own membership.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-277
+       Members of LaunchpadCelebrities.admin must be able to change the expiration date of their own membership and even promote/demote themselves from any team.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/logintoken.py
+     lib/canonical/launchpad/browser/person.py
+     lib/canonical/launchpad/browser/team.py
+     lib/canonical/launchpad/templates/foaf-validateemail.pt
+     lib/canonical/launchpad/templates/person-emails.pt
+     lib/canonical/launchpad/templates/teammembership-index.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-273
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-274
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-275
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-276
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-277
+
+
 2005-04-12 15:58:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1600
 
     Summary:

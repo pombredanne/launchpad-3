@@ -353,6 +353,16 @@ class PersonEditView(object):
 
         return True
 
+    def unvalidatedAndNotGuessed(self):
+        """All emails of this person that are waiting for validation but are
+        not yet in the emailaddress table with status = NEW."""
+        guessedemails = [g.email for g in self.context.guessedemails]
+        emails = []
+        for token in self.context.unvalidatedemails:
+            if token.email not in guessedemails:
+                emails.append(token)
+        return emails
+
     def anyRegisteredEmail(self):
         """Return true if this user have any email address that was registered
         in Launchpad by himself.
