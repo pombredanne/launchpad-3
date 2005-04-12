@@ -203,8 +203,8 @@ class MessageProxy(POMessage):
     # property: msgidPlural
     # in rosetta: messageIDs()[PLURAL] points to it
     def _get_msgidPlural(self):
-        msgids = self._potmsgset.messageIDs()
-        if len(list(msgids)) >= 2:
+        msgids = list(self._potmsgset.messageIDs())
+        if len(msgids) >= 2:
             return msgids[PLURAL].msgid
         return None
     def _set_msgidPlural(self, value):
@@ -240,7 +240,8 @@ class MessageProxy(POMessage):
     # in rosetta: set of translations sightings that point back here
     # we use the helper class TranslationsList for both reading and writing
     def _get_msgstrPlurals(self):
-        if len(list(self._potmsgset.messageIDs())) > 1:
+        msgids = list(self._potmsgset.messageIDs())
+        if len(msgids) > 1:
             # test is necessary because the interface says when
             # message is not plural, msgstrPlurals is None
             if self._pomsgset is None:

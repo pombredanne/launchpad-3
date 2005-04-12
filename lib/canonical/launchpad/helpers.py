@@ -10,6 +10,8 @@ from StringIO import StringIO
 
 from zope.component import getUtility
 
+import gettextpo
+
 from canonical.launchpad.interfaces import ILaunchBag, IHasOwner, IGeoIP, \
     IRequestPreferredLanguages
 
@@ -305,3 +307,26 @@ def convertToHtmlCode(text):
     in a form that a 'normal' person can read.
     """
     return ''.join(map(lambda c: "&#%s;" % ord(c), text))
+
+def validate_translation(original, translation, flags):
+    """Checks with gettext if a translation is correct or not.
+
+    If the translation has a problem, raise gettextpo.error.
+    """
+    msg = gettextpo.PoMessage()
+    msg.set_msgid(original[0])
+
+    if len(original) > 1:
+        # It has plural forms.
+        msg.set_msgid_plural(original[1])
+        for i in range(len(translation)):
+            msg.set_msgstr_plural(i, translation[i])
+    elif len(translation):
+        msg.set_msgstr(translation[0])
+
+    for flag in flags:
+        msg.set_format(flag, True)
+
+    # Check the msg.
+    msg.check_format()
+

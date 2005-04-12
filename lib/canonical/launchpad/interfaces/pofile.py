@@ -338,7 +338,10 @@ class IPOTMsgSet(Interface):
         """Return a list of flags on this set."""
 
     def messageIDs():
-        """Return an iterator over this set's message IDs."""
+        """Return an iterator over this set's message IDs.
+
+        The maximum number of items this iterator returns is 2.
+        """
 
     def getMessageIDSighting(pluralForm):
         """Return the message ID sighting that is current and has the

@@ -2,6 +2,126 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-12 23:20:23 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1602
+
+    Summary:
+      Merged the gettext integration into Rosetta to check translations got from the Web.
+    Revision:
+      launchpad--devel--0--patch-1602
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-validation--0--base-0
+       tag of daf@canonical.com--2004/launchpad--translation-validation--0--patch-3
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-1
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-2
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-3
+       Integrated pygettextpo with Rosetta
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-4
+       Our interface should not expose SQLObject API, returning a list instead of a resultset
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-5
+       Small changes to make all this work :-P
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-6
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-7
+       Fixed a case when we don't know the plural form
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-8
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-9
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-10
+       Fixed the way we handle the URLs so it works as it should when someone submits a not valid string
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-11
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-12
+       Added some comments and minor changes before the review request
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-13
+       Fixed tests
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-14
+       Applied review changes
+    
+     * daf@canonical.com--2004/launchpad--translation-validation--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1347
+    
+     * daf@canonical.com--2004/launchpad--translation-validation--0--patch-1
+       save changes
+    
+     * daf@canonical.com--2004/launchpad--translation-validation--0--patch-2
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--translation-validation--0--patch-3
+       changes from Steve's first review
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/rosetta/.arch-ids/30-rosetta-potemplate-translation-gettext-error.data.id
+     lib/canonical/launchpad/pagetests/rosetta/.arch-ids/30-rosetta-potemplate-translation-gettext-error.txt.id
+     lib/canonical/launchpad/pagetests/rosetta/.arch-ids/=id
+     lib/canonical/launchpad/pagetests/rosetta/30-rosetta-potemplate-translation-gettext-error.data
+     lib/canonical/launchpad/pagetests/rosetta/30-rosetta-potemplate-translation-gettext-error.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/helpers.py
+     lib/canonical/launchpad/interfaces/pofile.py
+     lib/canonical/launchpad/pagetests/rosetta/31-rosetta-potemplate-translation-form-long-msgid.txt
+     lib/canonical/launchpad/templates/potemplate-translate.pt
+     lib/canonical/rosetta/browser.py
+     lib/canonical/rosetta/pofile_adapters.py
+     lib/canonical/rosetta/tests/test_browser.py
+
+    renamed files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-potemplate-translation-form-long-msgid.data.id
+       ==> lib/canonical/launchpad/pagetests/rosetta/.arch-ids/31-rosetta-potemplate-translation-form-long-msgid.data.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-potemplate-translation-form-long-msgid.txt.id
+       ==> lib/canonical/launchpad/pagetests/rosetta/.arch-ids/31-rosetta-potemplate-translation-form-long-msgid.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-translation-form-long-msgid.data
+       ==> lib/canonical/launchpad/pagetests/rosetta/31-rosetta-potemplate-translation-form-long-msgid.data
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-translation-form-long-msgid.txt
+       ==> lib/canonical/launchpad/pagetests/rosetta/31-rosetta-potemplate-translation-form-long-msgid.txt
+
+    new directories:
+     lib/canonical/launchpad/pagetests/rosetta
+     lib/canonical/launchpad/pagetests/rosetta/.arch-ids
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--translation-validation--0--base-0
+     carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-1
+     carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-2
+     carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-3
+     carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-4
+     carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-5
+     carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-6
+     carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-7
+     carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-8
+     carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-9
+     carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-10
+     carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-11
+     carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-12
+     carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-13
+     carlos.perello@canonical.com--2004/launchpad--translation-validation--0--patch-14
+     daf@canonical.com--2004/launchpad--translation-validation--0--base-0
+     daf@canonical.com--2004/launchpad--translation-validation--0--patch-1
+     daf@canonical.com--2004/launchpad--translation-validation--0--patch-2
+     daf@canonical.com--2004/launchpad--translation-validation--0--patch-3
+
+
 2005-04-12 19:56:16 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1601
 
     Summary:

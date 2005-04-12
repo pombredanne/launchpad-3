@@ -454,6 +454,7 @@ def test_TranslatePOTemplate_init():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest(languages='ja')
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> context.language_code
     'ja'
@@ -461,7 +462,7 @@ def test_TranslatePOTemplate_init():
     'ja'
     >>> [l.code for l in t.languages]
     ['ja']
-    >>> t.pluralforms
+    >>> t.pluralFormCounts
     {'ja': 4}
     >>> t.badLanguages
     []
@@ -478,6 +479,7 @@ def test_TranslatePOTemplate_init():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest()
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> context.language_code
     'es'
@@ -485,7 +487,7 @@ def test_TranslatePOTemplate_init():
     True
     >>> [l.code for l in t.languages]
     ['es']
-    >>> t.pluralforms
+    >>> t.pluralFormCounts
     {'es': 4}
     >>> t.badLanguages
     []
@@ -502,6 +504,7 @@ def test_TranslatePOTemplate_init():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest(languages='fr')
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> context.language_code
     'fr'
@@ -509,7 +512,7 @@ def test_TranslatePOTemplate_init():
     'fr'
     >>> [l.code for l in t.languages]
     ['fr']
-    >>> t.pluralforms
+    >>> t.pluralFormCounts
     {'fr': 3}
     >>> t.badLanguages
     []
@@ -527,6 +530,7 @@ def test_TranslatePOTemplate_init():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest(languages='cy')
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> context.language_code
     'cy'
@@ -534,7 +538,7 @@ def test_TranslatePOTemplate_init():
     'cy'
     >>> [l.code for l in t.languages]
     ['cy']
-    >>> t.pluralforms
+    >>> t.pluralFormCounts
     {'cy': None}
     >>> len(t.badLanguages)
     1
@@ -547,6 +551,7 @@ def test_TranslatePOTemplate_init():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest(offset=7, count=8)
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> t.offset
     7
@@ -558,6 +563,7 @@ def test_TranslatePOTemplate_init():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest(show='translated')
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> t.show
     'translated'
@@ -580,6 +586,7 @@ def test_TranslatePOTemplate_atBeginning_atEnd():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest()
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> t.atBeginning()
     True
@@ -589,6 +596,7 @@ def test_TranslatePOTemplate_atBeginning_atEnd():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest(offset=10)
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> t.atBeginning()
     False
@@ -598,6 +606,7 @@ def test_TranslatePOTemplate_atBeginning_atEnd():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest(offset=30)
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> t.atBeginning()
     False
@@ -624,6 +633,7 @@ def test_TranslatePOTemplate_URLs():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest()
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> t.URL()
     'http://this.is.a/fake/url'
@@ -639,6 +649,7 @@ def test_TranslatePOTemplate_URLs():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest(offset=10)
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> t.beginningURL()
     'http://this.is.a/fake/url'
@@ -658,12 +669,31 @@ def test_TranslatePOTemplate_URLs():
     >>> request = DummyRequest(languages='ca', offset=42,
     ...     count=43)
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> t.URL()
-    'http://this.is.a/fake/url?count=43&languages=ca'
+    'http://this.is.a/fake/url?count=43&languages=ca&offset=42'
 
     >>> t.endURL()
     'http://this.is.a/fake/url?count=43&languages=ca'
+
+    Test handling of the 'show' parameter.
+
+    >>> context = DummyPOTemplate()
+    >>> request = DummyRequest(show='all')
+    >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
+
+    >>> t.URL()
+    'http://this.is.a/fake/url'
+
+    >>> context = DummyPOTemplate()
+    >>> request = DummyRequest(show='translated')
+    >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
+
+    >>> t.URL()
+    'http://this.is.a/fake/url?show=translated'
 
     >>> tearDown()
     '''
@@ -683,8 +713,9 @@ def test_TranslatePOTemplate_messageSets():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest()
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
-    >>> x = list(t.messageSets())[0]
+    >>> x = list(t.messageSets)[0]
     >>> x['id']
     1
     >>> x['sequence']

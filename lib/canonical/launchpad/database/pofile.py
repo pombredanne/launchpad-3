@@ -860,16 +860,17 @@ class POTMsgSet(SQLBase):
             return [ flag for flag in
                 self.flagscomment.replace(' ', '').split(',') if flag != '' ]
 
-    # XXX: Carlos Perello Marin 15/10/04: Review, not sure it's correct...
-    # XXX: Carlos Perello Marin 18/10/04: We should not return SQLRecordSets
-    # in our interface, we should fix it after the split.
     def messageIDs(self):
-        return POMsgID.select('''
+        """See IPOTMsgSet."""
+        results = POMsgID.select('''
             POMsgIDSighting.potmsgset = %d AND
             POMsgIDSighting.pomsgid = POMsgID.id AND
             POMsgIDSighting.inlastrevision = TRUE
-            ''' % self.id, clauseTables=('POMsgIDSighting',),
+            ''' % self.id, clauseTables=['POMsgIDSighting'],
             orderBy='POMsgIDSighting.pluralform')
+
+        for pomsgid in results:
+            yield pomsgid
 
     # XXX: Carlos Perello Marin 15/10/04: Review, not sure it's correct...
     def getMessageIDSighting(self, pluralForm, allowOld=False):
@@ -932,7 +933,7 @@ class POTMsgSet(SQLBase):
 
         # If we only have a msgid, we change pluralforms to 1, if it's a
         # plural form, it will be the number defined in the pofile header.
-        if self.messageIDs().count() == 1:
+        if len(list(self.messageIDs())) == 1:
             pluralforms = 1
 
         if pluralforms == None:
@@ -1579,7 +1580,7 @@ class POMsgSet(SQLBase):
         notNull=True)
 
     def pluralforms(self):
-        if self.potmsgset.messageIDs().count() > 1:
+        if len(list(self.potmsgset.messageIDs())) > 1:
             # has plurals
             return self.pofile.pluralforms
         else:
