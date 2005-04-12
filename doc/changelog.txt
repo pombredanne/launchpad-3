@@ -2,6 +2,87 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-12 05:09:05 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1594
+
+    Summary:
+      Add saltless API to authserver
+    Revision:
+      launchpad--devel--0--patch-1594
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1246
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-1
+       Start working on a new salt-free API
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-2
+       Some cleanups before continuing
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-3
+       Remove some duplication
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-4
+       Make tests pass again
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-5
+       Test cases for the new API
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-6
+       Update sample configuration, and comment what that configuration is
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-7
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-8
+       Merge from rocketfuel, resolving conflicts.
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-9
+       Fix inconsistent naming, and add another comment
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-10
+       Add a module docstring to interfaces.py, explain some mildly confusing terminology in it.
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-11
+       Remove duplicate import
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-12
+       Rename CommonMixin to UserDetailsStorageMixin, fix dodgy SQL quoting.
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-13
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-14
+       Expect unicode strings from the database, and cope with python 2.3's lack of unicode.decode
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/authserver/database.py
+     lib/canonical/authserver/ftests/test.tac
+     lib/canonical/authserver/ftests/test_xmlrpc.py
+     lib/canonical/authserver/interfaces.py
+     lib/canonical/authserver/test.tac
+     lib/canonical/authserver/xmlrpc.py
+
+    new patches:
+     andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--base-0
+     andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-1
+     andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-2
+     andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-3
+     andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-4
+     andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-5
+     andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-6
+     andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-7
+     andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-8
+     andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-9
+     andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-10
+     andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-11
+     andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-12
+     andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-13
+     andrew.bennetts@canonical.com/launchpad--authserver-no-salts--0--patch-14
+
+
 2005-04-11 22:07:07 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1593
 
     Summary:
