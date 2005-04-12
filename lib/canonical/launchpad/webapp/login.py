@@ -194,10 +194,14 @@ class LoginOrRegister:
 
     def preserve_query(self):
         """Returns zero or more hidden inputs that preserve the URL's query."""
+        # XXX: Exclude '-C' because this is left in from sys.argv in Zope3
+        #      using python's cgi.FieldStorage to process requests.
+        # -- SteveAlexander, 2005-04-11
         L = ['<input type="hidden" name="%s" value="%s" />'
                  % (name, cgi.escape(value, quote=True))
              for name, value in self.request.form.items()
-             if not name.startswith(self.form_prefix)]
+             if not name.startswith(self.form_prefix)
+             if not name == '-C']
         return ''.join(L)
 
 

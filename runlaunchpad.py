@@ -29,24 +29,12 @@ def run(argv=list(sys.argv)):
         Zope3 needs Python 2.3.4 or greater. You are running:""" + sys.version
         sys.exit(1)
 
-    # Refuse to run without principals.zcml
-    if not os.path.exists('principals.zcml'):
-        print """\
-        ERROR: You need to create principals.zcml
-
-        The file principals.zcml contains your "bootstrap" user
-        database. You aren't going to get very far without it.  Start
-        by copying sample_principals.zcml and then modify the
-        example principal and role settings.
-        """
-        sys.exit(1)
-
     # setting python paths
     program = argv[0]
 
     src = 'lib'
     here = os.path.dirname(os.path.abspath(program))
-    srcdir = os.path.abspath(src)
+    srcdir = os.path.join(here, src)
     sys.path = [srcdir, here] + basepath
 
     from zope.app.server.main import main

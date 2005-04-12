@@ -2,6 +2,63 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-12 09:37:50 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1596
+
+    Summary:
+      Initial, very very hacky, zcml-for-scripts support.  Also, got rid of vestigal principals.zcml.
+    Revision:
+      launchpad--devel--0--patch-1596
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-364
+       refuel
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-365
+       removed principals.zcml, as we don't use it any more.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-366
+       Work around zope/python insanity where it sticks sys.argv[1] into request.form sometimes.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-367
+       added initial and very hackish support for using utilities and adapters from scripts.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-368
+       Use a PermissiveSecurityPolicy for scripts.  Make zcml for scripts start an interaction.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-369
+       removed references to principals.zcml
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-370
+       merge from rf
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-371
+       made ftesting.zcml include the includes excluded from zopeapp.zcml.
+    
+
+    new files:
+     .arch-ids/script.zcml.id script.zcml
+
+    removed files:
+     .arch-ids/principals.zcml.id principals.zcml
+
+    modified files:
+     Makefile doc/changelog.txt ftesting.zcml
+     lib/canonical/launchpad/scripts/__init__.py
+     lib/canonical/launchpad/webapp/login.py runlaunchpad.py
+     site.zcml zopeapp.zcml
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--devel--0--patch-364
+     steve.alexander@canonical.com/launchpad--devel--0--patch-365
+     steve.alexander@canonical.com/launchpad--devel--0--patch-366
+     steve.alexander@canonical.com/launchpad--devel--0--patch-367
+     steve.alexander@canonical.com/launchpad--devel--0--patch-368
+     steve.alexander@canonical.com/launchpad--devel--0--patch-369
+     steve.alexander@canonical.com/launchpad--devel--0--patch-370
+     steve.alexander@canonical.com/launchpad--devel--0--patch-371
+
+
 2005-04-12 05:19:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1595
 
     Summary:
