@@ -20,10 +20,9 @@ __metaclass__ = type
 # work properly, and the thing/lp:SchemaClass will not work properly.
 
 # The DBSchema subclasses should be in alphabetical order, listed after
-# EnumCol and values.  Please keep it that way.
+# EnumCol.  Please keep it that way.
 __all__ = (
 'EnumCol',
-'sqlvalues',
 # DBSchema types follow.
 'ArchArchiveType',
 'BinaryPackageFileType',
@@ -77,33 +76,6 @@ import warnings
 from sqlobject.col import SOCol, Col
 from sqlobject.include import validators
 import sqlobject.constraints as consts
-from sqlobject.converters import sqlrepr
-
-def sqlvalues(*values):
-    """Return a tuple of converted sql values for each value in some_tuple.
-
-    This safely quotes strings, or gives representations of dbschema items,
-    for example.
-
-    Use it when constructing a string for use in a SELECT.  Always use
-    %s as the replacement marker.
-
-      ('SELECT foo from Foo where bar = %s and baz = %s'
-       % sqlvalues(BugSeverity.CRITICAL, 'foo'))
-
-    >>> sqlvalues()
-    ()
-    >>> sqlvalues(1)
-    ('1',)
-    >>> sqlvalues(1, BugSeverity.CRITICAL)
-    ('1', '50')
-    >>> sqlvalues(1, BugSeverity.CRITICAL, "bad ' string")
-    ('1', '50', "'bad '' string'")
-
-    """
-    return tuple([sqlrepr(item, db='postgres')
-                  for item in values])
-
 
 class SODBSchemaEnumCol(SOCol):
 

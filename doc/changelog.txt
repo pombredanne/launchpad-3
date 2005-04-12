@@ -2,6 +2,43 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-12 14:22:10 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1599
+
+    Summary:
+      Made sqlvalues handle dicts as well as tuples.
+    Revision:
+      launchpad--devel--0--patch-1599
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-374
+       moved sqlvalues() from canonical.lp.dbschema to canonical.database.sqlbase
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-375
+       removed inaccurate comments and examples in canonical/database/__init__.py.  removed its arch-tag-ness too, although it was not present in allowed-tags.txt, so i expect it was explicitly id-ed anyway.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-376
+       add kw args -> dict handling to sqlvalues
+    
+
+    new files:
+     lib/canonical/database/.arch-ids/__init__.py.id
+     lib/canonical/database/__init__.py
+
+    removed files:
+     lib/canonical/database/.arch-ids/__init__.py.id
+     lib/canonical/database/__init__.py
+
+    modified files:
+     doc/changelog.txt lib/canonical/database/sqlbase.py
+     lib/canonical/lp/dbschema.py
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--devel--0--patch-374
+     steve.alexander@canonical.com/launchpad--devel--0--patch-375
+     steve.alexander@canonical.com/launchpad--devel--0--patch-376
+
+
 2005-04-12 11:38:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1598
 
     Summary:
