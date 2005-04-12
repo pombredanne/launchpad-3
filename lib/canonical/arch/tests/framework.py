@@ -16,22 +16,17 @@ import psycopg
 import tempfile
 import pybaz as arch
 
-txnManager = None
+from canonical.launchpad.ftests import harness
 
-def _connect():
-    from sqlobject import connectionForURI
-    from canonical.lp import initZopeless, dbname, dbhost
-    conn = connectionForURI('postgres://%s/%s' % (dbhost, dbname))
-    global txnManager
-    txnManager = initZopeless()
-    return conn.getConnection()
+class ZopelessTestSetup(harness.LaunchpadZopelessTestSetup):
+    template = 'launchpad_empty'
+    dbuser = 'importd'
 
 class DatabaseTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.__db_handle = _connect()
-
-        self.flushArchiveData(self.cursor())
+        self._zopeless = ZopelessTestSetup()
+        self._zopeless.setUp()
         self._archive = None
         self._category = None
         self._branch = None
@@ -39,30 +34,7 @@ class DatabaseTestCase(unittest.TestCase):
         self._revision = None
 
     def tearDown(self):
-        self.commit()
-
-    def commit(self):
-        self.__db_handle.commit()
-
-    def cursor(self):
-        return self.__db_handle.cursor()
-
-    def flushArchiveData(self, cursor):
-        """Remove all ArchArchive and ArchArchiveLocation entries"""
-        cursor.execute("DELETE FROM ChangesetFileHash")    
-        cursor.execute("DELETE FROM ChangesetFile")
-        cursor.execute("DELETE FROM ChangesetFileName")
-        cursor.execute("DELETE FROM Changeset")
-        cursor.execute("DELETE FROM POTranslationSighting")
-        cursor.execute("DELETE FROM POMsgIDSighting")
-        cursor.execute("DELETE FROM POMsgSet")
-        cursor.execute("DELETE FROM POFile")
-        cursor.execute("DELETE FROM POTemplate")
-        cursor.execute("DELETE FROM Branch")
-        cursor.execute("DELETE FROM ArchNamespace")
-        cursor.execute("DELETE FROM ArchArchiveLocation")
-        cursor.execute("DELETE FROM ArchArchive")
-        self.commit()
+        self._zopeless.tearDown()
 
     def _getTestArchive(self):
         """Insert a test archive into the db and return it"""
@@ -154,11 +126,11 @@ class DatabaseAndArchiveTestCase(DatabaseTestCase):
         else:
             self._saved_env_editor = None
         self._saved_working_directory = os.getcwd()
-        tmp_dir = arch.DirName(tempfile.mkdtemp(prefix='pyarch-')).realpath()
+        tmp_dir_name = tempfile.mkdtemp(prefix='launchpad-')
+        tmp_dir = arch.DirName(tmp_dir_name).realpath()
         self._arch_tmp_home = tmp_dir
         os.environ['HOME'] = self._arch_tmp_home
-        self._arch_dir = tmp_dir / arch.DirName(r'pyarch\(sp)tests')
-        os.mkdir(self._arch_dir)
+        self._arch_dir = tmp_dir
 
     def tearDown(self):
         os.environ['HOME'] = self._saved_env_home
@@ -174,62 +146,27 @@ class DatabaseAndArchiveTestCase(DatabaseTestCase):
     def arch_make_archive(self, name):
         return arch.make_archive(name, self._arch_dir/name)
 
+    def arch_make_mirror(self, master_name):
+        master = arch.Archive(master_name)
+        name = master.name + '-MIRROR'
+        return master.make_mirror(name, location = self._arch_dir/name,
+                                  signed=False, listing=True)
+
     def arch_make_tree(self, name, version):
         path = self._arch_dir/name
         os.mkdir(path)
         return arch.init_tree(path, version)
 
 
-class TestFramework(unittest.TestCase):
+def main(**kwargs):
+    from pybaz.tests.framework import OrderedTestLoader
+    unittest.main(testLoader=OrderedTestLoader(), **kwargs)
 
-    tests = []
-
-    def test_flushArchiveData(self):
-        """test that flushArchiveData works"""
-
-        DBHandle = _connect()
-        cursor = DBHandle.cursor()
-        cursor.execute("INSERT INTO ArchArchive (name, title, description, visible) VALUES ('%s', 'a title', 'a description', true)" % "bah@bleh")
-        DBHandle.commit()
-        
-        DBHandle = None
-        cursor = None
-
-        framework = DatabaseTestCase("commit")
-        framework.setUp() 
-
-        DBHandle = _connect()
-        cursor = DBHandle.cursor()
-        
-        cursor.execute("SELECT * FROM ArchArchive")
-        self.assertEqual(len(cursor.fetchall()), 0)
-
-        cursor.execute("SELECT * FROM ArchNamespace")
-        self.assertEqual(len(cursor.fetchall()), 0)
-        
-        cursor.execute("SELECT * FROM ArchArchiveLocation")
-        self.assertEqual(len(cursor.fetchall()), 0)
-
-        cursor.execute("SELECT * FROM Branch")
-        self.assertEqual(len(cursor.fetchall()), 0)
-
-        cursor.execute("SELECT * FROM Changeset")
-        self.assertEqual(len(cursor.fetchall()), 0)
-    tests.append('test_flushArchiveData')
-
-def test_suite():
-    return unittest.TestSuite()
-
-def main(argv):
-    """Run the full test suite."""
-    suite = unittest.TestSuite()
-    def addTests(klass): suite.addTests(map(klass, klass.tests))
-    # there should be a more elegant way - addClasses or something
-    map(addTests, (TestFramework,))
-    runner = unittest.TextTestRunner(verbosity=2)
-    if not runner.run(suite).wasSuccessful(): return 1
-    return 0
-
-if __name__ == '__main__':
-    sys.exit(main(sys.argv))
-
+def register(name):
+    from pybaz.tests.framework import OrderedTestLoader
+    def test_suite():
+        return OrderedTestLoader().loadTestsFromModule(sys.modules[name])
+    module = sys.modules[name]
+    module.test_suite = test_suite
+    if name == "__main__":
+        main()

@@ -2,6 +2,110 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-12 05:19:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1595
+
+    Summary:
+      Merge ddaa's unmergable branch
+    Revision:
+      launchpad--devel--0--patch-1595
+
+    Patches applied:
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-74
+       merge rocketfuel
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-75
+       enable canonical.arch tests, with needed fixage
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-76
+       update allowed_tags
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-77
+       do not use _columns in archarchive.py
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-78
+       eradicate commits and cursors from canonical.arch.tests
+    
+     * david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--base-0
+       tag of rocketfuel@canonical.com/launchpad--production--1.13--patch-2
+    
+     * david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--patch-1
+       actually run the tests in canonical.arch.tests
+    
+     * david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--patch-2
+       import NamespaceError in canonical.arch.broker
+    
+     * david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--patch-3
+       fix mirror creation in canonical.arch.tests.test_broker
+    
+     * david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--patch-4
+       really fix mirror creation
+    
+     * david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--patch-5
+       fix broker.ArchiveLocationRegistry for EnumCol
+    
+     * david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--patch-6
+       test_broker.ArchiveLocationRegistry is a DatabaseTestCase
+    
+     * david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--patch-7
+       various fixes to canonical.arch.tests.test_database
+    
+     * david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--patch-8
+       canonical.arch.tests.test_database fixes for dbschema.ArchArchiveType
+    
+     * david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--patch-9
+       fix RevisionMapper.insert_file for ChangesetFile.hashalg EnumCol
+    
+     * david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--patch-10
+       work around baz-1.3 COTM bug
+    
+     * david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--patch-11
+       pybaz.Version.setup() is deprecated
+    
+     * stuart.bishop@canonical.com/launchpad--ddaa--0--base-0
+       tag of david.allouche@canonical.com--2004/launchpad--devel--0--patch-78
+    
+     * stuart.bishop@canonical.com/launchpad--ddaa--0--patch-1
+       Merge from Rocketfuel
+    
+
+    modified files:
+     allowed-tags.txt doc/changelog.txt
+     lib/canonical/arch/broker.py
+     lib/canonical/arch/tests/framework.py
+     lib/canonical/arch/tests/test_broker.py
+     lib/canonical/arch/tests/test_database.py
+     lib/canonical/arch/tests/test_interfaces.py
+     lib/canonical/launchpad/database/archarchive.py
+     lib/canonical/launchpad/database/archchangeset.py
+     lib/canonical/lp/dbschema.py
+
+    renamed files:
+     lib/canonical/arch/tests/test_framework.py
+       ==> lib/canonical/arch/tests/framework.py
+
+    new patches:
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-74
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-75
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-76
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-77
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-78
+     david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--base-0
+     david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--patch-1
+     david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--patch-2
+     david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--patch-3
+     david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--patch-4
+     david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--patch-5
+     david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--patch-6
+     david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--patch-7
+     david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--patch-8
+     david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--patch-9
+     david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--patch-10
+     david.allouche@canonical.com--2004/launchpad--production-fixes--1.13--patch-11
+     stuart.bishop@canonical.com/launchpad--ddaa--0--base-0
+     stuart.bishop@canonical.com/launchpad--ddaa--0--patch-1
+
+
 2005-04-12 05:09:05 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1594
 
     Summary:

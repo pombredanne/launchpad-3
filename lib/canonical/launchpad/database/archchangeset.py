@@ -117,6 +117,7 @@ class RevisionMapper(object):
             raise RevisionNotRegistered(revision.fullname)
         
     def insert_file(self, revision, filename, data, checksums):
+        from canonical.lp.dbschema import HashAlgorithms
         """Insert a file into the database"""
         size = len(data)
         name = ChangesetFileName.select('filename = %s' % quote(filename))
@@ -135,7 +136,9 @@ class RevisionMapper(object):
                           filecontents="",
                           filesize=size)
         for hashalg, hashval in checksums.items():
-            hashid = {"md5":0, "sha1":1}[hashalg]
+            hash_mapping = {"md5": HashAlgorithms.MD5,
+                            "sha1": HashAlgorithms.SHA1}
+            hashid = hash_mapping[hashalg]
             hasha = ChangesetFileHash(changesetfile=f.id,
                                       hashalg=hashid,
                                       hash=hashval)

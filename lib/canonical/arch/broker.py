@@ -23,10 +23,11 @@ from canonical.launchpad.interfaces import INamespaceObject, ISourceTreeAPI, \
                                            IVersionIterable, \
                                            IBranchIterable, \
                                            ILogMessageFactory, \
-                                           IPathName
-
-
+                                           IPathName, \
+                                           NamespaceError
 from canonical.launchpad import database
+from canonical.lp.dbschema import ArchArchiveType
+
 import pybaz as arch
 
 ###############################################################################
@@ -233,11 +234,6 @@ class Archives(object, UserDict.DictMixin):
 class ArchiveLocationRegistry(object):
     """I'm a list of the registered locations for an archive"""
 
-    # TODO move these ENUM values to dbschema.py
-    readwrite    = 0
-    readonly     = 1
-    mirrorTarget = 2
-    
     def __init__(self, archive):
         self._mapper = database.ArchiveLocationMapper()
         self._archive = archive
@@ -250,15 +246,15 @@ class ArchiveLocationRegistry(object):
 
     def createReadWriteTargetLocation(self, url):
         """Create a ArchiveLocation for a read/write mirror"""
-        return self._createLocation(url, ArchiveLocationRegistry.readwrite)
+        return self._createLocation(url, ArchArchiveType.READWRITE)
 
     def createReadOnlyTargetLocation(self, url):
         """Create a ArchiveLocation for a read-only archive"""
-        return self._createLocation(url, ArchiveLocationRegistry.readonly)
+        return self._createLocation(url, ArchArchiveType.READONLY)
 
     def createMirrorTargetLocation(self, url):
         """Create a ArchiveLocation for a mirror target"""
-        return self._createLocation(url, ArchiveLocationRegistry.mirrorTarget)
+        return self._createLocation(url, ArchArchiveType.MIRRORTARGET)
 
     def existsLocation(self, location):
         """Is location in the db?"""
@@ -267,25 +263,25 @@ class ArchiveLocationRegistry(object):
     def _get(self, type):
         """Return all locations"""
         return self._mapper.get(self._archive, type=type)
-        
+
     def _remove(self, type, name):
         raise NotImplemented, "Not implemented yet"
 
     def getMirrorTargetLocations(self):
-        return self._get(2)
+        return self._get(ArchArchiveType.MIRRORTARGET)
 
     def getReadOnlyLocations(self):
-        return self._get(1)
-    
+        return self._get(ArchArchiveType.READONLY)
+
     def getReadWriteLocations(self):
-        return self._get(0)
+        return self._get(ArchArchiveType.READWRITE)
 
     def removeMirrorTarget(self, location):
         raise NotImplemented, "Not implemented yet"
-    
+
     def removeReadonlyTarget(self, location):
         raise NotImplemented, "Not implemented yet"
-    
+
     def removeReadWriteTarget(self, location):
         raise NotImplemented, "Not implemented yet"
 
