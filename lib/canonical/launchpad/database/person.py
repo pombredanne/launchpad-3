@@ -450,9 +450,8 @@ class Person(SQLBase):
     validatedemails = property(validatedemails)
 
     def unvalidatedemails(self):
-        tokens = LoginToken.select("requester=%d AND email IS NOT NULL"
-                % self.id)
-        return [token.email for token in tokens]
+        query = "requester=%d AND email IS NOT NULL" % self.id
+        return list(LoginToken.select(query))
     unvalidatedemails = property(unvalidatedemails)
 
     def guessedemails(self):
@@ -595,12 +594,24 @@ class PersonSet(object):
         else:
             return True
 
+    def peopleCount(self):
+        return self._getAllPersons().count()
+
     def getAllPersons(self):
+        return list(self._getAllPersons())
+
+    def _getAllPersons(self):
         query = AND(Person.q.teamownerID==None, Person.q.mergedID==None)
-        return list(Person.select(query))
+        return Person.select(query)
+
+    def teamsCount(self):
+        return self._getAllTeams().count()
 
     def getAllTeams(self):
-        return list(Person.select(Person.q.teamownerID!=None))
+        return list(self._getAllTeams())
+
+    def _getAllTeams(self):
+        return Person.select(Person.q.teamownerID!=None)
 
     def findByName(self, name):
         query = "fti @@ ftq(%s) AND merged is NULL" % quote(name)

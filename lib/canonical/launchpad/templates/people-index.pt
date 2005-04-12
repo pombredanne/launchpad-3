@@ -94,11 +94,9 @@
         </form>
         <tal:block condition="not: bn">
           <p> 
-            There are currently
-            <span class="fixme">quite a few</span>
-            people and
-            <span class="fixme">not quite as many</span>
-            teams registered in Launchpad.
+            There are currently <span tal:replace="view/peopleCount" />
+            people and <span tal:replace="view/teamsCount" /> teams 
+            registered in Launchpad.
           </p>
           <p> 
             Some accounts have been automatically created by Launchpad

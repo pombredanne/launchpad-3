@@ -9,7 +9,7 @@ import random
 from zope.interface import implements
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, StringCol
+from sqlobject import DateTimeCol, ForeignKey, StringCol, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase
 
 # canonical imports
@@ -36,6 +36,12 @@ class LoginTokenSet(object):
 
     def __init__(self):
         self.title = 'Launchpad Email Verification System'
+
+    def get(self, id, default=None):
+        try:
+            return LoginToken.get(id)
+        except SQLObjectNotFound:
+            return default
 
     def new(self, requester, requesteremail, email, tokentype):
         """See ILoginTokenSet"""

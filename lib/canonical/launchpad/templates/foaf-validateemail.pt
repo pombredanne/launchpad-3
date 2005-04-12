@@ -27,7 +27,7 @@
       <p>To validate your new email address, just enter your password on the
       field below.</p>
 
-      <form name="validate" action="" method="POST">
+      <form autocomplete="off" name="validate" action="" method="POST">
       <table>
         <tr>
           <td>Password:</td>

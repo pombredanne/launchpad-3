@@ -30,7 +30,6 @@ from canonical.launchpad.interfaces import IGPGKeySet
 from canonical.launchpad.helpers import well_formed_email, obfuscateEmail
 from canonical.launchpad.helpers import convertToHtmlCode
 from canonical.launchpad.mail.sendmail import simple_sendmail
-from canonical.launchpad.browser.emailaddress import sendEmailValidationRequest
 
 ##XXX: (batch_size+global) cprov 20041003
 ## really crap constant definition for BatchPages
@@ -94,6 +93,12 @@ class FOAFSearchView(object):
         self.context = context
         self.request = request
         self.results = []
+
+    def teamsCount(self):
+        return getUtility(IPersonSet).teamsCount()
+
+    def peopleCount(self):
+        return getUtility(IPersonSet).peopleCount()
 
     def searchPeopleBatchNavigator(self):
         name = self.request.get("name")
@@ -368,8 +373,9 @@ class PersonEditView(object):
     def processEmailChanges(self):
         person = self.context
         emailset = getUtility(IEmailAddressSet)
-        password = self.request.form.get("password")
+        logintokenset = getUtility(ILoginTokenSet)
         encryptor = getUtility(IPasswordEncryptor)
+        password = self.request.form.get("password")
         if not encryptor.validate(password, person.password):
             self.message = "Wrong password. Please try again."
             return
@@ -402,7 +408,6 @@ class PersonEditView(object):
                 return
 
             login = getUtility(ILaunchBag).login
-            logintokenset = getUtility(ILoginTokenSet)
             token = logintokenset.new(person, login, newemail, 
                                       LoginTokenType.VALIDATEEMAIL)
             sendEmailValidationRequest(token, self.request.getApplicationURL())
@@ -434,6 +439,7 @@ class PersonEditView(object):
             for id in ids:
                 email = emailset.get(id)
                 assert email.person.id == person.id
+
                 if person.preferredemail != email:
                     # The following lines are a *real* hack to make sure we
                     # don't let the user with no validated email address.
@@ -441,13 +447,27 @@ class PersonEditView(object):
                     # have a preferred email address.
                     if person.preferredemail is None and \
                        len(person.validatedemails) > 1:
-                        # No preferred email set. We can only delete this
-                        # email if it's not the last validated one.
+                        # No preferred email set and this is not the last
+                        # validated one. User can delete it.
                         email.destroySelf()
                     elif person.preferredemail is not None:
                         # This user has a preferred email and it's not this
                         # one, so we can delete it.
                         email.destroySelf()
+
+        ids = self.request.form.get("REMOVE_TOKEN")
+        if ids is not None:
+            # We can have multiple unvalidated email adressess marked for 
+            # deletion, and in # this case ids will be a list. Otherwise 
+            # ids will be str or int and we need to make a list with that 
+            # value to use in the for loop.
+            if not isinstance(ids, list):
+                ids = [ids]
+
+            for id in ids:
+                token = logintokenset.get(id)
+                assert token.requester.id == person.id
+                token.destroySelf()
 
         # Need to flush all changes we made, so subsequent queries we make
         # with this transaction will see this changes and thus they'll be
@@ -466,6 +486,21 @@ class PersonEditView(object):
                                   LoginTokenType.VALIDATEEMAIL)
         sendEmailValidationRequest(token, self.request.getApplicationURL())
         self.message = 'Thank you for your email changes.'
+
+
+def sendEmailValidationRequest(token, appurl):
+    template = open('lib/canonical/launchpad/templates/validate-email.txt').read()
+    fromaddress = "Launchpad Email Validator <noreply@ubuntu.com>"
+
+    replacements = {'longstring': token.token,
+                    'requester': token.requester.browsername(),
+                    'requesteremail': token.requesteremail,
+                    'toaddress': token.email,
+                    'appurl': appurl}
+    message = template % replacements
+
+    subject = "Launchpad: Validate your email address"
+    simple_sendmail(fromaddress, token.email, subject, message)
 
 
 class RequestPeopleMergeView(AddView):

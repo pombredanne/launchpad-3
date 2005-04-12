@@ -357,6 +357,12 @@ class IPersonSet(Interface):
     def getAllPersons():
         """Return all Persons, ignoring the merged ones."""
 
+    def peopleCount():
+        """Return the number of non-merged persons in the database."""
+
+    def teamsCount():
+        """Return the number of teams in the database."""
+
     def findByName(name):
         """Return all not-merged Persons and Teams with name matching."""
 

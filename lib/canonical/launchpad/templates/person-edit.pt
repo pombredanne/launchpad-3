@@ -32,7 +32,7 @@
     </div>
 
     <div>
-    <form name="edit" action="" method="POST">
+    <form autocomplete="off" name="edit" action="" method="POST">
 	<table>
 	<tr><td>
 	<div class="field">

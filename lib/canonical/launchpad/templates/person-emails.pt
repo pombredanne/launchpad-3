@@ -29,7 +29,7 @@
   </div>
   </tal:dummy>
   
-  <form name="email" action="" method="POST">
+  <form autocomplete="off" name="email" action="" method="POST">
 
   <p class="documentDescription">A list of the email addresses associated
   with this account in the Launchpad.</p>
@@ -64,12 +64,13 @@
         <input tal:attributes="value email/id" name="REMOVE_EMAIL" type="checkbox" />
       </td>
     </tr>
-    <tr tal:repeat="newemail context/unvalidatedemails">
+    <tr tal:repeat="unvalidated context/unvalidatedemails">
       <td>
         unvalidated
       </td>
-      <td tal:content="newemail">email@foo.com</td>
+      <td tal:content="unvalidated/email">email@foo.com</td>
       <td> 
+        <input tal:attributes="value unvalidated/id" name="REMOVE_TOKEN" type="checkbox" />
       </td>
     </tr>
   </table>

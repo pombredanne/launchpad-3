@@ -2,6 +2,60 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-12 15:58:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1600
+
+    Summary:
+      Allow deletion of unvalidated email address and some other UI fixes, as kiko suggested.
+    Revision:
+      launchpad--devel--0--patch-1600
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-268
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-269
+       Remove the <span class=fixme> in /people and show the number of people and teams registered in launchpad.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-270
+       Set autocomplete=off on person-emails.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-271
+       Allow deletion of unvalidated email address and use autocomplete=off on for registration/email-validation forms.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-272
+       Reverting change I did in harness.py
+    
+
+    removed files:
+     lib/canonical/launchpad/browser/.arch-ids/emailaddress.py.id
+     lib/canonical/launchpad/browser/emailaddress.py
+     lib/canonical/launchpad/templates/.arch-ids/passwd-change.pt.id
+     lib/canonical/launchpad/templates/passwd-change.pt
+
+    modified files:
+     doc/changelog.txt launchpad.conf
+     lib/canonical/launchpad/browser/__init__.py
+     lib/canonical/launchpad/browser/person.py
+     lib/canonical/launchpad/database/logintoken.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/logintoken.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/templates/foaf-mergepeople.pt
+     lib/canonical/launchpad/templates/foaf-resetpassword.pt
+     lib/canonical/launchpad/templates/foaf-validateemail.pt
+     lib/canonical/launchpad/templates/people-index.pt
+     lib/canonical/launchpad/templates/person-edit.pt
+     lib/canonical/launchpad/templates/person-emails.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-268
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-269
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-270
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-271
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-272
+
+
 2005-04-12 14:22:10 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1599
 
     Summary:
