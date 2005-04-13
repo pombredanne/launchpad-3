@@ -7,6 +7,7 @@ import random
 import re
 import tarfile
 from StringIO import StringIO
+from select import select
 
 from zope.component import getUtility
 
@@ -243,6 +244,61 @@ def requestCountry(request):
 def browserLanguages(request):
     """Return a list of Language objects based on the browser preferences."""
     return IRequestPreferredLanguages(request).getPreferredLanguages()
+
+def simple_popen2(command, input, in_bufsize=1024, out_bufsize=128):
+    """Run a command, give it input on its standard input, and capture its
+    standard output.
+
+    Returns the data from standard output.
+
+    This function is needed to avoid certain deadlock situations. For example,
+    if you popen2() a command, write its standard input, then read its
+    standard output, this can deadlock due to the parent process blocking on
+    writing to the child, while the child process is simultaneously blocking
+    on writing to its parent. This function avoids that problem by writing and
+    reading incrementally.
+
+    When we make Python 2.4 a requirement, this function can probably be
+    replaced with something using subprocess.Popen.communicate().
+    """
+
+    # Strategy:
+    #  - write until there's no more input
+    #  - when there's no more input, close the input filehandle
+    #  - stop when we receive EOF on the output
+
+    offset = 0
+    output = ''
+    child_stdin, child_stdout = os.popen2(command)
+
+    while True:
+        # We can't select on the input file handle after it has been
+        # closed.
+        if child_stdin.closed:
+            test_writable = []
+        else:
+            test_writable = [child_stdin]
+
+        readable, writable, erroneous = select(
+            [child_stdout], test_writable, [])
+
+        if readable:
+            s = child_stdout.read(out_bufsize)
+            if s:
+                output += s
+            else:
+                break
+
+        if writable:
+            if offset <= len(input):
+                child_stdin.write(
+                    input[offset:offset+in_bufsize])
+                offset += in_bufsize
+            else:
+                # End of input.
+                child_stdin.close()
+
+    return output
 
 # Note that this appears as "valid email" in the UI, because that term is
 # more familiar to users, even if it is less correct.

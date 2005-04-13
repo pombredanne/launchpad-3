@@ -77,6 +77,7 @@
     <include file="wikiname.zcml" />
     <include file="component.zcml" />
     <include file="section.zcml" />
+    <include file="vpoexport.zcml" />
 
     <include file="fields.zcml" />
     <include file="resources.zcml" />

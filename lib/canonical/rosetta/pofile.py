@@ -226,10 +226,6 @@ class POMessage(object):
         >>> unicode(POMessage(msgid="abc\ndef", msgstr="z"))
         u'msgid ""\n"abc\\n"\n"def"\nmsgstr "z"'
 
-        a single newline at the end of the message does not
-        >>> unicode(POMessage(msgid= "foo\n", msgstr="bar"))
-        u'msgid "foo\\n"\nmsgstr "bar"'
-
         '(this single-quote is here to appease emacs)
         '''
         r = [prefix + u' ""']
@@ -238,10 +234,7 @@ class POMessage(object):
         text = text.replace(u'\\', u'\\\\')
         text = text.replace(u'\"', u'\\"')
         text = text.replace(u'\t', u'\\t')
-        if text[-1] == '\n':
-            unwrapped = u'%s "%s\\n"' % (prefix, text[:-1])
-        else:
-            unwrapped = u'%s "%s"' % (prefix, text)
+        unwrapped = u'%s "%s"' % (prefix, text)
         if ('\n' not in unwrapped) and ((not wrapper.width)
                    or (len(unwrapped) <= wrapper.width + 1)):
             return [unwrapped]

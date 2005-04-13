@@ -2,6 +2,228 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-13 01:43:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1604
+
+    Summary:
+      RosettaOptimization!
+    Revision:
+      launchpad--devel--0--patch-1604
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1537
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-1
+       change PO file wrapping behaviour
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-2
+       export optimisation commit of doom
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-3
+       improve handling of stringification of plural message sets
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-4
+       fix export tests for plural message sets
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-5
+       implement suggestions from Steve's review
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-6
+       refactor export test code
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-7
+       fix non-UTF-8 exports and add test for encoded exports
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-8
+       fill in IVPOExport
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-9
+       tarball export fixes and tests
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-10
+       fix log of previous commit
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-11
+       improvements to components suggested by Steve
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-12
+       add (I)VPOExportSet
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-13
+       utilitise IVPOExportSet, add content declaration for IVPOExport
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-14
+       implement template tarball method on IVPOExportSet
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-15
+       adapt exports to use utilities
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-16
+       add functionality for exporting directly to filehandles
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-17
+       fix support for incomplete plural message sets
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-18
+       distro release tarball exports
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-19
+       improve documentation for simple_popen2() helper
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-20
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-21
+       move ORDER BY from SQL to code
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-22
+       second review from Steve
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-23
+       merge SQL/test changes from Stuart
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-24
+       add timestamps to distro release tarball exports
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-25
+       allow the PO export user to look at distributions
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-26
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-27
+       remove obsolete SQL patch
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-28
+       remove security declaration for POExportOrg
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-29
+       add pofile and languagepack fields to the export view; rename fields for consistency
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-30
+       fix variable initialization
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-31
+       remove decoy FilePOFileOutput.contents
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-32
+       update export test for sample data changes
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-33
+       update database revision number in SQL patch
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-34
+       update database revision number in SQL patch
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-35
+       merge from Stuart
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-36
+       merge from rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--poexport--0--base-0
+       tag of daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-22
+    
+     * stuart.bishop@canonical.com/launchpad--poexport--0--patch-1
+       Refactor POExport view and have tests connect as poexport postgresql user
+    
+     * stuart.bishop@canonical.com/launchpad--poexport--0--patch-2
+       baz merge --star-merge daf@canonical.com--2004/launchpad--RosettaOptimization--0
+    
+     * stuart.bishop@canonical.com/launchpad--poexport--0--patch-3
+       Add index on potemplate.languagepack and move db patch to final location
+    
+
+    new files:
+     database/schema/.arch-ids/patch-14-06-0.sql.id
+     database/schema/patch-14-06-0.sql
+     lib/canonical/launchpad/components/.arch-ids/poexport.py.id
+     lib/canonical/launchpad/components/poexport.py
+     lib/canonical/launchpad/components/tests/.arch-ids/=id
+     lib/canonical/launchpad/components/tests/.arch-ids/__init__.py.id
+     lib/canonical/launchpad/components/tests/.arch-ids/test_poexport.py.id
+     lib/canonical/launchpad/components/tests/__init__.py
+     lib/canonical/launchpad/components/tests/test_poexport.py
+     lib/canonical/launchpad/database/.arch-ids/vpoexport.py.id
+     lib/canonical/launchpad/database/vpoexport.py
+     lib/canonical/launchpad/doc/.arch-ids/poexport-distrorelease-tarball.txt.id
+     lib/canonical/launchpad/doc/.arch-ids/poexport-template-tarball.txt.id
+     lib/canonical/launchpad/doc/.arch-ids/poexport.txt.id
+     lib/canonical/launchpad/doc/poexport-distrorelease-tarball.txt
+     lib/canonical/launchpad/doc/poexport-template-tarball.txt
+     lib/canonical/launchpad/doc/poexport.txt
+     lib/canonical/launchpad/interfaces/.arch-ids/poexport.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/vpoexport.py.id
+     lib/canonical/launchpad/interfaces/poexport.py
+     lib/canonical/launchpad/interfaces/vpoexport.py
+     lib/canonical/launchpad/zcml/.arch-ids/poexport.zcml.id
+     lib/canonical/launchpad/zcml/.arch-ids/vpoexport.zcml.id
+     lib/canonical/launchpad/zcml/poexport.zcml
+     lib/canonical/launchpad/zcml/vpoexport.zcml
+
+    removed files:
+     database/schema/pending/.arch-ids/stub-poexport.sql.id
+     database/schema/pending/stub-poexport.sql
+
+    modified files:
+     database/schema/security.cfg doc/changelog.txt
+     lib/canonical/launchpad/database/__init__.py
+     lib/canonical/launchpad/ftests/test_system_documentation.py
+     lib/canonical/launchpad/helpers.py
+     lib/canonical/launchpad/interfaces/__init__.py
+     lib/canonical/launchpad/tests/test_helpers.py
+     lib/canonical/launchpad/zcml/configure.zcml
+     lib/canonical/rosetta/pofile.py
+
+    new directories:
+     lib/canonical/launchpad/components/tests
+     lib/canonical/launchpad/components/tests/.arch-ids
+
+    new patches:
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--base-0
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-1
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-2
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-3
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-4
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-5
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-6
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-7
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-8
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-9
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-10
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-11
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-12
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-13
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-14
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-15
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-16
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-17
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-18
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-19
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-20
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-21
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-22
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-23
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-24
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-25
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-26
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-27
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-28
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-29
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-30
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-31
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-32
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-33
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-34
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-35
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-36
+     stuart.bishop@canonical.com/launchpad--poexport--0--base-0
+     stuart.bishop@canonical.com/launchpad--poexport--0--patch-1
+     stuart.bishop@canonical.com/launchpad--poexport--0--patch-2
+     stuart.bishop@canonical.com/launchpad--poexport--0--patch-3
+
+
 2005-04-12 23:52:58 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1603
 
     Summary:

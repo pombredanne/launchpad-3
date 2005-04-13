@@ -122,6 +122,15 @@ def test_shortest():
     ['foo', 'bar']
     """
 
+def test_simple_popen2():
+    r"""
+    >>> print helpers.simple_popen2('rev', 'ooF\nraB\nzaB\n')
+    Foo
+    Bar
+    Baz
+    <BLANKLINE>
+    """
+
 def test_suite():
     return DocTestSuite()
 

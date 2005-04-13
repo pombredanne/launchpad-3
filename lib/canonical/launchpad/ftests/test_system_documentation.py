@@ -9,7 +9,8 @@ import os
 from canonical.functional import FunctionalDocFileSuite
 import sqlos.connection
 from canonical.launchpad.ftests.harness import \
-        LaunchpadTestSetup, _disconnect_sqlos, _reconnect_sqlos
+        LaunchpadTestSetup, LaunchpadZopelessTestSetup, \
+        _disconnect_sqlos, _reconnect_sqlos
 from zope.testing.doctest import DocFileSuite
 from zope.app import zapi
 from canonical.launchpad.interfaces import ILaunchBag
@@ -30,13 +31,35 @@ def tearDown(test):
     sqlos.connection.connCache = {}
     LaunchpadTestSetup().tearDown()
 
+def poExportSetUp(test):
+    sqlos.connection.connCache = {}
+    LaunchpadZopelessTestSetup(dbuser='poexport').setUp()
+
+def poExportTearDown(test):
+    LaunchpadZopelessTestSetup().tearDown()
+
 # Files that have special needs can construct their own suite
 special = {
 
     # No setup or teardown at all, since it is demonstrating these features
     'testing.txt': DocFileSuite('../doc/testing.txt'),
-    'porevisiondate.txt': DocFileSuite('../doc/porevisiondate.txt')
 
+    # Needs no DB
+    'porevisiondate.txt': DocFileSuite('../doc/porevisiondate.txt'),
+
+    # POExport stuff is Zopeless and connects as a different database user
+    'poexport.txt': FunctionalDocFileSuite(
+            '../doc/poexport.txt',
+            setUp=poExportSetUp, tearDown=poExportTearDown
+            ),
+    'poexport-template-tarball.txt': FunctionalDocFileSuite(
+            '../doc/poexport-template-tarball.txt',
+            setUp=poExportSetUp, tearDown=poExportTearDown
+            ),
+    'poexport-distrorelease-tarball.txt': FunctionalDocFileSuite(
+            '../doc/poexport-distrorelease-tarball.txt',
+            setUp=poExportSetUp, tearDown=poExportTearDown
+            ),
     }
 
 def test_suite():

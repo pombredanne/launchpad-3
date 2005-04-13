@@ -52,6 +52,7 @@ from canonical.launchpad.interfaces.milestone import *
 from canonical.launchpad.interfaces.package import *
 from canonical.launchpad.interfaces.packaging import *
 from canonical.launchpad.interfaces.person import *
+from canonical.launchpad.interfaces.poexport import *
 from canonical.launchpad.interfaces.pofile import *
 from canonical.launchpad.interfaces.potemplatename import *
 from canonical.launchpad.interfaces.processor import *
@@ -73,6 +74,7 @@ from canonical.launchpad.interfaces.sourcesource import *
 from canonical.launchpad.interfaces.spokenin import *
 from canonical.launchpad.interfaces.ssh import *
 from canonical.launchpad.interfaces.translationeffort import *
+from canonical.launchpad.interfaces.vpoexport import *
 from canonical.launchpad.interfaces.vsourcepackagereleasepublishing import *
 from canonical.launchpad.interfaces.wikiname import *
 
