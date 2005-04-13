@@ -943,6 +943,7 @@ class GPGKey(SQLBase):
     fingerprint = StringCol(dbName='fingerprint', notNull=True)
 
     keysize = IntCol(dbName='keysize', notNull=True)
+
     algorithm = EnumCol(dbName='algorithm', notNull=True,
                         schema=GPGKeyAlgorithms)
 
@@ -960,7 +961,7 @@ class GPGKeySet(object):
     def new(self, ownerID, keyid, pubkey, fingerprint, keysize,
             algorithm, revoked):
         return GPGKey(owner=ownerID, keyid=keyid, pubkey=pubkey,
-                      figerprint=fingerprint, keysize=keysize,
+                      fingerprint=fingerprint, keysize=keysize,
                       algorithm=algorithm, revoked=revoked)
 
     def get(self, id, default=None):
@@ -968,7 +969,7 @@ class GPGKeySet(object):
             return GPGKey.get(id)
         except SQLObjectNotFound:
             return default
-
+        
 
 class SSHKey(SQLBase):
     implements(ISSHKey)

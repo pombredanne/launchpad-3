@@ -59,7 +59,7 @@
 	   Paste the Key Fingerprint (use: `gpg --fingerprint YOU`,
     can only be used with v4 keys)
 	</div>
-        <input type="text" name="fpr" size="60"/>
+        <input type="text" name="fingerprint" size="60"/>
         <input type="submit" value="Find and Import"/>
     </fieldset>
     </form>

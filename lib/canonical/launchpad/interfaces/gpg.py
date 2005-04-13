@@ -36,3 +36,4 @@ class IGPGKeySet(Interface):
         """Return the GPGKey object for the given id.
         Return the given default if there's now object with the given id.
         """
+        

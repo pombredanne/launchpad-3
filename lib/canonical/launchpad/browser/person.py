@@ -12,7 +12,7 @@ from zope.component import getUtility
 
 # lp imports
 from canonical.lp.dbschema import LoginTokenType, SSHKeyType
-from canonical.lp.dbschema import EmailAddressStatus
+from canonical.lp.dbschema import EmailAddressStatus, GPGKeyAlgorithms
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces import ILaunchBag, ILoginTokenSet
 from canonical.launchpad.interfaces import IPasswordEncryptor, \
                                            ISignedCodeOfConduct,\
                                            ISignedCodeOfConductSet
-from canonical.launchpad.interfaces import IGPGKeySet
+from canonical.launchpad.interfaces import IGPGKeySet, IGpgHandler
 
 from canonical.launchpad.helpers import well_formed_email, obfuscateEmail
 from canonical.launchpad.helpers import convertToHtmlCode
@@ -214,28 +214,54 @@ class PersonView(object):
     # As "Claim GPG key" takes a lot of time, we should process it
     # throught the NotificationEngine.
     def claim_gpg(self):
-        fpr = self.request.form.get('fpr')
+        fingerprint = self.request.form.get('fingerprint')
 
         #XXX cprov 20050401
         # Add fingerprint checks before claim.
         
-        return 'DEMO: GPG key "%s" claimed.' % fpr
+        return 'DEMO: GPG key "%s" claimed.' % fingerprint
 
     def import_gpg(self):
         pubkey = self.request.form.get('pubkey')
 
-        #XXX cprov 20050401
-        # Add pubkey checks before import.
+        gpghandler = getUtility(IGpgHandler)
+
+        fingerprint = gpghandler.importPubKey(pubkey)        
+
+        if fingerprint == None:
+            return 'DEMO: GPG pubkey not recognized'
+
+        keysize, algorithm, revoked = gpghandler.getKeyInfo(fingerprint)
         
-        return 'DEMO: GPG key "%s" imported.' % pubkey
+        kw = {"ownerID" : self.user.id,
+              # XXX cprov 20050407
+              # Keyid is totally obsolete
+              "keyid" : fingerprint[-8:],
+              "pubkey" : pubkey,
+              "fingerprint" : fingerprint,
+              "keysize" : keysize,
+              # EnumCol doesn't help in this case, at least
+              "algorithm" : GPGKeyAlgorithms.items[algorithm],
+              "revoked" : revoked,
+              }
+              
+        getUtility(IGPGKeySet).new(**kw)
+        
+        return 'DEMO: %s imported' % fingerprint
 
     # XXX cprov 20050401
     # is it possible to remove permanently a key from our keyring
     # The best bet should be DEACTIVE it.
     def remove_gpg(self):
         keyid = self.request.form.get('keyid')
+        # retrieve key info
         gpgkey = getUtility(IGPGKeySet).get(keyid)
-        return 'DEMO: GPG key removed ("%s")' % gpgkey.keyid
+        
+        comment = 'DEMO: GPG key removed ("%s")' % gpgkey.fingerprint
+
+        #gpgkey.destroySelf()
+
+        return comment
 
     def add_ssh(self):
         sshkey = self.request.form.get('sshkey')

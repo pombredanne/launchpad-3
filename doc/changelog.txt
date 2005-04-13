@@ -2,6 +2,43 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-13 18:59:31 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1606
+
+    Summary:
+      GpgHandler changes and trivial import pubkeys, last commit on devel, will use a personal branch.
+    Revision:
+      launchpad--devel--0--patch-1606
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-574
+       Importing GPG Key prototype, missed checks and pagetests.
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-575
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-576
+       Supporting detached signatures in verifySignature(), still missing "key" support.
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-577
+       Merge from RF
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/person.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/gpg.py
+     lib/canonical/launchpad/interfaces/gpghandler.py
+     lib/canonical/launchpad/templates/person-gpgkey.pt
+     lib/canonical/launchpad/utilities/gpghandler.py
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-574
+     celso.providelo@canonical.com/launchpad--devel--0--patch-575
+     celso.providelo@canonical.com/launchpad--devel--0--patch-576
+     celso.providelo@canonical.com/launchpad--devel--0--patch-577
+
+
 2005-04-13 10:22:20 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1605
 
     Summary:
