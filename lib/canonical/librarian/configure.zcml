@@ -15,6 +15,10 @@
         <allow interface=".interfaces.ILibrarianClient" />
     </content>
 
+    <content class=".client._File">
+        <allow attributes="read close" />
+    </content>
+
     <securedutility
         class=".client.LibrarianClient"
         provides=".interfaces.ILibrarianClient">

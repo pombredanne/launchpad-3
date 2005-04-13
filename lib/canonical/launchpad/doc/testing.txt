@@ -169,8 +169,13 @@ the Librarian as a Utility.
 >>> print >> some_content, 'Hi Mum\n'*100
 >>> size = len(some_content.getvalue())
 >>> some_content.seek(0)
->>> lib = zapi.getUtility(ILibrarianClient)
->>> lib.addFile('hi.txt', size, some_content) is not None
+>>> librarian_client = zapi.getUtility(ILibrarianClient)
+>>> file_alias_id = librarian_client.addFile('hi.txt', size, some_content)
+>>> isinstance(file_alias_id, int)
+True
+>>> url = librarian_client.getURLForAlias(file_alias_id)
+>>> data = librarian_client.getFileByAlias(file_alias_id).read()
+>>> data == some_content.getvalue()
 True
 
 >>> LibrarianTestSetup().tearDown()

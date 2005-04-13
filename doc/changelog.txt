@@ -2,6 +2,38 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-13 10:22:20 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1605
+
+    Summary:
+      Librarian refactorings
+    Revision:
+      launchpad--devel--0--patch-1605
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-274
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-275
+       Deprecate most of Librarian client
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-276
+       Deprecate most of librarian client API and ensure permissions correct for LibrarianClient secured utility
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/doc/testing.txt
+     lib/canonical/librarian/client.py
+     lib/canonical/librarian/configure.zcml
+     lib/canonical/librarian/ftests/test_web.py
+     lib/canonical/librarian/interfaces.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-274
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-275
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-276
+
+
 2005-04-13 01:43:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1604
 
     Summary:

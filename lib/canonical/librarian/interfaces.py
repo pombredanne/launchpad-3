@@ -5,7 +5,7 @@ __metaclass__ = type
 from zope.interface import Interface
 
 class IFileUploadClient(Interface):
-    def addFile(name, size, file):
+    def addFile(name, size, file, contentType=None):
         """Add a file to the librarian.
 
         :param name: Name to store the file as
@@ -13,6 +13,8 @@ class IFileUploadClient(Interface):
         :param file: File-like object with the content in it
 
         :raises UploadFailed: If the server rejects the upload for some reason
+
+        Returns the id of the newly added LibraryFileAlias
         """
 
 class IFileDownloadClient(Interface):
@@ -25,3 +27,6 @@ class IFileDownloadClient(Interface):
 class ILibrarianClient(IFileUploadClient, IFileDownloadClient):
     pass
 
+class IReadFile(Interface):
+    def read(blocksize):
+        """Read up to blobksize bytes from this file-like object"""

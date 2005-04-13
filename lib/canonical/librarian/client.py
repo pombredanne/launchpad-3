@@ -8,6 +8,11 @@ import urllib, urllib2, warnings
 
 from canonical.config import config
 
+# TODO: Nuke all deprecated methods and refactor sometime after May 2005
+# assuming nobody comes up with use cases for keeping them. I didn't
+# just refactor this because I suspect that this API is used by code with
+# poor or no test coverage -- StuartBishop 20050413
+
 __all__ = ['UploadFailed', 'FileUploadClient', 'FileDownloadClient']
 
 class UploadFailed(Exception):
@@ -21,7 +26,7 @@ class DownloadFailed(Exception):
 class FileUploadClient(object):
     """Simple blocking client for uploading to the librarian."""
 
-    def connect(self, **kw):
+    def connect(self, *args, **kw):
         # TODO: Nuke this method sometime after May 2005 -- StuartBishop
         warnings.warn(
                 'FileUploadClient.connect is not needed and will be removed',
@@ -61,10 +66,8 @@ class FileUploadClient(object):
         self.f.write(line + '\r\n')
         self._checkError()
 
-    # TODO: Change the return value of addFile - it isn't documented,
-    # and should not return the content-id (just the alias id).
-    # -- StuartBishop 20050412
-    def addFile(self, name, size, file, contentType=None, digest=None):
+    def addFile(self, name, size, file, contentType=None, digest=None,
+            _warn=True):
         """Add a file to the librarian.
 
         :param name: Name to store the file as
@@ -76,6 +79,16 @@ class FileUploadClient(object):
 
         :raises UploadFailed: If the server rejects the upload for some reason
         """
+        # Detect if this method was not called from the LibrarianClient
+        #
+        if _warn:
+            warnings.warn(
+                    'LibrarianClient should be used instead of '
+                    'FileUploadClient, preferably using the ILibrarianClient '
+                    'Utility.',
+                    DeprecationWarning, stacklevel=2
+                    )
+
         self._connect()
         try:
             # Send command
@@ -111,6 +124,22 @@ def quote(s):
     return urllib.quote(s).replace('/', '%2F')
 
 
+class _File(object):
+    """A wrapper around a file like object that has security assertions"""
+
+    def __init__(self, file):
+        self.file = file
+
+    def read(self, chunksize=None):
+        if chunksize is None:
+            return self.file.read()
+        else:
+            return self.file.read(chunksize)
+
+    def close(self):
+        return self.file.close()
+
+
 class FileDownloadClient(object):
     """A simple client to download files from the librarian"""
 
@@ -129,9 +158,6 @@ class FileDownloadClient(object):
         if self._logger is not None:
             self._logger.warning(msg, *args)
 
-    # XXX: This method needs to be refactored - fileID and filename
-    # should not be passed in. In particular, call sights should not
-    # know the fileID as this is the domain of the Librarian
     # -- StuartBishop 20050412
     def getFile(self, fileID, aliasID, filename):
         """Returns a fd to read the file from
@@ -142,6 +168,11 @@ class FileDownloadClient(object):
 
         :returns: file-like object
         """
+        warnings.warn(
+                'FileDownloadClient.getFile is not needed and will '
+                'be removed. Use LibraryClient.getFileByAlias',
+                DeprecationWarning, stacklevel=2
+                )
         host = config.librarian.download_host
         port = config.librarian.download_port
         url = ('http://%s:%d/%s/%s/%s'
@@ -162,24 +193,37 @@ class FileDownloadClient(object):
             raise DownloadFailed, 'Incomplete response'
         return paths
 
-    # TODO: Shouldn't return fileID -- StuartBishop 20050412
     def findByDigest(self, hexdigest):
         """Find a file by its SHA-1 digest
 
         :returns: sequence of 3-tuples of (fileID, aliasID, filename).
         """
+        warnings.warn(
+                'FileDownloadClient.findByDigest is not needed and will '
+                'be removed', DeprecationWarning, stacklevel=2
+                )
         return [tuple(p.split('/')) for p in self._findByDigest(hexdigest)]
 
     def findLinksByDigest(self, hexdigest):
         """Return a list of URIs to file aliases matching 'hexdigest'"""
+        warnings.warn(
+                'FileDownloadClient.findLinksByDigest is not needed and will '
+                'be removed', DeprecationWarning, stacklevel=2
+                )
         host = config.librarian.download_host
         port = config.librarian.download_port
         return [('http://%s:%d/%s' % (host, port, path))
                 for path in self._findByDigest(hexdigest)]
 
-    # TODO: This probably should exist in the client API?
-    # -- StuartBishop 20040412
     def getPathForAlias(self, aliasID):
+        """Deprecated"""
+        warnings.warn(
+                'FileDownloadClient.getPathForAlias is not needed and will '
+                'be removed', DeprecationWarning, stacklevel=2
+                )
+        return self._getPathForAlias(aliasID)
+
+    def _getPathForAlias(self, aliasID):
         """Returns the path inside the librarian to talk about the given
         alias.
 
@@ -211,7 +255,7 @@ class FileDownloadClient(object):
         """
         host = config.librarian.download_host
         port = config.librarian.download_port
-        l = self.getPathForAlias(aliasID)
+        l = self._getPathForAlias(aliasID)
         url = ('http://%s:%d%s' % (host, port, l))
         return url
 
@@ -223,8 +267,7 @@ class FileDownloadClient(object):
         :returns: file-like object
         """
         url = self.getURLForAlias(aliasID)
-        return urllib2.urlopen(url)
-
+        return _File(urllib2.urlopen(url))
 
 class LibrarianClient(FileUploadClient, FileDownloadClient):
     """Object combining the upload/download interfaces to the Librarian
@@ -233,4 +276,14 @@ class LibrarianClient(FileUploadClient, FileDownloadClient):
     """
     def __init__(self):
         super(LibrarianClient, self).__init__()
+
+    def addFile(self, name, size, file, contentType=None):
+        """See ILibrarianClient.addFile"""
+        # Override the FileUploadClient implementation as the method
+        # signature and return value has changed.
+        # TODO: FileUploadClient and FileDownloadClient should be removed,
+        # with their code moved into the LibrarianClient class and deprecated
+        # methods removed.
+        r = super(LibrarianClient, self).addFile(name, size, file, _warn=False)
+        return int(r[1])
 
