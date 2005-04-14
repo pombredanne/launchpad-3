@@ -2,6 +2,41 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-14 16:08:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1608
+
+    Summary:
+      Fix all foaf page tests that are date-based; now they'll break only in 2050.
+    Revision:
+      launchpad--devel--0--patch-1608
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--fix-pagetests--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1606
+    
+     * guilherme.salgado@canonical.com/launchpad--fix-pagetests--0--patch-1
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--fix-pagetests--0--patch-2
+       Fix all foaf page tests that are date-based; now they'll break only in 2050.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/pagetests/foaf/22-approve-proposed-member.txt
+     lib/canonical/launchpad/pagetests/foaf/23-promote-member.txt
+     lib/canonical/launchpad/pagetests/foaf/24-demote-member.txt
+     lib/canonical/launchpad/pagetests/foaf/25-expire-subscription.txt
+     lib/canonical/launchpad/pagetests/foaf/26-renew-subscription.txt
+     lib/canonical/launchpad/pagetests/foaf/27-deactivate-subscription.txt
+     lib/canonical/launchpad/pagetests/foaf/28-reactivate-subscription.txt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--fix-pagetests--0--base-0
+     guilherme.salgado@canonical.com/launchpad--fix-pagetests--0--patch-1
+     guilherme.salgado@canonical.com/launchpad--fix-pagetests--0--patch-2
+
+
 2005-04-14 15:33:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1607
 
     Summary:
