@@ -2,6 +2,50 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-14 16:58:22 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1610
+
+    Summary:
+      move trebuchet into launchpad
+    Revision:
+      launchpad--devel--0--patch-1610
+
+    Patches applied:
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-38
+       merge from rocketfuel
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-39
+       rocketfuel merge
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-40
+       add trebuchet to launchpad proper
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-41
+       fix a few trebuchet bugs left over from tac-conversion
+    
+
+    new files:
+     daemons/.arch-ids/trebuchet.tac.id daemons/trebuchet.tac
+     lib/canonical/launchpad/daemons/.arch-ids/=id
+     lib/canonical/launchpad/daemons/.arch-ids/__init__.py.id
+     lib/canonical/launchpad/daemons/.arch-ids/trebuchet.py.id
+     lib/canonical/launchpad/daemons/__init__.py
+     lib/canonical/launchpad/daemons/trebuchet.py
+
+    modified files:
+     doc/changelog.txt
+
+    new directories:
+     lib/canonical/launchpad/daemons
+     lib/canonical/launchpad/daemons/.arch-ids
+
+    new patches:
+     scott@canonical.com--2005/launchpad--devel--0--patch-38
+     scott@canonical.com--2005/launchpad--devel--0--patch-39
+     scott@canonical.com--2005/launchpad--devel--0--patch-40
+     scott@canonical.com--2005/launchpad--devel--0--patch-41
+
+
 2005-04-14 16:46:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1609
 
     Summary:
