@@ -137,14 +137,19 @@ class IBugDelta(Interface):
     title = Attribute("The new bug title or None.")
     shortdesc = Attribute("The new bug shortdesc or None.")
     description = Attribute("The new bug description or None.")
-    private = Attribute("A hash with two keys, 'old' and 'new', or None.")
-    name = Attribute("A hash with two keys, 'old' and 'new', or None.")
+    private = Attribute("A dict with two keys, 'old' and 'new', or None.")
+    name = Attribute("A dict with two keys, 'old' and 'new', or None.")
 
     # other things linked to the bug
     external_reference = Attribute(
-        "An IBugExternalRef added to a bug, or None.")
-    bugwatch = Attribute("An IBugWatch added to a bug, or None.")
-    cveref = Attribute("An ICVERef added to a bug, or None.")
+        "A dict with two keys, 'old' and 'new', or None. Key values are "
+        "IBugExternalRefs.")
+    bugwatch = Attribute(
+        "A dict with two keys, 'old' and 'new', or None. Key values are "
+        "IBugWatch's.")
+    cveref = Attribute(
+        "A dict with two keys, 'old' and 'new', or None. Key values are "
+        "ICVERef's.")
     bugtask_deltas = Attribute(
         "A tuple of IBugTaskDelta, one IBugTaskDelta or None.")
 

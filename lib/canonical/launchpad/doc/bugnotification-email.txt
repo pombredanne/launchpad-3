@@ -70,7 +70,7 @@ notification to be sent:
     >>> subject
     u'[Bug 2] the new title'
     >>> body
-    u'Sample Person <test@canonical.com> made changes to\n\n    http://www.example.com/bugs/2\n\n    - Changed title:\n        the new title\n    - Changed description:\n        a new description that is quite long. but the nice thing is that\n        the edit notification email generator knows how to indent and\n        wrap descriptions, so this will appear quite nice in the actual\n        email that gets sent\n'
+    u'Sample Person <test@canonical.com> made changes to:\n\n    http://www.example.com/bugs/2\n\n    - Changed title:\n        the new title\n    - Changed description:\n        a new description that is quite long. but the nice thing is that\n        the edit notification email generator knows how to indent and\n        wrap descriptions, so this will appear quite nice in the actual\n        email that gets sent\n'
 
 Another edit, this time the short description:
 
@@ -85,7 +85,7 @@ Another edit, this time the short description:
     >>> subject
     u'[Bug 2] the new title'
     >>> body
-    u"Sample Person <test@canonical.com> made changes to\n\n    http://www.example.com/bugs/2\n\n    - Changed short description:\n        this short desc isn't particularly short is it? after all, what\n        kind of shortdesc is so long that it needs to be wrapped?\n"
+    u"Sample Person <test@canonical.com> made changes to:\n\n    http://www.example.com/bugs/2\n\n    - Changed short description:\n        this short desc isn't particularly short is it? after all, what\n        kind of shortdesc is so long that it needs to be wrapped?\n"
 
 Let's set the bug private (for demo purposes, we need to switch logins
 to a user that is explicitly subscribed to this bug):
@@ -102,7 +102,7 @@ to a user that is explicitly subscribed to this bug):
     >>> subject
     u'[Bug 2] the new title'
     >>> body
-    u'Sample Person <test@canonical.com> made changes to\n\n    http://www.example.com/bugs/2\n\n    - Changed private:\n        False => True\n'
+    u'Sample Person <test@canonical.com> made changes to:\n\n    http://www.example.com/bugs/2\n\n    - Changed private:\n        False => True\n'
 
 2. Editing a bug task.
 
@@ -130,12 +130,11 @@ of adding bug tasks here too, but at the time of this writing I'm not
     >>> subject
     u'[Bug 2] the new title'
     >>> body
-    u'Sample Person <test@canonical.com> made changes to\n\n    http://www.example.com/bugs/2\n\nTask: Upstream Ubuntu\n       status: New => Accepted\n     assignee: (unassigned) => Sample Person\n'
+    u'Sample Person <test@canonical.com> made changes to:\n\n    http://www.example.com/bugs/2\n\nTask: Upstream Ubuntu\n       status: New => Accepted\n     assignee: (unassigned) => Sample Person\n'
 
-3. Adding a web link.
+3. Adding and editing web links.
 
-Adding a web link can be seen as "editing" a bug. Currently we don't
-send out notification emails when an external reference is changed.
+Adding a web link can be seen as "editing" a bug.
 
     >>> from zope.interface import implements
     >>> from canonical.launchpad.interfaces import IBugExternalRef
@@ -156,14 +155,39 @@ send out notification emails when an external reference is changed.
     ...     bug = edited_bug,
     ...     bugurl = "http://www.example.com/bugs/2",
     ...     user = sample_person,
-    ...     external_reference = mock_ext_ref)
+    ...     external_reference = {'new': mock_ext_ref})
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
     >>> body
-    u'Sample Person <test@canonical.com> made changes to\n\n    http://www.example.com/bugs/2\n\n    - Changed web links:\n        Added: http://www.example.com/foo/bar\n'
+    u'Sample Person <test@canonical.com> made changes to:\n\n    http://www.example.com/bugs/2\n\n    - Changed web links:\n        Added: http://www.example.com/foo/bar (some title)\n'
 
-4. Adding bug watches.
+Editing a web link shows the previous link as "Removed" and the newly
+modified link as having been "Added" (though no actual "adding" or
+"deleting" is actually taking place in the database.)
+
+    >>> mock_ext_ref_edited = MockBugExtRef(
+    ...     bug = edited_bug,
+    ...     url = "http://www.example.com/foo/bar",
+    ...     title = "some better title",
+    ...     owner = sample_person.id)
+
+    >>> bug_delta = BugDelta(
+    ...     bug = edited_bug,
+    ...     bugurl = "http://www.example.com/bugs/2",
+    ...     user = sample_person,
+    ...     external_reference = {
+    ...         'old' : mock_ext_ref, 'new': mock_ext_ref_edited})
+    >>> subject, body = generate_bug_edit_email(bug_delta)
+    >>> subject
+    u'[Bug 2] the new title'
+    >>> body
+    u'Sample Person <test@canonical.com> made changes to:\n\n    http://www.example.com/bugs/2\n\n    - Changed web links:\n        Added: http://www.example.com/foo/bar (some better title)\n      Removed: http://www.example.com/foo/bar (some title)\n'
+
+4. Adding and editing bug watches.
+
+Here's an example that demonstrates the notification email that gets
+generated when a bug watch is added:
 
     >>> from canonical.launchpad.interfaces import IBugWatch, IBugTrackerSet
     >>> bugtrackerset = getUtility(IBugTrackerSet)
@@ -183,14 +207,37 @@ send out notification emails when an external reference is changed.
     ...     bug = edited_bug,
     ...     bugurl = "http://www.example.com/bugs/2",
     ...     user = sample_person,
-    ...     bugwatch = mock_bug_watch)
+    ...     bugwatch = {'new' : mock_bug_watch})
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
     >>> body
-    u'Sample Person <test@canonical.com> made changes to\n\n    http://www.example.com/bugs/2\n\n    - Changed bug watches:\n        Added: Bug 123 [The Mozilla.org Bug Tracker]\n'
+    u'Sample Person <test@canonical.com> made changes to:\n\n    http://www.example.com/bugs/2\n\n    - Changed bug watches:\n        Added: Bug 123 [The Mozilla.org Bug Tracker]\n'
 
-5. Add CVE refs.
+When edited, we display the change to a bug watch as though the
+previous data was "removed" and the new, current data was "added."
+Let's demonstrate with an example:
+
+    >>> mock_bug_watch_edited = MockBugWatch(
+    ...     bug = edited_bug,
+    ...     bugtracker = getUtility(IBugTrackerSet)["mozilla.org"],
+    ...     remotebug = 12)
+
+    >>> bug_delta = BugDelta(
+    ...     bug = edited_bug,
+    ...     bugurl = "http://www.example.com/bugs/2",
+    ...     user = sample_person,
+    ...     bugwatch =
+    ...         {'old' : mock_bug_watch, 'new' : mock_bug_watch_edited})
+    >>> subject, body = generate_bug_edit_email(bug_delta)
+    >>> subject
+    u'[Bug 2] the new title'
+    >>> body
+    u'Sample Person <test@canonical.com> made changes to:\n\n    http://www.example.com/bugs/2\n\n    - Changed bug watches:\n        Added: Bug 12 [The Mozilla.org Bug Tracker]\n      Removed: Bug 123 [The Mozilla.org Bug Tracker]\n'
+
+5. Adding and editing CVE refs.
+
+Adding a CVE ref will generate a notification that looks as follows:
 
     >>> from canonical.launchpad.interfaces import ICVERef
 
@@ -209,12 +256,32 @@ send out notification emails when an external reference is changed.
     ...     bug = edited_bug,
     ...     bugurl = "http://www.example.com/bugs/2",
     ...     user = sample_person,
-    ...     cveref = mock_cve_ref)
+    ...     cveref = {'new' : mock_cve_ref})
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
     >>> body
-    u'Sample Person <test@canonical.com> made changes to\n\n    http://www.example.com/bugs/2\n\n    - Changed CVE references:\n        Added: CAN-2004-0718 [a test cve ref]\n'
+    u'Sample Person <test@canonical.com> made changes to:\n\n    http://www.example.com/bugs/2\n\n    - Changed CVE references:\n        Added: CAN-2004-0718 [a test cve ref]\n'
+
+Editing a CVE ref generates an email that refers to the previous CVE
+ref as "removed" and the newly modified CVE ref as "added". An example
+follows:
+
+    >>> mock_cve_ref_edited = MockCVERef(
+    ...     bug = edited_bug,
+    ...     cveref = "CAN-2004-0719",
+    ...     title = "a test cve ref")
+
+    >>> bug_delta = BugDelta(
+    ...     bug = edited_bug,
+    ...     bugurl = "http://www.example.com/bugs/2",
+    ...     user = sample_person,
+    ...     cveref = {'old' : mock_cve_ref, 'new' : mock_cve_ref_edited})
+    >>> subject, body = generate_bug_edit_email(bug_delta)
+    >>> subject
+    u'[Bug 2] the new title'
+    >>> body
+    u'Sample Person <test@canonical.com> made changes to:\n\n    http://www.example.com/bugs/2\n\n    - Changed CVE references:\n        Added: CAN-2004-0719 [a test cve ref]\n      Removed: CAN-2004-0718 [a test cve ref]\n'
 
 6. Adding an infestation.
 

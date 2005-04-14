@@ -33,7 +33,7 @@ def generate_bug_edit_email(bug_delta):
     subject = "[Bug %d] %s" % (bug_delta.bug.id, bug_delta.bug.title)
 
     body = """\
-%(browsername)s <%(email)s> made changes to
+%(browsername)s <%(email)s> made changes to:
 
     %(bugurl)s
 
@@ -67,16 +67,32 @@ def generate_bug_edit_email(bug_delta):
             'new' : bug_delta.private['new']}
     if bug_delta.external_reference is not None:
         body += "    - Changed web links:\n"
-        body += "        Added: %s\n" % bug_delta.external_reference.url
+        body += "        Added: %s (%s)\n" % (
+            bug_delta.external_reference['new'].url,
+            bug_delta.external_reference['new'].title)
+        old_ext_ref = bug_delta.external_reference.get('old')
+        if old_ext_ref is not None:
+            body += "      Removed: %s (%s)\n" % (
+                old_ext_ref.url, old_ext_ref.title)
     if bug_delta.bugwatch is not None:
         body += "    - Changed bug watches:\n"
         body += "        Added: Bug %s [%s]\n" % (
-            bug_delta.bugwatch.remotebug,
-            bug_delta.bugwatch.bugtracker.title)
+            bug_delta.bugwatch['new'].remotebug,
+            bug_delta.bugwatch['new'].bugtracker.title)
+        old_bug_watch = bug_delta.bugwatch.get('old')
+        if old_bug_watch:
+            body += "      Removed: Bug %s [%s]\n" % (
+                old_bug_watch.remotebug,
+                old_bug_watch.bugtracker.title)
+
     if bug_delta.cveref is not None:
         body += "    - Changed CVE references:\n"
         body += "        Added: %s [%s]\n" % (
-            bug_delta.cveref.cveref, bug_delta.cveref.title)
+            bug_delta.cveref['new'].cveref, bug_delta.cveref['new'].title)
+        old_cveref = bug_delta.cveref.get('old')
+        if old_cveref:
+            body += "      Removed: %s [%s]\n" % (
+                old_cveref.cveref, old_cveref.title)
 
     if bug_delta.bugtask_deltas is not None:
         bugtask_deltas = bug_delta.bugtask_deltas
@@ -244,7 +260,7 @@ def get_task_delta(old_task, new_task):
     """Compute the delta from old_task to new_task.
 
     old_task and new_task are either both IDistroBugTask's or both
-    IUpstreamBugTask's, otherwise a ValueError is raised.
+    IUpstreamBugTask's, otherwise a TypeError is raised.
 
     Returns an IBugTaskDelta or None if there were no changes between
     old_task and new_task.
@@ -274,7 +290,7 @@ def get_task_delta(old_task, new_task):
             changes["binarypackagename"]["old"] = old_task.binarypackagename
             changes["binarypackagename"]["new"] = new_task.binarypackagename
     else:
-        raise ValueError(
+        raise TypeError(
             "Can't calculate delta on bug tasks of incompatible types: "
             "[%s, %s]" % (repr(old_task), repr(new_task)))
 
@@ -287,6 +303,13 @@ def get_task_delta(old_task, new_task):
             changes[field_name] = {}
             changes[field_name]["old"] = old_val
             changes[field_name]["new"] = new_val
+
+    old_assignee = getattr(old_task, "assignee")
+    new_assignee = getattr(new_task, "assignee")
+    if old_assignee != new_assignee:
+        changes["assignee"] = {}
+        changes["assignee"]["old"] = old_assignee
+        changes["assignee"]["new"] = new_assignee
 
     if changes:
         changes["bugtask"] = old_task
@@ -384,7 +407,7 @@ def notify_bugtask_added(bugtask, event):
                 bugtask.distrorelease.distribution.displayname,
                 bugtask.distrorelease.displayname)
         else:
-            raise ValueError("Unrecognized BugTask type")
+            raise TypeError("Unrecognized BugTask type")
 
         simple_sendmail(
             FROM_ADDR, notification_recipient_emails,
@@ -565,10 +588,33 @@ def notify_bug_external_ref_added(ext_ref, event):
             bug = ext_ref.bug,
             bugurl = zapi.absoluteURL(ext_ref.bug, event.request),
             user = IPerson(event.request.principal),
-            external_reference = ext_ref)
+            external_reference = {'new' : ext_ref})
 
         send_bug_edit_notification(
             FROM_ADDR, notification_recipient_emails, bug_delta)
+
+def notify_bug_external_ref_edited(edited_ext_ref, event):
+    """Notify CC'd list that a web link has been edited.
+
+    edited_ext_ref must be an IBugExternalRef. event must be an
+    ISQLObjectModifiedEvent.
+    """
+    notification_recipient_emails = get_cc_list(edited_ext_ref.bug)
+
+    if notification_recipient_emails:
+        old = event.object_before_modification
+        new = event.object
+        if ((old.url != new.url) or (old.title != new.title)):
+            # A change was made that's worth sending an edit
+            # notification about.
+            bug_delta = BugDelta(
+                bug = new.bug,
+                bugurl = zapi.absoluteURL(new.bug, event.request),
+                user = IPerson(event.request.principal),
+                external_reference = {'old' : old, 'new' : new})
+
+            send_bug_edit_notification(
+                FROM_ADDR, notification_recipient_emails, bug_delta)
 
 def notify_bug_watch_added(watch, event):
     """Notify CC'd list that a new watch has been added for this bug.
@@ -583,7 +629,7 @@ def notify_bug_watch_added(watch, event):
             bug = watch.bug,
             bugurl = zapi.absoluteURL(watch.bug, event.request),
             user = IPerson(event.request.principal),
-            bugwatch = watch)
+            bugwatch = {'new' : watch})
 
         send_bug_edit_notification(
             FROM_ADDR, notification_recipient_emails, bug_delta)
@@ -597,31 +643,21 @@ def notify_bug_watch_modified(modified_bug_watch, event):
     notification_recipient_emails = get_cc_list(modified_bug_watch.bug)
 
     if notification_recipient_emails:
-        btv = BugTrackerVocabulary(modified_bug_watch.bug)
-        changes = get_changes(
-            before = event.object_before_modification,
-            after = event.object,
-            fields = (
-                ("bugtracker", lambda v: btv.getTermByToken(v.id).title),
-                ("remotebug", lambda v: v)))
-
-        edit_header_line = """\
-Comments and other information can be added to this bug at
-%(url)s
-
-Edited watch on bugtracker: %(bugtracker)s""" % {
-            'bugtracker' : event.object_before_modification.bugtracker.title,
-            'url' : zapi.absoluteURL(modified_bug_watch.bug, event.request)}
-
-        send_bug_edit_notification(
-            bug = event.object_before_modification.bug,
-            from_addr = FROM_ADDR,
-            to_addrs = notification_recipient_emails,
-            subject = "[Bug %d] %s" % (
-                event.object_before_modification.bug.id,
-                event.object_before_modification.bug.title),
-            edit_header_line = edit_header_line, changes = changes,
-            user = event.principal)
+        old = event.object_before_modification
+        new = event.object
+        if ((old.bugtracker != new.bugtracker) or
+            (old.remotebug != new.remotebug)):
+            # there is a difference worth notifying about here
+            # so let's keep going
+            bug_delta = BugDelta(
+                bug = new.bug,
+                bugurl = zapi.absoluteURL(new.bug, event.request),
+                user = IPerson(event.request.principal),
+                bugwatch = {'old' : old, 'new' : new})
+            send_bug_edit_notification(
+                from_addr = FROM_ADDR,
+                to_addrs = notification_recipient_emails,
+                bug_delta = bug_delta)
 
 def notify_bug_cveref_added(cveref, event):
     """Notify CC'd list that a new cveref has been added to this bug.
@@ -636,10 +672,33 @@ def notify_bug_cveref_added(cveref, event):
             bug = cveref.bug,
             bugurl = zapi.absoluteURL(cveref.bug, event.request),
             user = IPerson(event.request.principal),
-            cveref = cveref)
+            cveref = {'new': cveref})
 
         send_bug_edit_notification(
             FROM_ADDR, notification_recipient_emails, bug_delta)
+
+def notify_bug_cveref_edited(edited_cveref, event):
+    """Notify CC'd list that a cveref has been edited.
+
+    edited_cveref must be an ICVERef. event must be an
+    ISQLObjectModifiedEvent.
+    """
+    notification_recipient_emails = get_cc_list(edited_cveref.bug)
+
+    if notification_recipient_emails:
+        old = event.object_before_modification
+        new = event.object
+        if ((old.cveref != new.cveref) or (old.title != new.title)):
+            # There's a change worth notifying about, so let's go
+            # ahead and send a notification email.
+            bug_delta = BugDelta(
+                bug = new.bug,
+                bugurl = zapi.absoluteURL(new.bug, event.request),
+                user = IPerson(event.request.principal),
+                cveref = {'old' : old, 'new': new})
+
+            send_bug_edit_notification(
+                FROM_ADDR, notification_recipient_emails, bug_delta)
 
 def notify_join_request(event):
     """Notify team administrators that a new membership is pending approval."""

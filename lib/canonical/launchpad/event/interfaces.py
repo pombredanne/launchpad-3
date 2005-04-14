@@ -20,6 +20,8 @@ class ISQLObjectModifiedEvent(IObjectModifiedEvent):
     edited_fields = Attribute(
         "The list of fields that were edited (though not necessarily all "
         "modified, of course.)")
+    # XXX: Brad Bollenbach, 2005-04-13: See
+    # https://launchpad.ubuntu.com/malone/bugs/375
     principal = Attribute("The principal for this event.")
     request = Attribute(
         "The IBrowserRequest if this object was created through a web "

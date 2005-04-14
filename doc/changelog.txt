@@ -2,6 +2,62 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-14 16:46:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1609
+
+    Summary:
+      complete BugEditNotifications implementation. small bugfixes and refactoring.
+    Revision:
+      launchpad--devel--0--patch-1609
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-505
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-506
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-507
+       finish complete implementation of BugEditNotifications after having confirmed the last few details yesterday with kiko
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-508
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-509
+       tiny formatting change on edit notification email (r=kiko)
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-510
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-511
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-512
+       fix empty edit notifications on assignee change (r=kiko)
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/doc/bugnotification-email.txt
+     lib/canonical/launchpad/doc/bugnotifications.txt
+     lib/canonical/launchpad/event/interfaces.py
+     lib/canonical/launchpad/interfaces/bug.py
+     lib/canonical/launchpad/mailnotification.py
+     lib/canonical/launchpad/zcml/bug-events.zcml
+     lib/canonical/launchpad/zcml/bugextref.zcml
+     lib/canonical/launchpad/zcml/cveref.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-505
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-506
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-507
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-508
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-509
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-510
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-511
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-512
+
+
 2005-04-14 16:08:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1608
 
     Summary:
