@@ -9,7 +9,8 @@ import random
 from zope.interface import implements
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, StringCol, SQLObjectNotFound
+from sqlobject import DateTimeCol, ForeignKey, StringCol, SQLObjectNotFound, \
+                      AND
 from canonical.database.sqlbase import SQLBase
 
 # canonical imports
@@ -42,6 +43,14 @@ class LoginTokenSet(object):
             return LoginToken.get(id)
         except SQLObjectNotFound:
             return default
+
+    def searchByEmailAndRequester(self, email, requester):
+        return LoginToken.select(AND(LoginToken.q.email==email,
+                                     LoginToken.q.requesterID==requester.id))
+
+    def deleteByEmailAndRequester(self, email, requester):
+        for token in self.searchByEmailAndRequester(email, requester):
+            token.destroySelf()
 
     def new(self, requester, requesteremail, email, tokentype):
         """See ILoginTokenSet"""

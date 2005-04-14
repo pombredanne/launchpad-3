@@ -233,9 +233,6 @@ class ProposedTeamMembersEditView:
         self.request = request
         self.user = getUtility(ILaunchBag).user
 
-    def allPeople(self):
-        return getUtility(IPersonSet).getAll()
-
     def processProposed(self):
         if self.request.method != "POST":
             return

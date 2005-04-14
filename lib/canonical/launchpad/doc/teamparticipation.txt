@@ -20,6 +20,7 @@ First of all, create some teams:
 
 >>> from canonical.database.sqlbase import flush_database_updates
 
+>>> defaultOrder = 'displayname'
 >>> o = TeamSubscriptionPolicy.OPEN
 >>> m = TeamSubscriptionPolicy.MODERATED
 >>> expires = datetime(2110, 12, 01)
@@ -40,14 +41,14 @@ Now, add p as a member of t3.
 
 >>> p.join(t3)
 True
->>> [m.displayname for m in _getAllMembers(t3)]
+>>> [m.displayname for m in _getAllMembers(t3, orderBy=defaultOrder)]
 []
 
 
 But t3 is a MODERATED team, somebody have to approve the membership:
 
 >>> t3.setMembershipStatus(p, TeamMembershipStatus.APPROVED, expires, p)
->>> [m.displayname for m in _getAllMembers(t3)]
+>>> [m.displayname for m in _getAllMembers(t3, orderBy=defaultOrder)]
 [u'Foo Bar']
 
 
@@ -56,28 +57,28 @@ actions, it can't actually "join" t2. Instead, an administrator of t2 have
 to addMember() it.
 
 >>> t2.addMember(t3)
->>> [m.displayname for m in _getAllMembers(t2)]
+>>> [m.displayname for m in _getAllMembers(t2, orderBy=defaultOrder)]
 [u'Foo Bar', u't3']
 
 
 ... t2 as a member of t1, ...
 
 >>> t1.addMember(t2)
->>> [m.displayname for m in _getAllMembers(t1)]
+>>> [m.displayname for m in _getAllMembers(t1, orderBy=defaultOrder)]
 [u'Foo Bar', u't2', u't3']
 
 
 ... t2 as a member of t5, ...
 
 >>> t5.addMember(t2)
->>> [m.displayname for m in _getAllMembers(t5)]
+>>> [m.displayname for m in _getAllMembers(t5, orderBy=defaultOrder)]
 [u'Foo Bar', u't2', u't3']
 
 
 ... t5 as a member of t4
 
 >>> t4.addMember(t5)
->>> [m.displayname for m in _getAllMembers(t4)]
+>>> [m.displayname for m in _getAllMembers(t4, orderBy=defaultOrder)]
 [u'Foo Bar', u't2', u't3', u't5']
 
 XXX: There appears to be some nasty SQLObject bug hiding in here.
@@ -94,16 +95,16 @@ Now let's remove some members to see what happens:
 
 >>> p.leave(t3)
 True
->>> len(_getAllMembers(t3))
+>>> len(_getAllMembers(t3, orderBy=defaultOrder))
 0
 
->>> [m.displayname for m in _getAllMembers(t2)]
+>>> [m.displayname for m in _getAllMembers(t2, orderBy=defaultOrder)]
 [u't3']
 
->>> [m.displayname for m in _getAllMembers(t4)]
+>>> [m.displayname for m in _getAllMembers(t4, orderBy=defaultOrder)]
 [u't2', u't3', u't5']
 
->>> [m.displayname for m in _getAllMembers(t5)]
+>>> [m.displayname for m in _getAllMembers(t5, orderBy=defaultOrder)]
 [u't2', u't3']
 
 
@@ -111,9 +112,9 @@ t2 can't leave() t5 because it's a team and teams take no actions. We have to
 call setMembershipStatus() for t2 in t5, to make it a DEACTIVATED member.
 
 >>> t5.setMembershipStatus(t2, TeamMembershipStatus.DEACTIVATED, expires)
->>> len(_getAllMembers(t5))
+>>> len(_getAllMembers(t5, orderBy=defaultOrder))
 0
 
->>> [m.displayname for m in _getAllMembers(t4)]
+>>> [m.displayname for m in _getAllMembers(t4, orderBy=defaultOrder)]
 [u't5']
 

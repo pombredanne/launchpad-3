@@ -2,6 +2,96 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-14 18:49:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1613
+
+    Summary:
+      Fix person-emails to not show duplicates of email address that are waiting for validation and  delete all these duplicates when an email address is validated. Remove some useless methods of IPersonSet and add optional orderBy on the useful ones. Split person's actions-portlet into two portlets. r=SteveA
+    Revision:
+      launchpad--devel--0--patch-1613
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-278
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-279
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-280
+       Improving page test for adding a new email address.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-281
+       Fix person-emails to show duplicates of email address that are waiting for validation. Also deletes all these duplicates when an email address is validated.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-282
+       Removing IPersonSet.getAll(); completely useless.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-283
+       There's no need for IPersonSet.isUbuntite(person); what we want is IPerson.ubuntite. Nuked IPS.isUbuntite().
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-284
+       Adding optional orderBy parameters to IPersonSet methods.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-285
+       Split person's actions-portlet into one with only the actions and another with the multiple facets of a person (bugs, translations, packages, etc).
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-286
+       Must take care with teammembership expiration dates in pagetests; now we shouldn't have problems with this until 2050.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-287
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-288
+       Fix according to SteveA's review.
+    
+
+    new files:
+     lib/canonical/launchpad/templates/.arch-ids/portlet-person-views.pt.id
+     lib/canonical/launchpad/templates/portlet-person-views.pt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/logintoken.py
+     lib/canonical/launchpad/browser/person.py
+     lib/canonical/launchpad/browser/team.py
+     lib/canonical/launchpad/database/logintoken.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/doc/teamparticipation.txt
+     lib/canonical/launchpad/interfaces/logintoken.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/pagetests/foaf/02-addemail.txt
+     lib/canonical/launchpad/templates/person-bounties.pt
+     lib/canonical/launchpad/templates/person-bugs.pt
+     lib/canonical/launchpad/templates/person-edit.pt
+     lib/canonical/launchpad/templates/person-emails.pt
+     lib/canonical/launchpad/templates/person-gpgkey.pt
+     lib/canonical/launchpad/templates/person-index.pt
+     lib/canonical/launchpad/templates/person-karma.pt
+     lib/canonical/launchpad/templates/person-packages.pt
+     lib/canonical/launchpad/templates/person-sshkey.pt
+     lib/canonical/launchpad/templates/person-translations.pt
+     lib/canonical/launchpad/templates/portlet-person-actions.pt
+
+    renamed files:
+     lib/canonical/launchpad/templates/.arch-ids/portlet-person-bugs.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/portlet-person-bugs.pt.obsolete.id
+     lib/canonical/launchpad/templates/portlet-person-bugs.pt
+       ==> lib/canonical/launchpad/templates/portlet-person-bugs.pt.obsolete
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-278
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-279
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-280
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-281
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-282
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-283
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-284
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-285
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-286
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-287
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-288
+
+
 2005-04-14 17:17:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1612
 
     Summary:

@@ -348,13 +348,10 @@ class IPersonSet(Interface):
           IPerson.arg IS NULL.
         """
 
-    def getAll():
-        """Return all Persons and Teams."""
-
-    def getAllTeams():
+    def getAllTeams(orderBy=None):
         """Return all Teams."""
 
-    def getAllPersons():
+    def getAllPersons(orderBy=None):
         """Return all Persons, ignoring the merged ones."""
 
     def peopleCount():
@@ -363,21 +360,18 @@ class IPersonSet(Interface):
     def teamsCount():
         """Return the number of teams in the database."""
 
-    def findByName(name):
+    def findByName(name, orderBy=None):
         """Return all not-merged Persons and Teams with name matching."""
 
-    def findPersonByName(name):
+    def findPersonByName(name, orderBy=None):
         """Return all not-merged Persons with name matching."""
 
-    def findTeamByName(name):
+    def findTeamByName(name, orderBy=None):
         """Return all Teams with name matching."""
 
     def getContributorsForPOFile(pofile):
         """Return the list of persons that have an active contribution for a
         concrete POFile."""
-
-    def isUbuntite(user):
-        """Return True if User has a valid Signed current version CoC."""
 
     def getUbuntites():
         """Return a set of person with valid Ubuntite flag."""

@@ -18,6 +18,7 @@ from canonical.launchpad.webapp.login import logInPerson
 
 from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
 from canonical.launchpad.interfaces import IPasswordEncryptor, IEmailAddressSet
+from canonical.launchpad.interfaces import ILoginTokenSet
 
 
 class LoginTokenView(object):
@@ -186,6 +187,8 @@ class ValidateEmailView(object):
         # table.
         email = emailset.new(self.context.email, status, requester.id)
         self.context.destroySelf()
+        logintokenset = getUtility(ILoginTokenSet)
+        logintokenset.deleteByEmailAndRequester(self.context.email, requester)
 
 
 class NewAccountView(AddView):
@@ -298,3 +301,4 @@ class MergePeopleView(object):
         # account's stuff to the user account.
         pset = getUtility(IPersonSet).merge(self.dupe, self.context.requester)
         self.mergeCompleted = True
+

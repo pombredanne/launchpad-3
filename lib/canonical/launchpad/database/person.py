@@ -2,6 +2,7 @@
 
 __metaclass__ = type
 
+import sets
 from datetime import datetime, timedelta
 
 # Zope interfaces
@@ -451,7 +452,7 @@ class Person(SQLBase):
 
     def unvalidatedemails(self):
         query = "requester=%d AND email IS NOT NULL" % self.id
-        return list(LoginToken.select(query))
+        return sets.Set([token.email for token in LoginToken.select(query)])
     unvalidatedemails = property(unvalidatedemails)
 
     def guessedemails(self):
@@ -520,10 +521,19 @@ class Person(SQLBase):
         return list(sprutil.getByCreatorID(self.id))
     packages = property(packages)
 
-    def isUbuntite(self):
-        putil = getUtility(IPersonSet)
-        return putil.isUbuntite(self.id)
-    ubuntite = property(isUbuntite)
+    def ubuntite(self):
+        # XXX: cprov 20050226
+        # Verify the the SignedCoC version too
+        # we can't do it before add the field version on
+        # SignedCoC table. Then simple compare the already
+        # checked field with what we grab from CoCConf utility.
+        # Simply add 'SignedCodeOfConduct.version = %s' % conf.current
+        # in query when the field was landed.
+        query = AND(SignedCodeOfConduct.q.active==True,
+                    SignedCodeOfConduct.q.ownerID==self.id)
+
+        return bool(SignedCodeOfConduct.select(query).count())
+    ubuntite = property(ubuntite)
     
 
 class PersonSet(object):
@@ -597,33 +607,33 @@ class PersonSet(object):
     def peopleCount(self):
         return self._getAllPersons().count()
 
-    def getAllPersons(self):
-        return list(self._getAllPersons())
+    def getAllPersons(self, orderBy=None):
+        return list(self._getAllPersons(orderBy=orderBy))
 
-    def _getAllPersons(self):
+    def _getAllPersons(self, orderBy=None):
         query = AND(Person.q.teamownerID==None, Person.q.mergedID==None)
-        return Person.select(query)
+        return Person.select(query, orderBy=orderBy)
 
     def teamsCount(self):
         return self._getAllTeams().count()
 
-    def getAllTeams(self):
-        return list(self._getAllTeams())
+    def getAllTeams(self, orderBy=None):
+        return list(self._getAllTeams(orderBy=orderBy))
 
-    def _getAllTeams(self):
-        return Person.select(Person.q.teamownerID!=None)
+    def _getAllTeams(self, orderBy=None):
+        return Person.select(Person.q.teamownerID!=None, orderBy=orderBy)
 
-    def findByName(self, name):
+    def findByName(self, name, orderBy=None):
         query = "fti @@ ftq(%s) AND merged is NULL" % quote(name)
-        return list(Person.select(query))
+        return list(Person.select(query, orderBy=orderBy))
 
-    def findPersonByName(self, name):
+    def findPersonByName(self, name, orderBy=None):
         query = "fti @@ ftq(%s) AND teamowner is NULL AND merged is NULL"
-        return list(Person.select(query % quote(name)))
+        return list(Person.select(query % quote(name), orderBy=orderBy))
 
-    def findTeamByName(self, name):
+    def findTeamByName(self, name, orderBy=None):
         query = "fti @@ ftq(%s) AND teamowner is not NULL" % quote(name)
-        return list(Person.select(query))
+        return list(Person.select(query, orderBy=orderBy))
 
     def get(self, personid, default=None):
         """See IPersonSet."""
@@ -631,10 +641,6 @@ class PersonSet(object):
             return Person.get(personid)
         except SQLObjectNotFound:
             return default
-
-    def getAll(self):
-        """See IPersonSet."""
-        return Person.select()
 
     def getByEmail(self, email, default=None):
         """See IPersonSet."""
@@ -658,25 +664,6 @@ class PersonSet(object):
             POMsgSet.pofile = %d''' % pofile.id,
             clauseTables=('POTranslationSighting', 'POMsgSet'),
             distinct=True)
-
-    def isUbuntite(self, person):
-        """See IPersonSet."""
-        # XXX: cprov 20050226
-        # Verify the the SignedCoC version too
-        # we can't do it before add the field version on
-        # SignedCoC table. Then simple compare the already
-        # checked field with what we grab from CoCConf utility.
-        # Simply add 'SignedCodeOfConduct.version = %s' % conf.current
-        # in query when the field was landed.
-        conf = getUtility(ICodeOfConductConf)
-
-        query = ('SignedCodeOfConduct.active = True AND '
-                 'SignedCodeOfConduct.owner = %s' % person)
-                 
-        sign = SignedCodeOfConduct.select(query)
-
-        if sign.count():
-            return True
 
     def getUbuntites(self):
         """See IPersonSet."""
@@ -1131,10 +1118,11 @@ class TeamParticipation(SQLBase):
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
 
-def _getAllMembers(team):
+def _getAllMembers(team, orderBy=None):
     query = ('Person.id = TeamParticipation.person AND '
              'TeamParticipation.team = %d' % team.id)
-    return list(Person.select(query, clauseTables=['TeamParticipation']))
+    return list(Person.select(query, clauseTables=['TeamParticipation'],
+                              orderBy=orderBy))
 
 
 def _cleanTeamParticipation(person, team):

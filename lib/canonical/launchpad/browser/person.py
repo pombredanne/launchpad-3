@@ -129,11 +129,18 @@ class FOAFSearchView(object):
         return getUtility(IPersonSet).findByName(name)
 
 
-class PersonView(object):
-    """A simple View class to be used in all Person's pages."""
+class BasePersonView(object):
+    """A base class to be used by all IPerson view classes."""
+
+    viewsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-person-views.pt')
 
     actionsPortlet = ViewPageTemplateFile(
         '../templates/portlet-person-actions.pt')
+
+
+class PersonView(BasePersonView):
+    """A simple View class to be used in all Person's pages."""
 
     def __init__(self, context, request):
         self.context = context
@@ -298,10 +305,7 @@ class PersonView(object):
         return 'Key "%s" removed' % comment
 
 
-class PersonEditView(object):
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-person-actions.pt')
+class PersonEditView(BasePersonView):
 
     def __init__(self, context, request):
         self.context = context
@@ -384,9 +388,9 @@ class PersonEditView(object):
         not yet in the emailaddress table with status = NEW."""
         guessedemails = [g.email for g in self.context.guessedemails]
         emails = []
-        for token in self.context.unvalidatedemails:
-            if token.email not in guessedemails:
-                emails.append(token)
+        for email in self.context.unvalidatedemails:
+            if email not in guessedemails:
+                emails.append(email)
         return emails
 
     def anyRegisteredEmail(self):
@@ -491,19 +495,17 @@ class PersonEditView(object):
                         # one, so we can delete it.
                         email.destroySelf()
 
-        ids = self.request.form.get("REMOVE_TOKEN")
-        if ids is not None:
+        emails = self.request.form.get("REMOVE_TOKEN")
+        if emails is not None:
             # We can have multiple unvalidated email adressess marked for 
-            # deletion, and in # this case ids will be a list. Otherwise 
+            # deletion, and in this case ids will be a list. Otherwise 
             # ids will be str or int and we need to make a list with that 
             # value to use in the for loop.
-            if not isinstance(ids, list):
-                ids = [ids]
+            if not isinstance(emails, list):
+                emails = [emails]
 
-            for id in ids:
-                token = logintokenset.get(id)
-                assert token.requester.id == person.id
-                token.destroySelf()
+            for email in emails:
+                logintokenset.deleteByEmailAndRequester(email, person)
 
         # Need to flush all changes we made, so subsequent queries we make
         # with this transaction will see this changes and thus they'll be
@@ -659,10 +661,7 @@ def sendMergeRequestEmail(token, dupename, appurl):
     simple_sendmail(fromaddress, token.email, subject, message)
 
 
-class TeamAddView(AddView):
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-person-actions.pt')
+class TeamAddView(AddView, BasePersonView):
 
     def __init__(self, context, request):
         self.context = context
