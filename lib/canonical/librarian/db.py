@@ -5,9 +5,8 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.database import LibraryFileContent, LibraryFileAlias
 
 from sqlobject import IntCol, StringCol, DateTimeCol, ForeignKey
+from sqlobject import SQLObjectNotFound
 
-class AliasConflict(Exception):
-    pass
 
 class Library(object):
 
@@ -18,7 +17,12 @@ class Library(object):
                 LibraryFileContent.selectBy(sha1=digest)]
 
     def getAlias(self, fileid, filename):
-        return LibraryFileAlias.selectBy(contentID=fileid, filename=filename)[0]
+        """Returns a LibraryFileAlias, or raises LookupError."""
+        results = LibraryFileAlias.selectBy(contentID=fileid, filename=filename)
+        try:
+            return results[0]
+        except IndexError:
+            raise LookupError, 'Alias %s: %r'% (fileid, filename)
 
     def getAliases(self, fileid):
         results = LibraryFileAlias.selectBy(contentID=fileid)
@@ -27,6 +31,15 @@ class Library(object):
     def getByAlias(self, aliasid):
         return LibraryFileAlias.get(aliasid)
 
+    def hasContent(self, contentID):
+        # XXX: write test.
+        try:
+            LibraryFileContent.get(contentID)
+        except SQLObjectNotFound:
+            return False
+        else:
+            return True
+
     # the following methods are used for adding to the library
 
     def add(self, digest, size):
@@ -34,14 +47,17 @@ class Library(object):
         return lfc.id
 
     def addAlias(self, fileid, filename, mimetype):
+        """Add an alias, and return its ID.
+        
+        If a matching alias already exists, it will return that ID instead.
+        """
         try:
             existing = self.getAlias(fileid, filename)
-            if existing.mimetype != mimetype:
-                # FIXME: The DB should probably have a constraint that enforces
-                # this i.e. UNIQUE(content, filename)
-                raise AliasConflict
-            return existing.id
-        except IndexError:
-            return LibraryFileAlias(contentID=fileid, filename=filename,
-                                    mimetype=mimetype).id
+            if existing.mimetype == mimetype:
+                return existing.id
+        except LookupError:
+            pass
+
+        return LibraryFileAlias(contentID=fileid, filename=filename,
+                                mimetype=mimetype).id
             

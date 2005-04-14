@@ -151,9 +151,6 @@ class BasicExportTest(ExportTest):
             'msgid "zig"',
             'msgstr "zag"',
             '',
-            '#~ msgid "zot"',
-            '#~ msgstr "zat"',
-            '',
             '#, c-format',
             'msgid "zip"',
             'msgstr "zap"',
@@ -163,6 +160,9 @@ class BasicExportTest(ExportTest):
             '#: rath',
             'msgid "zog"',
             'msgstr "zug"',
+            '',
+            '#~ msgid "zot"',
+            '#~ msgstr "zat"',
         ])
 
         self.test_export(rows, expected_pofiles)

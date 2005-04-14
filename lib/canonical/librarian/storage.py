@@ -12,13 +12,16 @@ import tempfile
 from canonical.librarian import db
 from canonical.database.sqlbase import begin, commit, rollback
 
-__all__ = ['DigestMismatchError', 'FatSamStorage', 'FatSamFile']
+__all__ = ['DigestMismatchError', 'LibrarianStorage', 'LibraryFileUpload']
 
 class DigestMismatchError(Exception):
     """The given digest doesn't match the SHA-1 digest of the file"""
 
+class DuplicateFileIDError(Exception):
+    """Given File ID already exists"""
 
-class FatSamStorage:
+
+class LibrarianStorage:
     """Blob storage.
     
     This manages the actual storage of files on disk and the record of those in
@@ -43,14 +46,16 @@ class FatSamStorage:
         return os.path.join(self.directory, _relFileLocation(str(fileid)))
 
     def startAddFile(self, filename, size):
-        return FatSamFile(self, filename, size)
+        return LibraryFileUpload(self, filename, size)
 
     def getFileAlias(self, fileid, filename):
         return self.library.getAlias(fileid, filename)
 
-class FatSamFile(object):
+class LibraryFileUpload(object):
     srcDigest = None
     mimetype = 'unknown/unknown'
+    contentID = None
+
     def __init__(self, storage, filename, size):
         self.storage = storage
         self.filename = filename
@@ -77,27 +82,12 @@ class FatSamFile(object):
             os.remove(self.tmpfilepath) 
             raise DigestMismatchError, (self.srcDigest, dstDigest)
 
-        # Find potentially matching files
         begin()
         try:
-            similarFiles = self.storage.library.lookupBySHA1(dstDigest)
-            newFile = True
-            if len(similarFiles) == 0:
-                fileID = self.storage.library.add(dstDigest, self.size)
-            else:
-                for candidate in similarFiles:
-                    candidatePath = self.storage._fileLocation(candidate)
-                    if _sameFile(candidatePath, self.tmpfilepath):
-                        # Found a file with the same content
-                        fileID = candidate
-                        newFile = False
-                        break
-                else:
-                    # No matches -- we found a hash collision in SHA-1!
-                    fileID = self.storage.library.add(dstDigest, self.size)
-
-            alias = self.storage.library.addAlias(fileID, self.filename,
-                                                  self.mimetype)
+            # XXX: Figure out a better name for _determineContentAndAliasIDs
+            #        - AndrewBennetts, 2005-03-24
+            result = self._determineContentAndAliasIDs(dstDigest)
+            newFile, contentID, aliasID = result
         except:
             # Abort transaction and re-raise
             rollback()
@@ -106,7 +96,7 @@ class FatSamFile(object):
         if newFile:
             # Move file to final location
             try:
-                self._move(fileID)
+                self._move(contentID)
             except:
                 # Abort DB transaction
                 rollback()
@@ -123,7 +113,46 @@ class FatSamFile(object):
             commit()
         
         # Return the IDs
-        return fileID, alias
+        return contentID, aliasID
+
+    def _determineContentAndAliasIDs(self, digest):
+        if self.contentID is None:
+            # Find potentially matching files
+            # XXX: This is deprecated.  It should happen in the garbage
+            #      collection cron job.  See LibrarianTransactions spec.
+            #        - Andrew Bennetts, 2005-03-24.
+            similarFiles = self.storage.library.lookupBySHA1(digest)
+            newFile = True
+            if len(similarFiles) == 0:
+                contentID = self.storage.library.add(digest, self.size)
+            else:
+                for candidate in similarFiles:
+                    candidatePath = self.storage._fileLocation(candidate)
+                    if _sameFile(candidatePath, self.tmpfilepath):
+                        # Found a file with the same content
+                        contentID = candidate
+                        newFile = False
+                        break
+                else:
+                    # No matches -- we found a hash collision in SHA-1!
+                    contentID = self.storage.library.add(digest, self.size)
+        
+            aliasID = self.storage.library.addAlias(contentID, self.filename,
+                                                    self.mimetype)
+        else:
+            contentID = self.contentID
+            aliasID = None
+            newFile = True
+        
+            # ensure the content and alias don't already exist.
+            if self.storage.library.hasContent(contentID):
+                raise DuplicateFileIDError(
+                        'content ID %d already exists' % contentID)
+        
+            # We don't need to add them to the DB; the client has done that
+            # for us.
+
+        return newFile, contentID, aliasID
 
     def _move(self, fileID):
         location = self.storage._fileLocation(fileID)

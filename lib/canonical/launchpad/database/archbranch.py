@@ -133,7 +133,7 @@ class BranchMapper(object):
             % (quote(archive_id), quote(branch.category.name))
         )
         for an in ArchNamespace.select(query):
-            print 'deleting %r (%d) from BM.insert' % (an, an.id)
+            #print 'deleting %r (%d) from BM.insert' % (an, an.id)
             an.destroySelf()
 
     def exists(self, branch):
@@ -146,7 +146,7 @@ class VersionMapper(object):
     """Map versions to and from the database"""
     def findByName(self, name):
         try:
-            print name
+            #print name
             parser=arch.NameParser(name)
             archive=ArchArchive.select('name = ' + quote(parser.get_archive()))[0]
             id = archive.id
@@ -203,7 +203,7 @@ class VersionMapper(object):
                quote(version.branch.name))
         )
         for an in ArchNamespace.select(query):
-            print 'deleting %r (%d) from VM.insert' % (an, an.id)
+            #print 'deleting %r (%d) from VM.insert' % (an, an.id)
             an.destroySelf()
         return result
 

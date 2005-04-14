@@ -2,6 +2,185 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-14 15:33:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1607
+
+    Summary:
+      librarian transacations and test fixes
+    Revision:
+      launchpad--devel--0--patch-1607
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1469
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-1
+       Start hacking towards LibrarianTransactions, plus extra comments.
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-2
+       More work on new FatSamFile.store logic.
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-3
+       Fix some bugs; all the old tests pass again.
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-4
+       Extract 40 lines of FatSamFile.store into a new method to aid testing.
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-5
+       Start testing new code
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-6
+       Remove unneeded changes to db.py.  What was I thinking?
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-7
+       More testing
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-8
+       Add some XXX comments to clearly mark work that needs doing.
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-9
+       Add XXX to remind myself to remove some cruft.
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-10
+       First pass at updating the upload client to generate IDs rather than receive them.
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-11
+       Various small fixes to the upload protocol changes; all but one test passes.
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-12
+       Make test_uploadThenDownload pass.
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-13
+       Remove FatSamFile.aliasID instance variable, and associated XXX comment.
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-14
+       Remove AliasConflict (cleans up several XXXs)
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-15
+       Remove unused method.
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-16
+       More and better comments
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-17
+       Implement test_clientProvidedDuplicateContent
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-18
+       Some work based on stub's review
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-19
+       Update test to non-deprecated API (client-specified IDs, rather than server-generated).
+    
+     * andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-20
+       Update comments to be consistent with code.
+    
+     * daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-37
+       fix ordering of obsolete message sets
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-277
+       Merge from andrew.bennetts@canonical.com/launchpad--librarian-transactions--0, resolve conflicts and some fixes
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-278
+       Handle 404s correctly, and test transaction requirements (commit before retrieve)
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-279
+       Test duplicate uploads
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-280
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-281
+       tidy and tests
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-282
+       config fixes and wire up chunkydiff switch
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-283
+       Allow display of tracebacks to be toggled using config file
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-284
+       Remove deliberate error on front page
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-285
+       If you are going to have expiry dates in the sampledata, please make sure they expire *after* I have retired :-P
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-286
+       Merge from daf@canonical.com--2004/launchpad--RosettaOptimization--0
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-287
+       Remove debug crud
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-288
+       Fix Zopeless librarian tests
+    
+
+    removed files:
+     lib/canonical/.arch-ids/canonical.debugskin-configure.zcml.id
+     lib/canonical/canonical.debugskin-configure.zcml
+
+    modified files:
+     database/schema/security.cfg doc/changelog.txt launchpad.conf
+     lib/canonical/config/__init__.py
+     lib/canonical/config/schema.xml lib/canonical/functional.py
+     lib/canonical/launchpad/components/poexport.py
+     lib/canonical/launchpad/components/tests/test_poexport.py
+     lib/canonical/launchpad/database/archbranch.py
+     lib/canonical/launchpad/doc/testing.txt
+     lib/canonical/launchpad/pagetests/foaf/22-approve-proposed-member.txt
+     lib/canonical/launchpad/pagetests/foaf/23-promote-member.txt
+     lib/canonical/launchpad/pagetests/foaf/24-demote-member.txt
+     lib/canonical/launchpad/templates/default-error.pt
+     lib/canonical/launchpad/templates/root-index.pt
+     lib/canonical/launchpad/webapp/error.py
+     lib/canonical/librarian/client.py
+     lib/canonical/librarian/configure.zcml
+     lib/canonical/librarian/db.py
+     lib/canonical/librarian/ftests/test_storage.py
+     lib/canonical/librarian/ftests/test_web.py
+     lib/canonical/librarian/interfaces.py
+     lib/canonical/librarian/librarian.tac
+     lib/canonical/librarian/libraryprotocol.py
+     lib/canonical/librarian/storage.py
+     lib/canonical/librarian/tests/test_storage.py
+     lib/canonical/librarian/web.py
+
+    new patches:
+     andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--base-0
+     andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-1
+     andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-2
+     andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-3
+     andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-4
+     andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-5
+     andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-6
+     andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-7
+     andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-8
+     andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-9
+     andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-10
+     andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-11
+     andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-12
+     andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-13
+     andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-14
+     andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-15
+     andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-16
+     andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-17
+     andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-18
+     andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-19
+     andrew.bennetts@canonical.com/launchpad--librarian-transactions--0--patch-20
+     daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-37
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-277
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-278
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-279
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-280
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-281
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-282
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-283
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-284
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-285
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-286
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-287
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-288
+
+
 2005-04-13 18:59:31 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1606
 
     Summary:

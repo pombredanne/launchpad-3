@@ -6,14 +6,6 @@ import sys, os, os.path
 import zope.thread
 import ZConfig
 
-class BaseConfig(object):
-    """A tree of these objects is used to build the config.
-
-    Attributes are used to store items and subtrees.
-    """
-    def __init__(self, config):
-        self.config = config
-
 class CanonicalConfig(object):
     """
     Singleton configuration, accessed via the `config` module global.

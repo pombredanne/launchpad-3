@@ -1,15 +1,5 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
-    <content class=".client.FileUploadClient">
-        <implements interface=".interfaces.IFileUploadClient" />
-        <allow interface=".interfaces.IFileUploadClient" />
-    </content>
-
-    <content class=".client.FileDownloadClient">
-        <implements interface=".interfaces.IFileDownloadClient" />
-        <allow interface=".interfaces.IFileDownloadClient" />
-    </content>
-
     <content class=".client.LibrarianClient">
         <implements interface=".interfaces.ILibrarianClient" />
         <allow interface=".interfaces.ILibrarianClient" />

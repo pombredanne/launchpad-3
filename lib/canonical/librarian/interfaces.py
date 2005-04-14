@@ -27,6 +27,3 @@ class IFileDownloadClient(Interface):
 class ILibrarianClient(IFileUploadClient, IFileDownloadClient):
     pass
 
-class IReadFile(Interface):
-    def read(blocksize):
-        """Read up to blobksize bytes from this file-like object"""

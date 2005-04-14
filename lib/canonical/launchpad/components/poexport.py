@@ -53,9 +53,12 @@ class OutputPOFile:
         """Return a string representation of this PO file."""
 
         # Sort all the PO file's message sets by sequence number.
-        msgsets = [(msgset.sequence, msgset) for msgset in self.msgsets]
+        msgsets = [
+            (msgset.obsolete, msgset.sequence, msgset)
+            for msgset in self.msgsets
+            ]
         msgsets.sort()
-        msgsets = [msgset for sequence, msgset in msgsets]
+        msgsets = [msgset for obsolete, sequence, msgset in msgsets]
 
         chunks = [unicode(self.header).encode(self.header.charset)]
         chunks.extend([msgset.export_string() for msgset in msgsets])

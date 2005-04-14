@@ -4,14 +4,20 @@
 from socket import socket, SOCK_STREAM, AF_INET
 from select import select
 
-import urllib, urllib2, warnings
+import sha
+import urllib
+import urllib2
+import warnings
 
 from canonical.config import config
+from canonical.database.sqlbase import cursor
 
 # TODO: Nuke all deprecated methods and refactor sometime after May 2005
 # assuming nobody comes up with use cases for keeping them. I didn't
 # just refactor this because I suspect that this API is used by code with
 # poor or no test coverage -- StuartBishop 20050413
+
+import warnings
 
 __all__ = ['UploadFailed', 'FileUploadClient', 'FileDownloadClient']
 
@@ -66,17 +72,19 @@ class FileUploadClient(object):
         self.f.write(line + '\r\n')
         self._checkError()
 
-    def addFile(self, name, size, file, contentType=None, digest=None,
-            _warn=True):
+    def _sendHeader(self, name, value):
+        self._sendLine('%s: %s' % (name, value))
+
+    def addFile(self, name, size, file, contentType, digest=None, _warn=True):
         """Add a file to the librarian.
 
         :param name: Name to store the file as
         :param size: Size of the file
         :param file: File-like object with the content in it
-        :param contentType: Optional mime-type, e.g. text/plain
-        :param digest: Optional SHA-1 digest as hex string.  If given, the
-            server will use this to check that the upload is not corrupt
+        :param contentType: mime-type, e.g. text/plain
 
+        :returns: 2-tuple of (contentID, aliasID) as ints.
+        
         :raises UploadFailed: If the server rejects the upload for some reason
         """
         # Detect if this method was not called from the LibrarianClient
@@ -91,33 +99,48 @@ class FileUploadClient(object):
 
         self._connect()
         try:
+            # Import in this method to avoid a circular import
+            from canonical.launchpad.database import LibraryFileContent
+            from canonical.launchpad.database import LibraryFileAlias
+
+            # Generate new content and alias IDs.
+            # (we'll create rows with these IDs later, but not yet)
+            cur = cursor()
+            cur.execute("SELECT nextval('libraryfilecontent_id_seq')")
+            contentID = cur.fetchone()[0]
+            cur.execute("SELECT nextval('libraryfilealias_id_seq')")
+            aliasID = cur.fetchone()[0]
+
             # Send command
             self._sendLine('STORE %d %s' % (size, name))
 
             # Send headers
-            if contentType is not None:
-                self._sendLine('Content-Type: ' + contentType)
-            if digest is not None:
-                self._sendLine('SHA1-Digest: ' + digest)
+            self._sendHeader('File-Content-ID', contentID)
+            self._sendHeader('File-Alias-ID', aliasID)
 
             # Send blank line
             self._sendLine('')
             
             # Send file
-            for chunk in iter(lambda: file.read(4096), ''):
+            digester = sha.sha()
+            for chunk in iter(lambda: file.read(1024*64), ''):
                 self.f.write(chunk)
-            self.f.flush()
+                digester.update(chunk)
 
             # Read response
             response = self.f.readline().strip()
-            code, value = response.split(' ', 1)
-            if code == '200':
-                return value.split('/', 1)
-            else:
+            if response != '200':
                 raise UploadFailed, 'Server said: ' + response
+
+            # Add rows to DB
+            LibraryFileContent(id=contentID, filesize=size,
+                            sha1=digester.hexdigest())
+            LibraryFileAlias(id=aliasID, contentID=contentID, filename=name,
+                            mimetype=contentType)
+
+            return contentID, aliasID
         finally:
             self._close()
-
 
 def quote(s):
     # TODO: Perhaps filenames with / in them should be disallowed?
@@ -164,7 +187,7 @@ class FileDownloadClient(object):
 
         :param fileID: A unique ID for the file content to download
         :param aliasID: A unique ID for the alias
-        :param flename: The filename of the file being downloaded
+        :param filename: The filename of the file being downloaded
 
         :returns: file-like object
         """
@@ -193,6 +216,11 @@ class FileDownloadClient(object):
             raise DownloadFailed, 'Incomplete response'
         return paths
 
+    def _parsePath(path):
+        fileID, aliasID, filename = path.split('/')
+        return int(fileID), int(aliasID), filename
+    _parsePath = staticmethod(_parsePath)
+
     def findByDigest(self, hexdigest):
         """Find a file by its SHA-1 digest
 
@@ -202,7 +230,7 @@ class FileDownloadClient(object):
                 'FileDownloadClient.findByDigest is not needed and will '
                 'be removed', DeprecationWarning, stacklevel=2
                 )
-        return [tuple(p.split('/')) for p in self._findByDigest(hexdigest)]
+        return [self._parsePath(path) for path in self._findByDigest(hexdigest)]
 
     def findLinksByDigest(self, hexdigest):
         """Return a list of URIs to file aliases matching 'hexdigest'"""
@@ -231,19 +259,22 @@ class FileDownloadClient(object):
 
         :returns: String Path
         """
-        host = config.librarian.download_host
-        port = config.librarian.download_port
-        url = ('http://%s:%d/byalias?alias=%s'
-               % (host, port, aliasID))
-        self._warning('getPathForAlias: http get %s', url)
-        f = urllib2.urlopen(url)
-        l = f.read()
-        f.close()
-        if l == 'Not found':
+        aliasID = int(aliasID)
+        q = """
+            SELECT c.id, a.filename
+            FROM
+                LibraryFileAlias AS a
+                JOIN LibraryFileContent AS c ON c.id = a.content
+            WHERE
+                a.id = %d
+            """ % aliasID
+        cur = cursor()
+        cur.execute(q)
+        row = cur.fetchone()
+        if row is None:
             raise DownloadFailed, 'Alias %r not found' % (aliasID,)
-        if l == 'Bad search':
-            raise DownloadFailed, 'Bad search: ' + repr(aliasID)
-        return l.rstrip()
+        contentID, filename = row
+        return '/%d/%d/%s' % (contentID, aliasID, quote(filename))
 
     def getURLForAlias(self, aliasID):
         """Returns the url for talking to the librarian about the given
@@ -269,6 +300,7 @@ class FileDownloadClient(object):
         url = self.getURLForAlias(aliasID)
         return _File(urllib2.urlopen(url))
 
+
 class LibrarianClient(FileUploadClient, FileDownloadClient):
     """Object combining the upload/download interfaces to the Librarian
        simplifying access. This object is instantiated as a Utility
@@ -277,13 +309,15 @@ class LibrarianClient(FileUploadClient, FileDownloadClient):
     def __init__(self):
         super(LibrarianClient, self).__init__()
 
-    def addFile(self, name, size, file, contentType=None):
+    def addFile(self, name, size, file, contentType):
         """See ILibrarianClient.addFile"""
         # Override the FileUploadClient implementation as the method
         # signature and return value has changed.
         # TODO: FileUploadClient and FileDownloadClient should be removed,
         # with their code moved into the LibrarianClient class and deprecated
         # methods removed.
-        r = super(LibrarianClient, self).addFile(name, size, file, _warn=False)
+        r = super(LibrarianClient, self).addFile(
+                name, size, file, contentType, _warn=False
+                )
         return int(r[1])
 

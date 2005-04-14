@@ -28,7 +28,7 @@ application = service.Application('Librarian')
 librarianService = service.IServiceCollection(application)
 
 path = config.librarian.server.root
-storage = storage.FatSamStorage(path, db.Library())
+storage = storage.LibrarianStorage(path, db.Library())
 
 f = FileUploadFactory(storage)
 uploadPort = str(config.librarian.upload_port)

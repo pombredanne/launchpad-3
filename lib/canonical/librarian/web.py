@@ -60,9 +60,9 @@ class LibraryFileAliasResource(resource.Resource):
         begin()
         try:
             try:
-                alias = self.storage.getFileAlias(self.fileID, filename) 
+                alias = self.storage.getFileAlias(self.fileID, filename)
                 return alias.id, alias.mimetype
-            except IndexError:
+            except LookupError:
                 raise NotFound
         finally:
             rollback()
@@ -135,7 +135,7 @@ class AliasSearchResource(resource.Resource):
         try:
             alias = int(request.args['alias'][0])
         except (LookupError, ValueError):
-            return static.Data(AliasSearchErrors.BAD_SEARCH, 
+            return static.Data(AliasSearchErrors.BAD_SEARCH,
                                'text/plain').render(request)
 
         deferred = deferToThread(self._getByAlias, alias)

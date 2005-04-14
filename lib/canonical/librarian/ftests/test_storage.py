@@ -6,13 +6,15 @@ import shutil
 import tempfile
 import unittest
 
-from canonical.librarian.storage import FatSamStorage, DigestMismatchError
+from canonical.librarian.storage import LibrarianStorage, DigestMismatchError
+from canonical.librarian.storage import LibraryFileUpload, DuplicateFileIDError
 from canonical.librarian import db
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.database.sqlbase import begin
+from canonical.launchpad.database import LibraryFileContent, LibraryFileAlias
 
 
-class FatSamStorageDBTests(LaunchpadZopelessTestSetup, unittest.TestCase):
+class LibrarianStorageDBTests(LaunchpadZopelessTestSetup, unittest.TestCase):
     dbuser = 'librarian'
     def __init__(self, methodName='runTest'):
         # We can't use super here, because: the signatures of the two __init__
@@ -24,15 +26,15 @@ class FatSamStorageDBTests(LaunchpadZopelessTestSetup, unittest.TestCase):
         LaunchpadZopelessTestSetup.__init__(self)
 
     def setUp(self):
-        super(FatSamStorageDBTests, self).setUp()
+        super(LibrarianStorageDBTests, self).setUp()
         self.directory = tempfile.mkdtemp()
-        self.storage = FatSamStorage(self.directory, db.Library())
+        self.storage = LibrarianStorage(self.directory, db.Library())
 
     def tearDown(self):
         shutil.rmtree(self.directory, ignore_errors=True)
         from canonical.database.sqlbase import begin
         begin()
-        super(FatSamStorageDBTests, self).tearDown()
+        super(LibrarianStorageDBTests, self).tearDown()
 
     def test_addFile(self):
         data = 'data ' * 50
@@ -104,12 +106,67 @@ class FatSamStorageDBTests(LaunchpadZopelessTestSetup, unittest.TestCase):
         newfile3 = self.storage.startAddFile('file1', len(data))
         newfile3.mimetype = 'text/foo'
         newfile3.append(data)
-        # ...so when we store it, we get an AliasConflict
-        self.assertRaises(db.AliasConflict, newfile3.store)
+        # ...which should work, and give us a new alias id
+        fileid3, aliasid3 = newfile3.store()
+        self.assertNotEqual(aliasid2, aliasid3)
+
+    def test_clientProvidedDuplicateIDs(self):
+        # This test checks the new behaviour specified by LibrarianTransactions
+        # spec: don't create IDs in DB, but do check they don't exist.
+
+        # Create a new file
+        newfile = LibraryFileUpload(self.storage, 'filename', 0)
+
+        # Set a content ID on the file (same as would happen with a
+        # client-generated ID).
+        newfile.contentID = 666
+
+        # Make sure that _determineContentAndAliasIDs notices this is a new
+        # file...
+        new, contentID, aliasID = newfile._determineContentAndAliasIDs(None)
+        self.assertEqual(True, new)
+        # ...with the ID we gave it...
+        self.assertEqual(666, contentID)
+        # ...and the alias ID is irrelevant (it would be taken care of
+        # client-side), so it should be None.
+        self.assertEqual(None, aliasID)
+
+        # Now manually add content ID 666 to the database, and commit.
+        contentClash = LibraryFileContent(filesize=0, sha1='foo', id=666)
+        self.txn.commit()
+
+        # Now _determineContentAndAliasIDs will raise DuplicateFileIDError.
+        self.assertRaises(DuplicateFileIDError,
+                newfile._determineContentAndAliasIDs, None)
+
+    def test_clientProvidedDuplicateContent(self):
+        # Check the new behaviour specified by LibrarianTransactions spec: allow
+        # duplicate content with distinct IDs.
+
+        content = 'some content'
+
+        # Store a file with id 6661
+        newfile1 = LibraryFileUpload(self.storage, 'filename', 0)
+        newfile1.contentID = 6661
+        newfile1.append(content)
+        fileid1, aliasid1 = newfile1.store()
+
+        # Store second file identical to the first, with id 6662
+        newfile2 = LibraryFileUpload(self.storage, 'filename', 0)
+        newfile2.contentID = 6662
+        newfile2.append(content)
+        fileid2, aliasid2 = newfile2.store()
+
+        # Create rows in the database for these files.
+        content1 = LibraryFileContent(filesize=0, sha1='foo', id=6661)
+        content2 = LibraryFileContent(filesize=0, sha1='foo', id=6662)
+        self.txn.commit()
+
+        # And no errors should have been raised!
 
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(FatSamStorageDBTests))
+    suite.addTest(unittest.makeSuite(LibrarianStorageDBTests))
     return suite
 
