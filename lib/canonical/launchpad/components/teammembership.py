@@ -21,10 +21,6 @@ class TeamMembershipSubset:
     def __init__(self, team=None):
         self.team = team
 
-    def _getMembershipsByStatus(self, status):
-        mset = getUtility(ITeamMembershipSet)
-        return mset.getMemberships(self.team.id, status.value)
-
     def getByPersonName(self, name, default=None):
         assert self.team is not None
         person = getUtility(IPersonSet).getByName(name)
@@ -33,23 +29,16 @@ class TeamMembershipSubset:
 
     def getActiveMemberships(self):
         assert self.team is not None
-        status = TeamMembershipStatus.ADMIN
-        admins = self._getMembershipsByStatus(status)
-
-        status = TeamMembershipStatus.APPROVED
-        members = self._getMembershipsByStatus(status)
-        return admins + members
+        mset = getUtility(ITeamMembershipSet)
+        return mset.getActiveMemberships(self.team.id)
 
     def getProposedMemberships(self):
         assert self.team is not None
-        return self._getMembershipsByStatus(TeamMembershipStatus.PROPOSED)
+        mset = getUtility(ITeamMembershipSet)
+        return mset.getProposedMemberships(self.team.id)
 
     def getInactiveMemberships(self):
         assert self.team is not None
-        status = TeamMembershipStatus.EXPIRED
-        expired = self._getMembershipsByStatus(status)
-
-        status = TeamMembershipStatus.DEACTIVATED
-        deactivated = self._getMembershipsByStatus(status)
-        return expired + deactivated
+        mset = getUtility(ITeamMembershipSet)
+        return mset.getInactiveMemberships(self.team.id)
 

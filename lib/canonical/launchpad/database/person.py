@@ -14,7 +14,7 @@ from zope.component import ComponentLookupError, getUtility
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, SQLObjectNotFound
 from sqlobject.sqlbuilder import AND
-from canonical.database.sqlbase import SQLBase, quote, cursor
+from canonical.database.sqlbase import SQLBase, quote, cursor, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database import postgresql
 
@@ -665,7 +665,7 @@ class PersonSet(object):
             clauseTables=('POTranslationSighting', 'POMsgSet'),
             distinct=True)
 
-    def getUbuntites(self):
+    def getUbuntites(self, orderBy=None):
         """See IPersonSet."""
         
         clauseTables = ['SignedCodeOfConduct']
@@ -678,7 +678,7 @@ class PersonSet(object):
         query = ('Person.id = SignedCodeOfConduct.owner AND '
                  'SignedCodeOfConduct.active = True')
 
-        return Person.select(query, clauseTables=clauseTables)
+        return Person.select(query, clauseTables=clauseTables, orderBy=orderBy)
     
     def merge(self, from_person, to_person):
         """Merge a person into another.
@@ -1089,6 +1089,8 @@ class TeamMembershipSet(object):
 
     implements(ITeamMembershipSet)
 
+    _defaultOrder = 'Person.displayname'
+
     def getByPersonAndTeam(self, personID, teamID, default=None):
         results = TeamMembership.selectBy(personID=personID, teamID=teamID)
         if results.count() < 1:
@@ -1099,14 +1101,30 @@ class TeamMembershipSet(object):
     def getTeamMembersCount(self, teamID):
         return TeamMembership.selectBy(teamID=teamID).count()
 
-    def getMemberships(self, teamID, status):
-        assert isinstance(status, int)
+    def _getMembershipsByStatuses(self, teamID, statuses, orderBy=None):
         assert isinstance(teamID, int)
-        query = ("TeamMembership.team = %d AND TeamMembership.status = %d "
-                 "AND Person.id = TeamMembership.person") % (
-                 teamID, status)
+        orderBy = orderBy or self._defaultOrder
+        clauses = []
+        for status in statuses:
+            clauses.append("TeamMembership.status = %s" % sqlvalues(status))
+        clauses = " OR ".join(clauses)
+        query = ("(%s) AND Person.id = TeamMembership.person AND "
+                 "TeamMembership.team = %d" % (clauses, teamID))
         return list(TeamMembership.select(query, clauseTables=['Person'],
-                                          orderBy='displayname'))
+                                          orderBy=orderBy))
+
+    def getActiveMemberships(self, teamID, orderBy=None):
+        statuses = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
+        return self._getMembershipsByStatuses(teamID, statuses, orderBy=orderBy)
+
+    def getInactiveMemberships(self, teamID, orderBy=None):
+        statuses = [TeamMembershipStatus.EXPIRED,
+                    TeamMembershipStatus.DEACTIVATED]
+        return self._getMembershipsByStatuses(teamID, statuses, orderBy=orderBy)
+
+    def getProposedMemberships(self, teamID, orderBy=None):
+        statuses = [TeamMembershipStatus.PROPOSED]
+        return self._getMembershipsByStatuses(teamID, statuses, orderBy=orderBy)
 
 
 class TeamParticipation(SQLBase):

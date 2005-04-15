@@ -2,6 +2,29 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-15 14:38:56 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1616
+
+    Summary:
+      Add optional orderBy methods to ITeamMembershiSet methods. Document orderBy in all methods that accepts it. Move some methods from ITeamMembershipSubset to ITeamMembershipSet. r=SteveA
+    Revision:
+      launchpad--devel--0--patch-1616
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-289
+       Add optional orderBy methods to ITeamMembershipSet methods. Document orderBy in all methods that accepts it. Move some methods from ITeamMembershipSubset to ITeamMembershipSet.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/components/teammembership.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/person.py
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-289
+
+
 2005-04-15 10:35:52 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1615
 
     Summary:

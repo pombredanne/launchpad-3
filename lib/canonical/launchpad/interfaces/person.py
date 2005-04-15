@@ -349,10 +349,22 @@ class IPersonSet(Interface):
         """
 
     def getAllTeams(orderBy=None):
-        """Return all Teams."""
+        """Return all Teams.
+        
+        If you want the results ordered, you have to explicitly specify an
+        <orderBy>. Otherwise the order used is not predictable.
+        <orderBy> can be either a string with the column name you want to sort
+        or a list of column names as strings.
+        """
 
     def getAllPersons(orderBy=None):
-        """Return all Persons, ignoring the merged ones."""
+        """Return all Persons, ignoring the merged ones.
+        
+        If you want the results ordered, you have to explicitly specify an
+        <orderBy>. Otherwise the order used is not predictable.
+        <orderBy> can be either a string with the column name you want to sort
+        or a list of column names as strings.
+        """
 
     def peopleCount():
         """Return the number of non-merged persons in the database."""
@@ -361,13 +373,31 @@ class IPersonSet(Interface):
         """Return the number of teams in the database."""
 
     def findByName(name, orderBy=None):
-        """Return all not-merged Persons and Teams with name matching."""
+        """Return all non-merged Persons and Teams with name matching.
+        
+        If you want the results ordered, you have to explicitly specify an
+        <orderBy>. Otherwise the order used is not predictable.
+        <orderBy> can be either a string with the column name you want to sort
+        or a list of column names as strings.
+        """
 
     def findPersonByName(name, orderBy=None):
-        """Return all not-merged Persons with name matching."""
+        """Return all not-merged Persons with name matching.
+
+        If you want the results ordered, you have to explicitly specify an
+        <orderBy>. Otherwise the order used is not predictable.
+        <orderBy> can be either a string with the column name you want to sort
+        or a list of column names as strings.
+        """
 
     def findTeamByName(name, orderBy=None):
-        """Return all Teams with name matching."""
+        """Return all Teams with name matching.
+
+        If you want the results ordered, you have to explicitly specify an
+        <orderBy>. Otherwise the order used is not predictable.
+        <orderBy> can be either a string with the column name you want to sort
+        or a list of column names as strings.
+        """
 
     def getContributorsForPOFile(pofile):
         """Return the list of persons that have an active contribution for a
@@ -454,9 +484,35 @@ class ITeamMembership(Interface):
 class ITeamMembershipSet(Interface):
     """A Set for TeamMembership objects."""
 
-    def getMemberships(teamID, status):
-        """Return all TeamMembership objects for the given team with the given
-        status."""
+    def getActiveMemberships(teamID, orderBy=None):
+        """Return all active TeamMemberships for the given team.
+        
+        Active memberships are the ones with status APPROVED or ADMIN.
+        If you want the results ordered, you have to explicitly specify an
+        <orderBy>. Otherwise the order used is not predictable.
+        <orderBy> can be either a string with the column name you want to sort
+        or a list of column names as strings.
+        """
+
+    def getInactiveMemberships(teamID, orderBy=None):
+        """Return all inactive TeamMemberships for the given team.
+        
+        Inactive memberships are the ones with status EXPIRED or DEACTIVATED.
+        If you want the results ordered, you have to explicitly specify an
+        <orderBy>. Otherwise the order used is not predictable.
+        <orderBy> can be either a string with the column name you want to sort
+        or a list of column names as strings.
+        """
+
+    def getProposedMemberships(teamID, orderBy=None):
+        """Return all proposed TeamMemberships for the given team.
+        
+        Proposed memberships are the ones with status PROPOSED.
+        If you want the results ordered, you have to explicitly specify an
+        <orderBy>. Otherwise the order used is not predictable.
+        <orderBy> can be either a string with the column name you want to sort
+        or a list of column names as strings.
+        """
 
     def getByPersonAndTeam(personID, teamID, default=None):
         """Return the TeamMembership object for the given person and team.
@@ -488,9 +544,6 @@ class ITeamMembershipSubset(Interface):
         If there's no TeamMembership for this person in this team, return the
         default value.
         """
-
-    def getMembershipsByStatus(status):
-        """All TeamMembership objects with the given status for this team."""
 
     def getInactiveMemberships():
         """Return all TeamMembership objects for inactive members of this team.
