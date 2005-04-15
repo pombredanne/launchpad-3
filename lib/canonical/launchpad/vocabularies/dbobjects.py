@@ -247,9 +247,6 @@ class PersonVocabulary(NamedSQLObjectVocabulary):
 
     def search(self, query):
         """Return terms where query is a subtring of the name"""
-        # TODO: This may actually be fast enough, or perhaps we will
-        # need to implement full text search inside PostgreSQL (tsearch or
-        # similar) -- StuartBishop 2004/11/24
         if not query:
             return []
         kw = {}
@@ -292,9 +289,6 @@ class ValidPersonVocabulary(PersonVocabulary):
 
     def search(self, query):
         """Return terms where query is a subtring of the name"""
-        # TODO: This may actually be fast enough, or perhaps we will
-        # need to implement full text search inside PostgreSQL (tsearch or
-        # similar) -- StuartBishop 2004/11/24
         if not query:
             return []
         query = query.lower()

@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-15 04:04:56 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1614
+
+    Summary:
+      [trivial] Remove some done TODOs
+    Revision:
+      launchpad--devel--0--patch-1614
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-289
+       [trivial] Remove some done TODOs
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/vocabularies/dbobjects.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-289
+
+
 2005-04-14 18:49:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1613
 
     Summary:
