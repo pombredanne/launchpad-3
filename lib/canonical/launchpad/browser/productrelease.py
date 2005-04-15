@@ -3,9 +3,6 @@
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
-# rosetta utility
-from canonical.rosetta.browser import request_languages, TemplateLanguages
-
 # launchpad interfaces
 from canonical.launchpad.interfaces import IPOTemplateSet
 
@@ -82,7 +79,7 @@ class ProductReleaseView:
         self.form = request.form
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
-        self.languages = request_languages(self.request)
+        self.languages = helpers.request_languages(self.request)
         # Cache value for the return value of self.templates
         self._template_languages = None
         # List of the templates we have in this subset.
@@ -109,7 +106,7 @@ class ProductReleaseView:
     def potemplates(self):
         if self._template_languages is None:
             self._template_languages = [
-                    TemplateLanguages(template,
+                    helpers.TemplateLanguages(template,
                                       self.languages,
                                       relativeurl='+pots/'+template.name)
                                for template in self._templates]

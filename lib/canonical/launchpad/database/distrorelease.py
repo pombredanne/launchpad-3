@@ -31,8 +31,7 @@ from canonical.launchpad.database.publishing \
 from canonical.launchpad.database import SourcePackageSet
 
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
-# sabdfl 30/03/05 grrr.... this should be in its own file, please fix it
-from canonical.launchpad.database.pofile import POTemplate
+from canonical.launchpad.database.potemplate import POTemplate
 
 class DistroRelease(SQLBase):
     """A particular release of a distribution."""

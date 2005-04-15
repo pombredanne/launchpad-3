@@ -252,180 +252,6 @@ msgstr ""
 '''
 
 
-def test_count_lines():
-    r'''
-    >>> from canonical.rosetta.browser import count_lines
-    >>> count_lines("foo")
-    1
-    >>> count_lines("123456789a123456789a123456789a1234566789a123456789a")
-    2
-    >>> count_lines("123456789a123456789a123456789a1234566789a123456789")
-    1
-    >>> count_lines("a\nb")
-    2
-    >>> count_lines("a\nb\n")
-    3
-    >>> count_lines("a\nb\nc")
-    3
-    >>> count_lines("123456789a123456789a123456789a\n1234566789a123456789a")
-    2
-    >>> count_lines("123456789a123456789a123456789a123456789a123456789a1\n1234566789a123456789a123456789a")
-    3
-    >>> count_lines("123456789a123456789a123456789a123456789a123456789a123456789a\n1234566789a123456789a123456789a")
-    3
-    >>> count_lines("foo bar\n")
-    2
-    '''
-
-def test_canonicalise_code():
-    '''
-    >>> from canonical.rosetta.browser import canonicalise_code
-    >>> canonicalise_code('cy')
-    'cy'
-    >>> canonicalise_code('cy-gb')
-    'cy_GB'
-    >>> canonicalise_code('cy_GB')
-    'cy_GB'
-    '''
-
-def test_codes_to_languages():
-    '''
-    Some boilerplate to allow us to use utilities.
-
-    >>> from zope.app.tests.placelesssetup import setUp, tearDown
-    >>> from zope.app.tests import ztapi
-
-    >>> setUp()
-    >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-
-    >>> from canonical.rosetta.browser import codes_to_languages
-    >>> languages = codes_to_languages(('es', '!!!'))
-    >>> len(languages)
-    1
-    >>> languages[0].code
-    'es'
-
-    >>> tearDown()
-    '''
-
-def test_request_languages():
-    '''
-    >>> from zope.app.tests.placelesssetup import setUp, tearDown
-    >>> from zope.app.tests import ztapi
-    >>> from zope.i18n.interfaces import IUserPreferredLanguages
-    >>> from canonical.launchpad.interfaces import IRequestPreferredLanguages
-    >>> from canonical.launchpad.interfaces import IRequestLocalLanguages
-    >>> from canonical.rosetta.browser import request_languages
-
-    First, test with a person who has a single preferred language.
-
-    >>> setUp()
-    >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
-
-    >>> languages = request_languages(DummyRequest())
-    >>> len(languages)
-    1
-    >>> languages[0].code
-    'es'
-
-    >>> tearDown()
-
-    Then test with a person who has no preferred language.
-
-    >>> setUp()
-    >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyNoLanguagePerson))
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
-
-    >>> languages = request_languages(DummyRequest())
-    >>> len(languages)
-    6
-    >>> languages[0].code
-    'ja'
-
-    >>> tearDown()
-    '''
-
-def test_parse_cformat_string():
-    '''
-    >>> from canonical.rosetta.browser import parse_cformat_string
-    >>> parse_cformat_string('')
-    ()
-    >>> parse_cformat_string('foo')
-    (('string', 'foo'),)
-    >>> parse_cformat_string('blah %d blah')
-    (('string', 'blah '), ('interpolation', '%d'), ('string', ' blah'))
-    >>> parse_cformat_string('%sfoo%%bar%s')
-    (('interpolation', '%s'), ('string', 'foo%%bar'), ('interpolation', '%s'))
-    >>> parse_cformat_string('%')
-    Traceback (most recent call last):
-    ...
-    ValueError: %
-    '''
-
-def test_parse_translation_form():
-    r'''
-    >>> from canonical.rosetta.browser import parse_translation_form
-
-    An empty form has no translations.
-
-    >>> parse_translation_form({})
-    {}
-
-    A message ID with no translations.
-
-    >>> x = parse_translation_form({'set_3_msgid' : 3 })
-    >>> x[3]['msgid']
-    3
-    >>> x[3]['translations']
-    {}
-    >>> x[3]['fuzzy']
-    {}
-
-    A translation with no message ID.
-
-    >>> parse_translation_form({'set_3_translation_cy' : None})
-    Traceback (most recent call last):
-    ...
-    AssertionError: Orphaned translation in form.
-
-    A message ID with some translations.
-
-    >>> x = parse_translation_form({
-    ...     'set_1_msgid' : 1,
-    ...     'set_1_translation_cy_0' : 'aaa',
-    ...     'set_1_translation_cy_1' : 'bbb',
-    ...     'set_1_translation_cy_2' : 'ccc',
-    ...     'set_1_translation_es_0' : 'xxx',
-    ...     'set_1_translation_es_1' : 'yyy',
-    ...     'set_1_fuzzy_es' : True
-    ...     })
-    >>> x[1]['msgid']
-    1
-    >>> x[1]['translations']['cy'][2]
-    'ccc'
-    >>> x[1]['translations']['es'][0]
-    'xxx'
-    >>> x[1]['fuzzy'].has_key('cy')
-    False
-    >>> x[1]['fuzzy']['es']
-    True
-
-    Test with a language which contains a country code. This is a regression
-    test.
-
-    >>> x = parse_translation_form({
-    ... 'set_1_msgid' : 1,
-    ... 'set_1_translation_pt_BR_0' : 'bar',
-    ... })
-    >>> x[1]['translations']['pt_BR'][0]
-    'bar'
-    '''
-
 def test_RosettaProjectView():
     '''
     >>> from canonical.launchpad.browser import ProjectView
@@ -440,7 +266,7 @@ def test_TranslatePOTemplate_init():
 
     >>> from zope.app.tests.placelesssetup import setUp, tearDown
     >>> from zope.app.tests import ztapi
-    >>> from canonical.rosetta.browser import TranslatePOTemplate
+    >>> from canonical.launchpad.browser import TranslatePOTemplate
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
@@ -577,7 +403,7 @@ def test_TranslatePOTemplate_atBeginning_atEnd():
 
     >>> from zope.app.tests.placelesssetup import setUp, tearDown
     >>> from zope.app.tests import ztapi
-    >>> from canonical.rosetta.browser import TranslatePOTemplate
+    >>> from canonical.launchpad.browser import TranslatePOTemplate
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
@@ -622,7 +448,7 @@ def test_TranslatePOTemplate_URLs():
 
     >>> from zope.app.tests.placelesssetup import setUp, tearDown
     >>> from zope.app.tests import ztapi
-    >>> from canonical.rosetta.browser import TranslatePOTemplate
+    >>> from canonical.launchpad.browser import TranslatePOTemplate
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
@@ -704,7 +530,7 @@ def test_TranslatePOTemplate_messageSets():
 
     >>> from zope.app.tests.placelesssetup import setUp, tearDown
     >>> from zope.app.tests import ztapi
-    >>> from canonical.rosetta.browser import TranslatePOTemplate
+    >>> from canonical.launchpad.browser import TranslatePOTemplate
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
@@ -736,45 +562,9 @@ def test_TranslatePOTemplate_messageSets():
     >>> tearDown()
     '''
 
-def test_msgid_html():
-    r'''
-    Test message ID presentation munger.
-
-    >>> from canonical.rosetta.browser import msgid_html
-
-    First, do no harm.
-
-    >>> msgid_html(u'foo bar', [], 'XXXA')
-    u'foo bar'
-
-    Test replacement of leading and trailing spaces.
-
-    >>> msgid_html(u' foo bar', [], 'XXXA')
-    u'XXXAfoo bar'
-    >>> msgid_html(u'foo bar ', [], 'XXXA')
-    u'foo barXXXA'
-    >>> msgid_html(u'  foo bar  ', [], 'XXXA')
-    u'XXXAXXXAfoo barXXXAXXXA'
-
-    Test replacement of newlines.
-
-    >>> msgid_html(u'foo\nbar', [], newline='YYYA')
-    u'fooYYYAbar'
-
-    And both together.
-
-    >>> msgid_html(u'foo \nbar', [], 'XXXA', 'YYYA')
-    u'fooXXXAYYYAbar'
-
-    Test treatment of tabs.
-
-    >>> msgid_html(u'foo\tbar', [])
-    u'foo\\tbar'
-    '''
-
 def test_TabIndexGenerator():
     '''
-    >>> from canonical.rosetta.browser import TabIndexGenerator
+    >>> from canonical.launchpad.browser import TabIndexGenerator
     >>> tig = TabIndexGenerator()
     >>> tig.generate()
     1

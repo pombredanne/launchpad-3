@@ -1,9 +1,13 @@
-getPORevisionDate
-=================
+Tests for our PO parser.
+========================
+
+
+POHeader.getPORevisionDate
+--------------------------
 
 Test that the function does not fails if the date field has unicode chars:
 
->>> from canonical.rosetta.pofile import POHeader
+>>> from canonical.launchpad.components.poparser import POHeader
 >>> header = POHeader(msgstr="""
 ... Project-Id-Version: foo
 ... Report-Msgid-Bugs-To: foo@bar.com
@@ -15,7 +19,6 @@ Test that the function does not fails if the date field has unicode chars:
 ... Content-Transfer-Encoding: 8bit
 ... """)
 >>> header.finish()
->>> from canonical.launchpad.database.pofile import getPORevisionDate
->>> getPORevisionDate(header)
+>>> header.getPORevisionDate()
 (u'\xe1 2004-03-06 20:06+0100', None)
 

@@ -23,6 +23,13 @@ from canonical.launchpad.database.bugtracker import *
 from canonical.launchpad.database.sourcesource import *
 from canonical.launchpad.database.potemplatename import *
 from canonical.launchpad.database.pofile import *
+from canonical.launchpad.database.potemplate import *
+from canonical.launchpad.database.potmsgset import *
+from canonical.launchpad.database.pomsgid import *
+from canonical.launchpad.database.pomsgidsighting import *
+from canonical.launchpad.database.pomsgset import *
+from canonical.launchpad.database.potranslation import *
+from canonical.launchpad.database.potranslationsighting import *
 from canonical.launchpad.database.archarchive import *
 from canonical.launchpad.database.archbranch import *
 from canonical.launchpad.database.archchangeset import *

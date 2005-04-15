@@ -4,7 +4,8 @@ from zope.interface import Interface
 
 __metaclass__ = type
 
-__all__ = ('IPOFileOutput', 'IPOTemplateExporter', 'IDistroReleasePOExporter')
+__all__ = ('IPOFileOutput', 'IPOTemplateExporter', 'IDistroReleasePOExporter',
+           'IPOExport')
 
 class IPOFileOutput(Interface):
     """Accept PO files for output.
@@ -39,6 +40,7 @@ class IPOTemplateExporter(Interface):
     def export_tarball_to_file(filehandle):
         """Export all translation in a tarball to a file handle."""
 
+
 class IDistroReleasePOExporter(Interface):
     """Export PO files in a distro release."""
 
@@ -51,3 +53,9 @@ class IDistroReleasePOExporter(Interface):
     def export_tarball_to_file(filehandle):
         """Export all translation in a tarball to a file handle."""
 
+
+class IPOExport(Interface):
+    """Interface to export .po/.pot files"""
+
+    def export(language):
+        """Exports the .po file for the specific language"""

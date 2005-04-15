@@ -1,5 +1,11 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
 from zope.interface import Interface, Attribute
 from zope.interface.common.mapping import IMapping
+
+__metaclass__ = type
+
+__all__ = ('IPOMessage', 'IPOHeader', 'IPOParser')
 
 class IPOMessage(Interface):
     """Represents a logic set of msgid/msgstr items that refer to a same message"""
@@ -36,14 +42,25 @@ class IPOHeader(IMapping):
     """Represents a PO header; items from the header can be fetched using the
     Mapping interface."""
 
+    messages = Attribute(
+        "A reference to the sequence of IPOMessages this header refers to")
+
     def finish():
         """If the IPOHeader instance implements the IPOMessage interface,
         you can call finish() to parse the msgstr and fill in the fields
         from there.  You should probably no longer modify the msgstr after
         that."""
 
-    messages = Attribute(
-        "A reference to the sequence of IPOMessages this header refers to")
+    def getPORevisionDate():
+        """Gets the string and datetime object for the PO-Revision-Date entry.
+
+        The function will return a tuple of a string and a datetime object
+        representing that string. If the date string is not found in the header
+        or the date format is not valid, the datetime object is None and
+        the string is set with the error.
+        This method is 100% code from Canonical.
+        """
+
 
 class IPOParser(Interface):
     def write(string):

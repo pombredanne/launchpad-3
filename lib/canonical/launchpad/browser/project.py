@@ -20,7 +20,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import IPerson, IProject
 
-from canonical.rosetta.browser import codes_to_languages, request_languages
+from canonical.launchpad import helpers
 
 #
 # we need malone.browser.newBugTracker
@@ -112,7 +112,7 @@ class ProjectView(object):
             currentCount = 0
             rosettaCount = 0
             updatesCount = 0
-            for language in request_languages(self.request):
+            for language in helpers.request_languages(self.request):
                 total += product.messageCount()
                 currentCount += product.currentCount(language.code)
                 rosettaCount += product.rosettaCount(language.code)
@@ -164,7 +164,7 @@ class ProjectView(object):
             yield retdict
 
     def languages(self):
-        return [language for language in request_languages(self.request)]
+        return [language for language in helpers.request_languages(self.request)]
 
 
 class ProjectAddProductView(AddView):

@@ -22,12 +22,11 @@ from canonical.database.sqlbase import SQLBase, quote
 from canonical.lp.dbschema import BugSeverity, BugTaskStatus
 from canonical.lp.dbschema import RosettaImportStatus, RevisionControlSystems
 from canonical.launchpad import helpers
-from canonical.rosetta.pofile import POSyntaxError, POInvalidInputError
 
 from canonical.launchpad.database.sourcesource import SourceSource
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productrelease import ProductRelease
-from canonical.launchpad.database.pofile import POTemplate
+from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.interfaces import IProduct, IProductSet
 

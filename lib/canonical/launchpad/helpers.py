@@ -6,15 +6,27 @@ import os
 import random
 import re
 import tarfile
+import base64
+import popen2
+import gettextpo
 from StringIO import StringIO
 from select import select
+from math import ceil
+from xml.sax.saxutils import escape as xml_escape
 
 from zope.component import getUtility
 
-import gettextpo
-
+from canonical.database.constants import UTC_NOW
+from canonical.lp.dbschema import RosettaImportStatus
 from canonical.launchpad.interfaces import ILaunchBag, IHasOwner, IGeoIP, \
-    IRequestPreferredLanguages
+    IRequestPreferredLanguages, ILanguageSet, IRequestLocalLanguages
+from canonical.launchpad.components.poparser import POSyntaxError, \
+    POInvalidInputError, POParser
+
+charactersPerLine = 50
+SPACE_CHAR = u'<span class="po-message-special">\u2022</span>'
+NEWLINE_CHAR = u'<span class="po-message-special">\u21b5</span><br/>\n'
+
 
 def is_maintainer(hasowner):
     """Return True if the logged in user is an owner of hasowner.
@@ -365,7 +377,7 @@ def convertToHtmlCode(text):
     return ''.join(map(lambda c: "&#%s;" % ord(c), text))
 
 def validate_translation(original, translation, flags):
-    """Checks with gettext if a translation is correct or not.
+    """Check with gettext if a translation is correct or not.
 
     If the translation has a problem, raise gettextpo.error.
     """
@@ -385,4 +397,416 @@ def validate_translation(original, translation, flags):
 
     # Check the msg.
     msg.check_format()
+
+def attachRawFileData(raw_file_data, contents, importer):
+    """Attach the contents of a file to a raw_file_data object."""
+    raw_file_data.rawfile = base64.encodestring(contents)
+    raw_file_data.daterawimport = UTC_NOW
+    raw_file_data.rawimporter = importer
+    raw_file_data.rawimportstatus = RosettaImportStatus.PENDING
+
+def count_lines(text):
+    '''Count the number of physical lines in a string. This is always at least
+    as large as the number of logical lines in a string.
+    '''
+
+    count = 0
+
+    for line in text.split('\n'):
+        if len(line) == 0:
+            count += 1
+        else:
+            count += int(ceil(float(len(line)) / charactersPerLine))
+
+    return count
+
+def canonicalise_code(code):
+    '''Convert a language code to a standard xx_YY form.'''
+
+    if '-' in code:
+        language, country = code.split('-', 1)
+
+        return "%s_%s" % (language, country.upper())
+    else:
+        return code
+
+def codes_to_languages(codes):
+    '''Convert a list of ISO language codes to language objects.'''
+
+    languages = []
+    all_languages = getUtility(ILanguageSet)
+
+    for code in codes:
+        try:
+            languages.append(all_languages[canonicalise_code(code)])
+        except KeyError:
+            pass
+
+    return languages
+
+def request_languages(request):
+    '''Turn a request into a list of languages to show.'''
+
+    user = getUtility(ILaunchBag).user
+
+    # If the user is authenticated, try seeing if they have any languages set.
+    if user is not None:
+        languages = user.languages
+        if languages:
+            return languages
+
+    # If the user is not authenticated, or they are authenticated but have no
+    # languages set, try looking at the HTTP headers for clues.
+    languages = IRequestPreferredLanguages(request).getPreferredLanguages()
+    for lang in IRequestLocalLanguages(request).getLocalLanguages():
+        if lang not in languages:
+            languages.append(lang)
+    return languages
+
+def parse_cformat_string(s):
+    '''Parse a printf()-style format string into a sequence of interpolations
+    and non-interpolations.'''
+
+    # The sequence '%%' is not counted as an interpolation. Perhaps splitting
+    # into 'special' and 'non-special' sequences would be better.
+
+    # This function works on the basis that s can be one of three things: an
+    # empty string, a string beginning with a sequence containing no
+    # interpolations, or a string beginning with an interpolation.
+
+    # Check for an empty string.
+
+    if s == '':
+        return ()
+
+    # Check for a interpolation-less prefix.
+
+    match = re.match('(%%|[^%])+', s)
+
+    if match:
+        t = match.group(0)
+        return (('string', t),) + parse_cformat_string(s[len(t):])
+
+    # Check for an interpolation sequence at the beginning.
+
+    match = re.match('%[^diouxXeEfFgGcspn]*[diouxXeEfFgGcspn]', s)
+
+    if match:
+        t = match.group(0)
+        return (('interpolation', t),) + parse_cformat_string(s[len(t):])
+
+    # Give up.
+
+    raise ValueError(s)
+
+def parse_translation_form(form):
+    """Parse a form submitted to the translation widget.
+
+    Returns a dictionary keyed on the sequence number of the message set,
+    where each value is a structure of the form
+
+        {
+            'msgid': '...',
+            'translations': {
+                'es': ['...', '...'],
+                'cy': ['...', '...', '...', '...'],
+            },
+            'fuzzy': {
+                 'es': False,
+                 'cy': True,
+            },
+        }
+    """
+
+    messageSets = {}
+
+    # Extract message IDs.
+
+    for key in form:
+        match = re.match('set_(\d+)_msgid$', key)
+
+        if match:
+            id = int(match.group(1))
+            messageSets[id] = {}
+            messageSets[id]['msgid'] = id
+            messageSets[id]['translations'] = {}
+            messageSets[id]['fuzzy'] = {}
+
+    # Extract non-plural translations.
+
+    for key in form:
+        match = re.match(r'set_(\d+)_translation_([a-z]+(?:_[A-Z]+)?)$', key)
+
+        if match:
+            id = int(match.group(1))
+            code = match.group(2)
+
+            if not id in messageSets:
+                raise AssertionError("Orphaned translation in form.")
+
+            messageSets[id]['translations'][code] = {}
+            messageSets[id]['translations'][code][0] = form[key].replace('\r', '')
+
+    # Extract plural translations.
+
+    for key in form:
+        match = re.match(r'set_(\d+)_translation_([a-z]+(?:_[A-Z]+)?)_(\d+)$',
+            key)
+
+        if match:
+            id = int(match.group(1))
+            code = match.group(2)
+            pluralform = int(match.group(3))
+
+            if not id in messageSets:
+                raise AssertionError("Orphaned translation in form.")
+
+            if not code in messageSets[id]['translations']:
+                messageSets[id]['translations'][code] = {}
+
+            messageSets[id]['translations'][code][pluralform] = form[key]
+
+    # Extract fuzzy statuses.
+
+    for key in form:
+        match = re.match(r'set_(\d+)_fuzzy_([a-z]+)$', key)
+
+        if match:
+            id = int(match.group(1))
+            code = match.group(2)
+            messageSets[id]['fuzzy'][code] = True
+
+    return messageSets
+
+def escape_msgid(s):
+    return s.replace('\\', r'\\').replace('\n', '\\n').replace('\t', '\\t')
+
+def msgid_html(text, flags, space=SPACE_CHAR, newline=NEWLINE_CHAR):
+    '''Convert a message ID to a HTML representation.'''
+
+    lines = []
+
+    for line in xml_escape(text).split('\n'):
+        # Pattern:
+        # - group 1: zero or more spaces: leading whitespace
+        # - group 2: zero or more groups of (zero or
+        #   more spaces followed by one or more non-spaces): maximal string
+        #   which doesn't begin or end with whitespace
+        # - group 3: zero or more spaces: trailing whitespace
+        match = re.match('^( *)((?: *[^ ]+)*)( *)$', line)
+
+        if match:
+            lines.append(
+                space * len(match.group(1)) +
+                match.group(2) +
+                space * len(match.group(3)))
+        else:
+            raise AssertionError(
+                "A regular expression that should always match didn't.")
+
+    for i in range(len(lines)):
+        if 'c-format' in flags:
+            line = ''
+
+            for segment in parse_cformat_string(lines[i]):
+                type, content = segment
+
+                if type == 'interpolation':
+                    line += '<span class="interpolation">%s</span>' % content
+                elif type == 'string':
+                    line += content
+
+            lines[i] = line
+
+    # Replace newlines and tabs with their respective representations.
+
+    return '\n'.join(lines).replace('\n', newline).replace('\t', '\\t')
+
+def check_po_syntax(s):
+    parser = POParser()
+
+    try:
+        parser.write(s)
+        parser.finish()
+    except:
+        return False
+
+    return True
+
+def is_tar_filename(filename):
+    '''
+    Check whether a filename looks like a filename that belongs to a tar file,
+    possibly one compressed somehow.
+    '''
+
+    return (filename.endswith('.tar') or
+            filename.endswith('.tar.gz') or
+            filename.endswith('.tar.bz2'))
+
+def check_tar(tf, pot_paths, po_paths):
+    '''
+    Check an uploaded tar file for problems. Returns an error message if a
+    problem was detected, or None otherwise.
+    '''
+
+    # Check that at most one .pot file was found.
+    if len(pot_paths) > 1:
+        return (
+            "More than one PO template was found in the tar file you "
+            "uploaded. This is not currently supported.")
+
+    # Check the syntax of the .pot file, if present.
+    if len(pot_paths) > 0:
+        pot_contents = tf.extractfile(pot_paths[0]).read()
+
+        if not check_po_syntax(pot_contents):
+            return (
+                "There was a problem parsing the PO template file in the tar "
+                "file you uploaded.")
+
+    # Complain if no files at all were found.
+    if len(pot_paths) == 0 and len(po_paths) == 0:
+        return (
+            "The tar file you uploaded could not be imported. This may be "
+            "because there was more than one 'po' directory, or because the "
+            "PO templates and PO files found did not share a common "
+            "location.")
+
+    return None
+
+def import_tar(potemplate, importer, tarfile, pot_paths, po_paths):
+    """Import a tar file into Rosetta.
+
+    Extract PO templates and PO files from the paths specified.
+    A status message is returned.
+
+    Currently, it is assumed that since check_tar will have been called before
+    import_tar, checking the syntax of the PO template will not be necessary
+    and also, we are 100% sure there are at least one .pot file and only one.
+    The syntax of PO files is checked, but errors are not fatal.
+    """
+
+    # At this point we are only getting one .pot file so this should be safe.
+    # We don't support other kinds of tarballs and before calling this
+    # function we did already the needed tests to be sure that pot_paths
+    # follows our requirements.
+    potemplate.attachRawFileData(tarfile.extractfile(pot_paths[0]).read(),
+                                 importer)
+    pot_base_dir = os.path.dirname(pot_paths[0])
+
+    # List of .pot and .po files that were not able to be imported.
+    errors = []
+
+    for path in po_paths:
+        if pot_base_dir != os.path.dirname(path):
+            # The po file is not inside the same directory than the pot file,
+            # we ignore it.
+            errors.append(path)
+            continue
+
+        contents = tarfile.extractfile(path).read()
+
+        basename = os.path.basename(path)
+        root, extension = os.path.splitext(basename)
+
+        if '@' in root:
+            # PO files with variants are not currently supported. If they
+            # were, we would use some code like this:
+            #
+            #   code, variant = [ unicode(x) for x in root.split('@', 1) ]
+
+            continue
+        else:
+            code, variant = root, None
+
+        pofile = potemplate.getOrCreatePOFile(code, variant, importer)
+
+        try:
+            pofile.attachRawFileData(contents, importer)
+        except (POSyntaxError, POInvalidInputError):
+            errors.append(path)
+            continue
+
+    message = ("%d files were queued for import from the tar file you "
+        "uploaded." % (len(pot_paths + po_paths) - len(errors)))
+
+    if errors != []:
+        message += (
+            "The following files were skipped due to syntax errors or other "
+            "problems: " + ', '.join(errors) + ".")
+
+    return message
+
+# XXX: Carlos Perello Marin 2005-04-15: TemplateLanguages and TemplateLanguage
+# should be fixed as explained at https://launchpad.ubuntu.com/malone/bugs/397
+
+class TemplateLanguages:
+    """Support class for ProductView."""
+
+    def __init__(self, template, languages, relativeurl=''):
+        self.template = template
+        self.name = template.potemplatename.name
+        self.title = template.title
+        self.description = template.description
+        self._languages = languages
+        self.relativeurl = relativeurl
+
+    def languages(self):
+        for language in self._languages:
+            yield TemplateLanguage(self.template, language, self.relativeurl)
+
+
+class TemplateLanguage:
+    """Support class for ProductView."""
+
+    def __init__(self, template, language, relativeurl=''):
+        self.name = language.englishname
+        self.code = language.code
+        self.translateURL = '+translate?languages=' + self.code
+        self.relativeurl = relativeurl
+
+        poFile = template.queryPOFileByLang(language.code)
+
+        if poFile is not None:
+            # NOTE: To get a 100% value:
+            # 1.- currentPercent + rosettaPercent + untranslatedPercent
+            # 2.- translatedPercent + untranslatedPercent
+            # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
+            #   untranslatedPercent
+
+            self.hasPOFile = True
+            self.poLen = poFile.messageCount()
+            self.lastChangedSighting = poFile.lastChangedSighting()
+
+            self.poCurrentCount = poFile.currentCount()
+            self.poRosettaCount = poFile.rosettaCount()
+            self.poUpdatesCount = poFile.updatesCount()
+            self.poNonUpdatesCount = poFile.nonUpdatesCount()
+            self.poTranslated = poFile.translatedCount()
+            self.poUntranslated = poFile.untranslatedCount()
+
+            self.poCurrentPercent = poFile.currentPercentage()
+            self.poRosettaPercent = poFile.rosettaPercentage()
+            self.poUpdatesPercent = poFile.updatesPercentage()
+            self.poNonUpdatesPercent = poFile.nonUpdatesPercentage()
+            self.poTranslatedPercent = poFile.translatedPercentage()
+            self.poUntranslatedPercent = poFile.untranslatedPercentage()
+        else:
+            self.hasPOFile = False
+            self.poLen = len(template)
+            self.lastChangedSighting = None
+
+            self.poCurrentCount = 0
+            self.poRosettaCount = 0
+            self.poUpdatesCount = 0
+            self.poNonUpdatesCount = 0
+            self.poTranslated = 0
+            self.poUntranslated = template.messageCount()
+
+            self.poCurrentPercent = 0
+            self.poRosettaPercent = 0
+            self.poUpdatesPercent = 0
+            self.poNonUpdatesPercent = 0
+            self.poTranslatedPercent = 0
+            self.poUntranslatedPercent = 100
 

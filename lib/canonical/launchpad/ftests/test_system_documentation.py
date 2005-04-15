@@ -43,9 +43,7 @@ special = {
 
     # No setup or teardown at all, since it is demonstrating these features
     'testing.txt': DocFileSuite('../doc/testing.txt'),
-
-    # Needs no DB
-    'porevisiondate.txt': DocFileSuite('../doc/porevisiondate.txt'),
+    'poparser.txt': DocFileSuite('../doc/poparser.txt'),
 
     # POExport stuff is Zopeless and connects as a different database user
     'poexport.txt': FunctionalDocFileSuite(

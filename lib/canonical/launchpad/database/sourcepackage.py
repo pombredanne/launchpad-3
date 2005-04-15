@@ -30,7 +30,7 @@ from canonical.launchpad.database.sourcepackagerelease import \
     SourcePackageRelease
 from canonical.launchpad.database.sourcepackagename import \
     SourcePackageName
-from canonical.launchpad.database.pofile import POTemplate
+from canonical.launchpad.database.potemplate import POTemplate
 
 class SourcePackage(object):
     """A source package, e.g. apache2, in a distribution or distrorelease.

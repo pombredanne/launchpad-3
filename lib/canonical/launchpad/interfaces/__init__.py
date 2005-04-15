@@ -54,7 +54,15 @@ from canonical.launchpad.interfaces.packaging import *
 from canonical.launchpad.interfaces.person import *
 from canonical.launchpad.interfaces.poexport import *
 from canonical.launchpad.interfaces.pofile import *
+from canonical.launchpad.interfaces.pomsgid import *
+from canonical.launchpad.interfaces.pomsgidsighting import *
+from canonical.launchpad.interfaces.pomsgset import *
+from canonical.launchpad.interfaces.poparser import *
+from canonical.launchpad.interfaces.potemplate import *
 from canonical.launchpad.interfaces.potemplatename import *
+from canonical.launchpad.interfaces.potmsgset import *
+from canonical.launchpad.interfaces.potranslation import *
+from canonical.launchpad.interfaces.potranslationsighting import *
 from canonical.launchpad.interfaces.processor import *
 from canonical.launchpad.interfaces.product import *
 from canonical.launchpad.interfaces.productrelease import *
@@ -64,6 +72,8 @@ from canonical.launchpad.interfaces.publishedpackage import *
 from canonical.launchpad.interfaces.publishing import *
 from canonical.launchpad.interfaces.pyarch import *
 from canonical.launchpad.interfaces.queue import *
+from canonical.launchpad.interfaces.rawfiledata import *
+from canonical.launchpad.interfaces.rosettastats import *
 from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.section import *
 from canonical.launchpad.interfaces.sourcepackage import *

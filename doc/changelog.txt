@@ -2,6 +2,244 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-15 10:35:52 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1615
+
+    Summary:
+      Rosetta source code follows now the Launchpad standard layout rs=SteveA
+    Revision:
+      launchpad--devel--0--patch-1615
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-206--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1604
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-206--0--patch-1
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-206--0--patch-2
+       Rosetta database code is now in the right files
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-206--0--patch-3
+       Added a new pagetest and added missing imports after the split
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-206--0--patch-4
+       Added another pagetest
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-206--0--patch-5
+       Fixed a missing import in potemplate.py and added a bug reference about improvements to rosettastats
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-206--0--patch-6
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-206--0--patch-7
+       Moved more things and removed obsolete ftest
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-206--0--patch-8
+       Finished the Rosetta code split. It's only a split. Need to do a review later
+    
+     * carlos.perello@canonical.com--2004/launchpad--bug-206--0--patch-9
+       Merge from rocketfuel
+    
+
+    new files:
+     lib/canonical/launchpad/browser/.arch-ids/pofile.py.id
+     lib/canonical/launchpad/browser/pofile.py
+     lib/canonical/launchpad/components/.arch-ids/rosettastats.py.id
+     lib/canonical/launchpad/components/rosettastats.py
+     lib/canonical/launchpad/database/.arch-ids/pomsgid.py.id
+     lib/canonical/launchpad/database/.arch-ids/pomsgidsighting.py.id
+     lib/canonical/launchpad/database/.arch-ids/pomsgset.py.id
+     lib/canonical/launchpad/database/.arch-ids/potemplate.py.id
+     lib/canonical/launchpad/database/.arch-ids/potmsgset.py.id
+     lib/canonical/launchpad/database/.arch-ids/potranslation.py.id
+     lib/canonical/launchpad/database/.arch-ids/potranslationsighting.py.id
+     lib/canonical/launchpad/database/pomsgid.py
+     lib/canonical/launchpad/database/pomsgidsighting.py
+     lib/canonical/launchpad/database/pomsgset.py
+     lib/canonical/launchpad/database/potemplate.py
+     lib/canonical/launchpad/database/potmsgset.py
+     lib/canonical/launchpad/database/potranslation.py
+     lib/canonical/launchpad/database/potranslationsighting.py
+     lib/canonical/launchpad/doc/.arch-ids/poparser.txt.id
+     lib/canonical/launchpad/doc/poparser.txt
+     lib/canonical/launchpad/interfaces/.arch-ids/pomsgid.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/pomsgidsighting.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/pomsgset.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/potemplate.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/potmsgset.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/potranslation.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/potranslationsighting.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/rawfiledata.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/rosettastats.py.id
+     lib/canonical/launchpad/interfaces/pomsgid.py
+     lib/canonical/launchpad/interfaces/pomsgidsighting.py
+     lib/canonical/launchpad/interfaces/pomsgset.py
+     lib/canonical/launchpad/interfaces/potemplate.py
+     lib/canonical/launchpad/interfaces/potmsgset.py
+     lib/canonical/launchpad/interfaces/potranslation.py
+     lib/canonical/launchpad/interfaces/potranslationsighting.py
+     lib/canonical/launchpad/interfaces/rawfiledata.py
+     lib/canonical/launchpad/interfaces/rosettastats.py
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-pofile-index.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-potemplate-index.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-pofile-index.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-index.txt
+
+    removed files:
+     lib/canonical/launchpad/doc/.arch-ids/porevisiondate.txt.id
+     lib/canonical/launchpad/doc/porevisiondate.txt
+     lib/canonical/launchpad/templates/.arch-ids/dashboard-translator.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/rosetta-import-queue.pt.id
+     lib/canonical/launchpad/templates/dashboard-translator.pt
+     lib/canonical/launchpad/templates/rosetta-import-queue.pt
+     lib/canonical/rosetta/.arch-ids/Makefile.id
+     lib/canonical/rosetta/Makefile
+     lib/canonical/rosetta/docs/.arch-ids/=id
+     lib/canonical/rosetta/docs/.arch-ids/no-notes-yet.txt.id
+     lib/canonical/rosetta/docs/no-notes-yet.txt
+     lib/canonical/rosetta/ftests/.arch-ids/=id
+     lib/canonical/rosetta/ftests/.arch-ids/__init__.py.id
+     lib/canonical/rosetta/ftests/.arch-ids/disabled_test_poimport.py.id
+     lib/canonical/rosetta/ftests/.arch-ids/gnome-terminal-cy.po.id
+     lib/canonical/rosetta/ftests/.arch-ids/gnome-terminal.pot.id
+     lib/canonical/rosetta/ftests/.arch-ids/test.pot.id
+     lib/canonical/rosetta/ftests/.arch-inventory
+     lib/canonical/rosetta/ftests/__init__.py
+     lib/canonical/rosetta/ftests/disabled_test_poimport.py
+     lib/canonical/rosetta/ftests/gnome-terminal-cy.po
+     lib/canonical/rosetta/ftests/gnome-terminal.pot
+     lib/canonical/rosetta/ftests/test.pot
+     lib/canonical/rosetta/images/.arch-ids/=id
+     lib/canonical/rosetta/poexport.py
+     lib/canonical/rosetta/templates/.arch-ids/=id
+
+    modified files:
+     allowed-tags.txt doc/changelog.txt
+     lib/canonical/launchpad/browser/__init__.py
+     lib/canonical/launchpad/browser/distrorelease.py
+     lib/canonical/launchpad/browser/potemplate.py
+     lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/browser/productrelease.py
+     lib/canonical/launchpad/browser/project.py
+     lib/canonical/launchpad/browser/sourcepackage.py
+     lib/canonical/launchpad/components/poexport.py
+     lib/canonical/launchpad/components/pofile_adapters.py
+     lib/canonical/launchpad/components/poparser.py
+     lib/canonical/launchpad/database/__init__.py
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/ftests/test_poexport.py
+     lib/canonical/launchpad/ftests/test_system_documentation.py
+     lib/canonical/launchpad/helpers.py
+     lib/canonical/launchpad/interfaces/__init__.py
+     lib/canonical/launchpad/interfaces/poexport.py
+     lib/canonical/launchpad/interfaces/pofile.py
+     lib/canonical/launchpad/interfaces/poparser.py
+     lib/canonical/launchpad/interfaces/project.py
+     lib/canonical/launchpad/tests/test_helpers.py
+     lib/canonical/launchpad/tests/test_poparser.py
+     lib/canonical/launchpad/zcml/pofile.zcml
+     lib/canonical/launchpad/zcml/potemplate.zcml
+     lib/canonical/launchpad/zcml/resources.zcml
+     lib/canonical/rosetta/__init__.py
+     lib/canonical/rosetta/browser.py
+     lib/canonical/rosetta/configure.zcml
+     lib/canonical/rosetta/tests/test_browser.py
+     lib/canonical/rosetta/tests/test_tarexport.py
+
+    renamed files:
+     lib/canonical/rosetta/.arch-ids/ipofile.py.id
+       ==> lib/canonical/launchpad/interfaces/.arch-ids/poparser.py.id
+     lib/canonical/rosetta/.arch-ids/pofile.py.id
+       ==> lib/canonical/launchpad/components/.arch-ids/poparser.py.id
+     lib/canonical/rosetta/.arch-ids/pofile_adapters.py.id
+       ==> lib/canonical/launchpad/components/.arch-ids/pofile_adapters.py.id
+     lib/canonical/rosetta/docs/.arch-ids/rosetta-cmdline.txt.id
+       ==> doc/.arch-ids/rosetta-cmdline.txt.id
+     lib/canonical/rosetta/docs/.arch-ids/rosetta-states.dia.id
+       ==> doc/.arch-ids/rosetta-states.dia.id
+     lib/canonical/rosetta/docs/poexport.txt
+       ==> doc/poexport.txt
+     lib/canonical/rosetta/docs/rosetta-cmdline.txt
+       ==> doc/rosetta-cmdline.txt
+     lib/canonical/rosetta/docs/rosetta-states.dia
+       ==> doc/rosetta-states.dia
+     lib/canonical/rosetta/images/.arch-ids/rosetta.png.id
+       ==> lib/canonical/launchpad/images/.arch-ids/rosetta.png.id
+     lib/canonical/rosetta/images/.arch-ids/rosetta.svg.id
+       ==> lib/canonical/launchpad/images/.arch-ids/rosetta.svg.id
+     lib/canonical/rosetta/images/rosetta.png
+       ==> lib/canonical/launchpad/images/rosetta.png
+     lib/canonical/rosetta/images/rosetta.svg
+       ==> lib/canonical/launchpad/images/rosetta.svg
+     lib/canonical/rosetta/ipofile.py
+       ==> lib/canonical/launchpad/interfaces/poparser.py
+     lib/canonical/rosetta/pofile.py
+       ==> lib/canonical/launchpad/components/poparser.py
+     lib/canonical/rosetta/pofile_adapters.py
+       ==> lib/canonical/launchpad/components/pofile_adapters.py
+     lib/canonical/rosetta/scripts/.arch-ids/=id
+       ==> scripts/rosetta/.arch-ids/=id
+     lib/canonical/rosetta/scripts/.arch-ids/__init__.py.id
+       ==> scripts/rosetta/.arch-ids/__init__.py.id
+     lib/canonical/rosetta/scripts/.arch-ids/extract-urls.py.id
+       ==> scripts/rosetta/.arch-ids/extract-urls.py.id
+     lib/canonical/rosetta/scripts/.arch-ids/get_porawfile.py.id
+       ==> scripts/rosetta/.arch-ids/get_porawfile.py.id
+     lib/canonical/rosetta/scripts/.arch-ids/import_blacklist.py.id
+       ==> scripts/rosetta/.arch-ids/import_blacklist.py.id
+     lib/canonical/rosetta/scripts/.arch-ids/import_languages_and_countries.py.id
+       ==> scripts/rosetta/.arch-ids/import_languages_and_countries.py.id
+     lib/canonical/rosetta/scripts/.arch-ids/po_export.py.id
+       ==> scripts/rosetta/.arch-ids/po_export.py.id
+     lib/canonical/rosetta/scripts/.arch-ids/po_import.py.id
+       ==> scripts/rosetta/.arch-ids/po_import.py.id
+     lib/canonical/rosetta/scripts/.arch-ids/poattach.py.id
+       ==> scripts/rosetta/.arch-ids/poattach.py.id
+     lib/canonical/rosetta/scripts/.arch-ids/show-products.py.id
+       ==> scripts/rosetta/.arch-ids/show-products.py.id
+     lib/canonical/rosetta/scripts/.arch-ids/show-projects.py.id
+       ==> scripts/rosetta/.arch-ids/show-projects.py.id
+     lib/canonical/rosetta/tests/.arch-ids/test_pofile.py.id
+       ==> lib/canonical/launchpad/tests/.arch-ids/test_poparser.py.id
+     lib/canonical/rosetta/tests/test_pofile.py
+       ==> lib/canonical/launchpad/tests/test_poparser.py
+
+    new directories:
+     scripts/rosetta/.arch-ids
+
+    removed directories:
+     lib/canonical/rosetta/docs
+     lib/canonical/rosetta/docs/.arch-ids
+     lib/canonical/rosetta/ftests
+     lib/canonical/rosetta/ftests/.arch-ids
+     lib/canonical/rosetta/images
+     lib/canonical/rosetta/images/.arch-ids
+     lib/canonical/rosetta/scripts/.arch-ids
+     lib/canonical/rosetta/templates
+     lib/canonical/rosetta/templates/.arch-ids
+
+    renamed directories:
+     lib/canonical/rosetta/scripts
+       ==> scripts/rosetta
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--bug-206--0--base-0
+     carlos.perello@canonical.com--2004/launchpad--bug-206--0--patch-1
+     carlos.perello@canonical.com--2004/launchpad--bug-206--0--patch-2
+     carlos.perello@canonical.com--2004/launchpad--bug-206--0--patch-3
+     carlos.perello@canonical.com--2004/launchpad--bug-206--0--patch-4
+     carlos.perello@canonical.com--2004/launchpad--bug-206--0--patch-5
+     carlos.perello@canonical.com--2004/launchpad--bug-206--0--patch-6
+     carlos.perello@canonical.com--2004/launchpad--bug-206--0--patch-7
+     carlos.perello@canonical.com--2004/launchpad--bug-206--0--patch-8
+     carlos.perello@canonical.com--2004/launchpad--bug-206--0--patch-9
+
+
 2005-04-15 04:04:56 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1614
 
     Summary:

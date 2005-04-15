@@ -1,12 +1,17 @@
 
+# XXX: Carlos Perello Marin 2005-04-15: This code will be "componentized"
+# soon. https://launchpad.ubuntu.com/malone/bugs/403
+
+
 import sets
 import warnings
 
 from zope.interface import implements
 
 from canonical.lp.dbschema import RosettaTranslationOrigin
-from canonical.rosetta.ipofile import IPOHeader, IPOMessage
-from canonical.rosetta.pofile import POHeader, POMessage, POParser, POInvalidInputError
+from canonical.launchpad.interfaces import IPOHeader, IPOMessage
+from canonical.launchpad.components.poparser import POHeader, POMessage, \
+    POParser, POInvalidInputError
 from canonical.launchpad.interfaces import IPOTemplate, IPOFile
 
 class DatabaseConstraintError(Exception):

@@ -36,7 +36,7 @@ from canonical.launchpad.interfaces import ISourcePackageReleaseSet
 
 from canonical.launchpad.database.translation_effort import TranslationEffort
 from canonical.launchpad.database.bug import Bug
-from canonical.launchpad.database.pofile import POTemplate
+from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
 

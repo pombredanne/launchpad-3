@@ -26,7 +26,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IPOFile"
         permission="zope.Public"
-        class="canonical.rosetta.browser.ViewPOFile"
+        class="canonical.launchpad.browser.ViewPOFile"
         lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language">
         <browser:page
             name="+index"
@@ -36,7 +36,7 @@
 
     <browser:page name="+edit"
         permission="launchpad.Edit"
-        class="canonical.rosetta.browser.ViewPOFile"
+        class="canonical.launchpad.browser.ViewPOFile"
         for="canonical.launchpad.interfaces.IPOFile"
         template="../templates/pofile-edit.pt"
         lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language/+edit" />
@@ -44,14 +44,14 @@
     <browser:page name="po"
         for="canonical.launchpad.interfaces.IPOFile"
         permission="zope.Public"
-        class="canonical.rosetta.browser.ViewPOExport"
+        class="canonical.launchpad.browser.ViewPOExport"
         attribute="__call__"
         lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$Language.code/po" />
 
     <browser:page name="mo"
         for="canonical.launchpad.interfaces.IPOFile"
         permission="zope.Public"
-        class="canonical.rosetta.browser.ViewMOExport"
+        class="canonical.launchpad.browser.ViewMOExport"
         attribute="__call__"
         lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$Language.code/mo" />
 

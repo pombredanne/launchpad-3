@@ -1,12 +1,18 @@
-# -*- coding: ascii -*-
 # Contains code from msgfmt.py (available from python source code),
 #     written by Martin v. Loewis <loewis@informatik.hu-berlin.de>
 #     changed by Christian 'Tiran' Heimes <ch@comlounge.net>
 
+
+# XXX: Carlos Perello Marin 2005-04-15: This code will be "componentized"
+# soon. https://launchpad.ubuntu.com/malone/bugs/403
+
 import sys, sets, warnings, textwrap, codecs
 
-from canonical.rosetta.ipofile import IPOMessage, IPOHeader, IPOParser
+from canonical.launchpad.interfaces import IPOMessage, IPOHeader, IPOParser
 from zope.interface import implements
+from zope.app.datetimeutils import SyntaxError, DateError, DateTimeError, \
+    parseDatetimetz
+
 
 # Exceptions and warnings
 
@@ -455,6 +461,23 @@ class POHeader(dict, POMessage):
 
     def __nonzero__(self):
         return bool(self.keys())
+
+    def getPORevisionDate(self):
+        """See IPOHeader."""
+
+        date_string = self.get('PO-Revision-Date')
+        if date_string is None:
+            date = None
+            date_string = 'Missing header'
+        else:
+            try:
+                date = parseDatetimetz(date_string)
+            except (SyntaxError, DateError, DateTimeError):
+                # The date format is not valid.
+                date = None
+
+        return (date_string, date)
+
 
 class POParser(object):
     implements(IPOParser)

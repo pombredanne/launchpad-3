@@ -1,6 +1,6 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
-from canonical.rosetta import pofile
+from canonical.launchpad.components import poparser as pofile
 import unittest, doctest
 import warnings
 

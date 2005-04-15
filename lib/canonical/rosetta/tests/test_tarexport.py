@@ -30,7 +30,7 @@ class DummyExporter:
 
 def test_POTemplateTarExport():
     '''
-    >>> from canonical.rosetta.browser import POTemplateTarExport
+    >>> from canonical.launchpad.browser import POTemplateTarExport
 
     Create a dummy exporter, do the export, and convert the string obtained
     into a tar file object.

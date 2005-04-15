@@ -24,13 +24,12 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
      MilestoneVocabulary
 
-from canonical.rosetta.browser import request_languages, TemplateLanguages
 from canonical.launchpad.database import Product, ProductSeriesSet, \
      BugFactory, ProductMilestoneSet, Milestone, SourceSourceSet, Person
 from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet, \
      IPersonSet, IBugTaskSet, IAging, ILaunchBag
 from canonical.launchpad.browser.productrelease import newProductRelease
-from canonical.launchpad.helpers import is_maintainer
+from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 
@@ -178,7 +177,7 @@ class ProductBugsView:
         self.batch = Batch(
             list(self.bugtask_search()), int(request.get('batch_start', 0)))
         self.batchnav = BatchNavigator(self.batch, request)
-        self.is_maintainer = is_maintainer(self.context)
+        self.is_maintainer = helpers.is_maintainer(self.context)
 
     def hideGlobalSearchBox(self):
         """Should the global search box be hidden on the page?"""
@@ -316,7 +315,7 @@ class ProductTranslationView:
         self.form = self.request.form
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
-        self.languages = request_languages(self.request)
+        self.languages = helpers.request_languages(self.request)
         # Cache value for the return value of self.templates
         self._template_languages = None
         # List of the templates we have in this subset.
@@ -335,8 +334,9 @@ class ProductTranslationView:
 
     def templates(self):
         if self._template_languages is None:
-            self._template_languages = [TemplateLanguages(template, self.languages)
-                               for template in self._templates]
+            self._template_languages = [
+                helpers.TemplateLanguages(template, self.languages)
+                for template in self._templates]
 
         return self._template_languages
 
