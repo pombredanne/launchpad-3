@@ -2,8 +2,13 @@
 
 __metaclass__ = type
 
+import unittest
+
 from zope.testing.doctestunit import DocTestSuite
 
 def test_suite():
-    return DocTestSuite('canonical.launchpad.scripts.rosetta')
+    suite = unittest.TestSuite()
+    suite.addTest(DocTestSuite('canonical.launchpad.scripts.rosetta'))
+    suite.addTest(DocTestSuite('canonical.launchpad.scripts.sort_sql'))
+    return suite
 

@@ -2,6 +2,45 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-18 06:38:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1618
+
+    Summary:
+      SQL sorting script (r=Andrew)
+    Revision:
+      launchpad--devel--0--patch-1618
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--sort-sql--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1606
+    
+     * daf@canonical.com--2004/launchpad--sort-sql--0--patch-1
+       add SQL sorting script
+    
+     * daf@canonical.com--2004/launchpad--sort-sql--0--patch-2
+       refactor script so that guts are in lib/, integrate test with test suite
+    
+     * daf@canonical.com--2004/launchpad--sort-sql--0--patch-3
+       add comment per Andrew's suggestion
+    
+
+    new files:
+     database/schema/.arch-ids/sort_sql.py.id
+     database/schema/sort_sql.py
+     lib/canonical/launchpad/scripts/.arch-ids/sort_sql.py.id
+     lib/canonical/launchpad/scripts/sort_sql.py
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/scripts/tests/test_rundoctests.py
+
+    new patches:
+     daf@canonical.com--2004/launchpad--sort-sql--0--base-0
+     daf@canonical.com--2004/launchpad--sort-sql--0--patch-1
+     daf@canonical.com--2004/launchpad--sort-sql--0--patch-2
+     daf@canonical.com--2004/launchpad--sort-sql--0--patch-3
+
+
 2005-04-18 02:42:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1617
 
     Summary:
