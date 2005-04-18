@@ -21,7 +21,7 @@
 
         <div class="formControls">
             <input type="text" name="text"
-                   tal:attributes="value view/text" size="40">
+                   tal:attributes="value view/text" size="25">
             <span tal:replace="structure view/sourcestateselector">
                 StateSelector
             </span>
@@ -30,20 +30,6 @@
             <label for="ready">Ready</label>
             <input type="submit" name="search" value="search" />
             <br />
-            <!--
-            <input type="checkbox" name="sync" id="sync"
-                   tal:attributes="checked view/sync">
-            <label for="sync">Syncing</label>
-            <input type="checkbox" name="process" id="process"
-                   tal:attributes="checked view/process">
-            <label for="process">Processing approved</label>
-            <input type="checkbox" name="tested" id="tested"
-                   tal:attributes="checked view/tested">
-            <label for="tested">Test successful</label>
-            <input type="checkbox" name="assigned" id="assigned"
-                   tal:attributes="checked view/assigned">
-            <label for="assigned">Assigned</label>
-            -->
         </div>
 
     </fieldset>
@@ -51,28 +37,29 @@
 
   <table class="listing rowNavigation" width="100%">
     <tr>
-        <th>Project</th>
         <th>Product</th>
-        <th>Name</th>
-        <th>Title</th>
-        <th>Test</th>
-        <th>Sync</th>
-        <th>Process</th>
+        <th>Series</th>
         <th>Started</th>
         <th>Finished</th>
+        <th>Tested</th>
+        <th>Process</th>
+        <th>Sync</th>
     </tr>
-    <tr tal:repeat="source batch"
-        tal:attributes="onclick string:window.location='${source/name}';">
-      <td><span tal:condition="source/product/project"
-                tal:content="source/product/project/name">$Project.name</span></td>
-      <td tal:content="source/product/name">$Product.name</td>
-      <td tal:content="source/name">$SourceSource.name</td>
-      <td tal:content="source/title">$SourceSource.title</td>
-      <td tal:content="source/autotested">$SourceSource.autotested</td>
-      <td tal:content="source/syncingapproved/fmt:date | string: -- ">$SourceSource.syncingapproved</td>
-      <td tal:content="source/processingapproved/fmt:date | string: -- ">$SourceSource.processingapproved</td>
-      <td tal:content="source/datestarted/fmt:date | string: -- ">$SourceSource.datestarted</td>
-      <td tal:content="source/datefinished/fmt:date | string: -- ">$SourceSource.datefinished</td>
+    <tr tal:repeat="series batch"
+        tal:attributes="onclick
+            string:window.location='/products/${series/product/name}/+series/${series/name}/+sourceadmin';">
+      <td tal:content="series/product/name">$Product.name</td>
+      <td tal:content="series/name">$Series.name</td>
+      <td tal:content="series/datestarted/fmt:date | string: -- "
+          >$Series.datestarted</td>
+      <td tal:content="series/datefinished/fmt:date | string: -- "
+          >$Series.datefinished</td>
+      <td tal:content="series/dateautotested/fmt:date | string: --"
+          >$Series.dateautotested</td>
+      <td tal:content="series/dateprocessapproved/fmt:date | string: -- "
+          >$Series.dateprocessapproved</td>
+      <td tal:content="series/datesyncapproved/fmt:date | string: -- "
+          >$Series.datesyncapproved</td>
     </tr>
     <tr class="batchnav">
       <td class="batchnav" colspan="10"
@@ -94,10 +81,6 @@
       </td>
     </tr>
   </table>
-
-  * NB: The SourceSource.status flag is not yet implemented, when this is
-    done the drop-down listbox will actually work properly, till then it's
-    a best guess and STOPPED, DONTSYNC etc do not work :-)
 
 </div>
 

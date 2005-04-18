@@ -16,5 +16,5 @@ ends in +edit, this is in fact a read-only UI to anonymous users.
   <BLANKLINE>
   <BLANKLINE>
   <BLANKLINE>
-                  <div>mozilla-firefox-dummy</div>
+                  <div>mozilla-firefox</div>
   ...

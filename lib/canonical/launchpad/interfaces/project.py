@@ -93,9 +93,6 @@ class IProject(IHasOwner):
     def shortDescription(aDesc=None):
         """return the projects shortdesc, setting it if aDesc is provided"""
 
-    def newSourceSource():
-        """Add a SourceSource for upstream code syncing to Arch."""
-
     def product(name):
         """Return the product belonging to this project with the given
         name."""

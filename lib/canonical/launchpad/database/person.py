@@ -128,41 +128,41 @@ class Person(SQLBase):
         ...     givenname = None
         ...     name = 'the_name'
         ...     # This next line is some special evil magic to allow us to
-        ...     # unit test browsername() in isolation.
+        ...     # unit test browsername in isolation.
         ...     browsername = Person.browsername.im_func
         ...
         >>> person = DummyPerson()
 
         Check with just the name.
 
-        >>> person.browsername()
+        >>> person.browsername
         'the_name'
 
         Check with givenname and name.  Just givenname is used.
 
         >>> person.givenname = 'the_givenname'
-        >>> person.browsername()
+        >>> person.browsername
         'the_givenname'
 
         Check with givenname, familyname and name.  Both givenname and
         familyname are used.
 
         >>> person.familyname = 'the_familyname'
-        >>> person.browsername()
+        >>> person.browsername
         'THE_FAMILYNAME the_givenname'
 
         Check with givenname, familyname, name and displayname.
         Only displayname is used.
 
         >>> person.displayname = 'the_displayname'
-        >>> person.browsername()
+        >>> person.browsername
         'the_displayname'
 
         Remove familyname to check with givenname, name and displayname.
         Only displayname is used.
 
         >>> person.familyname = None
-        >>> person.browsername()
+        >>> person.browsername
         'the_displayname'
 
         """
@@ -180,6 +180,7 @@ class Person(SQLBase):
             return ' '.join(L)
         else:
             return self.name
+    browsername = property(browsername)
 
     def translatedTemplates(self):
         '''
@@ -366,7 +367,7 @@ class Person(SQLBase):
     #
 
     def title(self):
-        return self.browsername()
+        return self.browsername
     title = property(title)
 
     def allmembers(self):

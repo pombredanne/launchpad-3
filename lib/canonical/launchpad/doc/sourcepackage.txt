@@ -35,4 +35,4 @@ To retrieve a specific source package name, use ISourcePackageNameSet.get:
 
     >>> firefox = sourcepackagenameset.get(1)
     >>> print firefox.name
-    mozilla-firefox-dummy
+    mozilla-firefox

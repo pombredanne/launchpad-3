@@ -1,5 +1,3 @@
-arch-tag: 06f3feef-229e-42b9-a9d5-ab8c3758a23b
-
 Exporting PO Files From Rosetta
 ===============================
 

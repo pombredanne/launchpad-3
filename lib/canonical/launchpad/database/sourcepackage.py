@@ -17,7 +17,7 @@ from canonical.database.sqlbase import SQLBase, quote
 # Launchpad Imports
 from canonical.lp.dbschema import EnumCol, \
         SourcePackageFormat, BugTaskStatus, BugSeverity, \
-        PackagePublishingStatus
+        PackagePublishingStatus, ImportStatus
 
 from canonical.launchpad.interfaces import ISourcePackage, ISourcePackageSet
 from canonical.launchpad.database.product import Product
@@ -31,6 +31,8 @@ from canonical.launchpad.database.sourcepackagerelease import \
 from canonical.launchpad.database.sourcepackagename import \
     SourcePackageName
 from canonical.launchpad.database.potemplate import POTemplate
+
+from sourcerer.deb.version import Version
 
 class SourcePackage(object):
     """A source package, e.g. apache2, in a distribution or distrorelease.
@@ -47,11 +49,21 @@ class SourcePackage(object):
 
     implements(ISourcePackage)
 
-    def __init__(self, sourcepackagename, distrorelease=None):
+    def __init__(self, sourcepackagename, distrorelease=None,
+                 distribution=None):
         """SourcePackage requires a SourcePackageName and a
-        DistroRelease. These must be Launchpad database objects."""
+        DistroRelease or Distribution. These must be Launchpad
+        database objects. If you give it a Distribution, it will try to find
+        and use the Distribution.currentrelease, failing if that is not
+        possible."""
+        if distribution and distrorelease:
+            raise TypeError, 'Cannot initialise SourcePackage with both distro and distrorelease'
         self.sourcepackagename = sourcepackagename
         self.distrorelease = distrorelease
+        if distribution:
+            self.distrorelease = distribution.currentrelease
+            if not self.distrorelease:
+                raise ValueError, "Distro '%s' has no current release" % distribution.name
         # set self.currentrelease based on current published sourcepackage
         # with this name in the distrorelease. if none is published, leave
         # self.currentrelease as None
@@ -78,9 +90,9 @@ class SourcePackage(object):
         return titlestr
     title = property(title)
 
-    shortdesc = "XXX this is a source package"
+    shortdesc = "XXX this is a source package, it has no summary"
 
-    description = "XXX this is still a source package"
+    description = "XXX this is still a source package, also has no title"
 
     def distribution(self):
         return self.distrorelease.distribution
@@ -117,16 +129,37 @@ class SourcePackage(object):
         Clearly, this is wrong, because it will mix different flavors of a
         sourcepackage as well as releases of entirely different
         sourcepackages (say, from RedHat and Ubuntu) that have the same
-        name. Later, we want to use the PublishingMorgue table to get a
+        name. Later, we want to use the PublishingMorgue spec to get a
         proper set of sourcepackage releases specific to this
-        distrorelease."""
-        return SourcePackageRelease.select(
-                SourcePackageRelease.q.sourcepackagenameID == self.sourcepackagename.id,
-                orderBy=["version"]
-                )
+        distrorelease. Please update this when PublishingMorgue is
+        implemented. Note that the releases are sorted by debian
+        version number sorting."""
+        # use a Set because we have no DISTINCT capability
+        ret = Set(SourcePackageRelease.select(
+                      "sourcepackagename = %d" % self.sourcepackagename.id,
+                      orderBy=["version"]))
+        # sort by debian version number
+        L = [(Version(item.version), item) for item in ret]
+        L.sort()
+        ret = [item for sortkey, item in L]
+        return ret
     releases = property(releases)
 
-    products = RelatedJoin('Product', intermediateTable='Packaging')
+    def releasehistory(self):
+        """This is just like .releases but it spans ALL the distroreleases
+        for this distribution. So it is a full history of all the releases
+        ever published in this distribution. Again, it needs to be fixed
+        when PublishingMorgue is implemented."""
+        # use a Set because we have no DISTINCT capability
+        ret = Set(SourcePackageRelease.select(
+                      "sourcepackagename = %d" % self.sourcepackagename.id,
+                      orderBy=["version"]))
+        # sort by debian version number
+        L = [(Version(item.version), item) for item in ret]
+        L.sort()
+        ret = [item for sortkey, item in L]
+        return ret
+    releasehistory = property(releasehistory)
 
     #
     # Properties
@@ -165,14 +198,24 @@ class SourcePackage(object):
             return None
     product = property(product)
 
-    def shouldimport(self):
-        """Whether we should import this or not.
+    def productseries(self):
+        raise NotImplementedError, 'Wait for Packaging to be fixed please!'
+    productseries = property(productseries)
 
-        Right now this is a stub that returns True for hoary source packages.
-        This should be changed to look up in the database, sabdfl says
-        Packaging.
+    def shouldimport(self):
+        """Note that this initial implementation of the method knows that we
+        are only interested in importing hoary and breezy packages
+        initially. Also, it knows that we should only import packages where
+        the upstream revision control is in place and working.
         """
-        return self.distrorelease.name == "hoary"
+        if self.distrorelease.name <> "hoary":
+            return False
+        if self.product is None:
+            return False
+        for series in self.product.serieslist:
+            if series.branch is not None:
+                return True
+        return False
     shouldimport = property(shouldimport)
 
     def bugsCounter(self):
@@ -195,21 +238,24 @@ class SourcePackage(object):
             ret.append(n)
         return ret
 
-    def getByVersion(self, version):
-        """This will look for a sourcepackage with the given version in the
-        distribution of this sourcepackage, NOT just the distrorelease of
-        the sourcepackage. NB - this assumes that a given
+    def getVersion(self, version):
+        """This will look for a sourcepackage release with the given version
+        in the distribution of this sourcepackage, NOT just the
+        distrorelease of the sourcepackage. NB - this assumes that a given
         sourcepackagerelease version is UNIQUE in a distribution. This is
         true of Ubuntu, RedHat and similar distros, but might not be
-        universally true."""
+        universally true. Please update when PublishingMorgue spec is
+        implemented to use the full publishing history."""
         ret = VSourcePackageReleasePublishing.selectBy(
-                sourcepackagename=self.sourcepackagename,
-                distribution=self.distribution,
-                version=version)
-        # XXX sabdfl 24/03/05 cprov: this will fail poorly if there is no 
-        # source package release published in this distro, we need a clearer
-        # plan for how to handle that failure
-        assert ret.count() == 1
+                        sourcepackagename=self.sourcepackagename,
+                        distribution=self.distribution,
+                        version=version)
+        if ret.count() == 0:
+            return None
+        # we assume that there is only ever one source package release with
+        # a given version published in the distro, across all
+        # distroreleases.
+        assert ret.count() < 2
         return ret[0]
 
     def pendingrelease(self):

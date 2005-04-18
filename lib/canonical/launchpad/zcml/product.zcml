@@ -83,11 +83,6 @@
         class="canonical.launchpad.browser.ProductView"
         permission="launchpad.AnyPerson" >
         <browser:page
-            name="+addsources"
-            template="../templates/sourcesource-add.pt"
-            lp:url="/products/$Product.name/+addsources"
-            />
-        <browser:page
             name="+addseries"
             template="../templates/series-new.pt"
             lp:url="/products/$Product.name/+addseries"

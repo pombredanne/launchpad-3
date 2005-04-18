@@ -79,11 +79,6 @@ class IProduct(IHasOwner):
     reviewed = Bool(title=_('Reviewed'), description=_("""Whether or not
         this product has been reviewed."""))
     
-    sourcesources = Attribute(_('Sources of source code. These are \
-        pointers to the revision control system for that product, along \
-        with status information about our ability to publish that \
-        source in Arch.'))
-
     sourcepackages = Attribute(_("List of distribution packages for this \
         product"))
 
@@ -144,9 +139,6 @@ class IProduct(IHasOwner):
 
     def newseries(form):
         """Creates a new ProductSeries for this series."""
-
-    def newSourceSource(form):
-        """Creates a new SourceSource entry for upstream code sync."""
 
     def messageCount():
         """Returns the number of Current IPOMessageSets in all templates

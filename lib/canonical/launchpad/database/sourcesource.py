@@ -20,14 +20,14 @@ from canonical.launchpad.interfaces import ISourceSource, \
 
 from canonical.lp.dbschema import EnumCol
 from canonical.lp.dbschema import ImportTestStatus
-from canonical.lp.dbschema import SourceSourceStatus
+from canonical.lp.dbschema import ImportStatus
 from canonical.lp.dbschema import RevisionControlSystems
 # tools
 import datetime
 from sets import Set
 import logging
 
-class SourceSource(SQLBase): 
+class XXXXSourceSource(SQLBase): 
     """SourceSource table"""
 
     implements (ISourceSource,
@@ -35,72 +35,74 @@ class SourceSource(SQLBase):
     
     _table = 'SourceSource'
 
-    name = StringCol(dbName='name', notNull=True)
-    title = StringCol(dbName='title', notNull=True)
-    description = StringCol(dbName='description', notNull=True)
-    product = ForeignKey(foreignKey='Product', dbName='product',
-                         notNull=True)
-    cvsroot = StringCol(dbName='cvsroot', default=None)
-    cvsmodule = StringCol(dbName='cvsmodule', default=None)
+    # canonical.lp.dbschema.ImportStatus
+    importstatus = EnumCol(dbName='importstatus', notNull=True,
+                         schema=ImportStatus, default=ImportStatus.TESTING)
+    name = StringCol(default=None)
+    title = StringCol(default=None)
+    description = StringCol(default=None)
+    cvsroot = StringCol(default=None)
+    cvsmodule = StringCol(default=None)
     cvstarfile = ForeignKey(foreignKey='LibraryFileAlias',
                    dbName='cvstarfile', default=None)
-    cvstarfileurl = StringCol(dbName='cvstarfileurl', default=None)
-    cvsbranch = StringCol(dbName='cvsbranch', default=None)
-    svnrepository = StringCol(dbName='svnrepository', default=None)
+    cvstarfileurl = StringCol(default=None)
+    cvsbranch = StringCol(default=None)
+    svnrepository = StringCol(default=None)
     # where are the tarballs released from this branch placed?
-    releaseroot = StringCol(dbName='releaseroot', default=None)
-    releaseverstyle = StringCol(dbName='releaseverstyle', default=None)
-    # what glob is used for the releases ?
-    releasefileglob = StringCol(dbName='releasefileglob', default=None)
+    releaseroot = StringCol(default=None)
+    releaseverstyle = StringCol(default=None)
+    releasefileglob = StringCol(default=None)
     releaseparentbranch = ForeignKey(foreignKey='Branch',
                    dbName='releaseparentbranch', default=None)
     branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
-    lastsynced = DateTimeCol(dbName='lastsynced', default=None)
-    syncinterval = DateTimeCol(dbName='syncinterval', default=None)
+    lastsynced = DateTimeCol(default=None)
+    syncinterval = DateTimeCol(default=None)
     rcstype = EnumCol(dbName='rcstype',
                       default=RevisionControlSystems.CVS,
                       schema=RevisionControlSystems,
                       notNull=True)
-    hosted = StringCol(dbName='hosted', default=None)
-    upstreamname = StringCol(dbName='upstreamname', default=None)
-    processingapproved = DateTimeCol(dbName='processingapproved',
-                    notNull=False, default=None)
-    syncingapproved = DateTimeCol(dbName='syncingapproved', notNull=False,
-                    default=None)
+    hosted = StringCol(default=None)
+    upstreamname = StringCol(default=None)
+    processingapproved = DateTimeCol(default=None)
+    syncingapproved = DateTimeCol(default=None)
     # For when Rob approves it
-    newarchive = StringCol(dbName='newarchive')
-    newbranchcategory = StringCol(dbName='newbranchcategory')
-    newbranchbranch = StringCol(dbName='newbranchbranch')
-    newbranchversion = StringCol(dbName='newbranchversion')
-    # Temporary keybuk stuff
-    packagedistro = StringCol(dbName='packagedistro', default=None)
-    packagefiles_collapsed = StringCol(dbName='packagefiles_collapsed',
-                default=None)
+    newarchive = StringCol(default=None)
+    newbranchcategory = StringCol(default=None)
+    newbranchbranch = StringCol(default=None)
+    newbranchversion = StringCol(default=None)
+    # Temporary HORRIBLE HACK keybuk stuff
+    packagedistro = StringCol(default=None)
+    packagefiles_collapsed = StringCol(default=None)
     owner = ForeignKey(foreignKey='Person', dbName='owner',
                    notNull=True)
-    currentgpgkey = StringCol(dbName='currentgpgkey', default=None)
-    fileidreference = StringCol(dbName='fileidreference', default=None)
-    # canonical.lp.dbschema.ImportTestStatus
-    autotested = EnumCol(dbName='autotested', notNull=True,
-                         default=ImportTestStatus.NEW,
-                         schema=ImportTestStatus)
-    datestarted = DateTimeCol(dbName='datestarted', notNull=False,
-        default=None)
-    datefinished = DateTimeCol(dbName='datefinished', notNull=False,
-        default=None)
+    currentgpgkey = StringCol(default=None)
+    fileidreference = StringCol(default=None)
+    dateautotested = DateTimeCol(default=None)
+    datestarted = DateTimeCol(default=None)
+    datefinished = DateTimeCol(default=None)
+    productseries = ForeignKey(dbName='productseries',
+                               foreignKey='ProductSeries',
+                               notNull=True)
+
+    # properties
+    def product(self):
+        return self.productseries.product
+    product = property(product)
 
     def namesReviewed(self):
         if not (self.product.reviewed and self.product.active):
             return False
-        if self.product.project is not None:
-            if not (self.product.project.reviewed and self.product.project.active):
-                return False
-        return True
+        if self.product.project is None:
+            return True
+        if self.product.project.reviewed and self.product.project.active:
+            return True
+        return False
 
     def certifyForSync(self):
         """enable the sync for processing"""
-        self.processingapproved='NOW'
-        self.syncinterval=datetime.timedelta(1)
+        self.processingapproved = 'NOW'
+        self.syncinterval = datetime.timedelta(1)
+        self.importstatus = ImportStatus.PROCESSING
 
     def syncCertified(self):
         """is the sync enabled"""
@@ -108,25 +110,24 @@ class SourceSource(SQLBase):
 
     def autoSyncEnabled(self):
         """is the sync automatically scheduling"""
-        return self.syncingapproved is not None
+        return self.importstatus == ImportStatus.SYNCING
 
     def enableAutoSync(self):
         """enable autosyncing"""
-        self.syncingapproved='NOW'
+        self.syncingapproved = 'NOW'
+        self.importstatus = ImportStatus.SYNCING
 
-    def canChangeProduct(self):
-        """is this sync allowed to have its product changed?"""
-        return self.product.name=="unassigned"
+    def canChangeProductSeries(self):
+        """is this sync allowed to have its product series changed?"""
+        return self.product.name == "unassigned"
 
-    def changeProduct(self, targetname):
-        """change the product this sync belongs to to be 'product'"""
-        assert (self.canChangeProduct())
-        products = getUtility(IProductSet)
-        self.product=products[targetname].id
-        assert (self.product is not None)
+    def changeProductSeries(self, series):
+        """change the productseries this sync belongs to"""
+        assert (self.canChangeProductSeries())
+        self.productseries = series
 
     def needsReview(self):
-        if not self.syncapproved and self.autotested:
+        if not self.syncapproved and self.dateautotested:
             return True
         return False
 
@@ -137,8 +138,6 @@ class SourceSource(SQLBase):
             return self.cvsroot
         elif self.rcstype == RevisionControlSystems.SVN:
             return self.svnrepository
-        elif self.rcstype == RevisionControlSystems.PACKAGE:
-            return None
         else:
             logging.critical ("unhandled source rcs type: %s", self.rcstype)
             # FIXME!
@@ -147,100 +146,12 @@ class SourceSource(SQLBase):
     def _get_package_files(self):
         # XXX: Not used anywhere but in buildJob. Should that be moved to
         # buildbot? -- David Allouche 2005-03-25
-        if self.package_files_collapsed is None: return None
+        if self.package_files_collapsed is None:
+            return None
         return self.package_files_collapsed.split()
 
-    def buildJob(self):
-        """Create an importd job from the sourcesource data."""
-        # XXX: Should that be moved to buildbot? -- David Allouche 2005-03-25
-        from importd.Job import CopyJob
-        job = CopyJob()
-        job.repository = str(self.repository)
-        if self.syncingapproved is None:
-            job.TYPE = 'import'
-            if self.cvstarfileurl is not None and self.cvstarfileurl != "":
-                job.repository = str(self.cvstarfileurl)
-            job.frequency=0
-        else:
-            job.TYPE = 'sync'
-            job.frequency = _interval_to_seconds(self.syncinterval)
 
-        job.tagging_rules=[]
-
-        # XXX ddaa 2004-10-28: workaround for broken cscvs shell quoting
-        name = _job_name_munger.translate(self.name)
-        # XXX end
-        job.name = name
-        RCSNames = {RevisionControlSystems.CVS: 'cvs',
-                    RevisionControlSystems.SVN: 'svn',
-                    RevisionControlSystems.ARCH: 'arch',
-                    RevisionControlSystems.PACKAGE: 'package',
-                    RevisionControlSystems.BITKEEPER: 'bitkeeper'}
-        job.RCS = RCSNames[self.rcstype]
-        job.svnrepository = self.svnrepository
-        job.module = str(self.cvsmodule)
-
-        job.category = str(self.newbranchcategory)
-        job.archivename = str(self.newarchive)
-        job.branchfrom = str(self.cvsbranch) # FIXME: assumes cvs!
-        job.branchto = str(self.newbranchbranch)
-        job.archversion = str(self.newbranchversion)
-
-        job.package_distro = self.packagedistro
-        job.package_files = self.packagefiles_collapsed
-        job.product_id = self.product.id
-
-        job.description = self.description
-        job.sourceID = self.id
-
-        job.releaseRoot = self.releaseroot
-        job.releaseFileGlob = self.releasefileglob
-        return job
-
-
-def _interval_to_seconds(interval):
-    # XXX: only used in bulidJob, should probably moved to buildbot
-    # -- David Allouche 2005-03-25
-    try:
-        return interval.days * 24 * 60 * 60 + interval.seconds
-    except AttributeError:
-        msg = "Failed to convert interval to seconds: %r" % (interval,)
-        raise TypeError(msg)
-
-
-class _JobNameMunger(object):
-    # XXX ddaa 2004-10-28: This is part of a short term workaround for
-    # code in cscvs which does not perform shell quoting correctly.
-    # https://bugzilla.canonical.com/bugzilla/show_bug.cgi?id=2149
-
-    def __init__(self):
-        self._table = None
-
-    def is_munged(self, char):
-        import string
-        return not (char in string.ascii_letters or char in string.digits
-                    or char in ",-.:=@^_" or ord(char) > 127)
-
-    def translation_table(self):
-        if self._table is not None: return self._table
-        table = []
-        for code in range(256):
-            if self.is_munged(chr(code)):
-                table.append('_')
-            else:
-                table.append(chr(code))
-        self._table = ''.join(table)
-        return self._table
-
-    def translate(self, text):
-        return text.encode('utf8').translate(self.translation_table())
-
-
-# XXX ddaa 2004-10-28: workaround for broken cscvs shell quoting
-_job_name_munger = _JobNameMunger()
-
-
-class SourceSourceSet(object):
+class XXXXSourceSourceSet(object):
     """The set of SourceSource's."""
     implements(ISourceSourceSet)
 
@@ -281,42 +192,10 @@ class SourceSourceSet(object):
             clauseTables.add('Project')
             clauseTables.add('Product')
         # now just add filters on sourcesource
-        if state == SourceSourceStatus.TESTING:
+        if state:
             if len(query) > 0:
-                query = query + ' AND '
-            query = query + 'SourceSource.processingapproved IS NULL'
-            query = query + ' AND '
-            query = query + 'SourceSource.syncingapproved IS NULL'
-            query = query + ' AND '
-            query = query + 'SourceSource.autotested = 0'
-        elif state == SourceSourceStatus.TESTFAILED:
-            if len(query) > 0:
-                query = query + ' AND '
-            query = query + 'SourceSource.processingapproved IS NULL'
-            query = query + ' AND '
-            query = query + 'SourceSource.syncingapproved IS NULL'
-            query = query + ' AND '
-            query = query + 'SourceSource.autotested = 1'
-        elif state == SourceSourceStatus.AUTOTESTED:
-            if len(query) > 0:
-                query = query + ' AND '
-            query = query + 'SourceSource.processingapproved IS NULL'
-            query = query + ' AND '
-            query = query + 'SourceSource.syncingapproved IS NULL'
-            query = query + ' AND '
-            query = query + 'SourceSource.autotested = 2'
-        elif state == SourceSourceStatus.PROCESSING:
-            if len(query) > 0:
-                query = query + ' AND '
-            query = query + 'SourceSource.processingapproved IS NOT NULL'
-            query = query + ' AND '
-            query = query + 'SourceSource.syncingapproved IS NULL'
-        elif state == SourceSourceStatus.SYNCING:
-            if len(query) > 0:
-                query = query + ' AND '
-            query = query + 'SourceSource.syncingapproved IS NOT NULL'
-        elif state == SourceSourceStatus.STOPPED:
-            pass
+                query += ' AND '
+            query += 'SourceSource.importstatus = %d' % state
         return query, clauseTables
 
     def search(self, ready=None, 
@@ -329,79 +208,30 @@ class SourceSourceSet(object):
                                    clauseTables=clauseTables)[start:length]
         
 
-    # XXX Mark Shuttleworth 04/03/05 renamed to Xfilter to see if anything
-    # breaks. If nothing has broken by end April feel free to remove
-    # entirely.
-    def Xfilter(self, sync=None, process=None, 
-                     tested=None, text=None,
-                     ready=None, assigned=None):
-        query = ''
-        clauseTables = Set()
-        clauseTables.add('SourceSource')
-        if ready is not None:
-            if len(query) > 0:
-                query = query + ' AND\n'
-            query = query + """SourceSource.product = Product.id AND
-                             ( Product.project IS NULL OR
-                             ( Product.project = Project.id AND
-                               Project.active IS TRUE AND
-                               Project.reviewed IS TRUE ) ) AND
-                               Product.active IS TRUE AND
-                               Product.reviewed IS TRUE"""
-            clauseTables.add('Project')
-            clauseTables.add('Product')
-        if sync is not None:
-            if len(query) > 0:
-                query = query + ' AND '
-            query = query + 'SourceSource.syncingapproved IS NOT NULL'
-        else:
-            if len(query) > 0:
-                query = query + ' AND '
-            query = query + 'SourceSource.syncingapproved IS NULL'
-        if process is not None:
-            if len(query) > 0:
-                query = query + ' AND '
-            query = query + 'SourceSource.processingapproved IS NOT NULL'
-        else:
-            if len(query) > 0:
-                query = query + ' AND '
-            query = query + 'SourceSource.processingapproved IS NULL'
-        if tested is not None:
-            if len(query) > 0:
-                query = query + ' AND '
-            query = query + 'SourceSource.autotested = 2'
-        if assigned is not None:
-            if len(query) > 0:
-                query = query + ' AND '                
-            query = query + "Product.name != 'unassigned'"
-            clauseTables.add('Product')
-        else:
-            if len(query) > 0:
-                query = query + ' AND '                
-            query = query + "Product.name = 'unassigned'"
-            clauseTables.add('Product')
-        if text is not None:
-            if len(query) > 0:
-                query = query + ' AND '
-            if 'Project' not in clauseTables:
-                query = query + """SourceSource.product = Product.id AND
-                             ( Product.project IS NULL OR
-                               Product.project = Project.id ) AND"""
-            text = quote( '%' + text + '%' )
-            query = query + """( ( Project.title ILIKE %s ) OR
-                                 ( Project.shortdesc ILIKE %s ) OR
-                                 ( Project.description ILIKE %s ) OR
-                                 ( Product.title ILIKE %s ) OR
-                                 ( Product.shortdesc ILIKE %s ) OR
-                                 ( Product.description ILIKE %s ) )
-                                 """ % ( text, text,
-                                         text, text,
-                                         text, text )
-            clauseTables.add('Project')
-            clauseTables.add('Product')
-        if len(query)==0:
-            query = None
-        return SourceSource.select(query, distinct=True,
-                                   clauseTables=clauseTables)
-
+    # this is pedantic, to get every item individually, but it does allow
+    # for making sure nothing gets passed in accidentally.
+    def newSourceSource(self,
+            owner=None,
+            productseries=None,
+            rcstype=None,
+            cvsroot=None,
+            cvsmodule=None,
+            cvsbranch=None,
+            cvstarfileurl=None,
+            svnrepository=None,
+            releaseroot=None,
+            releaseverstyle=None,
+            releasefileglob=None):
+        return SourceSource(
+            owner=owner,
+            productseries=productseries,
+            rcstype=rcstype,
+            cvsroot=cvsroot,
+            cvsmodule=cvsmodule,
+            cvsbranch=cvsbranch,
+            cvstarfileurl=cvstarfileurl,
+            svnrepository=svnrepository,
+            releaseroot=releaseroot,
+            releaseverstyle=releaseverstyle,
+            releasefileglob=releasefileglob)
 

@@ -1,0 +1,177 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+  lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="rosetta">
+
+<head>
+  <title metal:fill-slot="title">Add Source Import</title>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+  <!-- Launchpad style sheet -->
+  <style type="text/css" media="screen">@import url(launchpad.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <!-- try to process a previous form submission -->
+  <tal:dummy condition="view/editSource" omit-tag="" />
+
+  <h1>Upstream Source Import</h1>
+
+  <p class="documentDescription">Please fill in the form below to register
+  the branch in upstream's revision control system that represents
+  development for this Product Series. We will attempt to import that
+  code and publish it as a Bazaar branch.</p>
+  
+  <form method="post" name="mf">
+  
+  <fieldset>
+
+    <legend>Source Import Details</legend>
+
+    <div class="field">
+
+      <label>Revision Control System</label>
+
+      <span class="fieldRequired" title="Required">(Required)</span>
+
+      <div class="formHelp">
+        The type of revision control used by the upstream developers of
+        this branch. The most common revision control system is CVS, but the
+        Launchpad also supports the importing of branches in Subversion and
+        Arch formats. Choose the correct format below:
+      </div>
+
+      <div>
+         <div tal:replace="structure view/rcs_selector" />
+      </div>
+      <!--
+      braine.com:
+      as cvs target version is longest variation it loads in visible state
+      this stops shorter layers overlapping the page footer
+      the order of the divs matters because invisibles must load
+      before visible counterparts otherwise layout goes for a burton
+      it's a hack because i don't know dhtml positioning very well
+      with a bit of effort it could be much better
+      -->
+
+    <div>
+
+      <div style="visibility: hidden; position: absolute; width: 53%;"
+           id="svndetails">
+
+        <fieldset>
+
+        <legend>SVN Repository</legend>
+        <div class="field">
+          <label>SVN repository</label>
+          <span class="fieldRequired" title="Required">(Required)</span>
+
+          <div class="formHelp">
+          The url (internet address) of the SVN repository and branch to be
+          imported, in <i>svn://</i> or <i>http(s)://</i> format.  Note that
+          this must reference the specific branch to be designated as
+          upstream for the <span tal:replace="context/displayname" />
+          series of <span tal:replace="context/product/displayname" />.
+          </div>
+
+          <input type="text" name="svnrepository" size="30"
+             tal:attributes="value view/svnrepository" />
+        </div>
+        </fieldset>
+
+        <div class="formControls">
+
+        <!--NB. DO NOT CHANGE THE VALUE OF THIS
+          it is used to verify that the correct form was posted.
+          -->
+        <input class="context" type="submit"
+           name="Update RCS Details"
+           value="Update RCS Details" />
+
+        </div>
+
+      </div>
+
+      <div class="visualClear"></div>
+
+        <div style="visibility: visible; width: 100%;"
+             id="cvsdetails">
+
+          <fieldset>
+          <legend>CVS Repository</legend>
+
+          <div class="field">
+            <label>CVS Repository Root</label>
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+            <div class="formHelp">
+            The CVS repository root is the base CVS server access
+            description. It is not a URL but follows a specific pattern, for
+            example: <i>:pserver:anonymous@anoncvs.gnome.org:/cvs/gnome</i>
+            </div>
+
+            <input type="text" name="cvsroot" size="30"
+               tal:attributes="value view/cvsroot" />
+
+          </div>
+      
+          <div class="field">
+            <label>CVS Module</label>
+            <span class="fieldRequired" title="Required">(Required)</span>
+            
+            <div class="formHelp">
+            The CVS module within which this branch is found. A CVS
+            repository can contain code for many different modules. Usually,
+            but not always, those modules are closely related to one
+            another.
+            </div>
+
+            <input type="text" name="cvsmodule" size="30"
+               tal:attributes="value view/cvsmodule" />
+
+          </div>
+
+          <div class="field">
+            <label>CVS Branch Name</label>
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+            <div class="formHelp">
+            The Branch of the CVS module which should be imported. It should
+            be the branch representing the upstream codebase for this
+            product series.
+            </div>
+            
+            <input type="text" name="cvsbranch" size="30"
+               tal:attributes="value view/cvsbranch" />
+          </div>
+
+          </fieldset>
+
+          <div class="formControls">
+
+          <!--NB. DO NOT CHANGE THE VALUE OF THIS
+            it is used to verify that the correct form was posted.
+            -->
+          <input class="context" type="submit"
+             name="Update RCS Details"
+             value="Update RCS Details" />
+
+          </div>
+
+      </div>
+
+
+    </div>
+
+    </div>
+  </fieldset>
+
+  </form>
+
+</div>
+
+</body>
+</html>

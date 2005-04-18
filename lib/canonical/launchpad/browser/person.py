@@ -444,7 +444,7 @@ class PersonEditView(BasePersonView):
                                 "<a href=\"../+requestmerge\">Merge Accounts"
                                 "</a> page to claim this email address and "
                                 "everything that is owned by that account.") % \
-                               (email.email, email.person.browsername())
+                               (email.email, email.person.browsername)
                 return
 
             login = getUtility(ILaunchBag).login
@@ -531,7 +531,7 @@ def sendEmailValidationRequest(token, appurl):
     fromaddress = "Launchpad Email Validator <noreply@ubuntu.com>"
 
     replacements = {'longstring': token.token,
-                    'requester': token.requester.browsername(),
+                    'requester': token.requester.browsername,
                     'requesteremail': token.requesteremail,
                     'toaddress': token.email,
                     'appurl': appurl}

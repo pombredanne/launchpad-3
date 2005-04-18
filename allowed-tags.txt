@@ -1,6 +1,4 @@
 doc/changelog.txt automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
-doc/poexport.txt 06f3feef-229e-42b9-a9d5-ab8c3758a23b
-lib/canonical/arch/Makefile a28009ff-8549-499e-ba4c-df39e069ff02
 lib/canonical/arch/__init__.py 968155c0-f32b-4ca1-a579-1722c98bb117
 lib/canonical/arch/broker.py 27f07153-69b6-4ddb-b704-eaabcca57e3e
 lib/canonical/arch/infoUpdater.py 5ce06dae-6ab3-4397-8ff2-e7fec441857f

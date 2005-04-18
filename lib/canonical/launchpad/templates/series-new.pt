@@ -17,8 +17,7 @@
 
     <tal:dummy condition="view/newseries" />
 
-    <h1>Register a New Product Release Series for: <span
-    tal:content="context/displayname">$Product.displayname</span></h1>
+    <h1>Register a New Product Release Series</h1>
 
     <div class="documentDescription">
     Please fill in the details below to register a new Product Release

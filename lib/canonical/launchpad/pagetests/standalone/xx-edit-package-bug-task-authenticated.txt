@@ -23,7 +23,7 @@ Any authenticated user can edit a source package bug task.
   ... -----------------------------89019536856698512711194452
   ... Content-Disposition: form-data; name="field.sourcepackagename"
   ... 
-  ... mozilla-firefox-dummy
+  ... mozilla-firefox
   ... -----------------------------89019536856698512711194452
   ... Content-Disposition: form-data; name="field.binarypackagename"
   ... 
@@ -100,7 +100,7 @@ Any authenticated user can edit a source package bug task.
   ... -----------------------------16131040782095479517127443199
   ... Content-Disposition: form-data; name="field.sourcepackagename"
   ... 
-  ... mozilla-firefox-dummy
+  ... mozilla-firefox
   ... -----------------------------16131040782095479517127443199
   ... Content-Disposition: form-data; name="field.binarypackagename"
   ... 

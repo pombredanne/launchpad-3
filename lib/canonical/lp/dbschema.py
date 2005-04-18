@@ -58,7 +58,7 @@ __all__ = (
 'SourcePackageFormat',
 'SourcePackageRelationships',
 'SourcePackageUrgency',
-'SourceSourceStatus',
+'ImportStatus',
 'SSHKeyType',
 'TeamMembershipStatus',
 'TeamSubscriptionPolicy',
@@ -115,6 +115,8 @@ class DBSchemaValidator(validators.Validator):
         >>>
 
         """
+        if value is None:
+            return None
         if isinstance(value, int):
             raise TypeError(
                 'Need to set a dbschema Enum column to a dbschema Item,'
@@ -135,6 +137,8 @@ class DBSchemaValidator(validators.Validator):
         True
 
         """
+        if value is None:
+            return None
         return self.schema.items[value]
 
 EnumCol = DBSchemaEnumCol
@@ -921,7 +925,7 @@ class SourcePackageUrgency(DBSchema):
         as possible after appropriate review.
         """)
 
-class SourceSourceStatus(DBSchema):
+class ImportStatus(DBSchema):
     """This schema describes the states that a SourceSource record can take
     on."""
 
@@ -1714,7 +1718,7 @@ class RevisionControlSystems(DBSchema):
     PACKAGE = Item(4, """
         Package
 
-        XXX Provide a description.
+        DEPRECATED DO NOT USE
         """)
 
 

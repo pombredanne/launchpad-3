@@ -22,32 +22,23 @@
     <h4>Template Details:</h4>
 
     <div class="portletBody">
-
-        <div class="portletContent even">
-
+        <div class="portletContent odd">
             <img src="/++resource++document_icon.gif" />
             <span tal:replace="view/num_messages" /><br />
-
             <div tal:condition="context/owner" tal:omit-tag>
                 <b>Owner:</b><br />
                 <img src="/++resource++user.gif" />
                 <span tal:replace="context/owner/browsername" /><br />
             </div>
-
         </div>
     </div>
 </div>
-
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
 
 <div class="portlet">
 
     <h4>Actions:</h4>
 
     <div class="portletBody">
-
         <div class="portletContent even">
             <p><img src="/++resource++edit.gif"><a href="+edit">Edit this
             template</a>. This will modify the template header information and
@@ -59,12 +50,15 @@
     </div>
 </div>
 
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
 </metal:rightportlets>
 
 
 <div metal:fill-slot="main">
 
-    <h1>Template: <span tal:replace="context/title">Potemplate Title</span>
+    <h1>Translation Template: <span tal:replace="context/title">Potemplate Title</span>
     </h1>
 
     <h2>Translations</h2>

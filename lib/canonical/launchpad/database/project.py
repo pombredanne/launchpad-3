@@ -18,6 +18,7 @@ from canonical.launchpad.interfaces import IProject, IProjectSet, \
                                            IProjectBugTracker
 
 # Import needed database objects
+from canonical.lp.dbschema import ImportStatus
 from canonical.launchpad.database.product import Product
 
 from sets import Set
@@ -109,9 +110,11 @@ class ProjectSet:
         query = """Product.project=Project.id AND
                    Product.reviewed IS TRUE AND
                    Product.active IS TRUE AND
-                   Product.id=SourceSource.product AND
-                   SourceSource.syncingapproved IS NULL"""
-        clauseTables = ['Project', 'Product', 'SourceSource']
+                   Product.id=ProductSeries.product AND
+                   ProductSeries.importstatus IS NOT NULL AND
+                   ProductSeries.importstatus <> %d
+                   """ % ImportStatus.SYNCING
+        clauseTables = ['Project', 'Product', 'ProductSeries']
         results = []
         for project in Project.select(query, clauseTables=clauseTables):
             if project not in results:
@@ -144,7 +147,8 @@ class ProjectSet:
             clauseTables.add('BugTask')
         if bazaar:
             clauseTables.add('Product')
-            clauseTables.add('SourceSource')
+            clauseTables.add('ProductSeries')
+            query += ' AND ProductSeries.branch IS NOT NULL \n'
         if search_products and text:
             clauseTables.add('Product')
             query += " AND Product.fti @@ ftq(%s) " % (text,)
@@ -154,8 +158,8 @@ class ProjectSet:
             query += ' AND POTemplate.product=Product.id \n'
         if 'BugTask' in clauseTables:
             query += ' AND BugTask.product=Product.id \n'
-        if 'SourceSource' in clauseTables:
-            query += ' AND SourceSource.product=Product.id \n'
+        if 'ProductSeries' in clauseTables:
+            query += ' AND ProductSeries.product=Product.id \n'
         if not show_inactive:
             query += ' AND Project.active IS TRUE \n'
             if 'Product' in clauseTables:

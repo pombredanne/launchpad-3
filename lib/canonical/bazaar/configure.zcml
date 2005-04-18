@@ -27,8 +27,8 @@
 
     <browser:suburl
         for="canonical.bazaar.IBazaarApplication"
-        utility="canonical.launchpad.interfaces.ISourceSourceSet"
-        name="sources" />
+        utility="canonical.launchpad.interfaces.IProductSeriesSet"
+        name="series" />
 
     <!-- pages for the bazaar application -->
     <browser:pages

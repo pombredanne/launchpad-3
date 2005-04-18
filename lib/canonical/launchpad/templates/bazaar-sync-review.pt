@@ -36,16 +36,21 @@
         
 
         <div tal:repeat="product project/products">
-        
-            <div tal:repeat="source product/sourcesources">
-                <p style="margin-left: 50px;"
-                   tal:condition="source/needsReview">
-                    <b tal:content="source/title">source title</b>
+
+            <p><em tal:content="product/title">Product Title</em>
                     [ <a tal:attributes="href
                     string:${project/name}/${product/name}/+review">Review</a> ]
+            </p>
+        
+            <div tal:repeat="series product/serieslist">
+                <p style="margin-left: 50px;"
+                   tal:condition="series/needsSyncReview">
+                    <b tal:content="series/name">series name</b>
                     <br />
-                    <span tal:replace="source/description">source
+                    <span tal:replace="series/shortdesc">source
                     description</span>
+                    [ <a tal:attributes="href
+                    string:${project/name}/${product/name}/+series/${series/name}/+sourceadmin">Admin</a> ]
                 </p>
             </div>
 

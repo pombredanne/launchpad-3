@@ -29,11 +29,6 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
-        layer="canonical.launchpad.layers.BazaarLayer"
-        name="+bazaar-index" />
-
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IProject"
         layer="canonical.launchpad.layers.RosettaLayer"
         name="+rosetta-index" />
 
@@ -48,9 +43,10 @@
         <browser:page name="+malone-index"
             template="../templates/project-bugs.pt"
             lp:url="malone/projects/$Project.name/" />
-        <browser:page name="+bazaar-index"
+        <browser:page
+            name="+branches"
             template="../templates/project-branches.pt"
-            lp:url="bazaar/upstream/$Project.name/" />
+            lp:url="/projects/$Project.name/+branches" />
         <browser:page
             name="+bounties"
             template="../templates/related-bounties.pt"

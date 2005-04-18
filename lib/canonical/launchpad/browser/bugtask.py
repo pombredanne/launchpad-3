@@ -69,7 +69,7 @@ class BugTasksReportView:
             if person==self.user:
                 html = html + ' selected="yes"'
             html = html + '>'
-            html = html + person.browsername() + '</option>\n'
+            html = html + person.browsername + '</option>\n'
         html = html + '</select>\n'
         return html
 

@@ -53,11 +53,9 @@
                 vspace="5">
                 <td>
                     <img src="/++resource++product_icon.gif">
-                    <b><a tal:attributes="href product/name" href="#"
-                        tal:content="product/title">$Product.title</a></b>
-                    (<span tal:content="product/name">$Product.name</span>)
-                    <a tal:attributes="href product/homepageurl"
-                        tal:content="product/homepageurl">http://www.gnu.org/</a>
+                    <b tal:content="product/title">$Product.title</b>
+                    (<a tal:attributes="href product/name" href="#"
+                        tal:content="product/name">$Product.name</a>)
                     <br />
                 <span tal:content="product/shortdesc">
                     $Product.shortdesc</span>

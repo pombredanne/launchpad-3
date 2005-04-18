@@ -2,6 +2,315 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-18 02:42:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1617
+
+    Summary:
+      land marks NukeSourceSource patch
+    Revision:
+      launchpad--devel--0--patch-1617
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--base-0
+       tag of mark.shuttleworth@canonical.com/launchpad--devel--0--patch-909
+    
+     * mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-1
+       setup sql queries for sourcesource replacement columns
+    
+     * mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-2
+       continue sourcesource, and thehatchery cleanups
+    
+     * mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-3
+       merge stubs sourcesource-productseries patch
+    
+     * mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-4
+       get ready to toast sourcesource
+    
+     * mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-5
+       fix sampledata and update scripts
+    
+     * mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-6
+       party time
+    
+     * mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-7
+       clean up display and editing of series and source details
+    
+     * mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-8
+       merge rocketfuel, discarding unknown sampledata changes
+    
+     * mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-9
+       start removing sourcesource refs
+    
+     * mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-10
+       clean out use of SourceSource
+    
+     * mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-11
+       update sampledata to publish different versions of netapplet in warty and hoary
+    
+     * mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-12
+       move buildbot cruft over to buildbot
+    
+     * mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-13
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-14
+       update SourcePackage.shouldimport to know that ProductSeries is now the upstream import focus
+    
+     * mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-15
+       use the existence of a real branch as the true test of whether or not we have upstream code in baz
+    
+     * mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-16
+       test fixes
+    
+     * mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-17
+       start making productseries understand the interface that SourceSource used to export, where appropriate
+    
+     * mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-18
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-19
+       fix sampledata for rosetta and permissions on series +source
+    
+     * mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-20
+       add link to db patch
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-908
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-909
+       allow for a sourcepackage that is initialised with distro not distrorelease
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-910
+       rename SourcePackage.getByVersion to SourcePackage.getVersion
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-911
+       improve SourcePackage.getVersion and SourcePackage.releases
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-912
+       merge RF, resolve conflicts and add SourcePackage.releasehistory
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-913
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-914
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-915
+       cleanup up product.py
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-916
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-917
+       merge SourceSourceRefactoring branch
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-918
+       merge stub's updates
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-919
+       make browsername a property, and add dickbraine's js love to series source page
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-920
+       fix up sampledata for dropped sourcesource
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-921
+       further work on series source editing page
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-922
+       merge rocketfuel, ignoring phantom conflict
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-923
+       continue work on bazaar management screens
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-924
+       merge rocketfuel and resolve conflicts, removing arch-tag from doc/poexport.txt
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-925
+       page test work for launchpad landing
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-926
+       pagetest fixes
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-927
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-928
+       tweak content of autocreated productseries from sourcesources
+    
+     * stuart.bishop@canonical.com/launchpad--sabdfl--1--base-0
+       tag of mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-20
+    
+     * stuart.bishop@canonical.com/launchpad--sabdfl--1--patch-1
+       minor tweaks to db patch and migrate to final homes
+    
+     * stuart.bishop@canonical.com/launchpad--sourcesource-productseries--0--base-0
+       tag of stuart.bishop@canonical.com/launchpad--devel--1--patch-266
+    
+     * stuart.bishop@canonical.com/launchpad--sourcesource-productseries--0--patch-1
+       Merge from stuart.bishop@canonical.com/launchpad--devel--1
+    
+     * stuart.bishop@canonical.com/launchpad--sourcesource-productseries--0--patch-2
+       Merge from stuart.bishop@canonical.com/launchpad--devel--1
+    
+     * stuart.bishop@canonical.com/launchpad--sourcesource-productseries--0--patch-3
+       Move patch into mainstream and update sampledata
+    
+
+    new files:
+     database/schema/.arch-ids/patch-14-08-0.sql.id
+     database/schema/patch-14-08-0.sql
+     doc/.arch-ids/poexport.txt.id doc/poexport.txt
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-product-advanced-search.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-product-advanced-search.txt
+     lib/canonical/launchpad/templates/.arch-ids/portlet-product-packages.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/portlet-productseries-actions.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/productseries-sourceadmin.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/redirect-up.pt.id
+     lib/canonical/launchpad/templates/portlet-product-packages.pt
+     lib/canonical/launchpad/templates/portlet-productseries-actions.pt
+     lib/canonical/launchpad/templates/productseries-sourceadmin.pt
+     lib/canonical/launchpad/templates/redirect-up.pt
+
+    removed files:
+     doc/poexport.txt lib/canonical/arch/Makefile
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-project-addsourcesource-commit.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-sourcesource-edit.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-project-addsourcesource-commit.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-sourcesource-edit.txt
+
+    modified files:
+     allowed-tags.txt database/sampledata/current.sql
+     database/schema/comments.sql database/schema/patch-14-07-0.sql
+     database/schema/security.cfg doc/changelog.txt
+     lib/canonical/arch/infoImporter.py
+     lib/canonical/bazaar/configure.zcml
+     lib/canonical/launchpad/browser/__init__.py
+     lib/canonical/launchpad/browser/bugtask.py
+     lib/canonical/launchpad/browser/person.py
+     lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/browser/productseries.py
+     lib/canonical/launchpad/browser/sourcesource.py
+     lib/canonical/launchpad/database/__init__.py
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/database/productseries.py
+     lib/canonical/launchpad/database/project.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/database/sourcesource.py
+     lib/canonical/launchpad/database/tests/test_imports.py
+     lib/canonical/launchpad/doc/bugactivity.txt
+     lib/canonical/launchpad/doc/bugnotifications.txt
+     lib/canonical/launchpad/doc/distrorelease.txt
+     lib/canonical/launchpad/doc/sourcepackage.txt
+     lib/canonical/launchpad/doc/upstream.txt
+     lib/canonical/launchpad/interfaces/__init__.py
+     lib/canonical/launchpad/interfaces/product.py
+     lib/canonical/launchpad/interfaces/productseries.py
+     lib/canonical/launchpad/interfaces/project.py
+     lib/canonical/launchpad/interfaces/sourcepackage.py
+     lib/canonical/launchpad/interfaces/sourcesource.py
+     lib/canonical/launchpad/mailnotification.py
+     lib/canonical/launchpad/pagetests/bugtask-management/xx-edit-bug-task-severity.txt
+     lib/canonical/launchpad/pagetests/malone/90-bug-add.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-edit-package-bug-task-authenticated.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-product-addseries-commit.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-product-addseries.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-productrelease-add.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-productseries-addsource.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-index.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-series-edit.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-distrorelease-sources.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-i386-binpackage.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-view-package-bug-task-anonymous.txt
+     lib/canonical/launchpad/security.py
+     lib/canonical/launchpad/templates/bazaar-index.pt
+     lib/canonical/launchpad/templates/bazaar-sync-review.pt
+     lib/canonical/launchpad/templates/launchpad.css
+     lib/canonical/launchpad/templates/launchpad.js
+     lib/canonical/launchpad/templates/portlet-product-actions.pt
+     lib/canonical/launchpad/templates/potemplate-index.pt
+     lib/canonical/launchpad/templates/product-index.pt
+     lib/canonical/launchpad/templates/productrelease-new.pt
+     lib/canonical/launchpad/templates/products-index.pt
+     lib/canonical/launchpad/templates/productseries-source.pt
+     lib/canonical/launchpad/templates/projects-index.pt
+     lib/canonical/launchpad/templates/series-edit.pt
+     lib/canonical/launchpad/templates/series-new.pt
+     lib/canonical/launchpad/templates/series.pt
+     lib/canonical/launchpad/templates/sources-index.pt
+     lib/canonical/launchpad/templates/sourcesource-index.pt
+     lib/canonical/launchpad/zcml/product.zcml
+     lib/canonical/launchpad/zcml/productseries.zcml
+     lib/canonical/launchpad/zcml/project.zcml
+     lib/canonical/launchpad/zcml/sourcesource.zcml
+     lib/canonical/lp/dbschema.py
+
+    renamed files:
+     database/schema/pending/.arch-ids/stub-sourcesource-productseries.sql.id
+       ==> database/schema/.arch-ids/patch-14-07-0.sql.id
+     database/schema/pending/stub-sourcesource-productseries.sql
+       ==> database/schema/patch-14-07-0.sql
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-project-addsourcesource.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-productseries-addsource.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-project-addsourcesource.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/xx-productseries-addsource.txt
+     lib/canonical/launchpad/templates/.arch-ids/sourcesource-add.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/productseries-source.pt.id
+     lib/canonical/launchpad/templates/sourcesource-add.pt
+       ==> lib/canonical/launchpad/templates/productseries-source.pt
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--base-0
+     mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-1
+     mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-2
+     mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-3
+     mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-4
+     mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-5
+     mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-6
+     mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-7
+     mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-8
+     mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-9
+     mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-10
+     mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-11
+     mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-12
+     mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-13
+     mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-14
+     mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-15
+     mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-16
+     mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-17
+     mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-18
+     mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-19
+     mark.shuttleworth@canonical.com/launchpad--SourceSourceRefactoring--0--patch-20
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-908
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-909
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-910
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-911
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-912
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-913
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-914
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-915
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-916
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-917
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-918
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-919
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-920
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-921
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-922
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-923
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-924
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-925
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-926
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-927
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-928
+     stuart.bishop@canonical.com/launchpad--sabdfl--1--base-0
+     stuart.bishop@canonical.com/launchpad--sabdfl--1--patch-1
+     stuart.bishop@canonical.com/launchpad--sourcesource-productseries--0--base-0
+     stuart.bishop@canonical.com/launchpad--sourcesource-productseries--0--patch-1
+     stuart.bishop@canonical.com/launchpad--sourcesource-productseries--0--patch-2
+     stuart.bishop@canonical.com/launchpad--sourcesource-productseries--0--patch-3
+
+
 2005-04-15 14:38:56 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1616
 
     Summary:

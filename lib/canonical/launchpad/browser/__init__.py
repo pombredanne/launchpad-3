@@ -30,7 +30,7 @@ from canonical.launchpad.browser.project import *
 from canonical.launchpad.browser.publishedpackage import *
 from canonical.launchpad.browser.sourcepackage import *
 from canonical.launchpad.browser.sourcepackagename import *
-from canonical.launchpad.browser.sourcesource import *
+# from canonical.launchpad.browser.sourcesource import *
 from canonical.launchpad.browser.soyuz import *
 from canonical.launchpad.browser.sshkey import *
 from canonical.launchpad.browser.team import *

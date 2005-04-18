@@ -760,3 +760,24 @@ td.selected {
     color: #436976;
     border: 1px solid #8cacbb;
 }
+
+/* from richard braine for the series source forms */
+/* otherwise inputs don't disappear along with surrounding layer */
+input {
+    visibility:inherit
+}
+/* this lines up text inputs so they don't look a mess */
+.textinput {
+    position: absolute; 
+    left: 250px;
+} 
+/* radios had 1px left and right borders - don't know if intended
+   but looked shit imo */
+.radios {
+    border:none;
+}
+/* this style was making the text '(Required)' invisible:
+   same colour as background */
+.fieldRequired {
+    color: #999999
+}

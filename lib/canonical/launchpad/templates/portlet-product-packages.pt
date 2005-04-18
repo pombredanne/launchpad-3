@@ -1,0 +1,23 @@
+<div class="portlet" tal:condition="context/sourcepackages">
+
+  <h4>Distro Packages:</h4>
+
+  <div class="portletBody">
+    <div class="portletContent even">
+
+      <table class="rowNavigation">
+      <tr tal:repeat="package context/sourcepackages"
+          tal:attributes="onclick string:window.location='/distros/${package/distribution/name}/${package/distrorelease/name}/+sources/${package/name}';">
+        <td><a tal:attributes="href
+               string:/distros/${package/distribution/name}/${package/distrorelease/name}/+sources/${package/name}">
+          <span tal:replace="package/distribution/name">distribution</span>
+          (<span tal:replace="package/distrorelease/name">distrorelease</span>)
+          <span tal:replace="package/name">name</span>
+          </a>
+        </td>
+      </tr>
+      </table>
+
+    </div>
+  </div>
+</div>

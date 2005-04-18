@@ -66,6 +66,74 @@ COMMENT ON COLUMN ProductRole.product IS 'The product where the person plays thi
 COMMENT ON TABLE ProductSeries IS 'A ProductSeries is a set of product releases that are related to a specific version of the product. Typically, each major release of the product starts a new ProductSeries. These often map to a branch in the revision control system of the project, such as "2_0_STABLE". A few conventional Series names are "head" for releases of the HEAD branch, "1.0" for releases with version numbers like "1.0.0" and "1.0.1".';
 COMMENT ON COLUMN ProductSeries.name IS 'The name of the ProductSeries is like a unix name, it should not contain any spaces and should start with a letter or number. Good examples are "2.0", "3.0", "head" and "development".';
 COMMENT ON COLUMN ProductSeries.shortdesc IS 'A short description of this Product Series. A good example would include the date the series was initiated and whether this is the current recommended series for people to use.';
+COMMENT ON COLUMN ProductSeries.importstatus IS 'A status flag which
+gives the state of our efforts to import the upstream code from its revision
+control system and publish that in the baz revision control system. The
+allowed values are documented in dbschema.BazImportStatus.';
+COMMENT ON COLUMN ProductSeries.rcstype IS 'The revision control system used
+by upstream for this product series. The value is defined in
+dbschema.RevisionControlSystems.  If NULL, then there should be no CVS or
+SVN information attached to this productseries, otherwise the relevant
+fields for CVS or SVN etc should be filled out.';
+COMMENT ON COLUMN ProductSeries.cvsroot IS 'The CVS root where this
+productseries hosts its code. Only used if rcstype is CVS.';
+COMMENT ON COLUMN ProductSeries.cvsmodule IS 'The CVS module which contains
+the upstream code for this productseries. Only used if rcstype is CVS.';
+COMMENT ON COLUMN ProductSeries.cvsmodule IS 'The CVS branch that contains
+the upstream code for this productseries.  Only used if rcstype is CVS.';
+COMMENT ON COLUMN ProductSeries.cvstarfileurl IS 'The URL of a tarfile of
+the CVS repository for this productseries. This is an optimisation of the
+CVS import process - instead of hitting the server to pass us every set of
+changes in history, we can sometimes arrange to be given a tarfile of the
+CVS repository and then process it all locally. Once imported, we switch
+back to using the CVS server for ongoing syncronization.  Only used if
+rcstype is CVS.';
+COMMENT ON COLUMN ProductSeries.svnrepository IS 'The URL of the SVN branch
+where the upstream productseries code can be found. This single URL is the
+equivalent of the cvsroot, cvsmodule and cvsbranch for CVS. Only used if
+rcstype is SVN.';
+COMMENT ON COLUMN ProductSeries.bkrepository IS 'The URL of the BK branch
+where the upstream productseries code can be found. This single URL is the
+equivalent of the cvsroot, cvsmodule and cvsbranch. Only used if rcstype is
+BK.';
+COMMENT ON COLUMN ProductSeries.releaseroot IS 'The URL to the directory
+which holds upstream releases for this productseries. This allows us to
+monitor the upstream site and detect new upstream release tarballs.';
+COMMENT ON COLUMN ProductSeries.releasefileglob IS 'A fileglob that lets us
+see which files in the releaseroot directory are potentially new upstream
+tarball releases. For example: linux-*.*.*.gz.';
+COMMENT ON COLUMN ProductSeries.releaseverstyle IS 'An enum giving the style
+of this product series release version numbering system.  The options are
+documented in dbschema.UpstreamReleaseVersionStyle.  Most applications use
+Gnu style numbering, but there are other alternatives.';
+COMMENT ON COLUMN ProductSeries.targetarchcategory IS 'The category name of
+the bazaar branch to which we publish new changesets detected in the
+upstream revision control system.';
+COMMENT ON COLUMN ProductSeries.targetarchbranch IS 'The branch name of the
+bazaar branch to which we publish new changesets detected in the upstream
+revision control system.';
+COMMENT ON COLUMN ProductSeries.targetarchversion IS 'The version of the
+bazaar branch to which we publish new changesets detected in the upstream
+revision control system.';
+COMMENT ON COLUMN ProductSeries.dateprocessapproved IS 'The timestamp when
+this upstream import was certified for processing. Processing means it has
+passed autotesting, and is being moved towards production syncing. If the
+sync goes well, it will be approved for sync and then be fully in
+production.';
+COMMENT ON COLUMN ProductSeries.datesyncapproved IS 'The timestamp when this
+upstream import was certified for ongoing syncronisation.';
+COMMENT ON COLUMN ProductSeries.dateautotested IS 'This upstream revision
+control system target has passed automatic testing. It can probably be moved
+towards production sync status. This date is the timestamp when it passed
+the autotester. The autotester allows us to find the low hanging fruit that
+is easily brought into the bazaar import system by highlighting repositories
+which had no apparent difficulty in being imported.';
+COMMENT ON COLUMN ProductSeries.datestarted IS 'The timestamp when we last
+initiated an import test or sync of this upstream repository.';
+COMMENT ON COLUMN ProductSeries.datefinished IS 'The timestamp when we last
+completed an import test or sync of this upstream repository. If this is
+NULL and datestarted is NOT NULL, then there is a sync in progress.';
+
 
 
 
@@ -350,14 +418,15 @@ COMMENT ON TABLE DistroBounty IS 'This table records a simple link between a bou
 COMMENT ON TABLE ProjectBounty IS 'This table records a simple link between a bounty and a project. This bounty will be listed on the project web page, and the project will be mentioned on the bounty web page.';
 
 -- SourceSource
-COMMENT ON TABLE SourceSource IS 'The SourceSource table identifies upstream
-revision control systems that can be imported and re-published as bazaar
-(baz) archives. So, for example, there is an entry in this table for each
-upstream CVS or SVN branch that we want to sync-and-publish as a baz branch.';
+COMMENT ON TABLE SourceSourceBackup IS 'The SourceSource table identifies
+upstream revision control systems that can be imported and re-published as
+bazaar (baz) archives. So, for example, there is an entry in this table for
+each upstream CVS or SVN branch that we want to sync-and-publish as a baz
+branch.';
 
-COMMENT ON COLUMN SourceSource.branchpoint IS 'The source specification for an import job to branch from.';
-COMMENT ON COLUMN SourceSource.datestarted IS 'The timestamp of the last time an import or sync was started on this sourcesource.';
-COMMENT ON COLUMN SourceSource.datefinished IS 'The timestamp of the last time an import or sync finished on this sourcesource.';
+COMMENT ON COLUMN SourceSourceBackup.branchpoint IS 'The source specification for an import job to branch from.';
+COMMENT ON COLUMN SourceSourceBackup.datestarted IS 'The timestamp of the last time an import or sync was started on this sourcesource.';
+COMMENT ON COLUMN SourceSourceBackup.datefinished IS 'The timestamp of the last time an import or sync finished on this sourcesource.';
 
 
 -- Maintainership
@@ -644,7 +713,7 @@ COMMENT ON TABLE MirrorSourceContent IS 'Stores which distrorelease and componen
 COMMENT ON COLUMN MirrorSourceContent.distrorelease IS 'A distrorelease that this mirror contains.';
 COMMENT ON COLUMN MirrorSourceContent.component IS 'What component of the distrorelease that this sourcepackage mirror contains.';
 
-
+-- SourcePackagePublishingHistory
 COMMENT ON TABLE SourcePackagePublishingHistory IS 'SourcePackagePublishingHistory: The history of a SourcePackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.sourcepackagerelease IS 'The sourcepackagerelease being published.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.distrorelease IS 'The distrorelease into which the sourcepackagerelease is being published.';
@@ -658,3 +727,6 @@ COMMENT ON COLUMN SourcePackagePublishingHistory.supersededby IS 'The source whi
 COMMENT ON COLUMN SourcePackagePublishingHistory.datemadepending IS 'The date/time on which this publishing record was made to be pending removal from the archive.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.scheduleddeletiondate IS 'The date/time at which the source is/was scheduled to be deleted.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.dateremoved IS 'The date/time at which the source was actually deleted.';
+
+-- Packaging
+

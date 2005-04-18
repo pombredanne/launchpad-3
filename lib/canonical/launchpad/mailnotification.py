@@ -37,7 +37,7 @@ def generate_bug_edit_email(bug_delta):
 
     %(bugurl)s
 
-""" % {'browsername' : bug_delta.user.browsername(),
+""" % {'browsername' : bug_delta.user.browsername,
        'email' : bug_delta.user.preferredemail.email,
        'bugurl' : bug_delta.bugurl}
 
@@ -157,9 +157,9 @@ def generate_bug_edit_email(bug_delta):
                 oldval_display = "(unassigned)"
                 newval_display = "(unassigned)"
                 if bugtask_delta.assignee.get('old'):
-                    oldval_display = bugtask_delta.assignee['old'].browsername()
+                    oldval_display = bugtask_delta.assignee['old'].browsername
                 if bugtask_delta.assignee.get('new'):
-                    newval_display = bugtask_delta.assignee['new'].browsername()
+                    newval_display = bugtask_delta.assignee['new'].browsername
 
                 changerow = (
                     "%(label)13s: %(oldval)s => %(newval)s\n" % {
@@ -720,9 +720,9 @@ def notify_join_request(event):
 
     if to_addrs:
         url = "%s/people/%s/+members/%s" % (event.appurl, team.name, user.name)
-        replacements = {'browsername': user.browsername(),
+        replacements = {'browsername': user.browsername,
                         'name': user.name,
-                        'teamname': team.browsername(),
+                        'teamname': team.browsername,
                         'url': url}
         file = 'lib/canonical/launchpad/templates/pending-membership-approval.txt'
         msg = open(file).read() % replacements

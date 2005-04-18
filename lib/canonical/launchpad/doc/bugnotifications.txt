@@ -258,7 +258,7 @@ that they were the person that fixed the bug.)
     '[Bug ...] firefox crashes all the time'
 
     >>> msg.get_payload(decode = True)
-    'Sample Person <test@canonical.com> made changes to:\n\n    http://127.0.0.1/malone/bugs/...\n\nTask: debian mozilla-firefox-dummy\n       status: New => Fixed\n     assignee: (unassigned) => Sample Person\n'
+    'Sample Person <test@canonical.com> made changes to:\n\n    http://127.0.0.1/malone/bugs/...\n\nTask: debian mozilla-firefox\n       status: New => Fixed\n     assignee: (unassigned) => Sample Person\n'
 
     >>> stub.test_emails = []
 

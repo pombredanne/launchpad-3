@@ -2,6 +2,9 @@ SET client_min_messages=ERROR;
 
 /* Make SourceSource reference productseries instead of product */
 
+-- First backup SourceSource data for paranoid reasons
+CREATE TABLE SourceSourceBackup AS SELECT * FROM SourceSource;
+
 -- Add the new column
 
 ALTER TABLE SourceSource ADD COLUMN productseries integer
@@ -16,8 +19,13 @@ INSERT INTO ProductSeries (product, name, displayname, shortdesc)
     SELECT DISTINCT
         Product.id,
         'main' AS name, -- not MAIN, since names must be lower case
-        'Main release' AS displayname,
-        'The standard release' AS shortdesc
+        'MAIN' AS displayname,
+        'The primary "trunk" of development for this product. This series
+was automatically created and represents the idea of a primary trunk
+of software development without "stable branches". For most
+products, releases in this series will be "milestone" or "test"
+releases, and there should be other series for the stable releases
+of the product.' AS shortdesc
     FROM SourceSource
         JOIN Product ON SourceSource.product = Product.id
         LEFT OUTER JOIN ProductSeries ON Product.id = ProductSeries.product
@@ -50,5 +58,5 @@ ALTER TABLE SourceSource ADD CONSTRAINT sourcesource_releaseparentbranch_fk
 ALTER TABLE SourceSource ADD CONSTRAINT sourcesource_cvstarfile_fk
     FOREIGN KEY (cvstarfile) REFERENCES LibraryFileAlias;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (14, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (14, 7, 0);
 

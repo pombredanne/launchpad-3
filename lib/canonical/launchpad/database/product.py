@@ -23,7 +23,6 @@ from canonical.lp.dbschema import BugSeverity, BugTaskStatus
 from canonical.lp.dbschema import RosettaImportStatus, RevisionControlSystems
 from canonical.launchpad import helpers
 
-from canonical.launchpad.database.sourcesource import SourceSource
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.potemplate import POTemplate
@@ -92,14 +91,7 @@ class Product(SQLBase):
 
     branches = MultipleJoin('Branch', joinColumn='product')
 
-    sourcesources = MultipleJoin('SourceSource', joinColumn='product')
-
     serieslist = MultipleJoin('ProductSeries', joinColumn='product')
-
-    # XXX MorganCollett 2005-03-14 We now need to join through
-    #     ProductSeries
-    #releases = MultipleJoin('ProductRelease', joinColumn='product',
-    #                         orderBy='-datereleased')
 
     def releases(self):
         return ProductRelease.select(
@@ -147,49 +139,6 @@ class Product(SQLBase):
                              displayname=displayname,
                              shortdesc=shortdesc,
                              product=self.id)
-
-    def newSourceSource(self, form, owner):
-        rcstype = RevisionControlSystems.CVS
-        if form['svnrepository']:
-            rcstype = RevisionControlSystems.SVN
-        # XXX Robert Collins 05/10/04 need to handle arch too
-        ss = SourceSource(name=form['name'],
-            title=form['title'],
-            description=form['description'],
-            product=self.id,
-            owner=owner,
-            cvsroot=form['cvsroot'],
-            cvsmodule=form['module'],
-            cvstarfileurl=form['cvstarfile'],
-            cvsbranch=form['branchfrom'],
-            svnrepository=form['svnrepository'],
-            #StringCol('releaseroot', dbName='releaseroot', default=None),
-            #StringCol('releaseverstyle', dbName='releaseverstyle',
-            #          default=None),
-            #StringCol('releasefileglob', dbName='releasefileglob',
-            #          default=None),
-            #ForeignKey(name='releaseparentbranch', foreignKey='Branch',
-            #       dbName='releaseparentbranch', default=None),
-            #ForeignKey(name='branch', foreignKey='Branch',
-            #       dbName='branch', default=None),
-            #DateTimeCol('lastsynced', dbName='lastsynced', default=None),
-            #IntCol('frequency', dbName='syncinterval', default=None),
-            # WARNING: syncinterval column type is "interval", not "integer"
-            # WARNING: make sure the data is what buildbot expects
-            rcstype=rcstype,
-            hosted=None,
-            upstreamname=None,
-            newarchive=None,
-            newbranchcategory=None,
-            newbranchbranch=None,
-            newbranchversion=None)
-
-    def getSourceSource(self,name):
-        """get a sync"""
-        return SourceSource(self,
-            SourceSource.select("name=%s and sourcesource.product=%s" %
-                                (quote(name), self._product.id)
-                                )[0])
 
     def potemplates(self):
         # XXX sabdfl 30/03/05 this method is really obsolete, because what
@@ -413,16 +362,21 @@ class ProductSet:
             query += " AND Product.fti @@ ftq(%s) " % (text,)
         if rosetta:
             clauseTables.add('POTemplate')
+            clauseTables.add('ProductRelease')
+            clauseTables.add('ProductSeries')
         if malone:
             clauseTables.add('BugTask')
         if bazaar:
-            clauseTables.add('SourceSource')
+            clauseTables.add('ProductSeries')
+            query += ' AND ProductSeries.branch IS NOT NULL \n'
         if 'POTemplate' in clauseTables:
-            query += ' AND POTemplate.product=Product.id \n'
+            query += """ AND POTemplate.productrelease=ProductRelease.id
+                         AND ProductRelease.productseries=ProductSeries.id
+                         AND ProductSeries.product=product.id """
         if 'BugTask' in clauseTables:
             query += ' AND BugTask.product=Product.id \n'
-        if 'SourceSource' in clauseTables:
-            query += ' AND SourceSource.product=Product.id \n'
+        if 'ProductSeries' in clauseTables:
+            query += ' AND ProductSeries.product=Product.id \n'
         if not show_inactive:
             query += ' AND Product.active IS TRUE \n'
         return Product.select(query, distinct=True, clauseTables=clauseTables)
@@ -438,7 +392,8 @@ class ProductSet:
             AND ProductSeries.id = ProductRelease.productseries
             AND POTemplate.productrelease = ProductRelease.id
             ''',
-            clauseTables=['ProductRelease', 'ProductSeries', 'POTemplate']
+            clauseTables=['ProductRelease', 'ProductSeries', 'POTemplate'],
+            distinct=True
             )
 
     def count_all(self):

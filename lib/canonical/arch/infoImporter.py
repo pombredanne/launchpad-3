@@ -3,10 +3,18 @@
 It will create ArchArchive and Branch entries as needed.
 """
 
+#
+# NB Mark Shuttleworth 10/04/05: this code is defunct, it should never
+# be imported because it depends on the old SourceSource table which is
+# History (tm).
+#
+
+
 import sys
 
 from canonical.database.sqlbase import quote
-from canonical.launchpad.database import Product, ArchArchive, Person, SourceSource
+from canonical.launchpad.database import Product, ArchArchive, Person, \
+        SourceSource
 from canonical.lp import dbschema
 import canonical.lp
 

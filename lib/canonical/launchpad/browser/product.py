@@ -25,7 +25,7 @@ from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
      MilestoneVocabulary
 
 from canonical.launchpad.database import Product, ProductSeriesSet, \
-     BugFactory, ProductMilestoneSet, Milestone, SourceSourceSet, Person
+     BugFactory, ProductMilestoneSet, Milestone, Person
 from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet, \
      IPersonSet, IBugTaskSet, IAging, ILaunchBag
 from canonical.launchpad.browser.productrelease import newProductRelease
@@ -36,9 +36,7 @@ from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 # Traversal functions that help us look up something
 # about a project or product
 def traverseProduct(product, request, name):
-    if name == '+sources':
-        return SourceSourceSet()
-    elif name == '+series':
+    if name == '+series':
         return ProductSeriesSet(product = product)
     elif name == '+milestones':
         return ProductMilestoneSet(product = product)
@@ -77,6 +75,9 @@ class ProductView:
 
     milestonePortlet = ViewPageTemplateFile(
         '../templates/portlet-product-milestones.pt')
+
+    packagesPortlet = ViewPageTemplateFile(
+        '../templates/portlet-product-packages.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -119,22 +120,6 @@ class ProductView:
 
     def sourcesources(self):
         return iter(self.context.sourcesources())
-
-    def newSourceSource(self):
-        form = self.form
-        if (form.get("Register") != "Register Revision Control System"):
-            return
-        if self.request.method != "POST":
-            return
-        owner = IPerson(self.request.principal)
-        #XXX: cprov 20050112
-        # SteveA comments:
-        # Passing form is only slightly more evil than passing **kw.
-        # I'd rather see the correct keyword arguments passed in explicitly.
-        #
-        # Avoid passing obscure arguments as self.form
-        ss = self.context.newSourceSource(form, owner)
-        self.request.response.redirect('+sources/'+ form['name'])
 
     def newProductRelease(self):
         # default owner is the logged in user
