@@ -2,6 +2,57 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-18 13:09:41 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1619
+
+    Summary:
+      [Trivial] Three lines changed to fix bugs #393 and #394 + added a pagetest + added more plural forms to our documentation
+    Revision:
+      launchpad--devel--0--patch-1619
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-592
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-593
+       Added more plural forms
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-594
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-595
+       Trivial fix for bug #394
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-596
+       Trivial fix for bug #393 + test added
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-597
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-598
+       Merge from rocketfuel
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-potemplate-translation-form-empty-strings-without-validation.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-translation-form-empty-strings-without-validation.txt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/potemplate.py
+     lib/canonical/launchpad/database/potemplate.py
+     scripts/rosetta/plural-form-data
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-592
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-593
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-594
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-595
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-596
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-597
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-598
+
+
 2005-04-18 06:38:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1618
 
     Summary:

@@ -1,0 +1,15 @@
+Checks that an empty translation is not checked with pygettextpo
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+translate?count=1&languages=es&offset=12 HTTP/1.1
+  ... Accept-Language: en-gb,en;q=0.5
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 116
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+translate?count=1&languages=es&offset=12
+  ... 
+  ... set_13_msgid=Migrating+%60%25s%27%3A&set_13_translation_es=&offset=13&languages=es&show=all&SUBMIT=Save+%26+Continue""")
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+translate?languages=es&offset=13
+  ...

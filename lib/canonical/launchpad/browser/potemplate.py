@@ -570,7 +570,8 @@ class TranslatePOTemplate:
 
                 # Skip if there are no non-empty translations.
 
-                if not [ x for x in new_translations if x != '' ]:
+                if not [key for key in new_translations.keys()
+                              if new_translations[key] != '']:
                     continue
 
                 bad_translation_found = False

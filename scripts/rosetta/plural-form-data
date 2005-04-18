@@ -1,10 +1,10 @@
 # arch-tag: 26f84e2a-1a75-48d5-bf0d-28672ebc61aa
 
-languages: fa,hu,ja,kr,jbo,ko,tr,vi,zh
+languages: fa,hu,ja,kr,jbo,ko,tr,vi,zh,bo
 nplurals:  1
 plural:    0
 
-languages: az,ca,da,nn,nl,en,eu,fo,gu,de,no,sv,es,fi,el,hi,he,it,is,ro,sq,pt,es,eo,ms,nb,pa,ta,an,zu,af,xh
+languages: az,ca,da,nn,nl,en,eu,fo,gu,de,no,sv,es,fi,el,hi,he,it,is,ro,sq,pt,es,eo,ms,nb,pa,ta,an,zu,af,xh,bg,gl
 nplurals:  2
 plural:    n != 1
 
@@ -12,11 +12,15 @@ languages: fr,pt_BR,am
 nplurals:  2
 plural:    n > 1
 
+languages: qu,mk
+nplurals:  2
+plural:    (n % 10 == 1 && n % 100 != 11) ? 0 : 1
+
 languages: lv
 nplurals:  3
 plural:    n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2
 
-languages: ga
+languages: ga,ar
 nplurals:  3
 plural:    n==1 ? 0 : n==2 ? 1 : 2
 

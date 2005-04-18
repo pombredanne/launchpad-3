@@ -563,15 +563,17 @@ class POTemplate(SQLBase, RosettaStats):
             data['origin'] = self.sourcepackagename.name
 
         if owner is None:
-            # All POFiles should have an owner, by default, the Rosetta Admin
-            # team.
+            # All POFiles should have an owner, by default, the Ubuntu
+            # Translators team.
+            # XXX: Carlos Perello Marin 2005-04-15: We should get a better
+            # default depending on the POFile and the associated POTemplate.
             # The import is here to prevent circular dependencies
             from canonical.launchpad.database.person import PersonSet
 
             # XXX Carlos Perello Marin 2005-03-28
             # This should be done with a celebrity.
             personset = PersonSet()
-            owner = personset.getByName('rosetta-admins')
+            owner = personset.getByName('ubuntu-translators')
 
         return POFile(potemplate=self,
                       language=language,
