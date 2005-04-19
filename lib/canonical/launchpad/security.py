@@ -106,7 +106,7 @@ class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
         if user.inTeam(self.obj.teamowner) or user.inTeam(admins):
             return True
         else:
-            for team in self.obj.teamowner.administrators:
+            for team in self.obj.administrators:
                 if user.inTeam(team):
                     return True
 

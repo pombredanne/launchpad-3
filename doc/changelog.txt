@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-19 15:52:10 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1620
+
+    Summary:
+      [trivial] Fix to allow team administrators to edit team details.
+    Revision:
+      launchpad--devel--0--patch-1620
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--smallfixes--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1619
+    
+     * guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-1
+       Fix to allow team administrators to edit team details.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/security.py
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--smallfixes--0--base-0
+     guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-1
+
+
 2005-04-18 13:09:41 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1619
 
     Summary:
