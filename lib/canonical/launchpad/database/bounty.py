@@ -11,6 +11,7 @@ from canonical.launchpad.interfaces import IBounty, IBountySet, \
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.bountysubscription import BountySubscription
 
 # Python
@@ -35,8 +36,8 @@ class Bounty(SQLBase):
                            default=datetime.timedelta(7))
     reviewer = ForeignKey(dbName='reviewer', notNull=True,
                           foreignKey='Person')
-    datecreated = DateTimeCol(notNull=True,
-                          default=DEFAULT)
+    datecreated = UtcDateTimeCol(notNull=True,
+                                 default=DEFAULT)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
     # useful joins

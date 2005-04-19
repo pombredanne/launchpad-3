@@ -1,5 +1,6 @@
 from canonical.database.sqlbase import quote, SQLBase
-from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol
+from sqlobject import StringCol, ForeignKey, IntCol
+from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import RevisionNotRegistered
 from canonical.launchpad.interfaces import RevisionAlreadyRegistered
@@ -21,7 +22,7 @@ class Changeset(SQLBase):
     _columns = [
         ForeignKey(name='branch', foreignKey='Branch', dbName='branch',
                    notNull=True),
-        DateTimeCol('datecreated', dbName='datecreated', notNull=True),
+        UtcDateTimeCol('datecreated', dbName='datecreated', notNull=True),
         StringCol('name', dbName='name', notNull=True),
         StringCol('logmessage', dbName='logmessage', notNull=True),
         ForeignKey(name='archID', foreignKey='ArchUserID', dbName='archID',

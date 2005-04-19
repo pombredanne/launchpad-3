@@ -5,7 +5,7 @@ from zope.proxy import isProxy
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.lp.dbschema import BugTaskStatus, BugSeverity, BugPriority, BugInfestationStatus
-from canonical.database.constants import nowUTC
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database import Bug, BugActivity, Person, SourcePackageRelease, ProductRelease
 
 vocabulary_registry = getVocabularyRegistry()
@@ -74,7 +74,7 @@ def record_bug_added(bug_add_form, object_created_event):
     bug = Bug.get(bug_add_form.id)
     BugActivity(
         bug = bug.id,
-        datechanged = datetime.now(),
+        datechanged = UTC_NOW,
         person = int(bug.ownerID),
         whatchanged = "bug",
         message = "added bug")
@@ -86,7 +86,7 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
         for changed_field in changes.keys():
             BugActivity(
                 bug=sqlobject_modified_event.object_before_modification.id,
-                datechanged=nowUTC,
+                datechanged=UTC_NOW,
                 person=int(sqlobject_modified_event.principal.id),
                 whatchanged=changed_field,
                 oldvalue=changes[changed_field][0],
@@ -101,7 +101,7 @@ def record_bug_task_added(bug_task, object_created_event):
         activity_message = 'assigned to source package ' + bug_task.sourcepackagename.name
     BugActivity(
         bug=bug_task.bugID,
-        datechanged=nowUTC,
+        datechanged=UTC_NOW,
         person=int(bug_task.ownerID),
         whatchanged='bug',
         message=activity_message)
@@ -122,7 +122,6 @@ def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
                 task_title = None
             else:
                 task_title = obm.sourcepackagename.name
-        right_now = datetime.utcnow()
         for changed_field in changes.keys():
             ov = changes[changed_field][0]
             if ov is not None:
@@ -132,7 +131,7 @@ def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
                 nv = unicode(nv)
             BugActivity(
                 bug=bug_task_edited.bug.id,
-                datechanged=right_now,
+                datechanged=UTC_NOW,
                 person=int(sqlobject_modified_event.principal.id),
                 whatchanged="%s: %s" % (task_title, changed_field),
                 oldvalue=ov,
@@ -142,7 +141,7 @@ def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
 def record_product_task_added(product_task, object_created_event):
     BugActivity(
         bug=product_task.bugID,
-        datechanged=datetime.utcnow(),
+        datechanged=UTC_NOW,
         person=int(product_task.ownerID),
         whatchanged='bug',
         message='assigned to product ' + product_task.product.name)
@@ -151,11 +150,10 @@ def record_product_task_edited(product_task_edited, sqlobject_modified_event):
     changes = what_changed(sqlobject_modified_event)
     if changes:
         product_name = sqlobject_modified_event.object_before_modification.product.name
-        right_now = datetime.utcnow()
         for changed_field in changes.keys():
             BugActivity(
                 bug=product_task_edited.bug.id,
-                datechanged=right_now,
+                datechanged=UTC_NOW,
                 person=int(sqlobject_modified_event.principal.id),
                 whatchanged="%s: %s" % (product_name, changed_field),
                 oldvalue=changes[changed_field][0],
@@ -168,7 +166,7 @@ def record_package_infestation_added(package_infestation, object_created_event):
         package_infestation.sourcepackagerelease.version)
     BugActivity(
         bug=package_infestation.bugID,
-        datechanged=datetime.utcnow(),
+        datechanged=UTC_NOW,
         person=package_infestation.creatorID,
         whatchanged="bug",
         message="added infestation of package release " + package_release_name)
@@ -179,11 +177,10 @@ def record_package_infestation_edited(package_infestation_edited, sqlobject_modi
         package_release_name = "%s %s" % (
             sqlobject_modified_event.object_before_modification.sourcepackagerelease.sourcepackagename.name,
             sqlobject_modified_event.object_before_modification.sourcepackagerelease.version)
-        right_now = datetime.utcnow()
         for changed_field in changes.keys():
             BugActivity(
                 bug=package_infestation_edited.bug.id,
-                datechanged=right_now,
+                datechanged=UTC_NOW,
                 person=int(sqlobject_modified_event.principal.id),
                 whatchanged="%s: %s" % (package_release_name, changed_field),
                 oldvalue=changes[changed_field][0],
@@ -196,7 +193,7 @@ def record_product_infestation_added(product_infestation, object_created_event):
         product_infestation.productrelease.version)
     BugActivity(
         bug=product_infestation.bugID,
-        datechanged=datetime.utcnow(),
+        datechanged=UTC_NOW,
         person=product_infestation.creatorID,
         whatchanged="bug",
         message="added infestation of product release " + product_release_name)
@@ -207,11 +204,10 @@ def record_product_infestation_edited(product_infestation_edited, sqlobject_modi
         product_release_name = "%s %s" % (
             sqlobject_modified_event.object_before_modification.productrelease.product.name,
             sqlobject_modified_event.object_before_modification.productrelease.version)
-        right_now = datetime.utcnow()
         for changed_field in changes.keys():
             BugActivity(
                 bug=product_infestation_edited.bug.id,
-                datechanged=right_now,
+                datechanged=UTC_NOW,
                 person=int(sqlobject_modified_event.principal.id),
                 whatchanged="%s: %s" % (product_release_name, changed_field),
                 oldvalue=changes[changed_field][0],
@@ -223,7 +219,7 @@ def record_bugwatch_added(bugwatch_added, object_created_event):
     term = sv.getTerm(bugwatch_added.subscription)
     BugActivity(
         bug=bugwatch_added.bug.id,
-        datechanged=datetime.utcnow(),
+        datechanged=UTC_NOW,
         person=bugwatch_added.personID,
         whatchanged='add subscriber %s (%s)' % (
             bugwatch_added.person.displayname, term.token))
@@ -231,11 +227,10 @@ def record_bugwatch_added(bugwatch_added, object_created_event):
 def record_bugwatch_edited(bugwatch_edited, sqlobject_modified_event):
     changes = what_changed(sqlobject_modified_event)
     if changes:
-        right_now = datetime.utcnow()
         for changed_field in changes.keys():
             BugActivity(
                 bug=sqlobject_modified_event.object_before_modification.bug.id,
-                datechanged=right_now,
+                datechanged=UTC_NOW,
                 person=sqlobject_modified_event.principal.id,
                 whatchanged="subscriber %s" % (
                     sqlobject_modified_event.object_before_modification.person.displayname),

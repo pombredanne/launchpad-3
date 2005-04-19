@@ -7,9 +7,10 @@ from zope.interface import implements
 from zope.exceptions import NotFoundError
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
+from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote, flush_database_updates
+from canonical.database.datetimecol import UtcDateTimeCol
 
 # canonical imports
 from canonical.launchpad.interfaces import IEditPOTemplate, IPOTemplateSet, \
@@ -243,7 +244,7 @@ class POTemplate(SQLBase, RosettaStats):
     copyright = StringCol(dbName='copyright', notNull=False, default=None)
 #   license = ForeignKey(foreignKey='License', dbName='license', notNull=True)
     license = IntCol(dbName='license', notNull=False, default=None)
-    datecreated = DateTimeCol(dbName='datecreated', default=DEFAULT)
+    datecreated = UtcDateTimeCol(dbName='datecreated', default=DEFAULT)
     path = StringCol(dbName='path', notNull=False, default=None)
     iscurrent = BoolCol(dbName='iscurrent', notNull=True, default=True)
     messagecount = IntCol(dbName='messagecount', notNull=True, default=0)
@@ -654,7 +655,7 @@ class POTemplate(SQLBase, RosettaStats):
     rawfile = StringCol(dbName='rawfile', notNull=True)
     rawimporter = ForeignKey(foreignKey='Person', dbName='rawimporter',
         notNull=True)
-    daterawimport = DateTimeCol(dbName='daterawimport', notNull=True,
+    daterawimport = UtcDateTimeCol(dbName='daterawimport', notNull=True,
         default=UTC_NOW)
     rawimportstatus = EnumCol(dbName='rawimportstatus', notNull=True,
         schema=RosettaImportStatus, default=RosettaImportStatus.IGNORE)

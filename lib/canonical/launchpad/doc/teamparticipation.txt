@@ -10,6 +10,7 @@ First of all, create some teams:
 >>> login('launchpad.anonymous')
 
 >>> from datetime import datetime
+>>> import pytz
 
 >>> from zope.component import getUtility
 
@@ -23,7 +24,7 @@ First of all, create some teams:
 >>> defaultOrder = 'displayname'
 >>> o = TeamSubscriptionPolicy.OPEN
 >>> m = TeamSubscriptionPolicy.MODERATED
->>> expires = datetime(2110, 12, 01)
+>>> expires = datetime(2110, 12, 01, tzinfo=pytz.timezone('UTC'))
 
 >>> p = Person.byName('name16')
 >>> t1 = Person(subscriptionpolicy=o, name='t1', displayname='t1', teamowner=p)

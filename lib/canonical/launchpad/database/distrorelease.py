@@ -12,10 +12,10 @@ from zope.component import getUtility
 
 # SQLObject/SQLBase
 from sqlobject import MultipleJoin
-from sqlobject import StringCol, ForeignKey, MultipleJoin, BoolCol, \
-                      DateTimeCol
+from sqlobject import StringCol, ForeignKey, MultipleJoin, BoolCol
 
 from canonical.database.sqlbase import SQLBase
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import PackagePublishingStatus, BugTaskStatus, \
      EnumCol, DistributionReleaseStatus
 
@@ -53,7 +53,7 @@ class DistroRelease(SQLBase):
         dbName='sections', foreignKey='Schema', notNull=True)
     releasestatus = EnumCol(notNull=True,
                             schema=DistributionReleaseStatus)
-    datereleased = DateTimeCol(notNull=True)
+    datereleased = UtcDateTimeCol(notNull=True)
     parentrelease =  ForeignKey(
         dbName='parentrelease', foreignKey='DistroRelease', notNull=False)
     owner = ForeignKey(

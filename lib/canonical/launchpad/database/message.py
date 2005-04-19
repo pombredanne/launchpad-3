@@ -11,7 +11,7 @@ from zope.interface import implements
 from zope.component import getUtility
 from zope.security.proxy import isinstance
 
-from sqlobject import DateTimeCol, ForeignKey, StringCol, IntCol
+from sqlobject import ForeignKey, StringCol, IntCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.interfaces \
@@ -19,6 +19,7 @@ from canonical.launchpad.interfaces \
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC
+from canonical.database.datetimecol import UtcDateTimeCol
 
 class Message(SQLBase):
     """A message. This is an RFC822-style message, typically it would be
@@ -28,7 +29,7 @@ class Message(SQLBase):
 
     _table = 'Message'
     _defaultOrder = '-id'
-    datecreated = DateTimeCol(notNull=True, default=nowUTC)
+    datecreated = UtcDateTimeCol(notNull=True, default=nowUTC)
     title = StringCol(notNull=True)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
     parent = ForeignKey(foreignKey='Message', dbName='parent',

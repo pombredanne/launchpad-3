@@ -11,7 +11,7 @@ from warnings import warn
 from zope.interface import implements
 from zope.exceptions import NotFoundError
 
-from sqlobject import DateTimeCol, ForeignKey, StringCol, BoolCol
+from sqlobject import ForeignKey, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
 from sqlobject import SQLObjectNotFound
 from sqlobject import AND
@@ -19,6 +19,8 @@ from sqlobject import AND
 import canonical.sourcerer.deb.version
 
 from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import BugSeverity, BugTaskStatus
 from canonical.lp.dbschema import RosettaImportStatus, RevisionControlSystems
 from canonical.launchpad import helpers
@@ -56,8 +58,8 @@ class Product(SQLBase):
 
     description = StringCol(dbName='description', notNull=True)
 
-    datecreated = DateTimeCol(dbName='datecreated', notNull=True,
-                              default=datetime.utcnow())
+    datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True,
+                                 default=UTC_NOW)
 
     homepageurl = StringCol(dbName='homepageurl', notNull=False,
             default=None)

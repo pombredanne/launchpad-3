@@ -8,6 +8,8 @@ from zope.interface import implements
 from sqlobject import StringCol, ForeignKey, DateTimeCol, BoolCol
 
 from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces import IBuild, IBuilder, IBuildSet, \
                                            IBuildQueue
 from canonical.lp.dbschema import EnumCol
@@ -21,8 +23,8 @@ class Build(SQLBase):
     implements(IBuild)
     _table = 'Build'
 
-    datecreated = DateTimeCol(dbName='datecreated', notNull=True,
-                              default=datetime.utcnow())
+    datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True,
+                                 default=UTC_NOW)
     processor = ForeignKey(dbName='processor', foreignKey='Processor', 
                            notNull=True)
     distroarchrelease = ForeignKey(dbName='distroarchrelease', 
@@ -30,7 +32,7 @@ class Build(SQLBase):
                                    notNull=True)
     buildstate = EnumCol(dbName='buildstate', notNull=True,
                          schema=BuildStatus)
-    datebuilt = DateTimeCol(dbName='datebuilt')
+    datebuilt = UtcDateTimeCol(dbName='datebuilt')
     buildduration = DateTimeCol(dbName='buildduration')
     buildlog = ForeignKey(dbName='buildlog', foreignKey='LibraryFileAlias')
     builder = ForeignKey(dbName='builder', foreignKey='Builder')
@@ -75,7 +77,7 @@ class BuildQueue(SQLBase):
     build = ForeignKey(dbName='build', foreignKey='Build', notNull=True)
     builder = ForeignKey(dbName='builder', foreignKey='Builder',
                          notNull=False)
-    created = DateTimeCol(dbName='created', notNull=True)
-    buildstart = DateTimeCol(dbName='buildstart', notNull=False)
+    created = UtcDateTimeCol(dbName='created', notNull=True)
+    buildstart = UtcDateTimeCol(dbName='buildstart', notNull=False)
     logtail = StringCol(dbName='logtail', notNull=False)
 

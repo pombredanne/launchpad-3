@@ -9,9 +9,10 @@ Part of the Launchpad system.
 from zope.interface import implements
 
 # SQL object
-from sqlobject import DateTimeCol, ForeignKey, StringCol, BoolCol
+from sqlobject import ForeignKey, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.datetimecol import UtcDateTimeCol
 
 # Launchpad interfaces
 from canonical.launchpad.interfaces import IProject, IProjectSet, \
@@ -38,7 +39,7 @@ class Project(SQLBase):
     shortdesc = StringCol(dbName='shortdesc', notNull=True)
     description = StringCol(dbName='description', notNull=True)
     # XXX: https://bugzilla.warthogs.hbd.com/bugzilla/show_bug.cgi?id=1968
-    datecreated = DateTimeCol(dbName='datecreated', notNull=True)
+    datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
     wikiurl = StringCol(dbName='wikiurl', notNull=False, default=None)
     lastdoap = StringCol(dbName='lastdoap', notNull=False, default=None)

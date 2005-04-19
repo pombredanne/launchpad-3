@@ -1,5 +1,7 @@
 from canonical.database.sqlbase import SQLBase
-from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol, RelatedJoin
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
+from sqlobject import StringCol, ForeignKey, IntCol, RelatedJoin
 
 class LibraryFileContent(SQLBase):
     """A pointer to file content in the librarian."""
@@ -8,9 +10,9 @@ class LibraryFileContent(SQLBase):
 
     _columns = [
         # FIXME: make sqlobject let us use the default in the DB
-        DateTimeCol('dateCreated', dbName='dateCreated', notNull=True,
-                    default='NOW'),
-        DateTimeCol('dateMirrored', dbName='dateMirrored', default=None),
+        UtcDateTimeCol('dateCreated', dbName='dateCreated', notNull=True,
+                       default=UTC_NOW),
+        UtcDateTimeCol('dateMirrored', dbName='dateMirrored', default=None),
         IntCol('filesize', dbName='filesize', notNull=True),
         StringCol('sha1', dbName='sha1', notNull=True),
     ]

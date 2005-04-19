@@ -163,7 +163,10 @@ class DateTimeFormatterAPI:
         self._datetime = datetimeobject
 
     def time(self):
-        return self._datetime.strftime('%T')
+        if self._datetime.tzinfo:
+            return self._datetime.strftime('%T %Z')
+        else:
+            return self._datetime.strftime('%T')
 
     def date(self):
         return self._datetime.strftime('%Y-%m-%d')

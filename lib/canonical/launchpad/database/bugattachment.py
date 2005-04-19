@@ -11,6 +11,8 @@ from canonical.launchpad.interfaces import \
         IBugAttachment, IBugAttachmentSet, IBugAttachment
 
 from canonical.database.sqlbase import SQLBase
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 
 
 class BugAttachment(SQLBase):
@@ -26,7 +28,7 @@ class BugAttachment(SQLBase):
     description = StringCol(notNull=False, default=None)
     libraryfile = ForeignKey(foreignKey='LibraryFileAlias',
                              dbName='libraryfile', notNull=False)
-    datedeactivated = DateTimeCol(notNull=False, default=None)
+    datedeactivated = UtcDateTimeCol(notNull=False, default=None)
 
 class BugAttachmentSet(BugSetBase):
     """A set for bug attachments."""
@@ -56,10 +58,9 @@ def BugAttachmentFactory(context, **kw):
 
 def BugAttachmentContentFactory(context, **kw):
     bugattachment= context.context.id # view.attachment.id
-    daterevised = datetime.utcnow()
     return BugAttachmentContent(
             bugattachment=bugattachment,
-            daterevised=daterevised,
+            daterevised=UTC_NOW,
             **kw
             )
 

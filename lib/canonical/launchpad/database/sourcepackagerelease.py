@@ -10,9 +10,11 @@ from zope.app import zapi
 # SQLObject/SQLBase
 from sqlobject import MultipleJoin
 from sqlobject import SQLObjectNotFound
-from sqlobject import StringCol, ForeignKey, MultipleJoin, DateTimeCol
+from sqlobject import StringCol, ForeignKey, MultipleJoin
 
 from canonical.database.sqlbase import SQLBase
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import EnumCol, SourcePackageUrgency, \
         SourcePackageFormat
 
@@ -40,8 +42,8 @@ class SourcePackageRelease(SQLBase):
     manifest = ForeignKey(foreignKey='Manifest', dbName='manifest')
     urgency = EnumCol(dbName='urgency', schema=SourcePackageUrgency,
                       notNull=True)
-    dateuploaded = DateTimeCol(dbName='dateuploaded', notNull=True,
-                               default='NOW')
+    dateuploaded = UtcDateTimeCol(dbName='dateuploaded', notNull=True,
+                               default=UTC_NOW)
     dsc = StringCol(dbName='dsc')
     version = StringCol(dbName='version', notNull=True)
     changelog = StringCol(dbName='changelog')

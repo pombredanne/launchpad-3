@@ -2,8 +2,9 @@
 from zope.interface import implements
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, IntCol, BoolCol
+from sqlobject import ForeignKey, IntCol, BoolCol
 from canonical.database.sqlbase import SQLBase
+from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import IPOMsgIDSighting
 
@@ -16,8 +17,8 @@ class POMsgIDSighting(SQLBase):
         notNull=True)
     pomsgid_ = ForeignKey(foreignKey='POMsgID', dbName='pomsgid',
         notNull=True)
-    datefirstseen = DateTimeCol(dbName='datefirstseen', notNull=True)
-    datelastseen = DateTimeCol(dbName='datelastseen', notNull=True)
+    datefirstseen = UtcDateTimeCol(dbName='datefirstseen', notNull=True)
+    datelastseen = UtcDateTimeCol(dbName='datelastseen', notNull=True)
     inlastrevision = BoolCol(dbName='inlastrevision', notNull=True)
     pluralform = IntCol(dbName='pluralform', notNull=True)
 

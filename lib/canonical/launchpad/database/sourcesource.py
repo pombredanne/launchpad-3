@@ -13,6 +13,7 @@ from zope.component import getUtility
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.datetimecol import UtcDateTimeCol
 
 # Launchpad interfaces
 from canonical.launchpad.interfaces import ISourceSource, \
@@ -55,7 +56,7 @@ class XXXXSourceSource(SQLBase):
     releaseparentbranch = ForeignKey(foreignKey='Branch',
                    dbName='releaseparentbranch', default=None)
     branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
-    lastsynced = DateTimeCol(default=None)
+    lastsynced = UtcDateTimeCol(default=None)
     syncinterval = DateTimeCol(default=None)
     rcstype = EnumCol(dbName='rcstype',
                       default=RevisionControlSystems.CVS,
@@ -63,8 +64,8 @@ class XXXXSourceSource(SQLBase):
                       notNull=True)
     hosted = StringCol(default=None)
     upstreamname = StringCol(default=None)
-    processingapproved = DateTimeCol(default=None)
-    syncingapproved = DateTimeCol(default=None)
+    processingapproved = UtcDateTimeCol(default=None)
+    syncingapproved = UtcDateTimeCol(default=None)
     # For when Rob approves it
     newarchive = StringCol(default=None)
     newbranchcategory = StringCol(default=None)
@@ -77,9 +78,9 @@ class XXXXSourceSource(SQLBase):
                    notNull=True)
     currentgpgkey = StringCol(default=None)
     fileidreference = StringCol(default=None)
-    dateautotested = DateTimeCol(default=None)
-    datestarted = DateTimeCol(default=None)
-    datefinished = DateTimeCol(default=None)
+    dateautotested = UtcDateTimeCol(default=None)
+    datestarted = UtcDateTimeCol(default=None)
+    datefinished = UtcDateTimeCol(default=None)
     productseries = ForeignKey(dbName='productseries',
                                foreignKey='ProductSeries',
                                notNull=True)

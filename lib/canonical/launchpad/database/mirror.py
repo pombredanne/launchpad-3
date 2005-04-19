@@ -3,7 +3,8 @@ from zope.interface import implements
 
 # SQLObject/SQLBase
 from canonical.database.sqlbase import SQLBase
-from sqlobject import StringCol, ForeignKey, DateTimeCol, BoolCol
+from canonical.database.datetimecol import UtcDateTimeCol
+from sqlobject import StringCol, ForeignKey, BoolCol
 
 from canonical.lp.dbschema import EnumCol
 from canonical.lp.dbschema import MirrorFreshness
@@ -23,6 +24,6 @@ class Mirror(SQLBase):
     description = StringCol(dbName='description', notNull=True)
     freshness = EnumCol(dbName='freshness', notNull=True, default=99,
                         schema=MirrorFreshness)
-    lastcheckeddate = DateTimeCol(dbName='lastcheckeddate')
+    lastcheckeddate = UtcDateTimeCol(dbName='lastcheckeddate')
     approved = BoolCol(dbName='approved', notNull=True, default=False),
 

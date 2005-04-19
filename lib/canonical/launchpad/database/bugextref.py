@@ -4,13 +4,16 @@ from datetime import datetime
 from zope.interface import implements
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, StringCol
+from sqlobject import ForeignKey, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.interfaces import IBugExternalRef, IBugExternalRefSet
 
 from canonical.database.sqlbase import SQLBase
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.bugset import BugSetBase
+
 
 
 
@@ -23,7 +26,7 @@ class BugExternalRef(SQLBase):
     bug = ForeignKey(foreignKey='Bug', dbName='bug', notNull=True)
     url = StringCol(notNull=True)
     title = StringCol(notNull=True)
-    datecreated = DateTimeCol(notNull=True, default=datetime.utcnow())
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
 
 class BugExternalRefSet(BugSetBase):
@@ -45,7 +48,7 @@ class BugExternalRefSet(BugSetBase):
 
 def BugExternalRefFactory(context, **kw):
     bug = context.context.bug
-    datecreated = datetime.utcnow()
+    datecreated = UTC_NOW
     return BugExternalRef(
         bug=bug,
         owner=context.request.principal.id,

@@ -4,9 +4,10 @@ from zope.component import getUtility
 from zope.exceptions import NotFoundError
 
 # SQLObject/SQLBase
-from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol
+from sqlobject import StringCol, ForeignKey, IntCol
 
 from canonical.database.sqlbase import quote
+from canonical.database.datetimecol import UtcDateTimeCol
 
 # interfaces and database 
 from canonical.launchpad.interfaces import ISourcePackageReleasePublishing, \
@@ -41,7 +42,7 @@ class VSourcePackageReleasePublishing(SourcePackageRelease):
     maintainer = ForeignKey(foreignKey='Person', dbName='maintainer')
     publishingstatus = EnumCol(dbName='publishingstatus',
                                schema=PackagePublishingStatus)
-    datepublished = DateTimeCol(dbName='datepublished')
+    datepublished = UtcDateTimeCol(dbName='datepublished')
     distrorelease = ForeignKey(foreignKey='DistroRelease',
                                dbName='distrorelease')
     componentname = StringCol(dbName='componentname')

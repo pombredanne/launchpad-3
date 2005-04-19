@@ -9,6 +9,7 @@ from zope.interface import implements
 from sqlobject import ForeignKey, StringCol, DateTimeCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 from canonical.database.sqlbase import SQLBase
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import EnumCol, ImportStatus, \
         RevisionControlSystems
 
@@ -30,7 +31,7 @@ class ProductSeries(SQLBase):
     branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
                            schema=ImportStatus, default=None)
-    datelastsynced = DateTimeCol(default=None)
+    datelastsynced = UtcDateTimeCol(default=None)
     syncinterval = DateTimeCol(default=None)
     rcstype = EnumCol(dbName='rcstype',
                       schema=RevisionControlSystems,
@@ -49,11 +50,11 @@ class ProductSeries(SQLBase):
     targetarchcategory = StringCol(default=None)
     targetarchbranch = StringCol(default=None)
     targetarchversion = StringCol(default=None)
-    dateautotested = DateTimeCol(default=None)
-    datestarted = DateTimeCol(default=None)
-    datefinished = DateTimeCol(default=None)
-    dateprocessapproved = DateTimeCol(default=None)
-    datesyncapproved = DateTimeCol(default=None)
+    dateautotested = UtcDateTimeCol(default=None)
+    datestarted = UtcDateTimeCol(default=None)
+    datefinished = UtcDateTimeCol(default=None)
+    dateprocessapproved = UtcDateTimeCol(default=None)
+    datesyncapproved = UtcDateTimeCol(default=None)
 
     # useful joins
     releases = MultipleJoin('ProductRelease', joinColumn='productseries',

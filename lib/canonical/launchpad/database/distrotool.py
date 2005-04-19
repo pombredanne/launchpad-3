@@ -4,6 +4,8 @@ from datetime import datetime
 # Zope imports
 from zope.interface import implements
 
+from canonical.database.constants import UTC_NOW
+
 # LP imports
 from canonical.lp import dbschema
 
@@ -54,7 +56,7 @@ class DistroTools(object):
                                 version=version,
                                 owner=owner,
                                 parentrelease=int(parent),
-                                datereleased=datetime.utcnow(),
+                                datereleased=UTC_NOW,
                                 components=1,
                                 releasestatus=1,
                                 sections=1,

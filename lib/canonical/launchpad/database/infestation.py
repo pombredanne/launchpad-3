@@ -11,7 +11,9 @@ from zope.interface import implements
 
 # SQL imports
 from canonical.database.sqlbase import SQLBase
-from sqlobject import DateTimeCol, ForeignKey, IntCol
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
+from sqlobject import ForeignKey, IntCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.interfaces import IBugProductInfestationSet, \
@@ -41,12 +43,12 @@ class BugProductInfestation(SQLBase):
         dbName="productrelease", foreignKey='ProductRelease', notNull=False, default=None)
     infestationstatus = EnumCol(
         notNull=False, default=None, schema=dbschema.BugInfestationStatus)
-    datecreated = DateTimeCol(notNull=True)
+    datecreated = UtcDateTimeCol(notNull=True)
     creator = ForeignKey(dbName="creator", foreignKey='Person', notNull=True)
-    dateverified = DateTimeCol(notNull=False)
+    dateverified = UtcDateTimeCol(notNull=False)
     verifiedby = ForeignKey(
         dbName="verifiedby", foreignKey='Person', notNull=False, default=None)
-    lastmodified = DateTimeCol(notNull=True)
+    lastmodified = UtcDateTimeCol(notNull=True)
     lastmodifiedby = ForeignKey(dbName="lastmodifiedby", foreignKey='Person', notNull=True)
 
     # used for launchpad pages
@@ -69,11 +71,11 @@ class BugPackageInfestation(SQLBase):
         dbName='sourcepackagerelease', foreignKey='SourcePackageRelease', notNull=True)
     infestationstatus = EnumCol(dbName='infestationstatus', notNull=True,
         schema=dbschema.BugInfestationStatus)
-    datecreated = DateTimeCol(dbName='datecreated', notNull=True)
+    datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True)
     creator = ForeignKey(dbName='creator', foreignKey='Person', notNull=True)
-    dateverified = DateTimeCol(dbName='dateverified')
+    dateverified = UtcDateTimeCol(dbName='dateverified')
     verifiedby = ForeignKey(dbName='verifiedby', foreignKey='Person')
-    lastmodified = DateTimeCol(dbName='lastmodified')
+    lastmodified = UtcDateTimeCol(dbName='lastmodified')
     lastmodifiedby = ForeignKey(dbName='lastmodifiedby', foreignKey='Person')
 
     # used for launchpad pages
@@ -119,27 +121,25 @@ class BugPackageInfestationSet(BugSetBase):
 
 
 def BugProductInfestationFactory(context, **kw):
-    now = datetime.utcnow()
     return BugProductInfestation(
         bug=context.context.bug,
         explicit=True,
-        datecreated=now,
+        datecreated=UTC_NOW,
         creatorID=context.request.principal.id,
-        dateverified=now,
+        dateverified=UTC_NOW,
         verifiedbyID=context.request.principal.id,
-        lastmodified=now,
+        lastmodified=UTC_NOW,
         lastmodifiedbyID=context.request.principal.id,
         **kw)
 
 def BugPackageInfestationFactory(context, **kw):
-    now = datetime.utcnow()
     return BugPackageInfestation(
         bug=context.context.bug,
         explicit=True,
-        datecreated=now,
+        datecreated=UTC_NOW,
         creatorID=context.request.principal.id,
-        dateverified=now,
+        dateverified=UTC_NOW,
         verifiedbyID=context.request.principal.id,
-        lastmodified=now,
+        lastmodified=UTC_NOW,
         lastmodifiedbyID=context.request.principal.id,
         **kw)

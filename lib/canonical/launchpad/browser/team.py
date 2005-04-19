@@ -2,6 +2,8 @@
 
 from datetime import datetime, timedelta
 
+import pytz
+
 # zope imports
 from zope.event import notify
 from zope.app.form.browser.add import AddView
@@ -374,7 +376,7 @@ class TeamMembershipEditView(object):
         month = int(self.request.form.get('month'))
         day = int(self.request.form.get('day'))
         if year or month or day:
-            return datetime(year, month, day)
+            return datetime(year, month, day, tzinfo=pytz.timezone('UTC'))
         else:
             return None
 

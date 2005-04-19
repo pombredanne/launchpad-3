@@ -5,7 +5,7 @@ from zope.interface import implements
 from zope.exceptions import NotFoundError
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, StringCol
+from sqlobject import ForeignKey, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 from sqlobject import SQLObjectNotFound
 
@@ -13,7 +13,8 @@ from canonical.launchpad.interfaces import IBugWatch, \
         IBugWatchSet
 from canonical.launchpad.database.bug import BugSetBase
 from canonical.database.sqlbase import SQLBase
-from canonical.database.constants import nowUTC
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 
 
 class BugWatch(SQLBase):
@@ -24,9 +25,9 @@ class BugWatch(SQLBase):
                 foreignKey='BugTracker', notNull=True)
     remotebug = StringCol(notNull=True)
     remotestatus = StringCol(notNull=False, default=None)
-    lastchanged = DateTimeCol(notNull=False, default=None)
-    lastchecked = DateTimeCol(notNull=False, default=None)
-    datecreated = DateTimeCol(notNull=True, default=nowUTC)
+    lastchanged = UtcDateTimeCol(notNull=False, default=None)
+    lastchecked = UtcDateTimeCol(notNull=False, default=None)
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(dbName='owner', foreignKey='Person',
                 notNull=True)
 
@@ -56,7 +57,6 @@ class BugWatchSet(BugSetBase):
 
 def BugWatchFactory(context, **kw):
     bug = context.context.bug
-    now = datetime.utcnow()
     return BugWatch(
-        bug=bug, owner=context.request.principal.id, datecreated=now,
-        lastchanged=now, lastchecked=now, **kw)
+        bug=bug, owner=context.request.principal.id, datecreated=UTC_NOW,
+        lastchanged=UTC_NOW, lastchecked=UTC_NOW, **kw)

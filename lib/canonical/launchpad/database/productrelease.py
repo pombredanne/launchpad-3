@@ -2,12 +2,13 @@
 from zope.interface import implements
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
+from sqlobject import ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 
 # canonical imports
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad import helpers
 
 from canonical.launchpad.interfaces import IProductRelease
@@ -18,7 +19,7 @@ class ProductRelease(SQLBase):
     implements(IProductRelease)
     _table = 'ProductRelease'
 
-    datereleased = DateTimeCol(notNull=True, default=nowUTC)
+    datereleased = UtcDateTimeCol(notNull=True, default=nowUTC)
     version = StringCol(notNull=True)
     title = StringCol(notNull=False, default=None)
     shortdesc = StringCol(notNull=False, default=None)

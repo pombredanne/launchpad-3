@@ -3,9 +3,10 @@
 from zope.interface import implements
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
+from sqlobject import ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase
+from canonical.database.datetimecol import UtcDateTimeCol
 
 # canonical imports
 from canonical.launchpad.interfaces import IPackagePublishing, \
@@ -32,8 +33,8 @@ class PackagePublishing(SQLBase):
     priority = EnumCol(dbName='priority',
                        schema=BinaryPackagePriority)
     status = EnumCol(dbName='status', schema=PackagePublishingStatus)
-    scheduleddeletiondate = DateTimeCol(default=None)
-    datepublished = DateTimeCol(default=None)
+    scheduleddeletiondate = UtcDateTimeCol(default=None)
+    datepublished = UtcDateTimeCol(default=None)
 
 
 class SourcePackagePublishing(SQLBase):
@@ -55,8 +56,8 @@ class SourcePackagePublishing(SQLBase):
             foreignKey='Section',
             dbName='section'),
         EnumCol('status', schema=PackagePublishingStatus),
-        DateTimeCol('scheduleddeletiondate', default=None),
-        DateTimeCol('datepublished', default=None)
+        UtcDateTimeCol('scheduleddeletiondate', default=None),
+        UtcDateTimeCol('datepublished', default=None)
     ]
 
     

@@ -11,9 +11,11 @@ from zope.interface import implements
 # SQLObject/SQLBase
 from sqlobject import MultipleJoin
 from sqlobject import StringCol, ForeignKey, MultipleJoin, BoolCol, \
-                      DateTimeCol, StringCol
+                      StringCol
 
 from canonical.database.sqlbase import SQLBase
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 
 # interfaces and database 
 from canonical.launchpad.interfaces import IManifest
@@ -31,7 +33,7 @@ class Manifest(SQLBase):
 
     _table = 'Manifest'
 
-    datecreated = DateTimeCol(notNull=True, default=datetime.utcnow())
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
     uuid = StringCol(notNull=True, default=uuidgen(), alternateID=True)
 
