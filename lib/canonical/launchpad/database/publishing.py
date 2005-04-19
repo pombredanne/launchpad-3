@@ -41,23 +41,17 @@ class SourcePackagePublishing(SQLBase):
 
     implements(ISourcePackagePublishing)
 
-    _columns = [
-        ForeignKey(name='sourcepackagerelease',
-            foreignKey='SourcePackageRelease',
-            dbName='sourcepackagerelease'),
-        ForeignKey(name='distrorelease',
-            foreignKey='DistroRelease',
-            dbName='distrorelease'),
-        ForeignKey(name='component',
-            foreignKey='Component',
-            dbName='component'),
-        ForeignKey(name='section',
-            foreignKey='Section',
-            dbName='section'),
-        EnumCol('status', schema=PackagePublishingStatus),
-        DateTimeCol('scheduleddeletiondate', default=None),
-        DateTimeCol('datepublished', default=None)
-    ]
+    sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
+                                      dbName='sourcepackagerelease')
+    distrorelease = ForeignKey(foreignKey='DistroRelease',
+                               dbName='distrorelease')
+    component = ForeignKey(foreignKey='Component',
+                           dbName='component')
+    section = ForeignKey(foreignKey='Section',
+                         dbName='section')
+    status = EnumCol(schema=PackagePublishingStatus)
+    scheduleddeletiondate = DateTimeCol(default=None)
+    datepublished = DateTimeCol(default=None)
 
     
 class SourcePackageFilePublishing(SQLBase):
@@ -172,3 +166,20 @@ class BinaryPackagePublishingView(SQLBase):
     publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
                                default=None, notNull=True,
                                schema=PackagePublishingStatus)
+
+class SourcePackagePublishingHistory(SQLBase):
+    """A source package release publishing record."""
+
+    implements(ISourcePackagePublishing)
+
+    sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
+                                      dbName='sourcepackagerelease'),
+    distrorelease = ForeignKey(foreignKey='DistroRelease',
+                               dbName='distrorelease'),
+    component = ForeignKey(foreignKey='Component',
+                           dbName='component'),
+    section = ForeignKey(foreignKey='Section',
+                         dbName='section'),
+    status = EnumCol(schema=PackagePublishingStatus),
+    scheduleddeletiondate = DateTimeCol(default=None),
+    datepublished = DateTimeCol(default=None)

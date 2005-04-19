@@ -209,3 +209,60 @@ class IBinaryPackagePublishingView(Interface):
     publishingstatus = Int(
             title=_('Package publishing status'), required=True, readonly=True,
             )
+
+class ISourcePackagePublishingHistory(Interface):
+    """A source package publishing history record."""
+
+    sourcepackagerelease = Int(
+            title=_('The source package release being published'),
+            required=False, readonly=False,
+            )
+    status = Int(
+            title=_('The status of this publishing history record'),
+            required=False, readonly=False,
+            )
+    distrorelease = Int(
+            title=_('The distrorelease being published into'),
+            required=False, readonly=False,
+            )
+    component = Int(
+            title=_('The component being published into'),
+            required=False, readonly=False,
+            )
+    section = Int(
+            title=_('The section being published into'),
+            required=False, readonly=False,
+            )
+    datepublished = Datetime(
+            title=_('The date on which this record was published'),
+            required=False, readonly=False,
+            )
+    scheduleddeletiondate = Datetime(
+            title=_('The date on which this record is scheduled for deletion'),
+            required=False, readonly=False,
+            )
+
+    datecreated = Datetime(
+            title=_('The date on which this record was created'),
+            required=True, readonly=False,
+            )
+
+    datesuperseded = Datetime(
+            title=_('The date on which this record was marked superseded'),
+            required=False, readonly=False,
+            )
+    
+    supersededby = Int(
+            title=_('The sourcepackagerelease which superseded this one'),
+            required=False, readonly=False,
+            )
+
+    datemadepending = Datetime(
+            title=_('The date on which this record was set as pending removal'),
+            required=False, readonly=False,
+            )
+
+    dateremoved = Datetime(
+            title=_('The date on which this record was removed from the published set'),
+            required=False, readonly=False,
+            )

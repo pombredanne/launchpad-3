@@ -648,7 +648,7 @@ COMMENT ON COLUMN PackagePublishing.status IS 'The current status of the package
 
 -- SourcePackagePublishing
 
-COMMENT ON TABLE SourcePackagePublishing IS 'SourcePackagePublishing: Publishing records for Soyuz/Lucille. Lucille publishes sourcepackagereleases in distroreleases. This table represents the publishing of each sourcepackagerelease.';
+COMMENT ON VIEW SourcePackagePublishing IS 'SourcePackagePublishing: Publishing records for Soyuz/Lucille. Lucille publishes sourcepackagereleases in distroreleases. This table represents the currently active publishing of each sourcepackagerelease. For history see SourcePackagePublishingHistory.';
 COMMENT ON COLUMN SourcePackagePublishing.distrorelease IS 'The distrorelease which is having the sourcepackagerelease being published into it.';
 COMMENT ON COLUMN SourcePackagePublishing.sourcepackagerelease IS 'The sourcepackagerelease being published into the distrorelease.';
 COMMENT ON COLUMN SourcePackagePublishing.status IS 'The current status of the sourcepackage publishing record. For example "PUBLISHED" "PENDING" or "PENDINGREMOVAL"';

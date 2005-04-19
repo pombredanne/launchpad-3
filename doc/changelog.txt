@@ -2,6 +2,113 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-19 16:55:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1621
+
+    Summary:
+      SourcePackagePublishingHistory (or PublishingMorgue if you wish) implementation. r=andrew.bennetts, r=stuart.bishop
+    Revision:
+      launchpad--devel--0--patch-1621
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-2
+       star-merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-3
+       Merge from laptop archive
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-4
+       Star-Merge rocketfuel@canonical.com/launchpad--devel--0 and fix up sampledata
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-5
+       bless the db patch as per stub's directions
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-6
+       Post-review comment incorporation
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-7
+       star-merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-8
+       Fix up security configuration
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1571
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-1
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-2
+       Refactor SourcePackagePublishing to not use _columns
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-3
+       Feh, trailing commas == tuples
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-4
+       Publishing history interfaces
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-5
+       publishing history sql objects
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-6
+       Additional publishing status dbschema entry for removed
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-7
+       Add transition SQL patch and symlink to it for now
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-8
+       Update comments.sql for VIEW instead of TABLE
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-9
+       Fix up sampledata
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-10
+       star-merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-11
+       Initial gina fixes for SPPH
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-12
+       Add SPPHXXX tags for where publishing work will need to focus fixes for SPP->SPPH transition
+    
+
+    new files:
+     database/schema/.arch-ids/patch-14-09-0.sql.id
+     database/schema/patch-14-09-0.sql
+
+    modified files:
+     database/sampledata/current.sql database/schema/comments.sql
+     database/schema/security.cfg doc/changelog.txt
+     lib/canonical/launchpad/database/publishing.py
+     lib/canonical/launchpad/interfaces/publishing.py
+     lib/canonical/launchpad/scripts/gina/database.py
+     lib/canonical/lp/dbschema.py
+     lib/canonical/lucille/domination.py
+     lib/canonical/lucille/publishing.py
+
+    new patches:
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-2
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-3
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-4
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-5
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-6
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-7
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-8
+     daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--base-0
+     daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-1
+     daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-2
+     daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-3
+     daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-4
+     daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-5
+     daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-6
+     daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-7
+     daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-8
+     daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-9
+     daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-10
+     daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-11
+     daniel.silverstone@canonical.com--laptop/launchpad--publishing--0--patch-12
+
+
 2005-04-19 15:52:10 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1620
 
     Summary:
