@@ -498,8 +498,8 @@ class PersonEditView(BasePersonView):
         emails = self.request.form.get("REMOVE_TOKEN")
         if emails is not None:
             # We can have multiple unvalidated email adressess marked for 
-            # deletion, and in this case ids will be a list. Otherwise 
-            # ids will be str or int and we need to make a list with that 
+            # deletion, and in this case emails will be a list. Otherwise 
+            # emails will be a string and we need to make a list with that 
             # value to use in the for loop.
             if not isinstance(emails, list):
                 emails = [emails]

@@ -43,6 +43,7 @@ from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.searchbuilder import NULL
+from canonical.launchpad.helpers import shortlist
 
 from canonical.lp.dbschema import EnumCol, SSHKeyType, KarmaType
 from canonical.lp.dbschema import EmailAddressStatus
@@ -282,13 +283,15 @@ class Person(SQLBase):
     def getSuperTeams(self):
         query = ('Person.id = TeamParticipation.team AND '
                  'TeamParticipation.person = %d' % self.id)
-        return list(Person.select(query, clauseTables=['TeamParticipation']))
+        results = Person.select(query, clauseTables=['TeamParticipation'])
+        return shortlist(results)
 
     def getSubTeams(self):
         query = ('Person.id = TeamParticipation.person AND '
                  'TeamParticipation.team = %d AND '
                  'Person.teamowner IS NOT NULL' % self.id)
-        return list(Person.select(query, clauseTables=['TeamParticipation']))
+        results = Person.select(query, clauseTables=['TeamParticipation'])
+        return shortlist(results)
 
     def addMember(self, person, status=TeamMembershipStatus.APPROVED,
                   reviewer=None, comment=None):
@@ -360,7 +363,7 @@ class Person(SQLBase):
     def _getEmailsByStatus(self, status):
         query = AND(EmailAddress.q.personID==self.id,
                     EmailAddress.q.status==status)
-        return list(EmailAddress.select(query))
+        return shortlist(EmailAddress.select(query))
 
     #
     # Properties
@@ -407,7 +410,7 @@ class Person(SQLBase):
     inactivemembers = property(inactivemembers)
 
     def memberships(self):
-        return list(TeamMembership.selectBy(personID=self.id))
+        return shortlist(TeamMembership.selectBy(personID=self.id))
     memberships = property(memberships)
 
     def defaultexpirationdate(self):
@@ -435,7 +438,7 @@ class Person(SQLBase):
 
     def _getPreferredemail(self):
         status = EmailAddressStatus.PREFERRED
-        emails = list(self._getEmailsByStatus(status))
+        emails = shortlist(self._getEmailsByStatus(status))
         # There can be only one preferred email for a given person at a
         # given time, and this constraint must be ensured in the DB, but
         # it's not a problem if we ensure this constraint here as well.
@@ -699,10 +702,7 @@ class PersonSet(object):
         if not IPerson.providedBy(to_person):
             raise TypeError, 'to_person is not a person'
 
-        # XXX: Looks like I'm supposed to use EmailAddressSet here -
-        # Person.emails would be useful, but it only exists in the
-        # IPerson interface. -- StuartBishop 20050321
-        if len(list(EmailAddress.selectBy(personID=from_person.id))) > 0:
+        if len(getUtility(IEmailAddressSet).getByPerson(from_person.id)) > 0:
             raise ValueError, 'from_person still has email addresses'
 
         # Get a database cursor.
@@ -905,7 +905,7 @@ class EmailAddressSet(object):
             return email
 
     def getByPerson(self, personid):
-        return list(EmailAddress.selectBy(personID=personid))
+        return shortlist(EmailAddress.selectBy(personID=personid))
 
     def getByEmail(self, email, default=None):
         try:

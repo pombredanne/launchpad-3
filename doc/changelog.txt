@@ -2,6 +2,48 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-20 18:39:12 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1627
+
+    Summary:
+      Adding shortlist() to helpers.py and use it on some IPerson/IPersonSet methods. r=SteveA
+    Revision:
+      launchpad--devel--0--patch-1627
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--lazy-results--0--base-0
+       tag of guilherme.salgado@canonical.com/launchpad--devel--0--patch-288
+    
+     * guilherme.salgado@canonical.com/launchpad--lazy-results--0--patch-1
+       Adding shortlist() to helpers.py and use it on some IPerson/IPersonSet methods.
+    
+     * guilherme.salgado@canonical.com/launchpad--lazy-results--0--patch-2
+       Removing an XXX comment that don't apply anymore.
+    
+     * guilherme.salgado@canonical.com/launchpad--lazy-results--0--patch-3
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--lazy-results--0--patch-4
+       small fixes according to steve's review.
+    
+     * guilherme.salgado@canonical.com/launchpad--lazy-results--0--patch-5
+       merge from rf
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/person.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/helpers.py
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--lazy-results--0--base-0
+     guilherme.salgado@canonical.com/launchpad--lazy-results--0--patch-1
+     guilherme.salgado@canonical.com/launchpad--lazy-results--0--patch-2
+     guilherme.salgado@canonical.com/launchpad--lazy-results--0--patch-3
+     guilherme.salgado@canonical.com/launchpad--lazy-results--0--patch-4
+     guilherme.salgado@canonical.com/launchpad--lazy-results--0--patch-5
+
+
 2005-04-20 17:17:41 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1626
 
     Summary:
