@@ -2,6 +2,28 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-20 18:52:34 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1628
+
+    Summary:
+      [trivial] use fmt:date in foaf templates.
+    Revision:
+      launchpad--devel--0--patch-1628
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-5
+       use fmt:date in foaf templates.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/team-members.pt
+     lib/canonical/launchpad/templates/teammembership-index.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-5
+
+
 2005-04-20 18:39:12 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1627
 
     Summary:

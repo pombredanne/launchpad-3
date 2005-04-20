@@ -39,7 +39,7 @@
           <table>
           <tr>
             <td style="text-align: right">Member since:</td>
-            <td tal:content="context/datejoined/date" />
+            <td tal:content="context/datejoined/fmt:date" />
           </tr>
 
           <tr>
@@ -96,7 +96,7 @@
             </td>
             <td tal:condition="not: view/canChangeExpirationDate">
               <span tal:condition="context/dateexpires"
-                    tal:replace="context/dateexpires/date" />
+                    tal:replace="context/dateexpires/fmt:date" />
               <span tal:condition="not: context/dateexpires">Never</span>
             </td>
           </tr>
@@ -153,13 +153,13 @@
           <table>
           <tr>
             <td style="text-align: right">Became member in:</td>
-            <td tal:content="context/datejoined/date" />
+            <td tal:content="context/datejoined/fmt:date" />
           </tr>
 
           <tal:block tal:condition="view/isExpired">
           <tr>
             <td style="text-align: right">Subscription expired in:</td>
-            <td tal:content="context/dateexpires/date"></td>
+            <td tal:content="context/dateexpires/fmt:date"></td>
           </tr>
 
           <tr><td colspan="2">&nbsp;</td></tr>
@@ -249,7 +249,7 @@
           <table>
           <tr>
             <td style="text-align: right">Join requested in:</td>
-            <td tal:content="context/datejoined/date" />
+            <td tal:content="context/datejoined/fmt:date" />
           </tr>
 
           <tr><td colspan="2">&nbsp;</td></tr>
