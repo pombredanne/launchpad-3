@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-20 12:57:40 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1622
+
+    Summary:
+      Use radiobuttons to choose the expiration date of a teammembership; either choose 'Never' or a date in the selectboxes.
+    Revision:
+      launchpad--devel--0--patch-1622
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-2
+       Use radiobuttons to choose the expiration date of a teammembership; either choose 'Never' or a date in the selectboxes.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/team.py
+     lib/canonical/launchpad/templates/teammembership-index.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-2
+
+
 2005-04-19 16:55:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1621
 
     Summary:
