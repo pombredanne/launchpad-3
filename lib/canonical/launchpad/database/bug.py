@@ -9,6 +9,7 @@ from datetime import datetime
 from email.Utils import make_msgid
 
 from zope.interface import implements
+from zope.exceptions import NotFoundError
 
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
@@ -235,9 +236,10 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
             rfc822msgid = make_msgid('malonedeb')
 
     # retrieve or create the message in the db
+    msg_set = MessageSet()
     try:
-        msg = MessageSet().get(rfc822msgid=rfc822msgid)
-    except IndexError:
+        msg = msg_set.get(rfc822msgid=rfc822msgid)
+    except NotFoundError:
         msg = Message(
             title = title,
             distribution = distribution,

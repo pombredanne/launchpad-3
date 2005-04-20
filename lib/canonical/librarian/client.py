@@ -181,7 +181,6 @@ class FileDownloadClient(object):
         if self._logger is not None:
             self._logger.warning(msg, *args)
 
-    # -- StuartBishop 20050412
     def getFile(self, fileID, aliasID, filename):
         """Returns a fd to read the file from
 
@@ -298,7 +297,13 @@ class FileDownloadClient(object):
         :returns: file-like object
         """
         url = self.getURLForAlias(aliasID)
-        return _File(urllib2.urlopen(url))
+        try:
+            return _File(urllib2.urlopen(url))
+        except urllib2.HTTPError, x:
+            if x.code == 404:
+                raise LookupError, aliasID
+            else:
+                raise
 
 
 class LibrarianClient(FileUploadClient, FileDownloadClient):

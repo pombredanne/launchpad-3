@@ -12,9 +12,10 @@ from canonical.launchpad.ftests.harness import \
         LaunchpadTestSetup, LaunchpadZopelessTestSetup, \
         _disconnect_sqlos, _reconnect_sqlos
 from zope.testing.doctest import DocFileSuite
-from zope.app import zapi
+from zope.component import getUtility
 from canonical.launchpad.interfaces import ILaunchBag
-from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests import login, ANONYMOUS
+from canonical.librarian.ftests.harness import LibrarianTestSetup
 
 here = os.path.dirname(os.path.realpath(__file__))
 
@@ -24,7 +25,7 @@ def setUp(test):
     _reconnect_sqlos()
     test.globs['login'] = login
     test.globs['ILaunchBag'] = ILaunchBag
-    test.globs['zapi'] = zapi
+    test.globs['getUtility'] = getUtility
 
 def tearDown(test):
     _disconnect_sqlos()
@@ -37,6 +38,15 @@ def poExportSetUp(test):
 
 def poExportTearDown(test):
     LaunchpadZopelessTestSetup().tearDown()
+
+def librarianSetUp(test):
+    setUp(test)
+    login(ANONYMOUS)
+    LibrarianTestSetup().setUp()
+
+def librarianTearDown(test):
+    LibrarianTestSetup().tearDown()
+    tearDown(test)
 
 # Files that have special needs can construct their own suite
 special = {
@@ -57,6 +67,15 @@ special = {
     'poexport-distrorelease-tarball.txt': FunctionalDocFileSuite(
             '../doc/poexport-distrorelease-tarball.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown
+            ),
+
+    'librarian.txt': FunctionalDocFileSuite(
+            '../doc/librarian.txt',
+            setUp=librarianSetUp, tearDown=librarianTearDown
+            ),
+    'message.txt': FunctionalDocFileSuite(
+            '../doc/message.txt',
+            setUp=librarianSetUp, tearDown=librarianTearDown
             ),
     }
 

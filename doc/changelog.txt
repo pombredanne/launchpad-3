@@ -2,6 +2,84 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-20 13:53:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1623
+
+    Summary:
+      MailStorage [r=stevea]
+    Revision:
+      launchpad--devel--0--patch-1623
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-25
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-26
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-27
+       Enhance LibraryFileAlias API, add interfaces and create ILibraryFileAliasSet to create and lookup ILibraryFileAlias instances
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-28
+       More librarian usage docs
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-29
+       MailStorage complete and local tests pass
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-30
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-31
+       Tests passing
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-32
+       formatting and zapi zap
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-33
+       Remove decoys and trim newlines from preamble/epilogue due to random behavior
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-34
+       Changes as per review
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-35
+       Only store text in the database if it is text/plain - other text/* types will be stored as blobs
+    
+
+    new files:
+     lib/canonical/launchpad/doc/.arch-ids/librarian.txt.id
+     lib/canonical/launchpad/doc/librarian.txt
+     lib/canonical/launchpad/interfaces/.arch-ids/librarian.py.id
+     lib/canonical/launchpad/interfaces/librarian.py
+     lib/canonical/launchpad/zcml/.arch-ids/librarian.zcml.id
+     lib/canonical/launchpad/zcml/librarian.zcml
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/database/librarian.py
+     lib/canonical/launchpad/database/message.py
+     lib/canonical/launchpad/doc/message.txt
+     lib/canonical/launchpad/ftests/test_system_documentation.py
+     lib/canonical/launchpad/interfaces/__init__.py
+     lib/canonical/launchpad/interfaces/message.py
+     lib/canonical/launchpad/zcml/configure.zcml
+     lib/canonical/launchpad/zcml/message.zcml
+     lib/canonical/librarian/client.py
+     lib/canonical/librarian/interfaces.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-25
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-26
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-27
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-28
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-29
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-30
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-31
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-32
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-33
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-34
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-35
+
+
 2005-04-20 12:57:40 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1622
 
     Summary:

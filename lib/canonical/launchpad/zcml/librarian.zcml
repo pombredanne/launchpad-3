@@ -1,0 +1,21 @@
+<configure xmlns="http://namespaces.zope.org/zope" i18n_domain="launchpad">
+    <content class="canonical.launchpad.database.LibraryFileAlias">
+        <allow
+            interface="canonical.launchpad.interfaces.ILibraryFileAlias"
+            />
+    </content>
+
+    <content class="canonical.launchpad.database.LibraryFileContent">
+        <allow
+            interface="canonical.launchpad.interfaces.ILibraryFileContent"
+            />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.LibraryFileAliasSet"
+        provides="canonical.launchpad.interfaces.ILibraryFileAliasSet">
+        <allow
+            interface="canonical.launchpad.interfaces.ILibraryFileAliasSet"
+            />
+    </securedutility>
+</configure>

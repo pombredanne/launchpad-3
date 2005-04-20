@@ -1,0 +1,87 @@
+Librarian Access
+================
+
+High Level
+----------
+
+>>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+>>> from StringIO import StringIO
+>>> data = 'This is some data'
+
+We can create LibraryFileAliases using the ILibraryFileAliasSet utility.
+This name is a mouthful, but is consistant with the rest of our naming.
+
+>>> lfas = getUtility(ILibraryFileAliasSet)
+>>> alias = lfas.create('text.txt', len(data), StringIO(data), 'text/plain')
+>>> alias.mimetype
+u'text/plain'
+>>> alias.filename
+u'text.txt'
+
+We can retrieve the LibraryFileAlias we just created using its ID.
+
+>>> org_alias_id = alias.id
+>>> alias = lfas[org_alias_id]
+>>> alias.id == org_alias_id
+True
+
+We can get its URL too
+
+>>> import re
+>>> re.search(
+...     '^http://localhost:58000/\d+/\d+/text.txt$', alias.url
+...     ) is not None
+True
+
+However, we can't access its contents until we have committed
+
+>>> alias.open()
+Traceback (most recent call last):
+    [...]
+LookupError: ...
+
+Once we commit the transaction, LibraryFileAliases can be accessed like
+files.
+
+>>> import transaction
+>>> transaction.commit()
+
+>>> alias.open()
+>>> alias.read()
+'This is some data'
+>>> alias.close()
+
+We can also read it in chunks.
+
+>>> alias.open()
+>>> alias.read(2)
+'Th'
+>>> alias.read(6)
+'is is '
+>>> alias.read()
+'some data'
+>>> alias.close()
+
+If you don't want to read the file in chunks you can neglect to call
+open() and close().
+
+>>> alias.read()
+'This is some data'
+
+Low Level
+---------
+
+We can also use the ILibrarianClient Utility directly to store and access
+files in the Librarian.
+
+>>> from canonical.librarian.interfaces import ILibrarianClient
+>>> client = getUtility(ILibrarianClient)
+>>> aid = client.addFile('text.txt', len(data), StringIO(data), 'text/plain')
+>>> transaction.commit()
+>>> f = client.getFileByAlias(aid)
+>>> f.read()
+'This is some data'
+>>> url = client.getURLForAlias(aid)
+>>> re.search('^http://localhost:58000/\d+/\d+/text.txt$', url) is not None
+True
+
