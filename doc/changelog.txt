@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-20 16:08:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1625
+
+    Summary:
+      [trivial] Bug.owner needs a foreign key constraint
+    Revision:
+      launchpad--devel--0--patch-1625
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-292
+       Bug.owner needs a foreign key constraint
+    
+
+    new files:
+     database/schema/.arch-ids/patch-14-10-0.sql.id
+     database/schema/patch-14-10-0.sql
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-292
+
+
 2005-04-20 14:58:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1624
 
     Summary:
