@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-20 14:58:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1624
+
+    Summary:
+      [trivial] Give BradB more rope and allow page tests to be run individually
+    Revision:
+      launchpad--devel--0--patch-1624
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-290
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-291
+       Give BradB more rope and allow page tests to be run individually
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/ftests/test_pages.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-290
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-291
+
+
 2005-04-20 13:53:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1623
 
     Summary:
