@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-20 17:17:41 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1626
+
+    Summary:
+      [trivial] Removing unused IPerson attributes and add a test to make sure a Person object correctly implements IPerson. This test will be commented out until we get rid of the password2 attribute (scheduled to occur during or right after UDU).
+    Revision:
+      launchpad--devel--0--patch-1626
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-3
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-4
+       Removing unused IPerson attributes and add a test to make sure a Person object correctly implements IPerson. This test will be commented out until we get rid of the password2 attribute (scheduled to occur during or right after UDU).
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/doc/person.txt
+     lib/canonical/launchpad/interfaces/person.py
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-3
+     guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-4
+
+
 2005-04-20 16:08:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1625
 
     Summary:
