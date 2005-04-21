@@ -1,0 +1,37 @@
+Security proxies
+----------------
+
+SQLObjects that are security proxied should still behave normally, this includes
+being comparable with non-security proxied objects.
+
+First, some imports and set up::
+
+    >>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
+    >>> from canonical.launchpad.ftests import login, ANONYMOUS
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.database import Person
+
+    >>> LaunchpadFunctionalTestSetup().setUp()
+    >>> login(ANONYMOUS)
+
+Get a proxied and unproxied person object for the same person, and demonstrate
+working comparisons::
+
+    >>> sabdfl = Person.get(1)
+    >>> sabdfl_proxied = getUtility(IPersonSet).get(1)
+    >>> sabdfl is sabdfl_proxied
+    False
+    >>> sabdfl == sabdfl
+    True
+    >>> sabdfl == sabdfl_proxied
+    True
+    >>> sabdfl_proxied == sabdfl
+    True
+    >>> sabdfl_proxied == sabdfl_proxied
+    True
+
+Finally, tear down the test:
+
+    >>> LaunchpadFunctionalTestSetup().tearDown()
+

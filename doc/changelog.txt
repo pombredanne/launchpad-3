@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-21 02:31:35 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1629
+
+    Summary:
+      Add doctest to confirm that security-proxied sql objects are comparable. r=SteveA
+    Revision:
+      launchpad--devel--0--patch-1629
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/launchpad--sqlbase-securityproxy-doctest--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1619
+    
+     * andrew.bennetts@canonical.com/launchpad--sqlbase-securityproxy-doctest--0--patch-1
+       Doctest to confirm that security proxied sqlobjects are comparable.
+    
+
+    new files:
+     lib/canonical/launchpad/doc/.arch-ids/dbschema.txt.id
+     lib/canonical/launchpad/doc/dbschema.txt
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     andrew.bennetts@canonical.com/launchpad--sqlbase-securityproxy-doctest--0--base-0
+     andrew.bennetts@canonical.com/launchpad--sqlbase-securityproxy-doctest--0--patch-1
+
+
 2005-04-20 18:52:34 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1628
 
     Summary:
