@@ -80,10 +80,7 @@ class MessageSet:
     def _decode_header(self, header):
         """Decode an encoded header possibly containing Unicode"""
         bits = email.Header.decode_header(header)
-        # Note that charset may be None - see the email.Header.decode_header
-        # documentation in the standard library.
-        result = [raw.decode(charset or 'us-ascii') for raw, charset in bits]
-        return ''.join(result)
+        return unicode(email.Header.make_header(bits))
 
     def fromEmail(self, email_message):
         """See IMessageSet.fromEmail"""

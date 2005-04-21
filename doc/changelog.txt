@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-21 04:01:46 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1630
+
+    Summary:
+      [trivial] Use email.Header.make_header instead of manually decoding chunks from email.Header.decode_header
+    Revision:
+      launchpad--devel--0--patch-1630
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-293
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-294
+       Use email.Header.make_header instead of manually decoding chunks from email.Header.decode_header
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/message.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-293
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-294
+
+
 2005-04-21 02:31:35 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1629
 
     Summary:
