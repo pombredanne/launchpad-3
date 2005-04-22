@@ -2,6 +2,47 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-22 07:04:09 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1634
+
+    Summary:
+      Changes to bugtask.txt to fix /malone/assigned, with a test, and also somewhat clean up bugtask.txt. r=stub
+    Revision:
+      launchpad--devel--0--patch-1634
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-382
+       changed browser/bugtask.py to use the launchbag rather than IPerson()
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-383
+       various style changes to browser/bugtask.py, including removal of unused imports, improving clarity of code.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-384
+       added more commented out experimental traceback helper code.  discovered that the additional information in zope3 doesn't work any more.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-385
+       added test for /malone/assigned
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-386
+       refuel
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-slash-malone-slash-assigned.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-slash-malone-slash-assigned.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/bugtask.py
+     lib/canonical/publication.py
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--devel--0--patch-382
+     steve.alexander@canonical.com/launchpad--devel--0--patch-383
+     steve.alexander@canonical.com/launchpad--devel--0--patch-384
+     steve.alexander@canonical.com/launchpad--devel--0--patch-385
+     steve.alexander@canonical.com/launchpad--devel--0--patch-386
+
+
 2005-04-22 04:34:31 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1633
 
     Summary:

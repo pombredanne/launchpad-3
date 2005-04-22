@@ -1,0 +1,8 @@
+Check that /malone/assigned doesn't give an error when accessed anonymously.
+
+  >>> print http(r"""
+  ... GET /malone/assigned HTTP/1.1
+  ... """)
+  HTTP/1.1  303 See Other
+  ...
+
