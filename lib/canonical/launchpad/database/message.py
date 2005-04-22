@@ -8,6 +8,7 @@ _ = MessageIDFactory('launchpad')
 import email
 from email.Utils import parseaddr
 from cStringIO import StringIO as cStringIO
+import sha
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -22,6 +23,7 @@ from canonical.launchpad.interfaces import \
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC
+from canonical.base import base
 
 class Message(SQLBase):
     """A message. This is an RFC822-style message, typically it would be
@@ -90,13 +92,8 @@ class MessageSet:
         if not isinstance(email_message, str):
             raise TypeError('email_message must be a normal string')
 
-        # Stuff a copy of the raw email into the Librarian
-        file_alias_set = getUtility(ILibraryFileAliasSet)
-        raw_email_message = file_alias_set.create(
-                'raw.msg', len(email_message), cStringIO(email_message),
-                'message/rfc822'
-                )
-
+        # Parse the email into an email.Message.Message structure
+        raw_email_message = email_message
         email_message = email.message_from_string(email_message)
 
         title = self._decode_header(email_message.get('subject', ''))
@@ -131,6 +128,21 @@ class MessageSet:
         # -- StuartBishop 20050419
         if owner is None:
             raise NotFoundError(from_addrs[0])
+
+        # Stuff a copy of the raw email into the Librarian.
+        # We generate a filename to avoid people guessing the URL.
+        # We don't want URLs to private bug messages to be guessable for
+        # example.
+        file_alias_set = getUtility(ILibraryFileAliasSet)
+        raw_filename = '%s.msg' % (
+                base(long(
+                    sha.new(email_message['message-id']).hexdigest(), 16
+                    ), 62)
+                )
+        raw_email_message = file_alias_set.create(
+                raw_filename, len(raw_email_message),
+                cStringIO(raw_email_message), 'message/rfc822'
+                )
 
         message = Message(
             title=title,
@@ -173,36 +185,41 @@ class MessageSet:
                 charset = part.get_content_charset()
                 if charset:
                     content = content.decode(charset)
-                MessageChunk(
-                        messageID=message.id, sequence=sequence,
-                        content=content
-                        )
+                if content.strip():
+                    MessageChunk(
+                            messageID=message.id, sequence=sequence,
+                            content=content
+                            )
+                    sequence += 1
             else:
                 filename = part.get_filename() or 'unnamed'
                 # Note we use the Content-Type header instead of
                 # part.get_content_type() here to ensure we keep
                 # parameters as sent
-                blob = file_alias_set.create(
-                        name=filename,
-                        size=len(content),
-                        file=cStringIO(content),
-                        contentType=part['content-type']
-                        )
-                MessageChunk(
-                        messageID=message.id, sequence=sequence,
-                        blobID=blob.id
-                        )
-            sequence += 1
+                if len(content) > 0:
+                    blob = file_alias_set.create(
+                            name=filename,
+                            size=len(content),
+                            file=cStringIO(content),
+                            contentType=part['content-type']
+                            )
+                    MessageChunk(
+                            messageID=message.id, sequence=sequence,
+                            blobID=blob.id
+                            )
+                    sequence += 1
 
         if getattr(email_message, 'epilogue', None):
             epilogue = email_message.epilogue.decode(default_charset)
-            if epilogue[0] == '\n':
-                epilogue = epilogue[1:]
-            if epilogue[-1] == '\n':
-                epilogue = epilogue[:-1]
-            MessageChunk(
-                    messageID=message.id, sequence=sequence, content=epilogue
-                    )
+            if epilogue.strip():
+                if epilogue[0] == '\n':
+                    epilogue = epilogue[1:]
+                if epilogue[-1] == '\n':
+                    epilogue = epilogue[:-1]
+                MessageChunk(
+                        messageID=message.id, sequence=sequence,
+                        content=epilogue
+                        )
 
         return message
 

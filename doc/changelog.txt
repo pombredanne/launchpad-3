@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-22 03:38:47 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1631
+
+    Summary:
+      [trivial] Generate raw message filename rather than use a predictable one
+    Revision:
+      launchpad--devel--0--patch-1631
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-295
+       Generate raw message filename rather than use a predictable one
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/message.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-295
+
+
 2005-04-21 04:01:46 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1630
 
     Summary:
