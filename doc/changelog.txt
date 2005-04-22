@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-22 03:50:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1632
+
+    Summary:
+      [trivial] Missing import unbreaking bazaar search
+    Revision:
+      launchpad--devel--0--patch-1632
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-296
+       Missing import unbreaking bazaar search
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/productseries.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-296
+
+
 2005-04-22 03:38:47 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1631
 
     Summary:

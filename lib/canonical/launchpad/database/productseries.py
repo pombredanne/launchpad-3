@@ -8,7 +8,7 @@ from zope.interface import implements
 # SQL imports
 from sqlobject import ForeignKey, StringCol, DateTimeCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, quote
 from canonical.lp.dbschema import EnumCol, ImportStatus, \
         RevisionControlSystems
 
