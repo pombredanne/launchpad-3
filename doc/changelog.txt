@@ -2,6 +2,42 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-22 04:34:31 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1633
+
+    Summary:
+      Trivial change to make a doctest use IAging(bt) rather than getAdapter(bt, IAging, '') r=stub
+    Revision:
+      launchpad--devel--0--patch-1633
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-377
+       refuel
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-378
+       refuel
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-379
+       refuel
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-380
+       removed unneccesary use of getAdapter from datehandling.txt
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-381
+       refuel
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/doc/datehandling.txt
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--devel--0--patch-377
+     steve.alexander@canonical.com/launchpad--devel--0--patch-378
+     steve.alexander@canonical.com/launchpad--devel--0--patch-379
+     steve.alexander@canonical.com/launchpad--devel--0--patch-380
+     steve.alexander@canonical.com/launchpad--devel--0--patch-381
+
+
 2005-04-22 03:50:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1632
 
     Summary:
