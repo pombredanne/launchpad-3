@@ -41,11 +41,13 @@ class IBugTask(IHasDateCreated):
     bug = Int(title=_("Bug #"))
     product = Choice(title=_('Product'), required=False, vocabulary='Product')
     sourcepackagename = Choice(
-        title=_("Source Package Name"), required=False, vocabulary='SourcePackageName')
+        title=_("Source Package Name"), required=False,
+        vocabulary='SourcePackageName')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
     distrorelease = Choice(
-        title=_("Distribution Release"), required=False, vocabulary='DistroRelease')
+        title=_("Distribution Release"), required=False,
+        vocabulary='DistroRelease')
     milestone = Choice(
         title=_('Target'), required=False, vocabulary='Milestone')
     status = Choice(
@@ -60,9 +62,8 @@ class IBugTask(IHasDateCreated):
     assignee = Choice(
         title=_('Assignee'), required=False, vocabulary='ValidPerson')
     binarypackagename = Choice(
-            title=_('Binary PackageName'), required=False,
-            vocabulary='BinaryPackageName'
-            )
+        title=_('Binary PackageName'), required=False,
+        vocabulary='BinaryPackageName')
     dateassigned = Datetime()
     datecreated  = Datetime()
     owner = Int()
@@ -99,15 +100,27 @@ class IBugTaskDelta(Interface):
 
 
 class IUpstreamBugTask(IBugTask):
-    """Marker interface for upstream bug tasks."""
+    """A description of a bug needing fixing in a particular product."""
+    product = Choice(title=_('Product'), required=True, vocabulary='Product')
 
 
 class IDistroBugTask(IBugTask):
-    """Marker interface for distro bug tasks."""
+    """A description of a bug needing fixing in a particular package."""
+    sourcepackagename = Choice(
+        title=_("Source Package Name"), required=True,
+        vocabulary='SourcePackageName')
+    binarypackagename = Choice(
+        title=_('Binary PackageName'), required=False,
+        vocabulary='BinaryPackageName')
+    distribution = Choice(
+        title=_("Distribution"), required=True, vocabulary='Distribution')
 
 
 class IDistroReleaseBugTask(IDistroBugTask):
-    """Marker interface for distro release bug tasks."""
+    """A description of a bug needing fixing in a particular realease."""
+    distrorelease = Choice(
+        title=_("Distribution Release"), required=True,
+        vocabulary='DistroRelease')
 
 
 # XXX: Brad Bollenbach, 2005-02-03: This interface should be removed

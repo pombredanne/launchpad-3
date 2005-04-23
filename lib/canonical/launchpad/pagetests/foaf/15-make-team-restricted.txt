@@ -50,7 +50,7 @@
   ... 
   ... Change
   ... -----------------------------10179102741957765912820968610--
-  ... """)
+  ... """) #doctest: -NORMALIZE_WHITESPACE
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8

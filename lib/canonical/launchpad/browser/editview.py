@@ -66,10 +66,14 @@ class SQLObjectEditView(EditView):
                 class Snapshot:
                     pass
                 content_before_modification = Snapshot()
-                for name in self.schema.names():
-                    setattr(
-                        content_before_modification,
-                        name, getattr(content, name))
+                for name in self.schema.names(all=True):
+                    #XXX: Need to check if the attribute exists, since
+                    #     Person doesn't provides all attributes in
+                    #     IPerson. -- Bjorn Tillenius, 2005-04-20
+                    if hasattr(content, name):
+                        setattr(
+                            content_before_modification,
+                            name, getattr(content, name))
                 # transfer the provided interfaces to the Snapshot
                 # because there are some places where the provided
                 # interfaces are important (e.g. get_task_delta

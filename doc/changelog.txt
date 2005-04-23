@@ -2,6 +2,77 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-23 01:22:25 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1635
+
+    Summary:
+      Fix bug 263, make some fields required to make form machinery work. r=stevea
+    Revision:
+      launchpad--devel--0--patch-1635
+
+    Patches applied:
+    
+     * bjorn.tillenius@canonical.com/launchpad--dogfood-bug-263--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1532
+    
+     * bjorn.tillenius@canonical.com/launchpad--dogfood-bug-263--0--patch-1
+       use self.fieldNames instead of self.schema.names().
+    
+     * bjorn.tillenius@canonical.com/launchpad--dogfood-bug-263--0--patch-2
+       split IBugTask, make some fields required, so that there will be nice input errors when they are left out in an add/edit form.
+    
+     * bjorn.tillenius@canonical.com/launchpad--dogfood-bug-263--0--patch-3
+       merge rf
+    
+     * bjorn.tillenius@canonical.com/launchpad--dogfood-bug-263--0--patch-4
+       copy back the attributes of I*BugTask into IBugTask.
+    
+     * bjorn.tillenius@canonical.com/launchpad--dogfood-bug-263--0--patch-5
+       merge rf
+    
+     * bjorn.tillenius@canonical.com/launchpad--dogfood-bug-263--0--patch-6
+       merge rf, resolve conflicts.
+    
+     * bjorn.tillenius@canonical.com/launchpad--dogfood-bug-263--0--patch-7
+       merge rf
+    
+     * bjorn.tillenius@canonical.com/launchpad--dogfood-bug-263--0--patch-8
+       get all the names in the schema.
+    
+     * bjorn.tillenius@canonical.com/launchpad--dogfood-bug-263--0--patch-9
+       check if the attribute exists first when making a snapshot of an object. needed to make tests pass.
+    
+     * bjorn.tillenius@canonical.com/launchpad--dogfood-bug-263--0--patch-10
+       merge rf
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-edit-bug-task-no-product.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-edit-bug-task-no-product.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/editview.py
+     lib/canonical/launchpad/interfaces/bugtask.py
+     lib/canonical/launchpad/pagetests/bugtask-management/xx-view-non-editable-bug-task.txt
+     lib/canonical/launchpad/pagetests/foaf/15-make-team-restricted.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-edit-upstream-bug-task-team-aware.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-view-package-bug-task-anonymous.txt
+     lib/canonical/launchpad/subscribers/bugactivity.py
+     lib/canonical/launchpad/zcml/bugtask.zcml
+
+    new patches:
+     bjorn.tillenius@canonical.com/launchpad--dogfood-bug-263--0--base-0
+     bjorn.tillenius@canonical.com/launchpad--dogfood-bug-263--0--patch-1
+     bjorn.tillenius@canonical.com/launchpad--dogfood-bug-263--0--patch-2
+     bjorn.tillenius@canonical.com/launchpad--dogfood-bug-263--0--patch-3
+     bjorn.tillenius@canonical.com/launchpad--dogfood-bug-263--0--patch-4
+     bjorn.tillenius@canonical.com/launchpad--dogfood-bug-263--0--patch-5
+     bjorn.tillenius@canonical.com/launchpad--dogfood-bug-263--0--patch-6
+     bjorn.tillenius@canonical.com/launchpad--dogfood-bug-263--0--patch-7
+     bjorn.tillenius@canonical.com/launchpad--dogfood-bug-263--0--patch-8
+     bjorn.tillenius@canonical.com/launchpad--dogfood-bug-263--0--patch-9
+     bjorn.tillenius@canonical.com/launchpad--dogfood-bug-263--0--patch-10
+
+
 2005-04-22 07:04:09 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1634
 
     Summary:

@@ -8,11 +8,7 @@ View a bug task as an Anonymous user.
   HTTP/1.1 200 Ok
   ...
               <label>Product</label>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
+  ...
                   <div>Mozilla Firefox</div>
   ...
               <label>Maintainer</label>
