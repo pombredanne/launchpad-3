@@ -13,6 +13,7 @@ from zope.component import getUtility
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 # Launchpad interfaces
@@ -101,7 +102,7 @@ class XXXXSourceSource(SQLBase):
 
     def certifyForSync(self):
         """enable the sync for processing"""
-        self.processingapproved = 'NOW'
+        self.processingapproved = UTC_NOW
         self.syncinterval = datetime.timedelta(1)
         self.importstatus = ImportStatus.PROCESSING
 
@@ -115,7 +116,7 @@ class XXXXSourceSource(SQLBase):
 
     def enableAutoSync(self):
         """enable autosyncing"""
-        self.syncingapproved = 'NOW'
+        self.syncingapproved = UTC_NOW
         self.importstatus = ImportStatus.SYNCING
 
     def canChangeProductSeries(self):

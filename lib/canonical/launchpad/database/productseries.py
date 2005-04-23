@@ -9,6 +9,7 @@ from zope.interface import implements
 from sqlobject import ForeignKey, StringCol, DateTimeCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 from canonical.database.sqlbase import SQLBase
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import EnumCol, ImportStatus, \
         RevisionControlSystems
@@ -72,7 +73,7 @@ class ProductSeries(SQLBase):
 
     def certifyForSync(self):
         """enable the sync for processing"""
-        self.dateprocessapproved = 'NOW'
+        self.dateprocessapproved = UTC_NOW
         self.syncinterval = datetime.timedelta(1)
         self.importstatus = ImportStatus.PROCESSING
 
@@ -86,7 +87,7 @@ class ProductSeries(SQLBase):
 
     def enableAutoSync(self):
         """enable autosyncing"""
-        self.datesyncapproved = 'NOW'
+        self.datesyncapproved = UTC_NOW
         self.importstatus = ImportStatus.SYNCING
 
 
