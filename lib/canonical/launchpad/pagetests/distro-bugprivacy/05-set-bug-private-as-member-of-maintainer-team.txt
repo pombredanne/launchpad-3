@@ -14,6 +14,11 @@ Team, which is one of the maintainers on this bug.
       <div class="portletBody">
           <div class="portletContent even">
   <BLANKLINE>
+              <h5>submitter:</h5>
+              <ul class="people">
+                  <li><a href="/people/name12">Sample Person</a></li>
+              </ul>
+  <BLANKLINE>
               <h5>maintainers:</h5>
   <BLANKLINE>
               <ul class="people">
@@ -52,6 +57,7 @@ Team, which is one of the maintainers on this bug.
           </a><br />
           </div>
   <BLANKLINE>
+      </div>
       </div>
   ...
 
@@ -104,6 +110,11 @@ is a member.
   <BLANKLINE>
       <div class="portletBody">
           <div class="portletContent even">
+  <BLANKLINE>
+              <h5>submitter:</h5>
+              <ul class="people">
+                  <li><a href="/people/name12">Sample Person</a></li>
+              </ul>
   <BLANKLINE>
               <h5>maintainers:</h5>
   <BLANKLINE>

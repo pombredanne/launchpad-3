@@ -2,6 +2,48 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-25 13:44:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1641
+
+    Summary:
+      revert bug page as requested by Mark
+    Revision:
+      launchpad--devel--0--patch-1641
+
+    Patches applied:
+    
+     * mpt@canonical.com/launchpad--revert-bug-page--2--base-0
+       tag of mpt@canonical.com/launchpad--devel--0--patch-44
+    
+     * mpt@canonical.com/launchpad--revert-bug-page--2--patch-1
+       revert bug page as requested by Mark
+    
+     * mpt@canonical.com/launchpad--revert-bug-page--2--patch-2
+       fixes from SteveA's review
+    
+     * mpt@canonical.com/launchpad--revert-bug-page--2--patch-3
+       committing phantom changes
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/pagetests/distro-bugprivacy/05-set-bug-private-as-member-of-maintainer-team.txt
+     lib/canonical/launchpad/pagetests/malone/10-add-subscription.txt
+     lib/canonical/launchpad/pagetests/malone/60-add-external-ref.txt
+     lib/canonical/launchpad/pagetests/malone/70-add-edit-watch.txt
+     lib/canonical/launchpad/pagetests/malone/80-add-comment.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-index.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/80-private-upstream-bug-accessible-to-subscribed-user.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/95-make-bug-private-as-implicit-subscriber.txt
+     lib/canonical/launchpad/templates/bug-index.pt
+     lib/canonical/launchpad/templates/portlet-bug-people.pt
+
+    new patches:
+     mpt@canonical.com/launchpad--revert-bug-page--2--base-0
+     mpt@canonical.com/launchpad--revert-bug-page--2--patch-1
+     mpt@canonical.com/launchpad--revert-bug-page--2--patch-2
+     mpt@canonical.com/launchpad--revert-bug-page--2--patch-3
+
+
 2005-04-25 13:31:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1640
 
     Summary:
