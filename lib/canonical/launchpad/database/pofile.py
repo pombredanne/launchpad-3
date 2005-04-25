@@ -1,3 +1,8 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['POFileSet', 'POFile']
+
 import StringIO
 import base64
 
@@ -6,13 +11,13 @@ from zope.interface import implements
 from zope.component import getUtility
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol, \
-    SQLObjectNotFound
+from sqlobject import \
+    DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, flush_database_updates
 
 # canonical imports
-from canonical.launchpad.interfaces import IPOFileSet, IEditPOFile, \
-    IPersonSet, IRawFileData
+from canonical.launchpad.interfaces import \
+    IPOFileSet, IEditPOFile, IPersonSet, IRawFileData
 from canonical.lp.dbschema import EnumCol
 from canonical.lp.dbschema import RosettaImportStatus
 from canonical.launchpad.components.rosettastats import RosettaStats
@@ -22,7 +27,8 @@ from canonical.launchpad import helpers
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgset import POMsgSet
-from canonical.launchpad.database.potranslationsighting import POTranslationSighting
+from canonical.launchpad.database.potranslationsighting import \
+    POTranslationSighting
 
 
 class POFileSet:
@@ -30,8 +36,7 @@ class POFileSet:
 
     def getPOFilesPendingImport(self):
         """See IPOFileSet."""
-        results = POFile.selectBy(
-            rawimportstatus=RosettaImportStatus.PENDING)
+        results = POFile.selectBy(rawimportstatus=RosettaImportStatus.PENDING)
 
         # XXX: Carlos Perello Marin 2005-03-24
         # Really ugly hack needed to do the initial import of the whole hoary
@@ -107,11 +112,8 @@ class POFile(SQLBase, RosettaStats):
 
     def currentMessageSets(self):
         return POMsgSet.select(
-            '''
-            POMsgSet.pofile = %d AND
-            POMsgSet.sequence > 0
-            '''
-            % self.id, orderBy='sequence')
+            'POMsgSet.pofile = %d AND POMsgSet.sequence > 0' % self.id,
+            orderBy='sequence')
 
     # XXX: Carlos Perello Marin 15/10/04: I don't think this method is needed,
     # it makes no sense to have such information or perhaps we should have it
@@ -125,9 +127,8 @@ class POFile(SQLBase, RosettaStats):
             POMsgSet.iscomplete=TRUE AND
             POMsgSet.potmsgset = POTMsgSet.id AND
             POTMsgSet.sequence > 0''' % self.id,
-            clauseTables = [
-                'POMsgSet',
-                ]))
+            clauseTables = ['POMsgSet']
+            ))
 
     def untranslated(self):
         '''XXX'''
@@ -137,19 +138,19 @@ class POFile(SQLBase, RosettaStats):
         return iter(self.currentMessageSets())
 
     def messageSet(self, key, onlyCurrent=False):
-        query = '''potemplate = %d''' % self.potemplate.id
+        query = 'potemplate = %d' % self.potemplate.id
         if onlyCurrent:
             query += ' AND sequence > 0'
 
         if isinstance(key, slice):
             # XXX: Carlos Perello Marin 19/10/04: Not sure how to handle this.
             raise NotImplementedError
-#           return POTMsgSet.select(query, orderBy='sequence')[key]
+            #return POTMsgSet.select(query, orderBy='sequence')[key]
 
         if not isinstance(key, unicode):
             raise TypeError(
                 "Can't index with type %s. (Must be slice or unicode.)"
-                    % type(key))
+                % type(key))
 
         # Find a message ID with the given text.
         try:
@@ -159,24 +160,16 @@ class POFile(SQLBase, RosettaStats):
 
         # Find a message set with the given message ID.
 
-        results = POTMsgSet.select(query +
+        result = POTMsgSet.selectOne(query +
             (' AND primemsgid = %d' % messageID.id))
 
-        if results.count() == 0:
+        if result is None:
             raise KeyError, key
-        else:
-            assert results.count() == 1
 
-            poresults = POMsgSet.selectBy(
-                potmsgsetID=results[0].id,
-                pofileID=self.id)
-
-            if poresults.count() == 0:
-                raise KeyError, key
-            else:
-                assert poresults.count() == 1
-
-                return poresults[0]
+        poresult = POMsgSet.selectOneBy(potmsgsetID=result.id, pofileID=self.id)
+        if poresult is None:
+            raise KeyError, key
+        return poresult
 
     def __getitem__(self, msgid_text):
         return self.messageSet(msgid_text)
@@ -188,16 +181,13 @@ class POFile(SQLBase, RosettaStats):
             POMsgSet.sequence <> 0 AND
             POTMsgSet.sequence = 0''' % self.id,
             orderBy='sequence',
-            clauseTables = [
-                'POTMsgSet',
-                ]))
+            clauseTables = ['POTMsgSet']))
 
     def hasMessageID(self, messageID):
         results = POMsgSet.select('''
             POMsgSet.pofile = %d AND
             POMsgSet.potmsgset = POTMsgSet.id AND
             POTMsgSet.primemsgid = %d''' % (self.id, messageID.id))
-
         return results.count() > 0
 
     def messageCount(self):
@@ -214,7 +204,6 @@ class POFile(SQLBase, RosettaStats):
 
     def getContributors(self):
         return getUtility(IPersonSet).getContributorsForPOFile(self)
-
 
     # IEditPOFile
 
@@ -233,14 +222,14 @@ class POFile(SQLBase, RosettaStats):
                 POMsgSet.iscomplete = TRUE AND
                 POMsgSet.potmsgset = POTMsgSet.id AND
                 POTMsgSet.sequence > 0
-            ''' % self.id, clauseTables=('POTMsgSet',)).count()
+            ''' % self.id, clauseTables=['POTMsgSet']).count()
         else:
             current = self.currentcount
 
         # XXX: Carlos Perello Marin 27/10/04: We should fix the schema if we
-        # want that updates/rosetta is correctly calculated, if we have fuzzy msgset
-        # and then we fix it from Rosetta it will be counted as an update when
-        # it's not.
+        # want that updates/rosetta is correctly calculated, if we have fuzzy
+        # msgset and then we fix it from Rosetta it will be counted as an
+        # update when it's not.
         updates = POMsgSet.select('''
             POMsgSet.pofile = %d AND
             POMsgSet.sequence > 0 AND
@@ -260,7 +249,7 @@ class POFile(SQLBase, RosettaStats):
                         RosettaSight.inLastRevision = FALSE AND
                         FileSight.active = FALSE AND
                         RosettaSight.active = TRUE )
-            ''' % self.id, clauseTables=('POTMsgSet', )).count()
+            ''' % self.id, clauseTables=['POTMsgSet']).count()
 
         rosetta = POMsgSet.select('''
             POMsgSet.pofile = %d AND
@@ -283,7 +272,8 @@ class POFile(SQLBase, RosettaStats):
                     RosettaSight.pomsgset = POMsgSet.id AND
                     RosettaSight.inlastrevision = FALSE AND
                     RosettaSight.active = TRUE)
-            ''' % self.id, clauseTables=('POTMsgSet',)).count()
+            ''' % self.id,
+            clauseTables=['POTMsgSet']).count()
         self.set(currentcount=current,
                  updatescount=updates,
                  rosettacount=rosetta)
@@ -294,7 +284,6 @@ class POFile(SQLBase, RosettaStats):
 
         Returns that message set.
         """
-
         messageSet = POMsgSet(
             sequence=0,
             pofile=self,
@@ -320,8 +309,9 @@ class POFile(SQLBase, RosettaStats):
         '''
         sightings = POTranslationSighting.select('''
             POTranslationSighting.pomsgset = POMsgSet.id AND
-            POMsgSet.pofile = %d''' % self.id, orderBy='-datelastactive',
-            clauseTables=('POMsgSet',))
+            POMsgSet.pofile = %d''' % self.id,
+            orderBy='-datelastactive',
+            clauseTables=['POMsgSet'])
 
         try:
             return sightings[0]
@@ -428,13 +418,13 @@ class POFile(SQLBase, RosettaStats):
             # If we didn't got any error getting the Last-Translator field
             # from the pofile.
             if email == 'EMAIL@ADDRESS':
-                # We don't have a real account, thus we just use the import person
-                # as the owner.
+                # We don't have a real account, thus we just use the import
+                # person as the owner.
                 person = default_owner
             else:
                 # This import is here to prevent circular dependencies.
-                from canonical.launchpad.database.person import PersonSet, \
-                                                                createPerson
+                from canonical.launchpad.database.person import \
+                    PersonSet, createPerson
 
                 person_set = PersonSet()
 
@@ -463,8 +453,8 @@ class POFile(SQLBase, RosettaStats):
 
                     if person is None:
                         # XXX: Carlos Perello Marin 20/12/2004 We have already
-                        # that person in the database, we should get it instead of
-                        # use the default one...
+                        # that person in the database, we should get it instead
+                        # of use the default one...
                         person = default_owner
 
         importer = POFileImporter(self, person)
@@ -492,3 +482,4 @@ class POFile(SQLBase, RosettaStats):
                     'We got an error importing %s language for %s template' % (
                         self.language.code, self.potemplate.title),
                         exc_info = 1)
+

@@ -1,13 +1,13 @@
-# Zope imports
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['MirrorContent']
+
 from zope.interface import implements
 
-# SQLObject/SQLBase
 from canonical.database.sqlbase import SQLBase
 from sqlobject import ForeignKey
 
-#
-#
-#
 
 class MirrorContent(SQLBase):
     implements(IMirrorContent)
@@ -20,3 +20,4 @@ class MirrorContent(SQLBase):
     component = ForeignKey(foreignKey='Component',
                            dbName='component',
                            notNull=True)
+

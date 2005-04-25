@@ -1,38 +1,35 @@
-# Zope imports
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['SourcePackageInDistro', 'SourcePackageInDistroSet']
+
 from zope.interface import implements
 from zope.component import getUtility
 
-# SQLObject/SQLBase
-from sqlobject import MultipleJoin
-from sqlobject import SQLObjectNotFound
-from sqlobject import StringCol, ForeignKey, MultipleJoin
+from sqlobject import StringCol, ForeignKey
 
-# launchpad imports
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.lp.dbschema import EnumCol, PackagePublishingStatus, \
         SourcePackageFormat
 
-# launchpad interfaces and database 
-from canonical.launchpad.interfaces import ISourcePackageInDistro
-from canonical.launchpad.interfaces import ISourcePackageInDistroSet, \
-     ISourcePackageSet
+from canonical.launchpad.interfaces import \
+    ISourcePackageInDistro, ISourcePackageInDistroSet, ISourcePackageSet
+
 from canonical.launchpad.database.vsourcepackagereleasepublishing import \
      VSourcePackageReleasePublishing
 
+
 class SourcePackageInDistro(SQLBase):
-    """
-    Represents source releases published in the specified distribution. This
-    view's contents are uniqued, for the following reason: a certain package
-    can have multiple releases in a certain distribution release.
+    """Represents source releases published in the specified distribution.
+
+    This view's contents are uniqued, for the following reason: a certain
+    package can have multiple releases in a certain distribution release.
     """
 
     implements(ISourcePackageInDistro)
 
     _table = 'VSourcePackageInDistro'
-   
-    #
-    # Columns
-    #
+
     manifest = ForeignKey(foreignKey='Manifest', dbName='manifest')
 
     format = EnumCol(dbName='format',
@@ -49,8 +46,8 @@ class SourcePackageInDistro(SQLBase):
                                dbName='distrorelease')
 
 
-class SourcePackageInDistroSet(object):
-    """A Set of SourcePackages in a given DistroRelease"""
+class SourcePackageInDistroSet:
+    """A Set of SourcePackages in a given DistroRelease."""
     implements(ISourcePackageInDistroSet)
     def __init__(self, distrorelease):
         """Take the distrorelease when it makes part of the context"""
@@ -59,24 +56,21 @@ class SourcePackageInDistroSet(object):
 
     def findPackagesByName(self, pattern):
         srcutil = getUtility(ISourcePackageSet)
-        return srcutil.findByNameInDistroRelease(self.distrorelease.id,
-                                                 pattern)
+        return srcutil.findByNameInDistroRelease(self.distrorelease.id, pattern)
 
     def __iter__(self):
-        query = ('distrorelease = %d'
-                 % (self.distrorelease.id))
+        query = ('distrorelease = %d' % (self.distrorelease.id))
         return iter(SourcePackageInDistro.select(query,
                         orderBy='VSourcePackageInDistro.name',
                         distinct=True))
 
     def __getitem__(self, name):
-        publishing_status = PackagePublishingStatus.PUBLISHED.value
+        publishing_status = PackagePublishingStatus.PUBLISHED
+        query = ('distrorelease = %s AND publishingstatus=%s AND name=%s'
+                 % sqlvalues(self.distrorelease.id, publishing_status, name))
 
-        query = ('distrorelease = %d AND publishingstatus=%d AND name=%s'
-                 % (self.distrorelease.id, publishing_status, quote(name)))
-
-        try:
-            return VSourcePackageReleasePublishing.select(query)[0]
-        except IndexError:
+        item = VSourcePackageReleasePublishing.select(query)
+        if item is None:
             raise KeyError, name
+        return item
 

@@ -1,34 +1,31 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
+__all__ = ['Product', 'ProductSet']
 
-import os
-
-from sets import Set
+import sets
 from datetime import datetime
 from warnings import warn
 
 from zope.interface import implements
 from zope.exceptions import NotFoundError
 
-from sqlobject import DateTimeCol, ForeignKey, StringCol, BoolCol
-from sqlobject import MultipleJoin, RelatedJoin
-from sqlobject import SQLObjectNotFound
-from sqlobject import AND
+from sqlobject import \
+    DateTimeCol, ForeignKey, StringCol, BoolCol, MultipleJoin, RelatedJoin, \
+    SQLObjectNotFound, AND
 
 import canonical.sourcerer.deb.version
 
-from canonical.database.sqlbase import SQLBase, quote
-from canonical.lp.dbschema import BugSeverity, BugTaskStatus
-from canonical.lp.dbschema import RosettaImportStatus, RevisionControlSystems
-from canonical.launchpad import helpers
+from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.lp.dbschema import \
+    BugSeverity, BugTaskStatus, RosettaImportStatus
 
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.interfaces import IProduct, IProductSet
+from canonical.launchpad.interfaces import IProduct, IProductSet, IDistribution
 
 
 class Product(SQLBase):
@@ -38,15 +35,14 @@ class Product(SQLBase):
 
     _table = 'Product'
 
-    # db field names
-    project = ForeignKey(foreignKey="Project", dbName="project",
-                         notNull=False, default=None)
+    project = ForeignKey(
+        foreignKey="Project", dbName="project", notNull=False, default=None)
 
-    owner = ForeignKey(foreignKey="Person", dbName="owner",
-                       notNull=True)
+    owner = ForeignKey(
+        foreignKey="Person", dbName="owner", notNull=True)
 
-    name = StringCol(dbName='name', notNull=True, alternateID=True,
-                     unique=True)
+    name = StringCol(
+        dbName='name', notNull=True, alternateID=True, unique=True)
 
     displayname = StringCol(dbName='displayname', notNull=True)
 
@@ -56,19 +52,18 @@ class Product(SQLBase):
 
     description = StringCol(dbName='description', notNull=True)
 
-    datecreated = DateTimeCol(dbName='datecreated', notNull=True,
-                              default=datetime.utcnow())
+    datecreated = DateTimeCol(
+        dbName='datecreated', notNull=True, default=datetime.utcnow())
 
-    homepageurl = StringCol(dbName='homepageurl', notNull=False,
-            default=None)
+    homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
 
-    screenshotsurl = StringCol(dbName='screenshotsurl', notNull=False,
-            default=None)
+    screenshotsurl = StringCol(
+        dbName='screenshotsurl', notNull=False, default=None)
 
     wikiurl =  StringCol(dbName='wikiurl', notNull=False, default=None)
 
-    programminglang = StringCol(dbName='programminglang', notNull=False,
-            default=None)
+    programminglang = StringCol(
+        dbName='programminglang', notNull=False, default=None)
 
     downloadurl = StringCol(dbName='downloadurl', notNull=False, default=None)
 
@@ -84,7 +79,6 @@ class Product(SQLBase):
 
     sourceforgeproject = StringCol(notNull=False, default=None)
 
-    # useful Joins
     bugtasks = MultipleJoin('BugTask', joinColumn='product')
 
     branches = MultipleJoin('Branch', joinColumn='product')
@@ -93,36 +87,42 @@ class Product(SQLBase):
 
     def releases(self):
         return ProductRelease.select(
-                AND(ProductRelease.q.productseriesID == ProductSeries.q.id,
-                    ProductSeries.q.productID == self.id),
-                clauseTables=['ProductSeries'],
-                orderBy=['version']
-        )
+            AND(ProductRelease.q.productseriesID == ProductSeries.q.id,
+                ProductSeries.q.productID == self.id),
+            clauseTables=['ProductSeries'],
+            orderBy=['version']
+            )
     releases = property(releases)
 
     milestones = MultipleJoin('Milestone', joinColumn = 'product')
 
-    bounties = RelatedJoin('Bounty', joinColumn='product',
-                            otherColumn='bounty',
-                            intermediateTable='ProductBounty')
+    bounties = RelatedJoin(
+        'Bounty', joinColumn='product', otherColumn='bounty',
+        intermediateTable='ProductBounty')
 
     def sourcepackages(self):
+        # XXX: SteveAlexander, 2005-04-25, this needs a system doc test.
         from canonical.launchpad.database.sourcepackage import SourcePackage
         clause = """ProductSeries.id=Packaging.productseries AND
-                    ProductSeries.product = %d
-                    """ % self.id
+                    ProductSeries.product = %s
+                    """ % sqlvalues(self.id)
         clauseTables = ['ProductSeries']
         ret = Packaging.select(clause, clauseTables)
         return [SourcePackage(sourcepackagename=r.sourcepackagename,
                               distrorelease=r.distrorelease)
-                    for r in ret]
+                for r in ret]
     sourcepackages = property(sourcepackages)
 
     def primary_translatable(self):
-        """currently this returns the latest release for which we have
-        potemplates. in future it may return the ubuntu sourcepackage which
+        """Returns the latest release for which we have potemplates.
+
+        In future it may return the ubuntu sourcepackage which
         corresponds to this product in the current development release of
-        ubuntu... if it has templates."""
+        ubuntu... if it has templates.
+        """
+        # XXX Not in system doc tests.  SteveAlexander, 2005-04-24
+        # XXX Not directly tested by page tests either, that is, this can
+        #     be rather broken, and still work.  SteveAlexander, 2005-04-24
         releases = ProductRelease.select(
                         "POTemplate.productrelease=ProductRelease.id AND "
                         "ProductRelease.productseries=ProductSeries.id AND "
@@ -140,20 +140,25 @@ class Product(SQLBase):
         # never be passing forms straight through to the content class, that
         # violates the separation of presentation and model. This should be
         # a method on the ProductSeriesSet utility.
+        # XXX SteveA 2005-04-25.  The code that processes the request's form
+        # should be in launchpad/browser/*
+        # The code that creates a new ProductSeries should be in
+        # ProductSeriesSet, and accesed via getUtility(IProductSeriesSet) from
+        # the browser code.
+
         # Extract the details from the form
         name = form['name']
         displayname = form['displayname']
         shortdesc = form['shortdesc']
         # Now create a new series in the db
-        return ProductSeries(name=name,
-                             displayname=displayname,
-                             shortdesc=shortdesc,
-                             product=self.id)
+        return ProductSeries(
+            name=name, displayname=displayname, shortdesc=shortdesc,
+            product=self.id)
 
     def potemplates(self):
+        """See IProduct."""
         # XXX sabdfl 30/03/05 this method is really obsolete, because what
         # we really care about now is ProductRelease.potemplates
-        """See IProduct."""
         warn("Product.potemplates is obsolete, should be on ProductRelease",
              DeprecationWarning)
         templates = []
@@ -180,19 +185,16 @@ class Product(SQLBase):
         # It should be unique for a given productrelease.
         warn("Product.poTemplate(name) should be on ProductRelease instead",
              DeprecationWarning)
-        results = POTemplate.select(
-            "ProductSeries.product = %d AND "
+        results = POTemplate.selectOne(
+            "ProductSeries.product = %s AND "
             "ProductSeries.id = ProductRelease.productseries AND "
             "ProductRelease.id = POTemplate.productrelease AND "
             "POTemplate.potemplatename = POTemplateName.id AND "
-            "POTemplateName.name = %s" % (self.id, quote(name)),
-            clauseTables=['ProductSeries', 'ProductRelease',
-                          'POTemplateName'])
-
-        try:
-            return results[0]
-        except IndexError:
-            raise KeyError, name
+            "POTemplateName.name = %s" % sqlvalues(self.id, name),
+            clauseTables=['ProductSeries', 'ProductRelease', 'POTemplateName'])
+        if results is None:
+            raise KeyError(name)
+        return results
 
     def messageCount(self):
         count = 0
@@ -220,44 +222,48 @@ class Product(SQLBase):
 
     def getSeries(self, name):
         """See IProduct."""
-        try:
-            return ProductSeries.selectBy(productID=self.id, name=name)[0]
-        except IndexError:
-            raise NotFoundError
+        series = ProductSeries.selectOneBy(productID=self.id, name=name)
+        if series is None:
+            raise NotFoundError(name)
+        return series
 
     def getRelease(self, version):
         #return ProductRelease.selectBy(productID=self.id, version=version)[0]
-        return ProductRelease.select(
-                    AND(ProductRelease.q.productseriesID == ProductSeries.q.id,
-                        ProductSeries.q.productID == self.id,
-                        ProductRelease.q.version == version),
-                    clauseTables=['ProductSeries'])[0]
+        release = ProductRelease.selectOne(
+            AND(ProductRelease.q.productseriesID == ProductSeries.q.id,
+                ProductSeries.q.productID == self.id,
+                ProductRelease.q.version == version),
+            clauseTables=['ProductSeries'])
+        if release is None:
+            # XXX: This needs a change in banzai, which depends on this method
+            #      raising IndexError.
+            #      SteveAlexander, 2005-04-25
+            raise IndexError
+        return release
 
     def getPackage(self, distrorelease):
         # we have moved to focusing on ProductSeries as the linker
         from warnings import warn
         warn('Product.getPackage is deprecated, use ProductSeries.getPackage',
              DeprecationWarning, stacklevel=2)
-        if isinstance(distrorelease, Distribution):
+        if IDistribution.providedBy(distrorelease):
             warn('Product.getPackage is guessing distrorelease',
-                 DeprecationWarning, stacklevel=2)
+                DeprecationWarning, stacklevel=2)
             distrorelease = distrorelease.currentrelease
         for pkg in self.sourcepackages:
             if pkg.distrorelease == distrorelease:
                 return pkg
         else:
-            raise NotFoundError
-
+            raise NotFoundError(distrorelease)
 
     def packagedInDistros(self):
         # This function-local import is so we avoid a circular import
-        from canonical.launchpad.database import Distribution
         distros = Distribution.select(
             "Packaging.productseries = ProductSeries.id AND "
-            "ProductSeries.product = %d AND "
+            "ProductSeries.product = %s AND "
             "Packaging.distrorelease = DistroRelease.id AND "
             "DistroRelease.distribution = Distribution.id"
-            "" % self.id,
+            "" % sqlvalues(self.id),
             clauseTables=['Packaging', 'ProductSeries', 'DistroRelease'],
             orderBy='name',
             distinct=True
@@ -304,17 +310,16 @@ class ProductSet:
 
     def __getitem__(self, name):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        ret = Product.selectBy(name=name)
-        try:
-            return ret[0]
-        except IndexError:
-            raise KeyError, name
+        item = Product.selectOneBy(name=name)
+        if item is None:
+            raise KeyError(name)
+        return item
 
     def get(self, productid):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         try:
             product = Product.get(productid)
-        except SQLObjectNotFound, err:
+        except SQLObjectNotFound:
             raise NotFoundError("Product with ID %s does not exist" %
                                 str(productid))
 
@@ -326,33 +331,28 @@ class ProductSet:
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        return Product(owner=owner, name=name, displayname=displayname,
-                       title=title, project=project, shortdesc=shortdesc,
-                       description=description,
-                       homepageurl=homepageurl,
-                       screenshotsurl=screenshotsurl,
-                       wikiurl=wikiurl,
-                       downloadurl=downloadurl,
-                       freshmeatproject=freshmeatproject,
-                       sourceforgeproject=sourceforgeproject)
-    
+        return Product(
+            owner=owner, name=name, displayname=displayname,
+            title=title, project=project, shortdesc=shortdesc,
+            description=description, homepageurl=homepageurl,
+            screenshotsurl=screenshotsurl, wikiurl=wikiurl,
+            downloadurl=downloadurl, freshmeatproject=freshmeatproject,
+            sourceforgeproject=sourceforgeproject)
 
     def forReview(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         return Product.select("reviewed IS FALSE")
-
 
     def search(self, text=None, soyuz=None,
                rosetta=None, malone=None,
                bazaar=None,
                show_inactive=False):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        clauseTables = Set()
+        clauseTables = sets.Set()
         clauseTables.add('Product')
         query = '1=1 '
         if text:
-            text = quote(text)
-            query += " AND Product.fti @@ ftq(%s) " % (text,)
+            query += " AND Product.fti @@ ftq(%s) " % sqlvalues(text)
         if rosetta:
             clauseTables.add('POTemplate')
             clauseTables.add('ProductRelease')
@@ -400,12 +400,9 @@ class ProductSet:
 
     def count_bounties(self):
         return Product.select("ProductBounty.product=Product.id",
-                              distinct=True,
-                              clauseTables=['ProductBounty']).count()
+            distinct=True, clauseTables=['ProductBounty']).count()
 
     def count_buggy(self):
-        return Product.select(
-                "BugTask.product=Product.id", distinct=True,
-                clauseTables=['BugTask']).count()
-
+        return Product.select("BugTask.product=Product.id",
+            distinct=True, clauseTables=['BugTask']).count()
 

@@ -1,11 +1,15 @@
-# Zope interfaces
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['POMsgIDSighting']
+
 from zope.interface import implements
 
-# SQL imports
 from sqlobject import DateTimeCol, ForeignKey, IntCol, BoolCol
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces import IPOMsgIDSighting
+
 
 class POMsgIDSighting(SQLBase):
     implements(IPOMsgIDSighting)

@@ -1,15 +1,18 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
+__all__ = ['LibraryFileContent', 'LibraryFileAlias', 'LibraryFileAliasSet']
 
 from zope.component import getUtility
 from zope.interface import implements
-from canonical.launchpad.interfaces \
-        import ILibraryFileAlias, ILibraryFileContent, ILibraryFileAliasSet
+
+from canonical.launchpad.interfaces import \
+    ILibraryFileAlias, ILibraryFileAliasSet
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol, RelatedJoin
+
 
 class LibraryFileContent(SQLBase):
     """A pointer to file content in the librarian."""
@@ -24,7 +27,7 @@ class LibraryFileContent(SQLBase):
 
 class LibraryFileAlias(SQLBase):
     """A filename and mimetype that we can serve some given content with."""
-    
+
     _table = 'LibraryFileAlias'
 
     content = ForeignKey(
@@ -45,7 +48,7 @@ class LibraryFileAlias(SQLBase):
         self._datafile = client.getFileByAlias(self.id)
 
     def read(self, chunksize=None):
-        """See ILibraryFileAlias.read"""
+        """See ILibraryFileAlias.read."""
         if not self._datafile:
             if chunksize is not None:
                 raise RuntimeError("Can't combine autoopen with chunksize")
@@ -61,7 +64,7 @@ class LibraryFileAlias(SQLBase):
             return rv
         else:
             return self._datafile.read(chunksize)
-        
+
     def close(self):
         self._datafile.close()
         self._datafile = None
@@ -76,7 +79,7 @@ class LibraryFileAlias(SQLBase):
                                  intermediateTable='SourcePackageReleaseFile')
 
 
-class LibraryFileAliasSet(object):
+class LibraryFileAliasSet:
     """Create and find LibraryFileAliases."""
 
     implements(ILibraryFileAliasSet)

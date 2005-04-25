@@ -157,10 +157,10 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         return SimpleTerm(obj, obj.name, obj.title)
 
     def getTermByToken(self, token):
-        objs = self._table.select(self._table.q.name == token)
-        if objs.count() != 1:
+        obj = self._table.selectOne(self._table.q.name == token)
+        if obj is None:
             raise LookupError, token
-        return self._toTerm(objs[0])
+        return self._toTerm(obj)
 
     def search(self, query):
         """Returns products where the product name, displayname, title,
@@ -484,20 +484,19 @@ class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
 
     def getTermByToken(self, token):
         try:
-            distroname, distroreleasename = token.split('/',1)
+            distroname, distroreleasename = token.split('/', 1)
         except ValueError:
             raise LookupError, token
 
-        objs = DistroRelease.select(AND(Distribution.q.name == distroname,
-                DistroRelease.q.name == distroreleasename
-                ))
-        try:
-            return self._toTerm(objs[0])
-        except IndexError:
+        obj = DistroRelease.selectOne(AND(Distribution.q.name == distroname,
+            DistroRelease.q.name == distroreleasename))
+        if obj is None:
             raise LookupError, token
+        else:
+            return self._toTerm(obj)
 
     def search(self, query):
-        """Return terms where query is a substring of the name"""
+        """Return terms where query is a substring of the name."""
         if query:
             query = query.lower()
             objs = self._table.select(

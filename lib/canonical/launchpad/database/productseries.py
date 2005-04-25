@@ -1,21 +1,20 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-# Python imports
-from sets import Set
+__metaclass__ = type
+__all__ = ['ProductSeries', 'ProductSeriesSet']
 
-# Zope interfaces
+import sets
+
 from zope.interface import implements
 
-# SQL imports
-from sqlobject import ForeignKey, StringCol, DateTimeCol
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
+from sqlobject import ForeignKey, StringCol, DateTimeCol, MultipleJoin
 
-# canonical imports
-from canonical.launchpad.interfaces import IProductSeries, \
-    ISeriesSource, ISeriesSourceAdmin, IProductSeriesSet
+from canonical.launchpad.interfaces import \
+    IProductSeries, ISeriesSource, ISeriesSourceAdmin, IProductSeriesSet
 from canonical.launchpad.database.packaging import Packaging
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.lp.dbschema import EnumCol, ImportStatus, \
-        RevisionControlSystems
+from canonical.lp.dbschema import \
+    EnumCol, ImportStatus, RevisionControlSystems
 
 
 class ProductSeries(SQLBase):
@@ -56,27 +55,25 @@ class ProductSeries(SQLBase):
     dateprocessapproved = DateTimeCol(default=None)
     datesyncapproved = DateTimeCol(default=None)
 
-    # useful joins
     releases = MultipleJoin('ProductRelease', joinColumn='productseries',
                              orderBy=['version'])
 
-    # properties
-    def _title(self):
+    def title(self):
         return self.product.displayname + ' Series: ' + self.displayname
-    title = property(_title)
+    title = property(title)
 
     def sourcepackages(self):
         from canonical.launchpad.database.sourcepackage import SourcePackage
         ret = Packaging.selectBy(productseriesID=self.id)
         return [SourcePackage(sourcepackagename=r.sourcepackagename,
                               distrorelease=r.distrorelease)
-                    for r in ret]
+                for r in ret]
     sourcepackages = property(sourcepackages)
 
-    # methods
     def getRelease(self, version):
         for release in self.releases:
-            if release.version==version: return release
+            if release.version==version:
+                return release
         raise KeyError, version
 
     def getPackage(self, distrorelease):
@@ -84,24 +81,24 @@ class ProductSeries(SQLBase):
             if pkg.distrorelease == distrorelease:
                 return pkg
         else:
-            raise NotFoundError
+            raise NotFoundError(distrorelease)
 
     def certifyForSync(self):
-        """enable the sync for processing"""
+        """Enable the sync for processing."""
         self.dateprocessapproved = 'NOW'
         self.syncinterval = datetime.timedelta(1)
         self.importstatus = ImportStatus.PROCESSING
 
     def syncCertified(self):
-        """return true or false indicating if the sync is enabled"""
+        """Return true or false indicating if the sync is enabled"""
         return self.dateprocessapproved is not None
 
     def autoSyncEnabled(self):
-        """is the sync automatically scheduling"""
+        """Is the sync automatically scheduling?"""
         return self.importstatus == ImportStatus.SYNCING
 
     def enableAutoSync(self):
-        """enable autosyncing"""
+        """Enable autosyncing?"""
         self.datesyncapproved = 'NOW'
         self.importstatus = ImportStatus.SYNCING
 
@@ -115,27 +112,25 @@ class ProductSeriesSet:
 
     def __iter__(self):
         if self.product:
-            theiter = iter(ProductSeries.selectBy(productID=self.product.id))
+            return iter(ProductSeries.selectBy(productID=self.product.id))
         else:
-            theiter = iter(ProductSeries.select())
-        return theiter
+            return iter(ProductSeries.select())
 
     def __getitem__(self, name):
         if not self.product:
-            raise KeyError, 'ProductSeriesSet not initialised with product.'
-        ret = ProductSeries.selectBy(productID=self.product.id,
-                                     name=name)
-        if ret.count() == 0:
-            raise KeyError, name
-        else:
-            return ret[0]
+            raise KeyError('ProductSeriesSet not initialised with product.')
+        series = ProductSeries.selectOneBy(productID=self.product.id, name=name)
+        if series is None:
+            raise KeyError(name)
+        return series
 
     def _querystr(self, ready=None, text=None,
-                        forimport=None, importstatus=None):
+                  forimport=None, importstatus=None):
         """Return a querystring and clauseTables for use in a search or a
-        get or a query."""
+        get or a query.
+        """
         query = '1=1'
-        clauseTables = Set()
+        clauseTables = sets.Set()
         # deal with the cases which require project and product
         if ( ready is not None ) or text:
             if len(query) > 0:
@@ -170,14 +165,10 @@ class ProductSeriesSet:
             query += 'ProductSeries.importstatus = %d' % importstatus
         return query, clauseTables
 
-    def search(self, ready=None, 
-                     text=None,
-                     forimport=None,
-                     importstatus=None,
-                     start=None,
-                     length=None):
-        query, clauseTables = self._querystr(ready, text,
-                                             forimport, importstatus)
+    def search(self, ready=None, text=None, forimport=None, importstatus=None,
+               start=None, length=None):
+        query, clauseTables = self._querystr(
+            ready, text, forimport, importstatus)
         return ProductSeries.select(query, distinct=True,
                    clauseTables=clauseTables)[start:length]
 

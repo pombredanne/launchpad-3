@@ -17,10 +17,8 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import IPerson,\
-                                           IPersonSet, \
-                                           IDistroTools
-from canonical.launchpad.database import IPOTemplateSet
+from canonical.launchpad.interfaces import \
+    IPerson, IPersonSet, IDistroTools, IPOTemplateSet
 
 # depending on apps
 from canonical.launchpad import helpers

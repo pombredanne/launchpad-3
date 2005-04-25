@@ -1,44 +1,41 @@
-"""Launchpad Bug-related Database Table Objects
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+"""Launchpad Bug-related Database Table Objects."""
 
-Part of the Launchpad system.
-
-(c) 2004 Canonical, Ltd.
-"""
-from datetime import datetime
-
-# Zope
-from zope.interface import implements
-
-# SQL imports
-from canonical.database.sqlbase import SQLBase
-from sqlobject import DateTimeCol, ForeignKey, IntCol
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
-
-from canonical.launchpad.interfaces import IBugProductInfestationSet, \
-                                           IBugPackageInfestationSet, \
-                                           IBugProductInfestation, \
-                                           IBugPackageInfestation
-
-from canonical.launchpad.database.bugset import BugSetBase
-from canonical.lp import dbschema
-from canonical.lp.dbschema import EnumCol
-
-
-__all__ = ['BugProductInfestation', 'BugPackageInfestation',
+__metaclass__ = type
+__all__ = ['BugProductInfestation',
+           'BugPackageInfestation',
            'BugProductInfestationSet',
            'BugPackageInfestationSet',
            'BugProductInfestationFactory',
            'BugPackageInfestationFactory'
            ]
 
+from datetime import datetime
+
+from zope.interface import implements
+
+from canonical.database.sqlbase import SQLBase
+from sqlobject import DateTimeCol, ForeignKey, IntCol
+
+from canonical.launchpad.interfaces import \
+    IBugProductInfestationSet, IBugPackageInfestationSet, \
+    IBugProductInfestation, IBugPackageInfestation
+
+from canonical.launchpad.database.bugset import BugSetBase
+from canonical.lp import dbschema
+from canonical.lp.dbschema import EnumCol
+
+
 class BugProductInfestation(SQLBase):
     implements(IBugProductInfestation)
+
     _table = 'BugProductInfestation'
+
     # field names
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     explicit = IntCol(notNull=True, default=False)
-    productrelease = ForeignKey(
-        dbName="productrelease", foreignKey='ProductRelease', notNull=False, default=None)
+    productrelease = ForeignKey(dbName="productrelease",
+        foreignKey='ProductRelease', notNull=False, default=None)
     infestationstatus = EnumCol(
         notNull=False, default=None, schema=dbschema.BugInfestationStatus)
     datecreated = DateTimeCol(notNull=True)
@@ -47,7 +44,8 @@ class BugProductInfestation(SQLBase):
     verifiedby = ForeignKey(
         dbName="verifiedby", foreignKey='Person', notNull=False, default=None)
     lastmodified = DateTimeCol(notNull=True)
-    lastmodifiedby = ForeignKey(dbName="lastmodifiedby", foreignKey='Person', notNull=True)
+    lastmodifiedby = ForeignKey(
+        dbName="lastmodifiedby", foreignKey='Person', notNull=True)
 
     # used for launchpad pages
     def _title(self):
@@ -55,18 +53,19 @@ class BugProductInfestation(SQLBase):
         title += self.productrelease.productseries.product.displayname
         return title
     title = property(_title)
-    
-
 
 
 class BugPackageInfestation(SQLBase):
+
     implements(IBugPackageInfestation)
+
     _table = 'BugPackageInfestation'
+
     # field names
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     explicit = IntCol(dbName='explicit', notNull=True, default=False)
-    sourcepackagerelease = ForeignKey(
-        dbName='sourcepackagerelease', foreignKey='SourcePackageRelease', notNull=True)
+    sourcepackagerelease = ForeignKey(dbName='sourcepackagerelease',
+        foreignKey='SourcePackageRelease', notNull=True)
     infestationstatus = EnumCol(dbName='infestationstatus', notNull=True,
         schema=dbschema.BugInfestationStatus)
     datecreated = DateTimeCol(dbName='datecreated', notNull=True)
@@ -77,12 +76,12 @@ class BugPackageInfestation(SQLBase):
     lastmodifiedby = ForeignKey(dbName='lastmodifiedby', foreignKey='Person')
 
     # used for launchpad pages
-    def _title(self):
+    def title(self):
         title = 'Malone Bug #' + str(self.bug.id) + ' infests '
         title += self.sourcepackagerelease.name
         return title
-    title = property(_title)
-    
+    title = property(title)
+
 
 class BugProductInfestationSet(BugSetBase):
     """A set for BugProductInfestation."""
@@ -90,11 +89,10 @@ class BugProductInfestationSet(BugSetBase):
     table = BugProductInfestation
 
     def __getitem__(self, id):
-        try:
-            return self.table.select(self.table.q.id == id)[0]
-        except IndexError:
-            # Convert IndexError to KeyErrors to get Zope's NotFound page
+        item = self.table.selectOne(self.table.q.id == id)
+        if item is None:
             raise KeyError, id
+        return item
 
     def __iter__(self):
         for row in self.table.select(self.table.q.bugID == self.bug):
@@ -103,20 +101,20 @@ class BugProductInfestationSet(BugSetBase):
 
 class BugPackageInfestationSet(BugSetBase):
     """A set for BugPackageInfestation."""
+
     implements(IBugPackageInfestationSet)
+
     table = BugPackageInfestation
 
     def __getitem__(self, id):
-        try:
-            return self.table.select(self.table.q.id == id)[0]
-        except IndexError:
-            # Convert IndexError to KeyErrors to get Zope's NotFound page
+        item = self.table.selectOne(self.table.q.id == id)
+        if item is None:
             raise KeyError, id
+        return item
 
     def __iter__(self):
         for row in self.table.select(self.table.q.bugID == self.bug):
             yield row
-
 
 def BugProductInfestationFactory(context, **kw):
     now = datetime.utcnow()
@@ -143,3 +141,4 @@ def BugPackageInfestationFactory(context, **kw):
         lastmodified=now,
         lastmodifiedbyID=context.request.principal.id,
         **kw)
+

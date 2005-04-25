@@ -1,19 +1,19 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-
 """Database class for Rosetta PO export view."""
 
 __metaclass__ = type
 
-__all__ = ('VPOExportSet', 'VPOExport')
+__all__ = ['VPOExportSet', 'VPOExport']
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 
 from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces import IVPOExportSet
 from canonical.launchpad.interfaces import IVPOExport
+
 
 class VPOExportSet:
     """Retrieve collections of VPOExport objects."""
@@ -36,7 +36,7 @@ class VPOExportSet:
             'potemplateID': potemplate.id,
             'languageID': language.id,
             'orderBy': VPOExportSet.columns,
-        }
+            }
 
         if variant:
             clauses['variant'] = variant
@@ -53,11 +53,11 @@ class VPOExportSet:
         return VPOExport.selectBy(distroreleaseID=release.id,
             orderBy=VPOExportSet.columns)
 
+
 class VPOExport(SQLBase):
     """Present Rosetta PO files in a form suitable for exporting them
     efficiently.
     """
-
     implements(IVPOExport)
 
     _idType = str

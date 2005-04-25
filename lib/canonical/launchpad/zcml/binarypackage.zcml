@@ -4,7 +4,6 @@
     xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
-    
 
     <!-- BinaryPackage -->
     <content class="canonical.launchpad.database.BinaryPackage">

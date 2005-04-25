@@ -1,15 +1,18 @@
-# Zope interfaces
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['SchemaSet', 'Schema', 'Label']
+
 from zope.interface import implements
 
-# SQL imports
 from sqlobject import ForeignKey, StringCol, MultipleJoin
 from sqlobject import RelatedJoin, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote
 
-# canonical imports
 from canonical.launchpad.interfaces import ISchemaSet, ISchema, ILabel
 
-class SchemaSet(object):
+
+class SchemaSet:
     """The set of schemas."""
     implements(ISchemaSet)
 
@@ -36,7 +39,7 @@ class Schema(SQLBase):
         StringCol(name='name', dbName='name', notNull=True, alternateID=True),
         StringCol(name='title', dbName='title', notNull=True),
         StringCol(name='description', dbName='description', notNull=True),
-#        BoolCol(name='extensible', dbName='extensible', notNull=True),
+        #BoolCol(name='extensible', dbName='extensible', notNull=True),
     ]
 
     _labelsJoin = MultipleJoin('Label', joinColumn='schema')
@@ -45,18 +48,13 @@ class Schema(SQLBase):
         return iter(self._labelsJoin)
 
     def label(self, name):
-        '''SELECT * FROM Label WHERE
-            Label.schema = id AND
-            Label.name = name;'''
-        results = Label.select('''
-            Label.schema = %d AND
-            Label.name = %s''' %
-            (self.id, quote(name)))
-
-        if results.count() == 0:
+        """SELECT * FROM Label WHERE Label.schema = id AND Label.name = name;
+        """
+        label = Label.selectOne('Label.schema = %d AND Label.name = %s' %
+            sqlvalues(self.id, name))
+        if label is None:
             raise KeyError, name
-        else:
-            return results[0]
+        return label
 
 
 class Label(SQLBase):
@@ -70,7 +68,7 @@ class Label(SQLBase):
         StringCol(name='name', dbName='name', notNull=True),
         StringCol(name='title', dbName='title', notNull=True),
         StringCol(name='description', dbName='description', notNull=True),
-    ]
+        ]
 
     _personsJoin = RelatedJoin('Person', joinColumn='label',
         otherColumn='person', intermediateTable='PersonLabel')
@@ -78,3 +76,4 @@ class Label(SQLBase):
     def persons(self):
         for person in self._personsJoin:
             yield person[0]
+

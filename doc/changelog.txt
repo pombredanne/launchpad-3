@@ -2,6 +2,145 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-25 11:46:06 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1639
+
+    Summary:
+      Big lot of database clean-up  r=stub except for resolution of conflicts.
+    Revision:
+      launchpad--devel--0--patch-1639
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-387
+       Reviewed and cleaned up all database objects modules.  Used selectOne and selectOneBy whereever possible.  Used shortlist and sqlvalues where appropriate.  Added copyright and __metaclass__ = type.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-388
+       merge from rf, fixing test errors
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-389
+       formatting cleanup in binarypackage.py
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-390
+       make librarian use selectOne to stop ambiguity warnings.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-391
+       reenable fancydiffs, which i accidentally disabled.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-392
+       sorted out two more selectOne situations in vocabularies code and librarian code
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-393
+       fixed from stu's review
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-394
+       merge from rf, plus resolved 5 conflicts
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-395
+       fixed up wrt page tests
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-396
+       merge from rf
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-397
+       reenable fancy diff
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-398
+       Make Product.getRelease() raise IndexError on no release found, for compatibility with banzai requiring this.  Need to change banzai to make it expect a NotFoundError.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/packages.py
+     lib/canonical/launchpad/browser/sourcepackage.py
+     lib/canonical/launchpad/database/__init__.py
+     lib/canonical/launchpad/database/archarchive.py
+     lib/canonical/launchpad/database/archbranch.py
+     lib/canonical/launchpad/database/archchangeset.py
+     lib/canonical/launchpad/database/binarypackage.py
+     lib/canonical/launchpad/database/binarypackagename.py
+     lib/canonical/launchpad/database/bounty.py
+     lib/canonical/launchpad/database/bountysubscription.py
+     lib/canonical/launchpad/database/branch.py
+     lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/database/bugactivity.py
+     lib/canonical/launchpad/database/bugattachment.py
+     lib/canonical/launchpad/database/bugextref.py
+     lib/canonical/launchpad/database/bugmessage.py
+     lib/canonical/launchpad/database/bugset.py
+     lib/canonical/launchpad/database/bugsubscription.py
+     lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/database/bugtracker.py
+     lib/canonical/launchpad/database/bugwatch.py
+     lib/canonical/launchpad/database/build.py
+     lib/canonical/launchpad/database/codeofconduct.py
+     lib/canonical/launchpad/database/component.py
+     lib/canonical/launchpad/database/country.py
+     lib/canonical/launchpad/database/cveref.py
+     lib/canonical/launchpad/database/distribution.py
+     lib/canonical/launchpad/database/distroarchrelease.py
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/database/distrotool.py
+     lib/canonical/launchpad/database/files.py
+     lib/canonical/launchpad/database/infestation.py
+     lib/canonical/launchpad/database/language.py
+     lib/canonical/launchpad/database/librarian.py
+     lib/canonical/launchpad/database/logintoken.py
+     lib/canonical/launchpad/database/maintainership.py
+     lib/canonical/launchpad/database/manifest.py
+     lib/canonical/launchpad/database/manifestentry.py
+     lib/canonical/launchpad/database/message.py
+     lib/canonical/launchpad/database/milestone.py
+     lib/canonical/launchpad/database/mirror.py
+     lib/canonical/launchpad/database/mirrorcontent.py
+     lib/canonical/launchpad/database/mirrorsourcecontent.py
+     lib/canonical/launchpad/database/packaging.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/database/pomsgid.py
+     lib/canonical/launchpad/database/pomsgidsighting.py
+     lib/canonical/launchpad/database/pomsgset.py
+     lib/canonical/launchpad/database/potemplate.py
+     lib/canonical/launchpad/database/potemplatename.py
+     lib/canonical/launchpad/database/potmsgset.py
+     lib/canonical/launchpad/database/potranslation.py
+     lib/canonical/launchpad/database/potranslationsighting.py
+     lib/canonical/launchpad/database/processor.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/database/productrelease.py
+     lib/canonical/launchpad/database/productseries.py
+     lib/canonical/launchpad/database/project.py
+     lib/canonical/launchpad/database/publishedpackage.py
+     lib/canonical/launchpad/database/publishing.py
+     lib/canonical/launchpad/database/queue.py
+     lib/canonical/launchpad/database/schema.py
+     lib/canonical/launchpad/database/section.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/database/sourcepackageindistro.py
+     lib/canonical/launchpad/database/sourcepackagename.py
+     lib/canonical/launchpad/database/sourcepackagerelease.py
+     lib/canonical/launchpad/database/sourcesource.py
+     lib/canonical/launchpad/database/spokenin.py
+     lib/canonical/launchpad/database/translation_effort.py
+     lib/canonical/launchpad/database/vpoexport.py
+     lib/canonical/launchpad/database/vsourcepackagereleasepublishing.py
+     lib/canonical/launchpad/vocabularies/dbobjects.py
+     lib/canonical/launchpad/zcml/binarypackage.zcml
+     lib/canonical/librarian/db.py
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--devel--0--patch-387
+     steve.alexander@canonical.com/launchpad--devel--0--patch-388
+     steve.alexander@canonical.com/launchpad--devel--0--patch-389
+     steve.alexander@canonical.com/launchpad--devel--0--patch-390
+     steve.alexander@canonical.com/launchpad--devel--0--patch-391
+     steve.alexander@canonical.com/launchpad--devel--0--patch-392
+     steve.alexander@canonical.com/launchpad--devel--0--patch-393
+     steve.alexander@canonical.com/launchpad--devel--0--patch-394
+     steve.alexander@canonical.com/launchpad--devel--0--patch-395
+     steve.alexander@canonical.com/launchpad--devel--0--patch-396
+     steve.alexander@canonical.com/launchpad--devel--0--patch-397
+     steve.alexander@canonical.com/launchpad--devel--0--patch-398
+
+
 2005-04-25 10:20:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1638
 
     Summary:

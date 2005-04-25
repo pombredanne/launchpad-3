@@ -1,6 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
+__all__ = ['Message', 'MessageSet', 'MessageChunk']
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -16,18 +17,20 @@ from zope.security.proxy import isinstance
 from zope.exceptions import NotFoundError
 
 from sqlobject import DateTimeCol, ForeignKey, StringCol, IntCol
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
+from sqlobject import MultipleJoin, RelatedJoin
 
 from canonical.launchpad.interfaces import \
-        IMessage, IMessageSet, IMessageChunk, IPersonSet, ILibraryFileAliasSet
+    IMessage, IMessageSet, IMessageChunk, IPersonSet, ILibraryFileAliasSet
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC
-from canonical.base import base
+import canonical.base
+
 
 class Message(SQLBase):
     """A message. This is an RFC822-style message, typically it would be
-    coming into the bug system, or coming in from a mailing list."""
+    coming into the bug system, or coming in from a mailing list.
+    """
 
     implements(IMessage)
 
@@ -48,11 +51,11 @@ class Message(SQLBase):
     raw = ForeignKey(foreignKey='LibraryFileAlias', dbName='raw', default=None)
 
     def __iter__(self):
-        """Iterate over all chunks"""
+        """Iterate over all chunks."""
         return iter(self.chunks)
 
     def followup_title(self):
-        if self.title[:4].lower()=='re: ':
+        if self.title.lower().startswith('re: '):
             return self.title
         return 'Re: '+self.title
     followup_title = property(followup_title)
@@ -62,11 +65,10 @@ class Message(SQLBase):
     sender = property(sender)
 
     def contents(self):
-        bits = []
-        for chunk in iter(self):
-            bits.append(unicode(chunk))
+        bits = [unicode(chunk) for chunk in self]
         return '\n\n'.join(bits)
     contents = property(contents)
+
 
 class MessageSet:
     implements(IMessageSet)
@@ -74,23 +76,25 @@ class MessageSet:
     def get(self, rfc822msgid=None):
         if not rfc822msgid:
             raise KeyError, 'Need to search on at least an rfc822msgid'
-        try:
-            return Message.selectBy(rfc822msgid=rfc822msgid)[0]
-        except IndexError:
-            raise NotFoundError('rfc822msgid=%s' % (rfc822msgid,))
+        message = Message.selectOneBy(rfc822msgid=rfc822msgid)
+        if message is None:
+            raise NotFoundError(rfc822msgid)
+        return message
 
     def _decode_header(self, header):
-        """Decode an encoded header possibly containing Unicode"""
+        """Decode an encoded header possibly containing Unicode."""
         bits = email.Header.decode_header(header)
         return unicode(email.Header.make_header(bits))
 
     def fromEmail(self, email_message):
-        """See IMessageSet.fromEmail"""
+        """See IMessageSet.fromEmail."""
         # It does not make sense to handle Unicode strings, as email
         # messages may contain chunks encoded in differing character sets.
         # Passing Unicode in here indicates a bug.
         if not isinstance(email_message, str):
-            raise TypeError('email_message must be a normal string')
+            raise TypeError(
+                'email_message must be a normal string.  Got: %r'
+                % email_message)
 
         # Parse the email into an email.Message.Message structure
         raw_email_message = email_message
@@ -99,7 +103,7 @@ class MessageSet:
         title = self._decode_header(email_message.get('subject', ''))
         if not title:
             raise ValueError('No Subject')
-        
+
         # We could easily generate a default, but a missing message-id
         # almost certainly means a developer is using this method when
         # they shouldn't (by creating emails by hand and passing them here),
@@ -117,7 +121,7 @@ class MessageSet:
         from_addrs = [parseaddr(addr) for addr in from_addrs if addr]
         from_addrs = [addr for name, addr in from_addrs if addr]
         if len(from_addrs) == 0:
-            raise ValueError, 'No From: or Reply-To: header'
+            raise ValueError('No From: or Reply-To: header')
         owner = None
         for from_addr in from_addrs:
             owner = person_set.getByEmail(from_addr)
@@ -135,7 +139,7 @@ class MessageSet:
         # example.
         file_alias_set = getUtility(ILibraryFileAliasSet)
         raw_filename = '%s.msg' % (
-                base(long(
+                canonical.base.base(long(
                     sha.new(email_message['message-id']).hexdigest(), 16
                     ), 62)
                 )
@@ -165,8 +169,8 @@ class MessageSet:
             if preamble[-1] == '\n':
                 preamble = preamble[:-1]
             MessageChunk(
-                    messageID=message.id, sequence=sequence, content=preamble
-                    )
+                messageID=message.id, sequence=sequence, content=preamble
+                )
             sequence += 1
 
         for part in email_message.walk():
@@ -187,9 +191,9 @@ class MessageSet:
                     content = content.decode(charset)
                 if content.strip():
                     MessageChunk(
-                            messageID=message.id, sequence=sequence,
-                            content=content
-                            )
+                        messageID=message.id, sequence=sequence,
+                        content=content
+                        )
                     sequence += 1
             else:
                 filename = part.get_filename() or 'unnamed'
@@ -198,15 +202,15 @@ class MessageSet:
                 # parameters as sent
                 if len(content) > 0:
                     blob = file_alias_set.create(
-                            name=filename,
-                            size=len(content),
-                            file=cStringIO(content),
-                            contentType=part['content-type']
-                            )
+                        name=filename,
+                        size=len(content),
+                        file=cStringIO(content),
+                        contentType=part['content-type']
+                        )
                     MessageChunk(
-                            messageID=message.id, sequence=sequence,
-                            blobID=blob.id
-                            )
+                        messageID=message.id, sequence=sequence,
+                        blobID=blob.id
+                        )
                     sequence += 1
 
         if getattr(email_message, 'epilogue', None):
@@ -217,9 +221,9 @@ class MessageSet:
                 if epilogue[-1] == '\n':
                     epilogue = epilogue[:-1]
                 MessageChunk(
-                        messageID=message.id, sequence=sequence,
-                        content=epilogue
-                        )
+                    messageID=message.id, sequence=sequence,
+                    content=epilogue
+                    )
 
         return message
 
@@ -232,20 +236,20 @@ class MessageChunk(SQLBase):
     _defaultOrder = 'sequence'
 
     message = ForeignKey(
-            foreignKey='Message', dbName='message', notNull=True)
+        foreignKey='Message', dbName='message', notNull=True)
 
     sequence = IntCol(notNull=True)
 
     content = StringCol(notNull=False, default=None)
 
     blob = ForeignKey(
-            foreignKey='LibraryFileAlias', dbName='blob', notNull=False,
-            default=None
-            )
+        foreignKey='LibraryFileAlias', dbName='blob', notNull=False,
+        default=None
+        )
 
     def __unicode__(self):
         """Return a text representation of this chunk.
-        
+
         This is either the content, or a link to the blob in a format
         suitable for use in a text only environment, such as an email
         """
@@ -254,8 +258,8 @@ class MessageChunk(SQLBase):
         else:
             blob = self.blob
             return (
-                    "Attachment: %s\n"
-                    "Type:       %s\n"
-                    "URL:        %s" % (blob.filename, blob.mimetype, blob.url)
-                    )
+                "Attachment: %s\n"
+                "Type:       %s\n"
+                "URL:        %s" % (blob.filename, blob.mimetype, blob.url)
+                )
 

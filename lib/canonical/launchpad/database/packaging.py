@@ -1,14 +1,12 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
+__all__ = ['Packaging', 'PackagingUtil']
 
-# Zope interfaces
 from zope.interface import implements
 
-# SQL imports
-from sqlobject import DateTimeCol, ForeignKey, StringCol, BoolCol
-from sqlobject import MultipleJoin, RelatedJoin
-from canonical.database.sqlbase import SQLBase, quote
+from sqlobject import ForeignKey
+from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces import IPackaging, IPackagingUtil
 from canonical.lp.dbschema import EnumCol
@@ -16,14 +14,13 @@ from canonical.lp.dbschema import PackagingType
 
 
 class Packaging(SQLBase):
-    """A Packaging relating a SourcePackageName in DistroRelease and
-    a Product"""
+    """A Packaging relating a SourcePackageName in DistroRelease and a Product.
+    """
 
     implements(IPackaging)
 
     _table = 'Packaging'
 
-    # db field names
     productseries = ForeignKey(foreignKey="ProductSeries",
                                dbName="productseries",
                                notNull=True)
@@ -36,20 +33,16 @@ class Packaging(SQLBase):
                                dbName='distrorelease',
                                notNull=True)
 
-    packaging = EnumCol(dbName='packaging', notNull=True,
-                        schema=PackagingType)
+    packaging = EnumCol(dbName='packaging', notNull=True, schema=PackagingType)
 
 
 class PackagingUtil:
-    """
-    Utilities for Packaging
-    """
+    """Utilities for Packaging."""
     implements(IPackagingUtil)
 
     def createPackaging(self, productseries, sourcepackagename,
                               distrorelease, packaging):
         """Create new Packaging entry."""
-        
         Packaging(productseries=productseries,
                   sourcepackagename=sourcepackagename,
                   distrorelease=distrorelease,

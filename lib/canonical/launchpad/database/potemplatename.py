@@ -1,16 +1,18 @@
-# Zope interfaces
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['POTemplateNameSet', 'POTemplateName']
+
 from zope.interface import implements
 from zope.exceptions import NotFoundError
 
-# SQL imports
 from sqlobject import StringCol, MultipleJoin, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase
 
-# canonical imports
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import IPOTemplateName
 
-class POTemplateNameSet(object):
+class POTemplateNameSet:
     def __getitem__(self, name):
         try:
             return POTemplateName.byName(name)
