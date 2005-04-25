@@ -45,7 +45,7 @@ constant:
 
     >>> from canonical.lp import dbschema
     >>> from canonical.launchpad.vocabularies import vocab_factory
-    >>> PackagingVocabulary = vocab_factory(dbschema.Packaging)
+    >>> PackagingVocabulary = vocab_factory(dbschema.PackagingType)
     
 The right place to do it is in the file vocabularies/dbschema.py.
 Note: don't forget to registry your brand new instance for zope lookup
@@ -63,15 +63,16 @@ o DistroReleaseVocabulary - reflects the available distribution releases.
     >>> distrorelease_vocabulary = vocabulary_registry.get(
     ...     None,"DistroRelease")
     >>> for term in distrorelease_vocabulary:
-    ...     print "%s %13s %s" % (term.value, term.token, term.title)
-    7 debian/sarge  Sarge
-    8 debian/sid    Sid
-    6 debian/woody  WOODY
-    4 redhat/7.0    Seven
-    2 redhat/six    Six Six Six
-    5 ubuntu/grumpy The Grumpy Groundhog Release
-    3 ubuntu/hoary  The Hoary Hedgehog Release
-    1 ubuntu/warty  The Warty Warthog Release
+    ...     print "%s %20s %s" % (term.value, term.token, term.title)
+    7 debian/sarge         Sarge
+    8 debian/sid           Sid
+    6 debian/woody         WOODY
+    9 guadalinex/2k5       Guada 2005
+    4 redhat/7.0           Seven
+    2 redhat/six           Six Six Six
+    5 ubuntu/grumpy        The Grumpy Groundhog Release
+    3 ubuntu/hoary         The Hoary Hedgehog Release
+    1 ubuntu/warty         The Warty Warthog Release
     >>> distrorelease_vocabulary.getTermByToken('ubuntu/hoary').value
     3
     >>> [term.token for term in distrorelease_vocabulary.search('woody')]

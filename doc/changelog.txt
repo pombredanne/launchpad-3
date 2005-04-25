@@ -2,6 +2,100 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-25 01:57:04 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1636
+
+    Summary:
+      land packaging changes
+    Revision:
+      launchpad--devel--0--patch-1636
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--packaging--0--base-0
+       tag of mark.shuttleworth@canonical.com/launchpad--devel--0--patch-928
+    
+     * mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-1
+       first cut of packaging changes
+    
+     * mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-2
+       add in db patches and tests
+    
+     * mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-3
+       add vocab for productseries, and UI for adding package data via product
+    
+     * mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-4
+       comments on Packaging table
+    
+     * mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-5
+       updates based on reviewer feedback
+    
+     * mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-6
+       add getPackage to productseries
+    
+     * mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-7
+       merge rocketfuel and finalise the patch sequence
+    
+     * mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-8
+       add deprecation warnings for people who call old routines assuming linkage is product<->sourcepackage
+    
+     * mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-9
+       merge rocketfuel resolving conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-10
+       hack-fix for banzai
+    
+     * mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-11
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-12
+       resolve circular depends
+    
+
+    new files:
+     database/schema/.arch-ids/patch-14-11-0.sql.id
+     database/schema/patch-14-11-0.sql
+     lib/canonical/launchpad/database/tests/.arch-ids/test_sourcepackage.py.id
+     lib/canonical/launchpad/database/tests/test_sourcepackage.py
+
+    modified files:
+     database/sampledata/current.sql database/schema/comments.sql
+     database/schema/patch-14-01-0.sql doc/changelog.txt
+     lib/canonical/launchpad/browser/packaging.py
+     lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/database/packaging.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/database/productseries.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/doc/person.txt
+     lib/canonical/launchpad/doc/vocabularies.txt
+     lib/canonical/launchpad/interfaces/packaging.py
+     lib/canonical/launchpad/interfaces/product.py
+     lib/canonical/launchpad/interfaces/productseries.py
+     lib/canonical/launchpad/interfaces/sourcepackage.py
+     lib/canonical/launchpad/templates/portlet-distrorelease-details.pt
+     lib/canonical/launchpad/vocabularies/configure.zcml
+     lib/canonical/launchpad/vocabularies/dbobjects.py
+     lib/canonical/launchpad/vocabularies/dbschema.py
+     lib/canonical/launchpad/zcml/product.zcml
+     lib/canonical/lp/dbschema.py
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--packaging--0--base-0
+     mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-1
+     mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-2
+     mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-3
+     mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-4
+     mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-5
+     mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-6
+     mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-7
+     mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-8
+     mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-9
+     mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-10
+     mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-11
+     mark.shuttleworth@canonical.com/launchpad--packaging--0--patch-12
+
+
 2005-04-23 01:22:25 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1635
 
     Summary:

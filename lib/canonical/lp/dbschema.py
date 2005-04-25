@@ -47,7 +47,7 @@ __all__ = (
 'ManifestEntryType',
 'PackagePublishingPriority',
 'PackagePublishingStatus',
-'Packaging',
+'PackagingType',
 'GPGKeyAlgorithms',
 'ProjectRelationship',
 'ProjectStatus',
@@ -418,7 +418,7 @@ class ManifestEntryType(DBSchema):
         """)
 
 
-class Packaging(DBSchema):
+class PackagingType(DBSchema):
     """Source packages.
 
     Source packages include software from one or more Upstream open source

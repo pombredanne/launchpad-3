@@ -82,8 +82,6 @@ class IProduct(IHasOwner):
     sourcepackages = Attribute(_("List of distribution packages for this \
         product"))
 
-    packages = Attribute (_('SourcePackages related to a Product'))
-
     bugtasks = Attribute(
         """A list of BugTasks for this Product.""")
 
@@ -122,15 +120,6 @@ class IProduct(IHasOwner):
 
     def poTemplate(name):
         """Returns the PO template with the given name."""
-
-    def newPOTemplate(name, title, person=None):
-        """Create a new PO template.
-
-        Return the newly created template. The person argument is optional,
-        the POTemplate can exist without an owner.
-
-        Raise an KeyError if a PO template with that name already exists.
-        """
 
     def fullname():
         """Returns a name that uniquely identifies this product, by combining
@@ -186,8 +175,9 @@ class IProduct(IHasOwner):
         Log any error/warning into the logger object, if it's not None.
         """
 
-    def getPackage(distro):
-        """Return the SourcePackage for this product in the supplied distro."""
+    def getPackage(distrorelease):
+        """Return the SourcePackage for this product in the supplied
+        distrorelease."""
 
 class IProductSet(Interface):
     """The collection of products."""

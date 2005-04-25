@@ -22,11 +22,6 @@ class ISourcePackage(Interface):
 
     title = Attribute("Title")
 
-    shortdesc = Attribute("Summary")
-    summary = Attribute("Summary")
-
-    description = Attribute("Description")
-
     format = Attribute("Source Package Format. This is the format of the "
                 "current source package release for this name in this "
                 "distribution or distrorelease. Calling this when there is "
@@ -51,7 +46,9 @@ class ISourcePackage(Interface):
                     "associated with this SourcePackage.")
 
     productseries = Attribute("The best guess we have as to the Launchpad "
-                    "ProductSeries for this Source Package.")
+                    "ProductSeries for this Source Package. Try find "
+                    "packaging information for this specific distrorelease "
+                    "then try parent releases and previous ubuntu releases.")
 
     pendingrelease = Attribute("The latest source package release with "
                 "a Publishing status of PENDING, if one exists for "

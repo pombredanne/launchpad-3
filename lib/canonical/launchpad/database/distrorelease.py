@@ -28,7 +28,6 @@ from canonical.launchpad.database.sourcepackageindistro \
 from canonical.launchpad.database.publishedpackage import PublishedPackageSet
 from canonical.launchpad.database.publishing \
         import PackagePublishing, SourcePackagePublishing
-from canonical.launchpad.database import SourcePackageSet
 
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 from canonical.launchpad.database.potemplate import POTemplate
@@ -128,6 +127,7 @@ class DistroRelease(SQLBase):
     def traverse(self, name):
         """Get SourcePackages in a DistroRelease with BugTask"""
         if name == '+sources':
+            from canonical.launchpad.database.sourcepackage import SourcePackageSet
             return SourcePackageSet(distrorelease=self)
         elif name  == '+packages':
             return PublishedPackageSet()

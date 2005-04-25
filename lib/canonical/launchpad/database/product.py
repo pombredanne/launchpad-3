@@ -24,10 +24,12 @@ from canonical.lp.dbschema import RosettaImportStatus, RevisionControlSystems
 from canonical.launchpad import helpers
 
 from canonical.launchpad.database.productseries import ProductSeries
+from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.interfaces import IProduct, IProductSet
+
 
 class Product(SQLBase):
     """A Product."""
@@ -36,9 +38,7 @@ class Product(SQLBase):
 
     _table = 'Product'
 
-    #
     # db field names
-    #
     project = ForeignKey(foreignKey="Project", dbName="project",
                          notNull=False, default=None)
 
@@ -84,9 +84,7 @@ class Product(SQLBase):
 
     sourceforgeproject = StringCol(notNull=False, default=None)
 
-    #
     # useful Joins
-    #
     bugtasks = MultipleJoin('BugTask', joinColumn='product')
 
     branches = MultipleJoin('Branch', joinColumn='product')
@@ -110,13 +108,21 @@ class Product(SQLBase):
 
     def sourcepackages(self):
         from canonical.launchpad.database.sourcepackage import SourcePackage
-        ret = Packaging.selectBy(productID=self.id)
+        clause = """ProductSeries.id=Packaging.productseries AND
+                    ProductSeries.product = %d
+                    """ % self.id
+        clauseTables = ['ProductSeries']
+        ret = Packaging.select(clause, clauseTables)
         return [SourcePackage(sourcepackagename=r.sourcepackagename,
                               distrorelease=r.distrorelease)
                     for r in ret]
     sourcepackages = property(sourcepackages)
 
     def primary_translatable(self):
+        """currently this returns the latest release for which we have
+        potemplates. in future it may return the ubuntu sourcepackage which
+        corresponds to this product in the current development release of
+        ubuntu... if it has templates."""
         releases = ProductRelease.select(
                         "POTemplate.productrelease=ProductRelease.id AND "
                         "ProductRelease.productseries=ProductSeries.id AND "
@@ -130,6 +136,10 @@ class Product(SQLBase):
             return None
 
     def newseries(self, form):
+        # XXX sabdfl 16/04/05 HIDEOUS even if I was responsible. We should
+        # never be passing forms straight through to the content class, that
+        # violates the separation of presentation and model. This should be
+        # a method on the ProductSeriesSet utility.
         # Extract the details from the form
         name = form['name']
         displayname = form['displayname']
@@ -162,8 +172,8 @@ class Product(SQLBase):
                 yield template
 
     # XXX: Carlos Perello Marin 2005-03-17
-    # This method should be removed as soon as we have completely removed the old
-    # URL space.
+    # This method should be removed as soon as we have completely
+    # removed the old URL space.
     def poTemplate(self, name):
         # XXX sabdfl 30/03/05 this code is no longer correct, because a
         # potemplatename cannot be assumed to be unique for a given product.
@@ -183,19 +193,6 @@ class Product(SQLBase):
             return results[0]
         except IndexError:
             raise KeyError, name
-
-    def newPOTemplate(self, name, title, person=None):
-        if POTemplate.selectBy(
-                productID=self.id, name=name).count():
-            raise KeyError(
-                  "This product already has a template named %s" % name)
-        potemplate = POTemplate(name=name,
-                                title=title,
-                                product=self,
-                                iscurrent=False,
-                                owner=person)
-
-        return potemplate
 
     def messageCount(self):
         count = 0
@@ -236,38 +233,34 @@ class Product(SQLBase):
                         ProductRelease.q.version == version),
                     clauseTables=['ProductSeries'])[0]
 
-    def getPackage(self, distro_release):
-        """See IProduct."""
-        pkging = Packaging.selectBy(productID=self.id,
-                                    distroreleaseID=distro_release.id)
-        if pkging.count() == 0:
+    def getPackage(self, distrorelease):
+        # we have moved to focusing on ProductSeries as the linker
+        from warnings import warn
+        warn('Product.getPackage is deprecated, use ProductSeries.getPackage',
+             DeprecationWarning, stacklevel=2)
+        if isinstance(distrorelease, Distribution):
+            warn('Product.getPackage is guessing distrorelease',
+                 DeprecationWarning, stacklevel=2)
+            distrorelease = distrorelease.currentrelease
+        for pkg in self.sourcepackages:
+            if pkg.distrorelease == distrorelease:
+                return pkg
+        else:
             raise NotFoundError
 
-        from canonical.launchpad.database import SourcePackage
-        return SourcePackage(sourcepackagename=pkging[0].sourcepackagename,
-                             distrorelease=pkging[0].distrorelease)
 
     def packagedInDistros(self):
         # This function-local import is so we avoid a circular import
-        #   --Andrew Bennetts, 2004/11/07
         from canonical.launchpad.database import Distribution
-
-        # FIXME: The database access here could be optimised a lot, probably
-        # with a view.  Whether it's worth the hassle remains to be seen...
-        #  -- Andrew Bennetts, 2004/11/07
-
-        # cprov 20041110
-        # Added 'Product' in clauseTables but got MANY entries for "Ubuntu".
-        # As it is written in template we expect a link to:
-        #    distribution/distrorelease/sourcepackagename
-        # But now it seems to be unrecheable.
-
         distros = Distribution.select(
-            "Packaging.product = Product.id AND "
-            "Packaging.sourcepackage = SourcePackage.id AND "
-            "Distribution.id = SourcePackage.distro ",
-            clauseTables=['Packaging', 'SourcePackage', 'Product'],
-            orderBy='title',
+            "Packaging.productseries = ProductSeries.id AND "
+            "ProductSeries.product = %d AND "
+            "Packaging.distrorelease = DistroRelease.id AND "
+            "DistroRelease.distribution = Distribution.id"
+            "" % self.id,
+            clauseTables=['Packaging', 'ProductSeries', 'DistroRelease'],
+            orderBy='name',
+            distinct=True
             )
         return distros
 

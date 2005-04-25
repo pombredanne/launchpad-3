@@ -118,9 +118,6 @@ class ProductView:
         return [p for p in self.context.project.products \
                     if p.id <> self.context.id]
 
-    def sourcesources(self):
-        return iter(self.context.sourcesources())
-
     def newProductRelease(self):
         # default owner is the logged in user
         owner = IPerson(self.request.principal)
@@ -129,17 +126,17 @@ class ProductView:
         pr = newProductRelease(self.form, self.context, owner)
 
     def newseries(self):
-        #
-        # Handle a request to create a new series for this product.
-        # The code needs to extract all the relevant form elements,
-        # then call the ProductSeries creation methods.
-        #
+        """Handle a request to create a new series for this product.
+        The code needs to extract all the relevant form elements,
+        then call the ProductSeries creation methods."""
         if not self.form.get("Register") == "Register Series":
             return
         if not self.request.method == "POST":
             return
         #XXX: cprov 20050112
         # Avoid passing obscure arguments as self.form
+        # XXX sabdfl 16/04/05 we REALLY should not be passing this form to
+        # the context object
         series = self.context.newseries(self.form)
         # now redirect to view the page
         self.request.response.redirect('+series/'+series.name)

@@ -8,13 +8,15 @@ from zope.interface import implements
 # SQL imports
 from sqlobject import ForeignKey, StringCol, DateTimeCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
-from canonical.database.sqlbase import SQLBase, quote
-from canonical.lp.dbschema import EnumCol, ImportStatus, \
-        RevisionControlSystems
 
 # canonical imports
 from canonical.launchpad.interfaces import IProductSeries, \
     ISeriesSource, ISeriesSourceAdmin, IProductSeriesSet
+from canonical.launchpad.database.packaging import Packaging
+from canonical.database.sqlbase import SQLBase, quote
+from canonical.lp.dbschema import EnumCol, ImportStatus, \
+        RevisionControlSystems
+
 
 class ProductSeries(SQLBase):
     """A series of product releases."""
@@ -25,8 +27,6 @@ class ProductSeries(SQLBase):
     name = StringCol(notNull=True)
     displayname = StringCol(notNull=True)
     shortdesc = StringCol(notNull=True)
-    # below came from SourceSource
-    # canonical.lp.dbschema.ImportStatus
     branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
                            schema=ImportStatus, default=None)
@@ -49,6 +49,7 @@ class ProductSeries(SQLBase):
     targetarchcategory = StringCol(default=None)
     targetarchbranch = StringCol(default=None)
     targetarchversion = StringCol(default=None)
+    # key dates on the road to import happiness
     dateautotested = DateTimeCol(default=None)
     datestarted = DateTimeCol(default=None)
     datefinished = DateTimeCol(default=None)
@@ -59,15 +60,31 @@ class ProductSeries(SQLBase):
     releases = MultipleJoin('ProductRelease', joinColumn='productseries',
                              orderBy=['version'])
 
+    # properties
+    def _title(self):
+        return self.product.displayname + ' Series: ' + self.displayname
+    title = property(_title)
+
+    def sourcepackages(self):
+        from canonical.launchpad.database.sourcepackage import SourcePackage
+        ret = Packaging.selectBy(productseriesID=self.id)
+        return [SourcePackage(sourcepackagename=r.sourcepackagename,
+                              distrorelease=r.distrorelease)
+                    for r in ret]
+    sourcepackages = property(sourcepackages)
+
+    # methods
     def getRelease(self, version):
         for release in self.releases:
             if release.version==version: return release
         raise KeyError, version
 
-    def _title(self):
-        return self.product.displayname + ' Series: ' + self.displayname
-
-    title = property(_title)
+    def getPackage(self, distrorelease):
+        for pkg in self.sourcepackages:
+            if pkg.distrorelease == distrorelease:
+                return pkg
+        else:
+            raise NotFoundError
 
     def certifyForSync(self):
         """enable the sync for processing"""

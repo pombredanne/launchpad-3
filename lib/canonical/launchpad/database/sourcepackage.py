@@ -17,11 +17,11 @@ from canonical.database.sqlbase import SQLBase, quote
 # Launchpad Imports
 from canonical.lp.dbschema import EnumCol, \
         SourcePackageFormat, BugTaskStatus, BugSeverity, \
-        PackagePublishingStatus, ImportStatus
+        PackagePublishingStatus, ImportStatus, PackagingType
 
 from canonical.launchpad.interfaces import ISourcePackage, ISourcePackageSet
-from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.bugtask import BugTask
+from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.vsourcepackagereleasepublishing import \
     VSourcePackageReleasePublishing
 from canonical.launchpad.database.sourcepackageindistro import \
@@ -90,10 +90,6 @@ class SourcePackage(object):
         return titlestr
     title = property(title)
 
-    shortdesc = "XXX this is a source package, it has no summary"
-
-    description = "XXX this is still a source package, also has no title"
-
     def distribution(self):
         return self.distrorelease.distribution
     distribution = property(distribution)
@@ -135,9 +131,10 @@ class SourcePackage(object):
         implemented. Note that the releases are sorted by debian
         version number sorting."""
         # use a Set because we have no DISTINCT capability
-        ret = Set(SourcePackageRelease.select(
+        ret = SourcePackageRelease.select(
                       "sourcepackagename = %d" % self.sourcepackagename.id,
-                      orderBy=["version"]))
+                      orderBy=["version"],
+                      distinct=True)
         # sort by debian version number
         L = [(Version(item.version), item) for item in ret]
         L.sort()
@@ -161,9 +158,7 @@ class SourcePackage(object):
         return ret
     releasehistory = property(releasehistory)
 
-    #
     # Properties
-    #
     def name(self):
         return self.sourcepackagename.name
     name = property(name)
@@ -185,21 +180,61 @@ class SourcePackage(object):
     potemplatecount = property(potemplatecount)
 
     def product(self):
-        try:
-            clauseTables = ('Packaging', 'Product')
-            querystr = ( "Product.id = Packaging.product AND "
-                         "Packaging.sourcepackagename = %d AND "
-                         "Packaging.distrorelease = %d" )
-            querystr %= ( self.sourcepackagename.id,
-                          self.distrorelease.id )
-            return Product.select(querystr, clauseTables=clauseTables)[0]
-        except IndexError:
-            # No corresponding product
-            return None
+        # we have moved to focusing on productseries as the linker
+        from warnings import warn
+        warn('SourcePackage.product is deprecated, use .productseries',
+             DeprecationWarning, stacklevel=2)
+        ps = self.productseries
+        if ps is not None:
+            return ps.product
+        return None
     product = property(product)
 
     def productseries(self):
-        raise NotImplementedError, 'Wait for Packaging to be fixed please!'
+        # First we look to see if there is packaging data for this
+        # distrorelease and sourcepackagename. If not, we look up through
+        # parent distroreleases, and when we hit Ubuntu, we look backwards in
+        # time through Ubuntu releases till we find packaging information or
+        # blow past the Warty Warthog.
+
+        # get any packagings matching this sourcepackage
+        packagings = Packaging.selectBy(
+                        sourcepackagenameID=self.sourcepackagename.id,
+                        distroreleaseID=self.distrorelease.id)
+        # now, return any Primary Packaging's found
+        for pkging in packagings:
+            if pkging.packaging == PackagingType.PRIME:
+                return pkging.productseries
+        # ok, we're scraping the bottom of the barrel, send the first
+        # packaging we have
+        if packagings.count() > 0:
+            return packagings[0].productseries
+        # if we are an ubuntu sourcepackage, try the previous release of
+        # ubuntu
+        if self.distribution.name == 'ubuntu':
+            datereleased = self.distrorelease.datereleased
+            # if this one is unreleased, use the last released one
+            if not datereleased:
+                datereleased = 'NOW'
+            from canonical.launchpad.database.distrorelease import \
+                    DistroRelease
+            ubuntureleases = DistroRelease.select(
+                "distribution = %d AND "
+                "datereleased < %s " % ( self.distribution.id,
+                                         quote(datereleased) ),
+                orderBy=['-datereleased'])
+            if ubuntureleases.count() > 0:
+                previous_ubuntu_release = ubuntureleases[0]
+                sp = SourcePackage(sourcepackagename=self.sourcepackagename,
+                                   distrorelease=previous_ubuntu_release)
+                return sp.productseries
+        # if we have a parent distrorelease, try that
+        if self.distrorelease.parentrelease is not None:
+            sp = SourcePackage(sourcepackagename=self.sourcepackagename,
+                               distrorelease=self.distrorelease.parentrelease)
+            return sp.productseries
+        # capitulate
+        return None
     productseries = property(productseries)
 
     def shouldimport(self):

@@ -12,7 +12,7 @@ from canonical.database.sqlbase import SQLBase, quote
 
 from canonical.launchpad.interfaces import IPackaging, IPackagingUtil
 from canonical.lp.dbschema import EnumCol
-from canonical.lp.dbschema import Packaging
+from canonical.lp.dbschema import PackagingType
 
 
 class Packaging(SQLBase):
@@ -23,11 +23,10 @@ class Packaging(SQLBase):
 
     _table = 'Packaging'
 
-    #
     # db field names
-    #
-    product = ForeignKey(foreignKey="Product", dbName="product",
-                         notNull=True)
+    productseries = ForeignKey(foreignKey="ProductSeries",
+                               dbName="productseries",
+                               notNull=True)
 
     sourcepackagename = ForeignKey(foreignKey="SourcePackageName",
                                    dbName="sourcepackagename",
@@ -38,7 +37,7 @@ class Packaging(SQLBase):
                                notNull=True)
 
     packaging = EnumCol(dbName='packaging', notNull=True,
-                        schema=Packaging)
+                        schema=PackagingType)
 
 
 class PackagingUtil:
@@ -47,9 +46,12 @@ class PackagingUtil:
     """
     implements(IPackagingUtil)
 
-    def createPackaging(self, product, sourcepackage, packaging):
+    def createPackaging(self, productseries, sourcepackagename,
+                              distrorelease, packaging):
         """Create new Packaging entry."""
         
-        Packaging(product=product, sourcepackage=sourcepackage,
+        Packaging(productseries=productseries,
+                  sourcepackagename=sourcepackagename,
+                  distrorelease=distrorelease,
                   packaging=packaging)
 
