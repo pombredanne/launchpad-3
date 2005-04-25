@@ -2,6 +2,62 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-25 06:14:31 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1637
+
+    Summary:
+      tidy up branch/release display on /products/foo, r=spiv
+    Revision:
+      launchpad--devel--0--patch-1637
+
+    Patches applied:
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-39
+       fix translation page markup and CSS
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-40
+       dang, I thought I'd fixed the page test completely before running it, but no
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-41
+       merge rocketfuel
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-42
+       fix CSS for headings, lowercase for entry fields, and tweak bug page examples
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-43
+       fix conflict with daf
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-44
+       nuke my changes with complete rocketfuel
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-45
+       merge rocketfuel
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-46
+       merge rocketfuel
+    
+     * mpt@canonical.com/launchpad--products-index-cleanup--2--patch-4
+       tag of mpt@canonical.com/launchpad--devel--0--patch-46
+    
+     * mpt@canonical.com/launchpad--products-index-cleanup--2--patch-5
+       merge rocketfuel
+    
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     mpt@canonical.com/launchpad--devel--0--patch-39
+     mpt@canonical.com/launchpad--devel--0--patch-40
+     mpt@canonical.com/launchpad--devel--0--patch-41
+     mpt@canonical.com/launchpad--devel--0--patch-42
+     mpt@canonical.com/launchpad--devel--0--patch-43
+     mpt@canonical.com/launchpad--devel--0--patch-44
+     mpt@canonical.com/launchpad--devel--0--patch-45
+     mpt@canonical.com/launchpad--devel--0--patch-46
+     mpt@canonical.com/launchpad--products-index-cleanup--2--patch-4
+     mpt@canonical.com/launchpad--products-index-cleanup--2--patch-5
+
+
 2005-04-25 01:57:04 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1636
 
     Summary:
