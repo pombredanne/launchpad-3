@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-25 10:20:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1638
+
+    Summary:
+      [trivial] Add primary key constraint to packaging table
+    Revision:
+      launchpad--devel--0--patch-1638
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--packaging-pkey--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1637
+    
+     * stuart.bishop@canonical.com/launchpad--packaging-pkey--0--patch-1
+       Add primary key constraint to packaging table
+    
+
+    new files:
+     database/schema/.arch-ids/patch-14-12-0.sql.id
+     database/schema/patch-14-12-0.sql
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--packaging-pkey--0--base-0
+     stuart.bishop@canonical.com/launchpad--packaging-pkey--0--patch-1
+
+
 2005-04-25 06:14:31 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1637
 
     Summary:
