@@ -2,6 +2,40 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-27 14:05:22 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1642
+
+    Summary:
+      Fixed a bunch of missing imports for sqlvalues
+    Revision:
+      launchpad--devel--0--patch-1642
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-599
+       Added a new plural form to our documentation
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-600
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-601
+       Fixed a bunch of missing imports for sqlvalues
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/build.py
+     lib/canonical/launchpad/database/pomsgset.py
+     lib/canonical/launchpad/database/project.py
+     lib/canonical/launchpad/database/schema.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/database/sourcepackageindistro.py
+     scripts/rosetta/plural-form-data
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-599
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-600
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-601
+
+
 2005-04-25 13:44:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1641
 
     Summary:

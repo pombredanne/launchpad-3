@@ -9,7 +9,7 @@ from zope.interface import implements
 
 from sqlobject import StringCol, ForeignKey, DateTimeCol, BoolCol
 
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.launchpad.interfaces import \
     IBuild, IBuilder, IBuildSet, IBuildQueue
 from canonical.lp.dbschema import EnumCol, BuildStatus

@@ -7,7 +7,7 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol, MultipleJoin
 from sqlobject import RelatedJoin, SQLObjectNotFound
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 
 from canonical.launchpad.interfaces import ISchemaSet, ISchema, ILabel
 

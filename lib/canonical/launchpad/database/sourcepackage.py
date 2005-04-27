@@ -7,7 +7,7 @@ import sets
 
 from zope.interface import implements
 
-from canonical.database.sqlbase import quote
+from canonical.database.sqlbase import quote, sqlvalues
 
 from canonical.lp.dbschema import \
     BugTaskStatus, BugSeverity, PackagePublishingStatus, PackagingType

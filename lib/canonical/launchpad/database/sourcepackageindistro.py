@@ -8,7 +8,7 @@ from zope.component import getUtility
 
 from sqlobject import StringCol, ForeignKey
 
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.lp.dbschema import EnumCol, PackagePublishingStatus, \
         SourcePackageFormat
 

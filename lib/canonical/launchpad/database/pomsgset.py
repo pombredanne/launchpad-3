@@ -9,8 +9,8 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import SQLObjectNotFound
-from canonical.database.sqlbase import SQLBase, flush_database_updates
-
+from canonical.database.sqlbase import SQLBase, sqlvalues, \
+    flush_database_updates
 from canonical.launchpad.interfaces import IEditPOMsgSet
 from canonical.lp.dbschema import RosettaTranslationOrigin
 from canonical.database.constants import UTC_NOW
