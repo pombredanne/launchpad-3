@@ -2,6 +2,59 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-28 03:11:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1643
+
+    Summary:
+      Menu infrastructure landed.
+    Revision:
+      launchpad--devel--0--patch-1643
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-399
+       initial facet zcml directives
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-400
+       Links, facets and tabs.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-401
+       collapsed TabListFactory and FacetListFactory into a single DeferedZcmlFactory
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-402
+       Refactor zcml processing for facets and tabs to remove duplicated code by Rob Collins and SteveA.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-403
+       added fixed implementation and tests for tabs.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-404
+       merge from rf, plus fix up failing tests.
+    
+
+    new files:
+     lib/canonical/launchpad/.arch-ids/links.zcml.id
+     lib/canonical/launchpad/doc/.arch-ids/zcmldirectives.txt.id
+     lib/canonical/launchpad/doc/zcmldirectives.txt
+     lib/canonical/launchpad/links.zcml
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/configure.zcml
+     lib/canonical/launchpad/doc/tales.txt
+     lib/canonical/launchpad/ftests/_login.py
+     lib/canonical/launchpad/interfaces/launchpad.py
+     lib/canonical/launchpad/webapp/configure.zcml
+     lib/canonical/launchpad/webapp/meta.zcml
+     lib/canonical/launchpad/webapp/metazcml.py
+     lib/canonical/launchpad/webapp/tales.py
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--devel--0--patch-399
+     steve.alexander@canonical.com/launchpad--devel--0--patch-400
+     steve.alexander@canonical.com/launchpad--devel--0--patch-401
+     steve.alexander@canonical.com/launchpad--devel--0--patch-402
+     steve.alexander@canonical.com/launchpad--devel--0--patch-403
+     steve.alexander@canonical.com/launchpad--devel--0--patch-404
+
+
 2005-04-27 14:05:22 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1642
 
     Summary:

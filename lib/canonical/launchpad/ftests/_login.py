@@ -9,6 +9,7 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import ILaunchBag, IPerson
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 
+
 class MockLaunchBag(object):
     implements(ILaunchBag)
     def __init__(self, login=None, user=None):
@@ -26,15 +27,21 @@ class MockPrincipal:
 
 ANONYMOUS = 'launchpad.anonymous'
 
-def login(email):
+def login(email, participation=None):
     """Simulates a login, using the specified email.
-    
+
     If the canonical.launchpad.ftests.ANONYMOUS constant is supplied 
     as the email, you'll be logged in as the anonymous user.
+
+    You can optionally pass in a participation to be used.  If no participation
+    is given, a MockParticipation is used.
+
+    The participation passed in must allow setting of its principal.
     """
     # First end any running interaction, and start a new one
     zope.security.management.endInteraction()
-    participation = MockParticipation()
+    if participation is None:
+        participation = MockParticipation()
     zope.security.management.newInteraction(participation)
 
     if email == ANONYMOUS:
@@ -48,3 +55,4 @@ def login(email):
 
     participation.principal = principal
     ztapi.provideUtility(ILaunchBag, launchbag)
+
