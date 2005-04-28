@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-28 04:52:47 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1644
+
+    Summary:
+      add forgotten import of warnings into tales.py
+    Revision:
+      launchpad--devel--0--patch-1644
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-405
+       needed to import warnings into tales.py
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/webapp/tales.py
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--devel--0--patch-405
+
+
 2005-04-28 03:11:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1643
 
     Summary:

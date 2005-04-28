@@ -8,6 +8,7 @@ __metaclass__ = type
 import cgi
 import re
 import sets
+import warnings
 from zope.interface import Interface, Attribute, implements
 from zope.component import getAdapter
 
