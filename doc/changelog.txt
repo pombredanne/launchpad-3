@@ -2,6 +2,40 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-29 08:51:59 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1645
+
+    Summary:
+      ScriptsAndDaemons file location compliance for Authserver and Librarian. r=jamesh
+    Revision:
+      launchpad--devel--0--patch-1645
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/launchpad--move-daemons--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1613
+    
+     * andrew.bennetts@canonical.com/launchpad--move-daemons--0--patch-1
+       Move authserver and librarian .tac files to /daemons
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/librarian/ftests/harness.py
+
+    renamed files:
+     lib/canonical/authserver/.arch-ids/test.tac.id
+       ==> daemons/.arch-ids/authserver.tac.id
+     lib/canonical/authserver/test.tac
+       ==> daemons/authserver.tac
+     lib/canonical/librarian/.arch-ids/librarian.tac.id
+       ==> daemons/.arch-ids/librarian.tac.id
+     lib/canonical/librarian/librarian.tac
+       ==> daemons/librarian.tac
+
+    new patches:
+     andrew.bennetts@canonical.com/launchpad--move-daemons--0--base-0
+     andrew.bennetts@canonical.com/launchpad--move-daemons--0--patch-1
+
+
 2005-04-28 04:52:47 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1644
 
     Summary:
