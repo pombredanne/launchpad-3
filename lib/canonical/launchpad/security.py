@@ -80,8 +80,7 @@ class EditSeriesSourceByButtSource(AuthorizationBase):
             return True
         elif not self.obj.syncCertified():
             return True
-        else:
-            return False
+        return False
 
 
 class EditMilestoneByProductMaintainer(AuthorizationBase):

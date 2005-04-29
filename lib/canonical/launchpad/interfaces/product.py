@@ -111,6 +111,9 @@ class IProduct(IHasOwner):
         latest productrelease for this product which includes
         translations.""")
 
+    def getPackage(distrorelease):
+        """return a package in that distrorelease for this product."""
+
     def potemplates():
         """Returns an iterator over this product's PO templates."""
 
@@ -174,10 +177,6 @@ class IProduct(IHasOwner):
 
         Log any error/warning into the logger object, if it's not None.
         """
-
-    def getPackage(distrorelease):
-        """Return the SourcePackage for this product in the supplied
-        distrorelease."""
 
 class IProductSet(Interface):
     """The collection of products."""

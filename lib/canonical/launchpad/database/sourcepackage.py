@@ -196,10 +196,8 @@ class SourcePackage:
         # get any packagings matching this sourcepackage
         packagings = Packaging.selectBy(
             sourcepackagenameID=self.sourcepackagename.id,
-            distroreleaseID=self.distrorelease.id)
-        # XXX: SteveAlexander, 2005-04-25.  Need to add orderBy, because
-        #      we're indexing it later.
-
+            distroreleaseID=self.distrorelease.id,
+            orderBy='packaging')
         # now, return any Primary Packaging's found
         for pkging in packagings:
             if pkging.packaging == PackagingType.PRIME:
@@ -244,12 +242,7 @@ class SourcePackage:
         """
         if self.distrorelease.name <> "hoary":
             return False
-        if self.product is None:
-            return False
-        for series in self.product.serieslist:
-            if series.branch is not None:
-                return True
-        return False
+        return self.productseries.branch is not None
     shouldimport = property(shouldimport)
 
     def bugsCounter(self):

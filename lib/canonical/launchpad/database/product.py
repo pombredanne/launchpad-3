@@ -113,6 +113,15 @@ class Product(SQLBase):
                 for r in ret]
     sourcepackages = property(sourcepackages)
 
+    def getPackage(self, distrorelease):
+        if isinstance(distrorelease, Distribution):
+            distrorelease = distrorelease.currentrelease
+        for pkg in self.sourcepackages:
+            if pkg.distrorelease == distrorelease:
+                return pkg
+        else:
+            raise NotFoundError(distrorelease)
+
     def primary_translatable(self):
         """Returns the latest release for which we have potemplates.
 
@@ -241,23 +250,9 @@ class Product(SQLBase):
             raise IndexError
         return release
 
-    def getPackage(self, distrorelease):
-        # we have moved to focusing on ProductSeries as the linker
-        from warnings import warn
-        warn('Product.getPackage is deprecated, use ProductSeries.getPackage',
-             DeprecationWarning, stacklevel=2)
-        if IDistribution.providedBy(distrorelease):
-            warn('Product.getPackage is guessing distrorelease',
-                DeprecationWarning, stacklevel=2)
-            distrorelease = distrorelease.currentrelease
-        for pkg in self.sourcepackages:
-            if pkg.distrorelease == distrorelease:
-                return pkg
-        else:
-            raise NotFoundError(distrorelease)
-
     def packagedInDistros(self):
         # This function-local import is so we avoid a circular import
+        from canonical.launchpad.database import Distribution
         distros = Distribution.select(
             "Packaging.productseries = ProductSeries.id AND "
             "ProductSeries.product = %s AND "

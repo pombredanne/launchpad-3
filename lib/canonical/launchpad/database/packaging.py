@@ -33,7 +33,8 @@ class Packaging(SQLBase):
                                dbName='distrorelease',
                                notNull=True)
 
-    packaging = EnumCol(dbName='packaging', notNull=True, schema=PackagingType)
+    packaging = EnumCol(dbName='packaging', notNull=True,
+                        schema=PackagingType)
 
 
 class PackagingUtil:

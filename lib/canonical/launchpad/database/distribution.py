@@ -33,18 +33,29 @@ class Distribution(SQLBase):
     domainname = StringCol()
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
-    releases = MultipleJoin('DistroRelease', joinColumn='distribution')
+    releases = MultipleJoin('DistroRelease', joinColumn='distribution',
+                            orderBy='-id')
     bounties = RelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistroBounty')
     bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
 
     def currentrelease(self):
+        # if we have a frozen one, return that
         for rel in self.releases:
-            if rel.releasestatus in [
-                DistributionReleaseStatus.DEVELOPMENT,
-                DistributionReleaseStatus.FROZEN]:
+            if rel.releasestatus == DistributionReleaseStatus.FROZEN:
                 return rel
+        # if we have one in development, return that
+        for rel in self.releases:
+            if rel.releasestatus == DistributionReleaseStatus.DEVELOPMENT:
+                return rel
+        # if we have a stable one, return that
+        for rel in self.releases:
+            if rel.releasestatus == DistributionReleaseStatus.CURRENT:
+                return rel
+        # if we have ANY, return the first one
+        if len(self.releases) > 0:
+            return self.releases[0]
         return None
     currentrelease = property(currentrelease)
 

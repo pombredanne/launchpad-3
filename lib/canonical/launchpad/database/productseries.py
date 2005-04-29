@@ -1,4 +1,3 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['ProductSeries', 'ProductSeriesSet']
@@ -9,12 +8,14 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol, DateTimeCol, MultipleJoin
 
+# canonical imports
 from canonical.launchpad.interfaces import \
     IProductSeries, ISeriesSource, ISeriesSourceAdmin, IProductSeriesSet
 from canonical.launchpad.database.packaging import Packaging
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.lp.dbschema import \
     EnumCol, ImportStatus, RevisionControlSystems
+
 
 
 class ProductSeries(SQLBase):
@@ -67,7 +68,7 @@ class ProductSeries(SQLBase):
         ret = Packaging.selectBy(productseriesID=self.id)
         return [SourcePackage(sourcepackagename=r.sourcepackagename,
                               distrorelease=r.distrorelease)
-                for r in ret]
+                    for r in ret]
     sourcepackages = property(sourcepackages)
 
     def getRelease(self, version):
@@ -84,21 +85,21 @@ class ProductSeries(SQLBase):
             raise NotFoundError(distrorelease)
 
     def certifyForSync(self):
-        """Enable the sync for processing."""
+        """enable the sync for processing"""
         self.dateprocessapproved = 'NOW'
         self.syncinterval = datetime.timedelta(1)
         self.importstatus = ImportStatus.PROCESSING
 
     def syncCertified(self):
-        """Return true or false indicating if the sync is enabled"""
+        """return true or false indicating if the sync is enabled"""
         return self.dateprocessapproved is not None
 
     def autoSyncEnabled(self):
-        """Is the sync automatically scheduling?"""
+        """is the sync automatically scheduling"""
         return self.importstatus == ImportStatus.SYNCING
 
     def enableAutoSync(self):
-        """Enable autosyncing?"""
+        """enable autosyncing?"""
         self.datesyncapproved = 'NOW'
         self.importstatus = ImportStatus.SYNCING
 
@@ -113,13 +114,13 @@ class ProductSeriesSet:
     def __iter__(self):
         if self.product:
             return iter(ProductSeries.selectBy(productID=self.product.id))
-        else:
-            return iter(ProductSeries.select())
+        return iter(ProductSeries.select())
 
     def __getitem__(self, name):
         if not self.product:
             raise KeyError('ProductSeriesSet not initialised with product.')
-        series = ProductSeries.selectOneBy(productID=self.product.id, name=name)
+        series = ProductSeries.selectOneBy(productID=self.product.id,
+                                           name=name)
         if series is None:
             raise KeyError(name)
         return series
@@ -171,4 +172,7 @@ class ProductSeriesSet:
             ready, text, forimport, importstatus)
         return ProductSeries.select(query, distinct=True,
                    clauseTables=clauseTables)[start:length]
+
+    def importcount(self, status=None):
+        return self.search(forimport=True, importstatus=status).count()
 

@@ -154,3 +154,9 @@ class IProductSeriesSet(Interface):
         """return a list of series matching the arguments, which are passed
         through to _querystr to generate the query."""
 
+    def importcount(status=None):
+        """Return the number of series that are in the process of being
+        imported and published as baz branches. If status is None then all
+        the statuses are included, otherwise the count reflects the number
+        of branches with that importstatus."""
+

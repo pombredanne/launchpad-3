@@ -25,6 +25,10 @@
   development for this Product Series. We will attempt to import that
   code and publish it as a Bazaar branch.</p>
   
+  <div tal:repeat="errmsg view/errormsgs" tal:omit-tag>
+  <p class="portalMessage" tal:content="errmsg" />
+  </div>
+
   <form method="post" name="mf">
   
   <fieldset>

@@ -2,6 +2,106 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-29 10:26:21 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1646
+
+    Summary:
+      fixes for baz import pages
+    Revision:
+      launchpad--devel--0--patch-1646
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-929
+       improve refuel to show which tree-version is being updated
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-930
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-931
+       merge rocketfuel resolving conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-932
+       merge rocketfuel resolving major conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-933
+       add recommendations for arch target
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-934
+       remove getPackage from product in favour of productrelease
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-935
+       fix productseries source admin pages
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-936
+       import status portlet for bazaar, and validation of cvs branch details
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-937
+       fix svn validation for productseries branch data
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-938
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-939
+       fix sourcepackate page template for clarity and robustness
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-940
+       integrate reviewer comments from jamesh
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-941
+       clarify determination of current distrorelease
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-942
+       incorporate reviewer comments, thanks jamesh
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-943
+       fix for banzai
+    
+
+    new files:
+     lib/canonical/launchpad/templates/.arch-ids/portlet-upstream-imports.pt.id
+     lib/canonical/launchpad/templates/portlet-upstream-imports.pt
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/bazaar/__init__.py
+     lib/canonical/launchpad/browser/productseries.py
+     lib/canonical/launchpad/database/distribution.py
+     lib/canonical/launchpad/database/librarian.py
+     lib/canonical/launchpad/database/maintainership.py
+     lib/canonical/launchpad/database/message.py
+     lib/canonical/launchpad/database/packaging.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/database/productseries.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/interfaces/product.py
+     lib/canonical/launchpad/interfaces/productseries.py
+     lib/canonical/launchpad/security.py
+     lib/canonical/launchpad/templates/bazaar-index.pt
+     lib/canonical/launchpad/templates/distro-index.pt
+     lib/canonical/launchpad/templates/distrorelease-sources.pt
+     lib/canonical/launchpad/templates/productseries-source.pt
+     lib/canonical/launchpad/templates/productseries-sourceadmin.pt
+     lib/canonical/launchpad/templates/sourcepackage.pt
+     utilities/refuel
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-929
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-930
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-931
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-932
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-933
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-934
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-935
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-936
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-937
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-938
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-939
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-940
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-941
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-942
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-943
+
+
 2005-04-29 08:51:59 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1645
 
     Summary:

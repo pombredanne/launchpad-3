@@ -69,7 +69,6 @@ class Message(SQLBase):
         return '\n\n'.join(bits)
     contents = property(contents)
 
-
 class MessageSet:
     implements(IMessageSet)
 
@@ -96,6 +95,7 @@ class MessageSet:
                 'email_message must be a normal string.  Got: %r'
                 % email_message)
 
+
         # Parse the email into an email.Message.Message structure
         raw_email_message = email_message
         email_message = email.message_from_string(email_message)
@@ -103,7 +103,7 @@ class MessageSet:
         title = self._decode_header(email_message.get('subject', ''))
         if not title:
             raise ValueError('No Subject')
-
+ 
         # We could easily generate a default, but a missing message-id
         # almost certainly means a developer is using this method when
         # they shouldn't (by creating emails by hand and passing them here),
@@ -224,7 +224,6 @@ class MessageSet:
                     messageID=message.id, sequence=sequence,
                     content=epilogue
                     )
-
         return message
 
 

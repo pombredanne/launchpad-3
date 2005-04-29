@@ -48,7 +48,7 @@ class LibraryFileAlias(SQLBase):
         self._datafile = client.getFileByAlias(self.id)
 
     def read(self, chunksize=None):
-        """See ILibraryFileAlias.read."""
+        """See ILibraryFileAlias.read"""
         if not self._datafile:
             if chunksize is not None:
                 raise RuntimeError("Can't combine autoopen with chunksize")
@@ -64,7 +64,7 @@ class LibraryFileAlias(SQLBase):
             return rv
         else:
             return self._datafile.read(chunksize)
-
+        
     def close(self):
         self._datafile.close()
         self._datafile = None
@@ -79,7 +79,7 @@ class LibraryFileAlias(SQLBase):
                                  intermediateTable='SourcePackageReleaseFile')
 
 
-class LibraryFileAliasSet:
+class LibraryFileAliasSet(object):
     """Create and find LibraryFileAliases."""
 
     implements(ILibraryFileAliasSet)

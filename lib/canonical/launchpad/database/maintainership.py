@@ -51,8 +51,6 @@ class MaintainershipSet:
         else:
             self.distribution = None
             self.distrorelease = None
-        # XXX sabdfl 24/03/2005 not yet completed
-        warnings.warn("sabdfl says this is not yet completed.")
 
     def getByPersonID(self, personID, distribution=None):
         if distribution is None and self.distribution is not None:
