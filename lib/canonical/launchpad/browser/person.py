@@ -137,10 +137,14 @@ class BasePersonView(object):
 
     actionsPortlet = ViewPageTemplateFile(
         '../templates/portlet-person-actions.pt')
-
+    
 
 class PersonView(BasePersonView):
     """A simple View class to be used in all Person's pages."""
+
+    # restricted set of methods to be proxied by form_action()
+    permitted_actions = ['import_gpg', 'claim_gpg', 'remove_gpg',
+                         'add_ssh', 'remove_ssh']
 
     def __init__(self, context, request):
         self.context = context
@@ -210,12 +214,13 @@ class PersonView(BasePersonView):
             # Nothing to do
             return ''
         action = self.request.form.get('action')
-        # standart action reflected in our local methods
-        try:
-            return getattr(self, action)()
-        except AttributeError:
-            return None
+
+        # primary check on restrict set of 'form-like' methods.
+        if action and (action not in self.permitted_actions):
+            return 'Forbidden Form Method'
         
+        # do not mask anything 
+        return getattr(self, action)()       
 
     # XXX cprov 20050401
     # As "Claim GPG key" takes a lot of time, we should process it
@@ -240,19 +245,15 @@ class PersonView(BasePersonView):
 
         keysize, algorithm, revoked = gpghandler.getKeyInfo(fingerprint)
         
-        kw = {"ownerID" : self.user.id,
-              # XXX cprov 20050407
-              # Keyid is totally obsolete
-              "keyid" : fingerprint[-8:],
-              "pubkey" : pubkey,
-              "fingerprint" : fingerprint,
-              "keysize" : keysize,
-              # EnumCol doesn't help in this case, at least
-              "algorithm" : GPGKeyAlgorithms.items[algorithm],
-              "revoked" : revoked,
-              }
-              
-        getUtility(IGPGKeySet).new(**kw)
+        # XXX cprov 20050407
+        # Keyid is totally obsolete        
+        keyid = fingerprint[-8:]
+        # EnumCol doesn't help in this case, at least
+        algorithm_value = GPGKeyAlgorithms.items[algorithm]
+
+        # See IGPGKeySet for further information
+        getUtility(IGPGKeySet).new(self.user.id, keyid, pubkey, fingerprint,
+                                   keysize, algorithm_value, revoked)
         
         return 'DEMO: %s imported' % fingerprint
 

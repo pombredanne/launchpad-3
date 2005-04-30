@@ -2,6 +2,51 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-30 07:09:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1647
+
+    Summary:
+      Preliminary work on Code of Conduct (moving to branch) r=jamesh
+    Revision:
+      launchpad--devel--0--patch-1647
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-578
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-579
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-580
+       Applying jamesh review on GPG stuff already merged in devel branch.
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-581
+       Merge from RF, solved small conflict in browser/person.py
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-582
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-583
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-584
+       Applying jamesh review.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/person.py
+     lib/canonical/launchpad/utilities/gpghandler.py
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-578
+     celso.providelo@canonical.com/launchpad--devel--0--patch-579
+     celso.providelo@canonical.com/launchpad--devel--0--patch-580
+     celso.providelo@canonical.com/launchpad--devel--0--patch-581
+     celso.providelo@canonical.com/launchpad--devel--0--patch-582
+     celso.providelo@canonical.com/launchpad--devel--0--patch-583
+     celso.providelo@canonical.com/launchpad--devel--0--patch-584
+
+
 2005-04-29 10:26:21 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1646
 
     Summary:

@@ -2,10 +2,9 @@
 
 __metaclass__ = type
 
-
-# For information on how to handle multiple contexts, see W. Koch's
-# interesting comment a
-# http://lists.gnupg.org/pipermail/gnupg-users/2005-February/024755.html
+# standard
+import os
+import tempfile
 
 # zope
 from zope.interface import implements
@@ -16,8 +15,6 @@ from canonical.launchpad.interfaces import IGpgHandler
 # pyme 
 from pyme import core
 
-# standard
-import os, tempfile
 
 class GpgHandler(object):
     """See IGpgHandler."""
@@ -72,6 +69,11 @@ class GpgHandler(object):
     def importPubKey(self, pubkey, keyring=None):
         """See IGpgHandler."""
 
+        # XXX cprov 20050415
+        # Support multiple keyring is considered obsolete in the GPGME
+        # approach. For information on how to handle multiple contexts,
+        # see W. Koch's interesting comment at:
+        # http://lists.gnupg.org/pipermail/gnupg-users/2005-February/024755.html
         c = core.Context()
         c.set_armor(1)
 
