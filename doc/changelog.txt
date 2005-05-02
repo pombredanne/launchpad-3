@@ -2,6 +2,55 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-02 02:47:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1648
+
+    Summary:
+      r=spiv, dont reset the importstatus on the adminsource form, and make certified sources immutable
+    Revision:
+      launchpad--devel--0--patch-1648
+
+    Patches applied:
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-110
+       merge from rf
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-111
+       test commit
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-112
+       test commit
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-113
+       merge from rf
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-114
+       do not allow modification of productseries import details once certified
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-115
+       dont reset the importstatus on the adminsource form, and make the return from editSource all consistent
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-116
+       and use the fromAdmin flag for editSource
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-117
+       use False in the args list for editSource, its safe as its immutable
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/productseries.py
+
+    new patches:
+     robert.collins@canonical.com/launchpad--devel--0--patch-110
+     robert.collins@canonical.com/launchpad--devel--0--patch-111
+     robert.collins@canonical.com/launchpad--devel--0--patch-112
+     robert.collins@canonical.com/launchpad--devel--0--patch-113
+     robert.collins@canonical.com/launchpad--devel--0--patch-114
+     robert.collins@canonical.com/launchpad--devel--0--patch-115
+     robert.collins@canonical.com/launchpad--devel--0--patch-116
+     robert.collins@canonical.com/launchpad--devel--0--patch-117
+
+
 2005-04-30 07:09:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1647
 
     Summary:
