@@ -148,7 +148,7 @@ class ProductSeriesView(object):
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
 
-    def editSource(self, fromAdmin=None):
+    def editSource(self, fromAdmin=False):
         """This method processes the results of an attempt to edit the
         upstream revision control details for this series."""
         # see if anything was posted
