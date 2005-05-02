@@ -148,7 +148,7 @@ class ProductSeriesView(object):
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
 
-    def editSource(self):
+    def editSource(self, fromAdmin=None):
         """This method processes the results of an attempt to edit the
         upstream revision control details for this series."""
         # see if anything was posted
@@ -157,9 +157,9 @@ class ProductSeriesView(object):
         form = self.form
         if form.get("Update RCS Details", None) is None:
             return
-        if self.context.syncCertified():
+        if self.context.syncCertified() and not fromAdmin:
             self.errormsgs.append('This Source is has been certified and is now unmodifiable.')
-            return None
+            return
         # get the form content, defaulting to what was there
         rcstype=form.get("rcstype", None)
         if rcstype == 'cvs':
@@ -176,23 +176,24 @@ class ProductSeriesView(object):
         if rcstype == 'cvs':
             if not (self.cvsroot and self.cvsmodule and self.cvsbranch):
                 self.errormsgs.append('Please give valid CVS details')
-                return None
+                return
             if not validate_cvs_branch(self.cvsbranch):
                 self.errormsgs.append('Your CVS branch name is invalid.')
-                return None
+                return
             if not validate_cvs_root(self.cvsroot, self.cvsmodule):
                 self.errormsgs.append('Your CVS root and module are invalid.')
-                return None
+                return
         elif rcstype == 'svn':
             if not validate_svn_repo(self.svnrepository):
                 self.errormsgs.append('Please give valid SVN server details')
-                return None
+                return
         self.context.rcstype = self.rcstype
         self.context.cvsroot = self.cvsroot
         self.context.cvsmodule = self.cvsmodule
         self.context.cvsbranch = self.cvsbranch
         self.context.svnrepository = self.svnrepository
-        self.context.importstatus = ImportStatus.TESTING
+        if not fromAdmin:
+            self.context.importstatus = ImportStatus.TESTING
         self.request.response.redirect('.')
 
     def adminSource(self):
