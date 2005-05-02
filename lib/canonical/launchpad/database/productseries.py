@@ -2,6 +2,7 @@
 __metaclass__ = type
 __all__ = ['ProductSeries', 'ProductSeriesSet']
 
+import datetime
 import sets
 
 from zope.interface import implements

@@ -2,6 +2,28 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-02 04:46:20 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1649
+
+    Summary:
+      r=spiv, restore the broken certify for sync functionality
+    Revision:
+      launchpad--devel--0--patch-1649
+
+    Patches applied:
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-118
+       restore the broken certify for sync functionality
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/productseries.py
+     lib/canonical/launchpad/database/productseries.py
+
+    new patches:
+     robert.collins@canonical.com/launchpad--devel--0--patch-118
+
+
 2005-05-02 02:47:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1648
 
     Summary:
