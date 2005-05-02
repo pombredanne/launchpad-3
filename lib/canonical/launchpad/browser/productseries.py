@@ -157,6 +157,9 @@ class ProductSeriesView(object):
         form = self.form
         if form.get("Update RCS Details", None) is None:
             return
+        if self.context.syncCertified():
+            self.errormsgs.append('This Source is has been certified and is now unmodifiable.')
+            return None
         # get the form content, defaulting to what was there
         rcstype=form.get("rcstype", None)
         if rcstype == 'cvs':
