@@ -5,8 +5,9 @@
     specialised tasks page.
 -->
 
-<div tal:omit-tag="" tal:define="bug_url string:/malone/bugs/${context/id}">
-<table class="listing rowNavigation" style="width: 100%;">
+<div tal:omit-tag
+     tal:define="bug_url string:/malone/bugs/${context/id}">
+<table class="data rowNavigation" style="width: 100%;">
     <thead>
         <tr>
             <th>Upstream / Package</th>
@@ -22,22 +23,22 @@
         <!-- Upstream Tasks -->
         <tr tal:repeat="bugtask context/bugtasks"
             tal:attributes="onclick string:window.location='/malone/tasks/${bugtask/id}/+edit';">
-           
+
             <td>
                 <a href=""
                     tal:condition="bugtask/product"
                     tal:attributes="href string:/malone/products/${bugtask/product/name}"
                     >
-                    upstream <span tal:content="bugtask/product/name">$Product.name</span>
+                    upstream <span tal:replace="bugtask/product/name">$Product.name</span>
                 </a>
                 <a href=""
                     tal:condition="python: bugtask.distribution and bugtask.sourcepackagename"
                     tal:attributes="href string:/malone/distros/${bugtask/distribution/name}/${bugtask/sourcepackagename/name}"
                     >
-                        <span tal:content="bugtask/distribution/name">
+                        <span tal:replace="bugtask/distribution/name">
                             distro
                         </span>
-                        <span tal:content="bugtask/sourcepackagename/name">
+                        <span tal:replace="bugtask/sourcepackagename/name">
                             sourcepackagename
                         </span>
                 </a>
@@ -45,7 +46,7 @@
                     tal:condition="python: bugtask.distribution and not bugtask.sourcepackagename"
                     tal:attributes="href string:/malone/distros/${bugtask/distribution/name}/}"
                     >
-                        <span tal:content="bugtask/distribution/name">
+                        <span tal:replace="bugtask/distribution/name">
                             distro
                         </span>
                 </a>
@@ -53,10 +54,10 @@
                     tal:condition="python: bugtask.distrorelease and bugtask.sourcepackagename"
                     tal:attributes="href string:/malone/distros/${bugtask/distrorelease/distribution/name}/${bugtask/sourcepackagename/name}"
                     >
-                        <span tal:content="string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
+                        <span tal:replace="string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
                             distro
                         </span>
-                        <span tal:content="bugtask/sourcepackagename/name">
+                        <span tal:replace="bugtask/sourcepackagename/name">
                             sourcepackagename
                         </span>
                 </a>
@@ -64,59 +65,38 @@
                     tal:condition="python: bugtask.distrorelease and not bugtask.sourcepackagename"
                     tal:attributes="href string:/malone/distros/${bugtask/distrorelease/distribution/name}/}"
                     >
-                        <span tal:content="string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
+                        <span tal:replace="string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
                             distro
                         </span>
                 </a>
              </td>
-            
-            <td tal:content="bugtask/status/lp:BugTaskStatus">
+
+            <td tal:content="bugtask/status/title">
                 $BugTask.status
             </td>
 
-            <td tal:content="bugtask/severity/lp:BugSeverity"
-                tal:attributes="class string:severity${bugtask/severity/lp:BugSeverity}">
+            <td tal:content="bugtask/severity/title"
+                tal:attributes="class string:severity${bugtask/severity/title}">
                 Critical
             </td>
 
-            <td tal:content="bugtask/priority/lp:BugPriority"
-                tal:attributes="class string:priority${bugtask/priority/lp:BugPriority}">
+            <td tal:content="bugtask/priority/title"
+                tal:attributes="class string:priority${bugtask/priority/title}">
                 Medium
             </td>
-            
+
             <td>
                 <a tal:condition="bugtask/assignee"
                    tal:attributes="href string:/malone/bugs/assigned?name=${bugtask/assignee/name}">
-                   <img src="/++resource++user.gif" alt="" 
+                   <img src="/++resource++user.gif" alt=""
                     /><span tal:replace="bugtask/assignee/browsername">
                     assignee.browsername
                     </span>
                 </a>
             </td>
-        
+
         </tr>
 
     </tbody>
 </table>
-
-<a href="#" tal:attributes="href string:$bug_url/tasks/+upstreamtask"
-    style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
-    title="Mark this bug as occurring upstream">
-    <img src="/++resource++add.gif" alt="+" />
-    Upstream Task...
-</a>
-
-<a href="#" tal:attributes="href string:$bug_url/tasks/+distrotask"
-    style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
-    title="Mark this bug as occurring in another package">
-    <img src="/++resource++add.gif" alt="+" />
-    Distro Task...
-</a>
-
-<a href="#" tal:attributes="href string:$bug_url/tasks/+distroreleasetask"
-    style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
-    title="Mark this bug as occurring in another package for a specific distro release">
-    <img src="/++resource++add.gif" alt="+" />
-    Distro Release Task...
-</a>
 </div>

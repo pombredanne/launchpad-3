@@ -13,8 +13,8 @@ import sys
 import unittest
 from zope.interface.verify import verifyClass, verifyObject
 
-from canonical.arch.tests.test_framework import DatabaseTestCase
-from canonical.arch.tests.test_framework import DatabaseAndArchiveTestCase
+from canonical.arch.tests.framework import DatabaseTestCase
+from canonical.arch.tests.framework import DatabaseAndArchiveTestCase
 
 from canonical.launchpad.interfaces import NamespaceError
 from canonical.launchpad.interfaces import IArchive
@@ -26,6 +26,9 @@ from canonical.launchpad.interfaces import IArchiveCollection
 
 
 class NamespaceObject(unittest.TestCase):
+
+    # XXX: disable all tests from this class
+    # -- David Allouche 2005-04-05
     tests = []
 
     def test_None_is_not_equal(self):
@@ -33,7 +36,6 @@ class NamespaceObject(unittest.TestCase):
         from canonical.arch.broker import Revision
         r = Revision("")
         self.failIf(r == None)
-    tests.append('test_None_is_not_equal')
 
     def test_identical_is_equal(self):
         """Test that an object is identical to itself"""
@@ -48,7 +50,6 @@ class NamespaceObject(unittest.TestCase):
         from canonical.arch.broker import Revision
         r2 = Revision("")
         self.assertEqual(r1, r2)
-    tests.append('test_blah')
 
     def test_everything_in_the_world(self):
         """Test equality combinations"""
@@ -73,8 +74,6 @@ class NamespaceObject(unittest.TestCase):
                 j = j + 1
             j = 0
             i = i + 1
-        # FIXME
-        # tests.append('test_everything_in_the_world')
 
 
 class Archives(DatabaseTestCase):
@@ -109,12 +108,10 @@ class Archives(DatabaseTestCase):
         """Archives.create("foo@bar") works"""
         from canonical.arch.broker import Archives, Archive
         from canonical.launchpad.database import ArchiveMapper
-        from canonical.arch.tests.test_database import _archive_purge
         name="foo@bar"
         mapper=ArchiveMapper()
         self.failIf(mapper.findByName(name).exists())
         archive=Archives().create(name)
-        self.commit()
         self.failUnless(isinstance(archive, Archive))
         self.failUnless(mapper.findByName(name).exists())
     tests.append('test_create')
@@ -135,7 +132,6 @@ class Archives(DatabaseTestCase):
         mapper=ArchiveMapper()
         self.failIf(mapper.findByName(name).exists())
         archive=Archives().create(name, location)
-        self.commit()
         self.failUnless(isinstance(archive, Archive))
         self.failUnless(mapper.findByName(name).exists())
     # FIXME
@@ -175,7 +171,6 @@ class Archives(DatabaseTestCase):
         missing_archive = archives[name]
         self.assert_(isinstance(missing_archive, MissingArchive))
         archives.create(name)
-        self.commit()
         created_archive = archives[name]
         self.assert_(isinstance(created_archive, Archive))
         self.assertEqual(name, created_archive.name)
@@ -208,51 +203,93 @@ class ArchiveLocation(DatabaseTestCase):
         location1 = ArchiveLocation(archive1, url1, 0)
         location2 = ArchiveLocation(archive1, url2, 0)
 
-class ArchiveLocationRegistry(DatabaseTestCase):
-    tests=[]
 
-    def _create_mirror(self, name):
-        import pybaz as arch
-        default_location = "/tmp/"
-        archive = arch.Archive(name)
-        archive.make_mirror(name + "-MIRROR",
-                            location = default_location + name,
-                            signed=False, listing=True)
+class ArchiveLocationRegistry(DatabaseTestCase):
+
+    def setUp(self):
+        DatabaseTestCase.setUp(self)
+        self._archive = None
+        self._registry = None
+
+    def archive(self):
+        if self._archive is None:
+            from canonical.arch import broker
+            archives = broker.Archives()
+            self._archive = archives.create("foo@bar")
+        return self._archive
+
+    def registry(self):
+        from canonical.arch import broker
+        if self._registry is None:
+            archive = self.archive()
+            self._registry = broker.ArchiveLocationRegistry(archive)
+        return self._registry
 
     def test_instantiate(self):
         """canonical.arch.broker.ArchiveLocationRegistry can be instantiated"""
         from canonical.arch import broker
         archive = broker.Archive("foo@bar")
-        registry = broker.ArchiveLocationRegistry(archive)
-    tests.append('test_instantiate')
+        unused = broker.ArchiveLocationRegistry(archive)
 
-    def test_insert_location(self):
-        """test that we can insert a location and check it exists"""
+    def checkLocations(self, locs, url):
         from canonical.arch import broker
+        self.assertEqual(len(locs), 1)
+        self.assertEqual(type(locs[0]), broker.ArchiveLocation)
+        self.assertEqual(locs[0].url, url)
+        self.assertEqual(locs[0].archive, self.archive())
+
+    def test_createReadWriteTargetLocation(self):
+        """ArchiveLocationRegistry inserts and retrieves read-write."""
         url = "http://blah/"
-        archives = broker.Archives()
-        archive = archives.create("foo@bar")
-        registry = broker.ArchiveLocationRegistry(archive)
-        self._create_mirror(archive.name)
-        location = registry.createMirrorTargetLocation(url)
-        self.commit()
-        self.failUnless(registry.existsLocation(location))
-    tests.append('test_insert_location')
+        location = self.registry().createReadWriteTargetLocation(url)
+        self.checkLocations([location], url)
+        locs = self.registry().getReadWriteLocations()
+        self.checkLocations(locs, url)
+
+    def test_createReadOnlyTargetLocation(self):
+        """ArchiveLocationRegistry inserts and retrieves read-only."""
+        url = "http://blah/"
+        location = self.registry().createReadOnlyTargetLocation(url)
+        self.checkLocations([location], url)
+        locs = self.registry().getReadOnlyLocations()
+        self.checkLocations(locs, url)
+
+    def test_createMirrorTargetLocation(self):
+        """ArchiveLocationRegistry inserts and retrieves mirror."""
+        url = "http://blah/"
+        location = self.registry().createMirrorTargetLocation(url)
+        self.checkLocations([location], url)
+        locs = self.registry().getMirrorTargetLocations()
+        self.checkLocations(locs, url)
+
+    def existsLocation(self, url):
+        from canonical.arch import broker
+        location = broker.ArchiveLocation(archive=None, url=url, type=None)
+        return self.registry().existsLocation(location)
+
+    def test_existsLocation(self):
+        """ArchiveLocationRegistry.existsLocation works."""
+        url1 = "http://blah/1"
+        self.assertEqual(self.existsLocation(url1), False)
+        unused = self.registry().createReadWriteTargetLocation(url1)
+        self.assertEqual(self.existsLocation(url1), True)
+        url2 = "http://blah/2"
+        self.assertEqual(self.existsLocation(url2), False)
+        unused = self.registry().createReadOnlyTargetLocation(url2)
+        self.assertEqual(self.existsLocation(url2), True)
+        url3 = "http://blah/3"
+        self.assertEqual(self.existsLocation(url3), False)
+        unused = self.registry().createMirrorTargetLocation(url3)
+        self.assertEqual(self.existsLocation(url3), True)
 
     def test_extract_mirrors(self):
         """test that we can extract a list of mirrorarchives"""
-        from canonical.arch import broker
         url = "http://blah/"
-        archives = broker.Archives()
-        archive = archives.create("foo@bar")
-        registry = broker.ArchiveLocationRegistry(archive)
-        self._create_mirror(archive.name)
-        location = registry.createMirrorTargetLocation(url)
-        locations = registry.getMirrorTargetLocations()
-        self.failUnless(registry.existsLocation(location))
+        location = self.registry().createMirrorTargetLocation(url)
+        locations = self.registry().getMirrorTargetLocations()
+        self.failUnless(self.registry().existsLocation(location))
         self.assertEqual(location.url, url)
-        self.assertEqual(location.archive, archive)
-    tests.append('test_extract_mirrors')
+        self.assertEqual(location.archive, self.archive())
 
 
 class NamespaceTestCase(DatabaseTestCase):
@@ -462,7 +499,6 @@ class Archive(NamespaceTestCase):
         category = archive.create_category(name)
         from canonical.launchpad.database import CategoryMapper
         mapper = CategoryMapper()
-        self.commit()
         self.failUnless(mapper.exists(category))
         read_back = archive[name]
         self.assertEqual(read_back, category)
@@ -539,7 +575,6 @@ class Category(NamespaceTestCase):
         archive = self.getTestArchive()
         category = Category("bang", archive)
         category.setup()
-        self.commit()
         self.failUnless(category.exists())
     tests.append('test_can_setup')
 
@@ -784,7 +819,6 @@ class RevisionImport(DatabaseAndArchiveTestCase):
         # end of hack
         archive = self.arch_make_archive(arch_name)
         tree = self.arch_make_tree('wtree', arch_vsn)
-        arch_vsn.setup()
         tree.tagging_method = 'names'
         open(tree/'foo', 'w').write('Hello, World!\n')
         tree.import_()
@@ -819,31 +853,5 @@ class RevisionImport(DatabaseAndArchiveTestCase):
     tests.append('test_clone_files')
 
 
-def test_suite():
-    import sys
-    result = unittest.TestLoader().loadTestsFromModule(sys.modules[__name__])
-    # TODO: lifeless & steveA to talk about enabling the arch ftests'
-    return unittest.TestSuite()
-
-def main(argv):
-    """Run the full test suite."""
-    suite = unittest.TestSuite()
-    def addTests(klass): suite.addTests(map(klass, klass.tests))
-    # there should be a more elegant way - addClasses or something
-    addTests(Archive)
-    addTests(ArchiveLocation)
-    addTests(ArchiveLocationRegistry)
-    addTests(Archives)
-    addTests(Category)
-    addTests(Branch)
-    addTests(Version)
-    addTests(Revision)
-    addTests(RevisionImport)
-    # addTests(NamespaceObject)
-    runner = unittest.TextTestRunner(verbosity=2)
-    if not runner.run(suite).wasSuccessful(): return 1
-    return 0
-
-
-if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+import framework
+framework.register(__name__)

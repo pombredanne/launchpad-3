@@ -9,8 +9,11 @@ from twisted.internet.threads import deferToThread
 from canonical.librarian.client import quote
 from canonical.database.sqlbase import begin, rollback
 
-defaultResource = static.Data('Copyright 2004 Canonical Ltd.', type='text/plain')
-fourOhFour = error.NoResource('No such resource') 
+defaultResource = static.Data(
+    'Copyright 2004-2005 Canonical Ltd.\n'
+    'These are not the droids you are looking for.\n'
+    'kthxbye.\n', type='text/plain')
+fourOhFour = error.NoResource('No such resource')
 
 class NotFound(Exception):
     pass
@@ -57,9 +60,9 @@ class LibraryFileAliasResource(resource.Resource):
         begin()
         try:
             try:
-                alias = self.storage.getFileAlias(self.fileID, filename) 
+                alias = self.storage.getFileAlias(self.fileID, filename)
                 return alias.id, alias.mimetype
-            except IndexError:
+            except LookupError:
                 raise NotFound
         finally:
             rollback()
@@ -132,7 +135,7 @@ class AliasSearchResource(resource.Resource):
         try:
             alias = int(request.args['alias'][0])
         except (LookupError, ValueError):
-            return static.Data(AliasSearchErrors.BAD_SEARCH, 
+            return static.Data(AliasSearchErrors.BAD_SEARCH,
                                'text/plain').render(request)
 
         deferred = deferToThread(self._getByAlias, alias)

@@ -1,0 +1,164 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<head>
+    <title metal:fill-slot="title">Bounties for
+      <span tal:replace="context/displayname">Context</span>
+    </title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Launchpad style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
+</head>
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure view/viewsPortlet" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/actionsPortlet" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Bounties for
+    <span tal:replace="context/displayname">Context</span>
+  </h1>
+
+  <p class="documentDescription">These are the bounties that are related to
+  <span tal:replace="context/displayname">Context</span>. This report
+  includes bounties issued by, claimed by or reviewed by the person, as well
+  as bounties to which <span tal:replace="context/displayname" /> has
+  subscribed. Click on a column header to sort by that header.</p>
+
+  <h3>Bounties Issued</h3>
+
+    <p tal:condition="not: context/ownedBounties"><span
+    tal:replace="context/displayname">Person DisplayName</span> has not
+    issued any bounties through the Launchpad system. Anybody can issue a
+    bounty using  PayPal to place the bounty funds in escrow until
+    the work is done.</p>
+
+    <table width="100%" class="listing rowNavigation"
+           tal:condition="context/ownedBounties">
+      <tr>
+        <th>Date Created</th>
+        <th>Title</th>
+        <th>USD Value<sup>*</sup></th>
+      </tr>
+      <tr tal:repeat="bounty context/ownedBounties"
+          tal:attributes="onclick
+              string:window.location='/bounties/${bounty/name}/';">
+        <td tal:content="python:bounty.datecreated.strftime('%d %b %y')">
+          date
+        </td>
+        <td><b><span tal:replace="bounty/title/fmt:shorten/45">title</span>
+            </b>
+        </td>
+        <td tal:content="bounty/usdvalue">usdvalue</td>
+      </tr>
+  </table>
+
+  <h3>Bounties Claimed</h3>
+
+  <p tal:condition="not: context/claimedBounties"><span
+  tal:replace="context/displayname">Person DisplayName</span> has not
+  claimed any bounties in the Launchpad system. You claim a bounty by
+  registering for it, and submitting code for review. If that code is judged
+  by the bounty reviewer to be the winning entry before the deadline for the
+  bounty expires, then the bounty is awarded to you and payment will be
+  made.</p>
+
+    <table width="100%" class="listing rowNavigation"
+           tal:condition="context/claimedBounties">
+      <tr>
+        <th>Date Created</th>
+        <th>Title</th>
+        <th>USD Value<sup>*</sup></th>
+      </tr>
+      <tr tal:repeat="bounty context/claimedBounties"
+          tal:attributes="onclick
+              string:window.location='/bounties/${bounty/name}/';">
+        <td tal:content="python:bounty.datecreated.strftime('%d %b %y')">
+          date
+        </td>
+        <td><b><span tal:replace="bounty/title/fmt:shorten/45">title</span>
+            </b>
+        </td>
+        <td tal:content="bounty/usdvalue">usdvalue</td>
+      </tr>
+  </table>
+
+  <h3>Bounties Reviewed:</h3>
+
+  <p tal:condition="not: context/reviewerBounties"><span
+  tal:replace="context/displayname">Person DisplayName</span> is not the
+  reviewer of any Launchpad bounties. The reviewer is responsible for
+  judging the quality of bounty submissions and determines the winner, if
+  any, of a bounty.</p>
+
+    <table width="100%" class="listing rowNavigation"
+           tal:condition="context/reviewerBounties">
+      <tr>
+        <th>Date Created</th>
+        <th>Title</th>
+        <th>USD Value<sup>*</sup></th>
+      </tr>
+      <tr tal:repeat="bounty context/reviewerBounties"
+          tal:attributes="onclick
+              string:window.location='/bounties/${bounty/name}/';">
+        <td tal:content="python:bounty.datecreated.strftime('%d %b %y')">
+          date
+        </td>
+        <td><b><span tal:replace="bounty/title/fmt:shorten/45">title</span>
+            </b>
+        </td>
+        <td tal:content="bounty/usdvalue">usdvalue</td>
+      </tr>
+  </table>
+
+  <h3>Bounties Subscribed:</h3>
+
+  <p tal:condition="not: context/subscribedBounties"><span
+  tal:replace="context/displayname">Person DisplayName</span> has not
+  subscribed to any bounties.</p>
+
+    <table width="100%" class="listing rowNavigation"
+           tal:condition="context/subscribedBounties">
+      <tr>
+        <th>Date Created</th>
+        <th>Title</th>
+        <th>USD Value<sup>*</sup></th>
+      </tr>
+      <tr tal:repeat="bounty context/subscribedBounties"
+          tal:attributes="onclick
+              string:window.location='/bounties/${bounty/name}/';">
+        <td tal:content="python:bounty.datecreated.strftime('%d %b %y')">
+          date
+        </td>
+        <td><b><span tal:replace="bounty/title/fmt:shorten/45">title</span>
+            </b>
+        </td>
+        <td tal:content="bounty/usdvalue">usdvalue</td>
+      </tr>
+  </table>
+
+  <p><sup>*</sup> A bounty may include contributions in several currencies,
+  this is an estimate of the bounty value in US Dollars based on recent
+  exchange rates.</p>
+
+  <p>Click on a bounty for further information. You can subscribe to
+  a bounty to receive email updates of changes in status of the bounty, or
+  to have the bounty show up on your personalised Launchpad overview
+  page.</p>
+
+</div>
+
+</body>
+</html>

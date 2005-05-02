@@ -1,5 +1,5 @@
 <div class="portlet">
-    <h4>Subscriptions</h4>
+    <h4>Related People:</h4>
 
     <div class="portletBody"
          tal:define="bug_url string:/malone/bugs/${context/id}">
@@ -9,8 +9,10 @@
 
             <h5>submitter:</h5>
             <ul class="people">
-                <li><span
-                tal:replace="context/owner/browsername">owner</span></li>
+                <li><a href=""
+                    tal:content="context/owner/browsername"
+                    tal:attributes="
+                      href string:/people/${context/owner/name}">owner</a></li>
             </ul>
 
             <h5>maintainers:</h5>
@@ -19,15 +21,14 @@
                 <li tal:condition="task/maintainer">
                 <a href=""
                    tal:content="task/maintainer/browsername"
-                   tal:attributes="href string:/foaf/people/${task/maintainer/name}" />
+                   tal:attributes="href string:/people/${task/maintainer/name}" />
                 </li>
             </ul>
 
           <tal:subscriptions
-            tal:define="ccs python:[s for s in subscriptions if s.subscription==2];
-                        watches python:[s for s in subscriptions if s.subscription==1];
-                        ignores python:[s for s in subscriptions if s.subscription==3]">
-
+            tal:define="ccs view/getCCs;
+                        watches view/getWatches;
+                        ignores view/getIgnores">
             <h5 tal:condition="ccs">cc:</h5>
             <ul class="people">
                 <li tal:repeat="sub ccs">

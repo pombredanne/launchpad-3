@@ -1,0 +1,51 @@
+Distribution information edit.
+This tests makes a modification in ubuntu distribution and check 
+if the page is not broken.
+
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+edit HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.5
+  ... Authorization: Basic ZGFuaWVsLmRlYm9uemlAY2Fub25pY2FsLmNvbTp6ZWNh
+  ... Cookie: tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"; CP=null*; gallery_sessionadd_photos_mode=url
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+edit HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.5
+  ... Authorization: Basic ZGFuaWVsLmRlYm9uemlAY2Fub25pY2FsLmNvbTp6ZWNh
+  ... Content-Length: 950
+  ... Content-Type: multipart/form-data; boundary=---------------------------119970322290070381991752450
+  ... Cookie: tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"; CP=null*; gallery_sessionadd_photos_mode=url
+  ... Referer: http://localhost:9000/distros/ubuntu/+edit
+  ... 
+  ... -----------------------------119970322290070381991752450
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... Ubuntu
+  ... -----------------------------119970322290070381991752450
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Ubuntu Linux II
+  ... -----------------------------119970322290070381991752450
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... Ubuntu is a new
+  ... approach to Linux Distribution that includes regular releases, and a
+  ... simplified single-CD installation system. Thas is cool.
+  ... -----------------------------119970322290070381991752450
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... Ubuntu is a new
+  ... approach to Linux Distribution that includes regular releases, and a
+  ... simplified single-CD installation system. Rocks.
+  ... -----------------------------119970322290070381991752450
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------119970322290070381991752450--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...

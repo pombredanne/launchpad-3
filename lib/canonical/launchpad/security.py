@@ -7,106 +7,187 @@ __metaclass__ = type
 from zope.interface import implements, Interface
 from zope.component import getUtility
 
-from canonical.lp.dbschema import BugSubscription
-from canonical.launchpad.interfaces import IAuthorization, IHasOwner, \
-    IPerson, ISourceSource, ISourceSourceAdmin, IMilestone, IHasProduct, \
-    IHasProductAndAssignee, IBug, IBugTask, IPersonSet
+from canonical.launchpad.interfaces import IAuthorization, IHasOwner
+from canonical.launchpad.interfaces import IPerson, ITeam
+from canonical.launchpad.interfaces import ITeamMembershipSubset
+from canonical.launchpad.interfaces import ITeamMembership
+from canonical.launchpad.interfaces import ISeriesSource, ISeriesSourceAdmin
+from canonical.launchpad.interfaces import IMilestone, IBug, IBugTask
+from canonical.launchpad.interfaces import IUpstreamBugTask, IDistroBugTask
+from canonical.launchpad.interfaces import IReadOnlyUpstreamBugTask
+from canonical.launchpad.interfaces import IProduct
+from canonical.launchpad.interfaces import IPOTemplate, IPOFile
+from canonical.launchpad.interfaces import ILaunchpadCelebrities
+
 
 class AuthorizationBase:
     implements(IAuthorization)
+    permission = None
+    usedfor = None
 
     def __init__(self, obj):
         self.obj = obj
 
     def checkUnauthenticated(self):
-        """Must return True or False. See IAuthorization.checkUnauthenticated."""
+        """Must return True or False.  See IAuthorization.checkUnauthenticated.
+        """
         return False
 
-    def checkPermission(self, person):
-        """Must return True or False. See IAuthorization.checkPermission."""
-        raise NotImplementedError
+    def checkAuthenticated(self, user):
+        """Must return True or False.  See IAuthorization.checkAuthenticated.
+        """
+        return False
 
 
 class AdminByAdminsTeam(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = Interface
 
-    def checkPermission(self, person):
-        admins = getUtility(IPersonSet).getByName('admins')
-        return person.inTeam(admins)
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(admins)
 
 
 class EditByOwnersOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IHasOwner
 
-    def checkPermission(self, person):
-        admins = getUtility(IPersonSet).getByName('admins')
-        if person.id == self.obj.owner.id:
-            return True
-        elif person.inTeam(admins):
-            return True
-        else:
-            return False
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(self.obj.owner) or user.inTeam(admins)
 
 
-class EditByOwner(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IHasOwner
-
-    def checkPermission(self, person):
-        """Authorize the object owner."""
-        if person.id == self.obj.owner.id:
-            return True
+class EditByOwnerOfProduct(EditByOwnersOrAdmins):
+    usedfor = IProduct
 
 
-class AdminSourceSourceByButtSource(AuthorizationBase):
+class AdminSeriesSourceByButtSource(AuthorizationBase):
     permission = 'launchpad.Admin'
-    usedfor = ISourceSourceAdmin
+    usedfor = ISeriesSourceAdmin
 
-    def checkPermission(self, person):
-        buttsource = getUtility(IPersonSet).getByName('buttsource')
-        return person.inTeam(buttsource)
+    def checkAuthenticated(self, user):
+        buttsource = getUtility(ILaunchpadCelebrities).buttsource
+        return user.inTeam(buttsource)
 
 
-class EditSourceSourceByButtSource(AuthorizationBase):
+class EditSeriesSourceByButtSource(AuthorizationBase):
     permission = 'launchpad.Edit'
-    usedfor = ISourceSource
+    usedfor = ISeriesSource
 
-    def checkPermission(self, person):
-        buttsource = getUtility(IPersonSet).getByName('buttsource')
-        if person.inTeam(buttsource):
+    def checkAuthenticated(self, user):
+        buttsource = getUtility(ILaunchpadCelebrities).buttsource
+        if user.inTeam(buttsource):
             return True
         elif not self.obj.syncCertified():
             return True
+        return False
+
+
+class EditMilestoneByProductMaintainer(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IMilestone
+
+    def checkAuthenticated(self, user):
+        """Authorize the product maintainer."""
+        return user.inTeam(self.obj.product.owner)
+
+
+class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ITeam
+
+    def checkAuthenticated(self, user):
+        """A user who is a team's owner has launchpad.Edit on that team.
+
+        The admin team also has launchpad.Edit on all teams.
+        """
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if user.inTeam(self.obj.teamowner) or user.inTeam(admins):
+            return True
+        else:
+            for team in self.obj.administrators:
+                if user.inTeam(team):
+                    return True
+
+        return False
+
+
+class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ITeamMembership
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if user.inTeam(self.obj.team.teamowner) or user.inTeam(admins):
+            return True
+        else:
+            for team in self.obj.team.administrators:
+                if user.inTeam(team):
+                    return True
+
+        return False
+
+
+class EditTeamMembershipSubsetByTeamOwnerOrTeamAdminsOrAdmins(
+        EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = ITeamMembershipSubset
+
+
+class EditPersonBySelfOrAdmins(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IPerson
+
+    def checkAuthenticated(self, user):
+        """A user can edit the Person who is herself.
+
+        The admin team can also edit any Person.
+        """
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return self.obj.id == user.id or user.inTeam(admins)
+
+
+class EditUpstreamBugTask(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IUpstreamBugTask
+
+    def checkAuthenticated(self, user):
+        """Allow the maintainer and possible assignee to edit the task.
+
+        If the maintainer or assignee is a team, everyone belonging to the team
+        is allowed to edit the task.
+        """
+        if user.inTeam(self.obj.maintainer):
+            return True
+        elif self.obj.assignee is not None and user.inTeam(self.obj.assignee):
+            return True
         else:
             return False
 
 
-class EditByProductOwner(AuthorizationBase):
+class EditDistroBugTask(AuthorizationBase):
     permission = 'launchpad.Edit'
-    usedfor = IHasProduct
+    usedfor = IDistroBugTask
 
-    def checkPermission(self, person):
-        """Authorize the product maintainer."""
-        return self.obj.product.owner.id == person.id
+    def checkAuthenticated(self, user):
+        """Allow all authenticated users to edit the task."""
+        if not self.obj.bug.private:
+            # public bug
+            return True
+        else:
+            # private bug
+            for subscription in self.obj.bug.subscriptions:
+                if user.inTeam(subscription.person):
+                    return True
+
+            return False
 
 
-class EditByProductOwnerOrAssignee(EditByProductOwner):
-    permission = 'launchpad.Edit'
-    usedfor = IHasProductAndAssignee
-
-    def checkPermission(self, person):
-        return (
-            super(EditByProductOwnerOrAssignee, self).checkPermission(person) or
-            self.obj.assignee.id == person.id)
-
-
-class TaskPublicToAllOrPrivateToExplicitSubscribers(AuthorizationBase):
+class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IBugTask
 
-    def checkPermission(self, person):
+    def checkAuthenticated(self, user):
         """Allow any user to see non-private bugs, but only explicit
         subscribers to see private bugs.
         """
@@ -115,25 +196,52 @@ class TaskPublicToAllOrPrivateToExplicitSubscribers(AuthorizationBase):
             return True
         else:
             # private bug
-            watch_or_cc = (
-                BugSubscription.WATCH.value, BugSubscription.CC.value)
             for subscription in self.obj.bug.subscriptions:
-                if (subscription.person.id == person.id and 
-                    subscription.subscription in watch_or_cc):
+                if user.inTeam(subscription.person):
                     return True
 
-        return False
+            return False
 
     def checkUnauthenticated(self):
         """Allow anonymous users to see non-private bugs only."""
         return not self.obj.bug.private
 
 
-class BugPublicToAllOrPrivateToExplicitSubscribers(AuthorizationBase):
+class PublicToAllOrPrivateToExplicitSubscribersForROBugTask(
+    PublicToAllOrPrivateToExplicitSubscribersForBugTask):
+    usedfor = IReadOnlyUpstreamBugTask
+
+
+class EditPublicByLoggedInUserAndPrivateByExplicitSubscribers(
+    AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IBug
+
+    def checkAuthenticated(self, user):
+        """Allow any logged in user to edit a public bug, and only
+        explicit subscribers to edit private bugs.
+        """
+        if not self.obj.private:
+            # public bug
+            return True
+        else:
+            # private bug
+            for subscription in self.obj.subscriptions:
+                if user.inTeam(subscription.person):
+                    return True
+
+        return False
+
+    def checkUnauthenticated(self):
+        """Never allow unauthenticated users to edit a bug."""
+        return False
+
+
+class PublicToAllOrPrivateToExplicitSubscribersForBug(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IBug
 
-    def checkPermission(self, person):
+    def checkAuthenticated(self, user):
         """Allow any user to see non-private bugs, but only explicit
         subscribers to see private bugs.
         """
@@ -142,11 +250,8 @@ class BugPublicToAllOrPrivateToExplicitSubscribers(AuthorizationBase):
             return True
         else:
             # private bug
-            watch_or_cc = (
-                BugSubscription.WATCH.value, BugSubscription.CC.value)
             for subscription in self.obj.subscriptions:
-                if (subscription.person.id == person.id and 
-                    subscription.subscription in watch_or_cc):
+                if user.inTeam(subscription.person):
                     return True
 
         return False
@@ -160,8 +265,34 @@ class UseApiDoc(AuthorizationBase):
     permission = 'zope.app.apidoc.UseAPIDoc'
     usedfor = Interface
 
-    def checkPermission(self, person):
+    def checkAuthenticated(self, user):
         return True
 
 
+class EditPOTemplateDetails(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IPOTemplate
+
+    def checkAuthenticated(self, user):
+        """Allow the owner of the POTemplate if it's not in a product release.
+        """
+        if self.obj.productrelease is not None:
+            # It's a PO file from a product, it has no restrictions.
+            return True
+        else:
+            return user.inTeam(self.obj.owner)
+
+
+class EditPOFileDetails(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IPOFile
+
+    def checkAuthenticated(self, user):
+        """Allow the owner of the POFile if it's not in a product release.
+        """
+        if self.obj.potemplate.productrelease is not None:
+            # It's a PO file from a product, it has no restrictions.
+            return True
+        else:
+            return user.inTeam(self.obj.owner)
 

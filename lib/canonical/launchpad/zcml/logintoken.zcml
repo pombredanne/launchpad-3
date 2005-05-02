@@ -5,23 +5,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <!-- LoginTokenSet pages -->
-    <content class="canonical.launchpad.database.LoginTokenSet">
-        <allow interface="canonical.launchpad.interfaces.ILoginTokenSet" />
-    </content>
-
-    <securedutility
-        class="canonical.launchpad.database.LoginTokenSet"
-        provides="canonical.launchpad.interfaces.ILoginTokenSet">
-        <allow interface="canonical.launchpad.interfaces.ILoginTokenSet" />
-    </securedutility>
-
-    <browser:traverse
-        for="canonical.launchpad.interfaces.ILoginTokenSet"
-        getter="__getitem__" />
-
-
-    <!-- LoginToken pages -->
+    <!-- LoginToken -->
     <content class="canonical.launchpad.database.LoginToken">
         <require 
             permission="zope.Public" 
@@ -38,7 +22,7 @@
         permission="zope.Public" 
         class="canonical.launchpad.browser.LoginTokenView"
         template="../templates/logintoken-index.pt"
-        lp:url="foaf/token/$token/+index" />
+        lp:url="token/$token/+index" />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
@@ -46,7 +30,7 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.ValidateEmailView"
         template="../templates/foaf-validateemail.pt"
-        lp:url="foaf/token/$token/+validate" />
+        lp:url="token/$token/+validate" />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
@@ -54,7 +38,7 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.ResetPasswordView"
         template="../templates/foaf-resetpassword.pt"
-        lp:url="foaf/token/$token/+resetpassword" />
+        lp:url="token/$token/+resetpassword" />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
@@ -62,7 +46,7 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.MergePeopleView"
         template="../templates/foaf-mergepeople.pt"
-        lp:url="foaf/token/$token/+accountmerge" />
+        lp:url="token/$token/+accountmerge" />
 
     <browser:addform
         name="+newaccount"
@@ -73,6 +57,21 @@
         class="canonical.launchpad.browser.NewAccountView"
         permission="zope.Public"
         template="../templates/foaf-newaccount.pt"
-        lp:url="foaf/token/$token/+newaccount" />
+        lp:url="token/$token/+newaccount" />
+
+    <!-- LoginTokenSet -->
+    <content class="canonical.launchpad.database.LoginTokenSet">
+        <allow interface="canonical.launchpad.interfaces.ILoginTokenSet" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.LoginTokenSet"
+        provides="canonical.launchpad.interfaces.ILoginTokenSet">
+        <allow interface="canonical.launchpad.interfaces.ILoginTokenSet" />
+    </securedutility>
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.ILoginTokenSet"
+        getter="__getitem__" />
 
 </configure>

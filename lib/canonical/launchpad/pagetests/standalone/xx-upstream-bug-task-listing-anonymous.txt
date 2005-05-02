@@ -1,4 +1,4 @@
-
+An anonymous user views the bug tasks in upstream Ubuntu.
 
   >>> print http(r"""
   ... GET /malone/products/ubuntu HTTP/1.1
@@ -10,7 +10,11 @@
       </h1>
   ...
     <small>displaying matching bugs 1 to 2 of 2</small>...
-            <td onclick="window.location='/malone/tasks/3/+edit'">2</td>
+            <td>
+                <a href="/malone/tasks/3/+edit">2</a>
+            </td>
   ...
-            <td onclick="window.location='/malone/tasks/1/+edit'">1</td>
+            <td>
+                <a href="/malone/tasks/1/+edit">1</a>
+            </td>
   ...

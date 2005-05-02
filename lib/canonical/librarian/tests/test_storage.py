@@ -1,6 +1,10 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 #
 
+# XXX: This file can (and probably should) be re-written as a doctest file, for
+#      better readability.
+#        - Andrew Bennetts, 2005-03-24.
+
 import unittest
 #from zope.testing.doctestunit import DocTestSuite
 
@@ -9,17 +13,17 @@ import sha
 import shutil
 import tempfile
 
-from canonical.librarian.storage import FatSamStorage, DigestMismatchError
+from canonical.librarian.storage import LibrarianStorage, DigestMismatchError
 from canonical.librarian.storage import _sameFile, _relFileLocation
 from canonical.librarian import db
 from canonical.database.sqlbase import SQLBase
 from canonical.database.sqlbase import FakeZopelessConnectionDescriptor
 
-class FatSamStorageTests(unittest.TestCase):
+class LibrarianStorageTestCase(unittest.TestCase):
     """Librarian test cases that don't involve the database"""
     def setUp(self):
         self.directory = tempfile.mkdtemp()
-        self.storage = FatSamStorage(self.directory, db.Library())
+        self.storage = LibrarianStorage(self.directory, db.Library())
         FakeZopelessConnectionDescriptor.install(None)
 
     def tearDown(self):
@@ -88,6 +92,7 @@ class FatSamStorageTests(unittest.TestCase):
         data = 'data ' * 50
         digest = sha.sha(data).hexdigest()
         newfile = self.storage.startAddFile('file1', len(data))
+        newfile.contentID = 99
         newfile.append(data)
 
         # The transaction shouldn't be committed yet...
@@ -111,6 +116,7 @@ class FatSamStorageTests(unittest.TestCase):
         data = 'data ' * 50
         digest = sha.sha(data).hexdigest()
         newfile = self.storage.startAddFile('file1', len(data))
+        newfile.contentID = 99
         newfile.append(data)
 
         # Cause the final step, the file rename, to break
@@ -136,16 +142,18 @@ class FatSamStorageTests(unittest.TestCase):
         self.storage.library = StubLibrary2()
         data = 'data ' * 50
         newfile = self.storage.startAddFile('file', len(data))
+        newfile.contentID = 0x11111111
         newfile.append(data)
         fileid1, aliasid = newfile.store()
-        # First id from stub library should be 100001
+        # First id from stub library should be 0x11111111
         self.assertEqual(0x11111111, fileid1)
 
         data += 'more data'
         newfile = self.storage.startAddFile('file', len(data))
+        newfile.contentID = 0x11111112
         newfile.append(data)
         fileid2, aliasid = newfile.store()
-        # Second id from stub library should be 100002
+        # Second id from stub library should be 0x11111112
         self.assertEqual(0x11111112, fileid2)
 
         # Did the files both get stored?
@@ -162,6 +170,9 @@ class StubLibrary:
 
     def lookupBySHA1(self, digest):
         return []
+
+    def hasContent(self, fileid):
+        return False
 
     def add(self, digest, size):
         return 99
@@ -180,9 +191,8 @@ class StubLibrary2(StubLibrary):
         return self.id
 
 
-
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(FatSamStorageTests))
+    suite.addTest(unittest.makeSuite(LibrarianStorageTestCase))
     return suite
 

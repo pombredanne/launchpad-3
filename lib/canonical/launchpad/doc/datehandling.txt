@@ -17,41 +17,17 @@ Time differences
 It's often useful to know how long ago something was created, or how long ago
 something happened. So, let's demonstrate how this functionality can be
 accessed in Launchpad, using the age of a bug task as an example. First, let's
-pretend we're logged in as an anonymous user:
+pretend we're logged in as Sample Person:
 
-    >>> import zope.security.management
-    >>> from canonical.launchpad.interfaces import IPerson
-    >>> from canonical.launchpad.database import Person
-    >>> class Principal:
-    ...     def __init__(self, id):
-    ...         self.id = id
-    ...         self.groups = []
-    >>> principal = Principal('launchpad.anonymous')
+    >>> from canonical.launchpad.ftests import login
+    >>> login("testing@canonical.com")
 
-    >>> class Participation:
-    ...     interaction = None
-    >>> anon_participation = Participation()
-    >>> anon_participation.principal = principal
-
-    >>> zope.security.management.newInteraction(anon_participation)
-
-    >>> from canonical.launchpad.interfaces import ILaunchBag
-    >>> from zope.app.tests import ztapi
-    >>> from zope.interface import implements
-    >>> class MockLaunchBag(object):
-    ...     implements(ILaunchBag)
-    ...     def __init__(self, login=None, user=None):
-    ...         self.login = login
-    ...         self.user = user
-    >>> launchbag = MockLaunchBag()
-    >>> ztapi.provideUtility(ILaunchBag, launchbag)
-
-Then let's grab a bug task to work with:
+Then let's grab one of his bug tasks to work with:
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IBugTaskSet
     >>> bugtaskset = getUtility(IBugTaskSet)
-    >>> bt = bugtaskset.get(1)
+    >>> bt = bugtaskset.get(2)
 
 Then let's create a bunch of sample dates to work with:
 
@@ -66,10 +42,9 @@ Then let's create a bunch of sample dates to work with:
 An IBugTask extends the interface IHasDateCreated. IHasDateCreated can be
 adapted to IAging:
 
-    >>> from zope.component import getAdapter
     >>> from canonical.launchpad.interfaces import IAging
     >>> bt.datecreated = one_minute_ago
-    >>> aging_bug = getAdapter(bt, IAging, '')
+    >>> aging_bug = IAging(bt)
 
 IAging provides a method, currentApproximateAge, which returns a human-readable
 approximation of the age of a something.
@@ -93,6 +68,3 @@ currentApproximateAge returns.
     >>> aging_bug.context.datecreated = one_year_ago
     >>> print aging_bug.currentApproximateAge()
     1 year
-
-    >>> ztapi.unprovideUtility(ILaunchBag)
-    >>> zope.security.management.endInteraction()

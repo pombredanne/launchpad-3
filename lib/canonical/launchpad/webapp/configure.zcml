@@ -32,6 +32,32 @@
     <!-- TALES namespaces. -->
 
     <adapter
+        for="zope.interface.Interface"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.MenuAPI"
+        name="menu"
+        />
+    <class class="canonical.launchpad.webapp.tales.FacetListDecorator">
+      <allow interface="canonical.launchpad.interfaces.IFacetList" />
+    </class>
+    <class class="canonical.launchpad.webapp.metazcml.FacetList">
+      <allow interface="canonical.launchpad.interfaces.IFacetList" />
+    </class>
+    <class class="canonical.launchpad.webapp.tales.TabListDecorator">
+      <allow interface="canonical.launchpad.interfaces.ITabList" />
+    </class>
+    <class class="canonical.launchpad.webapp.metazcml.TabList">
+      <allow interface="canonical.launchpad.interfaces.ITabList" />
+    </class>
+    <class class="canonical.launchpad.webapp.metazcml.Link">
+      <allow interface="canonical.launchpad.interfaces.ILink" />
+    </class>
+    <class class="canonical.launchpad.webapp.tales.LinkDecorator">
+      <allow
+        interface="canonical.launchpad.interfaces.ISelectionAwareLink" />
+    </class>
+
+    <adapter
         for="zope.publisher.interfaces.IApplicationRequest"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.RequestAPI"
@@ -71,12 +97,18 @@
         />
 
     <adapter
-        for="*"
+        for="basestring"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.FormattersAPI"
         name="fmt"
         />
 
+    <adapter
+        for="types.NoneType"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.NoneFormatter"
+        name="fmt"
+        />
 
     <!-- Authentication. -->
     <utility
@@ -137,46 +169,18 @@
         provides="zope.app.session.interfaces.ISessionDataContainer"
         />
 
-    <!-- Login and logout pages. -->
-    <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadApplication"
-        class="canonical.launchpad.webapp.login.BasicLoginPage"
-        permission="launchpad.AnyPerson"
-        name="+basiclogin"
-        attribute="login"
-        />
+    <!-- We want the changelog available on the debug view too, so people
+    can see when their patches make it to the dogfood server. -->
 
     <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadApplication"
-        template="../templates/launchpad-login.pt"
-        class="canonical.launchpad.webapp.login.CookieLoginPage"
+        layer="canonical.launchpad.layers.DebugLayer"
+        for="canonical.publication.RootObject"
+        name="changelog.html"
+        template="../templates/debug-root-changelog.pt"
+        class="canonical.launchpad.webapp.changelog.ChangeLog"
         permission="zope.Public"
-        name="+login"
         />
 
-    <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadApplication"
-        template="../templates/launchpad-join.pt"
-        class="canonical.launchpad.webapp.login.JoinLaunchpadView"
-        permission="zope.Public"
-        name="+register"
-        />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadApplication"
-        template="../templates/launchpad-forgottenpassword.pt"
-        class="canonical.launchpad.webapp.login.ForgottenPasswordPage"
-        permission="zope.Public"
-        name="+forgottenpassword"
-        />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadApplication"
-        template="../templates/launchpad-logout.pt"
-        class="canonical.launchpad.webapp.login.CookieLogoutPage"
-        permission="zope.Public"
-        name="+logout"
-        />
 
     <!-- Default favicon -->
     <browser:favicon for="*" file="../images/defaultFavicon.gif" />

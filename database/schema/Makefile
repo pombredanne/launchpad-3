@@ -17,6 +17,7 @@ DBNAME=launchpad_dev
 # It is not used directly, but used as a template in a createdb command
 # to quickly build a populated database to run tests against.
 TEST_DBNAME=launchpad_ftest_template
+EMPTY_DBNAME=launchpad_empty
 
 # The latest schema dump from production. Database patches are relative
 # to this baseline. This dump should be updated every production rollout
@@ -26,10 +27,9 @@ TEST_DBNAME=launchpad_ftest_template
 #             launchpad_prod | grep -v '^--'
 # Then, manually, the 'SET client_min_messages' line is added and
 # the first two CREATEs commented out (plpythonu stuff)
-REV=10
+REV=14
 BASELINE=launchpad-${REV}-00-0.sql
-MD5SUM=dbe572c767d824311cc7789ee5548cf8  launchpad-10-00-0.sql
-
+MD5SUM=deac7687a21ec0bbe79c5bf05aa04867  launchpad-14-00-0.sql
 default: all
 
 # NB. Yes - we run fti.py twice. This should be fixed sometime, but
@@ -44,49 +44,29 @@ test: create
 	    xargs -n 1 psql -d ${TEST_DBNAME} -q -f | cat
 	@ echo "* Setting up full text indexes"
 	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py
+	@ echo "* Adding comments"
+	@ psql -d ${TEST_DBNAME} -f comments.sql | grep : | cat
+	@ echo "* Security setup"
+	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} security.py
+	@ echo "* Creating database \"$(EMPTY_DBNAME)\" with no sample data."
+	@ createdb -E UNICODE --template ${TEST_DBNAME} ${EMPTY_DBNAME} \
+	    | grep : | cat
 	@ echo "* Loading language data"
 	@ psql -d ${TEST_DBNAME} -f ../languages.sql | grep : | cat
 	@ echo "* Loading sample data"
 	@ psql -d ${TEST_DBNAME} -f $(SAMPLEDATA) | grep : | cat
 	@ echo "* Setting up full text indexes"
+	@ env LP_DBNAME=${EMPTY_DBNAME} ${PYTHON} fti.py
 	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py
-	@ echo "* Adding comments"
-	@ psql -d ${TEST_DBNAME} -f comments.sql | grep : | cat
-	@ echo "* Security setup"
-	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} security.py
 	@ echo "* Vacuuming"
 	@ psql -d ${TEST_DBNAME} -c 'vacuum full analyze' | grep : | cat
-
-empty: create 
-	@ echo "* Loading base database schema"
-	@ psql -d ${TEST_DBNAME} -f ${BASELINE} | grep : | cat
-	@ echo "* Installing tsearch2 into ts2 schema"
-	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py --setup-only
-	@ echo "* Patching the database schema"
-	@ ls -1 patch-${REV}-*.sql | sort | \
-	    xargs -n 1 psql -d ${TEST_DBNAME} -q -f | cat
-	@ echo "* Setting up full text indexes"
-	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py
-	@ echo "* Loading language data"
-	@ psql -d ${TEST_DBNAME} -f ../languages.sql | grep : | cat
-	@ echo "* Setting up full text indexes"
-	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py
-	@ echo "* Adding comments"
-	@ psql -d ${TEST_DBNAME} -f comments.sql | grep : | cat
-	@ echo "* Vacuuming"
-	@ psql -d ${TEST_DBNAME} -c 'vacuum full analyze' | grep : | cat
-	@ echo "* Creating ${DBNAME}"
-	@if [ "$$((`psql -l | grep ${DBNAME} | wc -l`))" = '1' ]; \
-	    then dropdb ${DBNAME} | grep : | cat ; \
-	fi
-	@ createdb -E UNICODE --template=${TEST_DBNAME} ${DBNAME} | grep : | cat
 
 dev: test
 	@ echo "* Creating ${DBNAME}"
 	@if [ "$$((`psql -l | grep ${DBNAME} | wc -l`))" = '1' ]; \
 	    then dropdb ${DBNAME} | grep : | cat ; \
 	fi
-	@ createdb -E UNICODE --template=${TEST_DBNAME} ${DBNAME} | grep : | cat
+	@ createdb -E UNICODE --template ${TEST_DBNAME} ${DBNAME} | grep : | cat
 
 create: check
 	@ echo "* If this fails you need to run as the postgresql superuser"
@@ -96,6 +76,9 @@ create: check
 	@ echo
 	@if [ "$$((`psql -l | grep ${TEST_DBNAME} | wc -l`))" = '1' ]; \
 	    then dropdb ${TEST_DBNAME} | grep : | cat ; \
+	fi
+	@if [ "$$((`psql -l | grep ${EMPTY_DBNAME} | wc -l`))" = '1' ]; \
+	    then dropdb ${EMPTY_DBNAME} | grep : | cat ; \
 	fi
 	@ echo "* Creating database \"$(TEST_DBNAME)\" with sample data."
 	@if [ "$$((`psql -l | grep ${TEST_DBNAME} | wc -l`))" = '0' ]; \
@@ -127,6 +110,9 @@ all: dev test
 
 doc:
 	postgresql_autodoc -d ${DBNAME} -f launchpad -t html
+	tidy -asxhtml launchpad.html > ,launchpad.html || mv ,launchpad.html launchpad.html
+
+diagram:
 	${PYTHON} diagram.py
 
 newsample-foaf:

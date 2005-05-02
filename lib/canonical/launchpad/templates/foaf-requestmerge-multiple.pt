@@ -8,16 +8,13 @@
   <title metal:fill-slot="title">Merge User Accounts</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Soyuz style sheet -->
+    <!-- Launchpad style sheet -->
     <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
 
 <div metal:fill-slot="main">
-
-  <div id="content" class="documentEditable">
-  <div class="documentContent" id="region-content">
 
     <tal:block tal:condition="not: view/formProcessed">
       <h1>Merge User Accounts</h1>
@@ -59,9 +56,6 @@
       follow the instructions on each of those messages to complete the
       merge.</p>
     </tal:block>
-
-  </div>
-  </div>
 
 </div> 
 

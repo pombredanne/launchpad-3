@@ -15,6 +15,7 @@ class IProductRelease(Interface):
     datereleased = Datetime(title=_('Date Released'), required=True,
                             readonly=True)
     version = TextLine(title=_('Version'),required=True, readonly=True)
+    displayname = Attribute("Constructed displayname for a productrelease")
     title = TextLine(title=_('Title'),required=True)
     shortdesc = Text(title=_("Short Description"), required=True)
     description = Text(title=_("Description"), required=True)
@@ -25,4 +26,6 @@ class IProductRelease(Interface):
     manifest = Attribute("Manifest")
 
     files = Attribute(_('Iterable of product release files'))
-    
+    potemplates = Attribute(
+        _("Returns an iterator over this productrelease's PO templates."))
+

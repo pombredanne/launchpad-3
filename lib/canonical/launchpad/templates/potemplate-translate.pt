@@ -1,41 +1,47 @@
+<tal:block replace="view/processForm" />
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
       i18n:domain="rosetta">
 
-<head>
-    <title metal:fill-slot="title">Rosetta: Translating
-        <span tal:replace="context/product/displayname">product displayname</span>
-        Template <span tal:replace="context/title">template titleM</span></title>
+  <head>
+    <title metal:fill-slot="title">Translating
+      <span tal:replace="context/title">template title</span>
+    </title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Rosetta style sheet -->
-    <style type="text/css" media="screen">@import url(rosetta.css);</style>
-</head>
+    <!-- Launchpad style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
+  </head>
+  <body>
 
-<body>
-
-<div metal:fill-slot="portlets_one">
-    <div class="portlet">
-        <h4>Quick Reference</h4>
+    <div metal:fill-slot="portlets_one">
+      <div class="portlet">
+        <h4>What&#8217;s going on here?</h4>
+        <div class="portletBody">
+          <ul>
+            <li><a href="/rosetta/+about">About Rosetta</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="portlet">
+        <h4>Special characters</h4>
 
         <div class="portletBody">
             <ul>
             <li><span class="po-message-special"
-                style="padding: 0.2em">&#x21b5;</span> &ndash; a new line</li>
-            <li><span class="po-message-special"
                 style="padding: 0.2em">&#x2022;</span> &ndash; a space
                 character</li>
+            <li><span class="po-message-special"
+                style="padding: 0.2em">&#x21b5;</span> &ndash; a new line</li>
             </ul>
-
             <p>
-            Check the "needs review" button if you are not sure a translation
-            is correct.
+              In your translation, include spaces and new lines matching those indicated. (Don&#8217;t use these symbols).
             </p>
         </div>
-    </div>
+      </div>
 
-    <div class="portlet">
+      <div class="portlet">
         <h4>PO File Details</h4>
 
         <div class="portletBody">
@@ -47,294 +53,412 @@
                 >Language</a></li>
             </ul>
         </div>
+      </div>
     </div>
-</div>
 
-<div metal:fill-slot="main">
-
-    <h1>Translating <span tal:replace="context/product/displayname">product
-        displayname</span>:  <span tal:replace="context/title">POT file
-        title</span></h1>
-
-    <p class="discreet">
-      You are translating <a href=".."><span
-      tal:replace="context/product/displayname">product
-      displayname</span></a> using the Rosetta Translation portal. You can
-      read <a href="/rosetta/+about">more about Rosetta</a> or start
-      translating <span
-      tal:replace="context/product/displayname">product</span> immediately.
-      This specific translation template is called "<span
-      tal:replace="context/title">template title</span>"
-    </p>
-
-    <p tal:content="context/description">
-        template description
-    </p>
+    <div metal:fill-slot="main">
+      <div>You are translating</div>
+      <h1>
+        <strong tal:content="context/title">ProductName for DistroVersion</strong>
+        into
+        <span
+          tal:repeat="language view/languages"
+          tal:omit-tag
+        >
+          <strong tal:content="language/englishname">Portugese (Brazilian)</strong><span
+            tal:condition="not:repeat/language/end"
+            tal:omit-tag
+          >,</span>
+        </span>
+      </h1>
+      <p tal:content="context/description">
+        The template description.
+      </p>
 
     <!-- Plural form error message. -->
 
-    <div tal:condition="view/badLanguages">
-
-        <p class="portalMessage">
-        This template contains plural messages. To be able to translate these
-        messages, we need to have special information for each language.
-        However, we do not have this information for
-            <span tal:repeat="language view/badLanguages" tal:omit-tag>
-               <span tal:replace="language/englishname">language</span>,
-            </span>
-        please read the <a
-        href="http://www.gnu.org/software/gettext/manual/html_chapter/gettext_10.html#SEC150">
-        documentation</a> about plural forms and contact the <a
-        href="mailto:rosetta-users@lists.ubuntu.com">Rosetta users
-        mailing list</a> to resolve this giving us the plural form expression
-        as the documentation specifies it.<br />
-        If you don't understand exactly how it works, just give us the rules
-        you follow when writing into your language and we will try to write
-        the expression for you.<br />
-        This procedure only ever needs to be done once per language. Once we have
-        the information, you can translate into these languages.
+    <div tal:condition="view/badLanguages" class="portalMessage">
+        <p>
+          Rosetta can&#8217;t handle the plural items in this file, because it doesn&#8217;t yet know how plural forms work for
+          <span tal:repeat="language view/badLanguages"
+            tal:omit-tag
+          >
+            <span tal:replace="language/englishname">language</span><span
+            tal:condition="not:repeat/language/end"
+            tal:omit-tag
+          >,</span></span>.
+        </p>
+        <p>
+          To fix this, please e-mail the <a
+          href="mailto:rosetta-users@lists.ubuntu.com">Rosetta users
+          mailing list</a> with this information, preferably in the
+          format <a
+        href="http://www.gnu.org/software/gettext/manual/html_chapter/gettext_10.html#SEC150">described in the <code>gettext</code> manual.
+        </p>
+        <p>
+          This only needs to be done once per language.
+          Thanks for helping Rosetta.
         </p>
 
     </div>
 
-    <!-- No plural form error. -->
+    <!-- No errors. -->
 
-    <div tal:condition="not: view/badLanguages">
+      <div tal:condition="not: view/badLanguages">
 
     <!-- Display settings. -->
 
-    <form method="post" tal:attributes="action view/URL">
-        <fieldset>
-        <legend>Display Settings</legend>
-            <div class="field">
-                <label>Show</label>
-                <!--
-                Yes, I know, the logic for the 'checked' attributes is
-                somewhat evil.
-                 - Dafydd Harries, 21/10/2004
-                -->
-                <label><input name="show" type="radio" value="translated"
-                    tal:attributes="checked
-                        python:('', 'checked')[view.show == 'translated']" />
-                    translated</label>
-                <label><input name="show" type="radio" value="untranslated"
-                    tal:attributes="checked
-                        python:('', 'checked')[view.show == 'untranslated']" />
-                    untranslated</label>
-                <label><input name="show" type="radio" value="all"
-                    tal:attributes="checked
-                        python:('', 'checked')[view.show == 'all']" />
-                    all</label>
+        <form method="post"
+          style="text-align: right;"
+          tal:condition="view/canEditTranslations"
+          tal:attributes="action view/URL"
+        >
+          <label>Show:</label>
+          <select name="show">
+            <option value="all"
+              tal:attributes="selected
+              python:('', 'selected')[view.show == 'all']"
+            >all items</option>
+            <option value="untranslated"
+              tal:attributes="selected
+              python:('', 'selected')[view.show == 'untranslated']"
+            >untranslated items</option>
+            <option value="translated"
+              tal:attributes="selected
+              python:('', 'selected')[view.show == 'translated']"
+            >translated items</option>
+          </select>
+          <input type="hidden" name="languages"
+              tal:condition="view/codes"
+              tal:attributes="value view/codes" />
+          <input type="submit" value="Change" />
+        </form>
 
-                <input type="hidden" name="languages"
-                    tal:condition="view/codes"
-                    tal:attributes="value view/codes" />
-                <input type="submit" value="Change" />
-            </div>
-        </fieldset>
-    </form>
 
-    <!-- Show which messages are displayed. -->
+        <!-- The translation form. -->
+        <form method="post" tal:attributes="action view/URL">
+          <table class="data" style="margin-top: 0.5em;">
+            <thead>
+              <tr class="results">
+                <td colspan="0">
 
-    <div tal:condition="view/atBeginning">
-        <div tal:condition="view/atEnd">
-            Showing all
-            <span tal:replace="context/__len__">23</span>
-            messages.
-        </div>
-    </div>
-
-    <div tal:condition="python:
-            (not view.atBeginning()) or (not view.atEnd())">
-        Showing messages
-        <span tal:replace="python: view.offset + 1"
-            >5</span>
-        &ndash;
-        <span tal:replace="python:
-            min(len(context), view.offset + view.count)">10</span>
-        of
-        <span tal:replace="context/__len__">23</span>.
-        <span tal:repeat="language view/languages">
-            <br />
-            <label class="language-code"
-                   tal:content="language/englishname">pt_BR</label>:
-            <span tal:replace="python:
-                '%.1f' % view.completeness[language.code]">0</span>%
-        </span>
-    </div>
-
-    <!-- Paging doodads. -->
-
-    <div class="listingBar">
-        <!-- Link to previous page and beginning, if this is not the beginning page. -->
-        <span class="previous" tal:condition="not:view/atBeginning">
-            <a tal:attributes="href view/beginningURL">&laquo; Beginning</a>
-
-            <a tal:attributes="href view/previousURL">&laquo; Previous
-                <span tal:replace="view/count">5</span> messages</a>
-        </span>
-
-        <!-- Link to next page and end, if tis is not the end page. -->
-        <span class="next" tal:condition="not:view/atEnd">
-            <a tal:attributes="href view/nextURL">Next
-                <span tal:replace="view/count">5</span> messages &raquo;</a>
-
-            <a tal:attributes="href view/endURL">End &raquo;</a>
-        </span>
-        &nbsp;
-    </div>
-
-    <!-- The translation form. -->
-
-    <form method="post" tal:attributes="action view/URL">
-        <fieldset class="message-strings" tal:repeat="set view/messageSets">
-            <input type="hidden"
-                tal:attributes="
-                    name string:set_${set/id}_msgid;
-                    value set/messageID/text
-                    " />
-
-            <legend>Message #<span tal:replace="set/sequence">120</span></legend>
-
-            <div class="po-comment" tal:condition="set/sourceComment">
-                <label>Developer Note</label>
-
-                <div tal:content="set/sourceComment">This refers to the content type.</div>
-            </div>
-
-            <tal:simple-message condition="not:set/isPlural">
-                <!-- Simple message. -->
-
-                <label class="language-code">English (Source)</label>:
-
-                <div class="messageSourceString"
-                     tal:content="structure set/messageID/displayText">text</div>
-
-                <div tal:repeat="language view/languages">
-                    <span class="language-label">
-                    <label class="language-code"
-                        tal:content="language/englishname">Welsh</label>:
-                    </span>
-
-                    <label class="fuzzy-checkbox">
-                        Needs review
-                        <input type="checkbox" value="fuzzy" tal:attributes="
-                            checked python:set['fuzzy'][language];
-                            name string:set_${set/id}_fuzzy_${language/code};
-                            tabindex: view/makeTabIndex
-                            " />
-                    </label>
-
-                    <br/>
-
-                    <div class="po-comment"
-                        tal:condition="python: set['comments'][language]">
-                        <label>Translator Note</label>
-
-                        <div tal:content="python: set['comments'][language]">
-                        Translator comment.
-                        </div>
+                  <!-- Show which messages are displayed. -->
+                  <div style="width: 50%; float: left;">
+                    <div tal:condition="view/atBeginning">
+                      <div tal:condition="view/atEnd">
+                        All
+                        <strong tal:content="context/__len__">23</strong>
+                        items
+                      </div>
                     </div>
-
-                    <input type="text"
-                        tal:condition="not:set/messageID/isMultiline"
-                        tal:attributes="
-                            name string:set_${set/id}_translation_${language/code};
-                            value python:set['translations'][language][0];
-                            tabindex view/makeTabIndex;
-                            " />
-                    <textarea
-                        tal:condition="set/messageID/isMultiline"
-                        tal:attributes="
-                            name string:set_${set/id}_translation_${language/code};
-                            rows set/messageID/lines;
-                            tabindex view/makeTabIndex;
-                            "
-                        tal:content="python:set['translations'][language][0]
-                        "></textarea>
-                </div>
-            </tal:simple-message>
-
-            <tal:plural-message condition="set/isPlural">
-                <!-- Plural message. -->
-
-                <div class="field">
-                    <label class="language-code">English Singular</label>:
-                    <div class="messageSourceString"
-                        tal:content="structure set/messageID/displayText">singular</div>
-                </div>
-
-                <div class="field">
-                    <label class="language-code">English Plural</label>:
-                    <div class="messageSourceString"
-                        tal:content="structure set/messageIDPlural/displayText">plural</div>
-                </div>
-
-                <div tal:repeat="language view/languages">
-
-                    <label class="fuzzy-checkbox">
-                        Needs review
-                        <input type="checkbox" value="fuzzy" tal:attributes="
-                            checked python:set['fuzzy'][language];
-                            name string:set_${set/id}_fuzzy_${language/code};
-                            tabindex: view/makeTabIndex
-                            " />
-                    </label>
-
-                    <label class="language-code"
-                        tal:content="language/englishname">pt_BR[0]</label>:
-
-                    <div class="field" tal:repeat="i python:
-                        range(view.pluralforms[language.code])">
-
-                        <input type="text"
-                            tal:condition="not:set/messageID/isMultiline"
-                            tal:attributes="
-                                name string:set_${set/id}_translation_${language/code}_${i};
-                                value python:set['translations'][language][i];
-                                tabindex view/makeTabIndex;
-                                " />
-                        <textarea
-                            tal:condition="set/messageID/isMultiline"
-                            tal:attributes="
-                                name string:set_${set/id}_translation_${language/code}_${i};
-                                rows set/messageID/lines;
-                                tabindex view/makeTabIndex;
-                                "
-                            tal:content="python:set['translations'][language][i]"
-                            ></textarea>
-                        <!--
-                        <img src="/++resource++info.gif" title="Example: 1 dead horse." />
-                        -->
+                    <div tal:condition="python:
+                      (not view.atBeginning()) or (not view.atEnd())"
+                    >
+                      Items
+                      <strong tal:content="python: view.offset + 1"
+                      >5</strong>&rarr;<strong tal:content="python:
+                      min(len(context), view.offset +
+                      view.count)">10</strong>
+                      of
+                      <strong tal:content="context/__len__">23</strong>
                     </div>
+                  </div>
+                  <!-- Paging doodads. -->
+                  <div style="width: 50%; float: right; text-align: right;">
 
-                </div>
-            </tal:plural-message>
+                <!-- Link to previous page and beginning, if this is not the beginning page. -->
+                <span class="previous" tal:condition="not:view/atBeginning">
+                    <a tal:attributes="href view/beginningURL">First</a>
+                    &ndash;
+                    <a tal:attributes="href view/previousURL">Previous
+                        <span tal:replace="view/count">5</span></a>
+                   <span tal:condition="not:view/atEnd">&ndash;</span>
+                </span>
 
-            <fieldset class="collapsible collapsed">
-                <legend>Located in</legend>
-                <pre tal:content="set/fileReferences"
-                    >./plone_forms/discussion_reply_form.pt</pre>
-            </fieldset>
+                <!-- Link to next page and end, if tis is not the end page. -->
+                <span class="next" tal:condition="not:view/atEnd">
+                    <a tal:attributes="href view/nextURL">Next
+                        <span tal:replace="view/count">5</span></a>
+                &ndash;
+                    <a tal:attributes="href view/endURL">Last</a>
+                </span>
 
-        </fieldset>
+                  </div>
+                  <br style="clear: both;">
+                </td>
+              </tr>
+            </thead>
+            <tbody>
+              <tr tal:repeat="messageSet view/messageSets">
+                <td style="text-align: right;">
+                  <span tal:replace="messageSet/sequence">1</span>.
+                </td>
+                <td>
+                  <input type="hidden"
+                    tal:attributes="
+                    name string:set_${messageSet/id}_msgid;
+                    value messageSet/messageID/text"
+                  />
+                  <!-- XXX mpt-20050407: Nested tables? Ick.
+                  Should eventually be
+                  replaced by fancy code to calculate the
+                  rowspan of the messageSet/sequence cell above.
+                  -->
+                  <tal:simple-message
+                    condition="not:messageSet/isPlural"
+                  ><!-- Simple message. -->
+                    <table width="100%">
+                      <tr>
+                        <th style="width: 25%">
+                          <label class="language-code">English (source):</label>
+                        </th>
+                        <td style="width: 16px;">
+                        </td>
+                        <td
+                          tal:content="structure messageSet/messageID/displayText"
+                        >
+                          The original text.
+                        </td>
+                      </tr>
+                      <tr
+                        class="discreet"
+                        tal:condition="messageSet/sourceComment"
+                      >
+                        <td></td>
+                        <td></td>
+                        <td>
+                          <img
+                            alt="Developer note:"
+                            src="/@@/info_icon.gif"
+                            title="This note was provided by the software developer."
+                          />
+                          <span
+                            tal:content="messageSet/sourceComment"
+                            tal:omit-tag
+                          >
+                            This refers to the content type.
+                          </span>
+                        </td>
+                      </tr>
+                      <tr tal:repeat="language view/languages">
+                      <tal:define define="language_code language/code">
+                        <th>
+                          <label class="language-code">
+                            <span tal:replace="language/englishname">Welsh</span>:
+                          </label>
+                        </th>
+                        <td>
+                          <!-- will eventually contain copy buttons -->
+                        </td>
+                        <td>
+                          <div
+                            tal:define="language_errors messageSet/errors/?language_code"
+                            tal:condition="language_errors"
+                            class="error">
+
+                            <strong>Error in Translation:</strong>
+                            <span tal:replace="python: language_errors" />
+                          </div>
+                          <input type="text"
+                              tal:condition="not:messageSet/messageID/isMultiline"
+                              tal:attributes="
+                                  name string:set_${messageSet/id}_translation_${language_code};
+                                  value python:messageSet['translations'][language][0];
+                                  tabindex view/makeTabIndex;
+                                  " />
+                          <textarea
+                              tal:condition="messageSet/messageID/isMultiline"
+                              tal:attributes="
+                                  name string:set_${messageSet/id}_translation_${language_code};
+                                  rows messageSet/messageID/lines;
+                                  tabindex view/makeTabIndex;
+                                  "
+                              tal:content="python:messageSet['translations'][language][0]
+                              "></textarea>
+                          <div>
+                          <label>
+                              <input type="checkbox" value="fuzzy" tal:attributes="
+                                  checked python:messageSet['fuzzy'][language];
+                                  name string:set_${messageSet/id}_fuzzy_${language_code};
+                                  tabindex: view/makeTabIndex
+                                  " />
+                              Someone should review this translation
+                          </label>
+                          </div>
+
+                          <div class="po-comment"
+                            tal:condition="python:messageSet['comments'][language]">
+                            <label>Translator Note</label>
+
+                            <div
+                              tal:content="python:messageSet['comments'][language]">
+                              Translator comment.
+                            </div>
+                          </div>
+                        </td>
+                      </tal:define>
+                      </tr>
+                      <tr class="discreet">
+                        <th style="width: 25%; padding-bottom: 1em;">
+                          Located in:
+                        </th>
+                        <td style="width: 16px;">
+                        </td>
+                        <td style="overflow: auto;"
+                          tal:content="messageSet/fileReferences"
+                        >
+                          ./plone_forms/discussion_reply_form.pt
+                        </td>
+                      </tr>
+                    </table>
+                  </tal:simple-message>
+
+                  <tal:plural-message condition="messageSet/isPlural">
+                    <!-- Plural message. -->
+                    <table>
+                      <tr>
+                        <th style="width: 25%;">
+                          <label>English singular:</label>
+                        </th>
+                        <td style="width: 16px;"></td>
+                        <td
+                          tal:content="structure messageSet/messageID/displayText"
+                        >
+                          singular source
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
+                          <label>English plural:</label>
+                        </th>
+                        <td style="width: 16px;"></td>
+                        <td
+                          tal:content="structure messageSet/messageIDPlural/displayText"
+                        >
+                          singular source
+                        </td>
+                      </tr>
+                      <rowgroup
+                        tal:repeat="language view/languages"
+                        tal:omit-tag
+                      >
+                      <tal:define define="language_code language/code">
+                        <tr>
+                          <th>
+                            <label>
+                              <span
+                                tal:replace="language/englishname"
+                              >Dutch</span>:
+                            </label>
+                          </th>
+                          <td></td>
+                          <td>
+                            <div
+                              tal:define="language_errors messageSet/errors/?language_code"
+                              tal:condition="language_errors"
+                              class="error">
+
+                              <strong>Error in Translation:</strong>
+                              <span tal:replace="language_errors" />
+                            </div>
+                            <div
+                              tal:repeat="i python:
+                                range(view.pluralFormCounts[language_code])"
+                              tal:omit-tag
+                            >
+                              <input type="text"
+                                  tal:condition="not:messageSet/messageID/isMultiline"
+                                  tal:attributes="
+                                      name string:set_${messageSet/id}_translation_${language_code}_${i};
+                                      value python:messageSet['translations'][language][i];
+                                      tabindex view/makeTabIndex;
+                                      " />
+                              <textarea
+                                  tal:condition="messageSet/messageID/isMultiline"
+                                  tal:attributes="
+                                      name string:set_${messageSet/id}_translation_${language_code}_${i};
+                                      rows messageSet/messageID/lines;
+                                      tabindex view/makeTabIndex;
+                                      "
+                                  tal:content="python:messageSet['translations'][language][i]"
+                                  ></textarea>
+                              <!--
+                              <img src="/++resource++info.gif" title="Example: 1 dead horse." />
+                              -->
+                            </div>
+                            <div>
+                              <label class="fuzzy-checkbox">
+                                <input type="checkbox" value="fuzzy" tal:attributes="
+                                    checked python:messageSet['fuzzy'][language];
+                                    name string:set_${messageSet/id}_fuzzy_${language_code};
+                                    tabindex: view/makeTabIndex
+                                    " />
+                                Someone should review these translations
+                              </label>
+                            </div>
+                          </td>
+                        </tr>
+                      </tal:define>
+                      </rowgroup>
+                      <tr class="discreet">
+                        <th>
+                          Located in:
+                        </th>
+                        <td style="width: 16px;">
+                        </td>
+                        <td style="overflow: auto;"
+                          tal:content="messageSet/fileReferences"
+                        >
+                          ./plone_forms/discussion_reply_form.pt
+                        </td>
+                      </tr>
+                    </table>
+                  </tal:plural-message>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <th colspan="0">
+                  <input type="hidden" name="offset"
+                      tal:condition="not: view/atEnd"
+                      tal:attributes="value python: view.offset + view.count" />
+                  <input type="hidden" name="languages"
+                      tal:condition="view/codes"
+                      tal:attributes="value view/codes" />
+                  <input type="hidden" name="show"
+                      tal:condition="view/show"
+                      tal:attributes="value view/show" />
+                  <input type="submit" name="SUBMIT" value="Save &amp; Continue" style="text-align: right;"
+                      tal:attributes="tabindex: view/makeTabIndex" />
+                </th>
+              </tr>
+            </tfoot>
+          </table>
 
         <!-- Offset of next page, if not at end. -->
-        <input type="hidden" name="offset"
-            tal:condition="not: view/atEnd"
-            tal:attributes="value python: view.offset + view.count" />
-        <input type="hidden" name="languages"
-            tal:condition="view/codes"
-            tal:attributes="value view/codes" />
-        <input type="hidden" name="show"
-            tal:condition="view/show"
-            tal:attributes="value view/show" />
-        <input type="submit" name="SUBMIT" value="Save"
-            tal:attributes="tabindex: view/makeTabIndex" />
-    </form>
+        </form>
+        <p class="discreet">
+          Translation status:
+          <span
+            tal:repeat="language view/languages"
+            tal:omit-tag
+          >
+            <span class="language-code"
+              tal:content="language/englishname"
+              tal:omit-tag
+            >pt_BR</span>
+            <span tal:replace="python:
+              '%.1f' % view.completeness[language.code]"
+              tal:omit-tag
+            >0</span> %<span
+              tal:condition="not:repeat/language/end"
+              tal:omit-tag
+            >,</span>
+          </span>
+        </p>
+      </div> <!-- condition: not: view/badLanguages -->
+    </div>
 
-    </div> <!-- condition: not: view/badLanguages -->
-</div>
-
-</body>
+  </body>
 </html>

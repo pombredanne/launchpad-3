@@ -14,6 +14,7 @@
 
     <include package="canonical.launchpad" file="permissions.zcml" />
     <include package="canonical.launchpad.webapp" file="meta.zcml" />
+    <include package="canonical.librarian" />
     <includeOverrides file="defaultview-meta.zcml" />
 
     <browser:skin
@@ -98,23 +99,16 @@
         layer="canonical.launchpad.layers.DebugLayer"
         />
 
-    <!-- And we want the changelog available on the debug view too, so people
-    can see when their patches make it to the dogfood server. -->
-
-    <browser:page
-        layer="canonical.launchpad.layers.DebugLayer"
-        for="canonical.publication.RootObject"
-        name="changelog.html"
-        template="launchpad/templates/debug-root-changelog.pt"
-        class="canonical.launchpad.browser.changelog.ChangeLog"
-        permission="zope.Public"
-        />
-
     <include file="browser-exception.zcml" />
     <include package="canonical.widgets" />
     <include package="canonical.database" />
-    <include package="canonical.auth" />
     <include package="canonical.launchpad" />
+
+    <content class="canonical.publication.LoginRoot">
+      <allow
+        attributes="publishTraverse"
+        />
+    </content>
 
     <!-- enable the error reporting service at /errors -->
     <browser:suburl

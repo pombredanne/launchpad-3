@@ -1,0 +1,53 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <!-- SourcePackageName -->
+    <content class="canonical.launchpad.database.SourcePackageName">
+        <allow interface="canonical.launchpad.interfaces.ISourcePackageName" />
+    </content>
+
+
+    <!-- SourcePackageNameSet -->
+    <securedutility
+        class="canonical.launchpad.database.SourcePackageNameSet"
+        provides="canonical.launchpad.interfaces.ISourcePackageNameSet">
+        <allow interface="canonical.launchpad.interfaces.ISourcePackageNameSet" />
+    </securedutility>
+
+    <content class="canonical.launchpad.database.SourcePackageNameSet">
+      <allow interface="canonical.launchpad.interfaces.ISourcePackageNameSet"/>
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ISourcePackageNameSet"
+        name="+index" />
+
+    <browser:pages
+         for="canonical.launchpad.interfaces.ISourcePackageNameSet"
+         permission="zope.Public"
+         class="canonical.launchpad.browser.SourcePackageNameSetView">
+        <browser:page
+            name="+index"
+            template="../templates/sourcepackagenames-index.pt"
+            lp:url="/sourcepackagenames/+index" />
+
+     </browser:pages>
+
+    <browser:addform
+        name="+new"
+        for="canonical.launchpad.interfaces.ISourcePackageNameSet"
+        schema="canonical.launchpad.interfaces.ISourcePackageName"
+        label="Create a new Source Package Name"
+        fields="name"
+        content_factory="canonical.launchpad.database.SourcePackageName"
+        class="canonical.launchpad.browser.SourcePackageNameAddView"
+        permission="launchpad.Admin"
+        template="../templates/launchpad-addform.pt"
+        lp:url="sourcepackagenames/+new">
+    </browser:addform>
+
+</configure>

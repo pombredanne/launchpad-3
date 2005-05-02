@@ -9,18 +9,20 @@ from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.database.distribution import Distribution
-from canonical.launchpad.database.distrorelease import DistroRelease
-from canonical.launchpad.database.person import Person
-from canonical.launchpad.database.sourcepackage import SourcePackage, \
+from canonical.launchpad.database import Distribution
+from canonical.launchpad.database import DistroRelease
+from canonical.launchpad.database import Person
+from canonical.launchpad.database import GPGKey
+from canonical.launchpad.database import SourcePackage, \
     SourcePackageRelease, SourcePackageName
-from canonical.launchpad.database.binarypackage import BinaryPackage, \
-    BinaryPackageName
-from canonical.launchpad.database.milestone import Milestone
-from canonical.launchpad.database.product import Product
-from canonical.launchpad.database.project import Project
-from canonical.launchpad.database.productrelease import ProductRelease
-from canonical.launchpad.database.bugtracker import BugTracker
+from canonical.launchpad.database import BinaryPackage
+from canonical.launchpad.database import BinaryPackageName
+from canonical.launchpad.database import Milestone
+from canonical.launchpad.database import Product
+from canonical.launchpad.database import Project
+from canonical.launchpad.database import ProductRelease
+from canonical.launchpad.database import ProductSeries
+from canonical.launchpad.database import BugTracker
 from canonical.database.sqlbase import SQLBase, quote_like, quote
 
 from sqlobject import AND, OR, CONTAINSSTRING
@@ -107,43 +109,6 @@ class SQLObjectVocabularyBase(object):
     def getTermByToken(self, token):
         return self.getTerm(token)
 
-
-class SourcePackageVocabulary(SQLObjectVocabularyBase):
-    implements(IHugeVocabulary)
-
-    _table = SourcePackage
-    _orderBy = 'id'
-
-    def _toTerm(self, obj):
-        name = obj.sourcepackagename.name
-        return SimpleTerm(obj, str(obj.id), name)
-
-    def getTermByToken(self, token):
-        return self.getTerm(token)
-
-    def search(self, query):
-        """Returns products where the sourcepackage full text indexes
-        contain the given
-        query. Returns an empty list if query is None or an empty string.
-
-        """
-        if not query:
-            return []
-        query = query.lower()
-        t = self._table
-        objs = [self._toTerm(r)
-            for r in t.select("""
-                sourcepackage.sourcepackagename = sourcepackagename.id
-                AND (
-                    sourcepackagename.name like '%%' || %s || '%%'
-                    OR sourcepackage.fti @@ ftq(%s)
-                    )
-                """ % (quote_like(query), quote(query)),
-                ['SourcePackageName']
-                )
-            ]
-        return objs
-
 class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
     """A SQLObjectVocabulary base for database tables that have a unique
         name column.
@@ -168,12 +133,12 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
 
     def search(self, query):
         """Return terms where query is a subtring of the name"""
-        if not query:
-            return []
-        objs = self._table.select(
-            CONTAINSSTRING(self._table.q.name, query)
-            )
-        return [self._toTerm(obj) for obj in objs]
+        if query:
+            objs = self._table.select(
+                CONTAINSSTRING(self._table.q.name, query)
+                )
+            for o in objs:
+                yield self._toTerm(o)
 
 
 class BinaryPackageNameVocabulary(NamedSQLObjectVocabulary):
@@ -192,10 +157,10 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         return SimpleTerm(obj, obj.name, obj.title)
 
     def getTermByToken(self, token):
-        objs = self._table.select(self._table.q.name == token)
-        if objs.count() != 1:
+        obj = self._table.selectOne(self._table.q.name == token)
+        if obj is None:
             raise LookupError, token
-        return self._toTerm(objs[0])
+        return self._toTerm(obj)
 
     def search(self, query):
         """Returns products where the product name, displayname, title,
@@ -283,9 +248,6 @@ class PersonVocabulary(NamedSQLObjectVocabulary):
 
     def search(self, query):
         """Return terms where query is a subtring of the name"""
-        # TODO: This may actually be fast enough, or perhaps we will
-        # need to implement full text search inside PostgreSQL (tsearch or
-        # similar) -- StuartBishop 2004/11/24
         if not query:
             return []
         kw = {}
@@ -328,9 +290,6 @@ class ValidPersonVocabulary(PersonVocabulary):
 
     def search(self, query):
         """Return terms where query is a subtring of the name"""
-        # TODO: This may actually be fast enough, or perhaps we will
-        # need to implement full text search inside PostgreSQL (tsearch or
-        # similar) -- StuartBishop 2004/11/24
         if not query:
             return []
         query = query.lower()
@@ -348,11 +307,65 @@ class ValidPersonVocabulary(PersonVocabulary):
 
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
     _table = ProductRelease
-    _orderBy = 'product'
+    _orderBy = 'name'
 
     def _toTerm(self, obj):
         return SimpleTerm(
             obj, obj.id, obj.product.name + " " + obj.version)
+
+class ProductSeriesVocabulary(SQLObjectVocabularyBase):
+    implements(IHugeVocabulary)
+
+    _table = ProductSeries
+    _orderBy = [Product.q.name, ProductSeries.q.name]
+    _clauseTables = ['Product']
+
+    def __iter__(self):
+        for obj in self._table.select(
+                ProductSeries.q.productID == Product.q.id,
+                orderBy=self._orderBy,
+                clauseTables=self._clauseTables,
+                ):
+            yield self._toTerm(obj)
+
+    def _toTerm(self, obj):
+        # NB: We use '/' as the seperator because '-' is valid in
+        # a product.name or productseries.name
+        token = '%s/%s' % (obj.product.name, obj.name)
+        return SimpleTerm(obj.id,
+                          token,
+                          obj.product.name + ' ' + obj.name)
+
+    def getTermByToken(self, token):
+        try:
+            productname, productseriesname = token.split('/', 1)
+        except ValueError:
+            raise LookupError, token
+
+        objs = ProductSeries.select(AND(Product.q.name == productname,
+                ProductSeries.q.name == productseriesname
+                ))
+        try:
+            return self._toTerm(objs[0])
+        except IndexError:
+            raise LookupError, token
+
+    def search(self, query):
+        """Return terms where query is a substring of the name"""
+        if query:
+            query = query.lower()
+            objs = self._table.select(
+                    AND(
+                        Product.q.id == ProductSeries.q.productID,
+                        OR(
+                            CONTAINSSTRING(Product.q.name, query),
+                            CONTAINSSTRING(ProductSeries.q.name, query)
+                            )
+                        ),
+                    orderBy=self._orderBy
+                    )
+            for o in objs:
+                yield self._toTerm(o)
 
 class MilestoneVocabulary(NamedSQLObjectVocabulary):
     _table = Milestone
@@ -368,11 +381,11 @@ class MilestoneVocabulary(NamedSQLObjectVocabulary):
 
 class PackageReleaseVocabulary(SQLObjectVocabularyBase):
     _table = SourcePackageRelease
-    _orderBy = 'sourcepackage'
+    _orderBy = 'id'
 
     def _toTerm(self, obj):
         return SimpleTerm(
-            obj, obj.id, obj.sourcepackage.name + " " + obj.version)
+            obj, obj.id, obj.name + " " + obj.version)
 
 class SourcePackageNameVocabulary(NamedSQLObjectVocabulary):
     implements(IHugeVocabulary)
@@ -393,16 +406,9 @@ class SourcePackageNameVocabulary(NamedSQLObjectVocabulary):
         query = query.lower()
         t = self._table
         objs = [self._toTerm(r)
-            for r in t.select("""
-                sourcepackage.sourcepackagename = sourcepackagename.id
-                AND (
-                    sourcepackagename.name like '%%' || %s || '%%'
-                    OR sourcepackage.fti @@ ftq(%s)
-                    )
-                """ % (quote_like(query), quote(query)),
-                ['SourcePackage']
-                )
-            ]
+                   for r in t.select("""
+                       sourcepackagename.name like '%%' || %s || '%%'
+                       """ % quote_like(query))]
         return objs
 
 
@@ -426,22 +432,83 @@ class DistributionVocabulary(NamedSQLObjectVocabulary):
 
         return []
 
+
+class ValidGPGKeyVocabulary(SQLObjectVocabularyBase):
+    implements(IHugeVocabulary)
+    
+    _table = GPGKey
+    _orderBy = 'keyid'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(
+            obj, obj.id, obj.owner.displayname + " " + obj.keyid)
+
+
+    def search(self, query):
+        """Return terms where query is a substring of the keyid"""
+        if query:
+            clauseTables = ['Person',]
+
+            query = quote(query.lower())
+
+            objs = self._table.select(("GPGKey.owner = Person.id AND "
+                                       "Person.fti @@ ftq(%s)" % query),
+                                      orderBy=self._orderBy,
+                                      clauseTables=clauseTables)
+            
+            return [self._toTerm(obj) for obj in objs]
+
+        return []
+
+
 class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
     implements(IHugeVocabulary)
 
     _table = DistroRelease
-    _orderBy = 'name'
+    _orderBy = [Distribution.q.name, DistroRelease.q.name]
+    _clauseTables = ['Distribution']
+
+    def __iter__(self):
+        for obj in self._table.select(
+                DistroRelease.q.distributionID == Distribution.q.id,
+                orderBy=self._orderBy,
+                clauseTables=self._clauseTables,
+                ):
+            yield self._toTerm(obj)
+
+    def _toTerm(self, obj):
+        # NB: We use '/' as the seperater because '-' is valid in
+        # a distribution.name
+        token = '%s/%s' % (obj.distribution.name, obj.name)
+        return SimpleTerm(obj.id, token, obj.title)
+
+    def getTermByToken(self, token):
+        try:
+            distroname, distroreleasename = token.split('/', 1)
+        except ValueError:
+            raise LookupError, token
+
+        obj = DistroRelease.selectOne(AND(Distribution.q.name == distroname,
+            DistroRelease.q.name == distroreleasename))
+        if obj is None:
+            raise LookupError, token
+        else:
+            return self._toTerm(obj)
 
     def search(self, query):
-        """Return terms where query is a substring of the name"""
+        """Return terms where query is a substring of the name."""
         if query:
             query = query.lower()
-            like_query = quote('%%%s%%' % quote_like(query)[1:-1])
-            fti_query = quote(query)
-            kw = {}
-            if self._orderBy:
-                kw['orderBy'] = self._orderBy
-            objs = self._table.select("name LIKE %s" % like_query, **kw)
-            return [self._toTerm(obj) for obj in objs]
+            objs = self._table.select(
+                    AND(
+                        Distribution.q.id == DistroRelease.q.distributionID,
+                        OR(
+                            CONTAINSSTRING(Distribution.q.name, query),
+                            CONTAINSSTRING(DistroRelease.q.name, query)
+                            )
+                        ),
+                    orderBy=self._orderBy
+                    )
+            for o in objs:
+                yield self._toTerm(o)
 
-        return []

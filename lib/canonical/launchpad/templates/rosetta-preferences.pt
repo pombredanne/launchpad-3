@@ -7,8 +7,8 @@
     <title metal:fill-slot="title">Rosetta: Preferences</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Rosetta style sheet -->
-    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+    <!-- Launchpad style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
@@ -18,49 +18,6 @@
     <h1>Personal preferences</h1>
 
     <div tal:content="view/submit" />
-
-    <h2>My personal information</h2>
-
-    <p class="formHelp">
-    Here you are able to change your name and your password.
-    </p>
-
-    <form action="prefs" method="post" tal:define="translator view/person">
-        <div tal:condition="view/submitted_personal">
-            <p class="error" tal:condition="view/error_msg">
-                <span tal:content="view/error_msg">error</span>
-            </p>
-        </div>
-
-        <div tal:condition="not: view/error_msg">
-            <p>
-            The changes to your account settings have been saved.
-            </p>
-        </div>
-
-        <fieldset>
-            Please enter your existing password to confirm account changes.
-            <br/>
-            Password: <input type="password" name="currentPassword" />
-            <br/>
-            <hr/>
-            Given name: <input type="text" name="given"
-                            tal:attributes="value translator/givenname"/>
-            Family name: <input type="text" name="family"
-                            tal:attributes="value translator/familyname" />
-            <br/>
-            Display name: <input type="text" name="display"
-                tal:attributes="value translator/displayname" />
-            <br/>
-            New Password: <input type="password" name="newPassword1" />
-            <br/>
-            Re-enter new Password: <input type="password" name="newPassword2" />
-            <br/>
-            <div class="formControls">
-                <input type="submit" name="SAVE-PERSONAL" value="Save" />
-            </div>
-        </fieldset>
-    </form>
 
     <h2>My Languages</h2>
 

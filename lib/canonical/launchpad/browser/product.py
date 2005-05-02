@@ -1,5 +1,7 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
+"""Browser views and traversal functions for products."""
+
 __metaclass__ = type
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -17,39 +19,47 @@ from canonical.lp import dbschema
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.database.sqlbase import quote
+
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
      MilestoneVocabulary
-from canonical.launchpad.database import Product, ProductSeriesSet, Bug, \
-     BugFactory, ProductMilestoneSet, Milestone, SourceSourceSet, Person
-from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet, \
-     IPersonSet, IBugTaskSet, IAging
-from canonical.launchpad.browser.productrelease import newProductRelease
 
-#
+from canonical.launchpad.database import Product, ProductSeriesSet, \
+     BugFactory, ProductMilestoneSet, Milestone, Person
+from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet, \
+     IPersonSet, IBugTaskSet, IAging, ILaunchBag
+from canonical.launchpad.browser.productrelease import newProductRelease
+from canonical.launchpad import helpers
+from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
+
 # Traversal functions that help us look up something
 # about a project or product
-#
 def traverseProduct(product, request, name):
-    if name == '+sources':
-        return SourceSourceSet()
-    elif name == '+series':
+    if name == '+series':
         return ProductSeriesSet(product = product)
-    elif name == 'milestones':
+    elif name == '+milestones':
         return ProductMilestoneSet(product = product)
     else:
         return product.getRelease(name)
 
-#
+
 # A View Class for Product
-#
 class ProductView:
+
+    __used_for__ = IProduct
+
+    summaryPortlet = ViewPageTemplateFile(
+        '../templates/portlet-object-summary.pt')
 
     translationsPortlet = ViewPageTemplateFile(
         '../templates/portlet-product-translations.pt')
 
     latestBugPortlet = ViewPageTemplateFile(
         '../templates/portlet-latest-bugs.pt')
+
+    relatedBountiesPortlet = ViewPageTemplateFile(
+        '../templates/portlet-related-bounties.pt')
 
     branchesPortlet = ViewPageTemplateFile(
         '../templates/portlet-product-branches.pt')
@@ -65,6 +75,9 @@ class ProductView:
 
     milestonePortlet = ViewPageTemplateFile(
         '../templates/portlet-product-milestones.pt')
+
+    packagesPortlet = ViewPageTemplateFile(
+        '../templates/portlet-product-packages.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -97,24 +110,13 @@ class ProductView:
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
 
-    def sourcesources(self):
-        return iter(self.context.sourcesources())
-
-    def newSourceSource(self):
-        form = self.form
-        if (form.get("Register") != "Register Revision Control System"):
-            return
-        if self.request.method != "POST":
-            return
-        owner = IPerson(self.request.principal)
-        #XXX: cprov 20050112
-        # SteveA comments:
-        # Passing form is only slightly more evil than passing **kw.
-        # I'd rather see the correct keyword arguments passed in explicitly.
-        #
-        # Avoid passing obscure arguments as self.form
-        ss = self.context.newSourceSource(form, owner)
-        self.request.response.redirect('+sources/'+ form['name'])
+    def projproducts(self):
+        """Return a list of other products from the same project as this
+        product, excluding this product"""
+        if self.context.project is None:
+            return []
+        return [p for p in self.context.project.products \
+                    if p.id <> self.context.id]
 
     def newProductRelease(self):
         # default owner is the logged in user
@@ -122,36 +124,34 @@ class ProductView:
         #XXX: cprov 20050112
         # Avoid passing obscure arguments as self.form
         pr = newProductRelease(self.form, self.context, owner)
- 
+
     def newseries(self):
-        #
-        # Handle a request to create a new series for this product.
-        # The code needs to extract all the relevant form elements,
-        # then call the ProductSeries creation methods.
-        #
+        """Handle a request to create a new series for this product.
+        The code needs to extract all the relevant form elements,
+        then call the ProductSeries creation methods."""
         if not self.form.get("Register") == "Register Series":
             return
         if not self.request.method == "POST":
             return
         #XXX: cprov 20050112
         # Avoid passing obscure arguments as self.form
+        # XXX sabdfl 16/04/05 we REALLY should not be passing this form to
+        # the context object
         series = self.context.newseries(self.form)
         # now redirect to view the page
         self.request.response.redirect('+series/'+series.name)
 
     def latestBugTasks(self, quantity=5):
         """Return <quantity> latest bugs reported against this product."""
-        tasklist = self.context.bugtasks
-        # Sort the bugs by datecreated and return the last <quantity> bugs.
-        bugsdated = [(task.datecreated, task) for task in tasklist]
-        bugsdated.sort()
-        last_few_tasks = bugsdated[-quantity:]
-        return [task for sortkey, task in last_few_tasks]
+        bugtaskset = getUtility(IBugTaskSet)
+        tasklist = bugtaskset.search(product = self.context, orderby = "-datecreated")
+        return tasklist[:quantity]
+
 
 class ProductBugsView:
     DEFAULT_STATUS = (
-        int(dbschema.BugTaskStatus.NEW),
-        int(dbschema.BugTaskStatus.ACCEPTED))
+        dbschema.BugTaskStatus.NEW.value,
+        dbschema.BugTaskStatus.ACCEPTED.value)
 
     def __init__(self, context, request):
         self.context = context
@@ -159,6 +159,7 @@ class ProductBugsView:
         self.batch = Batch(
             list(self.bugtask_search()), int(request.get('batch_start', 0)))
         self.batchnav = BatchNavigator(self.batch, request)
+        self.is_maintainer = helpers.is_maintainer(self.context)
 
     def hideGlobalSearchBox(self):
         """Should the global search box be hidden on the page?"""
@@ -172,13 +173,22 @@ class ProductBugsView:
         if searchtext:
             params["searchtext"] = searchtext
 
-        for param_name in ("status", "severity"):
-            param_value = self.request.form.get(param_name)
-            if param_value and param_value != 'all':
-                if isinstance(param_value, (list, tuple)):
-                    params[param_name] = any(*param_value)
-                else:
-                    params[param_name] = param_value
+        status = self.request.form.get("status")
+        if status and status != 'all':
+            if isinstance(status, (list, tuple)):
+                params["status"] = any(*status)
+            else:
+                params["status"] = status
+        elif not status:
+            params["status"] = any(
+                dbschema.BugTaskStatus.NEW, dbschema.BugTaskStatus.ACCEPTED)
+
+        severity = self.request.form.get("severity")
+        if severity and severity != 'all':
+            if isinstance(severity, (list, tuple)):
+                params["severity"] = any(*severity)
+            else:
+                params["severity"] = severity
 
         assignee = self.request.form.get("assignee")
         milestone = self.request.form.get("target")
@@ -207,7 +217,9 @@ class ProductBugsView:
     def task_columns(self):
         """The columns to show in the bug task listing."""
         return [
-            "id", "title", "milestone", "status", "submittedby", "assignedto"]
+            "select", "id", "title", "milestone", "status",
+            "submittedby", "assignedto"
+            ]
 
     def assign_to_milestones(self):
         """Assign bug tasks to the given milestone."""
@@ -225,7 +237,7 @@ class ProductBugsView:
                             tasks = [BugTask.get(taskid) for taskid in taskids]
                             for task in tasks:
                                 task.milestone = milestone
-       
+
     # XXX: Brad Bollenbach, 2005-02-11: Replace this view method hack with a
     # TALES adapter, perhaps.
     def currentApproximateAge(self, bugtask):
@@ -238,13 +250,13 @@ class ProductBugsView:
         # the vocabulary doesn't need context since the
         # ValidPerson is independent of it in LP
         return ValidPersonVocabulary(None)
-    
+
     def milestones(self):
         """Return the list of milestones for this product."""
-        # Produce an empty context 
+        # Produce an empty context
         class HackedContext:
             pass
-        
+
         context = HackedContext()
         # Set context.product as required by Vocabulary
         context.product = self.context
@@ -256,21 +268,70 @@ class ProductBugsView:
         return dbschema.BugTaskStatus.items
 
 
-class ProductFileBugView(AddView):
+class ProductTranslationView:
+    # XXX sabdfl 17/03/05 please merge this with ProductView.
+    summaryPortlet = ViewPageTemplateFile(
+        '../templates/portlet-object-summary.pt')
+
+    branchesPortlet = ViewPageTemplateFile(
+        '../templates/portlet-product-branches.pt')
+
+    detailsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-product-details.pt')
+
+    actionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-product-actions.pt')
+
+    projectPortlet = ViewPageTemplateFile(
+        '../templates/portlet-product-project.pt')
+
+    prefLangsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-pref-langs.pt')
+
+    statusLegend = ViewPageTemplateFile(
+        '../templates/portlet-rosetta-status-legend.pt')
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.form = self.request.form
+        # List of languages the user is interested on based on their browser,
+        # IP address and launchpad preferences.
+        self.languages = helpers.request_languages(self.request)
+        # Cache value for the return value of self.templates
+        self._template_languages = None
+        # List of the templates we have in this subset.
+        self._templates = self.context.potemplates()
+        self.status_message = None
+        # Whether there is more than one PO template.
+        self.has_multiple_templates = len(self._templates) > 1
+
+    def projproducts(self):
+        """Return a list of other products from the same project as this
+        product, excluding this product"""
+        if self.context.project is None:
+            return []
+        return [p for p in self.context.project.products \
+                    if p.id <> self.context.id]
+
+    def templates(self):
+        if self._template_languages is None:
+            self._template_languages = [
+                helpers.TemplateLanguages(template, self.languages)
+                for template in self._templates]
+
+        return self._template_languages
+
+
+class ProductFileBugView(SQLObjectAddView):
 
     __used_for__ = IProduct
 
-    #XXX cprov 20050107
-    # Can we use the IBug instead of the content class ?
-    ow = CustomWidgetFactory(ObjectWidget, Bug)
-    sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
-    options_widget = sw
-    
     def __init__(self, context, request):
         self.request = request
         self.context = context
         self._nextURL = '.'
-        AddView.__init__(self, context, request)
+        SQLObjectAddView.__init__(self, context, request)
 
     def createAndAdd(self, data):
         # add the owner information for the bug
@@ -287,19 +348,22 @@ class ProductFileBugView(AddView):
         # Try to avoid passing **kw, it is unreadable
         # Pass the keyword explicitly ...
         bug = BugFactory(**kw)
-        notify(ObjectCreatedEvent(bug))
+        notify(SQLObjectCreatedEvent(bug, self.request))
         return bug
 
     def nextURL(self):
         return self._nextURL
- 
+
 
 class ProductSetView:
 
     __used_for__ = IProductSet
 
+    detailsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-productset-details.pt')
+
     def __init__(self, context, request):
-        
+
         self.context = context
         self.request = request
         form = self.request.form
@@ -310,9 +374,9 @@ class ProductSetView:
         self.text = form.get('text')
         self.searchrequested = False
         if (self.text is not None or
-            self.bazaar is not None or 
-            self.malone is not None or 
-            self.rosetta is not None or 
+            self.bazaar is not None or
+            self.malone is not None or
+            self.rosetta is not None or
             self.soyuz is not None):
             self.searchrequested = True
         self.results = None
@@ -334,15 +398,10 @@ class ProductSetView:
         return self.results
 
 
-
 class ProductSetAddView(AddView):
 
     __used_for__ = IProductSet
 
-    ow = CustomWidgetFactory(ObjectWidget, Bug)
-    sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
-    options_widget = sw
-    
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -359,7 +418,7 @@ class ProductSetAddView(AddView):
         for key, value in data.items():
             kw[str(key)] = value
         kw['owner'] = owner
-        # grab a ProductSet utility 
+        # grab a ProductSet utility
         product_util = getUtility(IProductSet)
         # create a brand new Product
         # XXX cprov 20050112
@@ -371,7 +430,7 @@ class ProductSetAddView(AddView):
         #                      screenshotsurl=None, wikiurl=None,
         #                      downloadurl=None, freshmeatproject=None,
         #                      sourceforgeproject=None):
-        # make sure you have those required keys in the kw dict 
+        # make sure you have those required keys in the kw dict
         product = product_util.createProduct(**kw)
         notify(ObjectCreatedEvent(product))
         self._nextURL = kw['name']

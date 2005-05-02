@@ -18,6 +18,10 @@
         for="canonical.launchpad.interfaces.IProductRelease"
         name="+index" />
 
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IProductRelease"
+        function="canonical.launchpad.browser.traverseProductRelease" />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IProductRelease"
         permission="zope.Public">
@@ -33,6 +37,16 @@
         <browser:page
             name="+edit"
             template="../templates/productrelease-edit.pt" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProductRelease"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ProductReleaseView" >
+        <browser:page
+            name="+translations"
+            template="../templates/object-pots.pt"
+            lp:url="/products/$Product.name/$Series.name/$ProductRelease.version/+rosetta" />
     </browser:pages>
 
 </configure>

@@ -6,11 +6,6 @@
         />
 
     <vocabulary
-        name="SourcePackage"
-        factory="canonical.launchpad.vocabularies.SourcePackageVocabulary"
-        />
-
-    <vocabulary
         name="SourcePackageName"
         factory="canonical.launchpad.vocabularies.SourcePackageNameVocabulary"
         />
@@ -56,13 +51,18 @@
         />
 
     <vocabulary
-        name="ProductRelease"
-        factory="canonical.launchpad.vocabularies.ProductReleaseVocabulary"
+        name="Product"
+        factory="canonical.launchpad.vocabularies.ProductVocabulary"
         />
 
     <vocabulary
-        name="Product"
-        factory="canonical.launchpad.vocabularies.ProductVocabulary"
+        name="ProductSeries"
+        factory="canonical.launchpad.vocabularies.ProductSeriesVocabulary"
+        />
+
+    <vocabulary
+        name="ProductRelease"
+        factory="canonical.launchpad.vocabularies.ProductReleaseVocabulary"
         />
 
     <vocabulary
@@ -111,8 +111,13 @@
         />
 
     <vocabulary
-        name="Packaging"
-        factory="canonical.launchpad.vocabularies.PackagingVocabulary"
+        name="PackagingType"
+        factory="canonical.launchpad.vocabularies.PackagingTypeVocabulary"
+        />
+
+    <vocabulary
+        name="ValidGPGKey"
+        factory="canonical.launchpad.vocabularies.ValidGPGKeyVocabulary"
         />
 
     <!-- Define the widget used by Choice fields that use huge vocabularies -->

@@ -17,9 +17,6 @@
 
 <div metal:fill-slot="main">
 
-<div id="content" class="documentEditable">
-
-  <div class="documentContent" id="region-content">
     <div tal:condition="not: view/successfullyProcessed">
       <h1>Merge User Accounts</h1>
 
@@ -33,7 +30,7 @@
       To complete this proccess, just fill in your Launchpad password on the
       form bellow and click on <em>Submit</em>.</p>
 
-      <form name="merge" action="" method="POST">
+      <form autocomplete="off" name="merge" action="" method="POST">
       <table>
         <tr>
           <td>Password:</td>
@@ -66,10 +63,7 @@
       </div>
     </div>
 
-  </div>
 </div>
-</div>
-
 
 </body>
 </html>

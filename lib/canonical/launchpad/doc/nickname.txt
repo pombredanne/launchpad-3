@@ -19,15 +19,11 @@ NicknameGenerationError: foop@example@com is not a valid email address
 >>> generate_nick("bar@example.com")
 'bar'
 >>> generate_nick("spam@example.com")
-'spam-example-com'
->>> generate_nick("foop.bar@example.com")
-'foop-bar'
->>> generate_nick("bar.spam@long.example.com")
-'bar-spam-long-example-com'
->>> generate_nick("taken@example.com")
-'taken-example-com-2'
->>> generate_nick("taken@example")
-'taken-example-1'
+'spam'
+>>> generate_nick("foo.bar@canonical.com")
+'foo-bar'
+>>> generate_nick("salgado@async.com.br")
+'salgado-async'
 >>> generate_nick("i@tv")
 'i-tv'
 >>> generate_nick("foo+bar@example.com")

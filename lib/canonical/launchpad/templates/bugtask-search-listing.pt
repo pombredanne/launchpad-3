@@ -3,8 +3,8 @@
   <form action="" method="GET"
      tal:define="listing_columns view/task_columns;
                  logged_in request/lp:person;
-                 is_maintainer python:logged_in and logged_in.id == context.owner.id;
-                 task_batch view/batch">
+                 task_batch view/batch;
+                 mass_edit python: 'select' in listing_columns and view.is_maintainer">
 
   <small> 
       <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=unassigned&product=all&sourcepackagename=all&search=Search">unassigned</a> .
@@ -13,24 +13,28 @@
       <span tal:omit-tag="" tal:condition="logged_in">.
           <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=all&submitter=${request/lp:person/name}&product=all&sourcepackagename=all&search=Search">submitted by me</a></span>
       :: bug id or text
-      <input style="border-style: solid; border-width: 1px; border-color: grey;" type="text" name="searchtext" tal:attributes="value request/searchtext|nothing;"/>
-      <input type="submit" style="border-style: solid; border-width: 1px; border-color: grey; background-color: #DCDCDC; " name="search" value="Search" />
+      <input type="text" name="searchtext" tal:attributes="value request/searchtext|nothing;"/>
+      <input type="submit" name="search" value="Search" />
     <input
         tal:condition="not:request/advanced|nothing"
-        style="border-style: solid; border-width: 1px; border-color: grey; background-color: #DCDCDC; "
         type="submit" name="advanced" value="Advanced" />
     <input
         tal:condition="request/advanced|nothing"
-        style="border-style: solid; border-width: 1px; border-color: grey; background-color: #DCDCDC; "
         type="submit" name="simple_submit" value="Simple" />
     <input type="hidden"
         name="advanced" tal:attributes="value request/advanced|nothing" />
   </small><br /><br />
-  <small tal:content="python:'displaying matching bugs ' + str(task_batch.startNumber()) + ' to ' + str(task_batch.endNumber()) + ' of ' + str(task_batch.total())">displaying 1 to 20 of 42 </small>
+  <small tal:define="startno task_batch/startNumber;
+                     endno task_batch/endNumber;
+                     total task_batch/total"
+         tal:content="string:displaying matching bugs $startno to $endno of $total">
+    displaying matching bugs 1 to 10 of 42
+  </small>
+  <fieldset>
   <table id="ass_listing"
-         class="listing rowNavigation">
+         class="listing lpListing rowNavigation">
     <tr>
-      <th tal:condition="is_maintainer">Select</th>
+      <th tal:condition="mass_edit">Select</th>
       <th tal:condition="python:'id' in listing_columns">Bug #</th>
       <th tal:condition="python:'product' in listing_columns">Product</th>
       <th tal:condition="python:'package' in listing_columns">Package</th>
@@ -44,7 +48,7 @@
       <th tal:condition="python:'assignedto' in listing_columns">Assigned To</th>
       <th tal:condition="python:'actions' in listing_columns and logged_in">Take Action</th>
     </tr>
-    <tr tal:repeat="task task_batch">
+    <tr tal:repeat="task task_batch" class="rowLinkified">
       <span tal:omit-tag=""
             tal:define="bugid task/bug/id;
                         assid task/id;
@@ -55,85 +59,63 @@
                         ass_link string:/malone/$collection_name/$assid/+edit;
                         ass_owner task/owner/name|nothing;
                         potential_assignee logged_in/displayname|nothing;
-                        status task/status/lp:BugTaskStatus;
+                        status task/status/title;
                         assignee task/assignee/name|python:'';
-                        priority task/priority/lp:BugPriority;
-                        severity task/severity/lp:BugSeverity;
+                        priority task/priority/title;
+                        severity task/severity/title;
                         statusid string:status${repeat/task/number};
                         assigneeid string:assignee${repeat/task/number};">
-          <td tal:condition="is_maintainer">
+          <td tal:condition="mass_edit">
             <input type="checkbox" name="task" value="" tal:attributes="value task/id" />
           </td>
-          <td tal:content="bugid"
-              tal:condition="python:'id' in listing_columns"
-              tal:attributes="onclick string:window.location='${ass_link}';">$Bug.title</td>
-          <td tal:condition="python:('product' in listing_columns) and product_name"
-              tal:content="python: (project_name == product_name) and product_name or (project_name + ' ' + product_name)"
-              tal:attributes="onclick string:window.location='${ass_link}';">product</td>
-          <td tal:condition="python:product_name and ('product' in listing_columns)"
-              tal:attributes="onclick string:window.location='${ass_link}';">-</td>
-          <td tal:content="python:package_name and package_name or '-'"
-              tal:condition="python:'package' in listing_columns"
-              tal:attributes="onclick string:window.location='${ass_link}';">-</td>
-          <td tal:attributes="onclick string:window.location='${ass_link}';"
-              tal:condition="python:'title' in listing_columns"
-              tal:content="task/bug/title">
-              title
+          <td tal:condition="python:'id' in listing_columns">
+              <a tal:attributes="href ass_link"
+                 tal:content="bugid">$Bug.title</a>
           </td>
-          <td tal:attributes="onclick string:window.location='${ass_link}';"
-              tal:condition="python:'milestone' in listing_columns"
-              tal:content="task/milestone/name|string:-">
-              milestone
+          <td tal:condition="python:('product' in listing_columns) and product_name">
+              <a tal:content="python: (project_name == product_name) and product_name or (project_name + ' ' + product_name)"
+                 tal:attributes="href ass_link">product</a>
           </td>
-          <td tal:content="status"
-              tal:condition="python:'status' in listing_columns"
-              tal:attributes="onclick string:window.location='${ass_link}';
-                              id statusid">New</td>
-          <td tal:content="priority"
-              tal:condition="python:'priority' in listing_columns"
-              tal:attributes="onclick string:window.location='${ass_link}';">High</td>
-          <td tal:content="severity"
-              tal:condition="python:'severity' in listing_columns"
-              tal:attributes="onclick string:window.location='${ass_link}';">Medium</td>
-          <td tal:content="python:task.datecreated.strftime('%d %b %y')"
-              tal:condition="python:'submittedon' in listing_columns"
-              tal:attributes="onclick string:window.location='${ass_link}';">date</td>
-          <td tal:content="task/owner/displayname|string:-"
-              tal:condition="python:'submittedby' in listing_columns"
-              tal:attributes="onclick string:window.location='${ass_link}';">name</td>
-          <td tal:content="task/assignee/displayname|string:-"
-              tal:condition="python:'assignedto' in listing_columns"
-              tal:attributes="onclick string:window.location='${ass_link}';
-                              id assigneeid;">somebody</td>
-          <td tal:condition="python:'actions' in listing_columns and logged_in">
-            <a href=""
-               tal:condition="product_name"
-               tal:attributes="onClick string:return accept('/malone/tasks/${task/id}/+edit?field.status=Accepted&field.priority=$priority&field.severity=$severity&field.product=$product_name&field.status-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.assignee=${logged_in/name}&UPDATE_SUBMIT=Change', '$statusid', '$assigneeid', '$potential_assignee');">
-                <small>accept</small>
-            </a>
-            <a href=""
-               tal:condition="package_name"
-               tal:attributes="onClick string:return accept('/malone/tasks/${task/id}/+edit?field.status=Accepted&field.priority=$priority&field.severity=$severity&field.status-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.binarypackagename=&field.assignee=${logged_in/name}&UPDATE_SUBMIT=Change', '$statusid', '$assigneeid', '$potential_assignee');">
-                <small>accept</small>
-            </a>
-            &nbsp;
-            <a href=""
-               tal:condition="product_name"
-               tal:attributes="onClick string:return reject('/malone/tasks/${task/id}/+edit?field.status=Rejected&field.priority=$priority&field.severity=$severity&field.product=$product_name&field.status-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>reject</small>
-            </a>
-            <a href=""
-               tal:condition="package_name"
-               tal:attributes="onClick string:return reject('/malone/tasks/${task/id}/+edit?field.status=Rejected&field.priority=$priority&field.severity=$severity&field.status-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.binarypackagename=&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>reject</small>
-            </a>
-            &nbsp;
-            <a href=""
-               tal:condition="product_name"
-               tal:attributes="onClick string:return fixed('/malone/tasks/${task/id}/+edit?field.status=Fixed&field.priority=$priority&field.severity=$severity&field.product=$product_name&field.status-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>fixed</small>
-            </a>
-            <a href=""
-               tal:condition="package_name"
-               tal:attributes="onClick string:return fixed('/malone/tasks/${task/id}/+edit?field.status=Fixed&field.priority=$priority&field.severity=$severity&field.status-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.binarypackagename=&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>fixed</small>
-            </a>
+          <td tal:condition="python:product_name and ('product' in listing_columns)">
+              <a tal:attributes="href ass_link">-</a>
+          </td>
+          <td tal:condition="python:'package' in listing_columns">
+              <a tal:content="python:package_name and package_name or '-'"
+                 tal:attributes="href ass_link">-</a>
+          </td>
+          <td tal:condition="python:'title' in listing_columns">
+              <a tal:attributes="href ass_link"
+                 tal:content="task/bug/title/fmt:shorten/60">title</a>
+          </td>
+          <td tal:condition="python:'milestone' in listing_columns">
+              <a tal:attributes="href ass_link"
+                 tal:content="task/milestone/name|string:-">milestone</a>
+          </td>
+          <td tal:condition="python:'status' in listing_columns">
+              <a tal:content="status"
+                 tal:attributes="href ass_link;
+                                 id statusid">New</a>
+          </td>
+          <td tal:condition="python:'priority' in listing_columns">
+              <a tal:content="priority"
+                 tal:attributes="href ass_link">High</a>
+          </td>
+          <td tal:condition="python:'severity' in listing_columns">
+              <a tal:content="severity"
+                 tal:attributes="href ass_link">Medium</a>
+          </td>
+          <td tal:condition="python:'submittedon' in listing_columns">
+              <a tal:content="python:task.datecreated.strftime('%d %b %y')"
+                 tal:attributes="href ass_link">date</a>
+          </td>
+          <td tal:condition="python:'submittedby' in listing_columns">
+              <a tal:content="task/owner/displayname|string:-"
+                 tal:attributes="href ass_link">name</a>
+          </td>
+          <td tal:condition="python:'assignedto' in listing_columns">
+              <a tal:content="task/assignee/displayname|string:-"
+                 tal:attributes="href ass_link;
+                                 id assigneeid;">somebody</a>
           </td>
       </span>
     </tr>
@@ -154,9 +136,10 @@
       </td>
     </tr>
   </table>
+  </fieldset>
 
-  <input tal:condition="is_maintainer" type="submit" name="assign_to_milestone" value="Assign to Milestone" />
-  <select tal:condition="is_maintainer" name="milestone">
+  <input tal:condition="mass_edit" type="submit" name="assign_to_milestone" value="Assign to Milestone" />
+  <select tal:condition="mass_edit" name="milestone">
     <option tal:repeat="milestone context/milestones"
             tal:attributes="value milestone/name"
             tal:content="milestone/name">milestone1</option>

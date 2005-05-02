@@ -6,10 +6,12 @@
     i18n:domain="launchpad">
 
 <head>
+    <title metal:fill-slot="title">Edit
+      <span tal:replace="context/product/displayname">Product</span>
+      <span tal:replace="context/name">Series</span> Details
+    </title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Rosetta style sheet -->
-    <style type="text/css" media="screen">@import url(rosetta.css);</style>
 </head>
 
 <body>
@@ -69,9 +71,43 @@
                     server deployments.</i>
                   </div>
 
-                <textarea cols="40" rows="3" name="shortdesc" 
+                <textarea cols="40" rows="7" name="shortdesc" 
                           tal:content="context/shortdesc">
                 </textarea>
+        </div>
+
+        <div class="field">
+
+            <label>Release Root Directory URL</label>
+
+            <div class="formHelp">
+              The URL for the directory which contains releases that are
+              part of this series. We will automatically scan this directory
+              on a regular basis to try to import new releases.
+              For example: <i>ftp://www.mozilla.org/pub/firefox/1.1/</i>
+            </div>
+
+            <input name="releaseroot" size=40
+                   tal:attributes="value context/releaseroot" />
+
+        </div>
+        
+        <div class="field">
+
+            <label>Release Filename Pattern</label>
+
+            <div class="formHelp">
+              Releases in this series match the following filename
+              pattern. We will use this pattern, together with the
+              root directory given above, to find new releases of
+              <span tal:replace="context/product/displayname" /> when
+              they are uploaded to that directory.
+              For example: <i>firefox-1.1.*.src.tgz</i>
+            </div>
+
+            <input name="releasefileglob" size=40
+                   tal:attributes="value context/releasefileglob" />
+
         </div>
         
         <div class="formControls">

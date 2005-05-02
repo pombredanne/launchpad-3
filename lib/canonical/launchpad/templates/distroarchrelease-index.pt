@@ -1,0 +1,46 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+  <title metal:fill-slot="title">
+    <span tal:replace="context/distrorelease/distribution/displayname">Distro</span> 
+    <span tal:replace="context/distrorelease/displayname">Release</span>
+    <span tal:replace="context/title">Architecture</span>
+  </title>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+</head>
+
+<body>
+
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure view/detailsPortlet" /> <br />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure view/actionsPortlet" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main"
+     tal:define="distrorelease context/distrorelease;
+                 distro distrorelease/distribution">
+
+    <h1>
+      <span tal:replace="context/title">
+        title
+      </span>
+    </h1> 
+
+      <p>This architecture of
+      <span tal:replace="distro/displayname" />
+      <span tal:replace="distrorelease/displayname" /> contains
+      <span tal:replace="context/binarycount" /> software packages. 
+      </p>
+
+</div>
+
+</body>
+</html>

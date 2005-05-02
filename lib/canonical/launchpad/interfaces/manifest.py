@@ -1,9 +1,14 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
 # Imports from zope
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
                         TextLine, Password
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
+
 
 #
 # Manifest Related Interfaces
@@ -19,10 +24,9 @@ class IManifest(Interface):
     datecreated = Datetime(title=_('Date Created'), description=_("""The
         date this manifest was created."""), required=True, readonly=True )
 
-    owner = Int(title=_('Manifest owner'), description=_("""The person who
-        created this manifest entry."""), required=True)
+    uuid = TextLine(title=_('Universally Unique ID'), description=_("""A UUID
+        that is guaranteed to identify this manifest uniquely."""),
+        required=True, readonly=True)
 
-    uuid = TextLine(title=_('Universally Unique ID'), description=_("""A UUID that is
-        guaranteed to identify this manifest uniquely."""), required=True,
-        readonly=True)
-
+    entries = Attribute(_("""List of entries in this manifest, sorted in
+    sequence order."""))

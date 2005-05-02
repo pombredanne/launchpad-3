@@ -4,23 +4,12 @@
     <div class="portletBody">
         <div class="portletContent even">
 
-        <img src="/++resource++edit.gif">
-        <a href="+edit">Edit Product</a><br />
-        <img src="/++resource++edit.gif">
-        <a href="+review">Review Product</a><br />
-        <img src="/++resource++edit.gif">
-        <a href="+addsources">Add RCS</a><br />
-        <img src="/++resource++edit.gif">
-        <a href="+addpackage">Add Package</a><br />
-        <img src="/++resource++edit.gif">
-        <a href="+addseries">Add Series</a><br />
-        <img src="/++resource++edit.gif">
-        <a href="+addrelease">Add Release</a><br />
-        <span tal:omit-tag=""
-              tal:condition="python:request.principal and request.principal.id == context.owner.id">
-            <img src="/++resource++edit.gif">
-            <a href="+milestone">Add Milestone</a>
-        </span>
+            <ul class="edit">
+                <li><a href="+edit">Edit Product</a></li>
+                <li><a href="+addseries">Add Branch</a></li>
+                <li><a href="+addpackage">Add Package</a></li>
+              
+                <li tal:condition="python:request.principal and request.principal.id == context.owner.id"><a href="+milestone">Add Milestone</a></li>
         </div>
     </div>
 </div>

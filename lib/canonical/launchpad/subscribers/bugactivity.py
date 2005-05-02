@@ -27,18 +27,18 @@ def what_changed(sqlobject_modified_event):
 
         # figure out the orig value
         if f == 'status':
-            val_before = BugTaskStatus.items[val_before].title
+            val_before = val_before.title
         elif f == 'priority':
-            val_before = BugPriority.items[val_before].title
+            val_before = val_before.title
         elif f == 'severity':
-            val_before = BugSeverity.items[val_before].title
+            val_before = val_before.title
         elif f == 'infestationstatus':
-            val_before = BugInfestationStatus.items[val_before].title
+            val_before = val_before.title
         elif isinstance(val_before, Person):
             val_before = val_before.name
         elif isinstance(val_before, SourcePackageRelease):
             val_before = "%s %s" % (
-                val_before.sourcepackage.sourcepackagename.name,
+                val_before.sourcepackagename.name,
                 val_before.version)
         elif isinstance(val_before, ProductRelease):
             val_before = "%s %s" % (
@@ -47,18 +47,18 @@ def what_changed(sqlobject_modified_event):
 
         # figure out the new value
         if f == 'status':
-            val_after = BugTaskStatus.items[val_after].title
+            val_after = val_after.title
         elif f == 'priority':
-            val_after = BugPriority.items[val_after].title
+            val_after = val_after.title
         elif f == 'severity':
-            val_after = BugSeverity.items[val_after].title
+            val_after = val_after.title
         elif f == 'infestationstatus':
-            val_after = BugInfestationStatus.items[val_after].title
+            val_after = val_after.title
         elif isinstance(val_after, Person):
                     val_after = val_after.name
         elif isinstance(val_after, SourcePackageRelease):
             val_after = "%s %s" % (
-                val_after.sourcepackage.sourcepackagename.name,
+                val_after.sourcepackagename.name,
                 val_after.version)
         elif isinstance(val_after, ProductRelease):
             val_after = "%s %s" % (
@@ -85,7 +85,7 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
     if changes:
         for changed_field in changes.keys():
             BugActivity(
-                bug=sqlobject_modified_event.object_before_modification.id,
+                bug=bug_edited.id,
                 datechanged=nowUTC,
                 person=int(sqlobject_modified_event.principal.id),
                 whatchanged=changed_field,
@@ -164,7 +164,7 @@ def record_product_task_edited(product_task_edited, sqlobject_modified_event):
 
 def record_package_infestation_added(package_infestation, object_created_event):
     package_release_name = "%s %s" % (
-        package_infestation.sourcepackagerelease.sourcepackage.sourcepackagename.name,
+        package_infestation.sourcepackagerelease.sourcepackagename.name,
         package_infestation.sourcepackagerelease.version)
     BugActivity(
         bug=package_infestation.bugID,
@@ -177,7 +177,7 @@ def record_package_infestation_edited(package_infestation_edited, sqlobject_modi
     changes = what_changed(sqlobject_modified_event)
     if changes:
         package_release_name = "%s %s" % (
-            sqlobject_modified_event.object_before_modification.sourcepackagerelease.sourcepackage.sourcepackagename.name,
+            sqlobject_modified_event.object_before_modification.sourcepackagerelease.sourcepackagename.name,
             sqlobject_modified_event.object_before_modification.sourcepackagerelease.version)
         right_now = datetime.utcnow()
         for changed_field in changes.keys():
@@ -234,11 +234,11 @@ def record_bugwatch_edited(bugwatch_edited, sqlobject_modified_event):
         right_now = datetime.utcnow()
         for changed_field in changes.keys():
             BugActivity(
-                bug=sqlobject_modified_event.object_before_modification.bug.id,
+                bug=bugwatch_edited.bug.id,
                 datechanged=right_now,
                 person=sqlobject_modified_event.principal.id,
                 whatchanged="subscriber %s" % (
-                    sqlobject_modified_event.object_before_modification.person.displayname),
+                    bugwatch_edited.person.displayname),
                 oldvalue=changes[changed_field][0],
                 newvalue=changes[changed_field][1])
                 

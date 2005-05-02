@@ -1,4 +1,5 @@
-
+The submitter of a bug is automatically subscribed to the bug and will
+thus receive notifications of changes made to the bug report.
 
   >>> print http(r"""
   ... GET /malone/bugs/7 HTTP/1.1
@@ -8,8 +9,5 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
-              <h5>submitter:</h5>
-              <ul class="people">
-                  <li>Foo Bar</li>
-              </ul>
+              <a href="/people/name16">Foo Bar</a>
   ...

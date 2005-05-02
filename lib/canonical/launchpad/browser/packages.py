@@ -9,14 +9,13 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.lp.dbschema import BugSeverity
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
-from canonical.launchpad.database import IPerson
+from canonical.launchpad.interfaces import IPerson
 
 # XXX: Daniel Debonzi
 # Importing stuff from Soyuz directory
 # Until have a place for it or better
 # Solution
 from canonical.soyuz.generalapp import builddepsSet
-    
 
 ##XXX: (batch_size+global) cprov 20041003
 ## really crap constant definition for BatchPages 
@@ -125,40 +124,6 @@ class DistroReleaseSourceView:
 
         return False
 
-#
-# BinaryPackage in a DistroRelease related classes
-#
-
-class DistroReleaseBinariesView:
-    
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-        self.fti = self.request.get("fti", "")
-
-    def binaryPackagesBatchNavigator(self):
-        name = self.request.get("name", "")
-        
-        if not name:
-            binary_packages = []
-            # XXX: Daniel Debonzi 20050104
-            # Returns all binarypackage available.
-            # Do not work with more than 45000 binarypackage
-            # (Actual dogfood db)
-            #binary_packages = list(self.context)
-        else:
-            binary_packages = list(self.context.findPackagesByArchtagName(name,
-                                                                          self.fti))
-
-        start = int(self.request.get('batch_start', 0))
-        end = int(self.request.get('batch_end', BATCH_SIZE))
-        batch_size = BATCH_SIZE
-        batch = Batch(list = binary_packages, start = start,
-                      size = batch_size)
-
-        return BatchNavigator(batch = batch, request = self.request)
-
 class DistrosReleaseBinariesSearchView:
     def __init__(self, context, request):
         self.context = context
@@ -190,7 +155,7 @@ class SourcePackageBugsView:
         self.batchnav = BatchNavigator(self.batch, request)
 
     def bugtask_search(self):
-        return self.context.bugs
+        return self.context.bugtasks
 
     def task_columns(self):
         return [

@@ -3,28 +3,33 @@
       lang="en"
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="launchpad">
-  <body>
+
+<head>
+  <title metal:fill-slot="title">Modify Your Bug Subscription</title>
+</head>
+
+<body>
 
   <div metal:fill-slot="main">
 
     <div metal:use-macro="context/@@launchpad_editform/editform">
 
-          <h3 tal:condition="view/label"
-              tal:content="view/label"
-              metal:fill-slot="heading"
-              >Modify A Bug Subscription</h3>
+      <h3 tal:condition="view/label"
+          tal:content="view/label"
+          metal:fill-slot="heading"
+          >Modify A Bug Subscription</h3>
 
-          <div metal:fill-slot="extra_info"
-            class="documentDescription">
-            You can change the nature of your subscription to any bug in the
-            Malone system.
-          </div>
+      <div metal:fill-slot="extra_info"
+           class="documentDescription">
+        You can change the nature of your subscription to any bug in the
+        Malone system.
+      </div>
 
-          <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
+      <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
         
     </div>
     
   </div>
 
-  </body>
+</body>
 </html>

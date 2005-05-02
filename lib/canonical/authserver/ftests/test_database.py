@@ -250,7 +250,7 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
             "  %d,"
             "  'garbage123',"
             "  'fred@bedrock')"
-            % (dbschema.SSHKeyType.DSA,)
+            % (dbschema.SSHKeyType.DSA.value, )
         )
 
         # Add test push mirror access
@@ -265,18 +265,18 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         storage = DatabaseUserDetailsStorage(None)
         keys = storage._getSSHKeysInteraction(self.cursor,
                                               'freds-archive@example.com')
-        self.assertEqual([(dbschema.SSHKeyType.DSA, 'garbage123')], keys)
+        self.assertEqual([('DSA', 'garbage123')], keys)
 
         # Fred's SSH key should also have access to an archive with his email
         # address
         keys = storage._getSSHKeysInteraction(self.cursor, 'fred@bedrock')
-        self.assertEqual([(dbschema.SSHKeyType.DSA, 'garbage123')], keys)
+        self.assertEqual([('DSA', 'garbage123')], keys)
 
         # Fred's SSH key should also have access to an archive whose name
         # starts with his email address + '--'.
         keys = storage._getSSHKeysInteraction(self.cursor,
                                               'fred@bedrock--2005')
-        self.assertEqual([(dbschema.SSHKeyType.DSA, 'garbage123')], keys)
+        self.assertEqual([('DSA', 'garbage123')], keys)
 
         # No-one should have access to wilma@bedrock
         keys = storage._getSSHKeysInteraction(self.cursor, 'wilma@bedrock')

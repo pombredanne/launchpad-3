@@ -1,0 +1,37 @@
+
+This is needed to make utilities work, it seems.
+
+  >>> from canonical.launchpad.ftests import login
+  >>> login("launchpad.anonymous")
+
+Get a tarball representation of a release's translations.
+
+This test assumes that the release with id 3 is Hoary.
+
+  >>> from canonical.launchpad.components.poexport import \
+  ...     DistroReleasePOExporter
+  >>> from canonical.launchpad.database import DistroRelease
+
+  >>> release = DistroRelease.get(3)
+  >>> exporter = DistroReleasePOExporter(release)
+  >>> tarfile_string = exporter.export_tarball()
+
+Check it has the right members.
+
+  >>> from canonical.launchpad.helpers import string_to_tarfile
+  >>> tarfile = string_to_tarfile(tarfile_string)
+  >>> for name in tarfile.getnames():
+  ...     print name
+  ...
+  rosetta-hoary/
+  rosetta-hoary/es/
+  rosetta-hoary/es/LC_MESSAGES/
+  rosetta-hoary/es/LC_MESSAGES/evolution-2.2.po
+  rosetta-hoary/timestamp.txt
+
+Check the PO file looks like what we expected.
+
+  >>> fh = tarfile.extractfile('rosetta-hoary/es/LC_MESSAGES/evolution-2.2.po')
+  >>> fh.readline()
+  '# traducci\xc3\xb3n de es.po al Spanish\n'
+

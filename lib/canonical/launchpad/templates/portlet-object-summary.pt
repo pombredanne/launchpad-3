@@ -1,0 +1,10 @@
+<div class="portlet">
+    <h4 tal:content="context/title">object title</h4>
+
+    <div class="portletBody">
+        <div class="portletContent even"
+             tal:content="context/summary | context/shortdesc | string: no summary">
+            Object Summary
+        </div>
+    </div>
+</div>

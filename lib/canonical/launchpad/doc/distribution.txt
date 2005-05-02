@@ -14,32 +14,8 @@ syntax should look familiar.
 
 Let's simulate interacting with the system as an anonymous user:
 
-    >>> import zope.security.management
-    >>> from canonical.launchpad.interfaces import IPerson
-    >>> from canonical.launchpad.database import Person
-    >>> class Principal:
-    ...     def __init__(self, id):
-    ...         self.id = id
-    ...         self.groups = []
-    >>> principal = Principal('launchpad.anonymous')
-
-    >>> class Participation:
-    ...     interaction = None
-    >>> anon_participation = Participation()
-    >>> anon_participation.principal = principal
-
-    >>> zope.security.management.newInteraction(anon_participation)
-
-    >>> from canonical.launchpad.interfaces import ILaunchBag
-    >>> from zope.app.tests import ztapi
-    >>> from zope.interface import implements
-    >>> class MockLaunchBag(object):
-    ...     implements(ILaunchBag)
-    ...     def __init__(self, login=None, user=None):
-    ...         self.login = login
-    ...         self.user = user
-    >>> launchbag = MockLaunchBag()
-    >>> ztapi.provideUtility(ILaunchBag, launchbag)
+    >>> from canonical.launchpad.ftests import login
+    >>> login('launchpad.anonymous')
 
 The IDistributionSet utility is accessed in the usual fashion:
 
@@ -53,7 +29,33 @@ To retrieve a specific distribution, use IDistributionSet.get:
     >>> print ubuntu.name
     ubuntu
 
-    >>> ztapi.unprovideUtility(ILaunchBag)
-    >>> zope.security.management.endInteraction()
+Once you've got a distribution, you can retrieve a source package if you
+have a SourcePackageName object for it.
+
+    >>> from canonical.launchpad.database.sourcepackagename import SourcePackageName
+    >>> evo = SourcePackageName.byName("evolution")
+    >>> evo_ubuntu = ubuntu.getSourcePackage(evo)
+    >>> print evo_ubuntu.name
+    evolution
+
+You can also get a release by name:
+
+    >>> hoary = ubuntu.getRelease("hoary")
+    >>> print hoary.name
+    hoary
+
+Or by version:
+
+    >>> v504 = ubuntu.getRelease("5.04")
+    >>> print v504.name
+    hoary
+
+You can list development distroreleases:
+
+    >>> devdists = ubuntu.getDevelopmentReleases()
+    >>> print devdists.count()
+    1
+    >>> print devdists[0].name
+    hoary
 
 [1] https://wiki.launchpad.canonical.com/DerivationOverview

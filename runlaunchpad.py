@@ -12,14 +12,23 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
-"""Start script for Soyuz: loads configuration and starts the server.
+"""Start script for Launchpad: loads configuration and starts the server.
 
 $Id: z3.py 25266 2004-06-04 21:25:45Z jim $
 """
 import os
 import sys
+from zope.app.server.main import main
 
 basepath = filter(None, sys.path)
+
+# Disgusting hack to use our extended config file schema rather than the
+# Z3 one. TODO: Add command line options or other to Z3 to enable overriding
+# this -- StuartBishop 20050406
+from zdaemon.zdoptions import ZDOptions
+ZDOptions.schemafile = os.path.abspath(os.path.join(
+        os.path.dirname(__file__), 'lib', 'canonical',
+        'config', 'schema.xml'))
 
 def run(argv=list(sys.argv)):
 
@@ -29,27 +38,14 @@ def run(argv=list(sys.argv)):
         Zope3 needs Python 2.3.4 or greater. You are running:""" + sys.version
         sys.exit(1)
 
-    # Refuse to run without principals.zcml
-    if not os.path.exists('principals.zcml'):
-        print """\
-        ERROR: You need to create principals.zcml
-
-        The file principals.zcml contains your "bootstrap" user
-        database. You aren't going to get very far without it.  Start
-        by copying sample_principals.zcml and then modify the
-        example principal and role settings.
-        """
-        sys.exit(1)
-
     # setting python paths
     program = argv[0]
 
     src = 'lib'
     here = os.path.dirname(os.path.abspath(program))
-    srcdir = os.path.abspath(src)
+    srcdir = os.path.join(here, src)
     sys.path = [srcdir, here] + basepath
 
-    from zope.app.server.main import main
     main(argv[1:])
 
 

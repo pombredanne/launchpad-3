@@ -53,17 +53,29 @@ class DummyProject:
     def products(self):
         return [DummyProduct(), DummyProduct()]
 
+class DummyProductRelease:
+
+    def __init__(self):
+        self.potemplates = [DummyPOTemplate()]
+
+class DummyProductSeries:
+    def __init__(self):
+        self.releases = [DummyProductRelease()]
 
 class DummyProduct:
     id = 1
 
     def __init__(self):
-        self.potemplates = []
+        self.serieslist = [DummyProductSeries()]
 
-    def newPOTemplate(self, name, title, person):
-        potemplate = DummyPOTemplate(name=name)
-        self.potemplates.append(potemplate)
-        return potemplate
+    def potemplates(self):
+        templates = []
+        for series in self.serieslist:
+            for release in series.releases:
+                for potemplate in release.potemplates:
+                    templates.append(potemplate)
+
+        return templates
 
 
 class DummyLanguage:
@@ -173,8 +185,11 @@ class DummyPOTemplate:
     def hasPluralMessage(self):
         return True
 
-    def attachFile(self, contents, importer=None):
+    def attachRawFileData(self, contents, importer=None):
         pass
+
+    def canEditTranslations(self, person):
+        return True
 
 
 class DummyResponse:
@@ -237,203 +252,6 @@ msgstr ""
 '''
 
 
-def test_count_lines():
-    r'''
-    >>> from canonical.rosetta.browser import count_lines
-    >>> count_lines("foo")
-    1
-    >>> count_lines("123456789a123456789a123456789a1234566789a123456789a")
-    2
-    >>> count_lines("123456789a123456789a123456789a1234566789a123456789")
-    1
-    >>> count_lines("a\nb")
-    2
-    >>> count_lines("a\nb\n")
-    3
-    >>> count_lines("a\nb\nc")
-    3
-    >>> count_lines("123456789a123456789a123456789a\n1234566789a123456789a")
-    2
-    >>> count_lines("123456789a123456789a123456789a123456789a123456789a1\n1234566789a123456789a123456789a")
-    3
-    >>> count_lines("123456789a123456789a123456789a123456789a123456789a123456789a\n1234566789a123456789a123456789a")
-    3
-    >>> count_lines("foo bar\n")
-    2
-    '''
-
-def test_canonicalise_code():
-    '''
-    >>> from canonical.rosetta.browser import canonicalise_code
-    >>> canonicalise_code('cy')
-    'cy'
-    >>> canonicalise_code('cy-gb')
-    'cy_GB'
-    >>> canonicalise_code('cy_GB')
-    'cy_GB'
-    '''
-
-def test_codes_to_languages():
-    '''
-    Some boilerplate to allow us to use utilities.
-
-    >>> from zope.app.tests.placelesssetup import setUp, tearDown
-    >>> from zope.app.tests import ztapi
-
-    >>> setUp()
-    >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-
-    >>> from canonical.rosetta.browser import codes_to_languages
-    >>> languages = codes_to_languages(('es', '!!!'))
-    >>> len(languages)
-    1
-    >>> languages[0].code
-    'es'
-
-    >>> tearDown()
-    '''
-
-def test_request_languages():
-    '''
-    >>> from zope.app.tests.placelesssetup import setUp, tearDown
-    >>> from zope.app.tests import ztapi
-    >>> from zope.i18n.interfaces import IUserPreferredLanguages
-    >>> from canonical.launchpad.interfaces import IRequestPreferredLanguages
-    >>> from canonical.launchpad.interfaces import IRequestLocalLanguages
-    >>> from canonical.rosetta.browser import request_languages
-
-    First, test with a person who has a single preferred language.
-
-    >>> setUp()
-    >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
-
-    >>> languages = request_languages(DummyRequest())
-    >>> len(languages)
-    1
-    >>> languages[0].code
-    'es'
-
-    >>> tearDown()
-
-    Then test with a person who has no preferred language.
-
-    >>> setUp()
-    >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyNoLanguagePerson))
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
-
-    >>> languages = request_languages(DummyRequest())
-    >>> len(languages)
-    6
-    >>> languages[0].code
-    'ja'
-
-    >>> tearDown()
-    '''
-
-def test_parse_cformat_string():
-    '''
-    >>> from canonical.rosetta.browser import parse_cformat_string
-    >>> parse_cformat_string('')
-    ()
-    >>> parse_cformat_string('foo')
-    (('string', 'foo'),)
-    >>> parse_cformat_string('blah %d blah')
-    (('string', 'blah '), ('interpolation', '%d'), ('string', ' blah'))
-    >>> parse_cformat_string('%sfoo%%bar%s')
-    (('interpolation', '%s'), ('string', 'foo%%bar'), ('interpolation', '%s'))
-    >>> parse_cformat_string('%')
-    Traceback (most recent call last):
-    ...
-    ValueError: %
-    '''
-
-def test_escape_unescape_msgid():
-    r'''
-    >>> from canonical.rosetta.browser import escape_msgid, unescape_msgid
-    >>> escape_msgid('foo')
-    'foo'
-    >>> escape_msgid('foo\\bar')
-    'foo\\\\bar'
-    >>> escape_msgid('foo\nbar')
-    'foo\\nbar'
-    >>> escape_msgid('foo\tbar')
-    'foo\\tbar'
-    >>> unescape_msgid('foo')
-    'foo'
-    >>> unescape_msgid('foo\\\\bar')
-    'foo\\bar'
-    >>> unescape_msgid('foo\\nbar')
-    'foo\nbar'
-    >>> unescape_msgid('foo\\tbar')
-    'foo\tbar'
-    >>> unescape_msgid('foo\\\\n')
-    'foo\\n'
-    '''
-
-def test_parse_translation_form():
-    r'''
-    >>> from canonical.rosetta.browser import parse_translation_form
-
-    An empty form has no translations.
-
-    >>> parse_translation_form({})
-    {}
-
-    A message ID with no translations.
-
-    >>> x = parse_translation_form({'set_3_msgid' : 'bar' })
-    >>> x[3]['msgid']
-    'bar'
-    >>> x[3]['translations']
-    {}
-    >>> x[3]['fuzzy']
-    {}
-
-    A translation with no message ID.
-
-    >>> parse_translation_form({'set_3_translation_cy' : None})
-    Traceback (most recent call last):
-    ...
-    AssertionError: Orphaned translation in form.
-
-    A message ID with some translations.
-
-    >>> x = parse_translation_form({
-    ...     'set_1_msgid' : 'foo',
-    ...     'set_1_translation_cy_0' : 'aaa',
-    ...     'set_1_translation_cy_1' : 'bbb',
-    ...     'set_1_translation_cy_2' : 'ccc',
-    ...     'set_1_translation_es_0' : 'xxx',
-    ...     'set_1_translation_es_1' : 'yyy',
-    ...     'set_1_fuzzy_es' : True
-    ...     })
-    >>> x[1]['msgid']
-    'foo'
-    >>> x[1]['translations']['cy'][2]
-    'ccc'
-    >>> x[1]['translations']['es'][0]
-    'xxx'
-    >>> x[1]['fuzzy'].has_key('cy')
-    False
-    >>> x[1]['fuzzy']['es']
-    True
-
-    Test with a language which contains a country code. This is a regression
-    test.
-
-    >>> x = parse_translation_form({
-    ... 'set_1_msgid' : 'foo',
-    ... 'set_1_translation_pt_BR_0' : 'bar',
-    ... })
-    >>> x[1]['translations']['pt_BR'][0]
-    'bar'
-    '''
-
 def test_RosettaProjectView():
     '''
     >>> from canonical.launchpad.browser import ProjectView
@@ -448,7 +266,7 @@ def test_TranslatePOTemplate_init():
 
     >>> from zope.app.tests.placelesssetup import setUp, tearDown
     >>> from zope.app.tests import ztapi
-    >>> from canonical.rosetta.browser import TranslatePOTemplate
+    >>> from canonical.launchpad.browser import TranslatePOTemplate
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
@@ -462,6 +280,7 @@ def test_TranslatePOTemplate_init():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest(languages='ja')
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> context.language_code
     'ja'
@@ -469,7 +288,7 @@ def test_TranslatePOTemplate_init():
     'ja'
     >>> [l.code for l in t.languages]
     ['ja']
-    >>> t.pluralforms
+    >>> t.pluralFormCounts
     {'ja': 4}
     >>> t.badLanguages
     []
@@ -486,6 +305,7 @@ def test_TranslatePOTemplate_init():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest()
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> context.language_code
     'es'
@@ -493,7 +313,7 @@ def test_TranslatePOTemplate_init():
     True
     >>> [l.code for l in t.languages]
     ['es']
-    >>> t.pluralforms
+    >>> t.pluralFormCounts
     {'es': 4}
     >>> t.badLanguages
     []
@@ -510,6 +330,7 @@ def test_TranslatePOTemplate_init():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest(languages='fr')
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> context.language_code
     'fr'
@@ -517,7 +338,7 @@ def test_TranslatePOTemplate_init():
     'fr'
     >>> [l.code for l in t.languages]
     ['fr']
-    >>> t.pluralforms
+    >>> t.pluralFormCounts
     {'fr': 3}
     >>> t.badLanguages
     []
@@ -535,6 +356,7 @@ def test_TranslatePOTemplate_init():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest(languages='cy')
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> context.language_code
     'cy'
@@ -542,7 +364,7 @@ def test_TranslatePOTemplate_init():
     'cy'
     >>> [l.code for l in t.languages]
     ['cy']
-    >>> t.pluralforms
+    >>> t.pluralFormCounts
     {'cy': None}
     >>> len(t.badLanguages)
     1
@@ -555,6 +377,7 @@ def test_TranslatePOTemplate_init():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest(offset=7, count=8)
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> t.offset
     7
@@ -566,6 +389,7 @@ def test_TranslatePOTemplate_init():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest(show='translated')
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> t.show
     'translated'
@@ -579,7 +403,7 @@ def test_TranslatePOTemplate_atBeginning_atEnd():
 
     >>> from zope.app.tests.placelesssetup import setUp, tearDown
     >>> from zope.app.tests import ztapi
-    >>> from canonical.rosetta.browser import TranslatePOTemplate
+    >>> from canonical.launchpad.browser import TranslatePOTemplate
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
@@ -588,6 +412,7 @@ def test_TranslatePOTemplate_atBeginning_atEnd():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest()
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> t.atBeginning()
     True
@@ -597,6 +422,7 @@ def test_TranslatePOTemplate_atBeginning_atEnd():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest(offset=10)
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> t.atBeginning()
     False
@@ -606,6 +432,7 @@ def test_TranslatePOTemplate_atBeginning_atEnd():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest(offset=30)
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> t.atBeginning()
     False
@@ -621,7 +448,7 @@ def test_TranslatePOTemplate_URLs():
 
     >>> from zope.app.tests.placelesssetup import setUp, tearDown
     >>> from zope.app.tests import ztapi
-    >>> from canonical.rosetta.browser import TranslatePOTemplate
+    >>> from canonical.launchpad.browser import TranslatePOTemplate
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
@@ -632,6 +459,7 @@ def test_TranslatePOTemplate_URLs():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest()
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> t.URL()
     'http://this.is.a/fake/url'
@@ -647,6 +475,7 @@ def test_TranslatePOTemplate_URLs():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest(offset=10)
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> t.beginningURL()
     'http://this.is.a/fake/url'
@@ -666,12 +495,31 @@ def test_TranslatePOTemplate_URLs():
     >>> request = DummyRequest(languages='ca', offset=42,
     ...     count=43)
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
     >>> t.URL()
-    'http://this.is.a/fake/url?count=43&languages=ca'
+    'http://this.is.a/fake/url?count=43&languages=ca&offset=42'
 
     >>> t.endURL()
     'http://this.is.a/fake/url?count=43&languages=ca'
+
+    Test handling of the 'show' parameter.
+
+    >>> context = DummyPOTemplate()
+    >>> request = DummyRequest(show='all')
+    >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
+
+    >>> t.URL()
+    'http://this.is.a/fake/url'
+
+    >>> context = DummyPOTemplate()
+    >>> request = DummyRequest(show='translated')
+    >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
+
+    >>> t.URL()
+    'http://this.is.a/fake/url?show=translated'
 
     >>> tearDown()
     '''
@@ -682,7 +530,7 @@ def test_TranslatePOTemplate_messageSets():
 
     >>> from zope.app.tests.placelesssetup import setUp, tearDown
     >>> from zope.app.tests import ztapi
-    >>> from canonical.rosetta.browser import TranslatePOTemplate
+    >>> from canonical.launchpad.browser import TranslatePOTemplate
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
@@ -691,8 +539,9 @@ def test_TranslatePOTemplate_messageSets():
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest()
     >>> t = TranslatePOTemplate(context, request)
+    >>> t.processForm()
 
-    >>> x = list(t.messageSets())[0]
+    >>> x = list(t.messageSets)[0]
     >>> x['id']
     1
     >>> x['sequence']
@@ -713,84 +562,14 @@ def test_TranslatePOTemplate_messageSets():
     >>> tearDown()
     '''
 
-def test_msgid_html():
-    r'''
-    Test message ID presentation munger.
-
-    >>> from canonical.rosetta.browser import msgid_html
-
-    First, do no harm.
-
-    >>> msgid_html(u'foo bar', [], 'XXXA')
-    u'foo bar'
-
-    Test replacement of leading and trailing spaces.
-
-    >>> msgid_html(u' foo bar', [], 'XXXA')
-    u'XXXAfoo bar'
-    >>> msgid_html(u'foo bar ', [], 'XXXA')
-    u'foo barXXXA'
-    >>> msgid_html(u'  foo bar  ', [], 'XXXA')
-    u'XXXAXXXAfoo barXXXAXXXA'
-
-    Test replacement of newlines.
-
-    >>> msgid_html(u'foo\nbar', [], newline='YYYA')
-    u'fooYYYAbar'
-
-    And both together.
-
-    >>> msgid_html(u'foo \nbar', [], 'XXXA', 'YYYA')
-    u'fooXXXAYYYAbar'
-
-    Test treatment of tabs.
-
-    >>> msgid_html(u'foo\tbar', [])
-    u'foo\\tbar'
-    '''
-
 def test_TabIndexGenerator():
     '''
-    >>> from canonical.rosetta.browser import TabIndexGenerator
+    >>> from canonical.launchpad.browser import TabIndexGenerator
     >>> tig = TabIndexGenerator()
     >>> tig.generate()
     1
     >>> tig.generate()
     2
-    '''
-
-def test_ProductView_newpotemplate():
-    '''
-    Test POTemplate creation from website.
-
-    >>> from zope.app.tests.placelesssetup import setUp, tearDown
-    >>> from zope.app.tests import ztapi
-    >>> from zope.publisher.browser import FileUpload
-    >>> from canonical.launchpad.interfaces import IRequestPreferredLanguages
-    >>> from canonical.launchpad.interfaces import IRequestLocalLanguages
-    >>> from canonical.rosetta.browser import ProductView
-
-    >>> setUp()
-    >>> ztapi.provideUtility(IDistributionSet, DummyDistributionSet())
-    >>> ztapi.provideUtility(ISourcePackageNameSet, DummySourcePackageNameSet())
-    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
-
-    >>> context = DummyProduct()
-    >>> fui = DummyFileUploadItem(name='foo.pot', content=potfile)
-    >>> fu = FileUpload(fui)
-    >>> request = DummyRequest(file=fu, name='template_name',
-    ...     title='template_title', Register='Register POTemplate')
-    >>> request.method = 'POST'
-    >>> pv = ProductView(context, request)
-
-    >>> len(pv._templates)
-    1
-    >>> 'distrorelease' in dir(pv._templates[0])
-    False
-
-    >>> tearDown()
     '''
 
 def test_suite():

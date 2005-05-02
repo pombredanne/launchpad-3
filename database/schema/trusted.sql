@@ -82,3 +82,17 @@ CREATE OR REPLACE FUNCTION sha1(text) RETURNS char(40) AS '
 COMMENT ON FUNCTION sha1(text) IS
     'Return the SHA1 one way cryptographic hash as a string of 40 hex digits';
 
+
+CREATE OR REPLACE FUNCTION you_are_your_own_member() RETURNS trigger AS '
+    BEGIN
+        IF NEW.teamowner IS NULL THEN
+            INSERT INTO TeamParticipation (person, team)
+                VALUES (NEW.id, NEW.id);
+        END IF;
+        RETURN NULL;
+    END;
+' LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION you_are_your_own_member() IS
+    'Trigger function to ensure that every row added to the Person table gets a corresponding row in the TeamParticipation table, as per the TeamParticipationUsage page on the Launchpad wiki';
+

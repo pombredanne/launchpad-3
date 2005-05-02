@@ -7,14 +7,15 @@
       name="index.html"
       template="launchpad/templates/default-error.pt"
       permission="zope.Public"
+      class="canonical.launchpad.webapp.error.SystemError"
       />
 
   <page
       for="zope.exceptions.IUnauthorized"
       name="index.html"
       permission="zope.Public"
-      template="launchpad/templates/unauthorized.pt"
-      class="zope.app.exception.browser.unauthorized.Unauthorized" 
+      class="canonical.launchpad.webapp.login.UnauthorizedView"
+      attribute="__call__"
       />
 
   <page
@@ -30,6 +31,7 @@
       name="index.html"
       permission="zope.Public"
       template="launchpad/templates/notfound.pt"
+      class="zope.app.exception.browser.notfound.NotFound"
       />
 <!--
    Commenting out the the debug view on Unauthorized, as we want it to prompt
@@ -46,6 +48,7 @@
       layer="canonical.launchpad.skins.DebugLayer"
       />
   -->
+  <!--
   <page
       layer="canonical.launchpad.layers.DebugLayer"
       for="zope.exceptions.IUnauthorized"
@@ -53,6 +56,16 @@
       permission="zope.Public"
       template="launchpad/templates/unauthorized.pt"
       class="zope.app.exception.browser.unauthorized.Unauthorized" 
+      />
+    -->
+
+  <page
+      layer="canonical.launchpad.layers.DebugLayer"
+      for="zope.exceptions.IUnauthorized"
+      name="index.html"
+      permission="zope.Public"
+      class="canonical.launchpad.webapp.login.UnauthorizedView"
+      attribute="__call__"
       />
 
 <!-- Note: debug view for exceptions. -->

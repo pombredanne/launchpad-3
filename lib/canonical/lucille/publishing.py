@@ -80,6 +80,9 @@ class Publisher(object):
                sourcepackagename : SourcePackageName.name
                    componentname : Component.name
         """
+        # SPPHXXX dsilvers 2005-04-15 This needs updating for SPPH
+        # as the publisher is written.
+
         for pubrec in records:
             source = pubrec.sourcepackagename.encode('utf-8')
             component = pubrec.componentname.encode('utf-8')

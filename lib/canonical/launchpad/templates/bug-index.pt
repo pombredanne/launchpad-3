@@ -26,140 +26,121 @@
 
 <div metal:fill-slot="main">
 
+    <h1>Bug Description and Discussion</h1>
 
-<div id="content" class="documentEditable">
-    <ul class="contentViews">
-        <li id="contentview-view" class="selected">
-            <a>View</a>
-        </li>
-
-        <li id="contentview-edit" class="plain">
-            <a href="+edit">Edit Bug Info</a>
-        </li>
-
-        <li id="contentview-edit" class="plain">
-            <a href="activity">Bug Changelog</a>
-        </li>
-    </ul>
-
-    <div class="contentActions">
-        &nbsp;
+    <div class="discreet">
+        Below is a list of source packages and upstream products in which
+        this bug should be fixed. The state, severity, priority and person
+        assigned to fix a bug is determined by the maintainer(s) of each
+        product or source package in which this bug should be fixed.
     </div>
 
-    <div class="documentContent" id="region-content">
+    <div tal:replace="structure view/tasksHeadline" />
 
-        <h1>
-            <span tal:replace="context/title" />
-        </h1>
-        <div class="discreet">
-            Below is a list of source packages and upstream products in which
-            this bug should be fixed. The state, severity, priority and person
-            assigned to fix a bug is determined by the maintainer(s) of each
-            product or source package in which this bug should be fixed.
-        </div>
+    <div class="discreet">
 
-        <div tal:replace="structure view/tasksHeadline" />
+        <span tal:condition="context/name">
+            Bugname: <a href="" tal:content="context/name">$Bug.name</a>,
+        </span>
 
-        <div class="discreet">
+        Submitted
+        <span tal:replace="context/datecreated/fmt:datetime"
+        >13 Sep 04 12:15</span>.
+    </div>
 
-            <span tal:condition="context/name">
-                Bugname: <a href="" tal:content="context/name">$Bug.name</a>,
+    <a href="+upstreamtask"
+        style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+        title="Mark this bug as occurring upstream">
+        <img src="/++resource++add.gif" alt="+" />
+        Upstream Task...
+    </a>
+
+    <a href="+distrotask"
+        style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+        title="Mark this bug as occurring in another package">
+        <img src="/++resource++add.gif" alt="+" />
+        Distro Task...
+    </a>
+
+    <a href="+distroreleasetask"
+        style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+        title="Mark this bug as occurring in another package for a specific distro release">
+        <img src="/++resource++add.gif" alt="+" />
+        Distro Release Task...
+    </a>
+
+    <div class="boardCommentContent" 
+        tal:content="structure context/description/fmt:nice_pre">
+        $Bug.description
+    </div>
+
+    <h2>Comments</h2>
+
+    <div class="boardComment">
+        <fieldset class="collapsible collapsed">
+            <legend>New comment on this bug</legend>
+
+            <div class="field">
+                <form action="+messages/+new" method="post">
+                    <label>Comment</label>
+                    <div class="formHelp">
+                        If you have additional relevant information,
+                        enter it below.
+                    </div>
+                    <b>Subject:</b>
+                    <input name="field.title" type="text" size="50" 
+                        tal:attributes="value context/followup_title" /><br />
+                    <b>Comment:</b> <textarea name="field.contents" rows="10"></textarea>
+                    <input type="submit" name="UPDATE_SUBMIT" value="Add" />
+                </form>
+            </div>
+
+        </fieldset>
+    </div>
+
+    <div class="boardComment" tal:repeat="message context/messages">
+
+        <div class="boardCommentDetails">
+            <strong tal:content="message/title">$Bugmessage.title</strong>
+
+            Posted by <span
+            tal:replace="message/owner/displayname|string:(none)">
+            $Person.displayname
             </span>
-
-            Submitted
-            <span tal:replace="python:context.datecreated.strftime(
-                '%d %b %y %H:%M')">13 Sep 04 12:15</span>.
+            at <span tal:replace="message/datecreated/fmt:datetime">Thursday 13:21</span>
         </div>
 
-        <div class="documentDescription" tal:content="context/shortdesc">
-            $Bug.shortdesc
-        </div>
-
-        <div class="boardCommentContent" 
-            tal:content="structure context/description/fmt:nice_pre">
-            $Bug.description
-        </div>
-
-        <h2>Comments</h2>
-
-        <div class="boardComment">
-            <fieldset class="collapsible collapsed">
-                <legend>New comment on this bug</legend>
-    
-                <div class="field">
-                    <form action="+messages/+new" method="post">
-                        <label>Comment</label>
-                        <div class="formHelp">
-                            If you have additional relevant information,
-                            enter it below.
-                        </div>
-                        <b>Subject:</b>
-                        <input name="field.title" type="text" size="50" 
-                            tal:attributes="value context/followup_title" /><br />
-                        <b>Comment:</b> <textarea name="field.contents" rows="10"></textarea>
-                        <input type="submit" name="UPDATE_SUBMIT" value="Add" />
-                    </form>
-                </div>
-    
-            </fieldset>
-        </div>
-
-        <div class="boardComment" tal:repeat="message context/messages">
-
-            <div class="boardCommentDetails">
-                <strong tal:content="message/title">$Bugmessage.title</strong>
-
-                Posted by <span
-                tal:replace="message/owner/displayname|string:(none)">
-                $Person.displayname
-                </span>
-                at <span tal:replace="python:message.datecreated.strftime(
-                    '%d %b %y %H:%M')">Thursday 13:21</span>
+        <div class="boardCommentBody">
+            <div class="boardCommentContent"
+                tal:content="structure message/contents/fmt:nice_pre">
+                Comment text.
             </div>
-
-            <div class="boardCommentBody">
-                <div tal:repeat="attachment message/attachments"
-                    class="portrait">
-                    <!-- TODO: Attachment URL when Librarian is available -->
-                    <a href="#">
-                        <div tal:content="attachment/name">
-                            $BugAttachment.name
-                        </div>
-                    </a>
-                </div>
-
-                <div class="boardCommentContent"
-                    tal:content="structure message/contents/fmt:nice_pre">
-                    Comment text.
-                </div>
-            </div>
-
-            <fieldset class="collapsible collapsed">
-                <legend>Follow-up on this comment</legend>
-
-                <div class="field">
-                    <form action="+messages/+new" method="post">
-                        <label>Comment</label>
-                        <div class="formHelp">
-                            If you have additional relevant information,
-                            enter it below.
-                        </div>
-                        <b>Subject:</b>
-                        <input name="field.title"
-                               type="text" size="50"
-                               value=""
-                               tal:attributes="value message/followup_title" /><br />
-                        <b>Comment:</b> <textarea name="field.contents" rows="10"></textarea>
-                        <input type="submit" name="UPDATE_SUBMIT" value="Add" />
-                    </form>
-                </div>
-            </fieldset>
-            <div class="visualClear"></div>
-
         </div>
 
-    </div>
-</div>
+        <fieldset class="collapsible collapsed">
+            <legend>Follow-up on this comment</legend>
 
-</div></body>
+            <div class="field">
+                <form action="+messages/+new" method="post">
+                    <label>Comment</label>
+                    <div class="formHelp">
+                        If you have additional relevant information,
+                        enter it below.
+                    </div>
+                    <b>Subject:</b>
+                    <input name="field.title"
+                           type="text" size="50"
+                           value=""
+                           tal:attributes="value message/followup_title" /><br />
+                    <b>Comment:</b> <textarea name="field.contents" rows="10"></textarea>
+                    <input type="submit" name="UPDATE_SUBMIT" value="Add" />
+                </form>
+            </div>
+        </fieldset>
+        <div class="visualClear"></div>
+
+      </div>
+
+  </div>
+</body>
 </html>

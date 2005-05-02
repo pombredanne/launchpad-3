@@ -2,7 +2,7 @@
       lang="en">
 
 <head>
-  <title>About FOAF</title>
+  <title metal:fill-slot="title">About FOAF</title>
 </head>
 
 <body>

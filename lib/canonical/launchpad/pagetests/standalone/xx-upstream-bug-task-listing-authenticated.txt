@@ -1,4 +1,6 @@
-
+Foo Bar views the upstream Ubuntu bug tasks listing. Note that he can
+see the extra "quick search" links "my todo list" and "submitted by
+me".
 
   >>> print http(r"""
   ... GET /malone/products/ubuntu HTTP/1.1
@@ -17,7 +19,11 @@
             <a ...>submitted by me</a>
   ...
     <small>displaying matching bugs 1 to 2 of 2</small>...
-            <td onclick="window.location='/malone/tasks/3/+edit'">2</td>
+            <td>
+                <a href="/malone/tasks/3/+edit">2</a>
+            </td>
   ...
-            <td onclick="window.location='/malone/tasks/1/+edit'">1</td>
+            <td>
+                <a href="/malone/tasks/1/+edit">1</a>
+            </td>
   ...

@@ -1,115 +1,110 @@
 # Imports from zope
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
+from zope.schema import Int, Text, TextLine
 from zope.schema import Password
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-
-class IPackages(Interface):
-    """Root object for web app."""
-    binary = Attribute("Binary packages")
-    source = Attribute("Source packages")
-
-    def __getitem__(name):
-        """Retrieve a package set by name."""
-
-class IPackageSet(Interface):
-    """A set of packages"""
-    def __getitem__(name):
-        """Retrieve a package by name."""
-    def __iter__():
-        """Iterate over names"""
-
-#
-# Interface we expect a SourcePackage to provide.
-#
 class ISourcePackage(Interface):
-    """A SourcePackage"""
-    id = Int(title=_("ID"), required=True)
-    name = TextLine(title=_("Name"), required=True)
-    maintainer = Int(title=_("Maintainer"), required=True)
-    title = TextLine(title=_("Title"), required=True)
-    shortdesc = Text(title=_("Description"), required=True)
-    srcpackageformat = Int(title=_('Source package format'), required=True)
-    description = Text(title=_("Description"), required=True)
-    manifest = Int(title=_("Manifest"), required=False)
-    distro = Int(title=_("Distribution"), required=False)
-    sourcepackagename = Int(title=_("Source package name"), required=True)
-    bugtasks = Attribute("bugtasks")
+    """A SourcePackage. See the MagicSourcePackage specification. This
+    interface preserves as much as possible of the old SourcePackage
+    interface from the SourcePackage table, with the new table-less
+    implementation."""
 
-    product = Attribute("Product, or None")
-    proposed = Attribute("A source package release with upload status of "
-                         "PROPOSED, else None")
+    id = Attribute("ID")
+
+    maintainer = Attribute("Maintainer")
+
+    name = Attribute("The text name of this source package, from "
+                     "SourcePackageName.")
+
+    displayname = Attribute("A displayname, constructed, for this package")
+
+    title = Attribute("Title")
+
+    format = Attribute("Source Package Format. This is the format of the "
+                "current source package release for this name in this "
+                "distribution or distrorelease. Calling this when there is "
+                "no current sourcepackagerelease will raise an exception.")
+
+    changelog = Attribute("The changelog of the currentrelease for this "
+                "source package published in this distrorelease.")
+
+    manifest = Attribute("The Manifest of the current SourcePackageRelease "
+                    "published in this distribution / distrorelease.")
+
+    distribution = Attribute("Distribution")
+
+    distrorelease = Attribute("The DistroRelease for this SourcePackage")
+
+    sourcepackagename = Attribute("SourcePackageName")
+
+    bugtasks = Attribute("Bug Tasks that reference this Source Package name "
+                    "in the context of this distribution.")
+
+    product = Attribute("The best guess we have as to the Launchpad Product "
+                    "associated with this SourcePackage.")
+
+    productseries = Attribute("The best guess we have as to the Launchpad "
+                    "ProductSeries for this Source Package. Try find "
+                    "packaging information for this specific distrorelease "
+                    "then try parent releases and previous ubuntu releases.")
+
+    pendingrelease = Attribute("The latest source package release with "
+                "a Publishing status of PENDING, if one exists for "
+                "this distrorelease, else None.")
+
+    currentrelease = Attribute("""The latest published SourcePackageRelease
+        of a source package with this name in the distribution or
+        distrorelease, or None if no source package with that name is
+        published in this distrorelease.""")
+
+    publishedreleases = Attribute("The complete set of source package "
+        "releases currently published in this distrorelease. This does "
+        "not include proposed releases, only those actually published. ")
+
+    releases = Attribute("The full set of source package releases that "
+        "have been published in this distrorelease under this source "
+        "package name. The list should be sorted by version number.")
+    
+    releasehistory = Attribute("A list of all the source packages ever "
+        "published in this Distribution (across all distroreleases) with "
+        "this source package name. Note that the list spans "
+        "distroreleases, and should be sorted by version number.")
+
+    def potemplates():
+        """Returns the set of POTemplates that exist for this
+        distrorelease/sourcepackagename combination."""
+
+    potemplatecount = Attribute("The number of POTemplates for this "
+                        "SourcePackage.")
+
     def bugsCounter():
-        """A bug counter widget for sourcepackage"""
+        """A bug counter widget for sourcepackage. This finds the number of
+        bugs for each bug severity, as well as the total number of bugs
+        associated with this sourcepackagename in this distribution."""
 
-    def getBugSourcePackages(distrorelease):
-        """Get SourcePackages in a DistroRelease with BugTasks"""
-
-    def lastversions(distrorelease):
-        """
-        Get the lastest version of a
-        sourcepackagerelease in a distrorelease
-        """
-
-    def current(distrorelease):
-        """Current SourcePackageRelease of a SourcePackage"""
+    def getVersion(version):
+        """Returns the SourcePackageRelease that had the name of this
+        SourcePackage and the given version, and was published in this
+        distribution. NB:
         
-class ISourcePackageinDistro(Interface):
-    """A SourcePackage in Distro PG View"""
-    id = Int(title=_("ID"), required=True)
-    name = TextLine(title=_("Name"), required=True)
-    distrorelease = Int(title=_("DistroRelease"), required=False)
-    maintainer = Int(title=_("Maintainer"), required=True)
-    title = TextLine(title=_("Title"), required=True)
-    shortdesc = Text(title=_("Description"), required=True)
-    description = Text(title=_("Description"), required=True)
-    manifest = Int(title=_("Manifest"), required=False)
-    distro = Int(title=_("Distribution"), required=False)
-    sourcepackagename = Int(title=_("SourcePackage Name"), required=True)
-    bugtasks = Attribute("bug tasks")
-    product = Attribute("Product, or None")
-    proposed = Attribute("A source package release with upload status of "
-                         "PROPOSED, else None")
-
-    def bugsCounter():
-        """A bug counter widget for sourcepackage"""
-    releases = Attribute("Set of releases tha this package is inside")
-    current = Attribute("Set of current versions")
-    lastversions = Attribute("set of lastversions")
-
-
-#
-# Interface provied by a SourcePackageName. This is a tiny
-# table that allows multiple SourcePackage entities to share
-# a single name.
-#
-class ISourcePackageName(Interface):
-    """Name of a SourcePackage"""
-
-    id = Int(title=_("ID"), required=True)
-    name = TextLine(title=_("Name"), required=True)
-
-    def __unicode__():
-        """Return the name"""
-
-
-class ISourcePackageNameSet(Interface):
-    """A set of SourcePackageName."""
-
-    def __getitem__(name):
-        """Retrieve a sourcepackage by name."""
-
-    def __iter__():
-        """Iterate over names"""
-
-    def get(sourcepackagenameid):
-        """Return a sourcepackagename by its id.
-
-        If the sourcepackagename can't be found a zope.exceptions.NotFoundError
-        will be raised.
+          1. Currently, we have no PublishingMorgue, so this will only find
+             SourcePackageReleases that are *still* published (even if they
+             have been superceded, as long as they have not yet been
+             deleted).
+        
+          2. It will look across the entire distribution, not just in the
+          current distrorelease. In Ubuntu and RedHat, and similar
+          distributions, a sourcepackagerelease name+version is UNIQUE
+          across all distroreleases. This may turn out not to be true in
+          other types of distribution, such as Gentoo.
         """
+
+    shouldimport = Attribute("""Whether we should import this or not.
+        By "import" we mean sourcerer analysis resulting in a manifest and a
+        set of Bazaar branches which describe the source package release.
+        The attribute is True or False.""")
 
 
 class ISourcePackageSet(Interface):
@@ -117,11 +112,19 @@ class ISourcePackageSet(Interface):
 
     title = Attribute('Title')
 
+    distribution = Attribute('Distribution')
+
+    distrorelease = Attribute('DistroRelease')
+
     def __getitem__(key):
         """Get an ISourcePackage by name"""
 
     def __iter__():
         """Iterate through SourcePackages."""
+
+    def query(text=None):
+        """Return an interator over source packages that match the required
+        text in this distrorelease / distribution."""
 
     def withBugs():
         """Return a sequence of SourcePackage, that have bugs assigned to them
@@ -132,26 +135,6 @@ class ISourcePackageSet(Interface):
     def getSourcePackages(distroreleaseID):
         """Returns a set of SourcePackage in a DistroRelease"""
 
-    def getByPersonID(personID):
-        """Get a set of SourcePackages maintained by a Person"""
-
-
-class ISourcePackageInDistroSet(Interface):
-    """A Set of SourcePackages in a given DistroRelease"""
-
-    title = Attribute('Title')
-
-    def findPackagesByName(pattern):
-        """Find SourcePackages in a given DistroRelease matching pattern"""
-
-    def __iter__():
-        """Return the SourcePackageInDistroSet Iterator"""
-
-    def __getitem__(name):
-        """Return a SourcePackageRelease Published in a DistroRelease"""
-
-class ISourcePackageUtility(Interface):
-    """A Utility for SourcePackages"""
     def findByNameInDistroRelease(distroreleaseID, pattern):
         """Returns a set o sourcepackage that matchs pattern
         inside a distrorelease"""
@@ -160,81 +143,6 @@ class ISourcePackageUtility(Interface):
         """Returns a SourcePackage by its name"""
 
     def getSourcePackageRelease(sourcepackageid, version):
-        """Get an Specific SourcePackageRelease by sourcepackageID and Version"""
+        """Get an Specific SourcePackageRelease by
+        sourcepackageID and Version"""
 
-
-class ISourcePackageRelease(Interface):
-    """A source package release, e.g. apache-utils 2.0.48-3"""
-
-    sourcepackage = Attribute("The source package this is a release for")
-    creator = Attribute("Person that created this release")
-    version = Attribute("A version string")
-    dateuploaded = Attribute("Date of Upload")
-    urgency = Attribute("Source Package Urgency")
-    dscsigningkey = Attribute("DSC Signing Key")
-    component = Attribute("Source Package Component")
-    changelog = Attribute("Source Package Change Log")
-    builddepends = Attribute(
-        "A comma-separated list of packages on which this package"
-        " depends to build")
-    builddependsindep = Attribute(
-        "Same as builddepends, but the list is of arch-independent packages")
-    architecturehintlist = Attribute("XXX: Kinnison?")
-    dsc = Attribute("The DSC file for this SourcePackageRelease")
-    section = Attribute("Section this Source package Release belongs to")
-    pkgurgency = Attribute("Source Package Urgency Translated using dbschema")
-    binaries = Attribute(
-        "Binary Packages generated by this SourcePackageRelease") 
-    builds = Attribute("Builds for this sourcepackagerelease")
-    files = Attribute("Files for this sourcepackagerelease")
-    files_url = Attribute(
-        "Downloadable URL for this sourcepackagerelease files")
-    sourcepackagename = Attribute("SourcePackageName table reference")
-
-    # read-only properties
-    name = Attribute('The sourcepackagename for this release, as text')
-
-    def branches():
-        """Return the list of branches in a source package release"""
-
-    # XXX: What do the following methods and attributes do?
-    #      These were missing from the interfaces, but being used
-    #      in application code.
-    #      -- Steve Alexander, Fri Dec 10 14:28:41 UTC 2004
-    architecturesReleased = Attribute("XXX")
-
-class ISourcePackageReleasePublishing(ISourcePackageRelease):
-    """
-    Interface for the SQL VSourcePackageReleasePublishing View, which
-    aggregates data from sourcepackagerelease, sourcepackagepublishing,
-    sourcepackagename, component and distrorelease.
-    """
-    id = Int(title=_("ID"), required=True)
-    publishingstatus = Attribute("The status of this publishing record")
-    datepublished = Attribute("The date on which this record was published")
-    name = Attribute("The SourcePackage name")
-    shortdesc = Attribute("The SourcePackage short description")
-    description = Attribute("The SourcePackage description")
-    componentname = Attribute("The Component name")
-    distrorelease = Attribute("The distro in which this package was released")
-    maintainer = Attribute("The maintainer of this package")
-
-    title = Attribute("Title")
-
-    def __getitem__(version):
-        """Get a SourcePackageRelease"""
-
-class IbuilddepsSet(Interface):
-    name = Attribute("Package name for a builddepends/builddependsindep")
-    signal = Attribute("Dependence Signal e.g = >= <= <")
-    version = Attribute("Package version for a builddepends/builddependsindep")
-
-class ICurrentVersion(Interface):
-    release = Attribute("The binary or source release object")
-    currentversion = Attribute("Current version of A binary or source package")
-    currentbuilds = Attribute(
-        "The current builds for binary or source package")
-
-class IDownloadURL(Interface):
-    filename = Attribute("Downloadable Package name")
-    fileurl = Attribute("Package full url")

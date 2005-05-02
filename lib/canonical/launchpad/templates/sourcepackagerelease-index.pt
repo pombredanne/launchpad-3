@@ -4,13 +4,14 @@
       i18n:domain="launchpad">
 
 <head>
-  <title metal:fill-slot="title"
-    tal:content="context/sourcepackage/shortdesc">
+  <title metal:fill-slot="title">
+    Source Package <span tal:replace="context/title">apache2
+    version 2.0.53-2</span>
   </title>
   <!-- Plone style sheet -->
   <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Soyuz style sheet -->
-  <style type="text/css" media="screen">@import url(soyuz.css);</style>
+  <!-- Launchpad style sheet -->
+  <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
@@ -23,15 +24,10 @@
     <div tal:replace="structure view/lastversionsPortlet" />
   </metal:rightportlets>
 
-  <div metal:fill-slot="main" id="content" class="documentEditable">
-    <div class="documentContent" id="region-content">
+  <div metal:fill-slot="main">
 
-      <h1>
-        <span tal:content="context/shortdesc">
-          TITLE</span>
-      </h1>
+      <h1>Source Package Release Details</h1>
 
-      <h4>Source Package Release Information</h4>
       <p>
 
       <ul>
@@ -52,7 +48,7 @@
            UPLOADDATE</span> UTC
 
         <li><b>Urgency:</b>
-           <span tal:content="context/pkgurgency">
+           <span tal:content="context/urgency/title">
            URGENCY</span>
 
         <li><b>Component:</b>
@@ -64,7 +60,7 @@
              <tal:block tal:condition="context/sourcepackage/product/project">
                <a tal:define="project context/sourcepackage/product/project"
                 tal:content="project/displayname"
-                tal:attributes="href string:/doap/projects/${project/name}">
+                tal:attributes="href string:/projects/${project/name}">
                 Project</a>
              </tal:block>
              <i tal:condition="not:context/sourcepackage/product/project">
@@ -79,7 +75,7 @@
            <a tal:condition="context/sourcepackage/product"
               tal:define="product context/sourcepackage/product"
               tal:content="product/displayname"
-              tal:attributes="href string:/doap/products/${product/name}">
+              tal:attributes="href string:/products/${product/name}">
            Product</a>
            <i tal:condition="not:context/sourcepackage/product">
              No product available for this sourcepackage
@@ -159,7 +155,6 @@
       </table>
 
      </div>
-    </div>
   </div>
 </body>
 </html>

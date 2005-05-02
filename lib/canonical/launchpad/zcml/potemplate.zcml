@@ -35,16 +35,16 @@
         for="canonical.launchpad.interfaces.IPOTemplate"
         permission="zope.Public"
         template="../templates/potemplate-index.pt"
-        class="canonical.rosetta.browser.ViewPOTemplate"
+        class="canonical.launchpad.browser.ViewPOTemplate"
         lp:url="Rosetta/products/$Product.name/$POTemplate.name/+index"
         />
 
     <browser:page
         name="+edit"
         for="canonical.launchpad.interfaces.IPOTemplate"
-        permission="launchpad.AnyPerson"
+        permission="launchpad.Edit"
         template="../templates/potemplate-edit.pt"
-        class="canonical.rosetta.browser.ViewPOTemplate"
+        class="canonical.launchpad.browser.ViewPOTemplate"
         lp:url="Rosetta/products/$Product.name/$POTemplate.name/+edit"
         />
 
@@ -53,7 +53,7 @@
         for="canonical.launchpad.interfaces.IPOTemplate"
         permission="launchpad.AnyPerson"
         template="../templates/potemplate-translate.pt"
-        class="canonical.rosetta.browser.TranslatePOTemplate"
+        class="canonical.launchpad.browser.TranslatePOTemplate"
         lp:url="Rosetta/products/$Product.name/$POTemplate.name/+translate"
         />
 
@@ -61,9 +61,53 @@
         name="+tar-export"
         for="canonical.launchpad.interfaces.IPOTemplate"
         permission="zope.Public"
-        class="canonical.rosetta.browser.POTemplateTarExport"
+        class="canonical.launchpad.browser.POTemplateTarExport"
         attribute="__call__"
         lp:url="Rosetta/products/$Product.name/$POTemplate.name/+translate"
+        />
+
+    <content class="canonical.launchpad.database.POTemplateSet">
+        <require
+            permission="zope.Public"
+            interface="canonical.launchpad.interfaces.IPOTemplateSet"
+            />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.POTemplateSet"
+        provides="canonical.launchpad.interfaces.IPOTemplateSet">
+        <allow interface="canonical.launchpad.interfaces.IPOTemplateSet" />
+    </securedutility>
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IPOTemplateSet"
+        getter="__getitem__"
+        />
+
+    <content class="canonical.launchpad.database.POTemplateSubset">
+        <require
+            permission="zope.Public"
+            interface="canonical.launchpad.interfaces.IPOTemplateSubset"
+            set_attributes="sourcepackagename distrorelease"
+            />
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IPOTemplateSubset"
+        name="+index"
+        />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IPOTemplateSubset"
+        getter="__getitem__"
+        />
+
+    <browser:page
+        name="+index"
+        for="canonical.launchpad.interfaces.IPOTemplateSubset"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.POTemplateSubsetView"
+        attribute="__call__"
         />
 
 </configure>

@@ -15,10 +15,8 @@ class ISourceSource(Interface):
     we are able to syncronise our Arch repositories with that upstream
     revision control system. It allows for access to objects that model
     the SourceSource table."""
-    #
-    # XXX Mark Shuttleworth 03/10/04 Robert Collins please give a better
+    # XXX Mark Shuttleworth 03/10/04: Robert Collins please give a better
     #     description of each field below.
-    #
     name = Attribute("The sourcesource unix name, a one-word lowercase \
         unique name for this sourcesource.")
     title = Attribute("The Title of this SourceSource")
@@ -57,18 +55,16 @@ class ISourceSource(Interface):
     owner = Attribute("The owner of this upstream source record.")
     currentgpgkeyd = Attribute("Robert please explain me")
     fileidreference = Attribute("Robert please explain me")
-    autotested = Attribute("""This enum is defined in
+    dateautotested = Attribute("""This enum is defined in
                             dbschema.ImportTestStatus.""")
     datestarted = Attribute("The timestamp of the last import run start.")
     datefinished = Attribute("The timestamp of the last import run completion.")
 
     def syncCertified():
         """is the sourcesource sync enabled?"""
+
     def autoSyncEnabled():
         """is the sourcesource enabled for automatic syncronisation?"""
-    
-    def canChangeProduct():
-        """is this sync allowed to have its product changed?"""
     
     def namesReviewed():
         """Return True if the product and project details have been reviewed
@@ -77,8 +73,8 @@ class ISourceSource(Interface):
 class ISourceSourceAdmin(Interface):
     """Administration of SourceSource jobs"""
 
-    def changeProduct(product):
-        """change the product this sync belongs to to be 'product'"""
+    def changeProductSeries(series):
+        """change the product series this sync belongs to"""
     
     def certifyForSync():
         """enable this to sync"""
@@ -107,11 +103,29 @@ class ISourceSourceSet(Interface):
     assigned = Attribute("""Setting this will limit the set to those which are
         connected to any product but the one named 'unassigned'.""")
 
+    title = Attribute('Title')
+
     def __getitem__(sourcesourcename):
         """Return the specified sourcesource object."""
+
+    def search(text=None, state=None):
+        """Return the sourcesource objects matching the state and text given
+        as arguments."""
 
     def filter(sync=None, process=None, tested=None, projecttext=None,
                assigned=None):
         """Return a subset of the sourcesources, filtered by the criteria
         given in the arguments."""
+
+    def newSourceSource(
+            rcstype=None,
+            cvsroot=None,
+            cvsmodule=None,
+            cvsbranch=None,
+            cvstarfileurl=None,
+            svnrepository=None,
+            releaseroot=None,
+            releaseverstyle=None,
+            releasefileglob=None):
+        """Create a new SourceSource"""
 

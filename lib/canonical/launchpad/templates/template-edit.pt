@@ -6,10 +6,9 @@
     i18n:domain="launchpad">
 
 <head>
+    <title metal:fill-slot="title">EXAMPLE EDIT TITLE</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Rosetta style sheet -->
-    <style type="text/css" media="screen">@import url(rosetta.css);</style>
 </head>
 
 <body>

@@ -29,8 +29,8 @@
             on something that you installed manually.
         </li>
         <li>
-            <a href="bugs">Search/View Bugs</a> - view or search bugs that have
-            already been reported
+            <a href="distros">View Distribution Bugs</a> - view bugs filed on
+            specific distributions and releases of distributions
         </li>
         <li>
             <a href="assigned">Assigned Bug Reports</a> - retrieve reports on

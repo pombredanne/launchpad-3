@@ -81,10 +81,11 @@ class IBug(Interface):
             #default=datetime.utcnow,
             )
     private = Bool(
-            title=_("Is this bug security related?"), required=False,
+            title=_("Should this bug be kept confidential?"), required=False,
             description=_(
-                "Check the box if this bug exposes a security vulnerability. If "
-                "you're not sure, leave this unchecked."),
+                "Check this box if, for example, this bug exposes a security "
+                "vulnerability. If selected, this bug will be visible only to "
+                "its subscribers."),
             default=False)
 
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
@@ -99,6 +100,58 @@ class IBug(Interface):
 
     def followup_title():
         """Return a candidate title for a followup message."""
+
+    def subscribe(person, subscription):
+        """Subscribe person to the bug, with the provided subscription type.
+
+        Returns an IBugSubscription. Raises a ValueError if the person is
+        already subscribed.
+        """
+
+    def unsubscribe(person):
+        """Remove this person's subscription to this bug.
+
+        Raises a ValueError if the person wasn't subscribed.
+        """
+
+    def isSubscribed(person):
+        """Is person subscribed to this bug?
+
+        Returns True if the user is explicitly subscribed to this bug
+        (no matter what the type of subscription), otherwise False.
+        """
+
+    def notificationRecipientAddresses():
+        """Return the list of email addresses that recieve notifications.
+        """
+
+
+class IBugDelta(Interface):
+    """The quantitative change made to a bug that was edited."""
+
+    bug = Attribute("The IBug, after it's been edited.")
+    bugurl = Attribute("The absolute URL to the bug.")
+    user = Attribute("The IPerson that did the editing.")
+
+    # fields on the bug itself
+    title = Attribute("The new bug title or None.")
+    shortdesc = Attribute("The new bug shortdesc or None.")
+    description = Attribute("The new bug description or None.")
+    private = Attribute("A dict with two keys, 'old' and 'new', or None.")
+    name = Attribute("A dict with two keys, 'old' and 'new', or None.")
+
+    # other things linked to the bug
+    external_reference = Attribute(
+        "A dict with two keys, 'old' and 'new', or None. Key values are "
+        "IBugExternalRefs.")
+    bugwatch = Attribute(
+        "A dict with two keys, 'old' and 'new', or None. Key values are "
+        "IBugWatch's.")
+    cveref = Attribute(
+        "A dict with two keys, 'old' and 'new', or None. Key values are "
+        "ICVERef's.")
+    bugtask_deltas = Attribute(
+        "A tuple of IBugTaskDelta, one IBugTaskDelta or None.")
 
 
 class IBugAddForm(IBug):
@@ -127,6 +180,14 @@ class IBugAddForm(IBug):
     comment = Text(title=_('Comment'), required=True,
             description=_("""A detailed description of the problem you are
             seeing."""))
+    private = Bool(
+            title=_("Should this bug be kept confidential?"), required=False,
+            description=_(
+                "Check this box if, for example, this bug exposes a security "
+                "vulnerability. If you select this option, you must manually "
+                "CC the people to whom this bug should be visible."),
+            default=False)
+
 
 # Interfaces for set
 class IBugSet(IAddFormCustomization):

@@ -6,8 +6,12 @@
     i18n_domain="launchpad">
 
     <content class="canonical.launchpad.database.Bug">
-        <allow interface="canonical.launchpad.interfaces.IBug" />
-        <require permission="launchpad.AnyPerson" set_schema="canonical.launchpad.interfaces.IBug" />
+        <require
+            permission="launchpad.View"
+            interface="canonical.launchpad.interfaces.IBug" />
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IBug" />
     </content>
 
     <browser:defaultView
@@ -58,7 +62,15 @@
         <defaultPage name="+index" />
     </browser:view>
 
-    <!-- this is class BugSet -->
+    <view
+        for="canonical.launchpad.interfaces.IBug"
+        factory="canonical.launchpad.browser.bug.BugAbsoluteURL"
+        type="zope.publisher.interfaces.http.IHTTPRequest"
+        permission="zope.Public"
+        provides="zope.app.traversing.browser.interfaces.IAbsoluteURL">
+    </view>
+
+    <!-- BugSet -->
     <content class="canonical.launchpad.database.BugSet">
         <allow interface="canonical.launchpad.interfaces.IBugSet" />
     </content>
@@ -107,10 +119,10 @@
         schema="canonical.launchpad.interfaces.IBugAddForm"
         class="canonical.launchpad.browser.bug.BugAddView"
         label="File a Bug on a Package"
-        fields="distribution sourcepackagename title comment owner"
+        fields="distribution sourcepackagename title comment private owner"
         content_factory="canonical.launchpad.database.BugFactory"
         arguments=""
-        keyword_arguments="distribution sourcepackagename title comment owner"
+        keyword_arguments="distribution sourcepackagename title comment private owner"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
         lp:url="malone/bugs/+product">
@@ -147,4 +159,8 @@
             lp:url="malone/bugs/created/$Bug.owner/index" />
     </browser:pages>
 
+    <!-- BugDelta -->
+    <content class="canonical.launchpad.database.bug.BugDelta">
+        <allow interface="canonical.launchpad.interfaces.IBugDelta" />
+    </content>
 </configure>

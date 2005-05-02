@@ -1,0 +1,13 @@
+
+This page shows a list of PO templates contained within all source packages
+in a particular distibution release. In this case, we're asking for the
+translation overview for Hoary.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+translations HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...<h2>The Hoary Hedgehog Release</h2>...
+  ...<h1>Translation Templates</h1>...
+  ...
+

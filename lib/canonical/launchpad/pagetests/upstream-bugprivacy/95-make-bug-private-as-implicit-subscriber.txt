@@ -1,0 +1,150 @@
+Sample Person views a bug, which they're about to set private:
+
+  >>> print http(r"""
+  ... GET /malone/bugs/4/+edit HTTP/1.1
+  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Cookie: launchpad=.tnbPlNUdY.lnfXrB7-zmMk3wV0.3ytPNrPof7k.AdO2FCQ5tptSxo
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+      <title>Malone: Edit Bug #4
+      </title>
+  ...
+      <h4>Related People:</h4>
+  <BLANKLINE>
+      <div class="portletBody">
+          <div class="portletContent even">
+  <BLANKLINE>
+              <h5>submitter:</h5>
+              <ul class="people">
+                  <li><a href="/people/name12">Sample Person</a></li>
+              </ul>
+  <BLANKLINE>
+              <h5>maintainers:</h5>
+  <BLANKLINE>
+              <ul class="people">
+                  <li>
+                  <a href="/people/name12">Sample Person</a>
+                  </li>
+              </ul>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+              <ul class="people">
+              </ul>
+  <BLANKLINE>
+  <BLANKLINE>
+              <ul class="people">
+              </ul>
+  <BLANKLINE>
+  <BLANKLINE>
+              <ul class="people">
+              </ul>
+  <BLANKLINE>
+  <BLANKLINE>
+          <a href="/malone/bugs/4/people/+new"
+             style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+             title="Add a subscriber to this bug.">
+              <img src="/++resource++add.gif" alt="+" />
+              Subscribe
+          </a><br />
+          </div>
+  <BLANKLINE>
+      </div>
+      </div>
+  ...
+
+Sample Person sets the bug private and is made an explicit subscriber
+in the process.
+
+  >>> print http(r"""
+  ... POST /malone/bugs/4/+edit HTTP/1.1
+  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 943
+  ... Content-Type: multipart/form-data; boundary=---------------------------17504435281690315679562496577
+  ... Cookie: launchpad=.tnbPlNUdY.lnfXrB7-zmMk3wV0.3ytPNrPof7k.AdO2FCQ5tptSxo
+  ... Referer: http://localhost:9000/malone/bugs/4/+edit
+  ... 
+  ... -----------------------------17504435281690315679562496577
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Reflow problems with complex page layouts
+  ... -----------------------------17504435281690315679562496577
+  ... Content-Disposition: form-data; name="field.shortdesc"
+  ... 
+  ... 
+  ... -----------------------------17504435281690315679562496577
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... 
+  ... -----------------------------17504435281690315679562496577
+  ... Content-Disposition: form-data; name="field.private.used"
+  ... 
+  ... 
+  ... -----------------------------17504435281690315679562496577
+  ... Content-Disposition: form-data; name="field.private"
+  ... 
+  ... on
+  ... -----------------------------17504435281690315679562496577
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... 
+  ... -----------------------------17504435281690315679562496577
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------17504435281690315679562496577--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+      <title>Malone: Edit Bug #4
+      </title>
+  ...
+      <h4>Related People:</h4>
+  <BLANKLINE>
+      <div class="portletBody">
+          <div class="portletContent even">
+  <BLANKLINE>
+              <h5>submitter:</h5>
+              <ul class="people">
+                  <li><a href="/people/name12">Sample Person</a></li>
+              </ul>
+  <BLANKLINE>
+              <h5>maintainers:</h5>
+  <BLANKLINE>
+              <ul class="people">
+                  <li>
+                  <a href="/people/name12">Sample Person</a>
+                  </li>
+              </ul>
+  <BLANKLINE>
+  <BLANKLINE>
+              <h5>cc:</h5>
+              <ul class="people">
+                  <li>
+                    <a href="/malone/bugs/4/people/7/+edit">Sample Person</a>
+                  </li>
+              </ul>
+  <BLANKLINE>
+  <BLANKLINE>
+              <ul class="people">
+              </ul>
+  <BLANKLINE>
+  <BLANKLINE>
+              <ul class="people">
+              </ul>
+  <BLANKLINE>
+  <BLANKLINE>
+          <a href="/malone/bugs/4/people/+new"
+             style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+             title="Add a subscriber to this bug.">
+              <img src="/++resource++add.gif" alt="+" />
+              Subscribe
+          </a><br />
+          </div>
+  <BLANKLINE>
+      </div>
+      </div>
+  ...

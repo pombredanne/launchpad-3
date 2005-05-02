@@ -5,37 +5,51 @@
     i18n:domain="launchpad">
 
 <head>
+    <title metal:fill-slot="title">Launchpad Bounty:
+      <span tal:replace="context/title">$Bounty.title</span>
+    </title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Rosetta style sheet -->
-    <style type="text/css" media="screen">@import url(rosetta.css);</style>
 </head>
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure view/subscribersPortlet" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/relatedsPortlet" />
+</metal:rightportlets>
+
 <div metal:fill-slot="main">
-
-    <div style="float: right;">
-        [ <a href="+edit">Edit</a> ]
-    </div>
-
-    <h1>Bounty details:<br/>
-    <span tal:replace="context/title">$Bounty.title</span></h1>
-
-    <div class="documentDescription" tal:content="context/summary">
+      <h2>
+        Description
+        <a href="+edit"><img 
+          alt="[Edit]"
+          src="/++resource++edit.gif"
+          title="Lets you edit the description."
+        ></a>
+      </h2>
+    <p class="documentDescription" tal:content="context/summary">
         $Bounty.summary goes here. This should be quite short,
         just a single paragraph of text really, giving a summary of
         this Bounty.
-    </div>
+    </p>
 
-    <div tal:content="context/description">
+    <p tal:repeat="notice view/notices"
+         class="portalMessage"
+         tal:content="notice">
+         Notification Message
+    </p>
+
+    <p tal:content="context/description">
         $Bounty.description goes here. It could be quite long, a few
         paragraphs at least, and should specify in detail the requirements
         of the bounty, so that both claimant and reviewer will know when the
         bounty has been completed.
-    </div>
+    </p>
 
-    
 </div>
 
 </body>

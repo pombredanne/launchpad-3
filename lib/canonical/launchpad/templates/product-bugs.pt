@@ -2,6 +2,13 @@
       lang="en"
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="malone">
+
+<head>
+  <title metal:fill-slot="title">Upstream Bugs on
+    <span tal:replace="context/displayname">$Product.displayname</span>
+  </title>
+</head>
+
 <body>
 
 <div metal:fill-slot="column_one">
@@ -26,7 +33,7 @@
     <a href="+filebug">File a new bug</a><br />
     <img src="/++resource++add.gif" alt="+">
     <a href="#"
-       tal:attributes="href string:/doap/products/${context/name}">
+       tal:attributes="href string:/products/${context/name}">
        View <span tal:replace="context/displayname">Product</span>
        Details</a>
     </p>

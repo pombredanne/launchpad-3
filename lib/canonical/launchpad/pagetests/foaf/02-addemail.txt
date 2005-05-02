@@ -1,0 +1,131 @@
+  'foo' adds a new email in launchpad and validates it.
+
+
+  Type the new email address and submit the form.
+
+  >>> print http(r"""
+  ... POST /people/foo/+emails HTTP/1.1
+  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... newemail=bar.foo%40canonical.com&password=f&SUBMIT_CHANGES=Submit""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...Thank you for your email changes...
+  ...
+
+
+  Add the same email again. While it's unvalidated, you can try to add them as
+  many times as you want, because you can have lost the token and then you'll
+  need another one.
+
+  >>> print http(r"""
+  ... POST /people/foo/+emails HTTP/1.1
+  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... newemail=bar.foo%40canonical.com&password=f&SUBMIT_CHANGES=Submit""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...Thank you for your email changes...
+  ...
+
+
+  Get the token we'll have to use to finish the registration process.
+
+  >>> import email, re
+  >>> from canonical.launchpad.mail import stub
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> msg = email.message_from_string(raw_msg)
+  >>> body = msg.get_payload()
+  >>> link = re.findall(r'http.*/token/.*', body)[0]
+  >>> token = re.sub(r'.*token/', '', link)
+  >>> base_path = '/token/%s' % token
+
+  Check if the email was sent to the right address.
+
+  >>> to_addrs
+  ['bar.foo@canonical.com']
+
+
+  Go to the link sent by email, to validate the email address.
+
+  >>> print http(r"""
+  ... GET %s HTTP/1.1
+  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
+  ... """ % base_path)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...<h1>You're being redirected</h1>
+  ...
+
+
+  >>> path = '%s/+validate' % base_path
+  >>> print http(r"""
+  ... GET %s HTTP/1.1
+  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
+  ... """ % path)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...Validate email address...
+  ...
+
+
+  Email was validated.
+
+  >>> print http(r"""
+  ... POST %s HTTP/1.1
+  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... password=f&SUBMIT_CHANGES=Submit""" % path)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...Email validated successfully...
+  ...
+
+
+  Now we can see it on the person's emails page.
+
+  >>> print http(r"""
+  ... GET /people/foo/+emails HTTP/1.1
+  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...bar.foo@canonical.com...
+  ...
+  
+
+  Now that the email is validated, if you try to add it again, you'll get an
+  error message explaining that it's already registered.
+
+  >>> print http(r"""
+  ... POST /people/foo/+emails HTTP/1.1
+  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... newemail=bar.foo%40canonical.com&password=f&SUBMIT_CHANGES=Submit""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...The email address...is already registered...
+  ...
+

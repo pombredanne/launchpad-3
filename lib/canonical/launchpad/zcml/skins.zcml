@@ -1,21 +1,4 @@
 <configure
     xmlns:browser="http://namespaces.zope.org/browser">
     
-    <!-- Launchpad skins -->
-    <browser:layer name="malone" />
-    <browser:skin name="newlook" layers="malone" />
-
-    <!-- XXX: Brad Bollenbach, 2005-02-08: Find a good home for
-    these directives. -->
-    <browser:page
-        for="*"
-        name="standard_macros"
-        permission="zope.Public"
-        layer="malone"
-        template="../templates/malone_skin/malone-standard-page.pt" />
-
-    <browser:resource
-        name="malone.css"
-        file="../templates/malone_skin/css/malone.css"
-        layer="malone" />
 </configure>

@@ -1,0 +1,86 @@
+View the file bug screen as user Sample Person.
+
+  >>> print http(r"""
+  ... GET /malone/products/firefox/+filebug HTTP/1.1
+  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: text/html;charset=utf-8
+  ...
+
+File a private bug as user Sample Person.
+
+  >>> print http(r"""
+  ... POST /malone/products/firefox/+filebug HTTP/1.1
+  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 696
+  ... Content-Type: multipart/form-data; boundary=---------------------------7564071467832000371737554862
+  ... Referer: http://localhost:9000/malone/products/firefox/+filebug
+  ... 
+  ... -----------------------------7564071467832000371737554862
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... this is a private bug
+  ... -----------------------------7564071467832000371737554862
+  ... Content-Disposition: form-data; name="field.comment"
+  ... 
+  ... very secret info here
+  ... -----------------------------7564071467832000371737554862
+  ... Content-Disposition: form-data; name="field.private.used"
+  ... 
+  ... 
+  ... -----------------------------7564071467832000371737554862
+  ... Content-Disposition: form-data; name="field.private"
+  ... 
+  ... on
+  ... -----------------------------7564071467832000371737554862
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------7564071467832000371737554862--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+
+After filing a bug, we're returned to the bug listing and, of course,
+able to see the private bug we've just filed.
+
+  >>> print http(r"""
+  ... GET /malone/products/firefox/ HTTP/1.1
+  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/malone/products/firefox/+filebug
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: text/html;charset=utf-8
+  ...
+      <h1>Upstream Bugs for:
+          Mozilla Firefox
+      </h1>
+  ...
+    <small>displaying matching bugs 1 to 5 of 5</small>
+  ...
+            <td>
+                <a href="/malone/tasks/16/+edit">7</a>
+            </td>
+  ...
+            <td>
+                <a href="/malone/tasks/15/+edit">6</a>
+            </td>
+  ...
+            <td>
+                <a href="/malone/tasks/14/+edit">5</a>
+            </td>
+  ...
+            <td>
+                <a href="/malone/tasks/13/+edit">4</a>
+            </td>
+  ...
+            <td>
+                <a href="/malone/tasks/2/+edit">1</a>
+            </td>
+  ...

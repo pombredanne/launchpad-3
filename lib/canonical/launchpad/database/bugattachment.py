@@ -1,15 +1,15 @@
-# Zope
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['BugAttachment', 'BugAttachmentSet', 'BugAttachmentFactory',
+           'BugAttachmentContentFactory']
+
 from zope.interface import implements
 
-# SQL imports
 from sqlobject import DateTimeCol, ForeignKey, StringCol
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.database.bug import BugSetBase
-
-from canonical.launchpad.interfaces import \
-        IBugAttachment, IBugAttachmentSet, IBugAttachment
-
+from canonical.launchpad.interfaces import IBugAttachmentSet, IBugAttachment
 from canonical.database.sqlbase import SQLBase
 
 
@@ -19,8 +19,8 @@ class BugAttachment(SQLBase):
     implements(IBugAttachment)
 
     _table = 'BugAttachment'
-    message = ForeignKey(foreignKey='Message',
-                            dbName='message', notNull=True)
+
+    message = ForeignKey(foreignKey='Message', dbName='message', notNull=True)
     name = StringCol(notNull=False, default=None)
     description = StringCol(notNull=False, default=None)
     libraryfile = ForeignKey(foreignKey='LibraryFileAlias',
@@ -37,11 +37,10 @@ class BugAttachmentSet(BugSetBase):
         self.bug = bug
 
     def __getitem__(self, id):
-        try:
-            return self.table.select(self.table.q.id == id)[0]
-        except IndexError:
-            # Convert IndexError to KeyErrors to get Zope's NotFound page
+        item = self.table.selectOne(self.table.q.id == id)
+        if item is None:
             raise KeyError, id
+        return item
 
     def __iter__(self):
         for row in self.table.select(self.table.q.bug == self.bug):
@@ -61,5 +60,4 @@ def BugAttachmentContentFactory(context, **kw):
             daterevised=daterevised,
             **kw
             )
-
 

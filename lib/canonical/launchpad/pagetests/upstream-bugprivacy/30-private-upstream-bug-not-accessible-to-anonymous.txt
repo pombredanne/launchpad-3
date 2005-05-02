@@ -1,0 +1,11 @@
+Trying to access a private upstream bug as an anonymous user results
+in being redirecting to the login page.
+
+  >>> print http(r"""
+  ... GET /malone/bugs/7 HTTP/1.1
+  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/malone/bugs/7/+index/+login
+  <BLANKLINE>

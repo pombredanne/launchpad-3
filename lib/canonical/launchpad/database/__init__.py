@@ -1,8 +1,5 @@
-#
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-# first the real ones
-#
 from canonical.launchpad.database.milestone import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.product import *
@@ -20,18 +17,33 @@ from canonical.launchpad.database.bugattachment import *
 from canonical.launchpad.database.bugextref import *
 from canonical.launchpad.database.cveref import *
 from canonical.launchpad.database.bugtracker import *
-from canonical.launchpad.database.sourcesource import *
+# from canonical.launchpad.database.sourcesource import *
+from canonical.launchpad.database.potemplatename import *
 from canonical.launchpad.database.pofile import *
+from canonical.launchpad.database.potemplate import *
+from canonical.launchpad.database.potmsgset import *
+from canonical.launchpad.database.pomsgid import *
+from canonical.launchpad.database.pomsgidsighting import *
+from canonical.launchpad.database.pomsgset import *
+from canonical.launchpad.database.potranslation import *
+from canonical.launchpad.database.potranslationsighting import *
 from canonical.launchpad.database.archarchive import *
 from canonical.launchpad.database.archbranch import *
 from canonical.launchpad.database.archchangeset import *
 from canonical.launchpad.database.librarian import *
+from canonical.launchpad.database.maintainership import *
 from canonical.launchpad.database.infestation import *
 from canonical.launchpad.database.sourcepackage import *
+from canonical.launchpad.database.sourcepackagename import *
+from canonical.launchpad.database.sourcepackageindistro import *
+from canonical.launchpad.database.sourcepackagerelease import *
+from canonical.launchpad.database.vsourcepackagereleasepublishing import *
 from canonical.launchpad.database.binarypackage import *
+from canonical.launchpad.database.binarypackagename import *
 from canonical.launchpad.database.publishedpackage import *
 from canonical.launchpad.database.distribution import *
 from canonical.launchpad.database.distrorelease import *
+from canonical.launchpad.database.distroarchrelease import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.schema import *
 from canonical.launchpad.database.language import *
@@ -44,14 +56,15 @@ from canonical.launchpad.database.build import *
 from canonical.launchpad.database.publishing import *
 from canonical.launchpad.database.files import *
 from canonical.launchpad.database.bounty import *
+from canonical.launchpad.database.bountysubscription import *
 from canonical.launchpad.database.message import *
 from canonical.launchpad.database.queue import *
 from canonical.launchpad.database.country import *
 from canonical.launchpad.database.spokenin import *
 from canonical.launchpad.database.logintoken import *
 from canonical.launchpad.database.codeofconduct import *
-
-# XXX old style file with all the Soyuz classes in it that still need to br
-# broken out.
-from canonical.launchpad.database.soyuz import *
+from canonical.launchpad.database.distrotool import *
+from canonical.launchpad.database.component import *
+from canonical.launchpad.database.section import *
+from canonical.launchpad.database.vpoexport import *
 

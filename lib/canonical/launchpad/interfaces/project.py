@@ -4,7 +4,8 @@
 """
 
 from canonical.launchpad.fields import Title, Summary
-from canonical.launchpad.interfaces import IRosettaStats
+from canonical.launchpad.interfaces.rosettastats import IRosettaStats
+from canonical.launchpad.interfaces.launchpad import IHasOwner
 
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
                         TextLine, Password
@@ -13,7 +14,7 @@ from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 
-class IProject(Interface):
+class IProject(IHasOwner):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -78,6 +79,8 @@ class IProject(Interface):
     reviewed = Bool(title=_('Reviewed'), required=False, description=_("""Whether
         or not this project has been reviewed."""))
 
+    bounties = Attribute(_("The bounties that are related to this project."))
+
     def bugtrackers():
         """Return the BugTrackers for this Project."""
 
@@ -89,9 +92,6 @@ class IProject(Interface):
 
     def shortDescription(aDesc=None):
         """return the projects shortdesc, setting it if aDesc is provided"""
-
-    def newSourceSource():
-        """Add a SourceSource for upstream code syncing to Arch."""
 
     def product(name):
         """Return the product belonging to this project with the given

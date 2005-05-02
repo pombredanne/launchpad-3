@@ -3,12 +3,13 @@
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
                         TextLine, Password
 from canonical.launchpad.fields import Title, Summary, Description
+from canonical.launchpad.interfaces import IHasOwner
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 
-class IDistroRelease(Interface):
+class IDistroRelease(IHasOwner):
     """A Release Object"""
     id = Attribute("The distrorelease's unique number.")
     name = TextLine(title=_("Name"), required=True,
@@ -34,17 +35,19 @@ class IDistroRelease(Interface):
     bugtasks = Attribute("The bug tasks filed specifically on this release.")
     componentes = Attribute("The release componentes.")
     sections = Attribute("The release section.")
-    releasestate = Attribute("The release's state.")
+    releasestatus = Attribute(
+        "The release's status, such as FROZEN or DEVELOPMENT, as "
+        "specified in the DistributionReleaseStatus enum.")
     datereleased = Attribute("The datereleased.")
     parentrelease = Attribute("Parent Release")
     owner =Attribute("Owner")
     state = Attribute("DistroRelease Status")
     parent = Attribute("DistroRelease Parent")
     lucilleconfig = Attribute("Lucille Configuration Field")
-    role_users = Attribute("Roles inside this Releases")
-    bugCounter = Attribute("The distro bug counter")
     sourcecount = Attribute("Source Packages Counter")
     binarycount = Attribute("Binary Packages Counter")
+    potemplates = Attribute("The set of potemplates in the release")
+    potemplatecount = Attribute("The number of potemplates for this release")
     architectures = Attribute("The Architecture-specific Releases")
 
     def architecturecount():
@@ -52,10 +55,6 @@ class IDistroRelease(Interface):
 
     def getBugSourcePackages():
         """Get SourcePackages in a DistroRelease with BugTask"""
-
-#    def getSourceByName(name):
-#        """Return the latest source package of this name uploaded to this
-#        distro release."""
 
     def traverse(name):
         """Traverse across a distrorelease in Launchpad. This looks for
@@ -73,8 +72,29 @@ class IDistroRelease(Interface):
         """Return an iterator over binary packages with a name that matches
         this one."""
 
+    def getPublishedReleases(sourcepackage_or_name):
+        """Given a SourcePackageName, return a list of the currently
+        published SourcePackageReleases as SourcePackagePublishing records.
+        """
+
 class IDistroReleaseSet(Interface):
     """The set of distro releases."""
 
     def get(distroreleaseid):
         """Retrieve the distro release with the given distroreleaseid."""
+
+    def translatables():
+        """Return a set of distroreleases that can be translated in
+        rosetta."""
+
+    def findByName(self, name):
+        """Find a DistroRelease by name.
+
+        Returns a list of matching distributions, which may be empty.
+        """
+
+    def findByVersion(self, version):
+        """Find a DistroRelease by version.
+
+        Returns a list of matching distributions, which may be empty.
+        """

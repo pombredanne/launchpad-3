@@ -55,10 +55,6 @@
     background-color: #7090a0;
 }
 
-label.language-code {
-    width: 6em;
-}
-
 .collapsed {
     border-style: dashed none none none;
 }
@@ -67,7 +63,7 @@ fieldset.message-strings {
 
 }
 
-fieldset.message-strings input {
+table.data input[type='text'] {
     width: 100%;
 }
 
@@ -85,7 +81,11 @@ fieldset.two-column {
 /* Plone elements that should be changed */
 
 h1, h2, h3, h4, h5, h6 {
-    text-shadow: #999999 3px 3px 3px;
+    border-bottom: none;
+}
+
+h3 {
+    list-style-image: url(/++resource++bullet.gif);
 }
 
 .listing td {
@@ -110,12 +110,12 @@ label {
     text-transform: lowercase;
 }
 
-h3 {
-    list-style-image: url(/++resource++bullet.gif);
-}
-
 #portal-logo {
     background: url(/++resource++rosetta.png) no-repeat;
+}
+
+#portal-personaltools {
+    clear: both;
 }
 
 #portal-personaltools .portalUser {
@@ -231,6 +231,27 @@ table.rowNavigation th:hover {
     cursor: default;
 }
 
+/* Display links as blocks, so we can make the whole row clickable */
+
+tr.rowLinkified a {
+    text-decoration: none;
+    display: block;
+}
+
+/* Overwride values from 'listing' class */
+.lpListing td {
+    padding: 0em 0em;
+}
+
+.lpListing td a {
+    padding: 0em 1em;
+}
+
+.lpListing a:hover {
+    text-decoration: none;
+}
+
+
 /* batch navigation links */
 
 .batchnav tr:hover {
@@ -342,7 +363,7 @@ table.rowNavigation th:hover {
 }
 
 /* used to mark dummy data with div entity */
-.dummy{
+.dummy {
    background-color: #cccccc;
 }
 
@@ -373,10 +394,6 @@ Translation template stuff.
     border: 1px solid #364970;
 }
 
-label.fuzzy-checkbox {
-    float: right;
-}
-
 .language-label {
     float: left;
 }
@@ -395,3 +412,372 @@ label.fuzzy-checkbox {
     background-color: #93bee2;
 }
 
+/* Used in default-error.pt so people actually notice exceptions */
+
+.exception {
+    color: red;
+    font-size: 200%;
+    margin: 1em;
+}
+
+/* === Undo bugs in plone.css === */
+
+/* -- Stop accessing resources on plone.org: -- */
+/* XXX mpt 20050407 change http://plone.org/ to /@@/ eventually */
+
+ul {
+  list-style-image: none;
+}
+#portal-logo {
+  background-image: url(http://plone.org/logo.jpg);
+}
+#portal-personaltools .portalUser, .link-user {
+  background-image: url(/@@/user.gif);
+}
+#portal-personaltools li {
+  background-image: url(http://plone.org/linkOpaque.gif);
+}
+.contentActions li {
+  background-image: url(/@@/arrowDownAlternative.gif);
+}
+#error-handling {
+  background-image: url(/@@/info_icon.gif);
+}
+.standalone, .documentEditable * .standalone {
+  background-image: url(http://plone.org/linkOpaque.gif);
+}
+.context, .documentEditable * .context, .destructive,
+.documentEditable * .destructive {
+  background-image: url(/@@/linkTransparent.gif);
+}
+input.searchButton {
+  background-image: url(/@@/search_icon.gif);
+}
+.fieldRequired {
+  background-image: url(/@@/required.gif);
+}
+.link-parent {
+  background-image: url(/@@/arrowUp.gif);
+}
+.link-external {
+  background-image: url(/@@/link_icon.gif);
+}
+.link-https {
+  background-image: url(/@@/lock_icon.gif);
+}
+.link-mailto {
+  background-image: url(http://plone.org/mail_icon.gif);
+}
+.link-news {
+  background-image: url(http://plone.org/topic_icon.gif);
+}
+.link-ftp {
+  background-image: url(http://plone.org/file_icon.gif);
+}
+.link-irc, .link-comment {
+  background-image: url(http://plone.org/discussionitem_icon.gif);
+}
+.link-callto {
+  background-image: url(http://plone.org/phone_icon.gif);
+}
+
+/* -- "Links must look like links." -- SteveA */
+
+a, #portal-footer a {
+  text-decoration: underline;
+}
+/* -- ... except in portlets for now -- */
+a[name], .portlet :link, .portlet :visited {
+  text-decoration: none;
+}
+
+/* -- Don't stomp on people's preferred font sizes: -- */
+
+body, .listing {
+  font-size: 100%;
+}
+code {
+  font-family: monospace;
+  font-size: 100%;
+  color: inherit;
+  background: transparent;
+  border: none;
+  padding: inherit;
+}
+pre {
+  font-family: monospace;
+  font-size: 100%;
+}
+
+/* -- Fix icon alignment in notes and error messages: -- */
+
+.portalMessage, .system-message, #error-handling {
+  background-position: 5px 0.5em;
+  padding-left: 30px;
+} /* need a px value because the image has a pixel size */
+
+/* -- Make headings lay out properly -- */
+
+h1 {
+  margin-bottom: 0.5em;
+  padding-right: 0;
+}
+
+/* -- Other bugs: -- */
+
+.listing td {
+  padding: 0.125em 0.25em;
+}
+
+.formHelp, .formHelp:hover {
+  color: #666666;
+}
+
+.portlet, #portal-top, #portal-footer {
+  font-size: smaller;
+}
+
+li {
+    margin-bottom: 0 !important;
+}
+
+li.edit, ul.edit li {
+    list-style-image: url(/++resource++edit.gif);
+}
+
+#portal-personaltools .portalUser {
+    background: transparent url(/++resource++user.gif)
+}
+
+.portlet li a {
+    text-decoration: none
+}
+
+/* === New design === */
+
+/* -- Stuff browsers should do, but don't -- */
+
+abbr, address {
+	font-style: inherit;
+}
+
+label {
+  font: caption;
+  font-weight: normal;
+}
+
+th {
+  text-align: right;
+}
+thead th {
+  text-align: center;
+}
+thead {
+  vertical-align: bottom;
+}
+
+/* -- Launchpad-wide -- */
+
+.debug {
+  background-color: #ffddee;
+}
+.debug th, .debug td {
+  border: 1px dotted red;
+}
+.debug th th, .debug th td, .debug td th, .debug td td {
+  border: 1px dotted green;
+}
+.fixme {
+  color: #ff6699;
+  background-color: #ffff00;
+}
+.actions {
+  margin: 0.5em 0;
+}
+.form {
+  text-align: right;
+}
+.list {
+  text-align: left;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  clear: both;
+	color: #000066;
+	font-family: "Lucida Grande", sans-serif;
+	font-weight: normal;
+	margin-top: 0;
+	text-align: left;
+}
+h2 {
+	text-transform: uppercase;
+	margin: 0.5em 0;
+}
+h2, h3, h4, h5, h6 {
+	font-size: 1em;
+}
+/* temporary while page-header exists: */
+.page-header h2 {
+  clear: none;
+  margin: 0;
+  text-transform: none;
+  font-size: 1.5em;
+}
+h3, h4, h5, h6 {
+	margin-bottom: 0;
+}
+table {
+	border-collapse: collapse;
+}
+table table {
+  width: 100%;
+}
+table.data, table.data thead, table.data tfoot {
+	border: solid #999;
+	border-width: 1pt 0;
+}
+table.data>thead>tr, table.data>tbody>tr, table.data>tfoot>tr {
+	border: dotted #999;
+	border-width: 1pt 0;
+}
+table.data>tr>th, table.data>tr>td,
+table.data>thead>tr>th, table.data>thead>tr>td,
+table.data>tbody>tr>th, table.data>tbody>tr>td, table.data>tfoot>tr>th,table.data>tfoot>tr>td {
+  padding: 0.25em 0.125em 0.5em;
+}
+td p:first-child, td ol:first-child, td blockquote:first-child {
+	margin-top: 0;
+}
+th {
+	text-align: right;
+}
+thead th {
+	text-align: center;
+}
+tr {
+	vertical-align: top;
+}
+
+.results {
+  background-color: #dee7ec;
+  font-family: sans-serif;
+  font-size: small;
+  padding: 0.25em;
+  margin: 1em 0em;
+  clear: both;
+}
+
+.user {
+	float: right;
+}
+
+address.app, .apps {
+	font-family: "Lucida Grande", sans-serif;
+}
+address.app {
+	font-size: 2em;
+}
+.apps {
+	clear: right;
+	float: right;
+	margin-top: 0.5em;
+}
+.page-header {
+	width: 100%;
+}
+.page-header img {
+	float: left;
+}
+.page-header h2 {
+    padding-top: 0.75em;
+}
+
+.navigation li {
+	display: inline;
+	padding: 0.25em 0.5em;
+}
+.navigation li:before {
+	content: '\2022';
+	margin-right: 0.25em;
+}
+#main {
+	border-top: 2pt solid black;
+	clear: both;
+	margin: 0;
+	padding-top: 1em;
+	width: 100%;
+}
+
+.page-header-ribbon {
+    /* Bar with personalized menu (user preferences, favorites etc) */
+    background-color: #dee7ec;
+    border-top-color: #8cacbb;
+    border-top-style: solid;
+    border-top-width: 1px;
+    border-bottom-color: #8cacbb;
+    border-bottom-style: solid;
+    border-bottom-width: 1px;
+    line-height: 1.3em;
+    color: Black;
+    padding: 0em 1em 0em 0em;
+    margin: 0;
+    list-style: none;
+}
+
+.page-header-ribbon address {
+    width: 75%;
+}
+
+.launchpad-apps {
+    float: right;
+}
+.launchpad-apps td {
+}
+
+/* -- Malone: -- */
+
+.bugid {
+  text-align: left;
+  width: 50%;
+  float: left;
+}
+.created {
+  text-align: right;
+  width: 50%;
+  float: right;
+}
+
+td.plain {
+    border: 1px dotted #8cacbb;
+}
+td.plain:hover {
+    background-color: #dee7ec;
+    color: #436976;
+    border: 1px solid #8cacbb;
+}
+td.selected {
+    background-color: #dee7ec;
+    color: #436976;
+    border: 1px solid #8cacbb;
+}
+
+/* from richard braine for the series source forms */
+/* otherwise inputs don't disappear along with surrounding layer */
+input {
+    visibility:inherit
+}
+/* this lines up text inputs so they don't look a mess */
+.textinput {
+    position: absolute; 
+    left: 250px;
+} 
+/* radios had 1px left and right borders - don't know if intended
+   but looked shit imo */
+.radios {
+    border:none;
+}
+/* this style was making the text '(Required)' invisible:
+   same colour as background */
+.fieldRequired {
+    color: #999999
+}

@@ -1,4 +1,5 @@
-
+A source package bug task describes where in a given distro a bug
+needs to be fixed.
 
   >>> print http(r"""
   ... GET /malone/tasks/6/+edit HTTP/1.1
@@ -8,6 +9,8 @@
   ...
             <h3>Edit SourcePackage Bug Task</h3>
   ...
+
+Any authenticated user can edit a source package bug task.
 
   >>> print http(r"""
   ... POST /malone/tasks/6/+edit HTTP/1.1
@@ -20,7 +23,7 @@
   ... -----------------------------89019536856698512711194452
   ... Content-Disposition: form-data; name="field.sourcepackagename"
   ... 
-  ... mozilla-firefox-dummy
+  ... mozilla-firefox
   ... -----------------------------89019536856698512711194452
   ... Content-Disposition: form-data; name="field.binarypackagename"
   ... 
@@ -79,10 +82,10 @@
                   <div><div id="field.priority">
   <div class="value">
   <select name="field.priority" size="1" >
-  <option value="High">High</option>
+  <option value="Wontfix">Wontfix</option>
   <option value="Low">Low</option>
   <option selected="selected" value="Medium">Medium</option>
-  <option value="Wontfix">Wontfix</option>
+  <option value="High">High</option>
   </select>
   ...
 
@@ -97,7 +100,7 @@
   ... -----------------------------16131040782095479517127443199
   ... Content-Disposition: form-data; name="field.sourcepackagename"
   ... 
-  ... mozilla-firefox-dummy
+  ... mozilla-firefox
   ... -----------------------------16131040782095479517127443199
   ... Content-Disposition: form-data; name="field.binarypackagename"
   ... 
@@ -156,9 +159,9 @@
                   <div><div id="field.priority">
   <div class="value">
   <select name="field.priority" size="1" >
-  <option value="High">High</option>
+  <option value="Wontfix">Wontfix</option>
   <option selected="selected" value="Low">Low</option>
   <option value="Medium">Medium</option>
-  <option value="Wontfix">Wontfix</option>
+  <option value="High">High</option>
   </select>
   ...

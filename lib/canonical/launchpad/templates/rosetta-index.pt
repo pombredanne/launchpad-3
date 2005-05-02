@@ -7,8 +7,8 @@
     <title metal:fill-slot="title">Rosetta</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Rosetta style sheet -->
-    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+    <!-- Launchpad style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
@@ -17,6 +17,7 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/prefLangPortlet" />
     <div tal:replace="structure view/countryPortlet" />
     <div tal:replace="structure view/browserLangPortlet" />
 </metal:rightportlets>
@@ -40,19 +41,39 @@
 
     </ul>
 
+    <h1>Translations in Ubuntu</h1>
+
+    <p>Rosetta is the primary translation system for the Ubuntu Project. You
+    can help translation any application in Ubuntu, or any of the Ubuntu
+    derivative distributions, using this web interface. Select a release
+    from the list below:</p>
+    
+    <div style="margin-left: 50px;">
+
+        <p tal:repeat="distrorelease context/translatable_distroreleases">
+            <img src="/++resource++product_icon.gif"> <b><span
+            tal:replace="distrorelease/title">product title</span></b>
+            [ <a tal:attributes="href
+            string:/distros/${distrorelease/distribution/name}/${distrorelease/name}/">Translate</a> ]
+            <br />
+            <span tal:replace="distrorelease/shortdesc">product
+            summary</span>
+        </p>
+
+    </div> <!-- indent -->
 
     <h1>Translatable Applications</h1>
 
     <p>The following open source applications can currently be translated as
     part of the Rosetta Translation Project. Select an application to
-    translate it into your own language, using only the your web
-    browser. If your favourite open source application is not listed here, you can
-    see if it is <a href="products">registered with the Launchpad</a> and
-    then start to translate it immediately!</p>
+    translate it into your own language, using only the your web browser. If
+    your favourite open source application is not listed here, you can see
+    if it is <a href="products">registered with the Launchpad</a> and then
+    start to translate it immediately!</p>
 
     <div style="margin-left: 50px;">
     
-        <p tal:repeat="product context/translatables">
+        <p tal:repeat="product context/translatable_products">
             <img src="/++resource++product_icon.gif"> <b><span
             tal:replace="product/title">product title</span></b>
             [ <a tal:attributes="href
@@ -62,7 +83,7 @@
             summary</span>
         </p>
 
-    </div>
+    </div> <!-- indent -->
 
     <p>Find or register <a href="products">another open source
     application</a> for translation.</p>

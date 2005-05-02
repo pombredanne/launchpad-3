@@ -1,15 +1,27 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['Category', 'TranslationEfforts', 'TranslationEffort',
+           'TranslationEffortPOTemplate']
+
 from canonical.database.sqlbase import SQLBase, quote
 
 from canonical.launchpad.database.schema import Label
 
-import canonical.launchpad.interfaces as interfaces
+from canonical.launchpad.interfaces import \
+    ICategory, ITranslationEffort, ITranslationEfforts, \
+    ITranslationEffortPOTemplate
 
-from sqlobject import ForeignKey, MultipleJoin, IntCol, StringCol
+from sqlobject import ForeignKey, MultipleJoin, StringCol
+
+from canonical.lp.dbschema import EnumCol
+from canonical.lp.dbschema import TranslationPriority
 
 from zope.interface import implements
 
+
 class Category(Label):
-    implements(interfaces.ICategory)
+    implements(ICategory)
 
     _effortPOTemplatesJoin = MultipleJoin('TranslationEffortPOTemplate',
         joinColumn='category')
@@ -18,14 +30,13 @@ class Category(Label):
         # XXX: We assume that template will have always a row because the
         # database's referencial integrity
         for effortPOTemplate in self._effortPOTemplatesJoin:
-            template = POTemplate.selectBy(id=effortPOTemplate.poTemplate)
-            yield template[0]
+            template = POTemplate.selectOneBy(id=effortPOTemplate.poTemplate)
+            yield template
 
     def poTemplate(self, name):
         for template in self.poTemplates():
             if template.name == name:
                 return template
-
         raise KeyError, name
 
     def messageCount(self):
@@ -53,39 +64,37 @@ class Category(Label):
         return count
 
 
-class TranslationEfforts(object):
-    implements(interfaces.ITranslationEfforts)
+class TranslationEfforts:
+    implements(ITranslationEfforts)
 
     def __iter__(self):
         return iter(TranslationEffort.select())
 
     def __getitem__(self, name):
-        ret = TranslationEffort.selectBy(name=name)
-
-        if ret.count() == 0:
+        ret = TranslationEffort.selectOneBy(name=name)
+        if ret is None:
             raise KeyError, name
-        else:
-            return ret[0]
+        return ret
 
     def new(self, name, title, shortDescription, description, owner, project):
         if TranslationEffort.selectBy(name=name).count():
-            raise KeyError, "There is already a translation effort with that name"
-
+            raise KeyError(
+                "There is already a translation effort with that name")
         return TranslationEffort(name=name,
-                              title=title,
-                              shortDescription=shortDescription,
-                              description=description,
-                              owner=owner, project=project)
+                                 title=title,
+                                 shortDescription=shortDescription,
+                                 description=description,
+                                 owner=owner, project=project)
 
     def search(self, query):
-        query = quote('%%' + query + '%%')
-        #query = quote(query)
-        return TranslationEffort.select('''title ILIKE %s  OR description ILIKE %s''' %
-            (query, query))
+        query = '%% || %s || %%' % quote_like(query)
+        # XXX: stub needs to make this use full text indexes.
+        return TranslationEffort.select(
+            'title ILIKE %s  OR description ILIKE %s' % (query, query))
 
 
 class TranslationEffort(SQLBase):
-    implements(interfaces.ITranslationEffort)
+    implements(ITranslationEffort)
 
     _table = 'TranslationEffort'
 
@@ -99,21 +108,18 @@ class TranslationEffort(SQLBase):
         StringCol(name='name', dbName='name', notNull=True, unique=True),
         StringCol(name='title', dbName='title', notNull=True),
         StringCol(name='shortDescription', dbName='shortdesc', notNull=True),
-        StringCol(name='description', dbName='description', notNull=True),
-    ]
+        StringCol(name='description', dbName='description', notNull=True)
+        ]
 
     def categories(self):
-        '''SELECT * FROM Label
-            WHERE schema=self.categories'''
+        """SELECT * FROM Label WHERE schema=self.categories"""
         return iter(Category.selectBy(schema=self.categories))
 
     def category(self, name):
-        ret = Category.selectBy(name=name, schema=self.categories)
-
-        if ret.count() == 0:
-            raise KeyError, name
-        else:
-            return ret[0]
+        ret = Category.selectOneBy(name=name, schema=self.categories)
+        if ret is None:
+            raise KeyError(name)
+        return ret
 
     def messageCount(self):
         count = 0
@@ -141,7 +147,7 @@ class TranslationEffort(SQLBase):
 
 
 class TranslationEffortPOTemplate(SQLBase):
-    implements(interfaces.ITranslationEffortPOTemplate)
+    implements(ITranslationEffortPOTemplate)
 
     _table = 'TranslationEffortPOTemplate'
 
@@ -153,7 +159,7 @@ class TranslationEffortPOTemplate(SQLBase):
             dbName='potemplate', notNull=True),
         ForeignKey(name='category', foreignKey='Category',
             dbName='category', notNull=False),
-        IntCol(name='priority', dbName='priority', notNull=True),
-    ]
-
+        EnumCol(name='priority', dbName='priority', notNull=True,
+            schema=TranslationPriority),
+        ]
 

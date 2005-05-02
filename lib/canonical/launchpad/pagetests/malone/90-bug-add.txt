@@ -1,4 +1,4 @@
-
+A bug is a problem in software.
 
   >>> print http(r"""
   ... GET /malone/bugs/+package HTTP/1.1
@@ -13,6 +13,11 @@
       </title>
   ...
 
+At the moment, Malone still has a bug filing page on which you can
+specify the distro in addition to the source package in which the bug
+occurs.
+
+You must be logged-in to file a bug.
 
   >>> print http(r"""
   ... POST /malone/bugs/+package HTTP/1.1
@@ -28,7 +33,7 @@
   ... -----------------------------124775592710556272331137042681
   ... Content-Disposition: form-data; name="field.sourcepackagename"
   ... 
-  ... mozilla-firefox-dummy
+  ... mozilla-firefox
   ... -----------------------------124775592710556272331137042681
   ... Content-Disposition: form-data; name="field.title"
   ... 

@@ -6,8 +6,8 @@ from datetime import datetime, date, time
 from sqlobject import connectionForURI
 import thread, warnings
 
-__all__ = ['SQLBase', 'quote', 'quote_like', 'ZopelessTransactionManager',
-           'ConflictingTransactionManagerError']
+__all__ = ['SQLBase', 'quote', 'quote_like', 'sqlvalues',
+           'ZopelessTransactionManager', 'ConflictingTransactionManagerError']
 
 class LaunchpadStyle(Style):
     """A SQLObject style for launchpad. 
@@ -36,6 +36,13 @@ class LaunchpadStyle(Style):
 
     def pythonClassToAttr(self, className):
         return className.lower()
+
+    # dsilvers: 20050322: If you take this method out; then RelativeJoin
+    # instances in our SQLObject classes cause the following error:
+    # AttributeError: 'LaunchpadStyle' object has no attribute 'tableReference'
+    def tableReference(self, table):
+        """Return the tablename mapped for use in RelativeJoin statements."""
+        return table.__str__()
 
 
 class SQLBase(SQLOS):
@@ -307,6 +314,10 @@ def quote(x):
     '1.0'
     >>> quote("hello")
     "'hello'"
+    >>> quote("'hello'")
+    "'''hello'''"
+    >>> quote(r"\'hello")
+    "'\\\\''hello'"
 
     Timezone handling is not implemented, since all timestamps should
     be UTC anyway.
@@ -368,8 +379,49 @@ def quote_like(x):
         raise TypeError, 'Not a string (%s)' % type(x)
     return quote(x).replace('%', r'\\%').replace('_', r'\\_')
 
+def sqlvalues(*values, **kwvalues):
+    """Return a tuple of converted sql values for each value in some_tuple.
 
-def flushUpdates():
+    This safely quotes strings, or gives representations of dbschema items,
+    for example.
+
+    Use it when constructing a string for use in a SELECT.  Always use
+    %s as the replacement marker.
+
+      ('SELECT foo from Foo where bar = %s and baz = %s'
+       % sqlvalues(BugSeverity.CRITICAL, 'foo'))
+
+    >>> sqlvalues()
+    Traceback (most recent call last):
+    ...
+    TypeError: Use either positional or keyword values with sqlvalue.
+    >>> sqlvalues(1)
+    ('1',)
+    >>> sqlvalues(1, "bad ' string")
+    ('1', "'bad '' string'")
+
+    You can also use it when using dict-style substitution.
+
+    >>> sqlvalues(foo=23)
+    {'foo': '23'}
+
+    However, you cannot mix the styles.
+
+    >>> sqlvalues(14, foo=23)
+    Traceback (most recent call last):
+    ...
+    TypeError: Use either positional or keyword values with sqlvalue.
+
+    """
+    if (values and kwvalues) or (not values and not kwvalues):
+        raise TypeError(
+            "Use either positional or keyword values with sqlvalue.")
+    if values:
+        return tuple([quote(item) for item in values])
+    elif kwvalues:
+        return dict([(key, quote(value)) for key, value in kwvalues.items()])
+
+def flush_database_updates():
     """Flushes all pending database updates for the current connection.
     
     When SQLObject's _lazyUpdate flag is set, then it's possible to have
@@ -388,7 +440,7 @@ def flushUpdates():
         assert Beer.select("name LIKE 'Vic%'").count() == 1  # This will pass
         beer = Beer.byName('Victoria Bitter')
         beer.name = 'VB'
-        flushUpdates()
+        flush_database_updates()
         assert Beer.select("name LIKE 'Vic%'").count() == 0  # This will pass
 
     """
@@ -419,6 +471,15 @@ def rollback():
 
 def commit():
     SQLBase._connection.commit()
+
+
+def cursor():
+    '''Return a cursor from the current database connection.
+
+    This is useful for code that needs to issue database queries
+    directly rather than using the SQLObject interface
+    '''
+    return SQLBase._connection._connection.cursor()
     
 
 class FakeZopelessConnectionDescriptor(_ZopelessConnectionDescriptor):

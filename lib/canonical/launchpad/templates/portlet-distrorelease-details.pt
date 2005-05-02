@@ -6,16 +6,16 @@
         <div class="portletContent even">
 
             <b>Distribution:</b><br />
-            <a tal:attributes="href string:/soyuz/distros/${context/distribution/name}/">
+            <a tal:attributes="href string:/distros/${context/distribution/name}/">
             <span tal:replace="context/distribution/displayname" /></a><br />
 
             <b>Admin:</b><br />
             <img src="/++resource++user.gif">
-            <a tal:attributes="href string:/foaf/people/${context/owner/name}"
+            <a tal:attributes="href string:/people/${context/owner/name}"
                tal:content="context/owner/displayname">owner name</a><br /> 
 
             <b>Status:</b><br />
-            <span tal:replace="context/state">Status</span><br />
+            <span tal:replace="context/releasestatus/title">Status</span><br />
 
             <b>Release Date:</b><br />
             <span
@@ -27,10 +27,11 @@
             <br />
 
             <span tal:condition="context/parentrelease" tal:omit-tag>
-                <b>Derives from:</b><br />
-                <a tal:attributes="href
-                string:/soyuz/distros/${context/parentrelease/distribution/name}/${context/parentrelease/name}">
-                <span tal:replace="context/parentrelease/displayname" /></a>
+              <b>Derives from:</b><br />
+              <a tal:attributes="href
+              string:/distros/${context/parentrelease/distribution/name}/${context/parentrelease/name}">
+              <span tal:replace="context/parentrelease/distribution/name" />
+              <span tal:replace="context/parentrelease/name" /></a>
             </span>
            
         </div>

@@ -27,16 +27,26 @@ def test_simple_sendmail():
 
     >>> body = 'The email body'
     >>> subject = 'The email subject'
-    >>> message_id = simple_sendmail(
-    ...     'nobody@example.com', ['nobody2@example.com'], subject, body
+    >>> message_id1 = simple_sendmail(
+    ...     'nobody1@example.com', ['nobody2@example.com'], subject, body
     ...     )
 
     We should have a message id, a string
 
-    >>> bool(message_id)
+    >>> bool(message_id1)
     True
-    >>> isinstance(message_id, str)
+    >>> isinstance(message_id1,str)
     True
+
+    We can also send arbitrary headers through. Note how Python's
+    email package handles Message-Id headers
+
+    >>> message_id2 = simple_sendmail(
+    ...     'nobody@example.com', ['nobody2@example.com'], subject, body,
+    ...     {'Message-Id': '<myMessageId>', 'X-Fnord': 'True'}
+    ...     )
+    >>> message_id2
+    'myMessageId'
 
     The TestMailer stores sent emails in memory (which we cleared in the
     setUp() method). But the actual email has yet to be sent, as that 
@@ -46,9 +56,15 @@ def test_simple_sendmail():
     0
     >>> transaction.commit()
     >>> len(stub.test_emails)
-    1
-    
+    2
+    >>> stub.test_emails[0] == stub.test_emails[1]
+    False
+
+    We have two emails, but we have no idea what order they are in!
+
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> if from_addr == 'nobody1@example.com':
+    ...     from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> from_addr
     'nobody@example.com'
     >>> to_addrs
@@ -63,6 +79,8 @@ def test_simple_sendmail():
     'nobody2@example.com'
     >>> message['Subject'] == subject
     True
+    >>> message['Message-Id']
+    '<myMessageId>'
     >>> message.get_payload() == body
     True
 

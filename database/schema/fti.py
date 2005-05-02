@@ -21,11 +21,11 @@ PATCH_SQL = os.path.join(
 
 ALL_FTI = [
     ('bug', ['name', 'title', 'shortdesc', 'description']),
-    ('message', ['title', 'contents']),
+    ('message', ['title']),
+    ('messagechunk', ['content']),
     ('person', ['givenname', 'familyname', 'displayname']),
     ('product', ['name', 'displayname', 'title', 'shortdesc', 'description']),
     ('project', ['name', 'displayname', 'title', 'shortdesc', 'description']),
-    ('sourcepackage', ['shortdesc', 'description']),
     ('binarypackage', ['shortdesc', 'description']),
     ]
 
@@ -138,7 +138,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
 
     # Create ftq helper
     execute(con, r"""
-        CREATE OR REPLACE FUNCTION ftq(text) RETURNS tsquery AS '
+        CREATE OR REPLACE FUNCTION ts2.ftq(text) RETURNS tsquery AS '
             import re
             q = args[0].lower()
             q = re.subn("[\|\&]", " ", q)

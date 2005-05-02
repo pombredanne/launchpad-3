@@ -1,12 +1,12 @@
 
 
   >>> print http(r"""
-  ... GET /doap/projects/mozilla/firefox/+addseries HTTP/1.1
+  ... GET /products/firefox/+addseries HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...
   Content-Type: text/html;charset=utf-8
   ...
-      <h1>Register a New Product Release Series for: ...</h1>
+      <h1>Register a New Product Release Series</h1>
   ...

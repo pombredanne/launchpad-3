@@ -4,14 +4,14 @@
       i18n:domain="launchpad">
 
 <head>
-  <title><span tal:content="context/release/distribution/title" />
-    <span tal:content="context/release/title" />: Source Packages
+  <title metal:fill-slot="title">
+    <span tal:content="context/release/distribution/title">Distro
+    Title</span>
+    <span tal:content="context/release/title">DistroRelease Title</span>:
+    Source Packages
   </title>
   <!-- Plone style sheet -->
   <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Soyuz style sheet -->
-  <style type="text/css" media="screen">@import url(soyuz.css);</style>
-
 </head>
 
 <body>
@@ -28,13 +28,13 @@
      <div class="portletContent even">
 
      <ul>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}">
+     <li><a tal:attributes="href string:/distros/${distro/name}">
      Home Page</a></li>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/releases">
+     <li><a tal:attributes="href string:/distros/${distro/name}/releases">
       Releases</a></li>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/src">
+     <li><a tal:attributes="href string:/distros/${distro/name}/src">
       Source Packages</a></li>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/bin">
+     <li><a tal:attributes="href string:/distros/${distro/name}/bin">
      Binary Packages</a></li>
      </ul>
 
@@ -47,7 +47,7 @@
    <div class="portletBody">
      <div class="portletContent even">
      <ul>
-     <li> Release: <a tal:attributes="href string:/soyuz/distros/${distro/name}/releases/${context/release/name}" 
+     <li> Release: <a tal:attributes="href string:/distros/${distro/name}/releases/${context/release/name}" 
             tal:content="context/release/title">RELEASE</a></li>
      </ul>
      </div>
@@ -63,12 +63,8 @@
 
 <div metal:fill-slot="main">
 
- <div id="content" class="documentEditable">
-  <div class="documentContent" id="region-content">
-
     <h1 style="margin-bottom: 1em;"><span tal:content="context/release/distribution/title" />
     <span tal:content="context/release/title" />: Source Packages</h1>
-    <!-- <div tal:on-error="python: error.type, error.value.args"> -->
 
     <div align="center" tal:define="sourcecount context/release/sourcecount">
 
@@ -91,8 +87,6 @@
 
 <!-- XXX: Need section stuff in db. They are in soyuz.dia but  -->
 <!-- the db implementatio is missing -->
-
-  </div>
 
   <tal:block tal:define="bn view/sourcePackagesBatchNavigator">
 
@@ -131,11 +125,7 @@
     </div>
   </tal:block>
 
-
-   </div>
   </div>
-
-<!-- </div> -->
 
 </body>
 

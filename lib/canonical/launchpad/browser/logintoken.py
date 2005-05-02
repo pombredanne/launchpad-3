@@ -7,19 +7,18 @@ from zope.app.form.browser.add import AddView
 from zope.app.form.interfaces import WidgetsError
 from zope.app.event.objectevent import ObjectCreatedEvent
 
-from canonical.database.sqlbase import flushUpdates
+from canonical.database.sqlbase import flush_database_updates
 
 from canonical.lp.dbschema import EmailAddressStatus, LoginTokenType
 
 from canonical.foaf.nickname import generate_nick
 
-from canonical.launchpad.database import EmailAddress
-
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logInPerson
 
 from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
-from canonical.launchpad.interfaces import IPasswordEncryptor
+from canonical.launchpad.interfaces import IPasswordEncryptor, IEmailAddressSet
+from canonical.launchpad.interfaces import ILoginTokenSet
 
 
 class LoginTokenView(object):
@@ -38,7 +37,8 @@ class LoginTokenView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        url = urllib.basejoin(str(request.URL), self.PAGES[context.tokentype])
+        url = urllib.basejoin(str(request.URL),
+                              self.PAGES[context.tokentype])
         request.response.redirect(url)
 
 
@@ -77,14 +77,34 @@ class ResetPasswordView(object):
             return
 
         # Make sure this person has a preferred email address.
-        emailaddress = EmailAddress.byEmail(self.context.email)
+        emailset = getUtility(IEmailAddressSet)
+        emailaddress = emailset.getByEmail(self.context.email)
+        emailaddress.status = EmailAddressStatus.VALIDATED
+
+        # Need to flush all changes we made, so subsequent queries we make
+        # with this transaction will see this changes and thus they'll be
+        # displayed on the page that calls this method.
+        flush_database_updates()
+
         person = emailaddress.person
-        if person.preferredemail is None:
-            person.preferredemail = emailaddress
+
+        # XXX: Steve Alexander, 2005-03-18
+        #      Local import, because I don't want this import copied elsewhere!
+        #      This code is to be removed when the UpgradeToBusinessClass
+        #      specification is implemented.
+        from zope.security.proxy import removeSecurityProxy
+        naked_person = removeSecurityProxy(person)
+        #      end of evil code.
+
+        if (person.preferredemail is None and 
+            len(person.validatedemails) == 1):
+            # This user have no preferred email set and this is the only
+            # validated email he owns. We must set it as the preferred one.
+            naked_person.preferredemail = emailaddress
 
         encryptor = getUtility(IPasswordEncryptor)
         password = encryptor.encrypt(password)
-        person.password = password
+        naked_person.password = password
         self.formProcessed = True
         self.context.destroySelf()
 
@@ -125,37 +145,50 @@ class ValidateEmailView(object):
         password = self.request.form.get("password")
         encryptor = getUtility(IPasswordEncryptor)
         if not encryptor.validate(password, requester.password):
-            self.errormessage = "Wrong password. Please try again."
+            self.errormessage = "Wrong password. Please check and try again."
             return 
 
-        results = EmailAddress.selectBy(email=self.context.requesteremail)
-        assert results.count() == 1
-        reqemail = results[0]
-        assert reqemail.person == requester
-
-        status = int(EmailAddressStatus.VALIDATED)
+        status = EmailAddressStatus.VALIDATED
         if not requester.preferredemail and not requester.validatedemails:
             # This is the first VALIDATED email for this Person, and we
             # need it to be the preferred one, to be able to communicate
             # with the user.
-            status = int(EmailAddressStatus.PREFERRED)
+            status = EmailAddressStatus.PREFERRED
 
-        results = EmailAddress.selectBy(email=self.context.email)
-        if results.count() > 0:
+        emailset = getUtility(IEmailAddressSet)
+        email = emailset.getByEmail(self.context.email)
+        if email is not None:
+            if email.person.id != requester.id:
+                self.errormessage = (
+                        'This email is already registered for another '
+                        'Launchpad user account. This account can be a '
+                        'duplicate of yours, created automatically, and '
+                        'in this case you should be able to '
+                        '<a href="/people/+requestmerge">merge them</a> '
+                        'into a single one.')
+                self.context.destroySelf()
+                return
+
+            if email.status != EmailAddressStatus.NEW:
+                self.errormessage = ("This email is already validated. "
+                                     "There's no need to validate it again.")
+                self.context.destroySelf()
+                return
+
             # This email was obtained via gina or lucille and have been
             # marked as NEW on the DB. In this case all we have to do is
-            # set that email status to VALIDATED.
-            assert results.count() == 1
-            email = results[0]
+            # set that email status to VALIDATED (or PREFERRED, if it's the
+            # first validated).
             email.status = status
             self.context.destroySelf()
             return
 
         # New email validated by the user. We must add it to our emailaddress
         # table.
-        email = EmailAddress(email=self.context.email, status=status,
-                             person=requester.id)
+        email = emailset.new(self.context.email, status, requester.id)
         self.context.destroySelf()
+        logintokenset = getUtility(ILoginTokenSet)
+        logintokenset.deleteByEmailAndRequester(self.context.email, requester)
 
 
 class NewAccountView(AddView):
@@ -195,11 +228,12 @@ class NewAccountView(AddView):
         person = getUtility(IPersonSet).newPerson(**kw)
         notify(ObjectCreatedEvent(person))
 
-        email = EmailAddress(person=person.id, email=self.context.email,
-                             status=int(EmailAddressStatus.PREFERRED))
+        emailset = getUtility(IEmailAddressSet)
+        preferred = EmailAddressStatus.PREFERRED
+        email = emailset.new(self.context.email, preferred, person.id)
         notify(ObjectCreatedEvent(email))
 
-        self._nextURL = '/foaf/people/%s' % person.name
+        self._nextURL = '/people/%s' % person.name
         self.context.destroySelf()
 
         loginsource = getUtility(IPlacelessLoginSource)
@@ -227,7 +261,6 @@ class MergePeopleView(object):
         if self.validate():
             self.doMerge()
             self.context.destroySelf()
-            return
 
     def successfullyProcessed(self):
         return self.formProcessed and not self.errormessage
@@ -251,8 +284,12 @@ class MergePeopleView(object):
         # dupe account, so we can assign it to him.
         email = getUtility(IEmailAddressSet).getByEmail(self.context.email)
         email.person = self.context.requester.id
-        email.status = int(EmailAddressStatus.VALIDATED)
-        flushUpdates()
+        email.status = EmailAddressStatus.VALIDATED
+
+        # Need to flush all changes we made, so subsequent queries we make
+        # with this transaction will see this changes and thus they'll be
+        # displayed on the page that calls this method.
+        flush_database_updates()
         
         # Now we must check if the dupe account still have registered email
         # addresses. If it haven't we can actually do the merge.
@@ -262,4 +299,6 @@ class MergePeopleView(object):
 
         # Call Stuart's magic function which will reassign all of the dupe
         # account's stuff to the user account.
+        pset = getUtility(IPersonSet).merge(self.dupe, self.context.requester)
         self.mergeCompleted = True
+

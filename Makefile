@@ -22,13 +22,14 @@ check_merge: build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
 	env PYTHONPATH=$(PYTHONPATH) \
-	${PYTHON} -t ./test_on_merge.py --dir hct --dir sourcerer --dir banzai
+	${PYTHON} -t ./test_on_merge.py -vv \
+	    --dir hct --dir sourcerer --dir banzai
 
 check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
 	env PYTHONPATH=$(PYTHONPATH) \
-	${PYTHON} -t ./test_on_merge.py 
+	${PYTHON} -t ./test_on_merge.py
 
 pagetests:
 	$(MAKE) -C sourcecode build
@@ -85,7 +86,7 @@ run: inplace
 	PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) $(PYTHON) -t \
             $(STARTSCRIPT) -C $(CONFFILE)
 
-debug: principals.zcml
+debug:
 	PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) $(PYTHON) -i -c \
             "from zope.app import Application;\
              app = Application('Data.fs', 'site.zcml')()"

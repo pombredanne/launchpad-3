@@ -1,7 +1,8 @@
-
+Check if the distros root page is not broken.
+In this page we can see all the Distributions in Launchpad.
 
   >>> print http(r"""
-  ... GET /soyuz/distros HTTP/1.1
+  ... GET /distros HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -11,10 +12,11 @@
     <h1>...
   ...
 
+Check if the Distribution page is not broken.
 
   >>> print http(r"""
-  ... GET /soyuz/distros/ubuntu HTTP/1.1
-  ... Referer: http://localhost:9000/soyuz/distros
+  ... GET /distros/ubuntu HTTP/1.1
+  ... Referer: http://localhost:9000/distros
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...

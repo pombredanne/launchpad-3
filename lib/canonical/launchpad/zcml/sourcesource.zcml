@@ -5,7 +5,7 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
-    <!-- SourceSource-->
+    <!-- SourceSource
     <content class="canonical.launchpad.database.SourceSource">
         <require
             permission="launchpad.Admin"
@@ -41,10 +41,10 @@
             lp:url="Doap/project/$Project.name/$Product.name/+sources/$SourceSource.name/"
             />
     </browser:pages>
+    -->
 
 
-
-    <!-- SourceSourceSet -->
+    <!-- SourceSourceSet
     <content class="canonical.launchpad.database.SourceSourceSet">
         <allow interface="canonical.launchpad.interfaces.ISourceSourceSet" />
         <require
@@ -77,5 +77,5 @@
             template="../templates/sources-index.pt"
             lp:url="bazaar/sources/+index" />
     </browser:pages>
-
+ -->
 </configure>

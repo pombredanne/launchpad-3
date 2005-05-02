@@ -1,0 +1,16 @@
+
+
+  >>> print http(r"""
+  ... GET /projects/mozilla/+bounties/ HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.7,af;q=0.3
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+      <title>Bounties for
+        the Mozilla Project
+      </title>
+  ...
+

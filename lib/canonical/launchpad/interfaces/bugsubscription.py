@@ -28,28 +28,13 @@ class IBugSubscription(Interface):
 class IBugSubscriptionSet(Interface):
     """A set for IBugSubscription objects."""
 
-    bug = Int(title=_("Bug id"), readonly=True)
-
     title = Attribute('Title')
 
     def __getitem__(key):
         """Get a BugSubscription object."""
 
     def __iter__():
-        """Iterate through bug subscribers for this bug."""
+        """Iterate through the bug subscriptions in this set."""
 
     def delete(id):
         """Delete a subscription."""
-
-    def getCcEmailAddresses():
-        """Return the email addresses of the people Cc'd on
-        this bug."""
-
-    def subscribePerson(person):
-        """Subscribe person to the bug, as a Cc.
-
-        Returns the IBugSubscription created.
-        """
-
-    def unsubscribePerson(person):
-        """Unsubscribe person from the bug."""

@@ -1,5 +1,16 @@
-<html><title>System Error</title>
-<body>
-  A system error occurred.
-</body>
+<html metal:use-macro="context/@@main_template/master">
+    <head>
+        <title metal:fill-slot="title">System Error</title>
+    </head>
+    <body>
+        <div metal:fill-slot="main">
+            <span class="exception">A system error occurred.</span>
+            <tal:block condition="view/show_tracebacks">
+                <h3>Error type: <span tal:replace="view/error_type" /></h3>
+                <div tal:content="structure view/htmltext | default">
+                    HTML rendering of error should go here.
+                </div>
+            </tal:block>
+        </div>
+    </body>
 </html>

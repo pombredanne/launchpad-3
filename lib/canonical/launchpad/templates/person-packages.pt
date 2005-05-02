@@ -8,75 +8,54 @@
       <span tal:replace="context/displayname">Name</span></title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Soyuz style sheet -->
-    <style type="text/css" media="screen">@import url(soyuz.css);</style>
+    <!-- Launchpad style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
 
-<div metal:fill-slot="main">
+  <metal:leftportlets fill-slot="portlets_one">
+      <div tal:replace="structure view/viewsPortlet" />
+  </metal:leftportlets>
 
-<div id="content" class="documentEditable">
+  <metal:rightportlets fill-slot="portlets_two">
+      <div tal:replace="structure view/actionsPortlet" />
+  </metal:rightportlets>
 
-    <ul class="contentViews">
-      <li id="contentview-profile" class="plain">
-        <a href=".">Profile</a>
-      </li>
+  <div metal:fill-slot="main">
 
-      <li tal:condition="context/packages" id="contentview-packages"
-          class="selected">
-        <a href="+packages">Packages</a>
-      </li>
+      <h1>Package Maintenance Report</h1>
 
-      <li tal:condition="context/bugs" id="contentview-bugs" class="plain">
-        <a href="+bugs">Bugs</a>
-      </li>
-
-      <li tal:condition="context/translations" id="contentview-translations"
-          class="plain">
-        <a href="+translations">Translations</a>
-      </li>
-
-      <li tal:condition="context/activities" id="contentview-karma"
-          class="plain">
-        <a href="+karma">Karma</a>
-      </li>
-    </ul>
-
-    <div class="documentContent" id="region-content">
-      <h1>Packages maintained By 
-      <span tal:content="context/displayname">context</span></h1>
-        <div>
-         <table>
-           <tr tal:condition="not:context/packages">
-             <td> No packages available </td>
-           </tr>
-
-           <tr tal:repeat="package context/packages">
-             <td tal:define="name package/name; 
-                             distrorelease package/distrorelease/name;
-                             distro package/distrorelease/distribution/name;
-                             distro_path string:/soyuz/distros/${distro};">
+      <p tal:condition="context/maintainerships"><span
+      tal:replace="context/displayname">Person DisplayName</span> is the
+      maintainer of the following distribution packages:</p>
       
-               <a tal:attributes="href distro_path"
-                  tal:content="package/distrorelease/distribution/title">DISTRO</a> ::
-               <a tal:attributes="href string:${distro_path}/${distrorelease}/"
-                  tal:content="package/distrorelease/title">DISTRORELASE</a> ::
-               <a tal:attributes="href string:${distro_path}/${distrorelease}/+sources/${name}"
-                  tal:content="string:${name}">PACKAGES</a> ::
-               <a tal:condition="package/product"
-                  tal:attributes="href string:/doap/products/${package/product/name}"
-                  tal:content="string:${package/product/displayname}">PRODUCT</a>
-	       <span tal:condition="not:package/product">No Product Available</span>
-             </td>
-          </tr>
-     </table>
-    </div>
+      <p tal:condition="not: context/maintainerships"><span
+      tal:replace="context/displayname">Person DisplayName</span> is not
+      currently recorded as the maintainer of any packages in the Launchpad
+      system.</p>
 
-</div>
-</div>
-</div>
+      <tal:block tal:repeat="maintainership context/maintainerships">
+      <tal:block tal:define="spname maintainership/sourcepackagename/name; 
+                             distro maintainership/distribution;
+                             currentrelease distro/currentrelease;"
+          tal:condition="currentrelease">
 
+        <a tal:attributes="href string:/distros/${distro/name}"
+           tal:content="distro/title">DISTRO</a> ::
+
+        <a tal:attributes="href string:/distros/${distro/name}/${currentrelease/name}"
+           tal:content="currentrelease/name">Distrorelease</a> ::
+
+        <a tal:attributes="href string:/distros/${distro/name}/${currentrelease/name}/+sources/${spname}"
+           tal:content="spname">PACKAGE</a>
+
+        <br />
+
+      </tal:block>
+      </tal:block>
+
+  </div>
 
 </body>
 </html>

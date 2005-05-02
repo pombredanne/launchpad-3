@@ -2,12 +2,19 @@
 This test demonstrates the reconnecting wrapper.  Compare and contrast to
 test_disconnection.txt.
 
-Make a TCP proxy to postgres.
+Make a TCP proxy to postgres. Note we have to match the version of
+twisted we use with out version of Python.
 
-    >>> import os
-    >>> os.system('mktap portforward --port 5555 --dest_port 5432')
+    >>> import os, sys
+    >>> import canonical.lp
+    >>> from canonical.database.ftests import getDBHost
+    >>> dbhost = getDBHost()
+    >>> ver = sys.version[:3]
+    >>> cmd = ('mktap%s portforward --port 5555 --dest_port 5432 '
+    ...        '--host %s' % (ver, dbhost))
+    >>> os.system(cmd)
     0
-    >>> os.system('twistd -of portforward.tap')
+    >>> os.system('twistd%s -of portforward.tap' % ver)
     0
 
 Wait for the proxy to start.
@@ -21,6 +28,7 @@ Wait for the proxy to start.
     ...                 return
     ...         except IOError:
     ...             pass
+    ...     raise RuntimeError('Proxy not ready')
     >>> wait_until_proxy_is_ready()
 
 Install the reconnector.
@@ -38,9 +46,9 @@ You can't install the reconnector twice accidentally, though.
 Connect to postgres via the proxy.  This will use the reconnector.
 
     >>> import psycopg
-    >>> import canonical.lp
-    >>> conn = psycopg.connect('dbname=%s user=%s host=localhost port=5555' % (
-    ...     canonical.lp.dbname, canonical.lp.dbuser))
+    >>> dsn = 'dbname=%s user=%s host=localhost port=5555' % (
+    ...     canonical.lp.dbname, canonical.lp.dbuser)
+    >>> conn = psycopg.connect(dsn)
 
 Check that the connection is working normally.
 
@@ -71,6 +79,7 @@ Wait for the proxy to stop.
     ...     while time.time() - start < 5:  # loop for a maximum of 5 seconds
     ...         if not os.path.exists('twistd.pid'):
     ...             return
+    ...     raise RuntimeError('Proxy would not stop')
     >>> wait_until_proxy_is_stopped()
 
 Executing a query now blocks until the database connection can be reestablished.
@@ -79,7 +88,9 @@ Executing a query now blocks until the database connection can be reestablished.
     >>> thread_result = []
     >>> def foo():
     ...     cur.execute('SELECT 1;')
+    ...     print "thread after execute"
     ...     thread_result.append(cur.fetchone()[0])
+    ...     print "thread end"
     >>> thread = threading.Thread(target=foo)
     >>> thread.start()
     >>> time.sleep(1)
@@ -88,28 +99,32 @@ Executing a query now blocks until the database connection can be reestablished.
     >>> thread.isAlive()
     True
 
-# TODO: test that the disconnection is logged
+# TODO: test that the disconnection is logged -- spiv
 
 And restart it.
 
-    >>> os.system('twistd -of portforward.tap')
+    >>> os.system('twistd%s -of portforward.tap' % ver)
     0
     >>> wait_until_proxy_is_ready()
 
-Now using our connection should still work.
+Now, our blocked thread should've finished successfully.
 
-    >>> cur.execute("SELECT 1;")
-    >>> cur.fetchone()[0]
-    1
-
-And our blocked thread should've finished successfully, too.
-
+    >>> time.sleep(1)
+    thread after execute
+    thread end
     >>> thread_result
     [1]
     >>> thread.isAlive()
     False
 
-XXX: Test that interrupting a transaction still fails
+Also, using our connection should still work.
+
+    >>> cur.execute("SELECT 1;")
+    >>> cur.fetchone()[0]
+    1
+
+
+XXX: Test that interrupting a transaction still fails -- spiv
 
 Clean up the proxy.
 

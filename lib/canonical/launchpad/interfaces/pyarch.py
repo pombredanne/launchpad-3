@@ -20,7 +20,7 @@ __all__ = ['ArchiveAlreadyRegistered', 'ArchiveNotRegistered',
            'RevisionAlreadyRegistered', 'VersionNotRegistered',
            'VersionAlreadyRegistered', 'BranchAlreadyRegistered',
            'CategoryAlreadyRegistered', 'IBranch',
-           'RCSTypeEnum', 'RCSNames', 'NamespaceError',
+           'NamespaceError',
            'IArchive', 'IArchiveLocation',
            'IArchiveCollection', 'INamespaceObject',
            'ISourceTreeAPI', 'ISourceTreeFactory',
@@ -490,6 +490,9 @@ class IBranch(ICategoryItem, IPackage, IVersionIterable):
         :precondition: `self.exists()` returns ``True``
         :precondition: `self.iter_versions` yields at least one object.
         """
+
+    def getPackageName():
+        """Arch package name for the branch."""
 
     '''extension interfaces for launchpad, to move into a sub interface'''
     id = Int(title=_('The database identifier for this branch.'))
@@ -1429,14 +1432,3 @@ except ImportError:
     pass
 else:
     pyarch_implements()
-
-class RCSTypeEnum:
-    cvs = 1
-    svn = 2
-    arch = 3
-    package = 4
-    bitkeeper = 5
-
-RCSNames = {1: 'cvs', 2: 'svn', 3: 'arch', 4: 'package', 5: 'bitkeeper'}
-
-

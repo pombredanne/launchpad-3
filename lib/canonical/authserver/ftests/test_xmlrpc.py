@@ -13,13 +13,13 @@ from twisted.python.util import sibpath
 from canonical.launchpad.ftests.harness import LaunchpadTestCase
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 
-
-class XMLRPCTestCase(LaunchpadTestCase):
+class TwistdTestCase(LaunchpadTestCase):
     # This test requires write access to the current working dir (it writes a
     # twistd.log and twistd.pid (and deletes them), and also the launchpad_test
     # DB created by running make in launchpad's database/schema directory.
     def setUp(self):
-        super(XMLRPCTestCase, self).setUp()
+        LaunchpadTestCase.setUp(self)
+
         # need to run different twistd depending on python version
         ver = sys.version[:3]
         os.system('kill `cat twistd.pid 2> /dev/null` > /dev/null 2>&1')
@@ -33,17 +33,36 @@ class XMLRPCTestCase(LaunchpadTestCase):
             try:
                 # Make sure it's really ready, including having written the port
                 # to a file
-                open('twistd.ready')
+                open('twistd.ready').close()
 
                 # Get the file with the port number
                 f = open('twistd.port')
             except IOError:
                 pass
             else:
-                port = int(f.read())
+                self.port = int(f.read())
+                f.close()
                 break
 
-        self.server = xmlrpclib.Server('http://localhost:%d/' % port)
+    def tearDown(self):
+        pid = int(open('twistd.pid').read())
+        ret = os.system('kill `cat twistd.pid`')
+        # Wait for it to actually die
+        while True:
+            try:
+                os.kill(pid, 0)
+            except OSError:
+                break
+            time.sleep(0.1)
+        os.remove('twistd.log')
+        LaunchpadTestCase.tearDown(self)
+        self.failIf(ret)
+
+
+class XMLRPCv1TestCase(TwistdTestCase):
+    def setUp(self):
+        TwistdTestCase.setUp(self)
+        self.server = xmlrpclib.Server('http://localhost:%d/' % self.port)
 
     def test_getUser(self):
         # Check that getUser works, and returns the right contents
@@ -91,23 +110,64 @@ class XMLRPCTestCase(LaunchpadTestCase):
         self.failUnlessEqual(r2['displayname'], 'Display Name')
         self.failUnlessEqual(r2['emailaddresses'], ['nobody@example.com'])
 
-    def tearDown(self):
-        pid = int(open('twistd.pid').read())
-        ret = os.system('kill `cat twistd.pid`')
-        # Wait for it to actually die
-        while True:
-            try:
-                os.kill(pid, 0)
-            except OSError:
-                break
-            time.sleep(0.1)
-        os.remove('twistd.log')
-        super(XMLRPCTestCase, self).tearDown()
-        self.failIf(ret)
+    def test_getSSHKeys(self):
+        # Unknown users have no SSH keys, of course.
+        self.assertEqual([], self.server.getSSHKeys('unknown@user'))
+
+        # Check that the SSH key in the sample data can be retrieved
+        # successfully.
+        keys = self.server.getSSHKeys('test@canonical.com')
+
+        # There should only be one key for this user.
+        self.assertEqual(1, len(keys))
+
+        # Check the keytype is being returned correctly.
+        keytype, keytext = keys[0]
+        self.assertEqual('DSA', keytype)
+
+
+class XMLRPCv2TestCase(TwistdTestCase):
+    """Like XMLRPCv1TestCase, but for the new, simpler, salt-less API."""
+    def setUp(self):
+        TwistdTestCase.setUp(self)
+        self.server = xmlrpclib.Server('http://localhost:%d/v2/' % self.port)
+
+    def test_getUser(self):
+        # Check that getUser works, and returns the right contents
+        markDict = self.server.getUser('mark@hbd.com')
+        self.assertEqual('Mark Shuttleworth', markDict['displayname'])
+        self.assertEqual(['mark@hbd.com'], markDict['emailaddresses'])
+        self.assert_(markDict.has_key('id'))
+
+        # Check specifically that there's no 'salt' entry in the user dict.
+        self.failIf(markDict.has_key('salt'))
+        
+        # Check that the failure case (no such user) returns {}
+        emptyDict = self.server.getUser('invalid@email')
+        self.assertEqual({}, emptyDict)
+
+    def test_authUser(self):
+        # Check that the failure case (no such user or bad passwd) returns {}
+        emptyDict = self.server.authUser('invalid@email', '')
+        self.assertEqual({}, emptyDict)
+
+        # Create a user. Note we have to pass in their email address twice
+        # (for historical reasons - should refactor one day)
+        self.server.createUser(
+                'nobody@example.com', # Used to generate the Person.name
+                'testpw',
+                'Display Name',
+                ['nobody@example.com',] # The email addresses stored
+                )
+
+        result = self.server.authUser('nobody@example.com', 'testpw')
+        self.failUnlessEqual(result['displayname'], 'Display Name')
+        self.failUnlessEqual(result['emailaddresses'], ['nobody@example.com'])
 
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(XMLRPCTestCase))
+    suite.addTest(unittest.makeSuite(XMLRPCv1TestCase))
+    suite.addTest(unittest.makeSuite(XMLRPCv2TestCase))
     return suite
 

@@ -7,6 +7,10 @@
 
   <body>
 
+  <metal:rightportlets fill-slot="portlets_two">
+      <div tal:replace="structure view/actionsPortlet" />
+  </metal:rightportlets>
+
   <!-- This page uses the launchpad-addform.pt METAL -->
 
   <div metal:fill-slot="main">

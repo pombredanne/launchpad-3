@@ -4,14 +4,12 @@
       i18n:domain="rosetta">
 
 <head>
-    <title metal:fill-slot="title">Rosetta:
-        <span tal:replace="context/product/displayname">product
-        displayname</span>:
+    <title metal:fill-slot="title">Rosetta
         <span tal:replace="context/title">template title</span></title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Rosetta style sheet -->
-    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+    <!-- Launchpad style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
@@ -24,18 +22,30 @@
     <h4>Template Details:</h4>
 
     <div class="portletBody">
-
-        <div class="portletContent even">
-
+        <div class="portletContent odd">
             <img src="/++resource++document_icon.gif" />
             <span tal:replace="view/num_messages" /><br />
-
             <div tal:condition="context/owner" tal:omit-tag>
                 <b>Owner:</b><br />
                 <img src="/++resource++user.gif" />
                 <span tal:replace="context/owner/browsername" /><br />
             </div>
+        </div>
+    </div>
+</div>
 
+<div class="portlet">
+
+    <h4>Actions:</h4>
+
+    <div class="portletBody">
+        <div class="portletContent even">
+            <p><img src="/++resource++edit.gif"><a href="+edit">Edit this
+            template</a>. This will modify the template header information and
+            will let you upload a new PO template version.<br />
+            This is an advanced operation, limited to 
+            <span tal:replace="context/owner/browsername" />, the current owner of
+            this template in Rosetta.</p>
         </div>
     </div>
 </div>
@@ -43,35 +53,13 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-
-<div class="portlet">
-
-    <h4>Actions:</h4>
-
-    <div class="portletBody">
-
-        <div class="portletContent even">
-            <p><img src="/++resource++edit.gif"><a href="+edit">Edit this
-            template</a>. This will modify the template header information and
-            will let you upload a new PO template version.<br />
-            This is an advanced operation, limited to Rosetta
-            administrators<span tal:condition="context/owner"> and 
-            <span tal:replace="context/owner/browsername" />, the current owner of
-            this template in Rosetta</span>.</p>
-        </div>
-    </div>
-</div>
-
 </metal:rightportlets>
 
 
 <div metal:fill-slot="main">
 
-    <h1>Translating <span tal:replace="context/product/title">Product
-        Title</span></h1>
-
-    <p class="documentDescription">Template: <span tal:replace="context/title">
-        Potemplate Title</span></p>
+    <h1>Translation Template: <span tal:replace="context/title">Potemplate Title</span>
+    </h1>
 
     <h2>Translations</h2>
 
@@ -81,7 +69,7 @@
             <th>Done</th>
             <th>Todo</th>
             <th>Graph</th>
-            <th>Lastest Contributor</th>
+            <th>Latest Contributor</th>
             <th>Last Edited</th>
         </thead>
 

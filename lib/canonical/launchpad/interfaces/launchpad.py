@@ -9,13 +9,43 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-__all__ = ('ILaunchpadApplication', 'IMaloneApplication',
-           'IRosettaApplication', 'ISoyuzApplication',
-           'IDOAPApplication', 'IFOAFApplication',
-           'IPasswordEncryptor', 'IReadZODBAnnotation',
-           'IWriteZODBAnnotation', 'IZODBAnnotation',
-           'IAuthorization', 'IObjectAuthorization',
-           'IHasOwner', 'IOpenLaunchBag', 'ILaunchBag')
+__all__ = ['ILaunchpadApplication', 'IMaloneApplication',
+           'IRosettaApplication', 'IDOAPApplication',
+           'IFOAFApplication', 'IPasswordEncryptor',
+           'IReadZODBAnnotation', 'IWriteZODBAnnotation',
+           'IZODBAnnotation', 'IAuthorization',
+           'IHasOwner', 'IHasAssignee', 'IHasProduct', 
+           'IHasProductAndAssignee', 'IOpenLaunchBag',
+           'IAging', 'IHasDateCreated',
+           'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities',
+           'IBasicLink', 'ILink', 'ISelectionAwareLink',
+           'ITabList', 'IFacetList']
+
+
+class ILaunchpadCelebrities(Interface):
+
+    buttsource = Attribute("The 'buttsource' team.")
+    admin = Attribute("The 'admins' team.")
+
+
+class ICrowd(Interface):
+
+    def __contains__(person_or_team_or_anything):
+        """Return True if the given person_or_team_or_anything is in the crowd.
+
+        Note that a particular crowd can choose to answer "True" to this
+        question, if that is what it is supposed to do.  So, crowds that
+        contain other crowds will want to allow the other crowds the
+        opportunity to answer __contains__ before that crowd does.
+        """
+
+    def __add__(crowd):
+        """Return a new ICrowd that is this crowd added to the given crowd.
+
+        The returned crowd contains the person or teams in
+        both this crowd and the given crowd.
+        """
+
 
 class ILaunchpadApplication(Interface):
     """Marker interface for a launchpad application.
@@ -37,20 +67,13 @@ class IMaloneApplication(ILaunchpadApplication):
 class IRosettaApplication(ILaunchpadApplication):
     """Application root for rosetta."""
 
-    def translatables():
+    def translatable_products():
         """Return an iterator over the set of translatable Products which
         are part of Ubuntu's translation project."""
 
-
-class ISoyuzApplication(ILaunchpadApplication):
-    """Application root for soyuz."""
-
-    title = Attribute("Title")
-
-    def distributions():
-        """Return a list of distributions that are entirely managed
-        by Soyuz. This does not include distributions which are parsed by
-        the backend tools, such as Fedora and Debian."""
+    def translatable_distroreleases():
+        """Return an iterator over the set of distroreleases which contain
+        translatable apps in Rosetta."""
 
 
 class IDOAPApplication(ILaunchpadApplication):
@@ -108,19 +131,6 @@ class IZODBAnnotation(IReadZODBAnnotation, IWriteZODBAnnotation):
     pass
 
 
-class IObjectAuthorization(Interface):
-    """Authorization policy for a particular object."""
-
-    def checkPermission(person, permission):
-        """Returns True if the person has that permission on the adapted
-        object.  Otherwise returns False.
-
-        The argument person is the person who is authenticated, or None if
-        the principal is not adaptable to a Person.  So, person is None when
-        no-one is logged in.
-        """
-
-
 class IAuthorization(Interface):
     """Authorization policy for a particular object and permission."""
 
@@ -129,13 +139,12 @@ class IAuthorization(Interface):
         on the adapted object.  Otherwise returns False.
         """
 
-    def checkPermission(person):
-        """Returns True if the person has that permission on the adapted
+    def checkAuthenticated(user):
+        """Returns True if the user has that permission on the adapted
         object.  Otherwise returns False.
 
-        The argument `person` is the person who is authenticated.
+        The argument `user` is the person who is authenticated.
         """
-
 
 class IHasOwner(Interface):
     """An object that has an owner."""
@@ -148,6 +157,31 @@ class IHasAssignee(Interface):
 
     assignee = Attribute("The object's assignee, which is an IPerson.")
 
+
+class IHasProduct(Interface):
+    """An object that has a product attribute that is an IProduct."""
+
+    product = Attribute("The object's product")
+
+
+class IHasProductAndAssignee(IHasProduct, IHasAssignee):
+    """An object that has a product attribute and an assigned attribute.
+    See IHasProduct and IHasAssignee."""
+
+
+class IAging(Interface):
+    """Something that gets older as time passes."""
+
+    def currentApproximateAge():
+        """Return a human-readable string of how old this thing is.
+
+        Values returned are things like '2 minutes', '3 hours', '1 month', etc.
+        """
+
+class IHasDateCreated(Interface):
+    """Something created on a certain date."""
+
+    datecreated = Attribute("The date on which I was created.")
 
 class ILaunchBag(Interface):
     site = Attribute('The application object, or None')
@@ -173,4 +207,36 @@ class IOpenLaunchBag(ILaunchBag):
         '''Empty the bag'''
     def setLogin(login):
         '''Set the login to the given value.'''
+
+
+class IBasicLink(Interface):
+    """A link."""
+
+    id = Attribute('id')
+    href = Attribute('the relative href')
+    title = Attribute('text for the link')
+    summary = Attribute('summary for this facet')
+
+
+class ILink(IBasicLink):
+    """A link, including whether or not it is disabled."""
+    enabled = Attribute('boolean, whether enabled')
+
+
+class ISelectionAwareLink(ILink):
+    selected = Attribute('bool; is this facet the selected one?')
+
+
+class IFacetList(Interface):
+    """A list of facets in various categories."""
+
+    links = Attribute("List of ILinks that are main links.")
+    overflow = Attribute("List of ILinks that overflow.")
+
+
+class ITabList(Interface):
+    """A list of tabs in various categories."""
+
+    links = Attribute("List of ILinks that are main links.")
+    overflow = Attribute("List of ILinks that overflow.")
 

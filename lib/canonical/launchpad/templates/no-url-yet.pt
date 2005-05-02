@@ -1,13 +1,12 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="rosetta">
+      i18n:domain="launchpad">
 
 <head>
+    <title metal:fill-slot="title">No url for this yet</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Rosetta style sheet -->
-    <style type="text/css" media="screen">@import url(rosetta.css);</style>
 </head>
 
 <body>
@@ -17,8 +16,7 @@
     <h1>No URL Yet</h1>
 
     <p>
-    The URL for this page needs adding to the <a
-    href="https://www.warthogs.hbd.com/Rosetta_2fURLs">URL table</a>.
+    The URL for this page needs to be added.
     </p>
 
 </div>

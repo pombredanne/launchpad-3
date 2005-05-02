@@ -1,46 +1,68 @@
-# Zope imports
-from zope.interface import implements
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-# SQLObject/SQLBase
-from sqlobject import MultipleJoin, SQLObjectNotFound
-from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
-                      DateTimeCol
+__metaclass__ = type
+__all__ = ['Distribution', 'DistributionSet', 'DistroPackageFinder']
+
+from zope.interface import implements
+from zope.exceptions import NotFoundError
+
+from sqlobject import \
+    RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey, MultipleJoin
 
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.launchpad.database.bug import BugTask
 from canonical.launchpad.database.publishedpackage import PublishedPackageSet
-from canonical.lp import dbschema
-
-# interfaces and database 
-from canonical.launchpad.interfaces import IDistribution
-from canonical.launchpad.interfaces import IDistributionSet
-from canonical.launchpad.interfaces import IDistroPackageFinder
-
-__all__ = ['Distribution', 'DistributionSet']
+from canonical.launchpad.database.distrorelease import DistroRelease
+from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.lp.dbschema import BugTaskStatus, DistributionReleaseStatus
+from canonical.launchpad.interfaces import IDistribution, IDistributionSet, \
+    IDistroPackageFinder, ITeamMembershipSubset, ITeam
 
 
 class Distribution(SQLBase):
-
+    """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(IDistribution)
 
-    _table = 'Distribution'
     _defaultOrder='name'
-    _columns = [
-        StringCol('name', dbName='name', notNull=True, alternateID=True,
-                  unique=True),
-        StringCol('displayname', dbName='displayname'),
-        StringCol('title', dbName='title'),
-        StringCol('summary', dbName='summary'),
-        StringCol('description', dbName='description'),
-        StringCol('domainname', dbName='domainname'),
-        ForeignKey(name='owner', dbName='owner', foreignKey='Person',
-                   notNull=True)
-        ]
 
-    releases = MultipleJoin('DistroRelease', 
-                            joinColumn='distribution') 
-    role_users = MultipleJoin('DistributionRole', 
-                              joinColumn='distribution')
+    name = StringCol(notNull=True, alternateID=True, unique=True)
+    displayname = StringCol()
+    title = StringCol()
+    summary = StringCol()
+    description = StringCol()
+    domainname = StringCol()
+    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
+    releases = MultipleJoin('DistroRelease', joinColumn='distribution',
+                            orderBy='-id')
+    bounties = RelatedJoin(
+        'Bounty', joinColumn='distribution', otherColumn='bounty',
+        intermediateTable='DistroBounty')
+    bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
+
+    def currentrelease(self):
+        # if we have a frozen one, return that
+        for rel in self.releases:
+            if rel.releasestatus == DistributionReleaseStatus.FROZEN:
+                return rel
+        # if we have one in development, return that
+        for rel in self.releases:
+            if rel.releasestatus == DistributionReleaseStatus.DEVELOPMENT:
+                return rel
+        # if we have a stable one, return that
+        for rel in self.releases:
+            if rel.releasestatus == DistributionReleaseStatus.CURRENT:
+                return rel
+        # if we have ANY, return the first one
+        if len(self.releases) > 0:
+            return self.releases[0]
+        return None
+    currentrelease = property(currentrelease)
+
+    def memberslist(self):
+        if not ITeam.providedBy(self.members):
+            return
+        return ITeamMembershipSubset(self.members).getActiveMemberships()
 
     def traverse(self, name):
         if name == '+packages':
@@ -59,28 +81,47 @@ class Distribution(SQLBase):
     def bugCounter(self):
         counts = []
 
-        clauseTables = ("VSourcePackageInDistro",
-                        "SourcePackage")
+        clauseTables = ["VSourcePackageInDistro"]
         severities = [
-            dbschema.BugTaskStatus.NEW,
-            dbschema.BugTaskStatus.ACCEPTED,
-            dbschema.BugTaskStatus.REJECTED,
-            dbschema.BugTaskStatus.FIXED]
+            BugTaskStatus.NEW,
+            BugTaskStatus.ACCEPTED,
+            BugTaskStatus.REJECTED,
+            BugTaskStatus.FIXED]
 
         query = ("bugtask.distribution = %s AND "
                  "bugtask.bugstatus = %i")
 
         for severity in severities:
-            query = query %(quote(self.id), severity)
+            query = query % (quote(self.id), severity)
             count = BugTask.select(query, clauseTables=clauseTables).count()
             counts.append(count)
 
         return counts
-
     bugCounter = property(bugCounter)
 
+    def getRelease(self, name_or_version):
+        """See IDistribution."""
+        distrorelease = DistroRelease.selectOneBy(
+            distributionID=self.id, name=name_or_version)
+        if distrorelease is None:
+            distrorelease = DistroRelease.selectOneBy(
+                distributionID=self.id, version=name_or_version)
+            if distrorelease is None:
+                raise NotFoundError, name_or_version
+        return distrorelease
 
-class DistributionSet(object):
+    def getDevelopmentReleases(self):
+        """See IDistribution."""
+        return DistroRelease.selectBy(
+            distributionID = self.id,
+            releasestatus = DistributionReleaseStatus.DEVELOPMENT)
+
+    def getSourcePackage(self, name):
+        """See IDistribution."""
+        return SourcePackage(name, self.currentrelease)
+
+
+class DistributionSet:
     """This class is to deal with Distribution related stuff"""
 
     implements(IDistributionSet)
@@ -112,10 +153,11 @@ class DistributionSet(object):
         """Returns a Distribution with name = name"""
         return self[name]
 
-class DistroPackageFinder(object):
+
+class DistroPackageFinder:
 
     implements(IDistroPackageFinder)
 
     def __init__(self, distribution=None, processorfamily=None):
         self.distribution = distribution
-        # find the x86 processorfamily
+

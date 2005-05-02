@@ -9,7 +9,7 @@ from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Int, Text, TextLine, Bool
+from zope.schema import Datetime, Int, Text, TextLine, Bool, Choice
 
 
 class ICodeOfConduct(Interface):
@@ -29,23 +29,25 @@ class ISignedCodeOfConduct(Interface):
              readonly=True
              )
 
-    person = Int(title=_("Owner"),
-                 description=_("Person Signing."),
-                 required=True
-                 )
+    owner = Choice(title=_('Owner'), required=True, vocabulary='ValidPerson',
+                    description=_("""Signature owner, it must be a valid
+                    Person inside Launchpad context."""))
     
     signedcode = Text(title=_("Signed Code"), 
-                      description=_("GPG Signed Code of Conduct.")
+                      description=_("""GPG Signed Code of Conduct.
+                      It should contain a clearsigned copy of current
+                      Code of Conduct version (use: `gpg --clearsign`).""")
                       )
 
-    signingkey = Int(title=_("Signing key ID"), 
-                     description=_("Person GPG Key ID.")
-                     )
+    signingkey = Choice(title=_('Signing GPG Key'), 
+                        description=_("""GPG key ID used to sign the document,
+                        it must be a valid inside Launchpad context."""),
+                        vocabulary='ValidGPGKey',
+                        required=True
+                        )
     
-
     datecreated = Datetime(title=_("Date Created"),
-                           description=_("Original Request Timestamp"),
-                           readonly=True
+                           description=_("Original Request Timestamp")
                            )
     
     recipient = Int(title=_("Recipient"),
@@ -66,9 +68,16 @@ class ISignedCodeOfConduct(Interface):
 
     displayname = Attribute("Fancy Title for CoC.")
 
+    # title is required for the Launchpad Page Layout main template
+    title = Attribute("Page title")
+
+
 # Interfaces for containers
 class ICodeOfConductSet(Interface):
     """Unsigned (original) Codes of Conduct container."""
+
+    # title is required for the Launchpad Page Layout main template
+    title = Attribute("Page title")
 
     def __getitem__(version):
         """Get a original CoC Release by its version."""
@@ -80,17 +89,29 @@ class ICodeOfConductSet(Interface):
 class ISignedCodeOfConductSet(Interface):
     """A container for Signed CoC."""
 
+    # title is required for the Launchpad Page Layout main template
+    title = Attribute("Page title")
+
     def __getitem__(id):
         """Get a Signed CoC by id."""
 
     def __iter__():
         """Iterate through the Signed CoC in this set."""
 
-    def verifyAndStore(person, signingkey, signedcode):
+    def verifyAndStore(user, signedcode):
         """Verify and Store a Signed CoC."""
 
     def searchByDisplayname(displayname, searchfor=None):
         """Search SignedCoC by Owner.displayname"""
+
+    def searchByUser(user_id):
+        """Search SignedCoC by Owner.id"""
+
+    def modifySignature(sign_id, recipient, admincomment, state):
+        """Modify a Signed CoC."""
+
+    def acknowledgeSignature(user, recipient):
+        """Acknowledge a paper submitted Signed CoC."""
 
 
 class ICodeOfConductConf(Interface):

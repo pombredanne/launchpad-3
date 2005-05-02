@@ -6,21 +6,24 @@
     i18n:domain="launchpad">
 
 <head>
+    <title metal:fill-slot="title">Edit Details for 
+      <span
+      tal:replace="context/product/displayname">$Product.displayname</span>
+      <span
+      tal:replace="context/version">$ProductRelease.version</span>
+    </title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Rosetta style sheet -->
-    <style type="text/css" media="screen">@import url(doap.css);</style>
 </head>
 
 <body>
 
 <div metal:fill-slot="main">
 
-    <!--
-    This tal:dummy block never turns into HTML, but it triggers the edit
-    method on the ProductReleaseView class. This checks to see if a form has been
-    submitted to it, and if so updates the product.
-    -->
+    <!-- This tal:dummy block never turns into HTML, but it triggers the
+    edit method on the ProductReleaseView class. This checks to see if a
+    form has been submitted to it, and if so updates the product.  -->
+
     <tal:dummy condition="view/edit" />
 
     <h1>Edit Release:

@@ -1,6 +1,9 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 #
 
+# XXX: Write doctests for this network protocol in the style of page tests.
+#       - Andrew Bennetts, 2005-03-24.
+
 from twisted.internet import protocol
 from twisted.internet.threads import deferToThread
 from twisted.protocols import basic
@@ -30,8 +33,17 @@ class FileUploadProtocol(basic.LineReceiver):
     
     Where "1234" is the file id in our system, and "5678" is file alias id.
 
-    Recognised headers are SHA1-Digest (used to check the upload was received
-    correctly) and Content-Type.  Unrecognised headers will be ignored.
+    Recognised headers are:
+      :Content-Type: a mime-type to associate with the file
+      :File-Content-ID: if specified, the integer file id for this file.  If not
+        specified, the server will generate one.
+      :File-Alias-ID: if specified, the integer file alias id for this file.  If
+        not specified, the server will generate one.
+
+    The File-Content-ID and File-Alias-ID headers are also described in
+    https://wiki.launchpad.canonical.com/LibrarianTransactions.
+    
+    Unrecognised headers will be ignored.
 
     If something goes wrong, the server will reply with a 400 (bad request) or
     500 (internal server error) response codes instead, and an appropriate
@@ -77,6 +89,18 @@ class FileUploadProtocol(basic.LineReceiver):
     def line_header(self, line):
         # Blank line signals the end of the headers
         if line == '':
+            # If File-Content-ID was specified, File-Alias-ID must be too, and
+            # vice-versa.
+            contentID = self.newFile.contentID
+            aliasID = self.newFile.aliasID
+            if ((contentID is not None and aliasID is None) or
+                (aliasID is not None and contentID is None)):
+                    raise ProtocolViolation(
+                        "File-Content-ID and File-Alias-ID must both be "
+                        "specified"
+                    )
+            
+            # If that's ok, we're ready to receive the file.
             self.state = 'file'
             self.setRawMode()
             return
@@ -118,6 +142,18 @@ class FileUploadProtocol(basic.LineReceiver):
     def header_sha1_digest(self, value):
         self.newFile.srcDigest = value
 
+    def header_file_content_id(self, value):
+        try:
+            self.newFile.contentID = int(value)
+        except ValueError:
+            raise ProtocolViolation("Invalid File-Content-ID: " + value)
+
+    def header_file_alias_id(self, value):
+        try:
+            self.newFile.aliasID = int(value)
+        except ValueError:
+            raise ProtocolViolation("Invalid File-Alias-ID: " + value)
+
     def rawDataReceived(self, data):
         realdata, rest = data[:self.bytesLeft], data[self.bytesLeft:]
         self.bytesLeft -= len(realdata)
@@ -128,7 +164,11 @@ class FileUploadProtocol(basic.LineReceiver):
             deferred = deferToThread(self.newFile.store)
             def _sendID((fileID, aliasID)):
                 # Send ID to client
-                self.sendLine('200 %s/%s' % (fileID, aliasID))
+                if self.newFile.contentID is None:
+                    # Respond with deprecated server-generated IDs
+                    self.sendLine('200 %s/%s' % (fileID, aliasID))
+                else:
+                    self.sendLine('200')
             deferred.addCallback(_sendID)
             deferred.addErrback(self.error)
 
@@ -156,6 +196,6 @@ if __name__ == '__main__':
         os.mkdir('/tmp/fatsam')
     except:
         pass
-    f = FileUploadFactory(storage.FatSamStorage('/tmp/fatsam', db.Library()))
+    f = FileUploadFactory(storage.LibrarianStorage('/tmp/fatsam', db.Library()))
     reactor.listenTCP(9090, f)
     reactor.run()

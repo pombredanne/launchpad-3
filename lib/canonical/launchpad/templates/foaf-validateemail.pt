@@ -9,28 +9,25 @@
   <title metal:fill-slot="title">Validate email address</title>
   <!-- Plone style sheet -->
   <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Soyuz style sheet -->
-  <style type="text/css" media="screen">@import url(soyuz.css);</style>
+  <!-- Launchpad style sheet -->
+  <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
 
 <div metal:fill-slot="main">
 
-<div id="content" class="documentEditable">
-
-  <div class="documentContent" id="region-content">
     <div tal:condition="not: view/successfullyProcessed">
       <h1>Validate email: <span tal:replace="context/email"></span></h1>
 
-      <div tal:condition="view/errormessage">
-        <p class="portalMessage" tal:content="view/errormessage"></p>
+      <div tal:condition="view/errormessage" class="portalMessage"
+           tal:content="structure view/errormessage">
       </div>
 
       <p>To validate your new email address, just enter your password on the
       field below.</p>
 
-      <form name="validate" action="" method="POST">
+      <form autocomplete="off" name="validate" action="" method="POST">
       <table>
         <tr>
           <td>Password:</td>
@@ -47,10 +44,8 @@
 
     <div tal:condition="view/successfullyProcessed">
       <h1>Email validated successfully.</h1>
-
     </div>
-  </div>
-</div>
+
 </div>
 
 

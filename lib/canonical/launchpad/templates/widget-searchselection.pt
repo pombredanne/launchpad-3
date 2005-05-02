@@ -8,7 +8,7 @@
         xtal:replace="context/title">Project Title</span></title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Rosetta style sheet -->
+    <!-- Launchpad style sheet -->
     <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 

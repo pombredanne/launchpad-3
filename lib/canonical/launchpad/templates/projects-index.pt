@@ -7,8 +7,8 @@
     <title metal:fill-slot="title">Launchpad Project Registry</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Rosetta style sheet -->
-    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+    <!-- Launchpad style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
@@ -54,11 +54,9 @@
                 vspace="5">
                 <td>
                     <img src="/++resource++product_icon.gif">
-                    <b><a tal:attributes="href project/name" href="#"
-                        tal:content="project/title">$Project.title</a></b>
-                    (<span tal:content="project/name">$Project.name</span>)
-                    <a tal:attributes="href project/homepageurl"
-                        tal:content="project/homepageurl">http://www.gnu.org/</a>
+                    <b tal:content="project/title">$Project.title</b>
+                    (<a tal:attributes="href project/name" href="#"
+                        tal:content="project/name">$Project.name</a>)
                     <br />
                 <span tal:content="project/shortdesc">
                     $Project.shortdesc</span>

@@ -30,7 +30,6 @@ class IPublishedPackage(Interface):
     datebuilt = Attribute("The date this package was built or uploaded")
     sourcepackagerelease = Attribute("Source package release id")
     sourcepackagereleaseversion = Attribute("Source package release version")
-    sourcepackage = Attribute("Source package id")
     sourcepackagename = Attribute("Source package name")
 
 

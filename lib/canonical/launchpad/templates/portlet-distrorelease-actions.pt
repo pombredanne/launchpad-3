@@ -4,12 +4,14 @@
     <div class="portletBody">
         <div class="portletContent even">
 
-        <img src="/++resource++edit.gif">
-	<a href="+edit">Edit Release Information</a> <br />
-        <img src="/++resource++add.gif">
+        <img src="/++resource++edit.gif" />
+        <a href="+edit">Edit Details</a><br />
+        <img src="/++resource++add.gif" />
         <a href="+sources">View Source Packages</a><br />
-        <img src="/++resource++add.gif">
-	<a href="+bugs">View Release Bugs</a><br />
+        <img src="/++resource++add.gif" />
+        <a href="+bugs">View Release Bugs</a><br />
+        <img src="/++resource++add.gif" />
+        <a href="+translations">View Translations</a><br />
         </div>
     </div>
 </div>

@@ -1,0 +1,26 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <!-- SourcePackageRelease -->
+    <content class="canonical.launchpad.database.SourcePackageRelease">
+      <allow interface="canonical.launchpad.interfaces.ISourcePackageRelease"/>
+    </content>
+
+    <!-- SourcePackageReleaseSet -->
+    <content class="canonical.launchpad.database.SourcePackageReleaseSet">
+      <allow
+        interface="canonical.launchpad.interfaces.ISourcePackageReleaseSet" />
+    </content>
+
+    <securedutility
+      class="canonical.launchpad.database.SourcePackageReleaseSet"
+      provides="canonical.launchpad.interfaces.ISourcePackageReleaseSet">
+      <allow
+        interface="canonical.launchpad.interfaces.ISourcePackageReleaseSet" />
+    </securedutility>
+
+</configure>

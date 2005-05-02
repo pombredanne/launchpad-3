@@ -10,8 +10,8 @@
     </title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Soyuz style sheet -->
-    <style type="text/css" media="screen">@import url(soyuz.css);</style>
+    <!-- Launchpad style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
@@ -28,12 +28,12 @@
      <div class="portletContent even">
 
      <ul>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}">
+     <li><a tal:attributes="href string:/distros/${distro/name}">
      Home Page</a></li>
      <li>Releases</li>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/src">
+     <li><a tal:attributes="href string:/distros/${distro/name}/src">
       Source Packages</a></li>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/bin">
+     <li><a tal:attributes="href string:/distros/${distro/name}/bin">
      Binary Packages</a></li>
      </ul>
 
@@ -47,9 +47,6 @@
 
 
 <div metal:fill-slot="main">
-
- <div id="content" class="documentEditable">
-  <div class="documentContent" id="region-content">
 
   <h1><span tal:content="context/distribution/title" />: Releases</h1>
 
@@ -68,8 +65,6 @@
 
   </table>    
 
-  </div>
- </div>
 </div>
 
 </body>

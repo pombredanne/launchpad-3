@@ -9,7 +9,7 @@ If you made this request, please click on the link below
 and complete the process to merge the '%(dupename)s' 
 account into your existing Launchpad account.
 
-   %(appurl)s/foaf/token/%(longstring)s
+   %(appurl)s/token/%(longstring)s
 
 If you did not make this request, in Rosetta or Malone or any
 other Launchpad system, then please ignore it or report it as

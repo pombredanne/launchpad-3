@@ -1,16 +1,20 @@
-# Zope
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['BugSubscription', 'BugSubscriptionSet', 'BugSubscriptionFactory']
+
 from zope.interface import implements
+from zope.component import getUtility
 
-# SQL imports
-from sqlobject import ForeignKey, IntCol
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
+from sqlobject import ForeignKey
 
-from canonical.launchpad.interfaces import IBugSubscription, \
-        IBugSubscriptionSet
-
+from canonical.lp.dbschema import EnumCol
+from canonical.lp import dbschema
+from canonical.launchpad.interfaces import \
+    IBugSubscription, IBugSubscriptionSet, ILaunchBag
 from canonical.launchpad.database.bugset import BugSetBase
-
 from canonical.database.sqlbase import SQLBase
+
 
 class BugSubscription(SQLBase):
     """A relationship between a person and a bug."""
@@ -18,15 +22,14 @@ class BugSubscription(SQLBase):
     implements(IBugSubscription)
 
     _table='BugSubscription'
-    person = ForeignKey(dbName='person', foreignKey='Person',
-                notNull=True)
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
-    subscription = IntCol(notNull=True)
+    subscription = EnumCol(
+        dbName='subscription', notNull=True, schema=dbschema.BugSubscription)
 
 
 def BugSubscriptionFactory(context, **kw):
-    bug = context.context.bug
-    return BugSubscription(bug=bug, **kw)
+    return BugSubscription(bug = getUtility(ILaunchBag).bug.id, **kw)
 
 
 class BugSubscriptionSet(BugSetBase):
@@ -41,3 +44,4 @@ class BugSubscriptionSet(BugSetBase):
         conn = BugSubscription._connection
         # I want an exception raised if id can't be converted to an int
         conn.query('DELETE FROM BugSubscription WHERE id=%d' % int(id))
+

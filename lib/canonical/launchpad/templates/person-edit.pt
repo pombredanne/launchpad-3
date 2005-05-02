@@ -9,20 +9,23 @@
       Information</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Soyuz style sheet -->
-    <style type="text/css" media="screen">@import url(soyuz.css);</style>
+    <!-- Launchpad style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
 
+  <metal:leftportlets fill-slot="portlets_one">
+      <div tal:replace="structure view/viewsPortlet" />
+  </metal:leftportlets>
+
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/actionsPortlet" />
+  </metal:rightportlets>
+
 <div metal:fill-slot="main">
 
-<div id="content" class="documentEditable">
-
-    <div class="documentContent" id="region-content">
-
-    <h1>Edit <span tal:content="context/displayname">DISPLAYNAME</span> 
-	Information</h1>
+    <h1>Edit Personal Information</h1>
 
     <div tal:condition="view/edit_action">
       <p class="portalMessage">Your changes have been saved.</p>
@@ -33,7 +36,7 @@
     </div>
 
     <div>
-    <form name="edit" action="" method="POST">
+    <form autocomplete="off" name="edit" action="" method="POST">
 	<table>
 	<tr><td>
 	<div class="field">
@@ -189,8 +192,6 @@
   </form>
   </div>
     
-</div>
-</div>
 </div>
 
 </body>

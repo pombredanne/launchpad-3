@@ -15,20 +15,24 @@ class IEditableUpstreamBugTask(IHasProductAndAssignee):
     user."""
     title = Attribute('Title')
 
+
 class IReadOnlyUpstreamBugTask(IHasProductAndAssignee):
     """A bug assigned to upstream, which is read-only by the current
     user."""
     title = Attribute('Title')
+
 
 class IEditableDistroBugTask(Interface):
     """A bug assigned to a distro package, which is editable by
     the current user."""
     title = Attribute('Title')
 
+
 class IReadOnlyDistroBugTask(Interface):
     """A bug assigned to a distro package, which is read-only by the
     current user."""
     title = Attribute('Title')
+
 
 class IBugTask(IHasDateCreated):
     """A description of a bug needing fixing in a particular product
@@ -37,33 +41,36 @@ class IBugTask(IHasDateCreated):
     bug = Int(title=_("Bug #"))
     product = Choice(title=_('Product'), required=False, vocabulary='Product')
     sourcepackagename = Choice(
-        title=_("Source Package Name"), required=False, vocabulary='SourcePackageName')
+        title=_("Source Package Name"), required=False,
+        vocabulary='SourcePackageName')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
     distrorelease = Choice(
-        title=_("Distribution Release"), required=False, vocabulary='DistroRelease')
+        title=_("Distribution Release"), required=False,
+        vocabulary='DistroRelease')
     milestone = Choice(
         title=_('Target'), required=False, vocabulary='Milestone')
     status = Choice(
         title=_('Bug Status'), vocabulary='BugStatus',
-        default=int(dbschema.BugTaskStatus.NEW))
+        default=dbschema.BugTaskStatus.NEW)
     priority = Choice(
         title=_('Priority'), vocabulary='BugPriority',
-        default=int(dbschema.BugPriority.MEDIUM))
+        default=dbschema.BugPriority.MEDIUM)
     severity = Choice(
         title=_('Severity'), vocabulary='BugSeverity',
-        default=int(dbschema.BugSeverity.NORMAL))
+        default=dbschema.BugSeverity.NORMAL)
     assignee = Choice(
         title=_('Assignee'), required=False, vocabulary='ValidPerson')
     binarypackagename = Choice(
-            title=_('Binary PackageName'), required=False,
-            vocabulary='BinaryPackageName'
-            )
+        title=_('Binary PackageName'), required=False,
+        vocabulary='BinaryPackageName')
     dateassigned = Datetime()
     datecreated  = Datetime()
-    owner = Int() 
+    owner = Int()
     maintainer = TextLine(
         title=_("Maintainer"), required=True, readonly=True)
+    maintainer_displayname = TextLine(
+        title = _("Maintainer"), required = True, readonly = True)
     bugtitle = TextLine(
         title=_("Bug Title"), required=True, readonly=True)
     bugdescription = Text(
@@ -71,6 +78,50 @@ class IBugTask(IHasDateCreated):
 
     # used for the page layout
     title = Attribute("Title")
+
+
+class IBugTaskDelta(Interface):
+    """The change made to a bug task (e.g. in an edit screen.)
+
+    Note that if product is not None, *both* sourcepackagename and
+    binarypackagename must be None. Likewise, if either of
+    sourcepackagename and/or binarypackagename is not None, product
+    must be None.
+    """
+    bugtask = Attribute("The modified IBugTask.")
+    product = Attribute("A has containing two keys, 'old' and 'new' or None.")
+    sourcepackagename = Attribute("A has containing two keys, 'old' and 'new' or None.")
+    binarypackagename = Attribute("A has containing two keys, 'old' and 'new' or None.")
+    target = Attribute("A has containing two keys, 'old' and 'new' or None.")
+    status = Attribute("A has containing two keys, 'old' and 'new' or None.")
+    priority = Attribute("A has containing two keys, 'old' and 'new' or None.")
+    severity = Attribute("A has containing two keys, 'old' and 'new' or None.")
+    assignee = Attribute("A has containing two keys, 'old' and 'new' or None.")
+
+
+class IUpstreamBugTask(IBugTask):
+    """A description of a bug needing fixing in a particular product."""
+    product = Choice(title=_('Product'), required=True, vocabulary='Product')
+
+
+class IDistroBugTask(IBugTask):
+    """A description of a bug needing fixing in a particular package."""
+    sourcepackagename = Choice(
+        title=_("Source Package Name"), required=True,
+        vocabulary='SourcePackageName')
+    binarypackagename = Choice(
+        title=_('Binary PackageName'), required=False,
+        vocabulary='BinaryPackageName')
+    distribution = Choice(
+        title=_("Distribution"), required=True, vocabulary='Distribution')
+
+
+class IDistroReleaseBugTask(IDistroBugTask):
+    """A description of a bug needing fixing in a particular realease."""
+    distrorelease = Choice(
+        title=_("Distribution Release"), required=True,
+        vocabulary='DistroRelease')
+
 
 # XXX: Brad Bollenbach, 2005-02-03: This interface should be removed
 # when spiv pushes a fix upstream for the bug that makes this hackery
@@ -81,11 +132,10 @@ class ISelectResultsSlicable(ISelectResults):
     def __getslice__(i, j):
         """Called to implement evaluation of self[i:j]."""
 
+
 class IBugTaskSet(Interface):
 
     title = Attribute('Title')
-
-    bug = Int(title=_("Bug id"), readonly=True)
 
     def __getitem__(key):
         """Get an IBugTask."""
@@ -102,14 +152,14 @@ class IBugTaskSet(Interface):
         """
 
     def search(bug=None, searchtext=None, status=None, priority=None,
-               severity=None, product=None, milestone=None, assignee=None,
-               submitter=None, orderby=None):
+               severity=None, product=None, distribution=None, distrorelease=None,
+               milestone=None, assignee=None, submitter=None, orderby=None):
         """Return a set of IBugTasks that satisfy the query arguments.
 
         Keyword arguments should always be used. The argument passing
         semantics are as follows:
 
-        * BugTaskSet.search(arg = 'foo'): Match all IBugTasks where 
+        * BugTaskSet.search(arg = 'foo'): Match all IBugTasks where
           IBugTask.arg == 'foo'.
 
         * BugTaskSet.search(arg = any('foo', 'bar')): Match all IBugTasks
@@ -132,6 +182,7 @@ class IBugTaskSet(Interface):
 
         Exactly one of product, distribution or distrorelease must be provided.
         """
+
 
 class IBugTasksReport(Interface):
 

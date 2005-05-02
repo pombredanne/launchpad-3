@@ -1,0 +1,63 @@
+Edit a bug task's severity as user Foo Bar.
+
+  >>> print http(r"""
+  ... POST /malone/tasks/5/+edit HTTP/1.1
+  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1358
+  ... Content-Type: multipart/form-data; boundary=---------------------------19142096961497584187956613781
+  ... Cookie: launchpad=cbh1IvglXT6fvDswppKHMmrc1D4RHbMLwUiFXaMlMhFYXE8PB3tbzs
+  ... Referer: http://localhost:9000/malone/tasks/5/+edit
+  ... 
+  ... -----------------------------19142096961497584187956613781
+  ... Content-Disposition: form-data; name="field.sourcepackagename"
+  ... 
+  ... mozilla-firefox
+  ... -----------------------------19142096961497584187956613781
+  ... Content-Disposition: form-data; name="field.binarypackagename"
+  ... 
+  ... 
+  ... -----------------------------19142096961497584187956613781
+  ... Content-Disposition: form-data; name="field.status"
+  ... 
+  ... Accepted
+  ... -----------------------------19142096961497584187956613781
+  ... Content-Disposition: form-data; name="field.status-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------19142096961497584187956613781
+  ... Content-Disposition: form-data; name="field.priority"
+  ... 
+  ... High
+  ... -----------------------------19142096961497584187956613781
+  ... Content-Disposition: form-data; name="field.priority-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------19142096961497584187956613781
+  ... Content-Disposition: form-data; name="field.severity"
+  ... 
+  ... Normal
+  ... -----------------------------19142096961497584187956613781
+  ... Content-Disposition: form-data; name="field.severity-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------19142096961497584187956613781
+  ... Content-Disposition: form-data; name="field.assignee"
+  ... 
+  ... name12
+  ... -----------------------------19142096961497584187956613781
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------19142096961497584187956613781--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+            <p class="portalMessage">Updated on ...</p>
+  ...
+                  <div><div id="field.severity">
+  ...
+  <option selected="selected" value="Normal">Normal</option>
+  ...
+  </div>
+  ...

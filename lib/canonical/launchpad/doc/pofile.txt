@@ -1,0 +1,8 @@
+POFileSet
+---------
+
+>>> from canonical.launchpad.database import POFileSet
+>>> pfs = POFileSet()
+>>> pofile_list = pfs.getPOFilesPendingImport()
+>>> len(list(pofile_list))
+1

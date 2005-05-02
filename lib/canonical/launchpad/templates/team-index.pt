@@ -9,29 +9,21 @@
     Information</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Soyuz style sheet -->
+    <!-- Launchpad style sheet -->
     <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
 
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/actionsPortlet" />
+</metal:rightportlets>
+
+
 <div metal:fill-slot="main">
 
-  <div id="content" class="documentEditable">
-    <ul class="contentViews">
-      <li id="contentview-profile" class="selected">
-        <a href=".">Team Information</a>
-      </li>
-
-      <li id="contentview-members" class="plain">
-        <a href="+members">Active Members</a>
-      </li>
-    </ul>
-
-    <div class="documentContent" id="region-content">
-
     <div>
-      <h1 tal:content="context/browsername">Name</h1>
+      <h1>Team Overview</h1>
         <br />
         <table width="80%">
           <tr tal:condition="context/teamdescription">
@@ -48,12 +40,16 @@
           <tr>
             <td>Active Members:</td>
             <td><span tal:content="view/activeMembersCount" />
-                <tal:block tal:condition="view/userInTeam">
-                  <a href="+unjoin">(Unjoin)</a>
+                <tal:block tal:condition="view/userIsActiveMember">
+                <tal:block tal:condition="not: view/userIsOwner">
+                  <a href="+leave">(Leave)</a>
+                </tal:block>
                 </tal:block>
 
-                <tal:block tal:condition="not: view/userInTeam">
+                <tal:block tal:condition="not: view/userIsActiveMember">
+                <tal:block tal:condition="not: view/userIsOwner">
                   <a href="+join">(Join)</a>
+                </tal:block>
                 </tal:block>
             </td>
           </tr>
@@ -68,17 +64,13 @@
             <td><span tal:replace="context/preferredemail/email"></span></td>
           </tr>
 
-          <tr>
-            <td></td>
-            <td class="listingNext"><a href="+edit">Edit Team Information</a></td>
-          </tr>
         </table>
     </div> 
 
 
     <table width="100%">
     <tr><td width="50%" valign="top"
-            tal:define="subteams context/subteams"
+            tal:define="subteams context/getSubTeams"
             tal:condition="subteams">
       <!-- SubTeams -->
       <fieldset>
@@ -93,7 +85,7 @@
         </table>
       </fieldset>
     </td>
-    <td valign="top" tal:define="superteams context/teams"
+    <td valign="top" tal:define="superteams context/getSuperTeams"
         tal:condition="superteams">
       <!-- SuperTeams -->
       <fieldset>
@@ -110,33 +102,6 @@
     </td></tr>
     </table>
 
-    <!-- Roles -->
-    <div tal:condition="python: context.distroroles or
-                                context.distroreleaseroles">
-      <fieldset>
-        <legend><span tal:replace="context/browsername"></span> is
-        </legend>
-        <table>
-          <tr tal:condition="context/distroroles"
-              tal:repeat="role context/distroroles">
-            <td><span tal:content="role/rolename">ROLENAME</span> on 
-              <a tal:attributes="href string:/soyuz/distros/${role/distribution/name}"
-                 tal:content="role/distribution/title">DISTRO</a></td>
-          </tr>
-          <tr><td></td></tr>
-          <tr tal:condition="context/distroreleaseroles"
-              tal:repeat="role context/distroreleaseroles">
-            <td><span tal:content="role/rolename">ROLENAME</span> on 
-              <a tal:attributes="href string:/soyuz/distros/${role/distrorelease/distribution/name}/${role/distrorelease/name}"
-                 tal:content="role/distrorelease/displayname">RELEASE</a>
-            </td>
-          </tr>
-        </table>
-      </fieldset>
-    </div>
-
-    </div>
-  </div>
 </div> 
 
 </body>

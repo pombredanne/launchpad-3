@@ -1,0 +1,90 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+  <title metal:fill-slot="title">
+    <span tal:replace="context/displayname">Name</span>
+    GPG Keys</title>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+  <!-- Soyuz style sheet -->
+  <style type="text/css" media="screen">@import url(soyuz.css);</style>
+</head>
+
+<body>
+
+  <metal:leftportlets fill-slot="portlets_one">
+      <div tal:replace="structure view/viewsPortlet" />
+  </metal:leftportlets>
+
+  <metal:rightportlets fill-slot="portlets_two">
+      <div tal:replace="structure view/actionsPortlet" />
+  </metal:rightportlets>
+
+  <div metal:fill-slot="main">
+
+    <h1>GPG Key Management</h1> 
+
+    <p>You need to register an GPG key with Launchpad to be able to
+    Sign a Code of Conduct and request action through email.</p>
+
+    <div tal:define="msg view/form_action" tal:condition="msg">
+      <p class="portalMessage" tal:content="msg">Something happened.</p>
+    </div>
+  
+    
+    <div tal:repeat="gpgkey context/gpgkeys"> 
+    <form name="remove" action="" method="POST">
+    <input type="hidden" name="action" value="remove_gpg" />
+    <input type="hidden" name="keyid" tal:attributes="value gpgkey/id" />
+    <fieldset> 
+    <legend>GPG Key Information </legend>
+    <dl>
+    <dt>Key ID</dt>
+        <dd tal:content="string:${gpgkey/keysize}${gpgkey/algorithmname}/${gpgkey/keyid}">ALG</dd>
+    <dt>Key Fingerprint</dt>
+        <dd tal:content="gpgkey/fingerprint">FPR</dd>
+    </dl>
+    <input type="submit" value="Remove" />
+    </fieldset>
+    </form>
+    </div>
+
+    <div>
+    <form name="clain" action="" method="POST">
+    <input type="hidden" name="action" value="claim_gpg" />
+    <fieldset>
+    <legend>Find and Import GPG Key</legend>
+    <div>
+        <label>Key Fingerprint</label>
+        <div class="formHelp">
+	   Paste the Key Fingerprint (use: `gpg --fingerprint YOU`,
+    can only be used with v4 keys)
+	</div>
+        <input type="text" name="fingerprint" size="60"/>
+        <input type="submit" value="Find and Import"/>
+    </fieldset>
+    </form>
+    </div>
+
+    <div>
+    <form name="add" action="" method="POST">
+    <input type="hidden" name="action" value="import_gpg" />
+    <fieldset>
+    <legend>Import GPG Public Key</legend>
+    <div>
+        <label>Public Key</label>
+        <div class="formHelp">
+	   Paste the ASCII armored public key (use: `gpg --export -a YOU`)
+	</div>
+        <textarea name="pubkey" rows="20"></textarea>
+        <input type="submit" value="Import"/>
+    </fieldset>
+    </form>
+    </div>
+    
+  </div>
+</body>
+</html>

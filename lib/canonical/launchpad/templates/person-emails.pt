@@ -9,33 +9,41 @@
     Information</title>
   <!-- Plone style sheet -->
   <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Soyuz style sheet -->
-  <style type="text/css" media="screen">@import url(soyuz.css);</style>
+  <!-- Launchpad style sheet -->
+  <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure view/viewsPortlet" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/actionsPortlet" />
+</metal:rightportlets>
+
 <div metal:fill-slot="main">
 
-<div id="content" class="documentEditable">
-<div class="documentContent" id="region-content">
+  <h1>Your Email Addresses</h1>
 
-<div>
-  <h1>Your email adresses</h1>
-
-  <tal:dummy tal:define="submitted view/formSubmitted">
+  <tal:dummy tal:define="submitted view/emailFormSubmitted">
   <div tal:condition="submitted">
     <p class="portalMessage" tal:content="structure view/message"></p>
   </div>
   </tal:dummy>
   
-  <form name="email" action="" method="POST">
+  <form autocomplete="off" name="email" action="" method="POST">
 
-  <p>Your preferred email address is the only one we'll use to communicate with
-  you. There can be only one preferred email address at a time, and it cannot 
-  be removed.</p>
+  <p class="documentDescription">A list of the email addresses associated
+  with this account in the Launchpad.</p>
+  
+  <tal:block tal:condition="view/anyRegisteredEmail">
+  <p>Your preferred email address is the only
+  one we'll use to communicate with you. There can be only one preferred
+  email address at a time, and it cannot be removed.</p>
 
-  <table id="ass_listing" class="listing rowNavigation">
+  <table id="ass_listing" class="listing" width="100%">
     <tr>
       <th>Preferred</th>
       <th>Email</th>
@@ -60,8 +68,25 @@
         <input tal:attributes="value email/id" name="REMOVE_EMAIL" type="checkbox" />
       </td>
     </tr>
+    <tr tal:repeat="unvalidated view/unvalidatedAndNotGuessed">
+      <td>
+        unvalidated
+      </td>
+      <td tal:content="unvalidated">email@foo.com</td>
+      <td> 
+        <input tal:attributes="value unvalidated" name="REMOVE_TOKEN" type="checkbox" />
+      </td>
+    </tr>
   </table>
   <br />
+  </tal:block>
+
+  <tal:block tal:condition="not: view/anyRegisteredEmail">
+  <p>You don't have any registered email address in Launchpad. You can do so
+  by filling in the form bellow with the email address you want and your
+  password. After that, we will e-mail you to check your address and give you
+  instructions on how to complete the registration of your email address.</p>
+  </tal:block>
 
   <table>
     <tr>
@@ -70,7 +95,7 @@
     </tr>
 
     <tr>
-      <td>Password: </td>
+      <td>Your password: </td>
       <td><input type="password" name="password" /></td>
     </tr>
     <tr>
@@ -80,15 +105,15 @@
     </tr>
   </table>
 
-  <tal:block define="notvalidatedemails context/notvalidatedemails">
-  <fieldset tal:condition="notvalidatedemails">
-    <legend>Guessed Emails</legend>
-    <p>The following email addresses have been guessed by our system as 
+  <tal:block define="guessedemails context/guessedemails">
+  <fieldset tal:condition="guessedemails">
+    <legend>Detected Emails</legend>
+    <p>The following email addresses have been detected by our system as 
     probably being yours. In order to use them on Launchpad, you must 
     validate them. To do so, just select one from the list below and 
     click on the Validate button.</p>
     <select name="NOT_VALIDATED_EMAIL">
-      <option tal:repeat="email notvalidatedemails"
+      <option tal:repeat="email guessedemails"
               tal:attributes="value email/id"
               tal:content="email/email">email</option>
     </select>
@@ -98,10 +123,6 @@
 
   </form>
   </div>
-
-</div>
-</div>
-</div>
 
 </body>
 </html>

@@ -7,11 +7,16 @@
     <title metal:fill-slot="title">Signed Code of Conduct Entry</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Rosetta style sheet -->
-    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+    <!-- Launchpad style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
+
+<metal:rightportlets fill-slot="portlets_two">
+        <div tal:replace="structure view/actionsPortlet" />
+</metal:rightportlets>
+
 
 <div metal:fill-slot="main">
 
@@ -39,7 +44,6 @@
       <p tal:condition="context/admincomment"><b>AdminComment:</b></p>
       <pre tal:condition="context/admincomment" 
            tal:content="context/admincomment">COMMENT</pre>
-
 
 </div>
 

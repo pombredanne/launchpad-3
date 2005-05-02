@@ -1,0 +1,53 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <!-- BinaryPackagename -->
+    <content class="canonical.launchpad.database.BinaryPackageName">
+        <allow interface="canonical.launchpad.interfaces.IBinaryPackageName" />
+    </content>
+
+    <!-- BinaryPackageNameSet -->
+    <securedutility
+        class="canonical.launchpad.database.BinaryPackageNameSet"
+        provides="canonical.launchpad.interfaces.IBinaryPackageNameSet">
+        <allow interface="canonical.launchpad.interfaces.IBinaryPackageNameSet" />
+    </securedutility>
+
+    <content class="canonical.launchpad.database.BinaryPackageNameSet">
+        <allow interface="canonical.launchpad.interfaces.IBinaryPackageNameSet" />
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IBinaryPackageNameSet"
+        name="+index" />
+
+    <browser:pages
+         for="canonical.launchpad.interfaces.IBinaryPackageNameSet"
+         permission="zope.Public"
+         class="canonical.launchpad.browser.BinaryPackageNameSetView">
+        <browser:page
+            name="+index"
+            template="../templates/binarypackagenames-index.pt"
+            lp:url="/binarypackagenames/+index" />
+
+     </browser:pages>
+
+    <browser:addform
+        name="+new"
+        for="canonical.launchpad.interfaces.IBinaryPackageNameSet"
+        schema="canonical.launchpad.interfaces.IBinaryPackageName"
+        label="Create a new Binary Package Name"
+        fields="name"
+        content_factory="canonical.launchpad.database.BinaryPackageName"
+        class="canonical.launchpad.browser.BinaryPackageNameAddView"
+        permission="launchpad.Admin"
+        template="../templates/launchpad-addform.pt"
+        lp:url="binarypackagenames/+new">
+    </browser:addform>
+
+
+</configure>

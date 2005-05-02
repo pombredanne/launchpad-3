@@ -62,6 +62,18 @@ affected.
 >>> cursor.execute("CREATE TABLE Beer (id serial PRIMARY KEY, name text)")
 >>> PgTestSetup().tearDown()
 
+We can also specify a different template to duplicate than the default
+clean one (template1). For example, if you need a launchpad database
+containing no data, you can use `launchpad_empty` as the template.
+
+>>> PgTestSetup('launchpad_empty').setUp()
+>>> connection = PgTestSetup().connect()
+>>> cursor = connection.cursor()
+>>> cursor.execute("SELECT COUNT(*) FROM Person")
+>>> int(cursor.fetchone()[0])
+0
+>>> PgTestSetup().tearDown()
+
 
 LaunchpadTestSetup
 ------------------
@@ -132,5 +144,47 @@ by ftesting.zcml
 >>> zapi.getUtility(IMailer, 'smtp') is not None
 True
 
+>>> LaunchpadFunctionalTestSetup().tearDown()
+
+LibrarianTestSetup
+------------------
+
+Code that needs to access the Librarian can do so easily. Note that
+LibrarianTestSetup requires the Launchpad database to be available, and
+thus requires LaunchpadTestSetup or similar to be used in tandam.
+You probably really want LaunchpadFunctionalTestSetup so you can access
+the Librarian as a Utility.
+
+>>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+>>> from canonical.launchpad.ftests import login, ANONYMOUS
+>>> from zope.app import zapi
+>>> from canonical.librarian.interfaces import ILibrarianClient
+>>> from StringIO import StringIO
+
+>>> LaunchpadFunctionalTestSetup().setUp()
+>>> LibrarianTestSetup().setUp()
+>>> login(ANONYMOUS)
+
+>>> some_content = StringIO()
+>>> print >> some_content, 'Hi Mum\n'*100
+>>> size = len(some_content.getvalue())
+>>> some_content.seek(0)
+>>> librarian_client = zapi.getUtility(ILibrarianClient)
+>>> file_alias_id = librarian_client.addFile(
+...     'hi.txt', size, some_content, 'text/plain')
+>>> isinstance(file_alias_id, int)
+True
+
+Note that you currently can't retrieve a file from the Librarian in
+the same transaction it was added
+
+>>> import transaction
+>>> transaction.commit()
+>>> url = librarian_client.getURLForAlias(file_alias_id)
+>>> data = librarian_client.getFileByAlias(file_alias_id).read()
+>>> data == some_content.getvalue()
+True
+
+>>> LibrarianTestSetup().tearDown()
 >>> LaunchpadFunctionalTestSetup().tearDown()
 

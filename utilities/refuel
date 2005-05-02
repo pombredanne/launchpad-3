@@ -28,8 +28,7 @@ fi
 
 # update the code that is brought directly into the tree
 cd $LAUNCHPAD
-baz cat-config configs/canonical.com/launchpad/development | xargs -n 2 baz update -d
-
+baz cat-config configs/canonical.com/launchpad/development | while read dirname branch; do baz tree-version -d $dirname; baz update -d $dirname; done
 # then check if there are unmerged changes
 cd launchpad
 baz diff -q
@@ -46,7 +45,7 @@ if [ $? -gt 0 ]; then
 fi
 
 # now merge launchpad with the rocketfuel repo
-baz merge --star-merge --two-way rocketfuel@canonical.com/launchpad--devel--0
+baz merge rocketfuel@canonical.com/launchpad--devel--0
 
 # check for conflicts, and if none exist, commit the merge
 FILELIST=$(find . -name "*.orig" -or -name "*.rej" -print)

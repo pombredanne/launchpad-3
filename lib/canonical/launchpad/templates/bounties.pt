@@ -5,10 +5,9 @@
     i18n:domain="launchpad">
 
 <head>
+    <title metal:fill-slot="title">Launchpad Registered Bounties</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Rosetta style sheet -->
-    <style type="text/css" media="screen">@import url(rosetta.css);</style>
 </head>
 
 <body>
@@ -22,38 +21,47 @@
     </div>
     
     <div class="documentDescription">
-        Below are all of the outstanding bounties. You can change the sort
-        order by clicking on the column on which you want to sort. You can
-        stake a claim to any unclaimed bounty, but must then begin to
-        deliver code on a regular schedule, or forfeit the claim to someone
-        else. The reviewer will decide when the submission is complete, and
-        can also rule that a claimant is making no progress, which will make
-        the bounty available again. Payments will be made by Paypal, wire
-        transfer can also be made for bounties in excess of $500.
+        Below are all of the outstanding bounties registered in the
+        Launchpad. Click on a bounty for more information.
     </div>
 
-    <table class="listing rowNavigation">
+    <table class="listing rowNavigation" width="100%">
         <tr>
             <th>Date Created</th>
             <th>Title</th>
             <th>USD Value<sup>*</sup></th>
-            <th>Difficulty</th>
-            <th>Duration</th>
+            <th>Est. Difficulty</th>
+            <th>Est. Duration</th>
         </tr>
-        <tr tal:repeat="bounty context" tal:attributes="onclick
-                        string:window.location='${bounty/name}';">
-            <td tal:content="python:bounty.datecreated.strftime('%d %b %y')">date</td>
-            <td><b><span tal:replace="bounty/title">title</span></b></td>
+        <tr tal:repeat="bounty context"
+            tal:attributes="onclick
+                string:window.location='${bounty/name}';">
+            <td tal:content="python:bounty.datecreated.strftime('%d %b %y')">
+              date
+            </td>
+            <td><b>
+                <span tal:replace="bounty/title/fmt:shorten/57">title</span>
+                </b></td>
             <td tal:content="bounty/usdvalue">usdvalue</td>
             <td tal:content="bounty/difficulty">difficulty</td>
             <td tal:content="bounty/duration">duration</td>
         </tr>
     </table>
 
-    <p><sup>*</sup> A bounty may include contributions in several
-    currencies, this is an estimate based on recent exchange rates.</p>
+    <p><sup>*</sup> A bounty may include contributions in several currencies,
+    this is an estimate of the bounty value in US Dollars based on recent
+    exchange rates.</p>
 
-</div>
+
+    <p>
+      You can stake a claim to any unclaimed bounty, but must then begin to
+      deliver code on a regular schedule, or forfeit the claim to someone
+      else.  The reviewer will decide when the submission is complete, and can
+      also rule that a claimant is making no progress, which will make the
+      bounty available again. Payments will be made by Paypal, wire transfer
+      can also be made for bounties in excess of $500.
+    </p>
+  </div>
 
 </body>
 </html>

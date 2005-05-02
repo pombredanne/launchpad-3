@@ -8,8 +8,8 @@
     <content class="canonical.launchpad.database.DistroRelease">
         <allow interface="canonical.launchpad.interfaces.IDistroRelease"/>
         <require
-            permission="zope.Public"
-            set_schema="canonical.launchpad.interfaces.IDistroRelease"
+            permission="launchpad.Admin"
+            set_attributes="displayname title shortdesc description version"
             />
     </content>
 
@@ -21,7 +21,6 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistroRelease"
-        layer="canonical.launchpad.layers.SoyuzLayer"
         name="+index" />
 
     <browser:defaultView
@@ -49,8 +48,7 @@
         schema="canonical.launchpad.interfaces.IDistroRelease"
         fields="displayname title shortdesc description version"
         template="../templates/launchpad-editform.pt"
-        lp:url="Soyuz/distros/$Distribution.name/$DistroRelease.name/+edit"
-        />
+        lp:url="/distros/$Distribution.name/$DistroRelease.name/+edit"/>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IDistroRelease"
@@ -60,12 +58,12 @@
 	    <browser:page
 	        name="+bugs"
             template="../templates/distrorelease-bugs.pt"
-	        lp:url="Soyuz/distros/$Distribution.name/$Release.name/+bugs"
+	        lp:url="/distros/$Distribution.name/$Release.name/+bugs"
 	        />
 	    <browser:page
             name="+translations"
-            template="../templates/distrorelease-translations.pt"
-	        lp:url="Soyuz/distros/$Distribution.name/$Release.name/+translations"
+            template="../templates/object-pots.pt"
+	        lp:url="/distros/ubuntu/hoary/+translations"
 	        />
     </browser:pages>
 

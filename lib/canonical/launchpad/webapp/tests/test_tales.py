@@ -43,7 +43,7 @@ def test_dbschemaapi():
     The syntax to get the title is: number/lp:DBSchemaClass
 
     >>> (str(DBSchemaAPI(4).traverse('ManifestEntryType', []))
-    ...  == ManifestEntryType.DIR.title)
+    ...  == ManifestEntryType.TAR.title)
     True
 
     Using an inappropriate number should give a KeyError.

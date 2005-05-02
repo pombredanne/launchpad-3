@@ -1,4 +1,9 @@
 <html>
+
+<head>
+  <title metal:fill-slot="title">Traceback Entry</title>
+</head>
+
 <body>
  <div tal:define="entry python:context.getLogEntryById(request.get('id'))">
   <pre tal:content="entry/tb_text">
@@ -6,4 +11,5 @@
   </pre>
  </div>
 </body>
+
 </html>

@@ -4,10 +4,11 @@
       i18n:domain="launchpad">
 
 <head>
+    <title metal:fill-slot="title">Register a new Release Series for
+      <span tal:replace="context/displayname">Product displayname</span>
+    </title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Rosetta style sheet -->
-    <style type="text/css" media="screen">@import url(rosetta.css);</style>
 </head>
 
 <body>
@@ -16,8 +17,7 @@
 
     <tal:dummy condition="view/newseries" />
 
-    <h1>Register a New Product Release Series for: <span
-    tal:content="context/displayname">$Product.displayname</span></h1>
+    <h1>Register a New Product Release Series</h1>
 
     <div class="documentDescription">
     Please fill in the details below to register a new Product Release

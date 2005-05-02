@@ -1,0 +1,8 @@
+View the distribution bug listing as Foo Bar, who's a maintainer.
+
+  >>> print http(r"""
+  ... GET /malone/distros/ubuntu HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...

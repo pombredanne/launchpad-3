@@ -1,4 +1,4 @@
-
+Any logged-in user can edit public bugs.
 
   >>> print http(r"""
   ... POST /malone/bugs/3/+edit HTTP/1.1

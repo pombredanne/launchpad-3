@@ -1,0 +1,56 @@
+DistroRelease information edit.
+This tests makes a modification in warty distrorelease and check 
+if the page is not broken.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/warty/+edit HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.5
+  ... Authorization: Basic ZGFuaWVsLmRlYm9uemlAY2Fub25pY2FsLmNvbTp6ZWNh
+  ... Cookie: tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"; CP=null*; gallery_sessionadd_photos_mode=url
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/warty/+edit HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.5
+  ... Authorization: Basic ZGFuaWVsLmRlYm9uemlAY2Fub25pY2FsLmNvbTp6ZWNh
+  ... Content-Length: 1268
+  ... Content-Type: multipart/form-data; boundary=---------------------------12441712013856150271106262438
+  ... Cookie: tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"; CP=null*; gallery_sessionadd_photos_mode=url
+  ... Referer: http://localhost:9000/distros/ubuntu/warty/+edit
+  ... 
+  ... -----------------------------12441712013856150271106262438
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... Warty
+  ... -----------------------------12441712013856150271106262438
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... The Warty Warthog II
+  ... Release
+  ... -----------------------------12441712013856150271106262438
+  ... Content-Disposition: form-data; name="field.shortdesc"
+  ... 
+  ... Warty is the first release of Ubuntu,
+  ... with a planned release date of October 2004. Yeah.
+  ... -----------------------------12441712013856150271106262438
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... Warty was the first stable release of Ubuntu. Key feature goals
+  ... included releasing on time, with the latest version of the Gnome Desktop
+  ... Environment, and the creation of all the infrastructure required to manage
+  ... Ubuntu itself. Warty includes excellent support for Python, with most of the
+  ... widely used Python libraries installed by default. Python Rocks.
+  ... -----------------------------12441712013856150271106262438
+  ... Content-Disposition: form-data; name="field.version"
+  ... 
+  ... 4.11
+  ... -----------------------------12441712013856150271106262438
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------12441712013856150271106262438--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...

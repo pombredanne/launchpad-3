@@ -2,12 +2,11 @@
 
 __metaclass__ = type
 
-import psycopg, sys, os
+import psycopg, sys, os, sets
 from ConfigParser import SafeConfigParser
+from optparse import OptionParser
 from fti import quote_identifier
-
-DEBUG = False
-OWNER = 'postgres'
+from canonical import lp
 
 class DbObject(object):
     def __init__(
@@ -37,7 +36,6 @@ class DbObject(object):
             return ''
         return "%s.%s" % (self.schema, self.name + '_id_seq')
     seqname = property(seqname)
-
 
 
 class DbSchema(dict):
@@ -102,16 +100,20 @@ class DbSchema(dict):
 
 
 class CursorWrapper(object):
-    def __init__(self, cursor):
+    def __init__(self, cursor, options):
         self.__dict__['_cursor'] = cursor
+        self.__dict__['_debug'] = options.debug
 
     def execute(self, cmd, params=None):
         cmd = cmd.encode('utf8')
-        if DEBUG:
-            print >> sys.stderr, '%s [%r]' % (cmd, params)
+        DEBUG = self.__dict__['_debug']
         if params is None:
+            if DEBUG:
+                print >> sys.stdout, '%s' % (cmd, )
             return self.__dict__['_cursor'].execute(cmd)
         else:
+            if DEBUG:
+                print >> sys.stderr, '%s [%r]' % (cmd, params)
             return self.__dict__['_cursor'].execute(cmd, params)
 
     def __getattr__(self, key):
@@ -120,34 +122,52 @@ class CursorWrapper(object):
     def __setattr__(self, key, value):
         return setattr(self.__dict__['_cursor'], key, value)
 
+
 CONFIG_DEFAULTS = {
     'groups': ''
     }
 
-def main():
+def main(options):
     # Load the config file
     config = SafeConfigParser(CONFIG_DEFAULTS)
     config.read(['security.cfg'])
 
-    con = psycopg.connect('dbname=%s' % os.environ['LP_DBNAME'])
-    cur = CursorWrapper(con.cursor())
+    constr = "dbname=%s" % lp.dbname
+
+    con = psycopg.connect('dbname=%s' % (lp.dbname,))
+    cur = CursorWrapper(con.cursor(), options)
     schema = DbSchema(con)
+
+    # Add our two automatically maintained groups
+    schema.groups.extend(['read', 'admin'])
 
     # Create all required groups and users.
     for section_name in config.sections():
-        if section_name in schema.principals:
-            continue
         if section_name.lower() == 'public':
             continue
         type_ = config.get(section_name, 'type')
         if type_ == 'group':
-            cur.execute("CREATE GROUP %s" % quote_identifier(section_name))
-            schema.groups.append(section_name)
-            schema.principals.append(section_name)
+            if section_name in schema.principals:
+                for user in schema.users:
+                    cur.execute("ALTER GROUP %s DROP USER %s" % (
+                        quote_identifier(section_name), quote_identifier(user)
+                        ))
+            else:
+                cur.execute("CREATE GROUP %s" % quote_identifier(section_name))
+                schema.groups.append(section_name)
+                schema.principals.append(section_name)
         elif type_ == 'user':
-            cur.execute("CREATE USER %s" % quote_identifier(section_name))
-            schema.users.append(section_name)
-            schema.principals.append(section_name)
+            if section_name in schema.principals:
+                # Note - we don't drop the user because it might own
+                # objects in other databases. We need to ensure they are
+                # not superusers though!
+                cur.execute("ALTER USER %s WITH NOCREATEDB NOCREATEUSER" % (
+                    quote_identifier(section_name),
+                    ))
+            else:
+                cur.execute("CREATE USER %s" % quote_identifier(section_name))
+                schema.users.append(section_name)
+                schema.principals.append(section_name)
         else:
             assert 0, "Unknown type %r for %r" % (type_, section_name)
 
@@ -164,14 +184,13 @@ def main():
                 quote_identifier(group), quote_identifier(user)
                 ))
             
-    
     # Change ownership of all objects to OWNER
     for obj in schema.values():
         if obj.type == "function":
             pass # Can't change ownership of functions
         else:
             cur.execute("ALTER TABLE %s OWNER TO %s" % (
-                obj.fullname, quote_identifier(OWNER)
+                obj.fullname, quote_identifier(options.owner)
                 ))
 
     # Revoke all privs
@@ -195,6 +214,11 @@ def main():
                     obj.seqname, g, quote_identifier(section_name),
                     ))
 
+    # Set of all tables we have granted permissions on. After we have assigned
+    # permissions, we can use this to determine what tables have been
+    # forgotten about.
+    found = sets.Set()
+
     # Set permissions as per config file
     for username in config.sections():
         for obj_name, perm in config.items(username):
@@ -202,21 +226,53 @@ def main():
                 continue
             assert obj_name in schema.keys(), 'Bad object name %r'%(obj_name,)
             obj = schema[obj_name]
-            if obj.type == 'function':
-                t = 'FUNCTION'
-            else:
-                t = 'TABLE'
+
+            found.add(obj)
+
+            perm = perm.strip()
+            if not perm:
+                # No perm means no rights. We can't grant no rights, so skip.
+                continue
+
             if username in schema.groups:
-                g = 'GROUP '
+                who = 'GROUP %s' % quote_identifier(username)
             else:
-                g = ''
-            cur.execute('GRANT %s ON %s %s TO %s%s' % (
-                perm, t, obj.fullname, g, quote_identifier(username)
-                ))
-            if schema.has_key(obj.seqname):
-                cur.execute('GRANT %s ON %s TO %s%s' % (
-                    perm, obj.seqname, g, quote_identifier(username)
+                who = quote_identifier(username)
+
+            if obj.type == 'function':
+                cur.execute('GRANT %s ON FUNCTION %s TO %s' % (
+                    perm, obj.fullname, who,
                     ))
+                cur.execute('GRANT EXECUTE ON FUNCTION %s TO GROUP read' % (
+                    obj.fullname,
+                    ))
+                cur.execute('GRANT ALL ON FUNCTION %s TO GROUP admin' % (
+                    obj.fullname,
+                    ))
+            else:
+                cur.execute('GRANT %s ON TABLE %s TO %s' % (
+                    perm, obj.fullname, who,
+                    ))
+                cur.execute('GRANT SELECT ON TABLE %s TO GROUP read' % (
+                    obj.fullname,
+                    ))
+                cur.execute('GRANT ALL ON TABLE %s TO GROUP admin' % (
+                    obj.fullname,
+                    ))
+                if schema.has_key(obj.seqname):
+                    if 'INSERT' in perm or 'UPDATE' in perm:
+                        seqperm = 'SELECT, INSERT, UPDATE'
+                    else:
+                        seqperm = perm
+                    cur.execute('GRANT %s ON %s TO %s' % (
+                        seqperm, obj.seqname, who,
+                        ))
+                    cur.execute('GRANT SELECT ON %s TO GROUP read' % (
+                        obj.fullname,
+                        ))
+                    cur.execute('GRANT ALL ON %s TO GROUP admin' % (
+                        obj.fullname,
+                        ))
 
     # Set permissions on public schemas
     public_schemas = [
@@ -230,13 +286,53 @@ def main():
     for obj in schema.values():
         if obj.schema not in public_schemas:
             continue
+        found.add(obj)
         if obj.type == 'function':
             cur.execute('GRANT EXECUTE ON FUNCTION %s TO PUBLIC' % obj.fullname)
         else:
             cur.execute('GRANT SELECT ON TABLE %s TO PUBLIC' % obj.fullname)
 
+    # Raise an error if we have database objects lying around that have not
+    # had permissions assigned.
+    forgotten = sets.Set()
+    for obj in schema.values():
+        if obj not in found:
+            forgotten.add(obj)
+    forgotten = [obj.fullname for obj in forgotten
+        if obj.type in ['table','function','view']]
+    if forgotten:
+        raise RuntimeError, 'No permissions specified for %r' % (forgotten,)
+
     con.commit()
 
 if __name__ == '__main__':
-    main()
+    parser = OptionParser()
+    parser.add_option(
+            "-D", "--debug", dest="debug", action="store_true", default=False,
+            help="Output SQL commands to stdout"
+            )
+    parser.add_option(
+            "-o", "--owner", dest="owner", default="postgres",
+            help="Owner of PostgreSQL objects"
+            )
+    parser.add_option(
+            "-d", "--database", dest="dbname",
+            default=os.environ.get("LP_DBNAME", "launchpad_dev"),
+            help="PostgreSQL database."
+            )
+#     parser.add_option(
+#             "-H", "--host", dest="dbhost",
+#             default=os.environ.get("LP_DBHOST", ""),
+#             help="Hostname of PostgreSQL server."
+#             )
+#     parser.add_option(
+#             "-U", "--user", dest="dbuser",
+#             default=os.environ.get("LP_DBUSER", "postgres"),
+#             help="PostgreSQL superuser to connect as."
+#             )
+    (options, args) = parser.parse_args()
+    lp.dbname = options.dbname
+#    lp.dbhost = options.dbhost
+#    lp.dbuser = options.dbuser
+    main(options)
 

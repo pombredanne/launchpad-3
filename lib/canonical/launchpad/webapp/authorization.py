@@ -15,7 +15,7 @@ from zope.security.simplepolicies import ParanoidSecurityPolicy
 from zope.security.management import system_user
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
-from canonical.launchpad.interfaces import IAuthorization, IObjectAuthorization
+from canonical.launchpad.interfaces import IAuthorization
 from canonical.launchpad.interfaces import IPerson
 
 steveIsFixingThis = False
@@ -32,35 +32,34 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
 
         Workflow:
         - If we have zope.Public, allow.  (We shouldn't ever get this, though.)
-        - If we have launchpad.AnyPerson and the user is an ILaunchpadPrincipal
-          then allow.
-        - If the object has an IObjectAuthorization adapter, use that to
-          check the permission.
-        - Otherwise, if the object has an IAuthorization named adapter, named
+        - If we have launchpad.AnyPerson and the principal is an
+          ILaunchpadPrincipal then allow.
+        - If the object has an IAuthorization named adapter, named
           after the permission, use that to check the permission.
         - Otherwise, deny.
         """
         # This check shouldn't be needed, strictly speaking.
         # However, it is here as a "belt and braces".
-        # XXX: It should emit a warning.  Steve Alexander, 2004-11-24.
-        #      This applies to the policy in zope3 also.
+        # XXX: This warning should apply to the policy in zope3 also.
+        # -- Steve Alexander, 2005-01-12
         if permission == 'zope.Public':
             if steveIsFixingThis:
                 warnings.warn('zope.Public being used raw on object %r' % object)
             return True
         if permission is CheckerPublic:
             return True
-        users = [p.principal
-                 for p in self.participations
-                 if p.principal is not system_user]
+        principals = [p.principal
+                     for p in self.participations
+                     if p.principal is not system_user]
 
-        if not users:
-            return False
-        if len(users) > 1:
-            raise RuntimeError, "More than one user participating."
-        user = users[0]
+        if not principals:
+            principal = None
+        elif len(principals) > 1:
+            raise RuntimeError, "More than one principal participating."
+        else:
+            principal = principals[0]
         if (permission == 'launchpad.AnyPerson' and
-            ILaunchpadPrincipal.providedBy(user)):
+            ILaunchpadPrincipal.providedBy(principal)):
             return True
         else:
             # If we have a view, get its context and use that to get an
@@ -73,35 +72,21 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             # Remove security proxies from object to authorize.
             objecttoauthorize = removeSecurityProxy(objecttoauthorize)
 
-            # Look for an IObjectAuthorization adapter.  If there is one,
-            # use that for authorization.
-            objectauthorization = IObjectAuthorization(objecttoauthorize, None)
-            if objectauthorization is not None:
-                person = IPerson(user, None)
-                result = objectauthorization.checkPermission(
-                    person, permission)
-                if type(result) is not bool:
-                    warnings.warn(
-                        'object authorization returning non-bool value: %r' %
-                        objectauthorization)
-                return bool(result)
-
-            # If there is no IObjectAuthorization adapter, we look for an
-            # IAuthorization adapter, and use that.  If there is no
+            # Look for an IAuthorization adapter.  If there is no
             # IAuthorization adapter then the permission is not granted.
             #
-            # The IAuthorization is a named adapter from # objecttoauthorize,
+            # The IAuthorization is a named adapter from objecttoauthorize,
             # providing IAuthorization, named after the permission.
             authorization = queryAdapter(
                 objecttoauthorize, IAuthorization, permission)
             if authorization is None:
                 return False
             else:
-                person = IPerson(user, None)
-                if person is None:
+                user = IPerson(principal, None)
+                if user is None:
                     result = authorization.checkUnauthenticated()
                 else:
-                    result = authorization.checkPermission(person)
+                    result = authorization.checkAuthenticated(user)
                 if type(result) is not bool:
                     warnings.warn(
                         'authorization returning non-bool value: %r' %

@@ -1,4 +1,5 @@
-
+Foo Bar visits the bug subscription page, to subscribe sabdfl to this
+bug:
 
   >>> print http(r"""
   ... GET /malone/bugs/2/people/+new HTTP/1.1
@@ -13,6 +14,7 @@
           <h1>Add Person</h1>
   ...
 
+Foo Bar subscribes sabdfl to this bug:
 
   >>> print http(r"""
   ... POST /malone/bugs/2/people/+new HTTP/1.1
@@ -48,14 +50,16 @@
           <h1>Add Person</h1>
   ...
   <select name="field.subscription" size="1" >
+  <option value="Watch">Watch</option>
   <option selected="selected" value="CC">CC</option>
   <option value="Ignore">Ignore</option>
-  <option value="Watch">Watch</option>
   </select>
   ...
   <input type="text" name="field.person" value="sabdfl" ... />
   ...
 
+Foo Bar gets redirected back to the bug index page after adding the
+subscription:
 
   >>> print http(r"""
   ... GET /malone/bugs/2/people/ HTTP/1.1
@@ -65,47 +69,9 @@
   HTTP/1.1 303 See Other
   ...
   <BLANKLINE>
-  ..
-  <!--
-  <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-        lang="en"
-        metal:use-macro="context/@@malone_template/master"
-        i18n:domain="rosetta">
-  <body>
-  <BLANKLINE>
-  <div metal:fill-slot="main">
-    <h1>People</h1>
-  <BLANKLINE>
-    <div class="portalMessage"
-         tal:condition="exists:request/delete">
-      <div tal:define="dummy python:context.delete(request.get('delete'))"
-           tal:replace="string:Subscription deleted" />
-    </div>
-  <BLANKLINE>
-    <table class="listing">
-      <tr>
-        <th>Relationship</th>
-        <th>Surname</th>
-        <th>Firstname</th>
-        <th>Action</th>
-      </tr>
-      <tr tal:repeat="sub context">
-        <td tal:content="sub/subscription/lp:BugSubscription">subscription</td>
-        <td tal:content="sub/person/familyname">familyname</td>
-        <td tal:content="sub/person/givenname">givenname</td>
-        <td>
-          <a tal:attributes="href string:index?delete=${sub/id}">Delete</a>
-        </td>
-      </tr>
-    </table>
-    <input type="submit" value="Add" onclick="window.open('+new','_top')" />
-  </div>
-  <BLANKLINE>
-  </body>
-  </html>
-  -->
-  <BLANKLINE>
+  ...
 
+And sees that sabdfl has been added as a subscriber on this bug:
 
   >>> print http(r"""
   ... GET /malone/bugs/2/ HTTP/1.1
@@ -117,8 +83,5 @@
                     <a href="/malone/bugs/2/people/6/+edit">...</a>
                   </li>
   ...
-          <h1>
-              Blackhole Trash folder
-          </h1>
+      <h1>Bug Description and Discussion</h1>
   ...
-

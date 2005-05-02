@@ -26,11 +26,22 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBounty"
+        class="canonical.launchpad.browser.BountyView"
         permission="zope.Public">
         <browser:page
             template="../templates/bounty.pt"
             name="+index"
-            lp:url="malone/bounties/$Bounty.name/+index" />
+            lp:url="/bounties/$Bounty.name/+index" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IBounty"
+        class="canonical.launchpad.browser.BountyView"
+        permission="launchpad.AnyPerson">
+        <browser:page
+            template="../templates/bounty-subscription.pt"
+            name="+subscribe"
+            lp:url="/bounties/$Bounty.name/+subscribe" />
     </browser:pages>
 
     <browser:editform
@@ -40,7 +51,7 @@
         fields="name title summary usdvalue difficulty duration description"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-editform.pt"
-        lp:url="malone/bounties/+edit">
+        lp:url="/bounties/+edit">
     </browser:editform>
 
     <!-- BountySet -->
@@ -72,7 +83,7 @@
         class="canonical.launchpad.browser.BountySetAddView"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
-        lp:url="malone/bounties/+new">
+        lp:url="/bounties/+new">
     </browser:addform>
 
     <browser:pages
@@ -81,7 +92,7 @@
         <browser:page
             template="../templates/bounties.pt"
             name="+index"
-            lp:url="malone/bounties/+index" />
+            lp:url="/bounties/+index" />
     </browser:pages>
 
 </configure>

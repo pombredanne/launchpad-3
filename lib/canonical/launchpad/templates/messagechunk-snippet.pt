@@ -1,0 +1,13 @@
+<tal:block condition="context/content">
+    <div class="boardCommentContent"
+        tal:content="structure context/content/fmt:nice_pre">
+        Text message content as preformatted text.
+    </div>
+</tal:block>
+<tal:block condition="context/blob">
+    <div class="boardCommentContent">
+        Message Attachment:
+        <a tal:attributes="href context/url"
+            tal:content="context/blobname">Attachment.jpg</a>
+    </div>
+</tal:block>

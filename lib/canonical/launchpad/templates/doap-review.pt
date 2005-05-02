@@ -4,11 +4,9 @@
       i18n:domain="launchpad">
 
 <head>
+    <title metal:fill-slot="title">DOAP Content Review</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Rosetta style sheet -->
-    <style type="text/css" media="screen">@import url(rosetta.css);</style>
-    <title>DOAP Content Review</title>
 </head>
 
 <body>
@@ -21,16 +19,16 @@
         Please review the following items.
     </div>
 
-    <div tal:repeat="item context/forReview">
+    <div tal:repeat="item context/forReview" tal:omit-tag>
 
-        <h3 tal:content="item/title">title</h3>
+        <p><b tal:content="item/title">title</b><br>
 
-        <p style="margin-left: 30px;">
+        <div style="margin-left: 30px;">
             <span tal:content="item/shortdesc">summary</span>
             <span tal:condition="not: item/reviewed">
                 [ <a tal:attributes="href string:${item/name}/+review">Review</a> ]
             </span>
-        </p>
+        </div>
         
     </div>
 

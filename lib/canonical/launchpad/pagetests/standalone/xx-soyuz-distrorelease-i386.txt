@@ -1,7 +1,7 @@
-
+Check if the DistroRelease Page is not Broken.
 
   >>> print http(r"""
-  ... GET /soyuz/distros/ubuntu/warty/i386 HTTP/1.1
+  ... GET /distros/ubuntu/warty/i386 HTTP/1.1
   ...
   ... """)
   HTTP/1.1 200 Ok

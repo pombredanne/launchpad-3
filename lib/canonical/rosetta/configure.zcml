@@ -35,7 +35,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IRosettaApplication"
         permission="zope.Public"
-        class="canonical.rosetta.RosettaApplicationView"
+        class="canonical.rosetta.browser.RosettaApplicationView"
         lp:url="Rosetta">
         <browser:page
             name="+index"
@@ -55,20 +55,6 @@
             name="+interest"
             template="../launchpad/templates/project-interest.pt"
             lp:url="Rosetta/project/+interest" />
-        <browser:page
-            name="legal"
-            template="../launchpad/templates/legal.pt"
-            lp:url="Rosetta/legal" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IRosettaApplication"
-        permission="launchpad.AnyPerson"
-        class="canonical.rosetta.browser.TranslatorDashboard"
-        >
-        <browser:page name="translator"
-            template="../launchpad/templates/dashboard-translator.pt"
-            lp:url="Rosetta/translator" />
     </browser:pages>
 
     <browser:pages
@@ -79,16 +65,6 @@
             name="prefs"
             template="../launchpad/templates/rosetta-preferences.pt"
             lp:url="Rosetta/prefs" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IRosettaApplication"
-        permission="launchpad.AnyPerson"
-        class="canonical.rosetta.browser.ViewImportQueue" >
-        <browser:page
-            name="+uploadqueue"
-            template="../launchpad/templates/rosetta-import-queue.pt"
-            lp:url="Rosetta/+uploadqueue" />
     </browser:pages>
 
 </configure>

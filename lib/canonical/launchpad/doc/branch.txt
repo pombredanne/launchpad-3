@@ -1,0 +1,30 @@
+Arch Branches
+=============
+
+The Branch table holds information about an Arch Branch, it's an
+abstract table that holds a reference to an Arch Namespace which
+itself holds a reference to an Arch Archive.
+
+We need to represent this as an Arch "package" string suitable for
+the command-line tool.  So we provide a function to do that.
+
+We login anonymously:
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login('launchpad.anonymous')
+
+We can get a Branch object in the normal way.
+
+    >>> from canonical.launchpad.database.archbranch import Branch
+    >>> branch = Branch.get(13)
+
+Calling getPackageName() should yield the full string:
+
+    >>> print branch.getPackageName()
+    mozilla@arch.ubuntu.com/mozilla--release--0.8
+
+It should work for a branch without a complete namespace too:
+
+    >>> branch = Branch.get(1)
+    >>> print branch.getPackageName()
+    mozilla@arch.ubuntu.com/mozilla

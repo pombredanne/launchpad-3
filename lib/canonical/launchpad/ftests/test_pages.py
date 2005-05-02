@@ -8,19 +8,23 @@ __metaclass__ = type
 import os, sys
 import unittest
 import sets
-import harness
+from harness import LaunchpadFunctionalTestSetup
 import sqlos.connection
 
 from canonical.functional import FunctionalDocFileSuite
-from canonical.launchpad.ftests.harness import \
-        _disconnect_sqlos, _reconnect_sqlos
+from canonical.launchpad.ftests.harness import _disconnect_sqlos
+from canonical.launchpad.ftests.harness import _reconnect_sqlos
 
 here = os.path.dirname(os.path.realpath(__file__))
 
-class StartStory(harness.LaunchpadFunctionalTestCase):
+_db_is_setup = False
+
+class StartStory(unittest.TestCase):
     def setUp(self):
         """Setup the database"""
-        super(StartStory, self).setUp()
+        LaunchpadFunctionalTestSetup().setUp()
+        global _db_is_setup
+        _db_is_setup = True
 
     def tearDown(self):
         """But don't tear it down, so other tests in the suite can use it"""
@@ -31,24 +35,48 @@ class StartStory(harness.LaunchpadFunctionalTestCase):
         # working by accident.
         pass
 
-class EndStory(harness.LaunchpadFunctionalTestCase):
+
+class EndStory(unittest.TestCase):
     def setUp(self):
         """Don't setup the database - it is already"""
         pass
 
     def tearDown(self):
         """Tear down the database"""
-        super(EndStory, self).tearDown()
+        LaunchpadFunctionalTestSetup().tearDown()
+        global _db_is_setup
+        _db_is_setup = False
 
     def test_tearDownDatabase(self):
         # Fake test to ensure tearDown is called.
         pass
 
+
 def setUp(test):
-    _reconnect_sqlos()
+    """Single page setUp.
+    
+    Handle SQLOS 'ickyness. Also take this opertunity to setup the
+    db if necessary, which is the case if we are running a single page
+    test.
+    """
+    global _db_is_setup
+    if _db_is_setup:
+        _reconnect_sqlos()
+    else:
+        LaunchpadFunctionalTestSetup().setUp()
 
 def tearDown(test):
-    _disconnect_sqlos()
+    """Single page tearDown.
+    
+    Handle SQLOS 'ickyness. Also teardown the database if we are running
+    a single standalone page test.
+    """
+    # Tear down the DB if we are running a single page test
+    global _db_is_setup
+    if _db_is_setup:
+        _disconnect_sqlos()
+    else:
+        LaunchpadFunctionalTestSetup().tearDown()
 
 def test_suite():
     suite = unittest.TestSuite()

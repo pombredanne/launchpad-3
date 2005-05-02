@@ -54,6 +54,18 @@ class ILoginTokenSet(Interface):
 
     title = Attribute('Title')
 
+    def get(id, default=None):
+        """Return the LoginToken object with the given id.
+
+        Return the default value if there's no such LoginToken.
+        """
+
+    def searchByEmailAndRequester(email, requester):
+        """Return all LoginTokens for the given email and requester."""
+
+    def deleteByEmailAndRequester(email, requester):
+        """Delete all LoginToken entries with the given email and requester."""
+
     def new(requester, requesteremail, email, tokentype):
         """ Create a new LoginToken object. Parameters must be:
         requester: a Person object or None (in case of a new account)

@@ -11,8 +11,8 @@
 
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Soyuz style sheet -->
-    <style type="text/css" media="screen">@import url(soyuz.css);</style>
+    <!-- Launchpad style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
     <title>Open bugs on <span tal:content="context/name">Distro</span></title>
 </head>
 
@@ -21,13 +21,11 @@
 <div metal:fill-slot="column_one"></div>
 
 <div metal:fill-slot="main" tal:define="distro context/distribution">
-  <div id="content" class="documentEditable">
  
    <h1>Bugs in <span tal:replace="context/title">Title</span></h1>
 
    <div metal:use-macro="context/@@bugtask_search_listing/buglisting" />
 
- </div>
 </div>
 
 </body>

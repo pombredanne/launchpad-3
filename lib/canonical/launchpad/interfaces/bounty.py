@@ -10,53 +10,51 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad.fields import Summary, Title, TimeInterval
 from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.interfaces import IHasOwner
 
 
-class IBounty(Interface):
+class IBounty(IHasOwner):
     """The core bounty description."""
 
     id = Int(
             title=_('Bounty ID'), required=True, readonly=True,
             )
     name = TextLine(
-            title=_('Bounty name'), required=True,
-            description=_("""A short and unique name for this bounty. 
-                This allows us to refer to the bounty directly in a url,
-                so it needs to be destinct and descriptive. For example:
-                mozilla-type-ahead-find and
-                postgres-smart-serial."""),
+            title=_('Name'), required=True,
+            description=_("""Keep this name very short, unique, and
+            descriptive, because it will be used in URLs. Examples:
+            mozilla-type-ahead-find, postgres-smart-serial."""),
             constraint=valid_name,
             )
     title = Title(
-            title=_('Bounty title'), required=True,
-            description=_("""The title of the bounty should be no more than 70
-            characters long, and is displayed in every list or report of bounties. It
-            should be as clear as possible in the space allotted what the
-            bounty is for."""),
+            title=_('Title'), required=True,
+            description=_("""Describe the task as clearly as
+            possible in up to 70 characters. This title is
+            displayed in every bounty list or report."""),
             )
     summary = Summary(
             title=_('Summary'), required=True,
-            description=_("""The bounty summary is a single paragraph
-            description of the bounty. This will also be desplayed in most
+            description=_("""A single-paragraph description of the
+            bounty. This will also be displayed in most
             bounty listings."""),
             )
     description = Text(
             title=_('Description'), required=True,
-            description=_("""The bounty description should be a detailed
-            description of the bounty, aimed ad specifying the exact results
-            that will be acceptable to the bounty owner and reviewer.""")
+            description=_("""A detailed description. Include exact
+            results that will be acceptable to the bounty owner and
+            reviewer.""")
             )
     usdvalue = Float(
-            title=_('Estimated USD Value'),
-            required=True, description=_("""The value of this bounty, in
-            USD. Note that in some cases the bounty may have been offered in
-            a variety of currencies, so this USD value is an estimate based
+            title=_('Estimated value (US dollars)'),
+            required=True, description=_("""In some cases the
+            bounty may have been offered in a variety of
+            currencies, so this USD value is an estimate based
             on recent currency rates.""")
             )
     difficulty = Int(
             title=_('Difficulty'),
-            required=True, description=_("""The difficulty of this bounty,
-            rated from 1 to 100 where 100 is most difficult. An example of
+            required=True, description=_("""From 1 (easiest) to 100
+            (most difficult). An example of
             an extremely difficult bounty would be something that requires
             extensive and rare knowledge, such as a kernel memory management
             subsystem.""")
@@ -75,7 +73,20 @@ class IBounty(Interface):
             title=_('Owner'), required=True, readonly=True
             )
     owner = Attribute("The owner's IPerson")
+    # joins
+    subscriptions = Attribute('The set of subscriptions to this bounty.')
+    projects = Attribute('The projects which this bounty is related to.')
+    products = Attribute('The products to which this bounty is related.')
+    distributions = Attribute('The distributions to which this bounty is related.')
 
+    # subscription-related methods
+    def subscribe(person, subscription):
+        """Subscribe this person to the bounty, using the given level of
+        subscription. Returns the BountySubscription that this would have
+        created or updated."""
+
+    def unsubscribe(person):
+        """Remove this person's subscription to this bounty."""
 
 
 # Interfaces for containers

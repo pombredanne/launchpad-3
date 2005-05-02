@@ -23,6 +23,11 @@ def file_is_portlet(path):
 
     return os.path.split(path)[-1].startswith('portlet-')
 
+def file_is_snippet(path):
+    """A template that returns a block of HTML - not a whole page."""
+
+    return os.path.split(path)[-1].endswith('-snippet.pt')
+
 def file_has_title(path):
     '''Check whether a template file provides a title.'''
 
@@ -39,7 +44,12 @@ def file_has_title(path):
 def check_file(path):
     '''Check whether a file is OK with regards to providing a title.'''
 
-    return file_is_macro(path) or file_is_portlet(path) or file_has_title(path)
+    return (
+            file_is_macro(path)
+            or file_is_portlet(path)
+            or file_is_snippet(path)
+            or file_has_title(path)
+            )
 
 def find_templates(path):
     '''Find all the page templates in a given directory.'''
@@ -73,10 +83,6 @@ def summarise_directory(path):
 
     for file in bad:
         print file
-
-    print
-    print "This will in future cause a test failure."
-    print
 
     return False
 

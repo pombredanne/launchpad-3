@@ -2,11 +2,17 @@
       lang="en"
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="malone">
+
+<head>
+  <title metal:fill-slot="title">Package Bug Listing for
+    <span tal:replace="context/name">$SourcePackage.name</span></title>
+</head>
+
 <body>
 
 <div metal:fill-slot="main">
     <h1>Bugs for Package: 
-        <span tal:content="context/name">$SourcePackage.title</span>
+        <span tal:content="context/name">$SourcePackage.name</span>
     </h1>
 
     <div class="documentDescription"

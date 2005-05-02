@@ -3,18 +3,17 @@
     <table class="listing rowNavigation">
         <tr>
             <th>Source Package</th>
-            <th>Infestation</th>
         </tr>
         <tr tal:repeat="pkginfest context/packageinfestations"
             tal:attributes="onclick
             string:window.location='$bug_url/packageinfestations/${pkginfest/id}/+edit';">
-            <td nowrap tal:content="python: pkginfest.sourcepackagerelease.sourcepackage.sourcepackagename.name + ' ' +
-                             pkginfest.sourcepackagerelease.version">$Product.title</td>
-            <td tal:content="pkginfest/infestationstatus/lp:BugInfestationStatus">
-                $BugInfestationStatus
+            <td><span tal:replace="python: pkginfest.sourcepackagerelease.sourcepackagename.name + ' ' +
+                             pkginfest.sourcepackagerelease.version">$Product.title</span>
+            <span tal:replace="pkginfest/infestationstatus/title">
+                $BugInfestationStatus</span>
             </td>
         </tr>
     </table>
-    [ <a href="#" tal:attributes="href string:$bug_url/packageinfestations/+new">Document an Infested Package
-    Version</a> ]
+    [ <a href="#" tal:attributes="href
+    string:$bug_url/packageinfestations/+new">New Package Infestation</a> ]
 </div>

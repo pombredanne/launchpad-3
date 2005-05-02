@@ -1,9 +1,11 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-# Zope
+__metaclass__ = type
+__all__ = ['BugActivity']
+
 from zope.interface import implements
-# SQL imports
+
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.interfaces import IBugActivity
 
@@ -15,8 +17,7 @@ class BugActivity(SQLBase):
     implements(IBugActivity)
 
     _table = 'BugActivity'
-    bug = ForeignKey(foreignKey='BugActivity',
-                dbName='bug', notNull=True)
+    bug = ForeignKey(foreignKey='BugActivity', dbName='bug', notNull=True)
     datechanged = DateTimeCol(notNull=True)
     person = IntCol(notNull=True)
     whatchanged = StringCol(notNull=True)
@@ -24,4 +25,3 @@ class BugActivity(SQLBase):
     newvalue = StringCol(default=None)
     message = StringCol(default=None)
 
-        

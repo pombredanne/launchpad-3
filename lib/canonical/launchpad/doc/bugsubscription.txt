@@ -25,60 +25,62 @@ example, you might want to send out a notification email to everyone that is
 Cc'd on a bug when something changes. For the purposes of this document, let's
 pretend we're logged in as Foo Bar:
 
-XXX: Brad Bollenbach, 2005-02-03: This needs to be replaced with a more concise
-     way to simulate a login. See https://launchpad.ubuntu.com/malone/bugs/104
-     for more.
+    >>> from canonical.launchpad.ftests import login
+    >>> login("foo.bar@canonical.com")
 
-    >>> import zope.security.management
-    >>> from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
-    >>> from canonical.launchpad.interfaces import ILaunchBag
-    >>> from zope.app.tests import ztapi
-    >>> from zope.interface import implements
-    >>> class MockLaunchBag(object):
-    ...     implements(ILaunchBag)
-    ...     def __init__(self, login=None, user=None):
-    ...         self.login = login
-    ...         self.user = user
-    >>> class Participation:
-    ...     interaction = None
-    >>> foobar = LaunchpadPrincipal(
-    ...     16, "Foo Bar",
-    ...     "i can't think of a description to write here")
-    >>> foobar_participation = Participation()
-    >>> foobar_participation.principal = foobar
-    >>> zope.security.management.newInteraction(foobar_participation)
-    >>> ztapi.provideUtility(
-    ...     ILaunchBag,
-    ...     MockLaunchBag("test@canonical.com", foobar))
+To get the set of subscriptions to a bug, you can access the
+IBug.subscriptions attribute:
 
-To get the set of subscriptions to a bug, Launchpad provides an adapter from an
-IBug to an IBugSubscriptionSet. The only email addresses that will ever be used
-for a Person are those that have been validated.
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from zope.component import getUtility
+    >>> bugset = getUtility(IBugSet)
+    >>> bug = bugset.get(1)
+    >>> len(bug.subscriptions)
+    4
 
-    >>> from zope.component import getAdapter
-    >>> from canonical.launchpad.database import Bug
-    >>> from canonical.launchpad.interfaces import IBugSubscriptionSet
-    >>> bug = Bug.get(1)
-    >>> subscriptions = getAdapter(bug, IBugSubscriptionSet, '')
-    >>> subscriptions.getCcEmailAddresses()
-    [u'mark@hbd.com', u'test@canonical.com']
+This is slightly misleading though, because this only gives us the
+list of explicit subscriptions on the bug, when in fact, there are
+special cases where one can be "implicitly" subscribed to a bug.
+
+Implicit vs. Explicit Subscriptions
+-----------------------------------
+
+An explicit subscription means that there's a row in the
+BugSubscription for that subscription. An implicit subscription:
+
+  1. Does not have a corresponding row in the BugSubscription table.
+  2. Is always of type CC.
+
+To get the entire list of email addresses that should receive a
+notification email on a bug, call
+IBug.notificationRecipientAddresses().
+
+   >>> bug.notificationRecipientAddresses()
+   [u'mark@hbd.com', u'test@canonical.com']
+
+To find out if someone is already explicitly subscribed to a bug, call
+IBug.isSubscribed, passing in an IPerson:
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> personset = getUtility(IPersonSet)
+    >>> bug.isSubscribed(personset.get(16))
+    False
+    >>> bug.isSubscribed(personset.get(2))
+    True
 
 Subscribing and Unsubscribing
 =============================
 
-IBugSubscriptionSet also provides add() and remove() methods to subscribe to
-and unsubscribe from a bug. The default subscription type is Cc.
+To subscribe people to and unsubscribe people from a bug, use
+IBug.subscribe and IBug.unsubscribe:
 
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> personset = getUtility(IPersonSet)
+    >>> from canonical.lp.dbschema import BugSubscription
     >>> foobar = personset.get(16)
-    >>> subscription = subscriptions.subscribePerson(foobar)
-    >>> subscriptions.getCcEmailAddresses()
-    [u'foo.bar@canonical.com', u'mark@hbd.com', u'test@canonical.com']
-    >>> subscription = subscriptions.unsubscribePerson(foobar)
-    >>> subscriptions.getCcEmailAddresses()
-    [u'mark@hbd.com', u'test@canonical.com']
-
-    >>> ztapi.unprovideUtility(ILaunchBag)
-    >>> zope.security.management.endInteraction()
+    >>> subscribed_people = [s.person.id for s in bug.subscriptions]
+    >>> 16 not in subscribed_people
+    True
+    >>> bug.subscribe(foobar, BugSubscription.CC)
+    <BugSubscription at ...>
+    >>> subscriptions = [(s.person.id, s.subscription) for s in bug.subscriptions]
+    >>> (16, BugSubscription.CC) in subscriptions
+    True

@@ -12,30 +12,10 @@ When do bug notifications get sent?
 
 Not *every* change on a bug causes a notification to be sent. This section will
 give a rundown of the things that do cause notifications to be sent. To start
-with let's simulate an interaction with the system as a logged-in user:
+with, let's login:
 
-    >>> import zope.security.management
-    >>> from zope.interface import implements
-    >>> from canonical.launchpad.interfaces import ILaunchBag
-    >>> from zope.app.tests import ztapi
-    >>> from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
-
-    >>> class Participation:
-    ...     interaction = None
-    >>> class MockLaunchBag(object):
-    ...     implements(ILaunchBag)
-    ...     def __init__(self, login=None, user=None):
-    ...         self.login = login
-    ...         self.user = user
-
-    >>> firefox_maintainer = LaunchpadPrincipal(
-    ...     12, "firefox maintainer",
-    ...     "i can't think of a description to write here")
-    >>> firefox_maintainer_participation = Participation()
-    >>> firefox_maintainer_participation.principal = firefox_maintainer
-    >>> zope.security.management.newInteraction(firefox_maintainer_participation)
-    >>> ztapi.provideUtility(
-    ...     ILaunchBag, MockLaunchBag("test@canonical.com", firefox_maintainer))
+    >>> from canonical.launchpad.ftests import login
+    >>> login("test@canonical.com")
 
 Then, let's get a handle to our mailer. This is the thing we'll examine to show
 what email has been sent, to whom, and what the body of the message contains:
@@ -44,24 +24,30 @@ what email has been sent, to whom, and what the body of the message contains:
     >>> stub.test_emails = []
 
 And with that, here are the things that cause bug notifications to be sent, and
-what those notifications look like:
+what those notifications look like.
+
+1. Filing a new bug
 
     >>> import email
     >>> from zope.event import notify
-    >>> from zope.app.event.objectevent import ObjectCreatedEvent
-    >>> from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
-    >>> from canonical.launchpad.database.bug import BugFactory
     >>> from zope.component import getUtility
+    >>> from zope.publisher.browser import TestRequest
+    >>> from canonical.launchpad.event.sqlobjectevent import \
+    ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, \
+    ...     SQLObjectCreatedEvent
+    >>> from canonical.launchpad.database.bug import BugFactory
     >>> from canonical.launchpad.interfaces import IProductSet, IPersonSet, \
-    ...     IDistributionSet, IDistroReleaseSet, ISourcePackageNameSet
+    ...     IDistributionSet, IDistroReleaseSet, ISourcePackageNameSet, IBugSet
 
+    >>> request = TestRequest()
     >>> bug_submitter = getUtility(IPersonSet).get(12)
+    >>> request.setPrincipal(bug_submitter)
     >>> firefox = getUtility(IProductSet).get(4)
-    
+
     >>> firefox_crashes = BugFactory(
     ...     product = firefox, title = "firefox crashes all the time",
     ...     comment = "this is a comment", owner = bug_submitter)
-    >>> notify(ObjectCreatedEvent(firefox_crashes))
+    >>> notify(SQLObjectCreatedEvent(firefox_crashes, request))
 
     >>> import transaction
     >>> transaction.commit()
@@ -72,16 +58,31 @@ what those notifications look like:
     >>> print from_addr
     Malone Bugtracker <noreply@canonical.com>
     >>> print to_addrs
-    ['global@bbnet.ca', 'dilys@muse.19inch.net', 'test@canonical.com']
+    ['dilys@muse.19inch.net', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
-    'Bug #...: "firefox crashes all the time" added'
+    '[Bug ...] firefox crashes all the time'
+
+Note that all bug notification emails include an absolute URL to the
+bug:
+
+    >>> msg.get_payload(decode = True)
+    'Comments and other information can be added to this bug at\nhttp://127.0.0.1/malone/bugs/...'
 
     >>> stub.test_emails = []
 
 2. Filing a new task on an existing bug
 
-There are three kinds of tasks that can be added to an existing bug.
+There are three kinds of tasks that can be added to an existing
+bug. Let's take a look at each type, demonstrating the implications
+they each have on notification recipients.
+
+Before we do that, note that BugTaskFactory uses the ILaunchBag
+utility to figure out the "current bug" on which to file the task, so
+let's hang a bug onto the ILaunchBag utility.
+
+    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> getUtility(ILaunchBag).bug = firefox_crashes
 
   2.1 Distro Task
 
@@ -91,20 +92,14 @@ There are three kinds of tasks that can be added to an existing bug.
     specific distro release, see 2.2.
 
     >>> from canonical.launchpad.database.bugtask import BugTaskFactory
-    >>> class FakeContext:
-    ...     pass
-    >>> class StubView:
-    ...     def __init__(self, bug):
-    ...         self.context = FakeContext()
-    ...         self.context.bug = bug.id
-    >>> view = StubView(firefox_crashes)
 
-    >>> ubuntu = getUtility(IDistributionSet).get(1)
+    >>> debian = getUtility(IDistributionSet).get(3)
     >>> firefox_source = getUtility(ISourcePackageNameSet).get(1)
-    >>> firefox_crashes_in_ubuntu = BugTaskFactory(
-    ...     view, distribution = ubuntu.id,
-    ...     sourcepackagename = firefox_source.id, owner = bug_submitter.id)
-    >>> notify(ObjectCreatedEvent(firefox_crashes_in_ubuntu))
+    >>> firefox_crashes_in_debian = BugTaskFactory(
+    ...     None, distribution = debian.id,
+    ...     sourcepackagename = firefox_source.id,
+    ...     owner = bug_submitter.id)
+    >>> notify(SQLObjectCreatedEvent(firefox_crashes_in_debian, request))
 
     >>> transaction.commit()
 
@@ -114,10 +109,13 @@ There are three kinds of tasks that can be added to an existing bug.
     >>> print from_addr
     Malone Bugtracker <noreply@canonical.com>
     >>> print to_addrs
-    ['global@bbnet.ca', 'dilys@muse.19inch.net', 'test@canonical.com']
+    ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
-    '...task added'
+    '[Bug ...] firefox crashes all the time'
+
+    >>> msg.get_payload(decode = True)
+    'Comments and other information can be added to this bug at\nhttp://127.0.0.1/malone/bugs/...'
 
     >>> stub.test_emails = []
 
@@ -128,11 +126,11 @@ There are three kinds of tasks that can be added to an existing bug.
     loss or security bugs.) Tasks filed on specific distro releases are not
     listed in the more generic, distro-wide bug task listings.
 
-    >>> warty = getUtility(IDistroReleaseSet).get(1)
-    >>> firefox_crashes_in_warty = BugTaskFactory(
-    ...     view, distrorelease = warty.id,
+    >>> sid = getUtility(IDistroReleaseSet).get(8)
+    >>> firefox_crashes_in_sid = BugTaskFactory(
+    ...     None, distrorelease = sid.id,
     ...     sourcepackagename = firefox_source.id, owner = bug_submitter.id)
-    >>> notify(ObjectCreatedEvent(firefox_crashes_in_warty))
+    >>> notify(SQLObjectCreatedEvent(firefox_crashes_in_sid, request))
 
     >>> transaction.commit()
 
@@ -142,10 +140,13 @@ There are three kinds of tasks that can be added to an existing bug.
     >>> print from_addr
     Malone Bugtracker <noreply@canonical.com>
     >>> print to_addrs
-    ['global@bbnet.ca', 'dilys@muse.19inch.net', 'test@canonical.com']
+    ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
-    '...task added'
+    '[Bug ...] firefox crashes all the time'
+
+    >>> msg.get_payload(decode = True)
+    'Comments and other information can be added to this bug at\nhttp://127.0.0.1/malone/bugs/...'
 
     >>> stub.test_emails = []
 
@@ -161,8 +162,8 @@ There are three kinds of tasks that can be added to an existing bug.
     distros via patches.
 
     >>> firefox_crashes_upstream = BugTaskFactory(
-    ...     view, product = firefox.id, owner = bug_submitter.id)
-    >>> notify(ObjectCreatedEvent(firefox_crashes_upstream))
+    ...     None, product = firefox.id, owner = bug_submitter.id)
+    >>> notify(SQLObjectCreatedEvent(firefox_crashes_upstream, request))
 
     >>> transaction.commit()
 
@@ -172,34 +173,28 @@ There are three kinds of tasks that can be added to an existing bug.
     >>> print from_addr
     Malone Bugtracker <noreply@canonical.com>
     >>> print to_addrs
-    ['global@bbnet.ca', 'dilys@muse.19inch.net', 'test@canonical.com']
+    ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
-    '...task added'
+    '[Bug ...] firefox crashes all the time'
+
+    >>> msg.get_payload(decode = True)
+    'Comments and other information can be added to this bug at\nhttp://127.0.0.1/malone/bugs/...'
 
     >>> stub.test_emails = []
 
 3. Commenting on a bug
 
-    >>> from canonical.launchpad.database.message import BugMessageFactory
+    >>> from canonical.launchpad.database.bugmessage import BugMessageFactory
 
     XXX: Brad Bollenbach, 2005-02-28: Hacks to get around the message
     BugMessageFactory implementation. Fixed this up in the next round
     of BugMessageFactory refactoring!
 
-    >>> class StubRequest:
-    ...     def __init__(self, principal):
-    ...         self.principal = principal
-    >>> class StubView2:
-    ...     def __init__(self, bug):
-    ...         self.context = FakeContext()
-    ...         self.request = StubRequest(bug_submitter)
-    ...         self.context.context = FakeContext()
-    ...         self.context.context.id = bug.id
-    >>> view2 = StubView2(firefox_crashes)
-    >>> comment_on_firefox_crashes_in_ubuntu = BugMessageFactory(
-    ...     view2, title = "some title", contents = "just a test comment")
-    >>> notify(ObjectCreatedEvent(comment_on_firefox_crashes_in_ubuntu))
+    >>> comment_on_firefox_crashes_in_debian = BugMessageFactory(
+    ...     None, title = "some title", content = "just a test comment")
+    >>> notify(SQLObjectCreatedEvent(comment_on_firefox_crashes_in_debian,
+    ...     request))
 
     >>> transaction.commit()
 
@@ -209,41 +204,347 @@ There are three kinds of tasks that can be added to an existing bug.
     >>> print from_addr
     Malone Bugtracker <noreply@canonical.com>
     >>> print to_addrs
-    ['global@bbnet.ca', 'dilys@muse.19inch.net', 'test@canonical.com']
+    ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
-    '...comment added'
+    '[Bug ...] firefox crashes all the time'
+
+    >>> msg.get_payload(decode = True)
+    'Comments and other information can be added to this bug at\nhttp://127.0.0.1/malone/bugs/...'
 
     >>> stub.test_emails = []
 
-4. Editing a task (e.g. marking a task "Fixed")
+4. Editing a task.
 
+Let's demonstrate a notification email where Sample Person marks a
+task Fixed and, in the process, makes themselves the assignee (to note
+that they were the person that fixed the bug.)
+
+    >>> from zope.interface import implements
+    >>> from canonical.launchpad.interfaces import IDistroBugTask
     >>> from canonical.lp.dbschema import BugTaskStatus
+
     >>> class MockObject(object):
+    ...     implements(IDistroBugTask)
     ...     pass
+
     >>> bugtask_before_modification = MockObject()
-    >>> bugtask_before_modification.status = firefox_crashes_in_ubuntu.status
-    >>> bugtask_before_modification.priority = firefox_crashes_in_ubuntu.priority
-    >>> bugtask_before_modification.severity = firefox_crashes_in_ubuntu.severity
-    >>> bugtask_before_modification.sourcepackagename = None
-    >>> bugtask_before_modification.product = None
-    >>> bugtask_before_modification.distribution = firefox_crashes_in_ubuntu.distribution
+    >>> bugtask_before_modification.status = firefox_crashes_in_debian.status
+    >>> bugtask_before_modification.priority = firefox_crashes_in_debian.priority
+    >>> bugtask_before_modification.severity = firefox_crashes_in_debian.severity
+    >>> bugtask_before_modification.assignee = firefox_crashes_in_debian.assignee
+    >>> bugtask_before_modification.sourcepackagename = firefox_crashes_in_debian.sourcepackagename
+    >>> bugtask_before_modification.binarypackagename = firefox_crashes_in_debian.binarypackagename
+    >>> bugtask_before_modification.distribution = firefox_crashes_in_debian.distribution
     >>> bugtask_before_modification.distrorelease = None
-    >>> firefox_crashes_in_ubuntu.status = BugTaskStatus.FIXED.value
-    >>> ubuntu_task_modified = SQLObjectModifiedEvent(
-    ...     firefox_crashes_in_ubuntu, bugtask_before_modification, ["status"],
-    ...     bug_submitter)
-    >>> notify(ubuntu_task_modified)
+    >>> firefox_crashes_in_debian.status = BugTaskStatus.FIXED
+    >>> firefox_crashes_in_debian.assignee = bug_submitter.id
+    >>> debian_task_modified = SQLObjectModifiedEvent(
+    ...     firefox_crashes_in_debian, bugtask_before_modification,
+    ...     ["status", "assignee"], bug_submitter, request)
+    >>> notify(debian_task_modified)
 
     >>> transaction.commit()
 
     >>> len(stub.test_emails)
     1
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> print from_addr
+    Malone Bugtracker <noreply@canonical.com>
+    >>> print to_addrs
+    ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["Subject"]
+    '[Bug ...] firefox crashes all the time'
+
+    >>> msg.get_payload(decode = True)
+    'Sample Person <test@canonical.com> made changes to:\n\n    http://127.0.0.1/malone/bugs/...\n\nTask: debian mozilla-firefox\n       status: New => Fixed\n     assignee: (unassigned) => Sample Person\n'
+
+    >>> stub.test_emails = []
+
+5. Adding and editing a bug watch.
+
+A bug watch can be added to a bug to watch the status of this bug in a
+remote bug tracker. A notification is sent out to the bug notification
+recipients when a bug watch is added to a bug. Let's demonstrate by
+pretending we've just added a watch to a bug.
+
+    >>> from canonical.launchpad.interfaces import IBugWatchSet
+    >>> bugwatch = getUtility(IBugWatchSet).get(2)
+    >>> bugwatch_added = SQLObjectCreatedEvent(bugwatch, request)
+    >>> notify(bugwatch_added)
+
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    1
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["Subject"]
+    '[Bug 1] Firefox does not support SVG'
+
+    >>> msg.get_payload(decode = True)
+    'Sample Person <test@canonical.com> made changes to:\n\n    http://127.0.0.1/malone/bugs/1\n\n    - Changed bug watches:\n        Added: Bug 2000 [The Mozilla.org Bug Tracker]\n'
+
+    >>> stub.test_emails = []
+
+If the bug watch is modified, a notification is sent out describing
+the changes made:
+
+    >>> bugwatch_before_modification = MockObject()
+    >>> bugwatch_before_modification.bugtracker = bugwatch.bugtracker
+    >>> bugwatch_before_modification.remotebug = bugwatch.remotebug
+    >>> bugwatch.remotebug = "2001"
+    >>> bugwatch_modified = SQLObjectModifiedEvent(
+    ...     object = bugwatch,
+    ...     object_before_modification = bugwatch_before_modification,
+    ...     edited_fields = ("remotebug"),
+    ...     principal = bug_submitter,
+    ...     request = request)
+
+    >>> notify(bugwatch_modified)
+
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    1
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["Subject"]
+    '[Bug 1] Firefox does not support SVG'
+
+    >>> msg.get_payload(decode = True)
+    'Sample Person <test@canonical.com> made changes to:\n\n    http://127.0.0.1/malone/bugs/1\n\n    - Changed bug watches:\n        Added: Bug 2001 [The Mozilla.org Bug Tracker]\n      Removed: Bug 2000 [The Mozilla.org Bug Tracker]\n'
+
+    >>> stub.test_emails = []
+
+6. Adding and editing a CVE ref.
+
+Adding a CVE reference to a bug also causes a notification email to go
+out to the bug notification recipient list. Let's create a CVE ref and
+attach it to the firefox_crashes bug that we've been using throughout
+this document:
+
+    >>> from canonical.launchpad.interfaces import ICVERefSet
+    >>> cveref = getUtility(ICVERefSet).createCVERef(
+    ...     bug = 1, cveref = "CVE-2004-0276", title="test",
+    ...     owner = 12)
+    >>> cveref_added = SQLObjectCreatedEvent(cveref, request)
+    >>> notify(cveref_added)
+
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    1
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["Subject"]
+    '[Bug 1] Firefox does not support SVG'
+
+    >>> msg.get_payload(decode = True)
+    'Sample Person <test@canonical.com> made changes to:\n\n    http://127.0.0.1/malone/bugs/1\n\n    - Changed CVE references:\n        Added: CVE-2004-0276 [test]\n'
+
+    >>> stub.test_emails = []
+
+Next, let's take a look at what the edit notification looks like:
+
+    >>> cveref_before_modification = MockObject()
+    >>> cveref_before_modification.cveref = cveref.cveref
+    >>> cveref_before_modification.title = cveref.title
+    >>> cveref.title = "a much better title"
+    >>> cveref_edited = SQLObjectModifiedEvent(
+    ...     object_before_modification = cveref_before_modification,
+    ...     object = cveref,
+    ...     edited_fields = ("title",),
+    ...     principal = request.principal,
+    ...     request = request)
+    >>> notify(cveref_edited)
+
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    1
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["Subject"]
+    '[Bug 1] Firefox does not support SVG'
+
+    >>> msg.get_payload(decode = True)
+    'Sample Person <test@canonical.com> made changes to:\n\n    http://127.0.0.1/malone/bugs/1\n\n    - Changed CVE references:\n        Added: CVE-2004-0276 [a much better title]\n      Removed: CVE-2004-0276 [test]\n'
+
+    >>> stub.test_emails = []
+
+7. Adding an external URL reference.
+
+When someone adds a web link to a bug report (e.g. to a related
+mailing list discussion), an email is sent to the notification
+recipients. We'll demonstrate by creating an external link and
+publishing an object created event.
+
+    >>> from canonical.launchpad.interfaces import IBugExternalRefSet
+    >>> extref = getUtility(IBugExternalRefSet).createBugExternalRef(
+    ...     bug = 1, url = "http://www.example.com", title="test",
+    ...     owner = 12)
+    >>> extref_added = SQLObjectCreatedEvent(extref, request)
+    >>> notify(extref_added)
+
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    1
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["Subject"]
+    '[Bug 1] Firefox does not support SVG'
+
+    >>> msg.get_payload(decode = True)
+    'Sample Person <test@canonical.com> made changes to:\n\n    http://127.0.0.1/malone/bugs/1\n\n    - Changed web links:\n        Added: http://www.example.com (test)\n'
+
+    >>> stub.test_emails = []
+
+When a link is edited, the notification will look as follows:
+
+    >>> extref_before_modification = MockObject()
+    >>> extref_before_modification.url = extref.url
+    >>> extref_before_modification.title = extref.title
+    >>> extref.url = "http://www.example.com/somewhere.html"
+
+    >>> extref_changed = SQLObjectModifiedEvent(
+    ...     object_before_modification = extref_before_modification,
+    ...     object = extref,
+    ...     edited_fields = ("url",),
+    ...     principal = request.principal,
+    ...     request = request)
+    >>> notify(extref_changed)
+
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    1
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["Subject"]
+    '[Bug 1] Firefox does not support SVG'
+
+    >>> msg.get_payload(decode = True)
+    'Sample Person <test@canonical.com> made changes to:\n\n    http://127.0.0.1/malone/bugs/1\n\n    - Changed web links:\n        Added: http://www.example.com/somewhere.html (test)\n      Removed: http://www.example.com (test)\n'
+
+    >>> stub.test_emails = []
 
 Implications of Bug Privacy
 ---------------------------
 
-XXX: blah privacy blah
+Making a bug private changes notification semantics. When a bug is
+made private, the only users that will receive notifcations for that
+bug are those who are explicitly CC'd to the bug.
 
-    >>> ztapi.unprovideUtility(ILaunchBag)
-    >>> zope.security.management.endInteraction()
+To learn more of the specifics of these semantics, consult the
+BugPrivacy spec:
+
+    https://wiki.launchpad.canonical.com/BugPrivacy
+
+and as well, the system document:
+
+    lib/canonical/launchpad/doc/bugsubscription.txt
+
+To demonstrate what we mean, let's make the firefox crashing bug
+report private:
+
+    >>> firefox_bug = getUtility(IBugSet).get(firefox_crashes.id)
+
+    >>> new_values = {"private" : True}
+    >>> bug_will_be_set_private = SQLObjectToBeModifiedEvent(
+    ...     firefox_bug, new_values)
+
+    >>> notify(bug_will_be_set_private)
+
+    >>> firefox_bug.private = True
+    >>> bug_before_modification = MockObject()
+    >>> bug_before_modification.title = firefox_bug.title
+    >>> bug_before_modification.shortdesc = firefox_bug.shortdesc
+    >>> bug_before_modification.description = firefox_bug.description
+    >>> bug_before_modification.name = firefox_bug.name
+    >>> bug_before_modification.id = firefox_bug.id
+    >>> bug_before_modification.private = False
+    >>> bug_before_modification.subscriptions = firefox_bug.subscriptions
+    >>> bug_before_modification.bugtasks = firefox_bug.bugtasks
+    >>> bug_modified = SQLObjectModifiedEvent(
+    ...     firefox_bug, bug_before_modification,
+    ...     ["private"], bug_submitter, request)
+
+    >>> notify(bug_modified)
+
+    >>> transaction.commit()
+    >>> stub.test_emails = []
+
+Now, when we add a new task to that bug, the maintainer of the task
+target will *not* get a notification (when a bug is marked private,
+implicit subscription is disabled):
+
+XXX: Brad Bollenbach, 2005-03-07: This is a totally CONTRIVED example!
+I should be adding this to another source package in another distro,
+but that would mean adding more sample sourcepackage data, which I
+don't want to do until after Nukesourcepackage is implemented, because
+the SourcePackage table is going to be blown away anyway.
+
+    >>> applets = getUtility(IProductSet).get(9)
+    >>> firefox_crashes_upstream = BugTaskFactory(
+    ...     None, product = applets.id, owner = bug_submitter.id)
+
+Normally, you might expect to see the maintainer of applets (Foo Bar,
+email foo.bar@canonical.com) now be included in the list of recipients
+that will get notified of changes on this bug. Because the bug is
+private, and Foo Bar is not an explicit subscriber to the bug, he will
+*not* be included in the list of recipients!
+
+    >>> notify(SQLObjectCreatedEvent(firefox_crashes_upstream, request))
+
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    1
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> print from_addr
+    Malone Bugtracker <noreply@canonical.com>
+    >>> print to_addrs
+    ['mark@hbd.com', 'test@canonical.com']
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["Subject"]
+    '[Bug ...] firefox crashes all the time'
+
+    >>> stub.test_emails = []
+
+If, for some odd reason, none of the subscribers on a bug have a
+preferred email set, no attempt to send a notification email will
+occur. Let's use another example to demonstrate what we mean; the same
+thing as the previous example, but this time let's "mock out" the
+bug's notificationRecipientAddresses method to pretend there are no
+recipient addresses:
+
+    >>> from canonical.launchpad.interfaces import IBug, IBugTask
+
+    >>> class MockBugNoRecipientAddresses(object):
+    ...     implements(IBug)
+    ...     def __init__(self, bug):
+    ...         self.bug = bug
+    ...     def __getattr__(self, name):
+    ...         return getattr(self.bug, name)
+    ...     def notificationRecipientAddresses(self):
+    ...         return []
+    >>> class MockBugTask(object):
+    ...     implements(IBugTask)
+    ...     def __init__(self, bugtask):
+    ...         self.bugtask = bugtask
+    ...     def __getattr__(self, name):
+    ...         return getattr(self.bugtask, name)
+    ...     def bug(self):
+    ...         return MockBugNoRecipientAddresses(self.bugtask.bug)
+    ...     bug = property(bug)
+
+    >>> task_with_no_subscribers = MockBugTask(firefox_crashes_upstream)
+    >>> notify(SQLObjectCreatedEvent(task_with_no_subscribers, request))
+
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    0

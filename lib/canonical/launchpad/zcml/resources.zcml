@@ -10,7 +10,7 @@
     <resource name="malone.png" file="../images/malone.png" />
   
     <!-- App-specific Images -->
-    <resource name="rosetta.png" file="../../rosetta/images/rosetta.png" />
+    <resource name="rosetta.png" file="../images/rosetta.png" />
     <resource name="soyuz.png" file="../../soyuz/images/soyuz.png" />
     <resource name="launchpad.png" file="../images/launchpad.png" />
 
@@ -24,6 +24,7 @@
 
     <resource name="info.gif" file="../images/info.gif" />
     <resource name="info.png" file="../images/info.png" />
+    <resource name="info_icon.gif" file="../images/info_icon.gif" />
     <resource name="download.png" file="../images/download.png" />
 
     <resource name="arrowBottom.gif" file="../images/arrowBottom.gif" />

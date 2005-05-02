@@ -7,7 +7,7 @@
         <table class="rowNavigation" border="0">
             <tr tal:repeat="bugtask view/latestBugTasks"
                 tal:attributes="onclick string:window.location='/malone/bugs/${bugtask/bug/id}';">
-                <td tal:content="bugtask/bug/title">bug title</td>
+                <td tal:content="string: [#${bugtask/bug/id}] ${bugtask/bug/title}">bug title</td>
             </tr>
         </table>
 
@@ -28,6 +28,6 @@
         </a>
 
         </div>
-                
+
     </div>
 </div>

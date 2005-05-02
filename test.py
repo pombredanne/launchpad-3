@@ -24,6 +24,10 @@ sys.path.append(os.path.join(here, 'lib'))
 # Set PYTHONPATH environment variable for spawned processes
 os.environ['PYTHONPATH'] = ':'.join(sys.path)
 
+# Tell canonical.config to use the test config file, not launchpad.conf
+from canonical.config import config
+config.setDefaultSection('testrunner')
+
 # Turn on psycopg debugging wrapper
 #import canonical.database.debug
 #canonical.database.debug.install()
@@ -40,23 +44,10 @@ warnings.filterwarnings(
         "error", category=DeprecationWarning, module="email"
         )
 
-# This is a hack to use canonical.difflib instead of standard difflib
-# so we can easily test it. Comment out and commit to rocketfuel if
-# it causes grief -- StuartBishop 20041130
-# Turned off - we need more context or linenumbers. eg. I'm being told I
-# have an unexpected line, but no way to tell where.
-def monkey_patch_doctest():
-    import canonical.difflib
-    sys.modules['difflib'] = canonical.difflib
-    import difflib
-    assert hasattr(difflib.Differ, 'fancy_compare'), \
-            'Failed to monkey patch difflib'
-    import zope.testing.doctest
-    import canonical.doctest
-    zope.testing.doctest.OutputChecker = canonical.doctest.OutputChecker
-#monkey_patch_doctest()
-
 from canonical.ftests import pgsql
+# If this is removed, make sure canonical.ftests.pgsql is updated
+# because the test harness there relies on the Connection wrapper being
+# installed.
 pgsql.installFakeConnect()
 
 # This is a terrible hack to divorce the FunctionalTestSetup from

@@ -7,11 +7,16 @@
     <title metal:fill-slot="title">Launchpad Product Registry</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Rosetta style sheet -->
-    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+    <!-- Launchpad style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
+
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure view/detailsPortlet" />
+</metal:leftportlets>
+
 
 <div metal:fill-slot="main">
 
@@ -48,11 +53,9 @@
                 vspace="5">
                 <td>
                     <img src="/++resource++product_icon.gif">
-                    <b><a tal:attributes="href product/name" href="#"
-                        tal:content="product/title">$Product.title</a></b>
-                    (<span tal:content="product/name">$Product.name</span>)
-                    <a tal:attributes="href product/homepageurl"
-                        tal:content="product/homepageurl">http://www.gnu.org/</a>
+                    <b tal:content="product/title">$Product.title</b>
+                    (<a tal:attributes="href product/name" href="#"
+                        tal:content="product/name">$Product.name</a>)
                     <br />
                 <span tal:content="product/shortdesc">
                     $Product.shortdesc</span>
