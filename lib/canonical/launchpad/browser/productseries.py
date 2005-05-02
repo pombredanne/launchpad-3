@@ -219,7 +219,7 @@ class ProductSeriesView(object):
         self.context.targetarchbranch = self.targetarchbranch
         self.context.targetarchversion = self.targetarchversion
         # find and handle editing changes
-        self.editSource()
+        self.editSource(fromAdmin=True)
 
     def newProductRelease(self):
         """
