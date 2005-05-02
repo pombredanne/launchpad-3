@@ -220,6 +220,12 @@ class ProductSeriesView(object):
         self.context.targetarchversion = self.targetarchversion
         # find and handle editing changes
         self.editSource(fromAdmin=True)
+        if self.form.get('syncCertified', None):
+            if not self.context.syncCertified():
+                self.context.certifyForSync()
+        if self.form.get('autoSyncEnabled', None):
+            if not self.context.autoSyncEnabled():
+                self.context.enableAutoSync()
 
     def newProductRelease(self):
         """
