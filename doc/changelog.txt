@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-03 08:21:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1651
+
+    Summary:
+      [trivial] Fix possible SQL injection attack in untested codepath of database/potemplate.py
+    Revision:
+      launchpad--devel--0--patch-1651
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--trivial--0--patch-1
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1650
+    
+     * stuart.bishop@canonical.com/launchpad--trivial--0--patch-2
+       Fix possible SQL injection attack in untested codepath of database/potemplate.py
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/potemplate.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--trivial--0--patch-1
+     stuart.bishop@canonical.com/launchpad--trivial--0--patch-2
+
+
 2005-05-03 06:51:30 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1650
 
     Summary:
