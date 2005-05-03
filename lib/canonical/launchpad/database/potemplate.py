@@ -365,8 +365,9 @@ class POTemplate(SQLBase, RosettaStats):
         # So, we get around this problem by checking the number of PO message
         # sets against the number of languages.
 
-        language_codes = ', '.join(["'%s'" % sqlvalues(language.code)
-                                   for language in languages])
+        language_codes = ', '.join(sqlvalues(
+            [language.code for language in languages]
+            ))
 
         if translated is not None:
             # Search for PO message sets which aren't complete for this POT
