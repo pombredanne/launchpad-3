@@ -311,7 +311,7 @@ class BugTasksReport:
         if showclosed:
             return querystr
         else:
-            return querystr + ' AND BugTask.status < ' % sqlvalues(
+            return querystr + ' AND BugTask.status < %s' % sqlvalues(
                 BugPriority.MEDIUM)
 
     # bugs assigned (i.e. tasks) to packages maintained by the user
@@ -326,7 +326,7 @@ class BugTasksReport:
         clauseTables = ['Maintainership']
         querystr = self._handle_showclosed(showclosed, querystr)
         if not showclosed:
-            querystr = querystr + ' AND BugTask.status < ' % sqlvalues(
+            querystr = querystr + ' AND BugTask.status < %s' % sqlvalues(
                 BugPriority.MEDIUM)
         return shortlist(BugTask.select(querystr, clauseTables=clauseTables))
 

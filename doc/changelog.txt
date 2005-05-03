@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-03 13:38:06 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1652
+
+    Summary:
+      [trivial] Fix broken /malone/assigned page
+    Revision:
+      launchpad--devel--0--patch-1652
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--trivial--0--patch-3
+       Fix /malone/assigned
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/bugtask.py
+     lib/canonical/launchpad/database/bugtask.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--trivial--0--patch-3
+
+
 2005-05-03 08:21:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1651
 
     Summary:
