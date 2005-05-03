@@ -2,6 +2,89 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-03 06:51:30 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1650
+
+    Summary:
+      [trivial] New database baseline
+    Revision:
+      launchpad--devel--0--patch-1650
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1649
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--patch-1
+       New database baseline
+    
+
+    modified files:
+     database/schema/Makefile database/schema/launchpad-17-00-0.sql
+     database/schema/patch-17-00-0.sql doc/changelog.txt
+
+    renamed files:
+     database/schema/.arch-ids/launchpad-14-00-0.sql.id
+       ==> database/schema/.arch-ids/launchpad-17-00-0.sql.id
+     database/schema/.arch-ids/patch-14-00-0.sql.id
+       ==> database/schema/.arch-ids/patch-17-00-0.sql.id
+     database/schema/.arch-ids/patch-14-01-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-14-01-0.sql.id
+     database/schema/.arch-ids/patch-14-02-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-14-02-0.sql.id
+     database/schema/.arch-ids/patch-14-03-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-14-03-0.sql.id
+     database/schema/.arch-ids/patch-14-04-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-14-04-0.sql.id
+     database/schema/.arch-ids/patch-14-05-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-14-05-0.sql.id
+     database/schema/.arch-ids/patch-14-06-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-14-06-0.sql.id
+     database/schema/.arch-ids/patch-14-07-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-14-07-0.sql.id
+     database/schema/.arch-ids/patch-14-08-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-14-08-0.sql.id
+     database/schema/.arch-ids/patch-14-09-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-14-09-0.sql.id
+     database/schema/.arch-ids/patch-14-10-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-14-10-0.sql.id
+     database/schema/.arch-ids/patch-14-11-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-14-11-0.sql.id
+     database/schema/.arch-ids/patch-14-12-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-14-12-0.sql.id
+     database/schema/launchpad-14-00-0.sql
+       ==> database/schema/launchpad-17-00-0.sql
+     database/schema/patch-14-00-0.sql
+       ==> database/schema/patch-17-00-0.sql
+     database/schema/patch-14-01-0.sql
+       ==> database/schema/archive/patch-14-01-0.sql
+     database/schema/patch-14-02-0.sql
+       ==> database/schema/archive/patch-14-02-0.sql
+     database/schema/patch-14-03-0.sql
+       ==> database/schema/archive/patch-14-03-0.sql
+     database/schema/patch-14-04-0.sql
+       ==> database/schema/archive/patch-14-04-0.sql
+     database/schema/patch-14-05-0.sql
+       ==> database/schema/archive/patch-14-05-0.sql
+     database/schema/patch-14-06-0.sql
+       ==> database/schema/archive/patch-14-06-0.sql
+     database/schema/patch-14-07-0.sql
+       ==> database/schema/archive/patch-14-07-0.sql
+     database/schema/patch-14-08-0.sql
+       ==> database/schema/archive/patch-14-08-0.sql
+     database/schema/patch-14-09-0.sql
+       ==> database/schema/archive/patch-14-09-0.sql
+     database/schema/patch-14-10-0.sql
+       ==> database/schema/archive/patch-14-10-0.sql
+     database/schema/patch-14-11-0.sql
+       ==> database/schema/archive/patch-14-11-0.sql
+     database/schema/patch-14-12-0.sql
+       ==> database/schema/archive/patch-14-12-0.sql
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--dba--0--base-0
+     stuart.bishop@canonical.com/launchpad--dba--0--patch-1
+
+
 2005-05-02 04:46:20 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1649
 
     Summary:
