@@ -2,6 +2,55 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-04 14:15:25 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1657
+
+    Summary:
+      Fix bug 220, make assigning milestones to bug tasks work again.
+    Revision:
+      launchpad--devel--0--patch-1657
+
+    Patches applied:
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-1
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1649
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-2
+       add a milestone for firefox to sample data.
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-3
+       getting milestone by name doesn't make sense. clean up.
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-4
+       make mass-editing of milestones work.
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-5
+       make editing a bugtask's milestone work.
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-6
+       merge rf
+    
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/database/milestone.py
+     lib/canonical/launchpad/doc/milestone.txt
+     lib/canonical/launchpad/interfaces/bugtask.py
+     lib/canonical/launchpad/interfaces/milestone.py
+     lib/canonical/launchpad/pagetests/standalone/xx-edit-upstream-bug-task-team-aware.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-massedit-upstream-bugtask.txt
+     lib/canonical/launchpad/templates/bugtask-search-listing.pt
+
+    new patches:
+     bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-1
+     bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-2
+     bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-3
+     bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-4
+     bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-5
+     bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-6
+
+
 2005-05-04 09:08:46 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1656
 
     Summary:
