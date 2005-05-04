@@ -2,6 +2,49 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-04 09:08:46 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1656
+
+    Summary:
+      Land rest of MailStorage [r=spiv,r=jamesh]
+    Revision:
+      launchpad--devel--0--patch-1656
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-36
+       Duplicate message-id handling, better and documented exceptions, more tests
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-37
+       Improve errors and add tests
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-38
+       Strip display of message attachments in bug comments as per UDU discussions. Includes comment on rationale
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-39
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-40
+       Make default charset iso-8859-1
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-41
+       Incorporate review feedback
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/message.py
+     lib/canonical/launchpad/doc/message.txt
+     lib/canonical/launchpad/interfaces/message.py
+     lib/canonical/launchpad/templates/messagechunk-snippet.pt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-36
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-37
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-38
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-39
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-40
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-41
+
+
 2005-05-04 08:40:56 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1655
 
     Summary:
