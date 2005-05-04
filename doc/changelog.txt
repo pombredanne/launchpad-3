@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-04 05:54:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1653
+
+    Summary:
+      allow / in module names - they can refer to paths in subdirectories
+    Revision:
+      launchpad--devel--0--patch-1653
+
+    Patches applied:
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-119
+       merge from rf
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-120
+       allow / in module names - they can refer to paths in subdirectories
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/productseries.py
+
+    new patches:
+     robert.collins@canonical.com/launchpad--devel--0--patch-119
+     robert.collins@canonical.com/launchpad--devel--0--patch-120
+
+
 2005-05-03 13:38:06 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1652
 
     Summary:
