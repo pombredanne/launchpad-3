@@ -54,15 +54,20 @@ class BugTasksReportView:
 
     # TODO: replace this with a smart vocabulary and widget
     def userSelector(self):
-        html = '<select name="name">\n'
-        for person in self.allPeople():
-            html = html + '<option value="'+person.name+'"'
-            if person==self.user:
-                html = html + ' selected="yes"'
-            html = html + '>'
-            html = html + person.browsername + '</option>\n'
-        html = html + '</select>\n'
-        return html
+        return '<input type="text" name="name" value="%s"/>\n' % (
+                self.user.name,
+                )
+        # Don't do this - when you have 60000+ people it tends to kill
+        # the production server.
+        # html = '<select name="name">\n'
+        # for person in self.allPeople():
+        #     html = html + '<option value="'+person.name+'"'
+        #     if person==self.user:
+        #         html = html + ' selected="yes"'
+        #     html = html + '>'
+        #     html = html + person.browsername + '</option>\n'
+        # html = html + '</select>\n'
+        # return html
 
     # TODO: replace this with a smart vocabulary and widget
     def severitySelector(self):
