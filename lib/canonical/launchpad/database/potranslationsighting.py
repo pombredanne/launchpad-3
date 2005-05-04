@@ -1,12 +1,14 @@
-# Zope interfaces
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['POTranslationSighting']
+
 from zope.interface import implements
 
-# SQL imports
 from sqlobject import ForeignKey, IntCol, BoolCol
 from canonical.database.sqlbase import SQLBase
 from canonical.database.datetimecol import UtcDateTimeCol
 
-# canonical imports
 from canonical.launchpad.interfaces import IPOTranslationSighting
 from canonical.lp.dbschema import EnumCol
 from canonical.database.constants import DEFAULT
@@ -32,3 +34,4 @@ class POTranslationSighting(SQLBase):
     origin = EnumCol(dbName='origin', notNull=True,
         schema=RosettaTranslationOrigin)
     person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
+

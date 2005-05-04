@@ -24,8 +24,16 @@ class IProductSeries(Interface):
     releases = Attribute("An iterator over the releases in this "
         "Series, sorted with latest release first.")
 
+    # properties
+    sourcepackages = Attribute(_("List of distribution packages for this \
+        product series"))
+
     def getRelease(version):
         """Get the release in this series that has the specified version."""
+
+    def getPackage(distrorelease):
+        """Return the SourcePackage for this productseries in the supplied
+        distrorelease."""
 
 
 class ISeriesSource(Interface):
@@ -145,4 +153,10 @@ class IProductSeriesSet(Interface):
                start=None, length=None):
         """return a list of series matching the arguments, which are passed
         through to _querystr to generate the query."""
+
+    def importcount(status=None):
+        """Return the number of series that are in the process of being
+        imported and published as baz branches. If status is None then all
+        the statuses are included, otherwise the count reflects the number
+        of branches with that importstatus."""
 

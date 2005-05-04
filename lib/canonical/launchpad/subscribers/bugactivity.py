@@ -85,7 +85,7 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
     if changes:
         for changed_field in changes.keys():
             BugActivity(
-                bug=sqlobject_modified_event.object_before_modification.id,
+                bug=bug_edited.id,
                 datechanged=UTC_NOW,
                 person=int(sqlobject_modified_event.principal.id),
                 whatchanged=changed_field,
@@ -229,11 +229,11 @@ def record_bugwatch_edited(bugwatch_edited, sqlobject_modified_event):
     if changes:
         for changed_field in changes.keys():
             BugActivity(
-                bug=sqlobject_modified_event.object_before_modification.bug.id,
+                bug=bugwatch_edited.bug.id,
                 datechanged=UTC_NOW,
                 person=sqlobject_modified_event.principal.id,
                 whatchanged="subscriber %s" % (
-                    sqlobject_modified_event.object_before_modification.person.displayname),
+                    bugwatch_edited.person.displayname),
                 oldvalue=changes[changed_field][0],
                 newvalue=changes[changed_field][1])
                 

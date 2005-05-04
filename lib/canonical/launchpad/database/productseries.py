@@ -1,22 +1,25 @@
 
-# Python imports
-from sets import Set
+__metaclass__ = type
+__all__ = ['ProductSeries', 'ProductSeriesSet']
 
-# Zope interfaces
+import datetime
+import sets
+
 from zope.interface import implements
 
-# SQL imports
-from sqlobject import ForeignKey, StringCol, DateTimeCol
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
-from canonical.database.sqlbase import SQLBase
+from sqlobject import ForeignKey, StringCol, MultipleJoin, DateTimeCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.lp.dbschema import EnumCol, ImportStatus, \
-        RevisionControlSystems
 
 # canonical imports
-from canonical.launchpad.interfaces import IProductSeries, \
-    ISeriesSource, ISeriesSourceAdmin, IProductSeriesSet
+from canonical.launchpad.interfaces import \
+    IProductSeries, ISeriesSource, ISeriesSourceAdmin, IProductSeriesSet
+from canonical.launchpad.database.packaging import Packaging
+from canonical.database.sqlbase import SQLBase, quote
+from canonical.lp.dbschema import \
+    EnumCol, ImportStatus, RevisionControlSystems
+
+
 
 class ProductSeries(SQLBase):
     """A series of product releases."""
@@ -27,8 +30,6 @@ class ProductSeries(SQLBase):
     name = StringCol(notNull=True)
     displayname = StringCol(notNull=True)
     shortdesc = StringCol(notNull=True)
-    # below came from SourceSource
-    # canonical.lp.dbschema.ImportStatus
     branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
                            schema=ImportStatus, default=None)
@@ -51,25 +52,40 @@ class ProductSeries(SQLBase):
     targetarchcategory = StringCol(default=None)
     targetarchbranch = StringCol(default=None)
     targetarchversion = StringCol(default=None)
+    # key dates on the road to import happiness
     dateautotested = UtcDateTimeCol(default=None)
     datestarted = UtcDateTimeCol(default=None)
     datefinished = UtcDateTimeCol(default=None)
     dateprocessapproved = UtcDateTimeCol(default=None)
     datesyncapproved = UtcDateTimeCol(default=None)
 
-    # useful joins
     releases = MultipleJoin('ProductRelease', joinColumn='productseries',
                              orderBy=['version'])
 
+    def title(self):
+        return self.product.displayname + ' Series: ' + self.displayname
+    title = property(title)
+
+    def sourcepackages(self):
+        from canonical.launchpad.database.sourcepackage import SourcePackage
+        ret = Packaging.selectBy(productseriesID=self.id)
+        return [SourcePackage(sourcepackagename=r.sourcepackagename,
+                              distrorelease=r.distrorelease)
+                    for r in ret]
+    sourcepackages = property(sourcepackages)
+
     def getRelease(self, version):
         for release in self.releases:
-            if release.version==version: return release
+            if release.version==version:
+                return release
         raise KeyError, version
 
-    def _title(self):
-        return self.product.displayname + ' Series: ' + self.displayname
-
-    title = property(_title)
+    def getPackage(self, distrorelease):
+        for pkg in self.sourcepackages:
+            if pkg.distrorelease == distrorelease:
+                return pkg
+        else:
+            raise NotFoundError(distrorelease)
 
     def certifyForSync(self):
         """enable the sync for processing"""
@@ -86,7 +102,7 @@ class ProductSeries(SQLBase):
         return self.importstatus == ImportStatus.SYNCING
 
     def enableAutoSync(self):
-        """enable autosyncing"""
+        """enable autosyncing?"""
         self.datesyncapproved = UTC_NOW
         self.importstatus = ImportStatus.SYNCING
 
@@ -100,27 +116,25 @@ class ProductSeriesSet:
 
     def __iter__(self):
         if self.product:
-            theiter = iter(ProductSeries.selectBy(productID=self.product.id))
-        else:
-            theiter = iter(ProductSeries.select())
-        return theiter
+            return iter(ProductSeries.selectBy(productID=self.product.id))
+        return iter(ProductSeries.select())
 
     def __getitem__(self, name):
         if not self.product:
-            raise KeyError, 'ProductSeriesSet not initialised with product.'
-        ret = ProductSeries.selectBy(productID=self.product.id,
-                                     name=name)
-        if ret.count() == 0:
-            raise KeyError, name
-        else:
-            return ret[0]
+            raise KeyError('ProductSeriesSet not initialised with product.')
+        series = ProductSeries.selectOneBy(productID=self.product.id,
+                                           name=name)
+        if series is None:
+            raise KeyError(name)
+        return series
 
     def _querystr(self, ready=None, text=None,
-                        forimport=None, importstatus=None):
+                  forimport=None, importstatus=None):
         """Return a querystring and clauseTables for use in a search or a
-        get or a query."""
+        get or a query.
+        """
         query = '1=1'
-        clauseTables = Set()
+        clauseTables = sets.Set()
         # deal with the cases which require project and product
         if ( ready is not None ) or text:
             if len(query) > 0:
@@ -155,14 +169,13 @@ class ProductSeriesSet:
             query += 'ProductSeries.importstatus = %d' % importstatus
         return query, clauseTables
 
-    def search(self, ready=None, 
-                     text=None,
-                     forimport=None,
-                     importstatus=None,
-                     start=None,
-                     length=None):
-        query, clauseTables = self._querystr(ready, text,
-                                             forimport, importstatus)
+    def search(self, ready=None, text=None, forimport=None, importstatus=None,
+               start=None, length=None):
+        query, clauseTables = self._querystr(
+            ready, text, forimport, importstatus)
         return ProductSeries.select(query, distinct=True,
                    clauseTables=clauseTables)[start:length]
+
+    def importcount(self, status=None):
+        return self.search(forimport=True, importstatus=status).count()
 

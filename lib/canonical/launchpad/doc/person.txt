@@ -6,15 +6,26 @@ and teams. Let's log in as Robert Collins to ensure we have the
 privileges to do what we're going to demonstrate.
 
 >>> from zope.component import getUtility
->>> from canonical.launchpad.interfaces import IPersonSet
+>>> from zope.interface.verify import verifyObject
+>>> from canonical.launchpad.interfaces import IPersonSet, IPerson
 >>> from canonical.launchpad.ftests import login
 
 >>> login("robertc@robertcollins.net")
 
+>>> personset = getUtility(IPersonSet)
+
+
+Verify that foobar (a Person object) correctly implements IPerson. This
+will be commented out until UDU, when we'll get rid of the password2 
+attribute in IPerson.
+
+#>>> foobar = personset.getByName('name16')
+#>>> verifyObject(IPerson, foobar)
+
+
 Access to people (Persons or Teams) is done through the IPersonSet
 utility:
 
->>> personset = getUtility(IPersonSet)
 >>> buttsource = personset.getByName('buttsource')
 >>> buttsource.teamowner is None
 False
@@ -23,8 +34,8 @@ False
 True
 
 An IPerson has an inTeam method to allow us to easily check if a
-person is a member of a team. It accepts the team name as a string,
-which is the common use case when checking permissions.
+person is a member of a team. It accepts an object implementing 
+IPerson, which is the common use case when checking permissions.
 
 >>> ddaa = personset.getByName('ddaa')
 >>> lifeless.inTeam(buttsource) and ddaa.inTeam(buttsource)
@@ -120,10 +131,10 @@ IPersonSet.search.
 >>> from canonical.launchpad.searchbuilder import NULL
 >>> valid_people = personset.search(password = NULL)
 >>> valid_people.count()
-22
+23
 
 Passing no args would return all people:
 
 >>> all_people = personset.search()
 >>> all_people.count()
-31
+32

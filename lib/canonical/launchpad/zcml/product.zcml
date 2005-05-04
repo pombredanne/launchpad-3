@@ -148,12 +148,12 @@
         name="+addpackage"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IPackaging"
-        label="Add New SourcePackage"
-        fields="sourcepackage packaging"
+        label="Distro Packaging Details"
+        fields="productseries sourcepackagename distrorelease packaging"
         class="canonical.launchpad.browser.PackagingAddView"
-        permission="launchpad.Admin"
+        permission="launchpad.Edit"
         template="../templates/launchpad-addform.pt"
-        lp:url="doap/product/$Project.name/+package">
+        lp:url="/product/$Product.name/+package">
     </browser:addform>
 
     <!-- ProductSet-->

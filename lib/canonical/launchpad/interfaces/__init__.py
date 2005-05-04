@@ -1,4 +1,7 @@
-# XXX from auth/interfaces
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
 from zope.interface import Interface, Attribute
 from persistent import IPersistent
 
@@ -43,6 +46,7 @@ from canonical.launchpad.interfaces.jabber import *
 from canonical.launchpad.interfaces.karma import *
 from canonical.launchpad.interfaces.language import *
 from canonical.launchpad.interfaces.launchpad import *
+from canonical.launchpad.interfaces.librarian import *
 from canonical.launchpad.interfaces.logintoken import *
 from canonical.launchpad.interfaces.maintainership import *
 from canonical.launchpad.interfaces.manifestentry import *

@@ -1,20 +1,18 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
+__all__ = ['LoginToken', 'LoginTokenSet']
 
 from datetime import datetime
 import random
 
-# Zope interfaces
 from zope.interface import implements
 
-# SQL imports
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, AND
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
-# canonical imports
 from canonical.launchpad.interfaces import ILoginToken, ILoginTokenSet
 from canonical.lp.dbschema import LoginTokenType, EnumCol
 
@@ -33,7 +31,8 @@ class LoginToken(SQLBase):
 
     title = 'Launchpad Email Verification'
 
-class LoginTokenSet(object):
+
+class LoginTokenSet:
     implements(ILoginTokenSet)
 
     def __init__(self):
@@ -54,7 +53,7 @@ class LoginTokenSet(object):
             token.destroySelf()
 
     def new(self, requester, requesteremail, email, tokentype):
-        """See ILoginTokenSet"""
+        """See ILoginTokenSet."""
         characters = '0123456789bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ'
         length = 20
         token = ''.join([random.choice(characters) for count in range(length)])
@@ -64,10 +63,8 @@ class LoginTokenSet(object):
                 created=UTC_NOW)
 
     def __getitem__(self, tokentext):
-        results = LoginToken.selectBy(token=tokentext)
-        if results.count() > 0:
-            assert results.count() == 1
-            return results[0]
-        else:
+        token = LoginToken.selectOneBy(token=tokentext)
+        if token is None:
             raise KeyError, tokentext
+        return token
 

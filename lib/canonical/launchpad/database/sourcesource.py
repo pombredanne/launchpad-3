@@ -1,52 +1,43 @@
-"""Launchpad SourceSource Database Table Objects
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+"""Launchpad SourceSource Database Table Objects"""
 
-Part of the Launchpad system.
+__metaclass__ = type
+__all__ = ['XXXXSourceSource', 'XXXXSourceSourceSet']
 
-(c) 2004 Canonical, Ltd.
-"""
+import datetime
+import sets
+import logging
 
-# Zope
 from zope.interface import implements
-from zope.component import getUtility
 
-# SQL object
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
+from sqlobject import DateTimeCol, ForeignKey, StringCol
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
-# Launchpad interfaces
-from canonical.launchpad.interfaces import ISourceSource, \
-    ISourceSourceAdmin, ISourceSourceSet, IProductSet
+from canonical.launchpad.interfaces import \
+    ISourceSource, ISourceSourceAdmin, ISourceSourceSet
 
-from canonical.lp.dbschema import EnumCol
-from canonical.lp.dbschema import ImportTestStatus
-from canonical.lp.dbschema import ImportStatus
-from canonical.lp.dbschema import RevisionControlSystems
-# tools
-import datetime
-from sets import Set
-import logging
+from canonical.lp.dbschema import EnumCol, ImportStatus, RevisionControlSystems
+
 
 class XXXXSourceSource(SQLBase): 
     """SourceSource table"""
 
-    implements (ISourceSource,
-                ISourceSourceAdmin)
-    
+    implements (ISourceSource, ISourceSourceAdmin)
+
     _table = 'SourceSource'
 
     # canonical.lp.dbschema.ImportStatus
     importstatus = EnumCol(dbName='importstatus', notNull=True,
-                         schema=ImportStatus, default=ImportStatus.TESTING)
+                           schema=ImportStatus, default=ImportStatus.TESTING)
     name = StringCol(default=None)
     title = StringCol(default=None)
     description = StringCol(default=None)
     cvsroot = StringCol(default=None)
     cvsmodule = StringCol(default=None)
     cvstarfile = ForeignKey(foreignKey='LibraryFileAlias',
-                   dbName='cvstarfile', default=None)
+                            dbName='cvstarfile', default=None)
     cvstarfileurl = StringCol(default=None)
     cvsbranch = StringCol(default=None)
     svnrepository = StringCol(default=None)
@@ -55,7 +46,7 @@ class XXXXSourceSource(SQLBase):
     releaseverstyle = StringCol(default=None)
     releasefileglob = StringCol(default=None)
     releaseparentbranch = ForeignKey(foreignKey='Branch',
-                   dbName='releaseparentbranch', default=None)
+                                     dbName='releaseparentbranch', default=None)
     branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
     lastsynced = UtcDateTimeCol(default=None)
     syncinterval = DateTimeCol(default=None)
@@ -76,7 +67,7 @@ class XXXXSourceSource(SQLBase):
     packagedistro = StringCol(default=None)
     packagefiles_collapsed = StringCol(default=None)
     owner = ForeignKey(foreignKey='Person', dbName='owner',
-                   notNull=True)
+                       notNull=True)
     currentgpgkey = StringCol(default=None)
     fileidreference = StringCol(default=None)
     dateautotested = UtcDateTimeCol(default=None)
@@ -101,37 +92,35 @@ class XXXXSourceSource(SQLBase):
         return False
 
     def certifyForSync(self):
-        """enable the sync for processing"""
+        """Enable the sync for processing."""
         self.processingapproved = UTC_NOW
         self.syncinterval = datetime.timedelta(1)
         self.importstatus = ImportStatus.PROCESSING
 
     def syncCertified(self):
-        """is the sync enabled"""
+        """Is the sync enabled?"""
         return self.processingapproved is not None
 
     def autoSyncEnabled(self):
-        """is the sync automatically scheduling"""
+        """Is the sync automatically scheduling?"""
         return self.importstatus == ImportStatus.SYNCING
 
     def enableAutoSync(self):
-        """enable autosyncing"""
+        """Enable autosyncing?"""
         self.syncingapproved = UTC_NOW
         self.importstatus = ImportStatus.SYNCING
 
     def canChangeProductSeries(self):
-        """is this sync allowed to have its product series changed?"""
+        """Is this sync allowed to have its product series changed?"""
         return self.product.name == "unassigned"
 
     def changeProductSeries(self, series):
-        """change the productseries this sync belongs to"""
+        """Change the productseries this sync belongs to."""
         assert (self.canChangeProductSeries())
         self.productseries = series
 
     def needsReview(self):
-        if not self.syncapproved and self.dateautotested:
-            return True
-        return False
+        return not self.syncapproved and self.dateautotested
 
     def _get_repository(self):
         # XXX: Is that used anywhere but in buildJob? If not, that should
@@ -153,7 +142,7 @@ class XXXXSourceSource(SQLBase):
         return self.package_files_collapsed.split()
 
 
-class XXXXSourceSourceSet(object):
+class XXXXSourceSourceSet:
     """The set of SourceSource's."""
     implements(ISourceSourceSet)
 
@@ -161,17 +150,20 @@ class XXXXSourceSourceSet(object):
         self.title = 'Bazaar Upstream Imports'
 
     def __getitem__(self, sourcesourcename):
-        ss = SourceSource.selectBy(name=sourcesourcename)
-        return ss[0]
+        ss = SourceSource.selectOneBy(name=sourcesourcename)
+        if ss is None:
+            raise KeyError(sourcesourcename)
+        return ss
 
     def _querystr(self, ready=None, text=None, state=None):
         """Return a querystring and clauseTables for use in a search or a
-        get or a query."""
+        get or a query.
+        """
         query = '1=1'
-        clauseTables = Set()
+        clauseTables = sets.Set()
         clauseTables.add('SourceSource')
         # deal with the cases which require project and product
-        if ( ready is not None ) or text:
+        if (ready is not None) or text:
             if len(query) > 0:
                 query = query + ' AND\n'
             query += "SourceSource.product = Product.id"
@@ -208,7 +200,6 @@ class XXXXSourceSourceSet(object):
         query, clauseTables = self._querystr(ready, text, state)
         return SourceSource.select(query, distinct=True,
                                    clauseTables=clauseTables)[start:length]
-        
 
     # this is pedantic, to get every item individually, but it does allow
     # for making sure nothing gets passed in accidentally.

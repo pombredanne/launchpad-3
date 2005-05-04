@@ -1,18 +1,18 @@
-# Zope interfaces
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['ProductRelease', 'ProductReleaseFile']
+
 from zope.interface import implements
 
-# SQL imports
-from sqlobject import ForeignKey, IntCol, StringCol
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
+from sqlobject import ForeignKey, IntCol, StringCol, MultipleJoin
 
-# canonical imports
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad import helpers
 
 from canonical.launchpad.interfaces import IProductRelease
-##from canonical.lp.dbschema import EnumCol
+
 
 class ProductRelease(SQLBase):
     """A release of a product."""
@@ -33,11 +33,9 @@ class ProductRelease(SQLBase):
 
     files = MultipleJoin('ProductReleaseFile', joinColumn='productrelease')
 
-    # joins
     files = MultipleJoin('ProductReleaseFile', joinColumn='productrelease')
     potemplates = MultipleJoin('POTemplate', joinColumn='productrelease')
 
-    # properties
     def product(self):
         return self.productseries.product
     product = property(product)
@@ -49,22 +47,17 @@ class ProductRelease(SQLBase):
     def potemplatecount(self):
         return len(self.potemplates)
     potemplatecount = property(potemplatecount)
-    
+
     def poTemplate(self, name):
-        results = POTemplate.select(
+        template = POTemplate.selectOne(
             "POTemplate.productrelease = %d AND "
             "POTemplate.potemplatename = POTemplateName.id AND "
             "POTemplateName.name = %s" % (self.id, quote(name)),
             clauseTables=['ProductRelease', 'POTemplateName'])
 
-        # there should never be more than 1 template with a given name for a
-        # specific product release
-        assert results.count() < 2
-        
-        if results.count() == 0:
+        if template is None: 
             raise KeyError, name
-        else:
-            return results[0]
+        return template
 
     def messageCount(self):
         count = 0
@@ -105,5 +98,4 @@ class ProductReleaseFile(SQLBase):
     # This should be changes to EnumCol but seems to do
     # not have an schema defined yet.
     filetype = IntCol(notNull=True)
-
 

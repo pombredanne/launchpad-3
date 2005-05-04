@@ -29,6 +29,10 @@
   efficiently, and also allows for distributed development of the upstream
   code.</p>
 
+  <div tal:repeat="errmsg view/errormsgs" tal:omit-tag>
+  <p class="portalMessage" tal:content="errmsg" />
+  </div>
+
   <form method="post">
   
   <fieldset>
@@ -56,7 +60,7 @@
   <div class="field">
     <label>CVS branch name</label>
     <span class="fieldRequired" title="Required">(Required)</span>
-    <input type="text" name="branchfrom" size="30"
+    <input type="text" name="cvsbranch" size="30"
        tal:attributes="value view/cvsbranch" />
   </div>
 
@@ -77,6 +81,7 @@
 
   </fieldset>
 
+  <!--
   <fieldset>
   <legend>Arch source</legend>
   <p class="discreet">
@@ -106,29 +111,64 @@
   </div>
 
   </fieldset>
-
-  <fieldset>
-  <legend>Arch target</legend>
+  -->
   
+  <fieldset>
+
+  <legend>Import and Sync Details</legend>
+
+  <div class="field">
+    <label>Import from...</label>
+    <span class="fieldRequired" title="Required">(Required)</span>
+    <br />
+    <span tal:replace="structure view/rcs_selector">RCS Selector</span>
+    <div class="formHelp">
+      Which revision control system details to use for the import.
+    </div>
+  </div>
+  
+  <div class="field">
+    <label>Arch archive</label>
+    <span class="fieldRequired" title="Required">(Required)</span>
+    <input type="text" name="targetarcharchive" size="30"
+       tal:attributes="value view/targetarcharchive" />
+    <div class="formHelp">
+      The recommended value would be <span
+      tal:replace="view/default_targetarcharchive" />
+    </div>
+  </div>
+
   <div class="field">
     <label>Arch category</label>
     <span class="fieldRequired" title="Required">(Required)</span>
-    <input type="text" name="category" size="30"
-       value="" />
+    <input type="text" name="targetarchcategory" size="30"
+       tal:attributes="value view/targetarchcategory" />
+    <div class="formHelp">
+      The recommended value would be <span
+      tal:replace="view/default_targetarchcategory" />
+    </div>
   </div>
 
   <div class="field">
     <label>Arch branch</label>
     <span class="fieldRequired" title="Required">(Required)</span>
-    <input type="text" name="branchto" size="30"
-       value="" />
+    <input type="text" name="targetarchbranch" size="30"
+       tal:attributes="value view/targetarchbranch" />
+    <div class="formHelp">
+      The recommended value would be <span
+      tal:replace="view/default_targetarchbranch" />
+    </div>
   </div>
 
   <div class="field">
     <label>Arch version</label>
     <span class="fieldRequired" title="Required">(Required)</span>
-    <input type="text" name="archversion" size="30"
-       value="" />
+    <input type="text" name="targetarchversion" size="30"
+       tal:attributes="value view/targetarchversion" />
+    <div class="formHelp">
+      The recommended value would be <span
+      tal:replace="view/default_targetarchversion" />
+    </div>
   </div>
 
   </fieldset>

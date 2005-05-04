@@ -3,18 +3,12 @@ ends in +edit, this is in fact a read-only UI to anonymous users.
 
   >>> print http(r"""
   ... GET /malone/tasks/6/+edit HTTP/1.1
-  ... """)
+  ... """) #doctest: -NORMALIZE_WHITESPACE
   HTTP/1.1 200 Ok
   ...
-  <BLANKLINE>
       <h3>Source Package Bug Task</h3>
   ...
-  <BLANKLINE>
               <label>Source Package Name</label>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
+  ...
                   <div>mozilla-firefox</div>
   ...

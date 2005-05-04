@@ -5,6 +5,7 @@ __metaclass__ = type
 import sys, os, os.path, shutil, time
 from signal import SIGTERM
 from canonical.config import config
+import canonical
 
 class LibrarianTestSetup(object):
     r"""Setup a librarian for use by functional tests
@@ -78,7 +79,8 @@ class LibrarianTestSetup(object):
 
     def tacfile(self):
         return os.path.abspath(os.path.join(
-            os.path.dirname(__file__), os.pardir, 'librarian.tac'
+            os.path.dirname(canonical.__file__), os.pardir, os.pardir,
+            'daemons/librarian.tac'
             ))
     tacfile = property(tacfile)
 

@@ -1,8 +1,5 @@
-#
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-# first the real ones
-#
 from canonical.launchpad.database.milestone import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.product import *
@@ -70,5 +67,4 @@ from canonical.launchpad.database.distrotool import *
 from canonical.launchpad.database.component import *
 from canonical.launchpad.database.section import *
 from canonical.launchpad.database.vpoexport import *
-
 

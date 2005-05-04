@@ -1,21 +1,22 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['BinaryPackageName', 'BinaryPackageNameSet']
+
 # Zope imports
 from zope.interface import implements
 
 # SQLObject/SQLBase
-from sqlobject import MultipleJoin
-from sqlobject import SQLObjectNotFound
-from sqlobject import StringCol, MultipleJoin
+from sqlobject import \
+    SQLObjectNotFound, StringCol, MultipleJoin, CONTAINSSTRING
 
 # launchpad imports
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase, quote, quote_like
 
 # interfaces and database 
 from canonical.launchpad.interfaces import IBinaryPackageName
 from canonical.launchpad.interfaces import IBinaryPackageNameSet
 
-#
-#
-#
 
 class BinaryPackageName(SQLBase):
 
@@ -25,19 +26,18 @@ class BinaryPackageName(SQLBase):
                      alternateID=True)
 
     binarypackages = MultipleJoin(
-            'BinaryPackage', joinColumn='binarypackagename'
-            )
+        'BinaryPackage', joinColumn='binarypackagename'
+        )
 
     def __unicode__(self):
         return self.name
 
-    def _ensure(klass, name):
+    def ensure(klass, name):
         try:
             return klass.byName(name)
         except SQLObjectNotFound:
             return klass(name=name)
-        
-    ensure = classmethod(_ensure)
+    ensure = classmethod(ensure)
 
 
 class BinaryPackageNameSet:
@@ -56,16 +56,16 @@ class BinaryPackageNameSet:
             yield binarypackagename
 
     def findByName(self, name):
-        """Find binarypackagenames by its name or part of it"""
-        name = name.replace('%', '%%')
-        query = ('name ILIKE %s'
-                 %quote('%%' +name+ '%%'))
-        return BinaryPackageName.select(query)
+        """Find binarypackagenames by its name or part of it."""
+        return BinaryPackageName.select(
+            CONTAINSSTRING(BinaryPackageName.q.name, name))
 
     def query(self, name=None, distribution=None, distrorelease=None,
               distroarchrelease=None, text=None):
-        if name is None and distribution is None and \
-            distrorelease is None and text is None:
-            raise NotImplementedError, 'must give something to the query.'
+        if (name is None and distribution is None and
+            distrorelease is None and text is None):
+            raise ValueError('must give something to the query.')
         clauseTables = Set(['BinaryPackage'])
         # XXX sabdfl 12/12/04 not done yet
+        raise NotImplementedError
+

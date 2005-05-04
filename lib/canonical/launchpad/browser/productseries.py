@@ -2,12 +2,16 @@
 # Copyright (c) 2004-2005 Canonical Ltd
 #
 
+import re
+
 from zope.interface import implements
 from zope.component import getUtility
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
+
+from CVS.protocol import CVSRoot
 
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
@@ -22,6 +26,44 @@ __all__ = ['traverseProductSeries', 'ProductSeriesView',
 def traverseProductSeries(series, request, name):
     return series.getRelease(name)
 
+def validate_cvs_root(cvsroot, cvsmodule):
+    try:
+        root = CVSRoot(cvsroot + '/' + cvsmodule)
+    except ValueError, e:
+        return False
+    valid_module = re.compile('^[a-zA-Z][a-zA-Z0-9_-]*$')
+    if not valid_module.match(cvsmodule):
+        return False
+    # 'CVS' is illegal as a module name
+    if cvsmodule == 'CVS':
+        return False
+    if root.method == 'local' or root.hostname.count('.') == 0:
+        return False
+    return True
+
+def validate_cvs_branch(branch):
+    if not len(branch):
+        return False
+    valid_branch = re.compile('^[a-zA-Z][a-zA-Z0-9_-]*$')
+    if valid_branch.match(branch):
+        return True
+    return False
+
+def validate_svn_repo(repo):
+    if not repo:
+        return False
+    import urllib
+    scheme, host = urllib.splittype(repo)
+    if not scheme in ["http", "https", "svn", "svn+ssh"]:
+        return False
+    host,path = urllib.splithost(host)
+    if not len(host):
+        return False
+    return True
+
+
+
+
 #
 # A View Class for ProductSeries
 #
@@ -35,6 +77,7 @@ class ProductSeriesView(object):
         self.product = context.product
         self.request = request
         self.form = request.form
+        self.errormsgs = []
         self.displayname = self.context.displayname
         self.shortdesc = self.context.shortdesc
         self.rcstype = self.context.rcstype
@@ -44,6 +87,22 @@ class ProductSeriesView(object):
         self.svnrepository = self.context.svnrepository
         self.releaseroot = self.context.releaseroot
         self.releasefileglob = self.context.releasefileglob
+        self.targetarcharchive = self.context.targetarcharchive
+        self.targetarchcategory = self.context.targetarchcategory
+        self.targetarchbranch = self.context.targetarchbranch
+        self.targetarchversion = self.context.targetarchversion
+        if self.context.product.project:
+            self.default_targetarcharchive = self.context.product.project.name
+            self.default_targetarcharchive += '@projects.ubuntu.com'
+        else:
+            self.default_targetarcharchive = self.context.product.name
+            self.default_targetarcharchive += '@products.ubuntu.com'
+        self.default_targetarchcategory = self.context.product.name
+        if self.cvsbranch:
+            self.default_targetarchbranch = self.cvsbranch
+        else:
+            self.default_targetarchbranch = self.context.name
+        self.default_targetarchversion = '0'
 
     def namesReviewed(self):
         if not (self.product.active and self.product.reviewed):
@@ -89,7 +148,7 @@ class ProductSeriesView(object):
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
 
-    def editSource(self):
+    def editSource(self, fromAdmin=False):
         """This method processes the results of an attempt to edit the
         upstream revision control details for this series."""
         # see if anything was posted
@@ -97,6 +156,9 @@ class ProductSeriesView(object):
             return
         form = self.form
         if form.get("Update RCS Details", None) is None:
+            return
+        if self.context.syncCertified() and not fromAdmin:
+            self.errormsgs.append('This Source is has been certified and is now unmodifiable.')
             return
         # get the form content, defaulting to what was there
         rcstype=form.get("rcstype", None)
@@ -110,14 +172,28 @@ class ProductSeriesView(object):
         self.cvsmodule = form.get("cvsmodule", self.cvsmodule)
         self.cvsbranch = form.get("cvsbranch", self.cvsbranch)
         self.svnrepository = form.get("svnrepository", self.svnrepository)
-
-        # XXX sabdfl 09/04/05 need to do some validation
+        # make sure we at least got something for the relevant rcs
+        if rcstype == 'cvs':
+            if not (self.cvsroot and self.cvsmodule and self.cvsbranch):
+                self.errormsgs.append('Please give valid CVS details')
+                return
+            if not validate_cvs_branch(self.cvsbranch):
+                self.errormsgs.append('Your CVS branch name is invalid.')
+                return
+            if not validate_cvs_root(self.cvsroot, self.cvsmodule):
+                self.errormsgs.append('Your CVS root and module are invalid.')
+                return
+        elif rcstype == 'svn':
+            if not validate_svn_repo(self.svnrepository):
+                self.errormsgs.append('Please give valid SVN server details')
+                return
         self.context.rcstype = self.rcstype
         self.context.cvsroot = self.cvsroot
         self.context.cvsmodule = self.cvsmodule
         self.context.cvsbranch = self.cvsbranch
         self.context.svnrepository = self.svnrepository
-        self.context.importstatus = ImportStatus.TESTING
+        if not fromAdmin:
+            self.context.importstatus = ImportStatus.TESTING
         self.request.response.redirect('.')
 
     def adminSource(self):
@@ -132,9 +208,24 @@ class ProductSeriesView(object):
         form = self.form
         if form.get("Update RCS Details", None) is None:
             return
-        # look for admin changes and handle those
+        # look for admin changes and retrieve those
+        self.targetarcharchive = form.get('targetarcharchive', self.targetarcharchive)
+        self.targetarchcategory = form.get('targetarchcategory', self.targetarchcategory)
+        self.targetarchbranch = form.get('targetarchbranch', self.targetarchbranch)
+        self.targetarchversion = form.get('targetarchversion', self.targetarchversion)
+        # lifeless 29/04/05 need validation
+        self.context.targetarcharchive = self.targetarcharchive
+        self.context.targetarchcategory = self.targetarchcategory
+        self.context.targetarchbranch = self.targetarchbranch
+        self.context.targetarchversion = self.targetarchversion
         # find and handle editing changes
-        self.editSource()
+        self.editSource(fromAdmin=True)
+        if self.form.get('syncCertified', None):
+            if not self.context.syncCertified():
+                self.context.certifyForSync()
+        if self.form.get('autoSyncEnabled', None):
+            if not self.context.autoSyncEnabled():
+                self.context.enableAutoSync()
 
     def newProductRelease(self):
         """

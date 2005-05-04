@@ -366,19 +366,26 @@ class TeamMembershipEditView(object):
         else:
             return True
 
+    def membershipExpires(self):
+        """Return True if this membership is scheduled to expire one day."""
+        if self.context.dateexpires is None:
+            return False
+        else:
+            return True
+
     def _getExpirationDate(self):
         """Return a datetime with the expiration date selected on the form.
 
         Return None if the selected date was empty. Also raises ValueError if
         the date selected is invalid.
         """
+        if self.request.form.get('expires') == 'never':
+            return None
+
         year = int(self.request.form.get('year'))
         month = int(self.request.form.get('month'))
         day = int(self.request.form.get('day'))
-        if year or month or day:
-            return datetime(year, month, day, tzinfo=pytz.timezone('UTC'))
-        else:
-            return None
+        return datetime(year, month, day, tzinfo=pytz.timezone('UTC'))
 
     def _setMembershipData(self, status):
         """Set all data specified on the form, for this TeamMembership.

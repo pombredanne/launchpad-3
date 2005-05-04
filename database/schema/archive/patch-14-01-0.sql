@@ -17,7 +17,15 @@ CREATE TEMPORARY TABLE TmpProductSeries (
 INSERT INTO TmpProductSeries
     (product, name, displayname, shortdesc, productrelease)
     SELECT DISTINCT
-        Product.id, 'HEAD', Product.displayname, Product.shortdesc,
+        Product.id,
+        'main',
+        'MAIN',
+        'The primary "trunk" of development for this product. This series
+was automatically created and represents the idea of a primary trunk
+of software development without "stable branches". For most
+products, releases in this series will be "milestone" or "test"
+releases, and there should be other series for the stable releases
+of the product.',
         ProductRelease.id
     FROM
         ProductRelease

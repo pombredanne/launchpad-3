@@ -1,11 +1,13 @@
-# Zope interfaces
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['POMsgID']
+
 from zope.interface import implements
 
-# SQL imports
 from sqlobject import StringCol, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote
 
-# canonical imports
 from canonical.launchpad.interfaces import IPOMsgID
 
 
@@ -20,17 +22,16 @@ class POMsgID(SQLBase):
         alternateID=False)
 
     def byMsgid(cls, key):
-        '''Return a POMsgID object for the given msgid'''
+        """Return a POMsgID object for the given msgid."""
 
         # We can't search directly on msgid, because this database column
         # contains values too large to index. Instead we search on its
         # hash, which *is* indexed
-        r = POMsgID.select('sha1(msgid) = sha1(%s)' % quote(key))
-        assert r.count() in (0,1), 'Database constraint broken'
-        if r.count() == 1:
-            return r[0]
-        else:
+        r = POMsgID.selectOne('sha1(msgid) = sha1(%s)' % quote(key))
+        if r is None:
             # To be 100% compatible with the alternateID behaviour, we should
             # raise SQLObjectNotFound instead of KeyError
             raise SQLObjectNotFound(key)
+        return r
     byMsgid = classmethod(byMsgid)
+

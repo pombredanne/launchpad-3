@@ -39,6 +39,7 @@
     <include file="karma.zcml" />
     <include file="language.zcml" />
     <include file="launchpad.zcml" />
+    <include file="librarian.zcml" />
     <include file="logintoken.zcml" />
     <include file="maintainership.zcml" />
     <include file="message.zcml" />

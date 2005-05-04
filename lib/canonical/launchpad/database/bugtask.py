@@ -1,33 +1,33 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
+__all__ = ['BugTask', 'BugTaskSet', 'BugTaskDelta', 'mark_task',
+           'BugTaskFactory', 'BugTasksReport']
 
 from sets import Set
 
 from sqlobject import ForeignKey
-from sqlobject import MultipleJoin, RelatedJoin
 from sqlobject import SQLObjectNotFound
-from sqlobject.sqlbuilder import table
 
 from zope.exceptions import NotFoundError
-from zope.security.interfaces import Unauthorized
 from zope.component import getUtility, getAdapter
 from zope.interface import implements, directlyProvides, directlyProvidedBy
-from zope.interface import implements
 
 from canonical.lp import dbschema
-from canonical.lp.dbschema import EnumCol
+from canonical.lp.dbschema import EnumCol, BugPriority
 from canonical.launchpad.interfaces import IBugTask, IBugTaskDelta
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import nowUTC
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.maintainership import Maintainership
 from canonical.launchpad.searchbuilder import any, NULL
+from canonical.launchpad.helpers import shortlist
 
 from canonical.launchpad.interfaces import IBugTasksReport, \
     IBugTaskSet, IEditableUpstreamBugTask, IReadOnlyUpstreamBugTask, \
     IEditableDistroBugTask, IReadOnlyDistroBugTask, IUpstreamBugTask, \
     IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, IAuthorization
+
 
 class BugTask(SQLBase):
     implements(IBugTask)
@@ -81,12 +81,11 @@ class BugTask(SQLBase):
         if self.product:
             return self.product.owner
         if self.distribution and self.sourcepackagename:
-            query = "distribution = %d AND sourcepackagename = %d" % (
-                self.distribution.id, self.sourcepackagename.id )
-            try:
-                return Maintainership.select(query)[0].maintainer
-            except IndexError:
-                return None
+            maintainership = Maintainership.selectOneBy(
+                distributionID=self.distribution.id,
+                sourcepackagenameID=self.sourcepackagename.id)
+            if maintainership is not None:
+                return maintainership.maintainer
         return None
     maintainer = property(maintainer)
 
@@ -159,7 +158,6 @@ class BugTaskSet:
             task = BugTask.get(id)
         except SQLObjectNotFound:
             raise KeyError, id
-
         return task
 
     def __iter__(self):
@@ -173,7 +171,6 @@ class BugTaskSet:
             bugtask = BugTask.get(id)
         except SQLObjectNotFound:
             raise NotFoundError("BugTask with ID %s does not exist" % str(id))
-
         return bugtask
 
     def search(self, bug=None, searchtext=None, status=None, priority=None,
@@ -184,7 +181,8 @@ class BugTaskSet:
         def build_where_condition_fragment(arg_name, arg_val, cb_arg_id):
             fragment = ""
             if isinstance(arg_val, any):
-                quoted_ids = [quote(cb_arg_id(obj)) for obj in query_arg.query_values]
+                quoted_ids = [quote(cb_arg_id(obj))
+                              for obj in query_arg.query_values]
                 query_values = ", ".join(quoted_ids)
                 fragment = "(BugTask.%s IN (%s))" % (arg_name, query_values)
             else:
@@ -238,27 +236,29 @@ class BugTaskSet:
         # appears to be a bug in sqlobject not taking distinct into
         # consideration when doing counts.
         if user:
-            query += ((
-                " OR ((BugTask.bug = Bug.id AND Bug.private = TRUE) AND "
-                "     (Bug.id in (SELECT Bug.id FROM Bug, BugSubscription WHERE "
-                "                (Bug.id = BugSubscription.bug) AND "
-                "                (BugSubscription.person = %(personid)d) AND "
-                "                (BugSubscription.subscription IN (%(cc)d, %(watch)d))))))") %
-                {'personid': user.id,
-                 'cc': dbschema.BugSubscription.CC.value,
-                 'watch': dbschema.BugSubscription.WATCH.value})
+            query += ("""
+                OR ((BugTask.bug = Bug.id AND Bug.private = TRUE) AND
+                    (Bug.id in (
+                        SELECT Bug.id FROM Bug, BugSubscription WHERE
+                           (Bug.id = BugSubscription.bug) AND
+                           (BugSubscription.person = %(personid)s) AND
+                           (BugSubscription.subscription IN
+                               (%(cc)s, %(watch)s))))))""" %
+                sqlvalues(personid=user.id,
+                          cc=dbschema.BugSubscription.CC,
+                          watch=dbschema.BugSubscription.WATCH)
+                )
 
-        bugtasks = BugTask.select(
-            query, clauseTables = ["Bug", "BugTask"])
+        bugtasks = BugTask.select(query, clauseTables=["Bug", "BugTask"])
         if orderby:
             bugtasks = bugtasks.orderBy(orderby)
 
         return bugtasks
 
-    def createTask(self, bug, product=None, distribution=None, distrorelease=None,
-                   sourcepackagename=None, binarypackagename=None, status=None,
-                   priority=None, severity=None, assignee=None, owner=None,
-                   milestone=None):
+    def createTask(self, bug, product=None, distribution=None,
+                   distrorelease=None, sourcepackagename=None,
+                   binarypackagename=None, status=None, priority=None,
+                   severity=None, assignee=None, owner=None, milestone=None):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
         bugtask_args = {
             'bug' : getattr(bug, 'id', None),
@@ -273,7 +273,7 @@ class BugTaskSet:
             'assignee' : getattr(assignee, 'id', None),
             'owner' : getattr(owner, 'id', None),
             'milestone' : getattr(milestone, 'id', None)
-        }
+            }
 
         return BugTask(**bugtask_args)
 
@@ -294,19 +294,26 @@ class BugTaskDelta:
         self.assignee = assignee
         self.target = target
 
-
 def mark_task(obj, iface):
     directlyProvides(obj, iface + directlyProvidedBy(obj))
-
 
 def BugTaskFactory(context, **kw):
     return BugTask(bugID = getUtility(ILaunchBag).bug.id, **kw)
 
 
-# REPORTS
 class BugTasksReport:
 
     implements(IBugTasksReport)
+
+    def _handle_showclosed(self, showclosed, querystr):
+        """Returns replacement querystr modified to take into account
+        showclosed.
+        """
+        if showclosed:
+            return querystr
+        else:
+            return querystr + ' AND BugTask.status < %s' % sqlvalues(
+                BugPriority.MEDIUM)
 
     # bugs assigned (i.e. tasks) to packages maintained by the user
     def maintainedPackageBugs(self, user, minseverity, minpriority, showclosed):
@@ -315,28 +322,27 @@ class BugTasksReport:
             "BugTask.distribution = Maintainership.distribution AND "
             "Maintainership.maintainer = %s AND "
             "BugTask.severity >= %s AND "
-            "BugTask.priority >= %s") % (
+            "BugTask.priority >= %s") % sqlvalues(
             user.id, minseverity, minpriority)
-        clauseTables = ('Maintainership',)
-
+        clauseTables = ['Maintainership']
+        querystr = self._handle_showclosed(showclosed, querystr)
         if not showclosed:
-            querystr = querystr + ' AND BugTask.status < 30'
-        return list(BugTask.select(querystr, clauseTables=clauseTables))
+            querystr = querystr + ' AND BugTask.status < %s' % sqlvalues(
+                BugPriority.MEDIUM)
+        return shortlist(BugTask.select(querystr, clauseTables=clauseTables))
 
     # bugs assigned (i.e. tasks) to products owned by the user
-    def maintainedProductBugs(self, user, minseverity, minpriority, showclosed):
+    def maintainedProductBugs(self, user, minseverity, minpriority,
+                              showclosed):
         querystr = (
             "BugTask.product = Product.id AND "
             "Product.owner = %s AND "
             "BugTask.severity >= %s AND "
-            "BugTask.priority >= %s") % (
+            "BugTask.priority >= %s") % sqlvalues(
             user.id, minseverity, minpriority)
-
-        clauseTables = ('Product',)
-
-        if not showclosed:
-            querystr = querystr + ' AND BugTask.status < 30'
-        return list(BugTask.select(querystr, clauseTables=clauseTables))
+        clauseTables = ['Product']
+        querystr = self._handle_showclosed(showclosed, querystr)
+        return shortlist(BugTask.select(querystr, clauseTables=clauseTables))
 
     # package bugs assigned specifically to the user
     def packageAssigneeBugs(self, user, minseverity, minpriority, showclosed):
@@ -344,11 +350,10 @@ class BugTasksReport:
             "BugTask.sourcepackagename IS NOT NULL AND "
             "BugTask.assignee = %s AND "
             "BugTask.severity >= %s AND "
-            "BugTask.priority >= %s") % (
+            "BugTask.priority >= %s") % sqlvalues(
             user.id, minseverity, minpriority)
-        if not showclosed:
-            querystr = querystr + ' AND BugTask.status < 30'
-        return list(BugTask.select(querystr))
+        querystr = self._handle_showclosed(showclosed, querystr)
+        return shortlist(BugTask.select(querystr))
 
     # product bugs assigned specifically to the user
     def productAssigneeBugs(self, user, minseverity, minpriority, showclosed):
@@ -356,10 +361,9 @@ class BugTasksReport:
             "BugTask.product IS NOT NULL AND "
             "BugTask.assignee =%s AND "
             "BugTask.severity >=%s AND "
-            "BugTask.priority >=%s") % (
+            "BugTask.priority >=%s") % sqlvalues(
             user.id, minseverity, minpriority)
-        if not showclosed:
-            querystr = querystr + ' AND BugTask.status < 30'
+        querystr = self._handle_showclosed(showclosed, querystr)
         return list(BugTask.select(querystr))
 
     # all bugs assigned to a user
@@ -384,3 +388,4 @@ class BugTasksReport:
         bugs = [bug for datecreated, bug in buglistwithdates]
 
         return bugs
+

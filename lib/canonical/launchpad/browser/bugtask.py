@@ -1,18 +1,15 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
 __metaclass__ = type
 
-from zope.schema.vocabulary import getVocabularyRegistry
 from zope.component import getUtility
 
-from sqlobject.sqlbuilder import AND, IN, ISNULL, OR, SQLOp
-
-from canonical.launchpad.browser.bug import BugView
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
-from canonical.launchpad.interfaces import IPerson, IPersonSet
+from canonical.launchpad.interfaces import IPersonSet, ILaunchBag
 from canonical.lp import dbschema
 from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
      ProductVocabulary, SourcePackageNameVocabulary
-from canonical.database.sqlbase import quote
 from canonical.launchpad.searchbuilder import NULL
 
 # Bug Reports
@@ -20,26 +17,20 @@ class BugTasksReportView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.form = self.request.form
         self.user = None
 
+        form = self.request.form
         # default to showing bugs assigned to the logged in user.
-        username = self.form.get('name', None)
+        username = form.get('name')
         if username:
             self.user = getUtility(IPersonSet).getByName(username)
         else:
-            # XXX: Brad Bollenbach, 2005-03-30: Why does this seem
-            # to set self.user to something other than None even
-            # when viewed by an anonymous user? Investigate.
-            self.user = IPerson(self.request.principal)
+            self.user = getUtility(ILaunchBag).user
 
         # default to showing even wishlist bugs
-        self.minseverity = int(self.form.get('minseverity', 0))
-        self.minpriority = int(self.form.get('minpriority', 0))
-        if self.form.get('showclosed', None) == 'yes':
-            self.showclosed = True
-        else:
-            self.showclosed = False
+        self.minseverity = int(form.get('minseverity', 0))
+        self.minpriority = int(form.get('minpriority', 0))
+        self.showclosed = form.get('showclosed') == 'yes'
 
     def maintainedPackageBugs(self):
         return self.context.maintainedPackageBugs(
@@ -63,15 +54,20 @@ class BugTasksReportView:
 
     # TODO: replace this with a smart vocabulary and widget
     def userSelector(self):
-        html = '<select name="name">\n'
-        for person in self.allPeople():
-            html = html + '<option value="'+person.name+'"'
-            if person==self.user:
-                html = html + ' selected="yes"'
-            html = html + '>'
-            html = html + person.browsername + '</option>\n'
-        html = html + '</select>\n'
-        return html
+        return '<input type="text" name="name" value="%s"/>\n' % (
+                self.user.name,
+                )
+        # Don't do this - when you have 60000+ people it tends to kill
+        # the production server.
+        # html = '<select name="name">\n'
+        # for person in self.allPeople():
+        #     html = html + '<option value="'+person.name+'"'
+        #     if person==self.user:
+        #         html = html + ' selected="yes"'
+        #     html = html + '>'
+        #     html = html + person.browsername + '</option>\n'
+        # html = html + '</select>\n'
+        # return html
 
     # TODO: replace this with a smart vocabulary and widget
     def severitySelector(self):
@@ -100,13 +96,16 @@ class BugTasksReportView:
         return html
 
     def showClosedSelector(self):
-        html = '<input type="checkbox" id="showclosed" name="showclosed" value="yes"'
+        html = ('<input type="checkbox" id="showclosed" '
+                'name="showclosed" value="yes"')
         if self.showclosed:
             html = html + ' checked="yes"'
         html = html + ' />'
         return html
 
     def allPeople(self):
+        # XXX: We should be using None, not NULL outside of database code.
+        #      -- Steve Alexander, 2005-04-22
         return getUtility(IPersonSet).search(password = NULL)
 
 # XXX: 2004-11-13, Brad Bollenbach: Much of the code in BugTasksView
@@ -148,21 +147,22 @@ class BugTasksView:
     def status_message(self):
         # XXX: Brad Bollenbach, 2004-11-30: This method is a bit of a dirty
         # hack at outputting a useful message if a bug has just been added, in
-        # lieu of a more general status message mechanism that avoids defacement
-        # attacks (e.g. http://www.example.com?status_message=You+have+been+hax0red).
+        # lieu of a more general status message mechanism that avoids
+        # defacement attacks
+        # (e.g. http://www.example.com?status_message=You+have+been+hax0red).
         bugadded = self.request.get('bugadded', None)
         if bugadded:
             try:
                 int(bugadded)
-                return 'Successfully added <a href="%s">bug # %s</a>. Thank you!' % (
-                    bugadded, bugadded)
-            except ValueError, err:
+                return ('Successfully added <a href="%s">bug # %s</a>.'
+                        ' Thank you!') % (bugadded, bugadded)
+            except ValueError:
                 pass
 
         return ''
 
     def submitted(self):
-        return self.request.get('search', None)
+        return self.request.get('search')
 
     def people(self):
         """Return the list of people in Launchpad."""
@@ -178,13 +178,13 @@ class BugTasksView:
 
     def advanced(self):
         """Should the form be rendered in advanced search mode?"""
-        req = self.request
         marker = object()
-        if req.get('advanced_submit', marker) is not marker:
+        form = self.request.form
+        if form.get('advanced_submit', marker) is not marker:
             return True
-        if req.get('simple_submit', marker) is not marker:
+        if form.get('simple_submit', marker) is not marker:
             return False
-        if req.get('advanced', 0):
+        if form.get('advanced', 0):
             return True
         return False
     advanced = property(advanced)

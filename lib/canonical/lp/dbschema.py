@@ -47,7 +47,7 @@ __all__ = (
 'ManifestEntryType',
 'PackagePublishingPriority',
 'PackagePublishingStatus',
-'Packaging',
+'PackagingType',
 'GPGKeyAlgorithms',
 'ProjectRelationship',
 'ProjectStatus',
@@ -418,7 +418,7 @@ class ManifestEntryType(DBSchema):
         """)
 
 
-class Packaging(DBSchema):
+class PackagingType(DBSchema):
     """Source packages.
 
     Source packages include software from one or more Upstream open source
@@ -1190,6 +1190,13 @@ class PackagePublishingStatus(DBSchema):
         passed the archive maintainance tools will remove the package from
         the on-disk archive and remove the publishing record.  """)
 
+    REMOVED = Item(7, """
+        Removed
+
+        Once a package is removed from the archive, its publishing record
+        is set to this status. This means it won't show up in the SPP view
+        and thus will not be considered in most queries about source
+        packages in distroreleases. """)
 
 class PackagePublishingPriority(DBSchema):
     """Package Publishing Priority

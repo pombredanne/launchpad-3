@@ -11,11 +11,7 @@
   Content-Type: text/html;charset=utf-8
   ...
               <label>Product</label>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
+  ...
                   <div>Mozilla Firefox</div>
   ...
 
@@ -31,11 +27,7 @@
   Content-Type: text/html;charset=utf-8
   ...
               <label>Product</label>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
+  ...
                   <div>
   <input type="text" name="field.product" value="firefox"
          cssclass="" id="field.product" size="20" />
@@ -118,11 +110,7 @@
   Content-Type: text/html;charset=utf-8
   ...
               <label>Product</label>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
+  ...
                   <div>
   <input type="text" name="field.product" value="firefox"
          cssclass="" id="field.product" size="20" />

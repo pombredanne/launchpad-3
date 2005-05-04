@@ -1,17 +1,20 @@
-# Zope interfaces
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['POTMsgSet']
+
 from zope.interface import implements
 from zope.component import getUtility
 
-# SQL imports
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote
 
-# canonical imports
 from canonical.launchpad.interfaces import IPOTMsgSet, ILanguageSet
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.pomsgset import POMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
+
 
 class POTMsgSet(SQLBase):
     implements(IPOTMsgSet)
@@ -30,10 +33,11 @@ class POTMsgSet(SQLBase):
 
     def flags(self):
         if self.flagscomment is None:
-            return ()
+            return []
         else:
-            return [ flag for flag in
-                self.flagscomment.replace(' ', '').split(',') if flag != '' ]
+            return [flag
+                    for flag in self.flagscomment.replace(' ', '').split(',')
+                    if flag != '']
 
     def messageIDs(self):
         """See IPOTMsgSet."""
@@ -41,7 +45,8 @@ class POTMsgSet(SQLBase):
             POMsgIDSighting.potmsgset = %d AND
             POMsgIDSighting.pomsgid = POMsgID.id AND
             POMsgIDSighting.inlastrevision = TRUE
-            ''' % self.id, clauseTables=['POMsgIDSighting'],
+            ''' % self.id,
+            clauseTables=['POMsgIDSighting'],
             orderBy='POMsgIDSighting.pluralform')
 
         for pomsgid in results:
@@ -50,23 +55,21 @@ class POTMsgSet(SQLBase):
     # XXX: Carlos Perello Marin 15/10/04: Review, not sure it's correct...
     def getMessageIDSighting(self, pluralForm, allowOld=False):
         """Return the message ID sighting that is current and has the
-        plural form provided."""
+        plural form provided.
+        """
         if allowOld:
-            results = POMsgIDSighting.selectBy(
+            sighting = POMsgIDSighting.selectOneBy(
                 potmsgsetID=self.id,
                 pluralform=pluralForm)
         else:
-            results = POMsgIDSighting.selectBy(
+            sighting = POMsgIDSighting.selectOneBy(
                 potmsgsetID=self.id,
                 pluralform=pluralForm,
                 inlastrevision=True)
-
-        if results.count() == 0:
+        if sighting is None:
             raise KeyError, pluralForm
         else:
-            assert results.count() == 1
-
-            return results[0]
+            return sighting
 
     def poMsgSet(self, language_code, variant=None):
         if variant is None:
@@ -76,7 +79,7 @@ class POTMsgSet(SQLBase):
         else:
             raise TypeError('Variant must be None or unicode.')
 
-        sets = POMsgSet.select('''
+        messagesets = POMsgSet.selectOne('''
             POMsgSet.potmsgset = %d AND
             POMsgSet.pofile = POFile.id AND
             POFile.language = Language.id AND
@@ -85,12 +88,11 @@ class POTMsgSet(SQLBase):
             ''' % (self.id,
                    variantspec,
                    quote(language_code)),
-            clauseTables=('POFile', 'Language'))
+            clauseTables=['POFile', 'Language'])
 
-        if sets.count() == 0:
-            raise KeyError, (language_code, variant)
-        else:
-            return sets[0]
+        if messagesets is None:
+            raise KeyError(language_code, variant)
+        return messagesets
 
     def translationsForLanguage(self, language):
         # Find the number of plural forms.
@@ -120,22 +122,19 @@ class POTMsgSet(SQLBase):
 
         # Find the sibling message set.
 
-        results = POMsgSet.select('''
+        translation_set = POMsgSet.selectOne('''
             POMsgSet.pofile = %d AND
             POMsgSet.potmsgset = POTMsgSet.id AND
             POTMsgSet.primemsgid = %d'''
            % (pofile.id, self.primemsgid_.id),
-           clauseTables = ['POTMsgSet', ])
+           clauseTables = ['POTMsgSet'])
 
-        if not (0 <= results.count() <= 1):
-            raise AssertionError("Duplicate message ID in PO file.")
-
-        if results.count() == 0:
+        if translation_set is None:
             return [None] * pluralforms
 
-        translation_set = results[0]
-
-        results = list(POTranslationSighting.select(
+        # XXX: Is this a place to use selectOne ?
+        #      -- SteveAlexander, 2005-04-23
+        results = shortlist(POTranslationSighting.select(
             'pomsgset = %d AND active = TRUE' % translation_set.id,
             orderBy='pluralForm'))
 
@@ -146,7 +145,6 @@ class POTMsgSet(SQLBase):
                 translations.append(results.pop(0).potranslation.translation)
             else:
                 translations.append(None)
-
         return translations
 
     # Methods defined in IEditPOTMsgSet
@@ -164,28 +162,24 @@ class POTMsgSet(SQLBase):
         except SQLObjectNotFound:
             messageID = POMsgID(msgid=text)
 
-        existing = POMsgIDSighting.selectBy(
+        existing = POMsgIDSighting.selectOneBy(
             potmsgsetID=self.id,
             pomsgid_ID=messageID.id,
             pluralform=pluralForm)
 
-        if existing.count():
-            assert existing.count() == 1
-
+        if existing is None:
+            return POMsgIDSighting(
+                potmsgsetID=self.id,
+                pomsgid_ID=messageID.id,
+                datefirstseen=UTC_NOW,
+                datelastseen=UTC_NOW,
+                inlastrevision=True,
+                pluralform=pluralForm)
+        else:
             if not update:
                 raise KeyError(
                     "There is already a message ID sighting for this "
                     "message set, text, and plural form")
-
-            existing = existing[0]
-            existing.set(datelastseen = UTC_NOW, inlastrevision = True)
-
+            existing.set(datelastseen=UTC_NOW, inlastrevision=True)
             return existing
 
-        return POMsgIDSighting(
-            potmsgsetID=self.id,
-            pomsgid_ID=messageID.id,
-            datefirstseen=UTC_NOW,
-            datelastseen=UTC_NOW,
-            inlastrevision=True,
-            pluralform=pluralForm)

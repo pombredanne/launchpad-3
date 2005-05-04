@@ -28,8 +28,7 @@ fi
 
 # update the code that is brought directly into the tree
 cd $LAUNCHPAD
-baz cat-config configs/canonical.com/launchpad/development | xargs -n 2 baz update -d
-
+baz cat-config configs/canonical.com/launchpad/development | while read dirname branch; do baz tree-version -d $dirname; baz update -d $dirname; done
 # then check if there are unmerged changes
 cd launchpad
 baz diff -q

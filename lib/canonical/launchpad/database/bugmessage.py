@@ -1,6 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
+__all__ = ['BugMessage', 'BugMessageFactory']
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -9,7 +10,7 @@ from email.Utils import make_msgid
 
 # Zope
 from zope.interface import implements
-from zope.app import zapi
+from zope.component import getUtility
 
 # SQL imports
 from sqlobject import ForeignKey
@@ -40,11 +41,10 @@ def BugMessageFactory(addview=None, title=None, content=None):
     Returns an IBugMessage
     """
     msg = Message(
-        parent=None, ownerID=zapi.getUtility(ILaunchBag).user.id,
+        parent=None, ownerID=getUtility(ILaunchBag).user.id,
         rfc822msgid=make_msgid('malone'), title=title)
-    chunk = MessageChunk(
-            messageID=msg.id, content=content, sequence=1)
-    bmsg = BugMessage(
-        bug=zapi.getUtility(ILaunchBag).bug.id, message=msg.id)
+    chunk = MessageChunk(messageID=msg.id, content=content, sequence=1)
+    bmsg = BugMessage(bug=getUtility(ILaunchBag).bug.id, message=msg.id)
 
     return bmsg
+

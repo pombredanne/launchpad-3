@@ -1,31 +1,25 @@
-# Python imports
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['DistroTools']
+
 from datetime import datetime
 
-# Zope imports
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
-
-# LP imports
-from canonical.lp import dbschema
-
-# interfaces and database 
 from canonical.launchpad.interfaces import IDistroTools
-
 from canonical.launchpad.database.distribution import Distribution
 
-#
-#
-#
 
-class DistroTools(object):
-    """Tools for help Distribution and DistroRelase Manipulation """
+class DistroTools:
+    """Tools for help Distribution and DistroRelase Manipulation."""
 
     implements(IDistroTools)
 
     def createDistro(self, owner, name, displayname,
                      title, summary, description, domain):
-        """Create a Distribution """
+        """Create a Distribution."""
         ##XXX: cprov 20041207
         ## Verify the name constraint as the postgresql does.
         ## What about domain ??? 
@@ -37,7 +31,6 @@ class DistroTools(object):
                               domainname=domain,
                               owner=owner)
         return distro
-        
 
     def createDistroRelease(self, owner, title, distribution, shortdesc,
                             description, version, parent):
@@ -63,7 +56,7 @@ class DistroTools(object):
                                 lucilleconfig='')
 
         return release
-    
+
     def getDistroReleases(self):
         return DistroRelease.select()
-    
+

@@ -1,16 +1,19 @@
-# Zope imports
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['BinaryPackageFile', 'SourcePackageReleaseFile']
+
 from zope.interface import implements
 
-# SQLObject/SQLBase
 from sqlobject import ForeignKey
 
 from canonical.database.sqlbase import SQLBase
 
-# interfaces and database 
-from canonical.launchpad.interfaces import IBinaryPackageFile, \
-                                           ISourcePackageReleaseFile
+from canonical.launchpad.interfaces import \
+    IBinaryPackageFile, ISourcePackageReleaseFile
 from canonical.lp.dbschema import EnumCol
 from canonical.lp.dbschema import BinaryPackageFileType, SourcePackageFileType 
+
 
 class BinaryPackageFile(SQLBase):
     """A binary package to library link record."""
@@ -24,6 +27,7 @@ class BinaryPackageFile(SQLBase):
                    dbName='libraryfile'),
         EnumCol('filetype', schema=BinaryPackageFileType),
     ]
+
 
 class SourcePackageReleaseFile(SQLBase):
     """A source package release to library link record."""

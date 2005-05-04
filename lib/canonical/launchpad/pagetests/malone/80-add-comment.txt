@@ -35,8 +35,7 @@ email.
   ...
   <BLANKLINE>
   ...
-          <h2>
-            Description
+      <h1>Bug Description and Discussion</h1>
   ...
 
 After the comment has been submitted, the notification email is sent:

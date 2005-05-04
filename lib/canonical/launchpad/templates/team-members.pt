@@ -61,13 +61,13 @@
 
             <td>
               <a tal:attributes="href member/name"
-                 tal:content="membership/datejoined/date"
+                 tal:content="membership/datejoined/fmt:date"
                  title="Edit this membership" />
             </td>
 
             <td tal:condition="membership/dateexpires">
               <a tal:attributes="href member/name" 
-                 tal:content="membership/dateexpires/date"
+                 tal:content="membership/dateexpires/fmt:date"
                  title="Edit this membership" />
             </td>
 
@@ -111,7 +111,7 @@
             </td>
             <td>
               <a tal:attributes="href member/name"
-                 tal:content="membership/datejoined/date"
+                 tal:content="membership/datejoined/fmt:date"
                  title="Approve/Decline this membership" />
             </td>
             </tal:block>
@@ -150,14 +150,14 @@
             </td>
             <td>
               <a tal:attributes="href member/name"
-                 tal:content="membership/datejoined/date"
+                 tal:content="membership/datejoined/fmt:date"
                  title="Renew/Reactivate this membership" />
             </td>
 
             <td tal:condition="membership/isExpired">
               <a tal:attributes="href member/name"
                  title="Renew/Reactivate this membership">
-                Membership expired in <span tal:replace="membership/dateexpires/date" />
+                Membership expired in <span tal:replace="membership/dateexpires/fmt:date" />
               </a>
             </td>
             <td tal:condition="not: membership/isExpired">

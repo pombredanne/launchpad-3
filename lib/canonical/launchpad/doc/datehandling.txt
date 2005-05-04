@@ -43,10 +43,9 @@ Then let's create a bunch of sample dates to work with:
 An IBugTask extends the interface IHasDateCreated. IHasDateCreated can be
 adapted to IAging:
 
-    >>> from zope.component import getAdapter
     >>> from canonical.launchpad.interfaces import IAging
     >>> bt.datecreated = one_minute_ago
-    >>> aging_bug = getAdapter(bt, IAging, '')
+    >>> aging_bug = IAging(bt)
 
 IAging provides a method, currentApproximateAge, which returns a human-readable
 approximation of the age of a something.

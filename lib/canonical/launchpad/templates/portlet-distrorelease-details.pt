@@ -27,10 +27,11 @@
             <br />
 
             <span tal:condition="context/parentrelease" tal:omit-tag>
-                <b>Derives from:</b><br />
-                <a tal:attributes="href
-                string:/distros/${context/parentrelease/distribution/name}/${context/parentrelease/name}">
-                <span tal:replace="context/parentrelease/displayname" /></a>
+              <b>Derives from:</b><br />
+              <a tal:attributes="href
+              string:/distros/${context/parentrelease/distribution/name}/${context/parentrelease/name}">
+              <span tal:replace="context/parentrelease/distribution/name" />
+              <span tal:replace="context/parentrelease/name" /></a>
             </span>
            
         </div>

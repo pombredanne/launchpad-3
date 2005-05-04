@@ -49,6 +49,10 @@ class Dominator(object):
             # never dominated by us, then just set subsequent entries
             # to SUPERSEDED unless they're already there or pending
             # removal
+
+            # SPPHXXX dsilvers 2005-04-15 This needs updating for SPPH
+            # as the publisher is written.
+
             for pubrec in sourceinput[source][1:]:
                 if pubrec.status == PUBLISHED or pubrec.status == PENDING:
                     pubrec.status = SUPERSEDED;
@@ -114,6 +118,9 @@ class Dominator(object):
         # For now; binaries were dominated as per sources and we just
         # treat everything as entirely separate. Nothing stays superseded
         # but we keep the separation for later correct implementation
+
+        # SPPHXXX dsilvers 2005-04-15 This needs updating for SPPH
+        # as the publisher is written.
 
         for p in sourcepackages:
             if p.status == SUPERSEDED:

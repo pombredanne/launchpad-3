@@ -1,5 +1,6 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
-#
+
+__metaclass__ = type
 
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.database import LibraryFileContent, LibraryFileAlias
@@ -8,9 +9,9 @@ from sqlobject import IntCol, StringCol, DateTimeCol, ForeignKey
 from sqlobject import SQLObjectNotFound
 
 
-class Library(object):
+class Library:
 
-    # the following methods are read-only queries
+    # The following methods are read-only queries.
 
     def lookupBySHA1(self, digest):
         return [fc.id for fc in 
@@ -18,11 +19,11 @@ class Library(object):
 
     def getAlias(self, fileid, filename):
         """Returns a LibraryFileAlias, or raises LookupError."""
-        results = LibraryFileAlias.selectBy(contentID=fileid, filename=filename)
-        try:
-            return results[0]
-        except IndexError:
-            raise LookupError, 'Alias %s: %r'% (fileid, filename)
+        alias = LibraryFileAlias.selectOneBy(
+            contentID=fileid, filename=filename)
+        if alias is None:
+            raise LookupError('Alias %s: %r' % (fileid, filename))
+        return alias
 
     def getAliases(self, fileid):
         results = LibraryFileAlias.selectBy(contentID=fileid)
@@ -48,7 +49,7 @@ class Library(object):
 
     def addAlias(self, fileid, filename, mimetype):
         """Add an alias, and return its ID.
-        
+
         If a matching alias already exists, it will return that ID instead.
         """
         try:
@@ -60,4 +61,4 @@ class Library(object):
 
         return LibraryFileAlias(contentID=fileid, filename=filename,
                                 mimetype=mimetype).id
-            
+

@@ -7,6 +7,14 @@
              tal:define="subscriptions context/subscriptions;
                          bugtasks context/bugtasks">
 
+            <h5>submitter:</h5>
+            <ul class="people">
+                <li><a href=""
+                    tal:content="context/owner/browsername"
+                    tal:attributes="
+                      href string:/people/${context/owner/name}">owner</a></li>
+            </ul>
+
             <h5>maintainers:</h5>
 
             <ul class="people" tal:repeat="task bugtasks">

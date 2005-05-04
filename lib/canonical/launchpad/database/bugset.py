@@ -1,4 +1,7 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
 __metaclass__ = type
+__all__ = ['BugSetBase']
 
 from zope.interface import implements
 from zope.app.form.browser.interfaces import IAddFormCustomization
@@ -12,11 +15,10 @@ class BugSetBase:
         self.title = 'A set of Bugs'
 
     def __getitem__(self, id):
-        try:
-            return self.table.select(self.table.q.id == id)[0]
-        except IndexError:
-            # Convert IndexError to KeyErrors to get Zope's NotFound page
+        item = self.table.selectOne(self.table.q.id == id)
+        if item is None:
             raise KeyError, id
+        return item
 
     def __iter__(self):
         for row in self.table.select(self.table.q.bugID == self.bug):
@@ -27,3 +29,4 @@ class BugSetBase:
 
     def nextURL(self):
         return '.'
+

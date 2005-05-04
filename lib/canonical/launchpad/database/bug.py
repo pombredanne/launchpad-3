@@ -1,19 +1,21 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
+__all__ = ['Bug', 'BugDelta', 'BugFactory', 'BugSet']
 
 from sets import Set
 from datetime import datetime
 from email.Utils import make_msgid
 
 from zope.interface import implements
+from zope.exceptions import NotFoundError
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
+from sqlobject import MultipleJoin, RelatedJoin
 
-from canonical.launchpad.interfaces import IBug, IBugAddForm, IBugSet, IBugDelta
+from canonical.launchpad.interfaces import \
+    IBug, IBugAddForm, IBugSet, IBugDelta
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -29,6 +31,7 @@ from canonical.launchpad.database.maintainership import Maintainership
 from zope.i18n import MessageIDFactory
 _ = MessageIDFactory("launchpad")
 
+
 class Bug(SQLBase):
     """A bug."""
 
@@ -43,7 +46,8 @@ class Bug(SQLBase):
     description = StringCol(notNull=False,
                             default=None)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-    duplicateof = ForeignKey(dbName='duplicateof', foreignKey='Bug', default=None)
+    duplicateof = ForeignKey(
+        dbName='duplicateof', foreignKey='Bug', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     communityscore = IntCol(dbName='communityscore', notNull=True, default=0)
     communitytimestamp = UtcDateTimeCol(dbName='communitytimestamp',
@@ -92,12 +96,8 @@ class Bug(SQLBase):
 
     def isSubscribed(self, person):
         """See canonical.launchpad.interfaces.IBug."""
-        bs = BugSubscription.selectBy(
-            bugID = self.id, personID = person.id)
-        if bs.count():
-            return True
-        else:
-            return False
+        bs = BugSubscription.selectBy(bugID = self.id, personID = person.id)
+        return bool(bs.count())
 
     def notificationRecipientAddresses(self):
         """See canonical.launchpad.interfaces.IBug."""
@@ -137,11 +137,12 @@ class Bug(SQLBase):
                             distribution = task.distribution
                         else:
                             distribution = task.distrorelease.distribution
-                        maintainership = Maintainership.selectBy(
+                        maintainership = Maintainership.selectOneBy(
                             sourcepackagenameID = task.sourcepackagename.id,
                             distributionID = distribution.id)
-                        if maintainership.count():
-                            preferred_email = maintainership[0].maintainer.preferredemail
+                        if maintainership is not None:
+                            maintainer = maintainership.maintainer
+                            preferred_email = maintainer.preferredemail
                             if preferred_email:
                                 emails.add(preferred_email.email)
 
@@ -173,7 +174,6 @@ class BugDelta:
         self.cveref = cveref
         self.bugtask_deltas = bugtask_deltas
 
-
 def BugFactory(addview=None, distribution=None, sourcepackagename=None,
                binarypackagename=None, product=None, comment=None,
                description=None, rfc822msgid=None, shortdesc=None,
@@ -203,9 +203,10 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
 
     # make sure that the factory has been passed enough information
     if not (distribution or product):
-        raise ValueError, 'Must pass BugFactory a distribution or a product'
+        raise ValueError('Must pass BugFactory a distribution or a product')
     if not (comment or description or rfc822msgid):
-        raise ValueError, 'BugFactory requires a comment, rfc822msgid or description'
+        raise ValueError(
+            'BugFactory requires a comment, rfc822msgid or description')
 
     # extract the details needed to create the bug and optional msg
     if not description:
@@ -222,13 +223,12 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
         datecreated = UTC_NOW
 
     bug = Bug(
-        title = title, shortdesc = shortdesc,
-        description = description, private = private,
-        owner = owner.id, datecreated=datecreated)
+        title=title, shortdesc=shortdesc,
+        description=description, private=private,
+        owner=owner.id, datecreated=datecreated)
 
     BugSubscription(
-        person = owner.id, bug = bug.id,
-        subscription = dbschema.BugSubscription.CC)
+        person=owner.id, bug=bug.id, subscription=dbschema.BugSubscription.CC)
 
     # create the bug comment if one was given
     if comment:
@@ -236,31 +236,31 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
             rfc822msgid = make_msgid('malonedeb')
 
     # retrieve or create the message in the db
+    msg_set = MessageSet()
     try:
-        msg = MessageSet().get(rfc822msgid=rfc822msgid)
-    except IndexError:
+        msg = msg_set.get(rfc822msgid=rfc822msgid)
+    except NotFoundError:
         msg = Message(
-            title = title,
-            distribution = distribution,
-            rfc822msgid = rfc822msgid, owner = owner)
+            title=title, distribution=distribution,
+            rfc822msgid=rfc822msgid, owner=owner)
         chunk = MessageChunk(
-                messageID=msg.id, sequence=1, content = comment, blobID=None)
+                messageID=msg.id, sequence=1, content=comment, blobID=None)
 
     # link the bug to the message
     bugmsg = BugMessage(bugID=bug.id, messageID=msg.id)
 
     # create the task on a product if one was passed
     if product:
-        BugTask(bug = bug, product = product.id, owner = owner.id)
+        BugTask(bug=bug, product=product.id, owner=owner.id)
 
     # create the task on a source package name if one was passed
     if distribution:
         BugTask(
-            bug = bug,
-            distribution = distribution,
-            sourcepackagename = sourcepackagename,
-            binarypackagename = binarypackagename,
-            owner = owner.id)
+            bug=bug,
+            distribution=distribution,
+            sourcepackagename=sourcepackagename,
+            binarypackagename=binarypackagename,
+            owner=owner.id)
 
     class BugAdded:
         implements(IBugAddForm)
@@ -269,14 +269,15 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
                 setattr(self, attr, val)
 
     bug_added = BugAdded(
-        distribution = distribution, sourcepackagename = sourcepackagename,
-        binarypackagename = binarypackagename, product = product,
-        comment = comment, description = description, rfc822msgid = rfc822msgid,
-        shortdesc = shortdesc, datecreated = datecreated, title = title,
-        private = private, owner = owner)
+        distribution=distribution, sourcepackagename=sourcepackagename,
+        binarypackagename=binarypackagename, product=product,
+        comment=comment, description=description, rfc822msgid=rfc822msgid,
+        shortdesc=shortdesc, datecreated=datecreated, title=title,
+        private=private, owner=owner)
     bug_added.id = bug.id
 
     return bug_added
+
 
 class BugSet(BugSetBase):
     """A set for bugs."""
@@ -286,10 +287,8 @@ class BugSet(BugSetBase):
 
     def __getitem__(self, id):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
-        try:
-            return self.table.select(self.table.q.id==id)[0]
-        except IndexError:
-            # Convert IndexError to KeyErrors to get Zope's NotFound page
+        item = self.table.selectOne(self.table.q.id==id)
+        if item is None:
             raise KeyError, id
 
     def __iter__(self):
@@ -300,3 +299,4 @@ class BugSet(BugSetBase):
     def get(self, bugid):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
         return self.table.get(bugid)
+

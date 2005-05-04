@@ -1,20 +1,19 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['BugExternalRef', 'BugExternalRefSet', 'BugExternalRefFactory']
+
 from datetime import datetime
 
-# Zope
 from zope.interface import implements
 
-# SQL imports
 from sqlobject import ForeignKey, StringCol
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.interfaces import IBugExternalRef, IBugExternalRefSet
-
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.bugset import BugSetBase
-
-
 
 
 class BugExternalRef(SQLBase):
@@ -28,6 +27,7 @@ class BugExternalRef(SQLBase):
     title = StringCol(notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
+
 
 class BugExternalRefSet(BugSetBase):
     """A set for BugExternalRef."""

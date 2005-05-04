@@ -6,6 +6,7 @@ import os
 import random
 import re
 import tarfile
+import warnings
 import base64
 import popen2
 import gettextpo
@@ -397,6 +398,23 @@ def validate_translation(original, translation, flags):
 
     # Check the msg.
     msg.check_format()
+
+def shortlist(sequence, longest_expected=15):
+    """Return a listified version of sequence.
+
+    If <sequence> has more than <longest_expected> items, a warning is issued.
+
+    >>> shortlist([1, 2])
+    [1, 2]
+
+    XXX: Must add a test here for the warning this method can issue.
+    """
+    L = list(sequence)
+    if len(L) > longest_expected:
+        warnings.warn("shortlist() should not be used here. It's meant to "
+              "listify sequences with no more than %d items." %
+              longest_expected)
+    return L
 
 def attachRawFileData(raw_file_data, contents, importer):
     """Attach the contents of a file to a raw_file_data object."""

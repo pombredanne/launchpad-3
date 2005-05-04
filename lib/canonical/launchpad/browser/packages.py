@@ -9,14 +9,13 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.lp.dbschema import BugSeverity
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
-from canonical.launchpad.database import IPerson
+from canonical.launchpad.interfaces import IPerson
 
 # XXX: Daniel Debonzi
 # Importing stuff from Soyuz directory
 # Until have a place for it or better
 # Solution
 from canonical.soyuz.generalapp import builddepsSet
-    
 
 ##XXX: (batch_size+global) cprov 20041003
 ## really crap constant definition for BatchPages 

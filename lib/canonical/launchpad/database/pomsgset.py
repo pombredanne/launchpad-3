@@ -1,19 +1,21 @@
-import StringIO
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['POMsgSet']
+
 import logging
 
-# Zope interfaces
 from zope.interface import implements
 
-# SQL imports
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import SQLObjectNotFound
-from canonical.database.sqlbase import SQLBase, flush_database_updates
-
-# canonical imports
+from canonical.database.sqlbase import SQLBase, sqlvalues, \
+    flush_database_updates
 from canonical.launchpad.interfaces import IEditPOMsgSet
 from canonical.lp.dbschema import RosettaTranslationOrigin
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.database.potranslationsighting import POTranslationSighting
+from canonical.launchpad.database.potranslationsighting import \
+    POTranslationSighting
 from canonical.launchpad.database.potranslation import POTranslation
 
 
@@ -65,22 +67,22 @@ class POMsgSet(SQLBase):
         """Return the translation sighting that is committed and has the
         plural form specified."""
         if allowOld:
-            translations = POTranslationSighting.selectBy(
+            translation = POTranslationSighting.selectOneBy(
                 pomsgsetID=self.id,
                 pluralform=pluralForm)
         else:
-            translations = POTranslationSighting.selectBy(
+            translation = POTranslationSighting.selectOneBy(
                 pomsgsetID=self.id,
                 inlastrevision=True,
                 pluralform=pluralForm)
-        if translations.count() == 0:
+        if translation is None:
+            # XXX: This should be a NotFoundError.
+            #      -- SteveAlexander, 2005-04-23
             raise IndexError, pluralForm
-        else:
-            return translations[0]
+        return translation
 
     def translationSightings(self):
-        return POTranslationSighting.selectBy(
-            pomsgsetID=self.id)
+        return POTranslationSighting.selectBy(pomsgsetID=self.id)
 
     # IEditPOMsgSet
 
@@ -104,13 +106,12 @@ class POMsgSet(SQLBase):
                     new_translations[index] is None):
                     # Make all sightings inactive.
                     sightings = POTranslationSighting.select(
-                        'pomsgset=%d AND pluralform = %d' % (
-                        self.id, index))
+                        'pomsgset=%d AND pluralform = %d' % 
+                        sqlvalues(self.id, index))
                     for sighting in sightings:
                         sighting.active = False
                     new_translations[index] = None
                     self.iscomplete = False
-
                 else:
                     try:
                         old_sight = self.getTranslationSighting(index)
@@ -186,16 +187,13 @@ class POMsgSet(SQLBase):
 
         # Now get hold of any existing translation sightings.
 
-        results = POTranslationSighting.selectBy(
+        sighting = POTranslationSighting.selectOneBy(
             pomsgsetID=self.id,
             potranslationID=translation.id,
             pluralform=pluralForm,
             personID=person.id)
 
-        if results.count():
-            # A sighting already exists.
-            sighting = results[0]
-        else:
+        if sighting is None:
             # No sighting exists yet.
 
             if fromPOFile:
@@ -222,11 +220,11 @@ class POMsgSet(SQLBase):
             # The translation comes from a PO import.
 
             # Look for the active TranslationSighting
-            active_results = POTranslationSighting.selectBy(
+            active_results = POTranslationSighting.selectOneBy(
                 pomsgsetID=self.id,
                 pluralform=pluralForm,
                 active=True)
-            if active_results.count() < 1:
+            if active_results is None:
                 # Don't have yet an active translation, mark this one as
                 # active and present in last PO.
                 sighting.datelastactive = UTC_NOW
@@ -234,9 +232,7 @@ class POMsgSet(SQLBase):
                 sighting.inlastrevision = True
                 new_active = sighting
             else:
-                assert active_results.count() == 1
-
-                old_active = active_results[0]
+                old_active = active_results
 
                 if old_active is sighting:
                     # Current sighting is already active, only update the
@@ -258,7 +254,7 @@ class POMsgSet(SQLBase):
                     sighting.inlastrevision = True
                     previous_active_results = POTranslationSighting.select(
                         'pomsgset=%d AND pluralform=%d AND active=FALSE'
-                            % (self.id, pluralForm),
+                            % sqlvalues(self.id, pluralForm),
                         orderBy='-datelastactive')
                     if (previous_active_results.count() > 1 and
                         previous_active_results[0] is not sighting):
@@ -278,7 +274,7 @@ class POMsgSet(SQLBase):
 
         sightings = POTranslationSighting.select(
             'pomsgset=%d AND pluralform = %d AND id <> %d'
-                % (self.id, pluralForm, new_active.id))
+            % (self.id, pluralForm, new_active.id))
 
         # In theory we should only get one resultset.
         if sightings.count() > 1:
@@ -290,7 +286,6 @@ class POMsgSet(SQLBase):
 
         for old_sighting in sightings:
             old_sighting.active = False
-
 
         # Ask for a sqlobject sync before reusing the data we just updated.
         flush_database_updates()

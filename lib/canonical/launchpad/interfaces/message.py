@@ -55,6 +55,12 @@ class IMessageSet(Interface):
         """Return a single IMessage matching the given criteria. Currently
         the only search criterion supported is an rfc822msgid."""
 
+    def fromEmail(email_message):
+        """Construct a Message from an email message and return it.
+
+        `email_message` should be the original email as a string.
+        """
+
 
 class IMessageChunk(Interface):
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -68,3 +74,4 @@ class IAddMessage(Interface):
     """This schema is used to generate the add comment form"""
     title = TextLine(title=_("Subject"), required=True)
     content = Text(title=_("Body"), required=True)
+

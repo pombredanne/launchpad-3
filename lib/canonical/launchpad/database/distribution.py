@@ -1,12 +1,13 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
+__all__ = ['Distribution', 'DistributionSet', 'DistroPackageFinder']
 
 from zope.interface import implements
 from zope.exceptions import NotFoundError
 
-from sqlobject import MultipleJoin, RelatedJoin, SQLObjectNotFound, \
-    StringCol, ForeignKey, MultipleJoin, BoolCol, DateTimeCol
+from sqlobject import \
+    RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey, MultipleJoin
 
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.launchpad.database.bug import BugTask
@@ -16,8 +17,6 @@ from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.lp.dbschema import BugTaskStatus, DistributionReleaseStatus
 from canonical.launchpad.interfaces import IDistribution, IDistributionSet, \
     IDistroPackageFinder, ITeamMembershipSubset, ITeam
-
-__all__ = ['Distribution', 'DistributionSet']
 
 
 class Distribution(SQLBase):
@@ -34,18 +33,29 @@ class Distribution(SQLBase):
     domainname = StringCol()
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
-    releases = MultipleJoin('DistroRelease', joinColumn='distribution')
+    releases = MultipleJoin('DistroRelease', joinColumn='distribution',
+                            orderBy='-id')
     bounties = RelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistroBounty')
     bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
 
     def currentrelease(self):
+        # if we have a frozen one, return that
         for rel in self.releases:
-            if rel.releasestatus in [
-                DistributionReleaseStatus.DEVELOPMENT,
-                DistributionReleaseStatus.FROZEN ]:
+            if rel.releasestatus == DistributionReleaseStatus.FROZEN:
                 return rel
+        # if we have one in development, return that
+        for rel in self.releases:
+            if rel.releasestatus == DistributionReleaseStatus.DEVELOPMENT:
+                return rel
+        # if we have a stable one, return that
+        for rel in self.releases:
+            if rel.releasestatus == DistributionReleaseStatus.CURRENT:
+                return rel
+        # if we have ANY, return the first one
+        if len(self.releases) > 0:
+            return self.releases[0]
         return None
     currentrelease = property(currentrelease)
 
@@ -82,35 +92,34 @@ class Distribution(SQLBase):
                  "bugtask.bugstatus = %i")
 
         for severity in severities:
-            query = query %(quote(self.id), severity)
+            query = query % (quote(self.id), severity)
             count = BugTask.select(query, clauseTables=clauseTables).count()
             counts.append(count)
 
         return counts
+    bugCounter = property(bugCounter)
 
     def getRelease(self, name_or_version):
         """See IDistribution."""
-        try:
-            return DistroRelease.selectBy(distributionID=self.id,
-                                          name=name_or_version)[0]
-        except IndexError:
-            try:
-                return DistroRelease.selectBy(distributionID=self.id,
-                                              version=name_or_version)[0]
-            except IndexError:
-                raise NotFoundError
-
-    bugCounter = property(bugCounter)
+        distrorelease = DistroRelease.selectOneBy(
+            distributionID=self.id, name=name_or_version)
+        if distrorelease is None:
+            distrorelease = DistroRelease.selectOneBy(
+                distributionID=self.id, version=name_or_version)
+            if distrorelease is None:
+                raise NotFoundError, name_or_version
+        return distrorelease
 
     def getDevelopmentReleases(self):
         """See IDistribution."""
         return DistroRelease.selectBy(
             distributionID = self.id,
-            releasestatus = DistributionReleaseStatus.DEVELOPMENT )
+            releasestatus = DistributionReleaseStatus.DEVELOPMENT)
 
     def getSourcePackage(self, name):
         """See IDistribution."""
         return SourcePackage(name, self.currentrelease)
+
 
 class DistributionSet:
     """This class is to deal with Distribution related stuff"""
@@ -151,3 +160,4 @@ class DistroPackageFinder:
 
     def __init__(self, distribution=None, processorfamily=None):
         self.distribution = distribution
+

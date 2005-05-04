@@ -648,7 +648,7 @@ COMMENT ON COLUMN PackagePublishing.status IS 'The current status of the package
 
 -- SourcePackagePublishing
 
-COMMENT ON TABLE SourcePackagePublishing IS 'SourcePackagePublishing: Publishing records for Soyuz/Lucille. Lucille publishes sourcepackagereleases in distroreleases. This table represents the publishing of each sourcepackagerelease.';
+COMMENT ON VIEW SourcePackagePublishing IS 'SourcePackagePublishing: Publishing records for Soyuz/Lucille. Lucille publishes sourcepackagereleases in distroreleases. This table represents the currently active publishing of each sourcepackagerelease. For history see SourcePackagePublishingHistory.';
 COMMENT ON COLUMN SourcePackagePublishing.distrorelease IS 'The distrorelease which is having the sourcepackagerelease being published into it.';
 COMMENT ON COLUMN SourcePackagePublishing.sourcepackagerelease IS 'The sourcepackagerelease being published into the distrorelease.';
 COMMENT ON COLUMN SourcePackagePublishing.status IS 'The current status of the sourcepackage publishing record. For example "PUBLISHED" "PENDING" or "PENDINGREMOVAL"';
@@ -729,4 +729,32 @@ COMMENT ON COLUMN SourcePackagePublishingHistory.scheduleddeletiondate IS 'The d
 COMMENT ON COLUMN SourcePackagePublishingHistory.dateremoved IS 'The date/time at which the source was actually deleted.';
 
 -- Packaging
-
+COMMENT ON TABLE Packaging IS 'DO NOT JOIN THROUGH THIS TABLE. This is a set
+of information linking upstream product series (branches) to distro
+packages, but it\'s not planned or likely to be complete, in the sense that
+we do not attempt to have information for every branch in every derivative
+distro managed in Launchpad. So don\'t join through this table to get from
+product to source package, or vice versa. Rather, use the
+ProductSeries.sourcepackages attribute, or the
+SourcePackage.productseries attribute. You may need to create a
+SourcePackage with a given sourcepackagename and distrorelease, then use its
+.productrelease attribute. The code behind those methods does more than just
+join through the tables, it is also smart enough to look at related
+distro\'s and parent distroreleases, and at Ubuntu in particular.';
+COMMENT ON COLUMN Packaging.productseries IS 'The upstream product series
+that has been packaged in this distrorelease sourcepackage.';
+COMMENT ON COLUMN Packaging.sourcepackagename IS 'The source package name for
+the source package that includes the upstream productseries described in
+this Packaging record. There is no requirement that such a sourcepackage
+actually be published in the distro.';
+COMMENT ON COLUMN Packaging.distrorelease IS 'The distrorelease in which the
+productseries has been packaged.';
+COMMENT ON COLUMN Packaging.packaging IS 'A dbschema Enum (PackagingType)
+describing the way the upstream productseries has been packaged. Generally
+it will be of type PRIME, meaning that the upstream productseries is the
+primary substance of the package, but it might also be INCLUDES, if the
+productseries has been included as a statically linked library, for example.
+This allows us to say that a given Source Package INCLUDES libneon but is a
+PRIME package of tla, for example. By INCLUDES we mean that the code is
+actually lumped into the package as ancilliary support material, rather
+than simply depending on a separate packaging of that code.';

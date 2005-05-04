@@ -8,8 +8,5 @@ view the page because he is an explicit subscriber on the bug.
   ... """)
   HTTP/1.1 200 Ok
   ...
-      <title>
-        Malone
-  ...
-        #7
+      <title>Malone: Bug #7
   ...
