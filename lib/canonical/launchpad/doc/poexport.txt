@@ -1,19 +1,19 @@
 
-This is needed to make utilities work, it seems.
+Test exporting a single PO template.
 
-  >>> from canonical.launchpad.ftests import login
-  >>> login("launchpad.anonymous")
+This is needed to make utilities work.
 
-  >>> from canonical.launchpad.components.poexport import POTemplateExporter
-  >>> from canonical.launchpad.database import POTemplate, LanguageSet
+  >>> login(ANONYMOUS)
 
 Get hold of a template, and a language to export a PO file for.
 
+  >>> from canonical.launchpad.database import POTemplate, LanguageSet
   >>> template = POTemplate.get(1)
   >>> language = LanguageSet()['es']
 
 Adapt the template with to exporter.
 
+  >>> from canonical.launchpad.components.poexport import POTemplateExporter
   >>> exporter = POTemplateExporter(template)
 
 Then get the PO file from the exporter.

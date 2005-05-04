@@ -19,13 +19,17 @@ from canonical.librarian.ftests.harness import LibrarianTestSetup
 
 here = os.path.dirname(os.path.realpath(__file__))
 
+def setGlobs(test):
+    test.globs['ANONYMOUS'] = ANONYMOUS
+    test.globs['login'] = login
+    test.globs['ILaunchBag'] = ILaunchBag
+    test.globs['getUtility'] = getUtility
+
 def setUp(test):
     sqlos.connection.connCache = {}
     LaunchpadTestSetup().setUp()
     _reconnect_sqlos()
-    test.globs['login'] = login
-    test.globs['ILaunchBag'] = ILaunchBag
-    test.globs['getUtility'] = getUtility
+    setGlobs(test)
 
 def tearDown(test):
     _disconnect_sqlos()
@@ -35,6 +39,7 @@ def tearDown(test):
 def poExportSetUp(test):
     sqlos.connection.connCache = {}
     LaunchpadZopelessTestSetup(dbuser='poexport').setUp()
+    setGlobs(test)
 
 def poExportTearDown(test):
     LaunchpadZopelessTestSetup().tearDown()
@@ -55,7 +60,9 @@ special = {
     'testing.txt': DocFileSuite('../doc/testing.txt'),
     'poparser.txt': DocFileSuite('../doc/poparser.txt'),
 
-    # POExport stuff is Zopeless and connects as a different database user
+    # POExport stuff is Zopeless and connects as a different database user.
+    # poexport-distrorelease-date-tarball.txt is excluded, since it adds data
+    # to the database as well.
     'poexport.txt': FunctionalDocFileSuite(
             '../doc/poexport.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown

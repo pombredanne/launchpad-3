@@ -1,22 +1,25 @@
 
-This is needed to make utilities work, it seems.
-
-  >>> from canonical.launchpad.ftests import login
-  >>> login("launchpad.anonymous")
-
 Get a tarball representation of a release's translations.
 
-This test assumes that the release with id 3 is Hoary.
+This is needed to make utilities work.
+
+  >>> login(ANONYMOUS)
+
+Get hold of our distribution release.
+
+  >>> from canonical.launchpad.database import DistroRelease
+  >>> release = DistroRelease.get(3)
+  >>> release.name
+  u'hoary'
+
+Now get hold of a tarball for the release.
 
   >>> from canonical.launchpad.components.poexport import \
   ...     DistroReleasePOExporter
-  >>> from canonical.launchpad.database import DistroRelease
-
-  >>> release = DistroRelease.get(3)
   >>> exporter = DistroReleasePOExporter(release)
   >>> tarfile_string = exporter.export_tarball()
 
-Check it has the right members.
+Check the tarball has the right members.
 
   >>> from canonical.launchpad.helpers import string_to_tarfile
   >>> tarfile = string_to_tarfile(tarfile_string)
