@@ -1,7 +1,10 @@
 <div class="portlet" tal:condition="context/cverefs"
      tal:define="bug_url string:/malone/bugs/${context/id}">
 
-    <h4>CVE References</h4>
+    <h4>
+      <abbr title="Common Vulnerabilities and Exposures index">CVE</abbr>
+      references
+    </h4>
 
     <div class="portletBody">
         <div class="portletContent odd"

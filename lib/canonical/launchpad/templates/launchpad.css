@@ -531,6 +531,7 @@ h1 {
 
 .formHelp, .formHelp:hover {
   color: #666666;
+  cursor: inherit;
 }
 
 .portlet, #portal-top, #portal-footer {

@@ -2,6 +2,43 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-04 08:40:56 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1655
+
+    Summary:
+      Add <abbr> elements for CVE; fix cursor for formHelp. (trivial)
+    Revision:
+      launchpad--devel--0--patch-1655
+
+    Patches applied:
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-47
+       merge rocketfuel
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-48
+       refuel and fix non-existent conflicts
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-49
+       merge rocketfuel
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-50
+       add <abbr> elements for CVE; fix cursor for formHelp
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/cvereference-index.pt
+     lib/canonical/launchpad/templates/launchpad.css
+     lib/canonical/launchpad/templates/portlet-bug-actions.pt
+     lib/canonical/launchpad/templates/portlet-bug-cve.pt
+     utilities/refuel
+
+    new patches:
+     mpt@canonical.com/launchpad--devel--0--patch-47
+     mpt@canonical.com/launchpad--devel--0--patch-48
+     mpt@canonical.com/launchpad--devel--0--patch-49
+     mpt@canonical.com/launchpad--devel--0--patch-50
+
+
 2005-05-04 07:38:16 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1654
 
     Summary:
