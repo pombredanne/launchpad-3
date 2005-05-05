@@ -5,8 +5,6 @@ import pytz
 from sqlobject.col import SOCol, Col
 from sqlobject.include import validators
 
-from canonical.database.constants import UTC_NOW, DEFAULT
-
 __all__ = ['UtcDateTimeCol']
 
 _utc_tz = pytz.timezone('UTC')
@@ -43,13 +41,17 @@ class UtcDateTimeValidator(validators.Validator):
             datetime.datetime(2004, 1, 1, 4, 0, tzinfo=<StaticTzInfo 'UTC'>)
             >>>
         """
-        if value in [None, UTC_NOW, DEFAULT]:
-            return value
-        elif isinstance(value, datetime.datetime):
+        if isinstance(value, datetime.datetime):
             # conversion to UTC will fail if it is a naiive datetime value
             return value.astimezone(_utc_tz)
 
-        # pass through in other cases (to handle UTC_NOW)
+        # don't accept the other datetime types for this column
+        # This check is done afterwards because datetime.datetime
+        # is a subclass of datetime.date.
+        if isinstance(value, (datetime.date,datetime.time,datetime.timedelta)):
+            raise TypeError('wrong datetime type')
+
+        # pass through in other cases (to handle None, UTC_NOW, etc)
         return value
 
     def toPython(self, value, state):
@@ -61,11 +63,11 @@ class UtcDateTimeValidator(validators.Validator):
             datetime.datetime(2004, 1, 1, 12, 0, tzinfo=<StaticTzInfo 'UTC'>)
             >>>
         """
-        if value in [None, UTC_NOW, DEFAULT]:
+        # does it look like a datetime type (datetime or mx.DateTime)?
+        try:
+            return datetime.datetime(value.year, value.month, value.day,
+                                     value.hour, value.minute, value.second,
+                                     tzinfo=_utc_tz)
+        except AttributeError:
+            # if it isn't a datetime type, return it unchanged
             return value
-        # astimezone() can't be used here, since the value will
-        # probably be either an mx.DateTime value or a naiive datetime
-        # value.
-        return datetime.datetime(value.year, value.month, value.day,
-                                 value.hour, value.minute, value.second,
-                                 tzinfo=_utc_tz)
