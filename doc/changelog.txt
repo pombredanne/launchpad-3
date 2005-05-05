@@ -2,6 +2,68 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-05 15:06:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1666
+
+    Summary:
+      Zopeless email [r=jamesh]
+    Revision:
+      launchpad--devel--0--patch-1666
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--zopelessemail--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1652
+    
+     * stuart.bishop@canonical.com/launchpad--zopelessemail--0--patch-1
+       Allow code to check if it is running in Zopeless mode
+    
+     * stuart.bishop@canonical.com/launchpad--zopelessemail--0--patch-2
+       Zopeless email and database test updates
+    
+     * stuart.bishop@canonical.com/launchpad--zopelessemail--0--patch-3
+       Fix shrodingbug and two SQLObject warnings
+    
+     * stuart.bishop@canonical.com/launchpad--zopelessemail--0--patch-4
+       Use consistant test database name, matching configuration on chinstrap
+    
+     * stuart.bishop@canonical.com/launchpad--zopelessemail--0--patch-5
+       Merge from Rocketfuel
+    
+
+    new files:
+     lib/canonical/database/ftests/.arch-ids/test_zopelesstransactionmanager.txt.id
+     lib/canonical/database/ftests/test_zopelesstransactionmanager.txt
+
+    modified files:
+     doc/changelog.txt launchpad.conf
+     lib/canonical/config/schema.xml
+     lib/canonical/database/ftests/test_disconnects.txt
+     lib/canonical/database/ftests/test_doctests.py
+     lib/canonical/database/ftests/test_reconnect_already_closed.txt
+     lib/canonical/database/ftests/test_reconnector.txt
+     lib/canonical/database/sqlbase.py
+     lib/canonical/doap/fileimporter.py
+     lib/canonical/ftests/pgsql.py
+     lib/canonical/launchpad/ftests/harness.py
+     lib/canonical/launchpad/mail/sendmail.py
+     lib/canonical/lp/__init__.py
+     lib/canonical/lp/ftests/test_zopeless.py
+
+    renamed files:
+     lib/canonical/database/ftests/.arch-ids/test_disconnects.py.id
+       ==> lib/canonical/database/ftests/.arch-ids/test_doctests.py.id
+     lib/canonical/database/ftests/test_disconnects.py
+       ==> lib/canonical/database/ftests/test_doctests.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--zopelessemail--0--base-0
+     stuart.bishop@canonical.com/launchpad--zopelessemail--0--patch-1
+     stuart.bishop@canonical.com/launchpad--zopelessemail--0--patch-2
+     stuart.bishop@canonical.com/launchpad--zopelessemail--0--patch-3
+     stuart.bishop@canonical.com/launchpad--zopelessemail--0--patch-4
+     stuart.bishop@canonical.com/launchpad--zopelessemail--0--patch-5
+
+
 2005-05-05 14:27:16 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1665
 
     Summary:

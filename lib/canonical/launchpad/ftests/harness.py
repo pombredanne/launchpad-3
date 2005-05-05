@@ -19,6 +19,12 @@ from canonical.lp import initZopeless
 import sqlos
 from sqlos.connection import connCache
 
+__all__ = [
+    'LaunchpadTestSetup', 'LaunchpadTestCase',
+    'LaunchpadZopelessTestSetup',
+    'LaunchpadFunctionalTestSetup', 'LaunchpadFunctionalTestCase',
+    ]
+
 def _disconnect_sqlos():
     try:
         name = zapi.getUtility(IConnectionName).name

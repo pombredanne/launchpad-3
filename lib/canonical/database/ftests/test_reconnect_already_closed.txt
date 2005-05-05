@@ -1,4 +1,7 @@
+Setup the database
 
+    >>> from canonical.ftests.pgsql import PgTestSetup
+    >>> PgTestSetup().setUp()
 
 Create a connection, wrap it in a ConnectionWrapper, and get a cursor from it.
 
@@ -6,8 +9,7 @@ Create a connection, wrap it in a ConnectionWrapper, and get a cursor from it.
     >>> import psycopg
     >>> import canonical.lp
     >>> reconnecting_conn = reconnect.ConnectionWrapper(
-    ...     psycopg.connect, 
-    ...     'dbname=%s user=%s' % (canonical.lp.dbname, canonical.lp.dbuser)
+    ...     psycopg.connect, 'dbname=%s' % (PgTestSetup().dbname,)
     ... )
     >>> reconnecting_cursor = reconnecting_conn.cursor()
 
@@ -41,4 +43,7 @@ this time.
     ...
     InterfaceError: already closed
 
+Tear down the database
+
+    >>> PgTestSetup().tearDown()
 

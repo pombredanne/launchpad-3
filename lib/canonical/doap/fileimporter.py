@@ -71,7 +71,7 @@ class ProductReleaseImporter:
                 # reported by the download, rather than just UTC_NOW.
                 pr = ProductRelease(productID=self.product.id,
                                     datereleased=UTC_NOW,
-                                    version=version, 
+                                    version=version,
                                     ownerID=self.product.owner.id)
             else:
                 # The db schema guarantees there cannot be more than one result
