@@ -2,6 +2,35 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-05 02:22:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1658
+
+    Summary:
+      Fix bug #524, adding of bug comments was broken. [trivial]
+    Revision:
+      launchpad--devel--0--patch-1658
+
+    Patches applied:
+    
+     * bjorn.tillenius@canonical.com/launchpad--trivial-fixes--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1657
+    
+     * bjorn.tillenius@canonical.com/launchpad--trivial-fixes--0--patch-1
+       Fix bug #524, adding of bug comments was broken.
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-add-comments.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-add-comments.txt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/bug-index.pt
+
+    new patches:
+     bjorn.tillenius@canonical.com/launchpad--trivial-fixes--0--base-0
+     bjorn.tillenius@canonical.com/launchpad--trivial-fixes--0--patch-1
+
+
 2005-05-04 14:15:25 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1657
 
     Summary:
