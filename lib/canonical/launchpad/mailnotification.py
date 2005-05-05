@@ -60,11 +60,13 @@ def generate_bug_edit_email(bug_delta):
             initial_indent = u"        ",
             subsequent_indent = u"        "))
         body += "\n"
-    if bug_delta.private is not None:
-        body += "    - Changed private:\n"
-        body += "        %(old)s => %(new)s\n" % {
-            'old' : bug_delta.private['old'],
-            'new' : bug_delta.private['new']}
+    for fieldname in ("private", "name"):
+        changed_attr = getattr(bug_delta, fieldname)
+        if changed_attr is not None:
+            body += "    - Changed %s:\n" % fieldname
+            body += "        %(old)s => %(new)s\n" % {
+                'old' : changed_attr['old'],
+                'new' : changed_attr['new']}
     if bug_delta.external_reference is not None:
         body += "    - Changed web links:\n"
         body += "        Added: %s (%s)\n" % (
@@ -234,14 +236,14 @@ def get_bug_delta(old_bug, new_bug, user, request):
         # change
         old_val = getattr(old_bug, field_name)
         new_val = getattr(new_bug, field_name)
-        if old_bug != new_val:
+        if old_val != new_val:
             changes[field_name] = new_val
 
     for field_name in ("name", "private"):
         # fields for which we show old => new when their values change
         old_val = getattr(old_bug, field_name)
         new_val = getattr(new_bug, field_name)
-        if old_bug != new_val:
+        if old_val != new_val:
             changes[field_name] = {}
             changes[field_name]["old"] = old_val
             changes[field_name]["new"] = new_val

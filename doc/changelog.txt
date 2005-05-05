@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-05 03:46:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1659
+
+    Summary:
+      Fix bug #491, don't include values that haven't changed. [trivial]
+    Revision:
+      launchpad--devel--0--patch-1659
+
+    Patches applied:
+    
+     * bjorn.tillenius@canonical.com/launchpad--trivial-fixes--0--patch-2
+       Fix bug #491, don't include values that haven't changed.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/mailnotification.py
+
+    new patches:
+     bjorn.tillenius@canonical.com/launchpad--trivial-fixes--0--patch-2
+
+
 2005-05-05 02:22:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1658
 
     Summary:
