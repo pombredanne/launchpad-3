@@ -31,6 +31,10 @@
         this series of releases.
     </p>
 
+    <div>
+        [ <a href="+review">Review Series Details</a> ]
+    </div>
+
     <div tal:condition="context/releases">
       <h2>Releases:</h2>
 

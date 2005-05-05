@@ -2,6 +2,94 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-05 13:40:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1663
+
+    Summary:
+      r=spiv, morgan.collett@canonical.com/launchpad--series-release-reviewpages--0 Add +review pages for product series and product release allowing renaming and moving to other products
+    Revision:
+      launchpad--devel--0--patch-1663
+
+    Patches applied:
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1573
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-1
+       Add +review page for series
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-2
+       Link to +review on series page
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-3
+       Add +review page - without productseries selector though
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-4
+       Fix series page template to link to releases and be more verbose about them, fix ol/li structure
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-5
+       Fixed browser/productrelease.py traverseProductRelease per SteveA
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-6
+       Make productrelease +review work to select a different series - at this stage across all products
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-7
+       Merge from RF
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-8
+       Better +review page for productseries - allows assigning to other products, and changing name/url
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-9
+       Implement new vocabulary for productseries so a release can be assigned at +review and see only series which belong to the release's product
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-10
+       Fix typo in vocabulary definition. Strange that it still worked...
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-11
+       merge rocketfuel
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-12
+       Use the FilteredProductSeriesVocabulary, make it use context not ILaunchbag
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-13
+       Results of spiv's code review
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-14
+       Merge from RF
+    
+
+    new files:
+     lib/canonical/launchpad/templates/.arch-ids/series-review.pt.id
+     lib/canonical/launchpad/templates/series-review.pt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/productrelease.py
+     lib/canonical/launchpad/interfaces/productrelease.py
+     lib/canonical/launchpad/templates/productrelease.pt
+     lib/canonical/launchpad/templates/series.pt
+     lib/canonical/launchpad/vocabularies/configure.zcml
+     lib/canonical/launchpad/vocabularies/dbobjects.py
+     lib/canonical/launchpad/zcml/productrelease.zcml
+     lib/canonical/launchpad/zcml/productseries.zcml
+
+    new patches:
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--base-0
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-1
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-2
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-3
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-4
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-5
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-6
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-7
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-8
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-9
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-10
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-11
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-12
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-13
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-14
+
+
 2005-05-05 12:33:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1662
 
     Summary:

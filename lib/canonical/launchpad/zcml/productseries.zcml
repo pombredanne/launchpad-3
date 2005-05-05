@@ -84,6 +84,17 @@
     </browser:pages>
     
 
+    <browser:editform
+        name="+review"
+        for="canonical.launchpad.interfaces.IProductSeries"
+        schema="canonical.launchpad.interfaces.IProductSeries"
+        label="Review Product Series Details:"
+        fields="product name"
+        permission="launchpad.Admin"
+        template="../templates/launchpad-editform.pt"
+        lp:url="/products/$Product.name/+series/$ProductSeries.name/+review">
+    </browser:editform>
+
     <!-- ProductSeriesSet -->
     <content class="canonical.launchpad.database.ProductSeriesSet">
         <allow interface="canonical.launchpad.interfaces.IProductSeriesSet" />

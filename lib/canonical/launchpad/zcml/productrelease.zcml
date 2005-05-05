@@ -39,6 +39,17 @@
             template="../templates/productrelease-edit.pt" />
     </browser:pages>
 
+    <browser:editform
+        name="+review"
+        for="canonical.launchpad.interfaces.IProductRelease"
+        schema="canonical.launchpad.interfaces.IProductRelease"
+        label="Review Product Release Details:"
+        fields="version productseries"
+        permission="launchpad.Admin"
+        template="../templates/launchpad-editform.pt"
+        lp:url="/products/$Product.name/$ProductRelease.name/+review">
+    </browser:editform>
+
     <browser:pages
         for="canonical.launchpad.interfaces.IProductRelease"
         permission="zope.Public"

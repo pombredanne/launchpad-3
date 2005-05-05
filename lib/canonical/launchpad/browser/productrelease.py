@@ -17,7 +17,7 @@ def traverseProductRelease(productrelease, request, name):
         potemplateset = getUtility(IPOTemplateSet)
         return potemplateset.getSubset(productrelease=productrelease)
     else:
-        raise KeyError, 'No traversal for "%s" on Product Release' % name
+        return None
 
 
 def newProductRelease(form, product, owner, series=None):
