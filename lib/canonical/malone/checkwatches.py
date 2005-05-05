@@ -29,10 +29,13 @@ def check_one_watch(watch):
     try:
         remotesystem = externalsystem.ExternalSystem(bugtracker,version)
     except externalsystem.UnknownBugTrackerTypeError, val:
-        print "*** WARNING: BugTrackerType '%s' is not known" % (
-            val.bugtrackertypename, )
-        print "    Skipping %s bug %s watch on bug %s" % (
-            val.bugtrackername, watch.remotebug, watch.bug)
+        # TODO: Raise an error on UnknownBugTrackerType. Currently
+        # not even warning to stop cron spam -- StuartBishop 20050505
+        pass
+        #print "*** WARNING: BugTrackerType '%s' is not known" % (
+        #    val.bugtrackertypename, )
+        #print "    Skipping %s bug %s watch on bug %s" % (
+        #    val.bugtrackername, watch.remotebug, watch.bug)
     except externalsystem.BugTrackerConnectError, val:
         print "*** WARNING: Got error trying to contact %s" % bugtracker.name
         print "    %s" % val

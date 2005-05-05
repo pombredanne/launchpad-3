@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-05 11:31:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1660
+
+    Summary:
+      [trivial] Turn off cron spam for now
+    Revision:
+      launchpad--devel--0--patch-1660
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--trivial--0--patch-4
+       Turn off cron spam for now
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/malone/checkwatches.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--trivial--0--patch-4
+
+
 2005-05-05 03:46:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1659
 
     Summary:
