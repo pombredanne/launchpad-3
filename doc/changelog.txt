@@ -2,6 +2,44 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-05 12:33:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1662
+
+    Summary:
+      r=spiv, Doctest for TheHatchery
+    Revision:
+      launchpad--devel--0--patch-1662
+
+    Patches applied:
+    
+     * morgan.collett@canonical.com/launchpad--hatchery-development--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1571
+    
+     * morgan.collett@canonical.com/launchpad--hatchery-development--0--patch-1
+       upstream.txt is now hatchery.txt
+    
+     * morgan.collett@canonical.com/launchpad--hatchery-development--0--patch-2
+       Add project test to hatchery doctest
+    
+     * morgan.collett@canonical.com/launchpad--hatchery-development--0--patch-3
+       Merge from RF
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/doc/hatchery.txt
+
+    renamed files:
+     lib/canonical/launchpad/doc/.arch-ids/upstream.txt.id
+       ==> lib/canonical/launchpad/doc/.arch-ids/hatchery.txt.id
+     lib/canonical/launchpad/doc/upstream.txt
+       ==> lib/canonical/launchpad/doc/hatchery.txt
+
+    new patches:
+     morgan.collett@canonical.com/launchpad--hatchery-development--0--base-0
+     morgan.collett@canonical.com/launchpad--hatchery-development--0--patch-1
+     morgan.collett@canonical.com/launchpad--hatchery-development--0--patch-2
+     morgan.collett@canonical.com/launchpad--hatchery-development--0--patch-3
+
+
 2005-05-05 12:05:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1661
 
     Summary:
