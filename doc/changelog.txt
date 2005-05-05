@@ -2,6 +2,42 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-05 13:53:10 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1664
+
+    Summary:
+      r=spiv, morgan.collett@canonical.com/launchpad--requireProductSeries-cleanup--0 Clean up after RequireProductSeries implementation, use SelectOneBy
+    Revision:
+      launchpad--devel--0--patch-1664
+
+    Patches applied:
+    
+     * morgan.collett@canonical.com/launchpad--requireProductSeries-cleanup--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1591
+    
+     * morgan.collett@canonical.com/launchpad--requireProductSeries-cleanup--0--patch-1
+       Cleanup of comments in fileimporter.py
+    
+     * morgan.collett@canonical.com/launchpad--requireProductSeries-cleanup--0--patch-2
+       merge from rf
+    
+     * morgan.collett@canonical.com/launchpad--requireProductSeries-cleanup--0--patch-3
+       Use selectOneBy per spiv's comments
+    
+     * morgan.collett@canonical.com/launchpad--requireProductSeries-cleanup--0--patch-4
+       Merge from RF
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/doap/fileimporter.py
+
+    new patches:
+     morgan.collett@canonical.com/launchpad--requireProductSeries-cleanup--0--base-0
+     morgan.collett@canonical.com/launchpad--requireProductSeries-cleanup--0--patch-1
+     morgan.collett@canonical.com/launchpad--requireProductSeries-cleanup--0--patch-2
+     morgan.collett@canonical.com/launchpad--requireProductSeries-cleanup--0--patch-3
+     morgan.collett@canonical.com/launchpad--requireProductSeries-cleanup--0--patch-4
+
+
 2005-05-05 13:40:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1663
 
     Summary:
