@@ -4,14 +4,15 @@
 
 __metaclass__ = type
 
+import zope.security.interfaces
+from zope.component import getUtility, getAdapter
+from zope.event import notify
+from zope.exceptions import NotFoundError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import SequenceWidget, ObjectWidget
 from zope.app.form.browser.add import AddView
-from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
-from zope.component import getUtility, getAdapter
-import zope.security.interfaces
 
 from sqlobject.sqlbuilder import AND, IN, ISNULL
 
@@ -27,7 +28,7 @@ from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
 from canonical.launchpad.database import Product, ProductSeriesSet, \
      BugFactory, ProductMilestoneSet, Milestone, Person
 from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet, \
-     IPersonSet, IBugTaskSet, IAging, ILaunchBag
+     IPersonSet, IBugTaskSet, IMilestoneSet, IAging, ILaunchBag
 from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
@@ -223,20 +224,28 @@ class ProductBugsView:
 
     def assign_to_milestones(self):
         """Assign bug tasks to the given milestone."""
-        if self.request.principal:
-            if self.context.owner.id == self.request.principal.id:
-                milestone_name = self.request.get('milestone')
-                if milestone_name:
-                    milestone = Milestone.byName(milestone_name)
-                    if milestone:
-                        taskids = self.request.get('task')
-                        if taskids:
-                            if not isinstance(taskids, (list, tuple)):
-                                taskids = [taskids]
+        if helpers.is_maintainer(self.context):
+            milestone_id = self.request.get('milestone')
+            if milestone_id:
+                milestoneset = getUtility(IMilestoneSet)
+                try:
+                    milestone = milestoneset.get(milestone_id)
+                except NotFoundError:
+                    # Should only occur if someone entered the milestone
+                    # in the URL manually.
+                    return
+                taskids = self.request.get('task')
+                if taskids:
+                    if not isinstance(taskids, (list, tuple)):
+                        taskids = [taskids]
 
-                            tasks = [BugTask.get(taskid) for taskid in taskids]
-                            for task in tasks:
-                                task.milestone = milestone
+                    bugtaskset = getUtility(IBugTaskSet)
+                    tasks = [bugtaskset.get(taskid) for taskid in taskids]
+                    for task in tasks:
+                        # XXX: When spiv fixes so that proxied objects
+                        #      can be assigned to a SQLBase '.id' can be
+                        #      removed. -- Bjorn Tillenius, 2005-05-04
+                        task.milestone = milestone.id
 
     # XXX: Brad Bollenbach, 2005-02-11: Replace this view method hack with a
     # TALES adapter, perhaps.

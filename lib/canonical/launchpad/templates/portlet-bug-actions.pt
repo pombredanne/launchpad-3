@@ -15,7 +15,7 @@
             <img src="/++resource++add.gif" alt="Add">
             <a href="#" tal:attributes="href string:$bug_url/packageinfestations/+new">Package Infestation</a><br />
             <img src="/++resource++add.gif" alt="Add">
-            <a href="#" tal:attributes="href string:$bug_url/cverefs/+new">CVE</a><br />
+            <a href="#" tal:attributes="href string:$bug_url/cverefs/+new"><abbr title="Common Vulnerabilities and Exposures index">CVE</abbr> reference</a><br />
             <img src="/++resource++add.gif" alt="Add">
             <a href="#" tal:attributes="href string:$bug_url/references/+new">Web Link</a><br />
             <img src="/++resource++add.gif" alt="Add">

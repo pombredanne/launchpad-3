@@ -2,6 +2,297 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-05 02:22:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1658
+
+    Summary:
+      Fix bug #524, adding of bug comments was broken. [trivial]
+    Revision:
+      launchpad--devel--0--patch-1658
+
+    Patches applied:
+    
+     * bjorn.tillenius@canonical.com/launchpad--trivial-fixes--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1657
+    
+     * bjorn.tillenius@canonical.com/launchpad--trivial-fixes--0--patch-1
+       Fix bug #524, adding of bug comments was broken.
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-add-comments.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-add-comments.txt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/bug-index.pt
+
+    new patches:
+     bjorn.tillenius@canonical.com/launchpad--trivial-fixes--0--base-0
+     bjorn.tillenius@canonical.com/launchpad--trivial-fixes--0--patch-1
+
+
+2005-05-04 14:15:25 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1657
+
+    Summary:
+      Fix bug 220, make assigning milestones to bug tasks work again.
+    Revision:
+      launchpad--devel--0--patch-1657
+
+    Patches applied:
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-1
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1649
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-2
+       add a milestone for firefox to sample data.
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-3
+       getting milestone by name doesn't make sense. clean up.
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-4
+       make mass-editing of milestones work.
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-5
+       make editing a bugtask's milestone work.
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-6
+       merge rf
+    
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/database/milestone.py
+     lib/canonical/launchpad/doc/milestone.txt
+     lib/canonical/launchpad/interfaces/bugtask.py
+     lib/canonical/launchpad/interfaces/milestone.py
+     lib/canonical/launchpad/pagetests/standalone/xx-edit-upstream-bug-task-team-aware.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-massedit-upstream-bugtask.txt
+     lib/canonical/launchpad/templates/bugtask-search-listing.pt
+
+    new patches:
+     bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-1
+     bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-2
+     bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-3
+     bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-4
+     bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-5
+     bjorn.tillenius@canonical.com/launchpad--production-bug-220--0--patch-6
+
+
+2005-05-04 09:08:46 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1656
+
+    Summary:
+      Land rest of MailStorage [r=spiv,r=jamesh]
+    Revision:
+      launchpad--devel--0--patch-1656
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-36
+       Duplicate message-id handling, better and documented exceptions, more tests
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-37
+       Improve errors and add tests
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-38
+       Strip display of message attachments in bug comments as per UDU discussions. Includes comment on rationale
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-39
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-40
+       Make default charset iso-8859-1
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-41
+       Incorporate review feedback
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/message.py
+     lib/canonical/launchpad/doc/message.txt
+     lib/canonical/launchpad/interfaces/message.py
+     lib/canonical/launchpad/templates/messagechunk-snippet.pt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-36
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-37
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-38
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-39
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-40
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-41
+
+
+2005-05-04 08:40:56 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1655
+
+    Summary:
+      Add <abbr> elements for CVE; fix cursor for formHelp. (trivial)
+    Revision:
+      launchpad--devel--0--patch-1655
+
+    Patches applied:
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-47
+       merge rocketfuel
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-48
+       refuel and fix non-existent conflicts
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-49
+       merge rocketfuel
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-50
+       add <abbr> elements for CVE; fix cursor for formHelp
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/cvereference-index.pt
+     lib/canonical/launchpad/templates/launchpad.css
+     lib/canonical/launchpad/templates/portlet-bug-actions.pt
+     lib/canonical/launchpad/templates/portlet-bug-cve.pt
+     utilities/refuel
+
+    new patches:
+     mpt@canonical.com/launchpad--devel--0--patch-47
+     mpt@canonical.com/launchpad--devel--0--patch-48
+     mpt@canonical.com/launchpad--devel--0--patch-49
+     mpt@canonical.com/launchpad--devel--0--patch-50
+
+
+2005-05-04 07:38:16 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1654
+
+    Summary:
+      RosettaLanguagePackExports (r=Steve)
+    Revision:
+      launchpad--devel--0--patch-1654
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-1
+       tag of daf@canonical.com--2004/launchpad--RosettaOptimization--0--patch-23
+    
+     * daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-2
+       add language pack export cron script
+    
+     * daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-3
+       merge rosetta optimization branch
+    
+     * daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-4
+       add INFO log statements to language pack cronscript
+    
+     * daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-5
+       merge rosetta optimization branch
+    
+     * daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-6
+       allow launchpad DB user to use the POExport view
+    
+     * daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-7
+       make the language pack cronscript execute ZCML
+    
+     * daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-8
+       implement exports limited by date
+    
+     * daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-9
+       change date-limited export to use less evil query suggested by Stuart
+    
+     * daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-10
+       add comment about poexport test setup
+    
+     * daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-11
+       allow poexport user to look at POFiles, POMsgSets and POTranslationsightings
+    
+     * daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-12
+       make the language pack export script only export PO files which have changed since release date
+    
+     * daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-13
+       merge rosetta optimization branch
+    
+     * daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-14
+       remove librarian host option from language pack cron script
+    
+     * daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-15
+       refactor mail notifications for language pack exports
+    
+     * daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-16
+       suggestions from Steve
+    
+     * daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-17
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-18
+       use %s when using sqlvalues()
+    
+     * daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-19
+       export ANONYOMOUS into doc tests by default; make PO export tests use same globals as other tests
+    
+     * daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-20
+       improvements to PO export doc tests
+    
+
+    new files:
+     cronscripts/.arch-ids/rosetta-language-pack-export.py.id
+     cronscripts/rosetta-language-pack-export.py
+     lib/canonical/launchpad/doc/.arch-ids/poexport-distrorelease-date-tarball.txt.id
+     lib/canonical/launchpad/doc/poexport-distrorelease-date-tarball.txt
+
+    modified files:
+     database/schema/security.cfg doc/changelog.txt
+     lib/canonical/launchpad/components/poexport.py
+     lib/canonical/launchpad/database/vpoexport.py
+     lib/canonical/launchpad/doc/poexport-distrorelease-tarball.txt
+     lib/canonical/launchpad/doc/poexport-template-tarball.txt
+     lib/canonical/launchpad/doc/poexport.txt
+     lib/canonical/launchpad/ftests/test_system_documentation.py
+
+    new patches:
+     daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-1
+     daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-2
+     daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-3
+     daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-4
+     daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-5
+     daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-6
+     daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-7
+     daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-8
+     daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-9
+     daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-10
+     daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-11
+     daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-12
+     daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-13
+     daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-14
+     daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-15
+     daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-16
+     daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-17
+     daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-18
+     daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-19
+     daf@canonical.com--2004/launchpad--RosettaLanguagePackExports--0--patch-20
+
+
+2005-05-04 05:54:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1653
+
+    Summary:
+      allow / in module names - they can refer to paths in subdirectories
+    Revision:
+      launchpad--devel--0--patch-1653
+
+    Patches applied:
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-119
+       merge from rf
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-120
+       allow / in module names - they can refer to paths in subdirectories
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/productseries.py
+
+    new patches:
+     robert.collins@canonical.com/launchpad--devel--0--patch-119
+     robert.collins@canonical.com/launchpad--devel--0--patch-120
+
+
 2005-05-03 13:38:06 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1652
 
     Summary:

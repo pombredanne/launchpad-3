@@ -430,12 +430,12 @@ class DistroRelaseTarballPOFileOutput:
         fileinfo.mtime = int(time.time())
         self.archive.addfile(fileinfo, StringIO(contents))
 
-def export_distrorelease_tarball(filehandle, release):
+def export_distrorelease_tarball(filehandle, release, date=None):
     """Export a tarball of translations for a distribution release."""
 
     archive = tarfile.open('', 'w:gz', filehandle)
 
-    rows = getUtility(IVPOExportSet).get_distrorelease_rows(release)
+    rows = getUtility(IVPOExportSet).get_distrorelease_rows(release, date)
     pofile_output = DistroRelaseTarballPOFileOutput(release, archive)
     export_rows(rows, pofile_output)
 
@@ -485,16 +485,16 @@ class DistroReleasePOExporter:
     def __init__(self, release):
         self.release = release
 
-    def export_tarball(self):
+    def export_tarball(self, date=None):
         """See IDistroReleasePOExporter."""
 
         outputbuffer = StringIO()
-        export_distrorelease_tarball(outputbuffer, self.release)
+        export_distrorelease_tarball(outputbuffer, self.release, date)
         return outputbuffer.getvalue()
 
-    def export_tarball_to_file(self, filehandle):
+    def export_tarball_to_file(self, filehandle, date=None):
         """See IDistroReleasePOExporter."""
-        export_distrorelease_tarball(filehandle, self.release)
+        export_distrorelease_tarball(filehandle, self.release, date)
 
 
 # XXX Carlos Perello Marin 2005-04-14: Code that implements the old

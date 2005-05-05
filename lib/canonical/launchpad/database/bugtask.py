@@ -283,7 +283,7 @@ class BugTaskDelta:
     implements(IBugTaskDelta)
     def __init__(self, bugtask, product=None, sourcepackagename=None,
                  binarypackagename=None, status=None, severity=None,
-                 priority=None, assignee=None, target=None):
+                 priority=None, assignee=None, milestone=None):
         self.bugtask = bugtask
         self.product = product
         self.sourcepackagename = sourcepackagename
@@ -292,7 +292,7 @@ class BugTaskDelta:
         self.severity = severity
         self.priority = priority
         self.assignee = assignee
-        self.target = target
+        self.target = milestone
 
 def mark_task(obj, iface):
     directlyProvides(obj, iface + directlyProvidedBy(obj))

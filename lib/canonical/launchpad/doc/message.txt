@@ -170,6 +170,28 @@ the integrity of GPG signed messages.
 >>> msg.raw.read() == raw_msg
 True
 
+If you attempt to stuff the same email in again, you get the same
+Message back out (but we have to check with == rather than is, as
+SQLObject doesn't necessarily give us the same intance back)
+
+>>> msg2 = msgset.fromEmail(raw_msg)
+>>> msg == msg2
+True
+
+But if a duplicate Message-Id: is detected, and the emails are not
+identical, an exception is raised
+>>> msg3 = msgset.fromEmail('''\
+... From: foo.bar@canonical.com
+... Subject: Test
+... Message-Id: <20050405054002.22134.71562@localhost.localdomain>
+...
+... Foo Bar
+... ''')
+Traceback (most recent call last):
+    [...]
+DuplicateMessageId: <20050405054002.22134.71562@localhost.localdomain>
+
+
 The fromEmail method handles non-multipart and minimalist messages 
 quite happily.
 
@@ -187,4 +209,57 @@ u'Test'
 1
 >>> chunks[0].content
 u'Foo Bar\n'
+
+
+However, there are some things it refuses to deal with. In particular, it
+will not create Messages if it cannot determine the owner or messages with
+out titles (It would be simple to change this behavior to automatically
+create missing Person instances, but there are no firm use cases for this
+yet).
+
+>>> msg = msgset.fromEmail('''\
+... From: foo.bar@canonical.com
+... Message-Id: <fnord2>
+...
+... Foo Bar
+... ''')
+Traceback (most recent call last):
+    [...]
+MissingSubject: <fnord2>
+
+>>> msg = msgset.fromEmail('''\
+... From: invalid@example.com
+... Message-Id: <fnord3>
+... Subject: Foo
+...
+... Foo Bar
+... ''')
+Traceback (most recent call last):
+    [...]
+UnknownSender: 'invalid@example.com'
+
+It also will refuse to deal with messages without a From: or Reply-To:
+header, or a missing Message-Id: header. These are required, and if they
+are missing then the email was sent from a broken email client or passed
+through a broken MTA and we have no choice but to bounce them.
+
+>>> msg = msgset.fromEmail('''\
+... From: foo.bar@canonical.com
+... Subject: Dud
+...
+... Moo
+... ''')
+Traceback (most recent call last):
+    [...]
+InvalidEmailMessage: Missing Message-Id
+
+>>> msg = msgset.fromEmail('''\
+... Subject: Dud
+... Message-Id: <fnord6>
+...
+... Moo
+... ''')
+Traceback (most recent call last):
+    [...]
+InvalidEmailMessage: No From: or Reply-To: header
 

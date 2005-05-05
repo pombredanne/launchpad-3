@@ -20,7 +20,9 @@ from sqlobject import ForeignKey, StringCol, IntCol
 from sqlobject import MultipleJoin, RelatedJoin
 
 from canonical.launchpad.interfaces import \
-    IMessage, IMessageSet, IMessageChunk, IPersonSet, ILibraryFileAliasSet
+    IMessage, IMessageSet, IMessageChunk, IPersonSet, \
+    ILibraryFileAliasSet, UnknownSender, MissingSubject, \
+    DuplicateMessageId, InvalidEmailMessage
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC
@@ -69,6 +71,7 @@ class Message(SQLBase):
         return '\n\n'.join(bits)
     contents = property(contents)
 
+
 class MessageSet:
     implements(IMessageSet)
 
@@ -85,7 +88,8 @@ class MessageSet:
         bits = email.Header.decode_header(header)
         return unicode(email.Header.make_header(bits))
 
-    def fromEmail(self, email_message):
+    def fromEmail(self, email_message, owner=None, filealias=None,
+            parsed_message=None):
         """See IMessageSet.fromEmail."""
         # It does not make sense to handle Unicode strings, as email
         # messages may contain chunks encoded in differing character sets.
@@ -95,58 +99,76 @@ class MessageSet:
                 'email_message must be a normal string.  Got: %r'
                 % email_message)
 
+        # Parse the raw message into an email.Message.Message instance,
+        # if we haven't been given one already.
+        if parsed_message is None:
+            parsed_message = email.message_from_string(email_message)
 
-        # Parse the email into an email.Message.Message structure
-        raw_email_message = email_message
-        email_message = email.message_from_string(email_message)
-
-        title = self._decode_header(email_message.get('subject', ''))
-        if not title:
-            raise ValueError('No Subject')
- 
         # We could easily generate a default, but a missing message-id
         # almost certainly means a developer is using this method when
         # they shouldn't (by creating emails by hand and passing them here),
         # which is broken because they will almost certainly have Unicode
         # errors.
-        rfc822msgid = email_message.get('message-id')
+        rfc822msgid = parsed_message.get('message-id')
         if not rfc822msgid:
-            raise ValueError('No Message-Id')
+            raise InvalidEmailMessage('Missing Message-Id')
 
-        # Try and determine the owner. We raise a NotFoundError
-        # if the sender does not exist.
-        person_set = getUtility(IPersonSet)
-        owner = None
-        from_addrs = [email_message['from'], email_message['reply-to']]
-        from_addrs = [parseaddr(addr) for addr in from_addrs if addr]
-        from_addrs = [addr for name, addr in from_addrs if addr]
-        if len(from_addrs) == 0:
-            raise ValueError('No From: or Reply-To: header')
-        owner = None
-        for from_addr in from_addrs:
-            owner = person_set.getByEmail(from_addr)
-            if owner is not None:
-                break
-        # TODO: Should we autocreate a Person if the From:
-        # address does not exist in the EmailAddres table?
-        # -- StuartBishop 20050419
+        # Handle duplicate Message-Id
+        try:
+            existing = self.get(rfc822msgid=rfc822msgid)
+        except LookupError:
+            pass
+        else:
+            existing_raw = existing.raw.read()
+            if email_message == existing_raw:
+                return existing
+            else:
+                raise DuplicateMessageId(rfc822msgid)
+
+        # Stuff a copy of the raw email into the Librarian, if it isn't
+        # already in there.
+        file_alias_set = getUtility(ILibraryFileAliasSet) # Reused later too
+        if filealias is None:
+            # We generate a filename to avoid people guessing the URL.
+            # We don't want URLs to private bug messages to be guessable
+            # for example.
+            raw_filename = '%s.msg' % (
+                    canonical.base.base(long(
+                        sha.new(parsed_message['message-id']).hexdigest(), 16
+                        ), 62)
+                    )
+            raw_email_message = file_alias_set.create(
+                    raw_filename, len(email_message),
+                    cStringIO(email_message), 'message/rfc822'
+                    )
+        else:
+            raw_email_message = filealias
+
+        # Messages must have a subject/title. While this restriction 
+        # doesn't make much sense in the Web UI, it is significant for
+        # email interfaces.
+        title = self._decode_header(parsed_message.get('subject', '')).strip()
+        if not title:
+            raise MissingSubject(rfc822msgid)
+        
         if owner is None:
-            raise NotFoundError(from_addrs[0])
-
-        # Stuff a copy of the raw email into the Librarian.
-        # We generate a filename to avoid people guessing the URL.
-        # We don't want URLs to private bug messages to be guessable for
-        # example.
-        file_alias_set = getUtility(ILibraryFileAliasSet)
-        raw_filename = '%s.msg' % (
-                canonical.base.base(long(
-                    sha.new(email_message['message-id']).hexdigest(), 16
-                    ), 62)
-                )
-        raw_email_message = file_alias_set.create(
-                raw_filename, len(raw_email_message),
-                cStringIO(raw_email_message), 'message/rfc822'
-                )
+            # Try and determine the owner. We raise a NotFoundError
+            # if the sender does not exist.
+            person_set = getUtility(IPersonSet)
+            from_addrs = [parsed_message['from'], parsed_message['reply-to']]
+            from_addrs = [parseaddr(addr) for addr in from_addrs if addr]
+            from_addrs = [addr for name, addr in from_addrs if addr]
+            if len(from_addrs) == 0:
+                raise InvalidEmailMessage('No From: or Reply-To: header')
+            for from_addr in from_addrs:
+                owner = person_set.getByEmail(from_addr)
+                if owner is not None:
+                    break
+            # TODO: Should we autocreate a Person if the From:
+            # address does not exist in the EmailAddres table?
+            # -- StuartBishop 20050419
+            if owner is None:
+                raise UnknownSender(from_addrs[0])
 
         message = Message(
             title=title,
@@ -156,24 +178,28 @@ class MessageSet:
             )
 
         # Determine the encoding to use for non-multipart messages, and the
-        # preamble and epilogue of multipart messages.
-        default_charset = email_message.get_content_charset() or 'us-ascii'
+        # preamble and epilogue of multipart messages. We default to iso-8859-1
+        # as it seems fairly harmless to cope with old, broken email clients
+        # (The RFCs state US-ASCII as the default character set).
+        default_charset = parsed_message.get_content_charset() or 'iso-8859-1'
 
         sequence = 1
-        if getattr(email_message, 'preamble', None):
+        if getattr(parsed_message, 'preamble', None):
             # We strip a leading and trailing newline - the email parser
             # seems to arbitrarily add them :-/
-            preamble = email_message.preamble.decode(default_charset)
-            if preamble[0] == '\n':
-                preamble = preamble[1:]
-            if preamble[-1] == '\n':
-                preamble = preamble[:-1]
-            MessageChunk(
-                messageID=message.id, sequence=sequence, content=preamble
-                )
-            sequence += 1
+            preamble = parsed_message.preamble.decode(
+                    default_charset, 'replace')
+            if preamble.strip():
+                if preamble[0] == '\n':
+                    preamble = preamble[1:]
+                if preamble[-1] == '\n':
+                    preamble = preamble[:-1]
+                MessageChunk(
+                    messageID=message.id, sequence=sequence, content=preamble
+                    )
+                sequence += 1
 
-        for part in email_message.walk():
+        for part in parsed_message.walk():
             mime_type = part.get_content_type()
 
             # Skip the multipart section that walk gives us. This part
@@ -188,7 +214,7 @@ class MessageSet:
             if mime_type == 'text/plain':
                 charset = part.get_content_charset()
                 if charset:
-                    content = content.decode(charset)
+                    content = content.decode(charset, 'replace')
                 if content.strip():
                     MessageChunk(
                         messageID=message.id, sequence=sequence,
@@ -213,16 +239,16 @@ class MessageSet:
                         )
                     sequence += 1
 
-        if getattr(email_message, 'epilogue', None):
-            epilogue = email_message.epilogue.decode(default_charset)
+        if getattr(parsed_message, 'epilogue', None):
+            epilogue = parsed_message.epilogue.decode(
+                    default_charset, 'replace')
             if epilogue.strip():
                 if epilogue[0] == '\n':
                     epilogue = epilogue[1:]
                 if epilogue[-1] == '\n':
                     epilogue = epilogue[:-1]
                 MessageChunk(
-                    messageID=message.id, sequence=sequence,
-                    content=epilogue
+                    messageID=message.id, sequence=sequence, content=epilogue
                     )
         return message
 

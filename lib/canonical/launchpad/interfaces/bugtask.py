@@ -89,14 +89,21 @@ class IBugTaskDelta(Interface):
     must be None.
     """
     bugtask = Attribute("The modified IBugTask.")
-    product = Attribute("A has containing two keys, 'old' and 'new' or None.")
-    sourcepackagename = Attribute("A has containing two keys, 'old' and 'new' or None.")
-    binarypackagename = Attribute("A has containing two keys, 'old' and 'new' or None.")
-    target = Attribute("A has containing two keys, 'old' and 'new' or None.")
-    status = Attribute("A has containing two keys, 'old' and 'new' or None.")
-    priority = Attribute("A has containing two keys, 'old' and 'new' or None.")
-    severity = Attribute("A has containing two keys, 'old' and 'new' or None.")
-    assignee = Attribute("A has containing two keys, 'old' and 'new' or None.")
+    product = Attribute("A dict containing two keys, 'old' and 'new' or None.")
+    sourcepackagename = Attribute(
+        "A dict containing two keys, 'old' and 'new' or None.")
+    binarypackagename = Attribute(
+        "A dict containing two keys, 'old' and 'new' or None.")
+    target = Attribute(
+        "A dict containing two keys, 'old' and 'new' or None.")
+    status = Attribute(
+        "A dict containing two keys, 'old' and 'new' or None.")
+    priority = Attribute(
+        "A dict containing two keys, 'old' and 'new' or None.")
+    severity = Attribute(
+        "A dict containing two keys, 'old' and 'new' or None.")
+    assignee = Attribute(
+        "A dict containing two keys, 'old' and 'new' or None.")
 
 
 class IUpstreamBugTask(IBugTask):
