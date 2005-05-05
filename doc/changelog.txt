@@ -2,6 +2,38 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-05 12:05:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1661
+
+    Summary:
+      r=spiv, Production Bug 131: text input widgets too small on product +edit
+    Revision:
+      launchpad--devel--0--patch-1661
+
+    Patches applied:
+    
+     * morgan.collett@canonical.com/launchpad--production-bug-131--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1598
+    
+     * morgan.collett@canonical.com/launchpad--production-bug-131--0--patch-1
+       Increase widget sizes in zcml
+    
+     * morgan.collett@canonical.com/launchpad--production-bug-131--0--patch-2
+       Merge from RF
+    
+     * morgan.collett@canonical.com/launchpad--production-bug-131--0--patch-3
+       Merge from RF
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/zcml/product.zcml
+
+    new patches:
+     morgan.collett@canonical.com/launchpad--production-bug-131--0--base-0
+     morgan.collett@canonical.com/launchpad--production-bug-131--0--patch-1
+     morgan.collett@canonical.com/launchpad--production-bug-131--0--patch-2
+     morgan.collett@canonical.com/launchpad--production-bug-131--0--patch-3
+
+
 2005-05-05 11:31:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1660
 
     Summary:
