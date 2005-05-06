@@ -2,6 +2,39 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-06 22:54:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1669
+
+    Summary:
+      remove all listifications of SelectResults in launchpad/database/person.py and some other cleanups. r=SteveA
+    Revision:
+      launchpad--devel--0--patch-1669
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-6
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-7
+       remove all listifications of SelectResults in launchpad/database/person.py and some other cleanups.
+    
+     * guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-8
+       small fixes suggested by steve
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/person.py
+     lib/canonical/launchpad/browser/team.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/mailnotification.py
+     lib/canonical/launchpad/templates/portlet-person-actions.pt
+     lib/canonical/launchpad/templates/portlet-person-views.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-6
+     guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-7
+     guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-8
+
+
 2005-05-06 08:36:33 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1668
 
     Summary:
