@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-06 00:41:46 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1667
+
+    Summary:
+      [trivial] reenable tests for dependent source code
+    Revision:
+      launchpad--devel--0--patch-1667
+
+    Patches applied:
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-121
+       reenable tests for dependent source code
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-122
+       merge from rocketfuel
+    
+
+    modified files:
+     Makefile doc/changelog.txt
+
+    new patches:
+     robert.collins@canonical.com/launchpad--devel--0--patch-121
+     robert.collins@canonical.com/launchpad--devel--0--patch-122
+
+
 2005-05-05 15:06:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1666
 
     Summary:
