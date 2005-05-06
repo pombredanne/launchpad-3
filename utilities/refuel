@@ -26,6 +26,8 @@ if [ ! $LAUNCHPAD ]; then
   exit 1
 fi
 
+ssh-add
+
 # update the code that is brought directly into the tree
 cd $LAUNCHPAD
 baz cat-config configs/canonical.com/launchpad/development | while read dirname branch; do baz tree-version -d $dirname; baz update -d $dirname; done

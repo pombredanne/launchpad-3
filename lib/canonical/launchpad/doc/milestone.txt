@@ -36,9 +36,9 @@ To create a new Milestone, use IMilestoneSet.new:
 
 To retrieve a specific Milestone, use IMilestoneSet.get:
 
-    >>> firefox_ms_1_1 = milestoneset.get(1)
-    >>> print firefox_ms_1_1.name
-    1.1
+    >>> firefox_ms_1_0 = milestoneset.get(1)
+    >>> print firefox_ms_1_0.name
+    1.0
 
 Trying to retrieve a milestone that doesn't exist will raise a
 zope.exceptions.NotFoundError:

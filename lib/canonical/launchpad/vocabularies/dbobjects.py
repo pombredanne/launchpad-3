@@ -4,6 +4,7 @@ Vocabularies pulling stuff from the database.
 You probably don't want to use these classes directly - see the
 docstring in __init__.py for details
 """
+from zope.component import getUtility
 from zope.interface import implements, Interface
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
@@ -23,6 +24,7 @@ from canonical.launchpad.database import Project
 from canonical.launchpad.database import ProductRelease
 from canonical.launchpad.database import ProductSeries
 from canonical.launchpad.database import BugTracker
+from canonical.launchpad.interfaces import ILaunchBag
 from canonical.database.sqlbase import SQLBase, quote_like, quote
 
 from sqlobject import AND, OR, CONTAINSSTRING
@@ -366,6 +368,24 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
                     )
             for o in objs:
                 yield self._toTerm(o)
+
+class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
+    """Describes ProductSeries of a particular product."""
+    _table = ProductSeries
+    _orderBy = 'product'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(
+            obj, obj.id, obj.product.name + " " + obj.name)
+
+    def __iter__(self):
+        kw = {}
+        if self._orderBy:
+            kw['orderBy'] = self._orderBy
+        if self.context.product:
+            product = self.context.product
+            for series in self._table.selectBy(productID=product.id, **kw):
+                yield self._toTerm(series)
 
 class MilestoneVocabulary(NamedSQLObjectVocabulary):
     _table = Milestone

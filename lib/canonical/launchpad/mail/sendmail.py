@@ -16,11 +16,15 @@ __all__ = ['sendmail', 'simple_sendmail', 'raw_sendmail']
 from email.Utils import make_msgid, formatdate
 from email.Message import Message
 from email.MIMEText import MIMEText
-#from email.Charset import Charset, QP
 from email import Charset
+from smtplib import SMTP
+
 from zope.app import zapi
 from zope.app.mail.interfaces import IMailDelivery
 from zope.security.proxy import isinstance as pisinstance
+
+from canonical.config import config
+from canonical.lp import isZopeless
 
 # email package by default ends up encoding UTF8 messages using base64,
 # which sucks as they look like spam to stupid spam filters. We define
@@ -106,16 +110,29 @@ def sendmail(message):
     if 'reply-to' not in message:
         message['Reply-To'] = message['from']
 
-    # Add an Errors-To: header for future bounce handling
-    # Currently bounces@canonical.com silently drops them.
+    # Add an Errors-To: header for bounce handling
     del message['Errors-To']
-    message['Errors-To'] = 'bounces@canonical.com'
+    message['Errors-To'] = config.bounce_address
 
     # Add an X-Generated-By header for easy whitelisting
     del message['X-Generated-By']
     message['X-Generated-By'] = 'Launchpad (canonical.com)'
 
-    return raw_sendmail(from_addr, to_addrs, message.as_string())
+    raw_message = message.as_string()
+    if isZopeless():
+        # Zopeless email sending is not unit tested, and won't be.
+        # The zopeless specific stuff is pretty simple though so this
+        # should be fine.
+        if config.zopeless.send_email:
+            # Note that we simply throw away dud recipients. This is fine,
+            # as it emulates the Z3 API which doesn't report this either
+            # (because actual delivery is done later).
+            smtp = SMTP(config.zopeless.smtp_host, config.zopeless.smtp_port)
+            smtp.sendmail(from_addr, to_addrs, raw_message)
+            smtp.quit()
+        return message['message-id']
+    else:
+        return raw_sendmail(from_addr, to_addrs, raw_message)
 
 def raw_sendmail(from_addr, to_addrs, raw_message):
     """Send a raw RFC8222 email message. 
@@ -126,7 +143,7 @@ def raw_sendmail(from_addr, to_addrs, raw_message):
     You should not need to call this method directly, although it may be
     necessary to pass on signed or encrypted messages.
 
-    Returns the message-id
+    Returns the message-id.
 
     """
     assert not isinstance(to_addrs, basestring), 'to_addrs must be a sequence'
@@ -134,4 +151,12 @@ def raw_sendmail(from_addr, to_addrs, raw_message):
     assert raw_message.decode('ascii'), 'Not ASCII - badly encoded message'
     mailer = zapi.getUtility(IMailDelivery, 'Mail')
     return mailer.send(from_addr, to_addrs, raw_message)
+
+if __name__ == '__main__':
+    from canonical.lp import initZopeless
+    tm = initZopeless()
+    simple_sendmail(
+            'stuart.bishop@canonical.com', ['stuart@stuartbishop.net'],
+            'Testing Zopeless', 'This is the body')
+    tm.uninstall()
 

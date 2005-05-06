@@ -31,6 +31,10 @@
         [ <a href="+edit">Edit</a> ]
     </div>
 
+    <div>
+        [ <a href="+review">Review</a> ]
+    </div>
+
     <div tal:content="context/description">
         $ProductRelease.description goes here. This is longer, like the
         product release notes.

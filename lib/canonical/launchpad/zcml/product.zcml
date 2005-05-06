@@ -105,6 +105,22 @@
         permission="launchpad.Edit"
         template="../templates/product-edit.pt"
         lp:url="/products/$Product.name/+edit">
+        <browser:widget
+           field="homepageurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+        <browser:widget
+           field="screenshotsurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+        <browser:widget
+           field="wikiurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+        <browser:widget
+           field="downloadurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
     </browser:editform>
 
     <browser:editform

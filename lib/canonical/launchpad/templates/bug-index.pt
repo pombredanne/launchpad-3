@@ -90,7 +90,7 @@
                     <b>Subject:</b>
                     <input name="field.title" type="text" size="50" 
                         tal:attributes="value context/followup_title" /><br />
-                    <b>Comment:</b> <textarea name="field.contents" rows="10"></textarea>
+                    <b>Comment:</b> <textarea name="field.content" rows="10"></textarea>
                     <input type="submit" name="UPDATE_SUBMIT" value="Add" />
                 </form>
             </div>
@@ -132,7 +132,7 @@
                            type="text" size="50"
                            value=""
                            tal:attributes="value message/followup_title" /><br />
-                    <b>Comment:</b> <textarea name="field.contents" rows="10"></textarea>
+                    <b>Comment:</b> <textarea name="field.content" rows="10"></textarea>
                     <input type="submit" name="UPDATE_SUBMIT" value="Add" />
                 </form>
             </div>

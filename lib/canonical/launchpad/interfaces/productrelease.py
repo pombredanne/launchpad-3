@@ -22,10 +22,10 @@ class IProductRelease(Interface):
     changelog = Text(title=_('Changelog'), required=True)
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = Attribute("The owner's IPerson")
-    productseries = Int(title=_('Product Series'))
+    productseries = Choice(title=_('ProductSeries'), required=True,
+                           vocabulary='FilteredProductSeries')
     manifest = Attribute("Manifest")
 
     files = Attribute(_('Iterable of product release files'))
     potemplates = Attribute(
         _("Returns an iterator over this productrelease's PO templates."))
-
