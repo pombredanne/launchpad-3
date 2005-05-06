@@ -2,6 +2,49 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-06 08:36:33 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1668
+
+    Summary:
+      cleans up /products page (r=spiv)
+    Revision:
+      launchpad--devel--0--patch-1668
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--mpt-products--0--base-0
+       tag of mpt@canonical.com/launchpad--products-index-pt--0--patch-1
+    
+     * guilherme.salgado@canonical.com/launchpad--mpt-products--0--patch-1
+       filled fixmes
+    
+     * mpt@canonical.com/launchpad--products-index-pt--0--base-0
+       tag of mpt@canonical.com/launchpad--devel--0--patch-46
+    
+     * mpt@canonical.com/launchpad--products-index-pt--0--patch-1
+       clean up /products page
+    
+     * mpt@canonical.com/launchpad--products-index-pt--0--patch-2
+       incorporate salgado's code
+    
+     * mpt@canonical.com/launchpad--products-index-pt--0--patch-3
+       change gotmatches to matches as requested by spiv
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/templates/launchpad.css
+     lib/canonical/launchpad/templates/products-index.pt
+     lib/canonical/launchpad/templates/products-search.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--mpt-products--0--base-0
+     guilherme.salgado@canonical.com/launchpad--mpt-products--0--patch-1
+     mpt@canonical.com/launchpad--products-index-pt--0--base-0
+     mpt@canonical.com/launchpad--products-index-pt--0--patch-1
+     mpt@canonical.com/launchpad--products-index-pt--0--patch-2
+     mpt@canonical.com/launchpad--products-index-pt--0--patch-3
+
+
 2005-05-06 00:41:46 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1667
 
     Summary:

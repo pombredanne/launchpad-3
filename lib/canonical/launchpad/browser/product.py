@@ -389,7 +389,7 @@ class ProductSetView:
             self.soyuz is not None):
             self.searchrequested = True
         self.results = None
-        self.gotmatches = 0
+        self.matches = 0
 
 
     def searchresults(self):
@@ -403,7 +403,7 @@ class ProductSetView:
                                                malone=self.malone,
                                                rosetta=self.rosetta,
                                                soyuz=self.soyuz)
-        self.gotmatches = len(list(self.results))
+        self.matches = self.results.count()
         return self.results
 
 
