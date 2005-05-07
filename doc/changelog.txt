@@ -2,6 +2,18 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-07 15:09:23 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1672
+
+    Summary:
+      PO attach functional test, plus miscellaneous fixes (r=Steve)
+    Revision:
+      launchpad--devel--0--patch-1672
+
+
+    modified files:
+     doc/changelog.txt
+
+
 2005-05-07 14:12:38 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1671
 
     Summary:
