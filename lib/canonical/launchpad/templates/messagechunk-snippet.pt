@@ -5,9 +5,24 @@
     </div>
 </tal:block>
 <tal:block condition="context/blob">
-    <div class="boardCommentContent">
-        Message Attachment:
-        <a tal:attributes="href context/url"
-            tal:content="context/blobname">Attachment.jpg</a>
-    </div>
+    <tal:comment condition="nothing">
+
+        This block used to display attachments as a link to the Librarian.
+        This is currently disabled until we determine how to handle them.
+        In particular, it is currently specified that we will accept
+        comments from unknown users via email, but this could allow
+        Malone to be used to distribute porn.
+
+        TODO: We probably need to simply bounce emails with attachments from
+        unknown users and turn this back on. -- StuartBishop 20050203
+
+        <div class="boardCommentContent">
+            Message Attachment:
+            <a tal:attributes="href context/url"
+                tal:content="context/blobname">Attachment.jpg</a>
+        </div>
+    </tal:comment>
+
+    <div class="boardCommentContent">Message Attachment stripped</div>
+
 </tal:block>

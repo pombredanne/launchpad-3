@@ -91,7 +91,7 @@ class PgTestSetup(object):
     connections = [] # Shared
 
     template = 'template1'
-    dbname = 'unittest_tmp'
+    dbname = 'launchpad_ftest'
     dbuser = None
 
     # (template, name) of last test. Class attribute.

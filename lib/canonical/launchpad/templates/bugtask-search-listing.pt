@@ -141,7 +141,7 @@
   <input tal:condition="mass_edit" type="submit" name="assign_to_milestone" value="Assign to Milestone" />
   <select tal:condition="mass_edit" name="milestone">
     <option tal:repeat="milestone context/milestones"
-            tal:attributes="value milestone/name"
+            tal:attributes="value milestone/id"
             tal:content="milestone/name">milestone1</option>
   </select>
   

@@ -1,5 +1,7 @@
 # Copyright 2004 Canonical Ltd
 
+__metaclass__ = type
+
 # sqlobject/sqlos
 from canonical.database.sqlbase import flush_database_updates
 
@@ -28,7 +30,7 @@ from canonical.launchpad.interfaces import IPasswordEncryptor, \
 from canonical.launchpad.interfaces import IGPGKeySet, IGpgHandler
 
 from canonical.launchpad.helpers import well_formed_email, obfuscateEmail
-from canonical.launchpad.helpers import convertToHtmlCode
+from canonical.launchpad.helpers import convertToHtmlCode, shortlist
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
 ##XXX: (batch_size+global) cprov 20041003
@@ -36,7 +38,7 @@ from canonical.launchpad.mail.sendmail import simple_sendmail
 BATCH_SIZE = 40
 
 
-class BaseListView(object):
+class BaseListView:
 
     header = ""
 
@@ -87,7 +89,7 @@ class UbuntiteListView(BaseListView):
         return self.getUbuntitesList()
 
 
-class FOAFSearchView(object):
+class FOAFSearchView:
 
     def __init__(self, context, request):
         self.context = context
@@ -129,7 +131,7 @@ class FOAFSearchView(object):
         return getUtility(IPersonSet).findByName(name)
 
 
-class BasePersonView(object):
+class BasePersonView:
     """A base class to be used by all IPerson view classes."""
 
     viewsPortlet = ViewPageTemplateFile(
@@ -591,7 +593,7 @@ class RequestPeopleMergeView(AddView):
         self._nextURL = './+mergerequest-sent'
 
 
-class FinishedPeopleMergeRequestView(object):
+class FinishedPeopleMergeRequestView:
     """A simple view for a page where we only tell the user that we sent the
     email with further instructions to complete the merge."""
 
@@ -600,7 +602,7 @@ class FinishedPeopleMergeRequestView(object):
         self.request = request
 
 
-class RequestPeopleMergeMultipleEmailsView(object):
+class RequestPeopleMergeMultipleEmailsView:
     """A view for the page where the user asks a merge and the dupe account
     have more than one email address."""
 
@@ -616,7 +618,9 @@ class RequestPeopleMergeMultipleEmailsView(object):
             dupe = self.request.get('dupe')
         self.dupe = getUtility(IPersonSet).get(int(dupe))
         emailaddrset = getUtility(IEmailAddressSet)
-        self.dupeemails = emailaddrset.getByPerson(self.dupe.id)
+        # XXX: salgado, 2005-05-06: As soon as we have a __contains__ method
+        # in SelectResults we'll not need to listify self.dupeemails anymore.
+        self.dupeemails = shortlist(emailaddrset.getByPerson(self.dupe.id))
 
     def processForm(self):
         if self.request.method != "POST":

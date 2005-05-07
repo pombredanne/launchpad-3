@@ -1,8 +1,9 @@
 
-This is needed to make utilities work, it seems.
+Test export of a PO template's PO files in a tarball.
 
-  >>> from canonical.launchpad.ftests import login
-  >>> login("launchpad.anonymous")
+This is needed to make utilities work.
+
+  >>> login(ANONYMOUS)
 
 Get a tarball representation of a template's translations.
 

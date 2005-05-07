@@ -61,6 +61,11 @@
         />
 
     <vocabulary
+        name="FilteredProductSeries"
+        factory="canonical.launchpad.vocabularies.FilteredProductSeriesVocabulary"
+        />
+
+    <vocabulary
         name="ProductRelease"
         factory="canonical.launchpad.vocabularies.ProductReleaseVocabulary"
         />

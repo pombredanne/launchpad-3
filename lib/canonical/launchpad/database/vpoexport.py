@@ -9,7 +9,7 @@ from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 
 from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.launchpad.interfaces import IVPOExportSet
 from canonical.launchpad.interfaces import IVPOExport
@@ -48,10 +48,26 @@ class VPOExportSet:
         return VPOExport.selectBy(potemplateID=potemplate.id,
             orderBy=VPOExportSet.columns)
 
-    def get_distrorelease_rows(self, release):
+    def get_distrorelease_rows(self, release, date=None):
         """See IVPOExportSet."""
-        return VPOExport.selectBy(distroreleaseID=release.id,
-            orderBy=VPOExportSet.columns)
+
+        if date is None:
+            return VPOExport.selectBy(distroreleaseID=release.id,
+                orderBy=VPOExportSet.columns)
+        else:
+            return VPOExport.select('''
+                pofile IN (
+                     SELECT POFile.id
+                     FROM POFile
+                     JOIN POTemplate ON POFile.potemplate = POTemplate.id
+                     JOIN POMsgSet ON POMsgSet.pofile = POFile.id
+                     JOIN POTranslationSighting
+                        ON POMsgSet.id = POTranslationSighting.pomsgset
+                     WHERE
+                         POTranslationSighting.datelastactive > %s AND
+                         POTemplate.distrorelease = %s
+                )
+                ''' % sqlvalues(date, release.id))
 
 
 class VPOExport(SQLBase):

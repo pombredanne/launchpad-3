@@ -4,7 +4,7 @@
       i18n:domain="launchpad">
 
 <head>
-    <title metal:fill-slot="title">Launchpad Product Registry</title>
+    <title metal:fill-slot="title">Products in Launchpad</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Launchpad style sheet -->
@@ -13,58 +13,100 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
+<metal:leftportlets fill-slot="portlets_two">
     <div tal:replace="structure view/detailsPortlet" />
 </metal:leftportlets>
 
 
 <div metal:fill-slot="main">
 
-    <h1>Launchpad Product Registry</h1>
+    <h1>Products in Launchpad</h1>
 
     <form method="post">
-
-        <fieldset>
-
-            <legend>Search for a product</legend>
-
-            <input name="text" size="45" tal:attributes="value view/text" />
-            &nbsp;
-            <input type="submit" value="Search" />
-            &nbsp;
-            <a style="font-size: 0.85;" href="+search">Advanced
-            Search</a>
-            
+        <table>
+          <tr>
+            <th>
+              <label for="text">
+                Search products:
+              </label>
+            </th>
+            <td>
+              <input name="text" size="30" tal:attributes="value view/text" />
+            </td>
+          </tr>
+          <tr>
+            <td></td>
+            <td>
+              <div class="actions">
+                <input
+                  tal:condition="view/searchrequested"
+                  type="submit"
+                  value="Search Again"
+                />
+                <input
+                  tal:condition="not: view/searchrequested"
+                  type="submit"
+                  value="Search"
+                />
+                <a href="+search">Advanced search</a>
+              </div>
+            </td>
+          </tr>
+        </table>
             <p class="formHelp">
             Enter any part of the product name, title or
             description.
             </p>
 
-        </fieldset>
-
     </form>
+
 
     <div tal:condition="view/searchrequested">
 
-        <table class="rowNavigation" width="100%">
-            <tr tal:repeat="product view/searchresults"
-                tal:attributes="onclick string:window.location='${product/name}';"
-                valign="top"
-                vspace="5">
-                <td>
-                    <img src="/++resource++product_icon.gif">
-                    <b tal:content="product/title">$Product.title</b>
-                    (<a tal:attributes="href product/name" href="#"
-                        tal:content="product/name">$Product.name</a>)
-                    <br />
-                <span tal:content="product/shortdesc">
-                    $Product.shortdesc</span>
-                </td>
-            </tr>
-        </table>
 
-        <div tal:condition="not: view/gotmatches"><b>No matching upstream
-        products.</b> You can <a href="+new">register a new product </a>.</div>
+      <tal:block tal:define="results view/searchresults">
+        <table class="data">
+          <thead>
+            <tr class="results">
+              <td colspan="0">
+                <span tal:replace="view/matches">3</span>
+                <span tal:condition="python: view.matches == 1">result</span>
+                <span tal:condition="python: view.matches != 1">results</span>
+              </td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <dl condition="view/matches" class="products">
+                  <tal:block repeat="product results">
+                    <dt>
+                      <a tal:attributes="href product/name"
+                        ><dfn
+                          tal:content="product/title"
+                        >$Product.title</dfn>
+                        (<span
+                          tal:replace="product/name"
+                        >$Product.name
+                      </span>)</a>
+                    </dt>
+                    <dd tal:content="product/shortdesc">
+                      $Product.shortdesc
+                    </dd>
+                  </tal:block>
+                </dl>
+                <p tal:condition="not: view/matches">
+                  <strong>No products matching
+                    &#8220;<span tal:replace="view/text">moz</span>&#8221;
+                  were found.</strong>
+                  You can <a href="+new">register a new product</a>.
+                </p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </tal:block>
+
 
     </div>
 

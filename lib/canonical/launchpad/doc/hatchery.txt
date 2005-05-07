@@ -1,5 +1,5 @@
-Upstream Projects in Launchpad
-==============================
+The Hatchery: Upstream Projects in Launchpad
+============================================
 
 In the general Launchpad perspective, there are two kinds of software projects,
 distro packages and upstream products. A distro package is usually some kind of
@@ -70,3 +70,14 @@ zope.exceptions.NotFoundError:
     Traceback (most recent call last):
       ...
     NotFoundError: 'Product with ID -1 does not exist'
+
+We can get to a project from a product:
+
+    >>> firefox.project.name
+    u'mozilla'
+
+We can get to the product from a project:
+
+    >>> firefox.project.products[1].name
+    u'firefox'
+

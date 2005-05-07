@@ -1,12 +1,13 @@
 """
 Tests to make sure that initZopeless works as expected.
 """
-import unittest, warnings, sys, psycopg
+import unittest, warnings, sys, psycopg, time
 from canonical.lp import initZopeless
 from canonical.database.sqlbase import SQLBase, alreadyInstalledMsg
-from canonical.ftests.pgsql import PgTestCase
+from canonical.ftests.pgsql import PgTestCase, PgTestSetup
 from canonical.functional import FunctionalTestSetup
 from threading import Thread
+from zope.testing.doctest import DocTestSuite
 
 from sqlobject import StringCol, IntCol
 
@@ -35,11 +36,12 @@ class TestInitZopeless(PgTestCase):
             # the exact same object twice, but also emit a warning.
             tm1 = initZopeless(dbname=self.dbname, dbhost='')
             tm2 = initZopeless(dbname=self.dbname, dbhost='')
+            self.failUnless(tm1 is tm2)
+            self.failUnless(self.warned)
         finally:
             # Put the warnings module back the way we found it.
             warnings.warn_explicit = warn_explicit
-        self.failUnless(tm1 is tm2)
-        self.failUnless(self.warned)
+            tm1.uninstall()
             
     def expectedWarning(self, message, category, filename, lineno,
                         module=None, registry=None):
@@ -47,18 +49,18 @@ class TestInitZopeless(PgTestCase):
         self.warned = True
         
 
-class TestZopeless(PgTestCase):
-    dbname = 'ftest_tmp'
+class TestZopeless(unittest.TestCase):
 
     def setUp(self):
-        PgTestCase.setUp(self)
-        self.tm = initZopeless(dbname=self.dbname, dbhost='')
+        PgTestSetup().setUp()
+        self.dbname = PgTestSetup().dbname
+        self.tm = initZopeless(dbname=self.dbname)
         MoreBeer.createTable()
         self.tm.commit()
 
     def tearDown(self):
         self.tm.uninstall()
-        PgTestCase.tearDown(self)
+        PgTestSetup().tearDown()
 
     def test_simple(self):
         # Create a few MoreBeers and make sure we can access them
@@ -109,7 +111,7 @@ class TestZopeless(PgTestCase):
     def test_threads(self):
         # Here we create a number of MoreBeers in seperate threads
         def doit():
-            #self.tm.begin()
+            self.tm.begin()
             b = MoreBeer(name=beer_name)
             b.rating = beer_rating
             self.tm.commit()
@@ -120,15 +122,19 @@ class TestZopeless(PgTestCase):
         t.start()
         t.join()
 
+        time.sleep(5)
+
         beer_name = 'Singa'
         beer_rating = 6
         t = Thread(target=doit)
         t.start()
         t.join()
 
+        time.sleep(5)
+
         # And make sure they are both seen
-        beers = list(MoreBeer.select())
-        self.failUnlessEqual(len(beers), 2)
+        beers = MoreBeer.select()
+        self.failUnlessEqual(beers.count(), 2)
         self.tm.commit()
 
     def test_exception(self):
@@ -169,12 +175,36 @@ class TestZopeless(PgTestCase):
         # We should now be able to see the external change in our connection
         self.failUnlessEqual(4, MoreBeer.byName('Victoria Bitter').rating)
 
+def test_isZopeless():
+    """
+    >>> from canonical.lp import isZopeless
+
+    >>> isZopeless()
+    False
+
+    >>> PgTestSetup().setUp()
+    >>> isZopeless()
+    False
+
+    >>> tm = initZopeless(dbname=PgTestSetup().dbname, dbhost='')
+    >>> isZopeless()
+    True
+
+    >>> tm.uninstall()
+    >>> isZopeless()
+    False
+
+    >>> PgTestSetup().tearDown()
+    >>> isZopeless()
+    False
+
+    """
 
 def test_suite():
-    # Tests disabled - no gain
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestZopeless))
     suite.addTest(unittest.makeSuite(TestInitZopeless))
+    suite.addTest(DocTestSuite()) # Doctests
     return suite
 
 if __name__ == '__main__':

@@ -1,5 +1,7 @@
 # Copyright 2004 Canonical Ltd
 
+__metaclass__ = type
+
 from datetime import datetime, timedelta
 
 # zope imports
@@ -35,7 +37,7 @@ class TeamEditView(SQLObjectEditView):
         self.team = self.context
 
 
-class TeamView(object):
+class TeamView:
     """A simple View class to be used in Team's pages where we don't have
     actions to process.
     """
@@ -49,7 +51,7 @@ class TeamView(object):
         self.team = self.context
 
     def activeMembersCount(self):
-        return len(self.context.approvedmembers + self.context.administrators)
+        return len(self.context.activemembers)
 
     def userIsOwner(self):
         """Return True if the user is the owner of this Team."""
@@ -194,7 +196,10 @@ class TeamLeaveView(TeamView):
         self.request.response.redirect('./')
 
 
-class TeamMembersView(TeamView):
+class TeamMembersView:
+
+    actionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-team-actions.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -206,14 +211,13 @@ class TeamMembersView(TeamView):
         return getUtility(ITeamMembershipSet).getTeamMembersCount(self.team.id)
 
     def activeMembersCount(self):
-        return len(self.team.approvedmembers + self.team.administrators)
+        return len(self.team.activemembers)
 
     def proposedMembersCount(self):
         return len(self.team.proposedmembers)
 
     def inactiveMembersCount(self):
-        return len(self.team.expiredmembers +
-                   self.team.deactivatedmembers)
+        return len(self.team.inactivemembers)
 
     def activeMemberships(self):
         return self.tmsubset.getActiveMemberships()
@@ -316,7 +320,7 @@ class AddTeamMemberView(AddView):
             team.addMember(member, approved, reviewer=self.user)
             self.addedMember = member
 
-class TeamMembershipEditView(object):
+class TeamMembershipEditView:
 
     monthnames = {1: 'January', 2: 'February', 3: 'March', 4: 'April',
                   5: 'May', 6: 'June', 7: 'July', 8: 'August', 9: 'September',

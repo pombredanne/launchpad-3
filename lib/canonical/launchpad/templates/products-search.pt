@@ -71,7 +71,7 @@
                 </tr>
             </table>
   
-            <div tal:condition="not: view/gotmatches"><b>No matching upstream
+            <div tal:condition="not: view/matches"><b>No matching upstream
             products.</b> You can register your product <a
             href="+new">here</a></div>
 
