@@ -36,13 +36,13 @@ Check that the previous submit was saved.
                           <td>Found <span class="interpolation">%i</span> invalid files.</td>
   ...
                                 <input type="text"
-      name="set_21_translation_es_0" value="foo %i"
+      name="set_150_translation_es_0" value="foo %i"
       tabindex="1" />
   ...
                                 <input type="text"
-      name="set_21_translation_es_1" value="bar %i"
+      name="set_150_translation_es_1" value="bar %i"
       tabindex="2" />
   ...
                                   <input type="checkbox"
-      value="fuzzy" name="set_21_fuzzy_es" tabindex:="3" />
+      value="fuzzy" name="set_150_fuzzy_es" tabindex:="3" />
   ...

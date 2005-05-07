@@ -14,14 +14,14 @@ files = {
         'bar',
     ),
     'translations.txt': join_lines(
-        'File: pmount_0.7.1-1_translations.tar.gz',
+        'File: pmount_0.7.2-2_translations.tar.gz',
         'Distribution: ubuntu',
         'Release: hoary',
         'Component: main',
         'Source: pmount',
-        'Version: 0.7.1-1',
+        'Version: 0.7.2-2',
         '',
-        'File: evolution_2.2.0-0ubuntu1_translations.tar.gz',
+        'File: evolution_2.2.0-0ubuntu2_translations.tar.gz',
         'Distribution: ubuntu',
         'Release: hoary',
         'Component: main',
@@ -89,19 +89,17 @@ def test():
     >>> attach(urlopener, archive_uri='foo', ztm=ztm, logger=logger)
     >>> for line in logger.log:
     ...     print line
-    INFO Getting foo/foo/pmount_0.7.1-1_translations.tar.gz
-    DEBUG foo/foo/pmount_0.7.1-1_translations.tar.gz attached to pmount sourcepackage
-    WARNING Creating new PO template name 'review-hoary-pmount-1'
-    WARNING Creating new PO template 'review-hoary-pmount-1' for hoary/pmount
-    INFO Getting foo/foo/evolution_2.2.0-0ubuntu1_translations.tar.gz
-    DEBUG foo/foo/evolution_2.2.0-0ubuntu1_translations.tar.gz attached to evolution sourcepackage
+    INFO Getting foo/foo/pmount_0.7.2-2_translations.tar.gz
+    DEBUG foo/foo/pmount_0.7.2-2_translations.tar.gz attached to pmount sourcepackage
+    INFO Getting foo/foo/evolution_2.2.0-0ubuntu2_translations.tar.gz
+    DEBUG foo/foo/evolution_2.2.0-0ubuntu2_translations.tar.gz attached to evolution sourcepackage
     WARNING Creating new PO template name 'review-hoary-evolution-1'
     WARNING Creating new PO template 'review-hoary-evolution-1' for hoary/evolution
-    INFO Getting foo/bar/pmount_0.7.1-1_translations.tar.gz
-    DEBUG foo/bar/pmount_0.7.1-1_translations.tar.gz attached to pmount sourcepackage
+    INFO Getting foo/bar/pmount_0.7.2-2_translations.tar.gz
+    DEBUG foo/bar/pmount_0.7.2-2_translations.tar.gz attached to pmount sourcepackage
     DEBUG This tarball or a newer one is already imported. Ignoring it.
-    INFO Getting foo/bar/evolution_2.2.0-0ubuntu1_translations.tar.gz
-    DEBUG foo/bar/evolution_2.2.0-0ubuntu1_translations.tar.gz attached to evolution sourcepackage
+    INFO Getting foo/bar/evolution_2.2.0-0ubuntu2_translations.tar.gz
+    DEBUG foo/bar/evolution_2.2.0-0ubuntu2_translations.tar.gz attached to evolution sourcepackage
     DEBUG This tarball or a newer one is already imported. Ignoring it.
 
     >>> LaunchpadZopelessTestSetup().tearDown()

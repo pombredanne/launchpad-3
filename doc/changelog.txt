@@ -2,6 +2,72 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-07 17:27:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1673
+
+    Summary:
+      Added more sampledata
+    Revision:
+      launchpad--devel--0--patch-1673
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-602
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-603
+       Added more Sample data to Rosetta and moved languages.sql into the sample data file
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-604
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-605
+       Fixed sampledata and all tests to handle new sampledata
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-606
+       More tests fixes
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-607
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-608
+       More test fixes
+    
+
+    removed files:
+     database/.arch-ids/languages.sql.id database/languages.sql
+
+    modified files:
+     database/sampledata/current.sql database/schema/Makefile
+     doc/changelog.txt
+     lib/canonical/launchpad/database/librarian.py
+     lib/canonical/launchpad/database/message.py
+     lib/canonical/launchpad/database/milestone.py
+     lib/canonical/launchpad/database/productseries.py
+     lib/canonical/launchpad/database/vpoexport.py
+     lib/canonical/launchpad/doc/person.txt
+     lib/canonical/launchpad/doc/poexport-distrorelease-tarball.txt
+     lib/canonical/launchpad/interfaces/message.py
+     lib/canonical/launchpad/pagetests/rosetta/30-rosetta-potemplate-translation-gettext-error.data
+     lib/canonical/launchpad/pagetests/rosetta/30-rosetta-potemplate-translation-gettext-error.txt
+     lib/canonical/launchpad/pagetests/rosetta/31-rosetta-potemplate-translation-form-long-msgid.data
+     lib/canonical/launchpad/pagetests/rosetta/31-rosetta-potemplate-translation-form-long-msgid.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-pofile-index.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-index.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-translation-form-empty-strings-without-validation.txt
+     lib/canonical/launchpad/scripts/ftests/test_po_attach.py
+     lib/canonical/launchpad/vocabularies/dbobjects.py
+     scripts/rosetta/plural-form-data
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-602
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-603
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-604
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-605
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-606
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-607
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-608
+
+
 2005-05-07 15:09:23 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1672
 
     Summary:

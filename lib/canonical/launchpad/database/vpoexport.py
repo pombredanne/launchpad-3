@@ -70,6 +70,7 @@ class VPOExportSet:
                 ''' % sqlvalues(date, release.id))
 
 
+
 class VPOExport(SQLBase):
     """Present Rosetta PO files in a form suitable for exporting them
     efficiently.

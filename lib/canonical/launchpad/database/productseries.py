@@ -1,3 +1,4 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['ProductSeries', 'ProductSeriesSet']
@@ -86,21 +87,21 @@ class ProductSeries(SQLBase):
             raise NotFoundError(distrorelease)
 
     def certifyForSync(self):
-        """enable the sync for processing"""
+        """Enable the sync for processing."""
         self.dateprocessapproved = 'NOW'
         self.syncinterval = datetime.timedelta(1)
         self.importstatus = ImportStatus.PROCESSING
 
     def syncCertified(self):
-        """return true or false indicating if the sync is enabled"""
+        """Return true or false indicating if the sync is enabled"""
         return self.dateprocessapproved is not None
 
     def autoSyncEnabled(self):
-        """is the sync automatically scheduling"""
+        """Is the sync automatically scheduling?"""
         return self.importstatus == ImportStatus.SYNCING
 
     def enableAutoSync(self):
-        """enable autosyncing?"""
+        """Enable autosyncing?"""
         self.datesyncapproved = 'NOW'
         self.importstatus = ImportStatus.SYNCING
 

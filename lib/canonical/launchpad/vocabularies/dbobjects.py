@@ -387,6 +387,7 @@ class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
             for series in self._table.selectBy(productID=product.id, **kw):
                 yield self._toTerm(series)
 
+
 class MilestoneVocabulary(NamedSQLObjectVocabulary):
     _table = Milestone
     _orderBy = 'name'
