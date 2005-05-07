@@ -7,12 +7,16 @@ from optparse import OptionParser
 
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts.lockfile import LockFile
-from canonical.launchpad.scripts.rosetta import AttachTranslationCatalog, \
-    fetch_date_list, fetch_catalog
+from canonical.launchpad.scripts.rosetta import URLOpener, attach
 
 _default_lock_file = '/var/lock/rosetta-package-po-attach.lock'
 
-def parse_options():
+def parse_options(args):
+    """Parse a set of command line options.
+
+    Returns an optparse.Values object.
+    """
+
     parser = OptionParser()
     parser.add_option("-v", "--verbose", dest="verbose",
         default=0, action="count",
@@ -27,47 +31,64 @@ def parse_options():
         default="http://people.ubuntu.com/~lamont/translations/",
         help="The location of the archive from which to get translations")
 
-    (options, args) = parser.parse_args()
+    (options, args) = parser.parse_args(args)
 
     return options
 
-def setup_logger(logger):
-    loglevel = logging.WARN
+def create_logger(name, loglevel):
+    """Create a logger.
 
-    for i in range(options.verbose):
-        if loglevel == logging.INFO:
-            loglevel = logging.DEBUG
-        elif loglevel == logging.WARN:
-            loglevel = logging.INFO
+    The logger will send log messages to standard error.
+    """
 
-    for i in range(options.quiet):
-        if loglevel == logging.WARN:
-            loglevel = logging.ERROR
-        elif loglevel == logging.ERROR:
-            loglevel = logging.CRITICAL
-
-    hdlr = logging.StreamHandler(strm=sys.stderr)
-    hdlr.setFormatter(
+    logger = logging.getLogger(name)
+    handler = logging.StreamHandler(strm=sys.stderr)
+    handler.setFormatter(
         logging.Formatter(fmt='%(asctime)s %(levelname)s %(message)s'))
-    logger.addHandler(hdlr)
+    logger.addHandler(handler)
     logger.setLevel(loglevel)
+    return logger
 
-def main(archive_uri, ztm, logger):
-    dates_list = fetch_date_list(archive_uri, logger)
+def calculate_loglevel(quietness, verbosity):
+    """Calculate a logging level based upon quietness and verbosity option
+    counts.
 
-    for date in dates_list:
-        catalog = fetch_catalog(archive_uri, date, logger)
-        process = AttachTranslationCatalog(
-            archive_uri + '/' + date, catalog, ztm, logger)
-        process.run()
+    >>> calculate_loglevel(0, 0)
+    logging.WARN
+    >>> calculate_loglevel(1, 0)
+    logging.ERROR
+    >>> calculate_loglevel(0, 1)
+    logging.INFO
+    >>> calculate_loglevel(0, 10)
+    logging.DEBUG
 
-if __name__ == '__main__':
-    options = parse_options()
+    """
+
+    # The logging levels are: CRITICAL, ERROR, WARN, INFO, DEBUG
+    # Relative to the defalut: -2, -1, 0, 1, 2
+    # Hence, absolute: 0, 1, 2, 3, 4
+
+    verbosity = verbosity - quietness + 2
+
+    if verbosity < 0:
+        verbosity = 0
+    elif verbosity > 4:
+        verbosity = 4
+
+    return [
+        logging.CRITICAL,
+        logging.ERROR,
+        logging.WARN,
+        logging.INFO,
+        logging.DEBUG,
+        ][verbosity]
+
+def main(argv):
+    options = parse_options(argv[1:])
 
     # Get the global logger for this task.
-    logger = logging.getLogger("rosetta-package-po-attach")
-    # Customize the logger output.
-    setup_logger(logger)
+    loglevel = calculate_loglevel(options.quiet, options.verbose)
+    logger = create_logger('rosetta-package-po-attach', loglevel)
 
     # Create a lock file so we don't have two daemons running at the same time.
     lockfile = LockFile(options.lockfilename, logger=logger)
@@ -76,21 +97,26 @@ if __name__ == '__main__':
     except OSError:
         logger.info("lockfile %s already exists, exiting",
                     options.lockfilename)
-        sys.exit(0)
+        return 0
 
     ztm = initZopeless()
+
+    urlopener = URLOpener()
 
     # Bare except clause: so that the lockfile is reliably deleted.
 
     try:
-        main(options.archive_uri, ztm, logger)
+        attach(urlopener, options.archive_uri, ztm, logger)
     except:
         # Release the lock for the next invocation.
         logger.error('An unexpected exception ocurred', exc_info = 1)
         lockfile.release()
-        sys.exit(1)
+        return 1
 
     # Release the lock for the next invocation.
     lockfile.release()
-    sys.exit(0)
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
 

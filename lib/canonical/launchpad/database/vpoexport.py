@@ -53,7 +53,7 @@ class VPOExportSet:
 
         if date is None:
             return VPOExport.selectBy(distroreleaseID=release.id,
-                orderBy=VPOExportSet.columns)
+                orderBy=VPOExportSet.columns, languagepack=True)
         else:
             return VPOExport.select('''
                 pofile IN (

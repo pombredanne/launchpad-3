@@ -2,18 +2,20 @@
 
 __metaclass__ = type
 
+import base64
+import gettextpo
 import os
+import popen2
 import random
 import re
 import tarfile
+import time
 import warnings
-import base64
-import popen2
-import gettextpo
 from StringIO import StringIO
 from select import select
 from math import ceil
 from xml.sax.saxutils import escape as xml_escape
+from difflib import unified_diff
 
 from zope.component import getUtility
 
@@ -47,51 +49,61 @@ def is_maintainer(hasowner):
     else:
         return False
 
+def tar_add_file(tf, path, contents):
+    """Convenience function for adding a file to a tar file."""
 
-def tar_add_file(tf, name, contents):
-    """
-    Convenience method for adding a file to a tar file.
-    """
+    now = int(time.time())
+    bits = path.split(os.path.sep)
 
-    tarinfo = tarfile.TarInfo(name)
-    tarinfo.size = len(contents)
+    # Ensure that all the directories in the path are present in the
+    # archive.
 
-    tf.addfile(tarinfo, StringIO(contents))
+    for i in range(1, len(bits)):
+        joined_path = os.path.join(*bits[:i])
 
-def tar_add_files(tf, prefix, files):
-    """Add a tree of files, represented by a dictionary, to a tar file."""
-
-    # Keys are sorted in order to make test cases easier to write.
-
-    names = files.keys()
-    names.sort()
-
-    for name in names:
-        if isinstance(files[name], basestring):
-            # Looks like a file.
-
-            tar_add_file(tf, prefix + name, files[name])
-        else:
-            # Should be a directory.
-
-            tarinfo = tarfile.TarInfo(prefix + name)
+        try:
+            tf.getmember(joined_path + '/')
+        except KeyError:
+            tarinfo = tarfile.TarInfo(joined_path)
             tarinfo.type = tarfile.DIRTYPE
+            tarinfo.mtime = now
             tf.addfile(tarinfo)
 
-            tar_add_files(tf, prefix + name + '/', files[name])
+    tarinfo = tarfile.TarInfo(path)
+    tarinfo.time = now
+    tarinfo.size = len(contents)
+    tf.addfile(tarinfo, StringIO(contents))
 
-def make_tarfile(files):
-    """Return a tar file as string from a dictionary."""
+def make_tarball_filehandle(files):
+    """Return a file handle to a tar file contaning a given set of files.
+
+    @param files: a dictionary mapping paths to file contents
+    """
 
     sio = StringIO()
+    tarball = tarfile.open('', 'w', sio)
 
-    tf = tarfile.open('', 'w', sio)
+    sorted_files = files.keys()
+    sorted_files.sort()
 
-    tar_add_files(tf, '', files)
+    for filename in sorted_files:
+        tar_add_file(tarball, filename, files[filename])
 
-    tf.close()
+    tarball.close()
+    sio.seek(0)
+    return sio
 
-    return sio.getvalue()
+def make_tarball_string(files):
+    """Similar to make_tarball_filehandle, but return the contents of the
+    tarball as a string.
+    """
+
+    return make_tarball_filehandle(files).read()
+
+def make_tarball(files):
+    """Similar to make_tarball_filehandle, but return a tarinfo object."""
+
+    return tarfile.open('', 'r', make_tarball_filehandle(files))
 
 def join_lines(*lines):
     """Concatenate a list of strings, adding a newline at the end of each."""
@@ -827,4 +839,17 @@ class TemplateLanguage:
             self.poNonUpdatesPercent = 0
             self.poTranslatedPercent = 0
             self.poUntranslatedPercent = 100
+
+def test_diff(lines_a, lines_b):
+    """Generate a string indicating the difference between expected and actual
+    values in a test.
+    """
+
+    return '\n'.join(list(unified_diff(
+        a=lines_a,
+        b=lines_b,
+        fromfile='expected',
+        tofile='actual',
+        lineterm='',
+        )))
 

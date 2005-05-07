@@ -2,6 +2,132 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-07 14:12:38 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1671
+
+    Summary:
+      PO attach functional test, plus miscellaneous fixes (r=Steve)
+    Revision:
+      launchpad--devel--0--patch-1671
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1606
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-1
+       refactor PO attach script
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-2
+       abstract network access from package attach cron script
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-3
+       move attach() function into library
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-4
+       more abstraction of network access; tidying up
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-5
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-6
+       move test_diff to helpers
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-7
+       remove unused import
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-8
+       tarball helper function deathmatch
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-9
+       reenable and repair PO attach functional doctest
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-10
+       forgot to take the scalpel out of the patient before sewing them up
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-11
+       add make_tarball_{filehandle,string} helpers
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-12
+       tweak logging
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-13
+       add PO attach functional test
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-14
+       fix PO attach test
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-15
+       PO exports: don't export inactive translation sightings, and don't export non-languagepack PO templates to distribution tarballs
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-16
+       implement suggestions from Steve's review
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-17
+       more suggestions from Steve
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-18
+       merge test setup/teardown fix from Stuart
+    
+     * stuart.bishop@canonical.com/launchpad--daf--0--base-0
+       tag of daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-17
+    
+     * stuart.bishop@canonical.com/launchpad--daf--0--patch-1
+       Fix setUp/tearDown in test_po_attach
+    
+
+    new files:
+     lib/canonical/launchpad/scripts/ftests/.arch-ids/=id
+     lib/canonical/launchpad/scripts/ftests/.arch-ids/__init__.py.id
+     lib/canonical/launchpad/scripts/ftests/.arch-ids/test_po_attach.py.id
+     lib/canonical/launchpad/scripts/ftests/__init__.py
+     lib/canonical/launchpad/scripts/ftests/test_po_attach.py
+
+    modified files:
+     cronscripts/rosetta-package-po-attach.py
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/launchpad/components/poexport.py
+     lib/canonical/launchpad/components/tests/test_poexport.py
+     lib/canonical/launchpad/database/vpoexport.py
+     lib/canonical/launchpad/doc/po-attach.txt
+     lib/canonical/launchpad/doc/poexport-distrorelease-date-tarball.txt
+     lib/canonical/launchpad/helpers.py
+     lib/canonical/launchpad/scripts/rosetta.py
+     lib/canonical/launchpad/tests/test_helpers.py
+
+    renamed files:
+     lib/canonical/launchpad/doc/.arch-ids/rosetta.py.id
+       ==> lib/canonical/launchpad/doc/.arch-ids/po-attach.txt.id
+     lib/canonical/launchpad/doc/rosetta.py
+       ==> lib/canonical/launchpad/doc/po-attach.txt
+
+    new directories:
+     lib/canonical/launchpad/scripts/ftests
+     lib/canonical/launchpad/scripts/ftests/.arch-ids
+
+    new patches:
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--base-0
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-1
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-2
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-3
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-4
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-5
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-6
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-7
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-8
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-9
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-10
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-11
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-12
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-13
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-14
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-15
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-16
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-17
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-18
+     stuart.bishop@canonical.com/launchpad--daf--0--base-0
+     stuart.bishop@canonical.com/launchpad--daf--0--patch-1
+
+
 2005-05-07 05:09:04 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1670
 
     Summary:
