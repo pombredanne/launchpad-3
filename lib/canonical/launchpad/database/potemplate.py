@@ -482,8 +482,8 @@ class POTemplate(SQLBase, RosettaStats):
             return 0
 
     def hasMessageID(self, messageID):
-        results = POTMsgSet.select(
-            potemplateID=self.id, primemsgid=messageID.id)
+        results = POTMsgSet.selectBy(
+            potemplateID=self.id, primemsgid_ID=messageID.id)
         return results.count() > 0
 
     def hasPluralMessage(self):
