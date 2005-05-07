@@ -13,7 +13,7 @@ from zope.component import getService
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from sqlos.interfaces import IConnectionName
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, ZopelessTransactionManager
 from canonical.lp import initZopeless
 
 import sqlos
@@ -76,6 +76,8 @@ class LaunchpadTestSetup(PgTestSetup):
 class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
     txn = None
     def setUp(self):
+        assert ZopelessTransactionManager._installed is None, \
+                'Last test using Zopeless failed to tearDown correctly'
         super(LaunchpadZopelessTestSetup, self).setUp()
         LaunchpadZopelessTestSetup.txn = initZopeless(
                 dbname=self.dbname, dbuser=self.dbuser
@@ -83,6 +85,8 @@ class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
 
     def tearDown(self):
         LaunchpadZopelessTestSetup.txn.uninstall()
+        assert ZopelessTransactionManager._installed is None, \
+                'Failed to tearDown Zopeless correctly'
         super(LaunchpadZopelessTestSetup, self).tearDown()
 
 

@@ -2,6 +2,35 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-07 05:09:04 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1670
+
+    Summary:
+      Minor tweak to harness to improve detection of flaky teardowns and silence some SQLObject whining [trivial]
+    Revision:
+      launchpad--devel--0--patch-1670
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--trivial--0--patch-5
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--trivial--0--patch-6
+       Minor tweak to harness to improve detection of flaky teardowns
+    
+     * stuart.bishop@canonical.com/launchpad--trivial--0--patch-7
+       Silence some SQLObject slice warnings
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/arch/tests/test_database.py
+     lib/canonical/launchpad/ftests/harness.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--trivial--0--patch-5
+     stuart.bishop@canonical.com/launchpad--trivial--0--patch-6
+     stuart.bishop@canonical.com/launchpad--trivial--0--patch-7
+
+
 2005-05-06 22:54:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1669
 
     Summary:
