@@ -20,13 +20,15 @@ class ViewPOFile:
         self.context = context
         self.request = request
         self.form = self.request.form
+        self.language_name = self.context.language.englishname
         self.status_message = None
         self.header = POHeader(msgstr=context.header)
+        self.URL = '+translate?languages=' + self.context.language.code
         self.header.finish()
 
     def pluralFormExpression(self):
         plural = self.header['Plural-Forms']
-        return plural.split(';', 1)[1].split('=',1)[1].split(';', 1)[0].strip();
+        return plural.split(';', 1)[1].split('=',1)[1].split(';', 1)[0].strip()
 
     def completeness(self):
         return '%.2f%%' % self.context.translatedPercentage()
@@ -57,13 +59,14 @@ class ViewPOFile:
                 if file == '':
                     self.status_message = 'You forgot the file!'
                 else:
-                    # XXX: Carlos Perello Marin 03/12/2004: Epiphany seems to have an
-                    # aleatory bug with upload forms (or perhaps it's launchpad because
-                    # I never had problems with bugzilla). The fact is that some uploads
-                    # don't work and we get a unicode object instead of a file-like object
-                    # in "file". We show an error if we see that behaviour.
-                    # For more info, look at bug #116
-                    self.status_message = 'There was an unknow error getting the file.'
+                    # XXX: Carlos Perello Marin 03/12/2004: Epiphany seems
+                    # to have an aleatory bug with upload forms (or perhaps
+                    # it's launchpad because I never had problems with
+                    # bugzilla). The fact is that some uploads don't work
+                    # and we get a unicode object instead of a file-like
+                    # object in "file". We show an error if we see that
+                    # behaviour.  For more info, look at bug #116
+                    self.status_message = 'Unknown error extracting the file.'
                 return
 
             filename = file.filename

@@ -25,6 +25,7 @@ from canonical.launchpad.interfaces import ILaunchBag, IHasOwner, IGeoIP, \
     IRequestPreferredLanguages, ILanguageSet, IRequestLocalLanguages
 from canonical.launchpad.components.poparser import POSyntaxError, \
     POInvalidInputError, POParser
+from canonical.launchpad.components.rosettastats import RosettaStats
 
 charactersPerLine = 50
 SPACE_CHAR = u'<span class="po-message-special">\u2022</span>'
@@ -767,78 +768,30 @@ def import_tar(potemplate, importer, tarfile, pot_paths, po_paths):
 
     return message
 
-# XXX: Carlos Perello Marin 2005-04-15: TemplateLanguages and TemplateLanguage
-# should be fixed as explained at https://launchpad.ubuntu.com/malone/bugs/397
-
-class TemplateLanguages:
-    """Support class for ProductView."""
-
-    def __init__(self, template, languages, relativeurl=''):
-        self.template = template
-        self.name = template.potemplatename.name
-        self.title = template.title
-        self.description = template.description
-        self._languages = languages
-        self.relativeurl = relativeurl
-
-    def languages(self):
-        for language in self._languages:
-            yield TemplateLanguage(self.template, language, self.relativeurl)
-
-
-class TemplateLanguage:
-    """Support class for ProductView."""
-
-    def __init__(self, template, language, relativeurl=''):
-        self.name = language.englishname
-        self.code = language.code
-        self.translateURL = '+translate?languages=' + self.code
-        self.relativeurl = relativeurl
-
-        poFile = template.queryPOFileByLang(language.code)
-
-        if poFile is not None:
-            # NOTE: To get a 100% value:
-            # 1.- currentPercent + rosettaPercent + untranslatedPercent
-            # 2.- translatedPercent + untranslatedPercent
-            # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
-            #   untranslatedPercent
-
-            self.hasPOFile = True
-            self.poLen = poFile.messageCount()
-            self.lastChangedSighting = poFile.lastChangedSighting()
-
-            self.poCurrentCount = poFile.currentCount()
-            self.poRosettaCount = poFile.rosettaCount()
-            self.poUpdatesCount = poFile.updatesCount()
-            self.poNonUpdatesCount = poFile.nonUpdatesCount()
-            self.poTranslated = poFile.translatedCount()
-            self.poUntranslated = poFile.untranslatedCount()
-
-            self.poCurrentPercent = poFile.currentPercentage()
-            self.poRosettaPercent = poFile.rosettaPercentage()
-            self.poUpdatesPercent = poFile.updatesPercentage()
-            self.poNonUpdatesPercent = poFile.nonUpdatesPercentage()
-            self.poTranslatedPercent = poFile.translatedPercentage()
-            self.poUntranslatedPercent = poFile.untranslatedPercentage()
-        else:
-            self.hasPOFile = False
-            self.poLen = len(template)
-            self.lastChangedSighting = None
-
-            self.poCurrentCount = 0
-            self.poRosettaCount = 0
-            self.poUpdatesCount = 0
-            self.poNonUpdatesCount = 0
-            self.poTranslated = 0
-            self.poUntranslated = template.messageCount()
-
-            self.poCurrentPercent = 0
-            self.poRosettaPercent = 0
-            self.poUpdatesPercent = 0
-            self.poNonUpdatesPercent = 0
-            self.poTranslatedPercent = 0
-            self.poUntranslatedPercent = 100
+class DummyPOFile(RosettaStats):
+    """
+    Represents a POFile where we do not yet actually HAVE a POFile for that
+    language for this template.
+    """
+    def __init__(self, potemplate, language):
+        self.potemplate = potemplate
+        self.language = language
+        self.messageCount = len(potemplate)
+        self.header = ''
+        self.latest_sighting = None
+        self.currentCount = 0
+        self.rosettaCount = 0
+        self.updatesCount = 0
+        self.nonUpdatesCount = 0
+        self.translatedCount = 0
+        self.untranslatedCount = self.messageCount
+        self.currentPercentage = 0
+        self.rosettaPercentage = 0
+        self.updatesPercentage = 0
+        self.nonUpdatesPercentage = 0
+        self.translatedPercentage = 0
+        self.untranslatedPercentage = 100
+        
 
 def test_diff(lines_a, lines_b):
     """Generate a string indicating the difference between expected and actual

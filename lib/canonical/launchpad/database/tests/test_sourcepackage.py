@@ -59,7 +59,7 @@ class PackagingDiscoveryTestCase(ZopelessTestCase):
         # now verify we still get a product for that sp
         sp = SourcePackage(sourcepackagename=self.a52dec,
                            distrorelease=self.hoary)
-        self.assertEqual(sp.product.name, 'a52dec')
+        self.assertEqual(sp.productseries.product.name, 'a52dec')
 
     def testParentReleasePackaging(self):
         "We get the productseries from the parent release if needed"
@@ -72,7 +72,7 @@ class PackagingDiscoveryTestCase(ZopelessTestCase):
         # now verify we still get a product for that sp
         sp = SourcePackage(sourcepackagename=self.a52dec,
                            distrorelease=self.g2k5)
-        self.assertEqual(sp.product.name, 'a52dec')
+        self.assertEqual(sp.productseries.product.name, 'a52dec')
 
 
 def test_suite():

@@ -2,6 +2,80 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-09 15:00:18 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1675
+
+    Summary:
+      fixrosettatemplateviews
+    Revision:
+      launchpad--devel--0--patch-1675
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-944
+       add validation for arch archive details
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixrosettatemplateviews--0--base-0
+       tag of mark.shuttleworth@canonical.com/launchpad--devel--0--patch-944
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixrosettatemplateviews--0--patch-1
+       eliminate use of TemplateLanguage in rosetta
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixrosettatemplateviews--0--patch-2
+       merge rocketfuel, resolving conflicts
+    
+     * steve.alexander@canonical.com/launchpad--fixrosettatemplateviews--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1674
+    
+     * steve.alexander@canonical.com/launchpad--fixrosettatemplateviews--0--patch-1
+       merge from rf
+    
+     * steve.alexander@canonical.com/launchpad--fixrosettatemplateviews--0--patch-2
+       resolved date conflict from xx-rosetta-potemplate-index.txt
+    
+     * steve.alexander@canonical.com/launchpad--fixrosettatemplateviews--0--patch-3
+       make changes according to code review.
+    
+
+    new files:
+     lib/canonical/launchpad/templates/.arch-ids/potemplate-chart.pt.id
+     lib/canonical/launchpad/templates/potemplate-chart.pt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/distrorelease.py
+     lib/canonical/launchpad/browser/pofile.py
+     lib/canonical/launchpad/browser/potemplate.py
+     lib/canonical/launchpad/browser/productrelease.py
+     lib/canonical/launchpad/browser/productseries.py
+     lib/canonical/launchpad/browser/sourcepackage.py
+     lib/canonical/launchpad/components/rosettastats.py
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/database/potemplate.py
+     lib/canonical/launchpad/database/tests/test_sourcepackage.py
+     lib/canonical/launchpad/helpers.py
+     lib/canonical/launchpad/interfaces/pofile.py
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-index.txt
+     lib/canonical/launchpad/templates/object-pots.pt
+     lib/canonical/launchpad/templates/potemplate-index.pt
+     lib/canonical/launchpad/templates/potemplate-translate.pt
+     lib/canonical/launchpad/templates/products-search.pt
+     lib/canonical/launchpad/templates/rosetta-about.pt
+     lib/canonical/launchpad/templates/rosetta-index.pt
+     lib/canonical/launchpad/zcml/pofile.zcml
+     lib/canonical/launchpad/zcml/potemplate.zcml
+     lib/canonical/rosetta/tests/test_browser.py
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-944
+     mark.shuttleworth@canonical.com/launchpad--fixrosettatemplateviews--0--base-0
+     mark.shuttleworth@canonical.com/launchpad--fixrosettatemplateviews--0--patch-1
+     mark.shuttleworth@canonical.com/launchpad--fixrosettatemplateviews--0--patch-2
+     steve.alexander@canonical.com/launchpad--fixrosettatemplateviews--0--base-0
+     steve.alexander@canonical.com/launchpad--fixrosettatemplateviews--0--patch-1
+     steve.alexander@canonical.com/launchpad--fixrosettatemplateviews--0--patch-2
+     steve.alexander@canonical.com/launchpad--fixrosettatemplateviews--0--patch-3
+
+
 2005-05-07 17:56:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1674
 
     Summary:

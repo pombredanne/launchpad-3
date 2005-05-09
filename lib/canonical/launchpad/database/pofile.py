@@ -31,28 +31,6 @@ from canonical.launchpad.database.potranslationsighting import \
     POTranslationSighting
 
 
-class POFileSet:
-    implements(IPOFileSet)
-
-    def getPOFilesPendingImport(self):
-        """See IPOFileSet."""
-        results = POFile.selectBy(rawimportstatus=RosettaImportStatus.PENDING)
-
-        # XXX: Carlos Perello Marin 2005-03-24
-        # Really ugly hack needed to do the initial import of the whole hoary
-        # archive. It will disappear as soon as the whole
-        # LaunchpadPackagePoAttach and LaunchpadPoImport are implemented so
-        # rawfile is not used anymore and we start using Librarian.
-        # The problem comes with the memory requirements to get more than 7500
-        # rows into memory with about 200KB - 300KB of data each one.
-        total = results.count()
-        done = 0
-        while done < total:
-            for potemplate in results[done:done+100]:
-                yield potemplate
-            done = done + 100
-
-
 class POFile(SQLBase, RosettaStats):
     implements(IEditPOFile, IRawFileData)
 
@@ -206,7 +184,6 @@ class POFile(SQLBase, RosettaStats):
         return getUtility(IPersonSet).getContributorsForPOFile(self)
 
     # IEditPOFile
-
     def expireAllMessages(self):
         for msgset in self.currentMessageSets():
             msgset.sequence = 0
@@ -302,7 +279,7 @@ class POFile(SQLBase, RosettaStats):
 
         return self.createMessageSetFromMessageSet(potmsgset)
 
-    def lastChangedSighting(self):
+    def latest_sighting(self):
         '''
         SELECT * FROM POTranslationSighting WHERE POTranslationSighting.id =
         POMsgSet.id AND POMsgSet.pofile = 2 ORDER BY datelastactive;
@@ -312,11 +289,11 @@ class POFile(SQLBase, RosettaStats):
             POMsgSet.pofile = %d''' % self.id,
             orderBy='-datelastactive',
             clauseTables=['POMsgSet'])
-
         try:
             return sightings[0]
         except IndexError:
             return None
+    latest_sighting = property(latest_sighting)
 
     # ICanAttachRawFileData implementation
 
@@ -482,4 +459,27 @@ class POFile(SQLBase, RosettaStats):
                     'We got an error importing %s language for %s template' % (
                         self.language.code, self.potemplate.title),
                         exc_info = 1)
+
+
+class POFileSet:
+    implements(IPOFileSet)
+
+    def getPOFilesPendingImport(self):
+        """See IPOFileSet."""
+        results = POFile.selectBy(rawimportstatus=RosettaImportStatus.PENDING)
+
+        # XXX: Carlos Perello Marin 2005-03-24
+        # Really ugly hack needed to do the initial import of the whole hoary
+        # archive. It will disappear as soon as the whole
+        # LaunchpadPackagePoAttach and LaunchpadPoImport are implemented so
+        # rawfile is not used anymore and we start using Librarian.
+        # The problem comes with the memory requirements to get more than 7500
+        # rows into memory with about 200KB - 300KB of data each one.
+        total = results.count()
+        done = 0
+        while done < total:
+            for potemplate in results[done:done+100]:
+                yield potemplate
+            done = done + 100
+
 

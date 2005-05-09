@@ -27,32 +27,36 @@
         for="canonical.launchpad.interfaces.IPOFile"
         permission="zope.Public"
         class="canonical.launchpad.browser.ViewPOFile"
-        lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language">
+        lp:url="/products/netapplet/1.0/+pots/$POTemplate.name/$POFile.language">
         <browser:page
             name="+index"
             template="../templates/pofile-index.pt"
-            lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language"/>
+            lp:url="/products/$Product.name/$POTemplate.name/$POFile.language"/>
+
     </browser:pages>
 
-    <browser:page name="+edit"
+    <browser:page
+        name="+edit"
         permission="launchpad.Edit"
         class="canonical.launchpad.browser.ViewPOFile"
         for="canonical.launchpad.interfaces.IPOFile"
         template="../templates/pofile-edit.pt"
-        lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language/+edit" />
+        lp:url="/products/$Product.name/+pots/$POTemplate.name/$POFile.language/+edit" />
 
-    <browser:page name="po"
+    <browser:page
+        name="po"
         for="canonical.launchpad.interfaces.IPOFile"
         permission="zope.Public"
         class="canonical.launchpad.browser.ViewPOExport"
         attribute="__call__"
-        lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$Language.code/po" />
+        lp:url="/products/$Product.name/$POTemplate.name/$Language.code/po" />
 
-    <browser:page name="mo"
+    <browser:page
+        name="mo"
         for="canonical.launchpad.interfaces.IPOFile"
         permission="zope.Public"
         class="canonical.launchpad.browser.ViewMOExport"
         attribute="__call__"
-        lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$Language.code/mo" />
+        lp:url="/products/$Product.name/$POTemplate.name/$Language.code/mo" />
 
 </configure>

@@ -6,6 +6,7 @@ from canonical.launchpad.interfaces import IRosettaStats
 # adaptor as bug #396 describes.
 
 class RosettaStats(object):
+
     implements(IRosettaStats)
 
     def messageCount(self):

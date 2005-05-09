@@ -51,10 +51,11 @@
     <div style="margin-left: 50px;">
 
         <p tal:repeat="distrorelease context/translatable_distroreleases">
-            <img src="/++resource++product_icon.gif"> <b><span
-            tal:replace="distrorelease/title">product title</span></b>
-            [ <a tal:attributes="href
-            string:/distros/${distrorelease/distribution/name}/${distrorelease/name}/">Translate</a> ]
+            <img src="/++resource++product_icon.gif">
+            <b>Version <span tal:replace="distrorelease/version" /> "<span
+            tal:replace="distrorelease/title">distrorelease
+            title</span>"</b>&nbsp;[&nbsp;<a tal:attributes="href
+            string:/distros/${distrorelease/distribution/name}/${distrorelease/name}/+translations">Translate</a>&nbsp;]
             <br />
             <span tal:replace="distrorelease/shortdesc">product
             summary</span>

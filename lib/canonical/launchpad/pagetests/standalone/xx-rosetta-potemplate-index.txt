@@ -1,25 +1,21 @@
-Check that the index page for a POTemplate is listing all available translations.
+
+Check that the index page for a POTemplate is listing all available
+translations.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/ HTTP/1.1
-  ... Accept-Language: en-gb,en;q=0.5
+  ... Accept-Language: en-us,en;q=0.7,af;q=0.3
   ... """)
   HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
   ...
-      <title>Rosetta
           Template for evolution in hoary</title>
   ...
               22 messages<br />
   ...
-                  Rosetta Administrators<br />
+                              Carlos Perelló Marín
   ...
-      <h1>Translation Template: Template for evolution in hoary
-  ...
-                          <a href="+translate?languages=es">Spanish</a></td>
-                      <td>7</td>
-                      <td>15</td>
-  ...
-                              <span>Carlos Perelló Marín</span>
-  ...
-                              <span>2005-05-06</span> GMT
+                              2005-05-06
   ...

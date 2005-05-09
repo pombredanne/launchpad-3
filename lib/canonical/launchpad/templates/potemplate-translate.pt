@@ -24,6 +24,7 @@
           </ul>
         </div>
       </div>
+
       <div class="portlet">
         <h4>Special characters</h4>
 
@@ -54,25 +55,31 @@
             </ul>
         </div>
       </div>
+
+      <div class="portlet">
+        <h4>template description</h4>
+
+        <div class="portletBody" tal:content="context/description">
+            portlet description
+        </div>
+      </div>
     </div>
 
     <div metal:fill-slot="main">
-      <div>You are translating</div>
-      <h1>
-        <strong tal:content="context/title">ProductName for DistroVersion</strong>
-        into
+
+      <p>This is a Rosetta translation page. The template you are translating
+        is for <span tal:replace="view/what" /> and has the title
+        <strong tal:content="context/title">template title here</strong>.
+        This page allows you to translate that template into
         <span
           tal:repeat="language view/languages"
-          tal:omit-tag
-        >
-          <strong tal:content="language/englishname">Portugese (Brazilian)</strong><span
+          tal:omit-tag="">
+          <strong tal:content="language/englishname">Portugese</strong><span
             tal:condition="not:repeat/language/end"
-            tal:omit-tag
-          >,</span>
-        </span>
-      </h1>
-      <p tal:content="context/description">
-        The template description.
+            tal:omit-tag="">,</span>
+        </span>. Use the forms below to provide good translations of the
+        strings listed there, taking care to understand the context
+        within which each string is being used.
       </p>
 
     <!-- Plural form error message. -->

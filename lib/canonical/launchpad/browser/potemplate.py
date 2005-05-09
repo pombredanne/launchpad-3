@@ -11,12 +11,15 @@ from zope.component import getUtility
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
 
+from canonical.launchpad import helpers
 from canonical.database.constants import UTC_NOW
+
 from canonical.launchpad.interfaces import ILanguageSet, ILaunchBag
 from canonical.launchpad.components.poexport import POExport
 from canonical.launchpad.components.poparser import POSyntaxError, \
     POInvalidInputError
-from canonical.launchpad import helpers
+
+from canonical.launchpad.browser.pofile import ViewPOFile
 
 _showDefault = 'all'
 
@@ -42,6 +45,7 @@ class TabIndexGenerator:
 
 
 class ViewPOTemplate:
+
     statusLegend = ViewPageTemplateFile(
         '../templates/portlet-rosetta-status-legend.pt')
 
@@ -49,6 +53,38 @@ class ViewPOTemplate:
         self.context = context
         self.request = request
         self.request_languages = helpers.request_languages(self.request)
+        self.name = self.context.potemplatename.name
+        self.title = self.context.potemplatename.title
+        self.description = self.context.potemplatename.description
+        # XXX carlos 01/05/05 please fix up when we have the
+        # MagicURLBox
+
+        # We will be constructing a URL path using a list.
+        L = []
+        if self.context.productrelease:
+            L.append('products')
+            L.append(self.context.productrelease.product.name)
+            L.append(self.context.productrelease.version)
+            L.append('+pots')
+            L.append(self.context.potemplatename.name)
+            self.what = self.context.productrelease.product.name
+            self.what += ' ' + self.context.productrelease.version
+        elif self.context.distrorelease and self.context.sourcepackagename:
+            L.append('distros')
+            L.append(self.context.distrorelease.distribution.name)
+            L.append(self.context.distrorelease.name)
+            L.append('+sources')
+            L.append(self.context.sourcepackagename.name)
+            L.append('+pots')
+            L.append(self.context.potemplatename.name)
+            self.what = self.context.sourcepackagename.name + ' in '
+            self.what += self.context.distrorelease.distribution.name + ' '
+            self.what += self.context.distrorelease.name
+        else:
+            raise NotImplementedError('We only understand POTemplates '
+                'linked to source packages and product releases.')
+        # The URL path is to start and end with '/'.
+        self.URL = '/%s/' % '/'.join(L)
         self.status_message = None
 
     def num_messages(self):
@@ -60,13 +96,14 @@ class ViewPOTemplate:
         else:
             return "%s messages" % N
 
-    def languages(self):
-        '''Iterate languages shown when viewing this PO template.
+    def pofiles(self):
+        """Iterate languages shown when viewing this PO template.
 
-        Yields a TemplateLanguage object for each language this template has
+        Yields a ViewPOFile object for each language this template has
         been translated into, and for each of the user's languages.
-        '''
-
+        Where the template has no POFile for that language, we use
+        a DummyPOFile.
+        """
         # Languages the template has been translated into.
         translated_languages = Set(self.context.languages())
 
@@ -78,7 +115,10 @@ class ViewPOTemplate:
         languages.sort(lambda a, b: cmp(a.englishname, b.englishname))
 
         for language in languages:
-            yield helpers.TemplateLanguage(self.context, language)
+            pofile = self.context.queryPOFileByLang(language.code)
+            if not pofile:
+                pofile = helpers.DummyPOFile(self.context, language)
+            yield ViewPOFile(pofile, self.request)
 
     def submitForm(self):
         """Called from the page template to do any processing needed if a form
@@ -185,6 +225,15 @@ class TranslatePOTemplate:
         self.context = context
         self.request = request
         self.user = getUtility(ILaunchBag).user
+        if self.context.productrelease:
+            self.what = '%s %s' % (
+                self.context.productrelease.product.name,
+                self.context.productrelease.version)
+        elif self.context.distrorelease and self.context.sourcepackagename:
+            self.what = '%s in %s %s' % (
+                self.context.sourcepackagename.name,
+                self.context.distrorelease.distribution.name,
+                self.context.distrorelease.name)
 
     def processForm(self):
         # This sets up the following instance variables:

@@ -3,6 +3,7 @@
 #
 
 import re
+import urllib
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -12,6 +13,7 @@ from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 from CVS.protocol import CVSRoot
+import pybaz
 
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
@@ -52,14 +54,20 @@ def validate_cvs_branch(branch):
 def validate_svn_repo(repo):
     if not repo:
         return False
-    import urllib
     scheme, host = urllib.splittype(repo)
     if not scheme in ["http", "https", "svn", "svn+ssh"]:
         return False
-    host,path = urllib.splithost(host)
-    if not len(host):
+    host, path = urllib.splithost(host)
+    return len(host) > 0
+
+def validate_release_root(repo):
+    if not repo:
         return False
-    return True
+    scheme, host = urllib.splittype(repo)
+    if not scheme in ["http", "https", "ftp"]:
+        return False
+    host, path = urllib.splithost(host)
+    return len(host) > 0
 
 
 
@@ -143,7 +151,11 @@ class ProductSeriesView(object):
         # XXX sabdfl 14/04/05 we need to do some validation here
         self.context.displayname = form.get('displayname', self.displayname)
         self.context.shortdesc = form.get('shortdesc', self.shortdesc)
-        self.context.releaseroot = form.get("releaseroot", self.releaseroot)
+        self.releaseroot = form.get("releaseroot", self.releaseroot)
+        if not validate_release_root(self.releaseroot):
+            self.errormsgs.append('Invalid release root URL')
+            return
+        self.context.releaseroot = self.releaseroot
         self.context.releasefileglob = form.get("releasefileglob", self.releasefileglob)
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
@@ -209,11 +221,32 @@ class ProductSeriesView(object):
         if form.get("Update RCS Details", None) is None:
             return
         # look for admin changes and retrieve those
-        self.targetarcharchive = form.get('targetarcharchive', self.targetarcharchive)
-        self.targetarchcategory = form.get('targetarchcategory', self.targetarchcategory)
-        self.targetarchbranch = form.get('targetarchbranch', self.targetarchbranch)
-        self.targetarchversion = form.get('targetarchversion', self.targetarchversion)
-        # lifeless 29/04/05 need validation
+        self.targetarcharchive = form.get(
+            'targetarcharchive', self.targetarcharchive)
+        self.targetarchcategory = form.get(
+            'targetarchcategory', self.targetarchcategory)
+        self.targetarchbranch = form.get(
+            'targetarchbranch', self.targetarchbranch)
+        self.targetarchversion = form.get(
+            'targetarchversion', self.targetarchversion)
+
+        # validate arch target details
+        assert len(self.errormsgs) == 0, (
+            "Some other code in the view's class has added error messages.")
+        if not pybaz.NameParser.is_archive_name(self.targetarcharchive):
+            self.errormsgs.append('Invalid target Arch archive name.')
+        if not pybaz.NameParser.is_category_name(self.targetarchcategory):
+            self.errormsgs.append('Invalid target Arch category.')
+        if not pybaz.NameParser.is_branch_name(self.targetarchbranch):
+            self.errormsgs.append('Invalid target Arch branch name.')
+        if not pybaz.NameParser.is_version_id(self.targetarchversion):
+            self.errormsgs.append('Invalid target Arch version id.')
+
+        # Return if there were any errors, so as not to update anything.
+        if self.errormsgs:
+            return
+
+        # update the database
         self.context.targetarcharchive = self.targetarcharchive
         self.context.targetarchcategory = self.targetarchcategory
         self.context.targetarchbranch = self.targetarchbranch
