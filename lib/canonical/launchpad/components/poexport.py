@@ -565,7 +565,7 @@ class POExport:
 
         # First we get last translator that touched a string and the date when
         # it was done.
-        last_changed = poFile.lastChangedSighting()
+        last_changed = poFile.latest_sighting
 
         if last_changed is not None:
             # We have at least one pomsgset with a translation so we are able

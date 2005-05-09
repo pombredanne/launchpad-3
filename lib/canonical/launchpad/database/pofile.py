@@ -280,19 +280,20 @@ class POFile(SQLBase, RosettaStats):
         return self.createMessageSetFromMessageSet(potmsgset)
 
     def latest_sighting(self):
-        '''
-        SELECT * FROM POTranslationSighting WHERE POTranslationSighting.id =
-        POMsgSet.id AND POMsgSet.pofile = 2 ORDER BY datelastactive;
-        '''
+        """See IPOFile."""
+
         sightings = POTranslationSighting.select('''
             POTranslationSighting.pomsgset = POMsgSet.id AND
             POMsgSet.pofile = %d''' % self.id,
             orderBy='-datelastactive',
-            clauseTables=['POMsgSet'])
+            clauseTables=['POMsgSet'],
+            limit=1)
+
         try:
             return sightings[0]
         except IndexError:
             return None
+
     latest_sighting = property(latest_sighting)
 
     # ICanAttachRawFileData implementation
@@ -399,13 +400,7 @@ class POFile(SQLBase, RosettaStats):
                 # person as the owner.
                 person = default_owner
             else:
-                # This import is here to prevent circular dependencies.
-                from canonical.launchpad.database.person import \
-                    PersonSet, createPerson
-
-                person_set = PersonSet()
-
-                person = person_set.getByEmail(email)
+                person = getUtility(IPersonSet).getByEmail(email)
 
                 if person is None:
                     items = name.split()

@@ -2,6 +2,121 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-09 17:13:12 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1676
+
+    Summary:
+      CountrySpecificLanguage, miscellaneous cleanups (r=Steve)
+    Revision:
+      launchpad--devel--0--patch-1676
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1662
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-1
+       add database patch
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-2
+       update interface/database code with hidden flag
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-3
+       filter hidden languages from GeoIP/Accept-Language lists
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-4
+       hide hidden language in the preferences page
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-5
+       remove duplication of language code canonicalisation
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-6
+       indentation
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-7
+       remove overcomplication
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-8
+       indentation
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-9
+       indentation
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-10
+       s/hidden/visible/
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-11
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-12
+       merge Stuart's DBA stamp of approval
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-13
+       update sample data
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-14
+       add a page test for missing files in web PO file uploads
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-15
+       POFile.lastChangedSighting: improve docstring, add limit=1
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-16
+       replace mid-module import in DB code with getUtility()
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-17
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-18
+       s/lastChangedSighting/latest_sighting/
+    
+     * stuart.bishop@canonical.com/launchpad--daf--1--base-0
+       tag of daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-10
+    
+     * stuart.bishop@canonical.com/launchpad--daf--1--patch-1
+       Move DB patch to proper place and add boilerplate. Sampledata needs work
+    
+
+    new files:
+     database/schema/.arch-ids/patch-17-04-0.sql.id
+     database/schema/patch-17-04-0.sql
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-pofile-edit-missing-file.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-pofile-edit-missing-file.txt
+
+    modified files:
+     cronscripts/rosetta-poimport.py
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/launchpad/browser/project.py
+     lib/canonical/launchpad/components/poexport.py
+     lib/canonical/launchpad/database/language.py
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/interfaces/language.py
+     lib/canonical/launchpad/templates/product-translations.pt
+     lib/canonical/launchpad/utilities/geoip.py
+     lib/canonical/rosetta/browser.py
+
+    new patches:
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--base-0
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-1
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-2
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-3
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-4
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-5
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-6
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-7
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-8
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-9
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-10
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-11
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-12
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-13
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-14
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-15
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-16
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-17
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-18
+     stuart.bishop@canonical.com/launchpad--daf--1--base-0
+     stuart.bishop@canonical.com/launchpad--daf--1--patch-1
+
+
 2005-05-09 15:00:18 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1675
 
     Summary:

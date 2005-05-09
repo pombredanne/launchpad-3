@@ -164,7 +164,7 @@ class ProjectView(object):
             yield retdict
 
     def languages(self):
-        return [language for language in helpers.request_languages(self.request)]
+        return helpers.request_languages(self.request)
 
 
 class ProjectAddProductView(AddView):

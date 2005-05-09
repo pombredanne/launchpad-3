@@ -5,7 +5,7 @@ __all__ = ['Language', 'LanguageSet']
 
 from zope.interface import implements
 
-from sqlobject import StringCol, IntCol
+from sqlobject import StringCol, IntCol, BoolCol
 from sqlobject import RelatedJoin, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase
 
@@ -23,6 +23,7 @@ class Language(SQLBase):
     englishname = StringCol(dbName='englishname')
     pluralforms = IntCol(dbName='pluralforms')
     pluralexpression = StringCol(dbName='pluralexpression')
+    visible = BoolCol(dbName='visible')
 
     translators = RelatedJoin('Person', joinColumn='language',
         otherColumn='person', intermediateTable='PersonLanguage')
