@@ -17,7 +17,7 @@ class IProductRelease(Interface):
     version = TextLine(title=_('Version'),required=True, readonly=True)
     displayname = Attribute("Constructed displayname for a productrelease")
     title = TextLine(title=_('Title'),required=True)
-    shortdesc = Text(title=_("Short Description"), required=True)
+    summary = Text(title=_("Summary"), required=True)
     description = Text(title=_("Description"), required=True)
     changelog = Text(title=_('Changelog'), required=True)
     ownerID = Int(title=_('Owner'), required=True, readonly=True)

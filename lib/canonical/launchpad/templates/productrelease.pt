@@ -22,8 +22,8 @@
     <h2><span tal:replace="context/version">Version</span>: 
     "<span tal:replace="context/title">Title</span>"</h2>
 
-    <div class="documentDescription" tal:content="context/shortdesc">
-        $ProductRelease.shortdesc goes here. This should be quite short,
+    <div class="documentDescription" tal:content="context/summary">
+        $ProductRelease.summary goes here. This should be quite short,
         just a single paragraph of text really, giving a summary of
         this release highlights.
     </div>

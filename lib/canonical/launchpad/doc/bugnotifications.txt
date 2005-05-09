@@ -461,7 +461,7 @@ report private:
     >>> firefox_bug.private = True
     >>> bug_before_modification = MockObject()
     >>> bug_before_modification.title = firefox_bug.title
-    >>> bug_before_modification.shortdesc = firefox_bug.shortdesc
+    >>> bug_before_modification.summary = firefox_bug.summary
     >>> bug_before_modification.description = firefox_bug.description
     >>> bug_before_modification.name = firefox_bug.name
     >>> bug_before_modification.id = firefox_bug.id

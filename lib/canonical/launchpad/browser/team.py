@@ -29,6 +29,9 @@ from canonical.database.sqlbase import flush_database_updates
 
 class TeamEditView(SQLObjectEditView):
 
+    viewsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-person-views.pt')
+
     actionsPortlet = ViewPageTemplateFile(
         '../templates/portlet-team-actions.pt')
 
@@ -41,6 +44,9 @@ class TeamView:
     """A simple View class to be used in Team's pages where we don't have
     actions to process.
     """
+
+    viewsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-person-views.pt')
 
     actionsPortlet = ViewPageTemplateFile(
         '../templates/portlet-team-actions.pt')

@@ -2,6 +2,227 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-09 21:50:18 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1677
+
+    Summary:
+      shift launchpad to summary from shortdesc (r=spiv)
+    Revision:
+      launchpad--devel--0--patch-1677
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--base-0
+       tag of mark.shuttleworth@canonical.com/launchpad--devel--0--patch-944
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-1
+       start work on shortdesc to summary conversion
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-2
+       fix db and sampledata for bugtracker shortdesc renamed to summary
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-3
+       fix translationeffort.shortdesc too
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-4
+       fix view issues
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-5
+       fix publishedpackageview
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-6
+       fix final test failure
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-7
+       comments for stub
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-8
+       merge rocketfuel, resolving conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-9
+       move db patch to better numbering based on rf updates
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-10
+       misc small fixes
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-11
+       update to latest rocketfuel and resolve sampledata conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-12
+       fix up tests
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-13
+       fixes for test failures
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-14
+       finalise db patch and position
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-15
+       review suggestions from spiv
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-16
+       fixes to add some image files to the resource list
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-17
+       merge rocketfuel resolving conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-18
+       clean up use of short description in favour of summary
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-19
+       merge rocketfuel resolving damn sampledata conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-20
+       resolve test-related problems like ordering the project.products multiplejoin
+    
+     * stuart.bishop@canonical.com/launchpad--sabdfl--3--base-0
+       tag of mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-10
+    
+
+    new files:
+     database/schema/.arch-ids/patch-17-03-0.sql.id
+     database/schema/patch-17-03-0.sql
+
+    modified files:
+     database/sampledata/current.sql database/schema/comments.sql
+     database/schema/fti.py database/schema/launchpad.html
+     doc/changelog.txt lib/canonical/doap/fileimporter.py
+     lib/canonical/launchpad/browser/bugtracker.py
+     lib/canonical/launchpad/browser/distrorelease.py
+     lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/browser/productrelease.py
+     lib/canonical/launchpad/browser/productseries.py
+     lib/canonical/launchpad/browser/project.py
+     lib/canonical/launchpad/browser/publishedpackage.py
+     lib/canonical/launchpad/browser/team.py
+     lib/canonical/launchpad/database/binarypackage.py
+     lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/database/bugtracker.py
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/database/distrotool.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/database/productrelease.py
+     lib/canonical/launchpad/database/productseries.py
+     lib/canonical/launchpad/database/project.py
+     lib/canonical/launchpad/database/publishedpackage.py
+     lib/canonical/launchpad/database/tests/test_sourcepackage.py
+     lib/canonical/launchpad/database/translation_effort.py
+     lib/canonical/launchpad/doc/bug.txt
+     lib/canonical/launchpad/doc/bugactivity.txt
+     lib/canonical/launchpad/doc/bugnotification-email.txt
+     lib/canonical/launchpad/doc/bugnotifications.txt
+     lib/canonical/launchpad/doc/bugtask.txt
+     lib/canonical/launchpad/doc/hatchery.txt
+     lib/canonical/launchpad/doc/poexport-distrorelease-tarball.txt
+     lib/canonical/launchpad/doc/potemplate.txt
+     lib/canonical/launchpad/interfaces/binarypackage.py
+     lib/canonical/launchpad/interfaces/bug.py
+     lib/canonical/launchpad/interfaces/bugtracker.py
+     lib/canonical/launchpad/interfaces/distrorelease.py
+     lib/canonical/launchpad/interfaces/distrotool.py
+     lib/canonical/launchpad/interfaces/product.py
+     lib/canonical/launchpad/interfaces/productrelease.py
+     lib/canonical/launchpad/interfaces/productseries.py
+     lib/canonical/launchpad/interfaces/project.py
+     lib/canonical/launchpad/interfaces/publishedpackage.py
+     lib/canonical/launchpad/interfaces/sourcepackageindistro.py
+     lib/canonical/launchpad/mailnotification.py
+     lib/canonical/launchpad/pagetests/bounty/02-bounty-new.txt
+     lib/canonical/launchpad/pagetests/distro-bugprivacy/05-set-bug-private-as-member-of-maintainer-team.txt
+     lib/canonical/launchpad/pagetests/malone/15-bugtracker.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-edit-commit.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-product-add.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-product-addseries-commit.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-productrelease-add.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-project-edit.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-series-edit.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-distrorelease-edit.txt
+     lib/canonical/launchpad/scripts/gina/babygina.py
+     lib/canonical/launchpad/scripts/gina/database.py
+     lib/canonical/launchpad/templates/bazaar-sync-review.pt
+     lib/canonical/launchpad/templates/binary-index.pt
+     lib/canonical/launchpad/templates/binarypackage-index.pt
+     lib/canonical/launchpad/templates/binarypackage-search.pt
+     lib/canonical/launchpad/templates/binarypackagebuild-index.pt
+     lib/canonical/launchpad/templates/branch-index.pt
+     lib/canonical/launchpad/templates/bugs-assigned.pt
+     lib/canonical/launchpad/templates/bugtracker-edit.pt
+     lib/canonical/launchpad/templates/bugtracker-index.pt
+     lib/canonical/launchpad/templates/bugtracker-new.pt
+     lib/canonical/launchpad/templates/bugtrackers-index.pt
+     lib/canonical/launchpad/templates/distroarchrelease-pkgsearch.pt
+     lib/canonical/launchpad/templates/distrorelease-edit.pt
+     lib/canonical/launchpad/templates/distrorelease-index.pt
+     lib/canonical/launchpad/templates/distrorelease-new.pt
+     lib/canonical/launchpad/templates/distrorelease-search.pt
+     lib/canonical/launchpad/templates/distrorelease-sources.pt
+     lib/canonical/launchpad/templates/doap-review.pt
+     lib/canonical/launchpad/templates/package-bugs.pt
+     lib/canonical/launchpad/templates/packages-bugs.pt
+     lib/canonical/launchpad/templates/portlet-object-summary.pt
+     lib/canonical/launchpad/templates/product-bugs.pt
+     lib/canonical/launchpad/templates/product-index.pt
+     lib/canonical/launchpad/templates/productrelease-edit.pt
+     lib/canonical/launchpad/templates/productrelease-new.pt
+     lib/canonical/launchpad/templates/productrelease.pt
+     lib/canonical/launchpad/templates/products-index.pt
+     lib/canonical/launchpad/templates/products-search.pt
+     lib/canonical/launchpad/templates/productseries-sourceadmin.pt
+     lib/canonical/launchpad/templates/project-branches.pt
+     lib/canonical/launchpad/templates/project-bugs.pt
+     lib/canonical/launchpad/templates/project-index.pt
+     lib/canonical/launchpad/templates/project-new.pt
+     lib/canonical/launchpad/templates/project-rosetta-index.pt
+     lib/canonical/launchpad/templates/projects-index.pt
+     lib/canonical/launchpad/templates/projects-search.pt
+     lib/canonical/launchpad/templates/rosetta-index.pt
+     lib/canonical/launchpad/templates/series-edit.pt
+     lib/canonical/launchpad/templates/series-new.pt
+     lib/canonical/launchpad/templates/series-review.pt
+     lib/canonical/launchpad/templates/series.pt
+     lib/canonical/launchpad/templates/sourcepackagebuild-buildlog.pt
+     lib/canonical/launchpad/templates/sourcepackagebuild-changes.pt
+     lib/canonical/launchpad/templates/sourcepackagebuild-index.pt
+     lib/canonical/launchpad/templates/sourcepackagerelease-buildlog.pt
+     lib/canonical/launchpad/templates/sourcesource-index.pt
+     lib/canonical/launchpad/templates/template-edit.pt
+     lib/canonical/launchpad/templates/template-new.pt
+     lib/canonical/launchpad/templates/widget-searchselection.pt
+     lib/canonical/launchpad/vocabularies/dbobjects.py
+     lib/canonical/launchpad/zcml/bug.zcml
+     lib/canonical/launchpad/zcml/distrorelease.zcml
+     lib/canonical/launchpad/zcml/product.zcml
+     lib/canonical/launchpad/zcml/project.zcml
+     lib/canonical/launchpad/zcml/resources.zcml
+     lib/canonical/not-used/nicole/database.py
+     lib/canonical/soyuz/importd.py scripts/debsync.py
+     scripts/malone.py scripts/rosetta/createproduct.py
+     scripts/rosetta/createproject.py
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--base-0
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-1
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-2
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-3
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-4
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-5
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-6
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-7
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-8
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-9
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-10
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-11
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-12
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-13
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-14
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-15
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-16
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-17
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-18
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-19
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-20
+     stuart.bishop@canonical.com/launchpad--sabdfl--3--base-0
+
+
 2005-05-09 17:13:12 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1676
 
     Summary:

@@ -31,7 +31,7 @@ def newProductRelease(form, product, owner, series=None):
     # Extract the ProductRelease details, which are in self.form
     version = form['version']
     title = form['title']
-    shortdesc = form['shortdesc']
+    summary = form['summary']
     description = form['description']
     releaseurl = form['releaseurl']
     # series may be passed in arguments, or in the form
@@ -43,7 +43,7 @@ def newProductRelease(form, product, owner, series=None):
                           #product=product.id,
                           version=version,
                           title=title,
-                          shortdesc=shortdesc,
+                          summary=summary,
                           description=description,
                           productseries=series,
                           owner=owner)
@@ -94,7 +94,7 @@ class ProductReleaseView:
             return
         # Extract details from the form and update the Product
         self.context.title = self.form['title']
-        self.context.shortdesc = self.form['shortdesc']
+        self.context.summary = self.form['summary']
         self.context.description = self.form['description']
         self.context.changelog = self.form['changelog']
         # now redirect to view the product

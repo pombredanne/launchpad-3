@@ -31,7 +31,7 @@ class DistroTools:
                               owner=owner)
         return distro
 
-    def createDistroRelease(self, owner, title, distribution, shortdesc,
+    def createDistroRelease(self, owner, title, distribution, summary,
                             description, version, parent):
         ##XXX: cprov 20041207
         ## Verify the name constraint as the postgresql does.
@@ -43,7 +43,7 @@ class DistroTools:
         release = DistroRelease(name=name,
                                 distribution=distribution,
                                 title=title,
-                                shortdesc=shortdesc,
+                                summary=summary,
                                 description=description,
                                 version=version,
                                 owner=owner,

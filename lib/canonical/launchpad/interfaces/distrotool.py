@@ -14,7 +14,7 @@ class IDistroTools(Interface):
         summary, description, domain):
         """ Create a Distribution """
 
-    def createDistroRelease(owner, title, distribution, shortdesc, description,
+    def createDistroRelease(owner, title, distribution, summary, description,
                             version, parent):
         """ Create a DistroRelease """        
     def getDistroRelease():

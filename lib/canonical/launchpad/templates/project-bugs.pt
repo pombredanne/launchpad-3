@@ -15,7 +15,7 @@
     <h1>Bug Summary for <span tal:replace="context/title">Project
     Title</span></h1>
 
-    <div tal:content="context/shortdesc">Project Summary</div>
+    <div tal:content="context/summary">Project Summary</div>
     
     <div tal:repeat="prod context/products">
         
@@ -36,7 +36,7 @@
            </tr>
         </table>
 
-        <p tal:content="prod/shortdesc">Product Summary</p>
+        <p tal:content="prod/summary">Product Summary</p>
 
         <p><img src="/++resource++add.gif">
            <a href="#" tal:attributes="href prod/name">See all

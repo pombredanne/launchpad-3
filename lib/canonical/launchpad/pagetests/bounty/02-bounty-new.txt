@@ -16,7 +16,7 @@
   >>> print http(r"""
   ... POST /bounties/+new HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 1169
+  ... Content-Length: 1165
   ... Content-Type: multipart/form-data; boundary=---------------------------185536517018750121982061630531
   ... Referer: http://localhost:9000/bounties/+new
   ... 

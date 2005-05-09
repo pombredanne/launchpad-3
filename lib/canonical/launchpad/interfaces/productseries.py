@@ -19,7 +19,7 @@ class IProductSeries(Interface):
     name = Text(title=_('Name'), required=True)
     title = Attribute('Title')
     displayname = Text( title=_('Display Name'), required=True)
-    shortdesc = Text(title=_("Short Description"), required=True)
+    summary = Text(title=_("Summary"), required=True)
     # convenient joins
     releases = Attribute("An iterator over the releases in this "
         "Series, sorted with latest release first.")

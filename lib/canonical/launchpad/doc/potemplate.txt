@@ -4,10 +4,12 @@ Get the PO template name.
 >>> from canonical.launchpad.database import POTemplateName
 >>> ptn = POTemplateName.byName('evolution-2.2')
 
-Get a PO template with that name.
+Get a PO template with that name, and make sure it does.
 
 >>> from canonical.launchpad.database import POTemplate
->>> template = POTemplate.selectBy(potemplatenameID=ptn.id)[0]
+>>> template = POTemplate.get(1)
+>>> template.potemplatename == ptn
+True
 
 Check that the import status enum column is working correctly.
 

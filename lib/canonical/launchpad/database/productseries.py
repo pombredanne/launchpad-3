@@ -5,6 +5,7 @@ __all__ = ['ProductSeries', 'ProductSeriesSet']
 
 import datetime
 import sets
+from warnings import warn
 
 from zope.interface import implements
 
@@ -28,7 +29,7 @@ class ProductSeries(SQLBase):
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
     name = StringCol(notNull=True)
     displayname = StringCol(notNull=True)
-    shortdesc = StringCol(notNull=True)
+    summary = StringCol(notNull=True)
     branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
                            schema=ImportStatus, default=None)
@@ -64,6 +65,12 @@ class ProductSeries(SQLBase):
     def title(self):
         return self.product.displayname + ' Series: ' + self.displayname
     title = property(title)
+
+    def shortdesc(self):
+        warn('ProductSeries.shortdesc should be ProductSeries.summary',
+             DeprecationWarning)
+        return self.summary
+    shortdesc = property(shortdesc)
 
     def sourcepackages(self):
         from canonical.launchpad.database.sourcepackage import SourcePackage

@@ -57,6 +57,7 @@ Check the tarball has the right members.
   rosetta-hoary/es/LC_MESSAGES/evolution-2.2.po
   rosetta-hoary/timestamp.txt
 
+
 Check the PO file looks like what we expected.
 
   >>> fh = tarfile.extractfile('rosetta-hoary/es/LC_MESSAGES/evolution-2.2.po')

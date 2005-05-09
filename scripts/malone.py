@@ -219,7 +219,7 @@ class Launchpad:
         newsrcpkg = get_sourcepackage(srcpkgname, distroname)
         if newsrcpkg is None:
             newsrcpkg = SourcePackage(maintainer=maintainer,
-                                      shortdesc=distroname+' package '+srcpkgname,
+                                      summary=distroname+' package '+srcpkgname,
                                       description=distroname +' package '+srcpkgname,
                                       distro=distribution.id,
                                       sourcepackagename=srcpkgname_id,

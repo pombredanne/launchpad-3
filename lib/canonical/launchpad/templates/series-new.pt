@@ -72,7 +72,7 @@
 
         <div class="field">
 
-            <label>Short Description</label>
+            <label>Summary</label>
 
                   <div class="formHelp">
                     A single paragraph introduction or overview of this
@@ -82,7 +82,7 @@
                     server deployments.</i>
                   </div>
 
-                <textarea cols="40" rows="4" name="shortdesc"></textarea>
+                <textarea cols="40" rows="4" name="summary"></textarea>
         </div>
         
         <div class="formControls">

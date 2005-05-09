@@ -31,7 +31,7 @@
   </legend>
 
   <div class="field"> 
-    <span tal:content="release/shortdesc">SHORTDESC</span>
+    <span tal:content="release/summary">SHORTDESC</span>
   </div>
 
   <div class="field"> 

@@ -40,7 +40,7 @@ class IProject(IHasOwner):
         This is what you would imagine seeing at the top of a page about
         the project. For example, The Apache Project, The Mozilla Project."""))
 
-    shortdesc = Summary(title=_('Project Summary'), description=_("""A summary
+    summary = Summary(title=_('Project Summary'), description=_("""A summary
         of the project, in a single short paragraph."""))
 
     description = Text(title=_('Description'), description=_("""A couple of
@@ -91,7 +91,7 @@ class IProject(IHasOwner):
         """Get a product with name `name`."""
 
     def shortDescription(aDesc=None):
-        """return the projects shortdesc, setting it if aDesc is provided"""
+        """return the projects summary, setting it if aDesc is provided"""
 
     def product(name):
         """Return the product belonging to this project with the given
@@ -111,7 +111,7 @@ class IProjectSet(Interface):
     def __getitem__(name):
         """Get a project by its name."""
 
-    # XXX needs displayname, shortdesc, NO url
+    # XXX needs displayname, summary, NO url
     def new(name, title, url, description, owner):
         """Creates a new project with the given name.
 

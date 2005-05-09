@@ -54,7 +54,7 @@ class ProductReleaseImporter:
             # Create a new series using the first part of the version number
             # as the series name:
             ps = ProductSeries(productID=self.product.id, name=version,
-                               displayname=version, shortdesc=version)
+                               displayname=version, summary=version)
             # Yep, we do need to create a product release.
             # FIXME: We probably ought to use the last-modified-time reported
             # by the download, rather than just UTC_NOW.

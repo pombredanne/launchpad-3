@@ -23,7 +23,7 @@ class IBugTracker(Interface):
     bugtrackertype = Int(title=_('Bug System Type'))
     name = TextLine(title=_('Name'))
     title = TextLine(title=_('Title'))
-    shortdesc = Text(title=_('Short Description'))
+    summary = Text(title=_('Summary'))
     baseurl = TextLine(title=_('Base URL'))
     owner = Int(title=_('Owner'))
     contactdetails = Text(title=_('Contact details'))

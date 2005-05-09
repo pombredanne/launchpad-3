@@ -27,7 +27,7 @@ class BinaryPackage(SQLBase):
     binarypackagename = ForeignKey(dbName='binarypackagename', 
                                  foreignKey='BinaryPackageName', notNull=True)
     version = StringCol(dbName='version', notNull=True)
-    shortdesc = StringCol(dbName='shortdesc', notNull=True, default="")
+    summary = StringCol(dbName='summary', notNull=True, default="")
     description = StringCol(dbName='description', notNull=True)
     build = ForeignKey(dbName='build', foreignKey='Build', notNull=True)
     binpackageformat = EnumCol(dbName='binpackageformat', notNull=True,

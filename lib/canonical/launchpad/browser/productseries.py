@@ -51,24 +51,48 @@ def validate_cvs_branch(branch):
         return True
     return False
 
-def validate_svn_repo(repo):
-    if not repo:
+def _validate_url(url, valid_schemes):
+    """Returns a boolean stating whether 'url' is a valid URL.
+
+       A URL is valid if:
+           - its URL scheme is in the provided 'valid_schemes' list, and
+           - it has a non-empty host name.
+
+       None and an empty string are not valid URLs::
+
+           >>> _validate_url(None, [])
+           False
+           >>> _validate_url('', [])
+           False
+
+       The valid_schemes list is checked::
+
+           >>> _validate_url('http://example.com', ['http'])
+           True
+           >>> _validate_url('http://example.com', ['https', 'ftp'])
+           False
+
+       A URL without a host name is not valid:
+
+           >>> _validate_url('http://', ['http'])
+           False
+           
+      """
+    if not url:
         return False
-    scheme, host = urllib.splittype(repo)
-    if not scheme in ["http", "https", "svn", "svn+ssh"]:
+    scheme, host = urllib.splittype(url)
+    if not scheme in valid_schemes:
         return False
     host, path = urllib.splithost(host)
-    return len(host) > 0
+    if not host:
+        return False
+    return True
 
 def validate_release_root(repo):
-    if not repo:
-        return False
-    scheme, host = urllib.splittype(repo)
-    if not scheme in ["http", "https", "ftp"]:
-        return False
-    host, path = urllib.splithost(host)
-    return len(host) > 0
+    return _validate_url(repo, ["http", "https", "ftp"])
 
+def validate_svn_repo(repo):
+    return _validate_url(repo, ["http", "https", "svn", "svn+ssh"])
 
 
 
@@ -87,7 +111,7 @@ class ProductSeriesView(object):
         self.form = request.form
         self.errormsgs = []
         self.displayname = self.context.displayname
-        self.shortdesc = self.context.shortdesc
+        self.summary = self.context.summary
         self.rcstype = self.context.rcstype
         self.cvsroot = self.context.cvsroot
         self.cvsmodule = self.context.cvsmodule
@@ -148,15 +172,17 @@ class ProductSeriesView(object):
             return
         # Extract details from the form and update the Product
         # we don't let people edit the name because it's part of the url
-        # XXX sabdfl 14/04/05 we need to do some validation here
-        self.context.displayname = form.get('displayname', self.displayname)
-        self.context.shortdesc = form.get('shortdesc', self.shortdesc)
+        self.displayname = form.get('displayname', self.displayname)
+        self.summary = form.get('summary', self.summary)
         self.releaseroot = form.get("releaseroot", self.releaseroot)
+        self.releasefileglob = form.get("releasefileglob", self.releasefileglob)
         if not validate_release_root(self.releaseroot):
             self.errormsgs.append('Invalid release root URL')
             return
+        self.context.summary = self.displayname
+        self.context.displayname = self.displayname
         self.context.releaseroot = self.releaseroot
-        self.context.releasefileglob = form.get("releasefileglob", self.releasefileglob)
+        self.context.releasefileglob = self.releasefileglob
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
 
@@ -229,10 +255,7 @@ class ProductSeriesView(object):
             'targetarchbranch', self.targetarchbranch)
         self.targetarchversion = form.get(
             'targetarchversion', self.targetarchversion)
-
         # validate arch target details
-        assert len(self.errormsgs) == 0, (
-            "Some other code in the view's class has added error messages.")
         if not pybaz.NameParser.is_archive_name(self.targetarcharchive):
             self.errormsgs.append('Invalid target Arch archive name.')
         if not pybaz.NameParser.is_category_name(self.targetarchcategory):
@@ -245,7 +268,6 @@ class ProductSeriesView(object):
         # Return if there were any errors, so as not to update anything.
         if self.errormsgs:
             return
-
         # update the database
         self.context.targetarcharchive = self.targetarcharchive
         self.context.targetarchcategory = self.targetarchcategory

@@ -63,7 +63,6 @@
 
     <div tal:condition="view/searchrequested">
 
-
       <tal:block tal:define="results view/searchresults">
         <table class="data">
           <thead>
@@ -90,8 +89,8 @@
                         >$Product.name
                       </span>)</a>
                     </dt>
-                    <dd tal:content="product/shortdesc">
-                      $Product.shortdesc
+                    <dd tal:content="product/summary">
+                      $Product.summary
                     </dd>
                   </tal:block>
                 </dl>

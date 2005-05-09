@@ -30,7 +30,7 @@ if the page is not broken.
   ... The Warty Warthog II
   ... Release
   ... -----------------------------12441712013856150271106262438
-  ... Content-Disposition: form-data; name="field.shortdesc"
+  ... Content-Disposition: form-data; name="field.summary"
   ... 
   ... Warty is the first release of Ubuntu,
   ... with a planned release date of October 2004. Yeah.

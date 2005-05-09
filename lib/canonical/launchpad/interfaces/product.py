@@ -43,7 +43,7 @@ class IProduct(IHasOwner):
     title = Title(title=_('Title'), description=_("""The product
     title. Should be just a few words."""))
 
-    shortdesc = Summary(title=_('Summary'), description=_("""The summary should
+    summary = Summary(title=_('Summary'), description=_("""The summary should
         be a single short paragraph."""))
 
     description = Description(title=_('Description'), description=_("""The product
@@ -196,7 +196,7 @@ class IProductSet(Interface):
         raised.
         """
 
-    def createProduct(owner, name, displayname, title, shortdesc,
+    def createProduct(owner, name, displayname, title, summary,
                       description, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,

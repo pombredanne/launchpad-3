@@ -47,10 +47,10 @@ def generate_bug_edit_email(bug_delta):
     if bug_delta.title is not None:
         body += "    - Changed title:\n"
         body += "        %s\n" % bug_delta.title
-    if bug_delta.shortdesc is not None:
-        body += "    - Changed short description:\n"
+    if bug_delta.summary is not None:
+        body += "    - Changed summary:\n"
         body += "\n".join(wrap(
-            bug_delta.shortdesc, width = 72,
+            bug_delta.summary, width = 72,
             initial_indent = u"        ",
             subsequent_indent = u"        "))
         body += "\n"
@@ -232,7 +232,7 @@ def get_bug_delta(old_bug, new_bug, user, request):
     IBugDelta if there are changes, or None if there were no changes.
     """
     changes = {}
-    for field_name in ("title", "shortdesc", "description"):
+    for field_name in ("title", "summary", "description"):
         # fields for which we simply show the new value when they
         # change
         old_val = getattr(old_bug, field_name)

@@ -65,8 +65,8 @@
                         <a tal:attributes="href product/homepageurl"
                             tal:content="product/homepageurl">http://www.gnu.org/</a>
                         <br />
-                    <span tal:content="product/shortdesc">
-                        $Product.shortdesc</span>
+                    <span tal:content="product/summary">
+                        $Product.summary</span>
                     </td>
                 </tr>
             </table>

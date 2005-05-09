@@ -91,7 +91,7 @@ class ReleasesAddView(object):
             return False
 
         title = self.request.get("title", "")
-        shortdesc = self.request.get("shortdesc", "")
+        summary = self.request.get("summary", "")
         description = self.request.get("description", "")
         version = self.request.get("version", "")
         parent = self.request.get("parentrelease", "")
@@ -103,7 +103,7 @@ class ReleasesAddView(object):
 
         dt = getUtility(IDistroTools)
         res = dt.createDistroRelease(person.id, title, distro_id,
-                                     shortdesc, description, version,
+                                     summary, description, version,
                                      parent)
         self.results = res
         return res
@@ -122,7 +122,7 @@ class ReleaseEditView(object):
 
         name = self.request.get("name", "")
         title = self.request.get("title", "")
-        shortdesc = self.request.get("shortdesc", "")
+        summary = self.request.get("summary", "")
         description = self.request.get("description", "")
         version = self.request.get("version", "")
 
@@ -132,7 +132,7 @@ class ReleaseEditView(object):
         ##XXX: (uniques) cprov 20041003
         self.context.release.name = name
         self.context.release.title = title
-        self.context.release.shortdesc = shortdesc
+        self.context.release.summary = summary
         self.context.release.description = description
         self.context.release.version = version
         return True

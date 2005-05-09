@@ -44,7 +44,7 @@
         label="Change Bug Information"
         permission="launchpad.AnyPerson"
         template="../templates/bug-edit.pt"
-        fields="title shortdesc description private name"
+        fields="title summary description private name"
         lp:url="malone/bugs/$Bug.id/+edit">
         <browser:widget
            field="title"

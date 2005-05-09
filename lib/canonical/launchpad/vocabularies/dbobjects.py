@@ -166,7 +166,7 @@ class ProductVocabulary(SQLObjectVocabularyBase):
 
     def search(self, query):
         """Returns products where the product name, displayname, title,
-        shortdesc, or description contain the given query. Returns an empty list
+        summary, or description contain the given query. Returns an empty list
         if query is None or an empty string.
 
         Note that this cannot use an index - if it is too slow we need
@@ -198,7 +198,7 @@ class ProjectVocabulary(SQLObjectVocabularyBase):
 
     def search(self, query):
         """Returns projects where the project name, displayname, title,
-        shortdesc, or description contain the given query. Returns an empty list
+        summary, or description contain the given query. Returns an empty list
         if query is None or an empty string.
 
         Note that this cannot use an index - if it is too slow we need

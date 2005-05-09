@@ -49,7 +49,6 @@ class PackagingDiscoveryTestCase(ZopelessTestCase):
 
     def testPreviousUbuntuPackagingData(self):
         "We get the productseries from a previous ubuntu package"
-
         # first make sure there is no Packaging entry for a52dec in hoary
         from canonical.launchpad.database import Packaging
         from canonical.launchpad.database import SourcePackage

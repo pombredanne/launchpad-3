@@ -21,15 +21,15 @@
 
     <div tal:repeat="item context/forReview" tal:omit-tag>
 
-        <p><b tal:content="item/title">title</b><br>
+        <p><b tal:content="item/title">title</b></p>
 
-        <div style="margin-left: 30px;">
-            <span tal:content="item/shortdesc">summary</span>
-            <span tal:condition="not: item/reviewed">
-                [ <a tal:attributes="href string:${item/name}/+review">Review</a> ]
-            </span>
-        </div>
-        
+        <p style="margin-left: 30px;">
+          <span tal:content="item/summary">summary</span>
+          <span tal:condition="not: item/reviewed">
+            [ <a tal:attributes="href string:${item/name}/+review">Review</a> ]
+          </span>
+        </p>
+
     </div>
 
 </div>

@@ -79,5 +79,5 @@ We can get to a project from a product:
 We can get to the product from a project:
 
     >>> firefox.project.products[1].name
-    u'firefox'
+    u'thunderbird'
 
