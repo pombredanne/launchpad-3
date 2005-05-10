@@ -11,6 +11,7 @@ import warnings
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
+from canonical.librarian.interfaces import UploadFailed, DownloadFailed
 
 # TODO: Nuke all deprecated methods and refactor sometime after May 2005
 # assuming nobody comes up with use cases for keeping them. I didn't
@@ -19,15 +20,7 @@ from canonical.database.sqlbase import cursor
 
 import warnings
 
-__all__ = ['UploadFailed', 'FileUploadClient', 'FileDownloadClient']
-
-class UploadFailed(Exception):
-    pass
-
-
-class DownloadFailed(Exception):
-    pass
-
+__all__ = ['FileUploadClient', 'FileDownloadClient']
 
 class FileUploadClient(object):
     """Simple blocking client for uploading to the librarian."""

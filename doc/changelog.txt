@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-10 15:28:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1682
+
+    Summary:
+      move Librarian exceptions into the interface
+    Revision:
+      launchpad--devel--0--patch-1682
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--librarian--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1678
+    
+     * daf@canonical.com--2004/launchpad--librarian--0--patch-1
+       mode UploadFailed/DownloadFailed to interfaces file
+    
+
+    modified files:
+     cronscripts/rosetta-language-pack-export.py doc/changelog.txt
+     lib/canonical/launchpad/interfaces/librarian.py
+     lib/canonical/librarian/client.py
+     lib/canonical/librarian/ftests/test_web.py
+     lib/canonical/librarian/interfaces.py
+
+    new patches:
+     daf@canonical.com--2004/launchpad--librarian--0--base-0
+     daf@canonical.com--2004/launchpad--librarian--0--patch-1
+
+
 2005-05-10 15:01:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1681
 
     Summary:
