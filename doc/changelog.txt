@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-10 14:09:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1679
+
+    Summary:
+      [trivial] allow dots in CVS module paths
+    Revision:
+      launchpad--devel--0--patch-1679
+
+    Patches applied:
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-123
+       allow dots in module paths
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-124
+       merge from rf
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/productseries.py
+
+    new patches:
+     robert.collins@canonical.com/launchpad--devel--0--patch-123
+     robert.collins@canonical.com/launchpad--devel--0--patch-124
+
+
 2005-05-10 04:35:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1678
 
     Summary:
