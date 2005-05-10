@@ -2,6 +2,157 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-10 17:01:21 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1684
+
+    Summary:
+      Moved the translation form from potemplate context into pofile context. r=SteveA
+    Revision:
+      launchpad--devel--0--patch-1684
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1619
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-1
+       Translation form moved from POTemplate context to POFile context and added a redirection from the old URL
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-2
+       We don't need the msgid text as a hidden field anymore, this change reduces the size of our translation form.
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-3
+       Fixed all links to point to the new translation form URL
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-4
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-5
+       Fixed tests
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-6
+       Test fixed (really)
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-7
+       Fixed the last test that is failing
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-8
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-9
+       Improved comments and docstrings
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-10
+       Fixed tests
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-11
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-12
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-13
+       Applied review changes, fixed tests + complete change of translation form code to use a Class instead of a dictionary (that let us to remove lots of 'python:' expressions.
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-14
+       Fixed tests and some review changes
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-15
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-16
+       Removed the date as there is a test that makes it change and it's not critical for this pagetest.
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-17
+       Merge from rocketfuel
+    
+
+    new files:
+     lib/canonical/launchpad/browser/tests/.arch-ids/=id
+     lib/canonical/launchpad/browser/tests/.arch-ids/__init__.py.id
+     lib/canonical/launchpad/browser/tests/.arch-ids/test_pofile.py.id
+     lib/canonical/launchpad/browser/tests/__init__.py
+     lib/canonical/launchpad/browser/tests/test_pofile.py
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-pofile-translation-gettext-error-middle-page.data.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-pofile-translation-gettext-error-middle-page.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-pofile-translation-gettext-error-middle-page.data
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-pofile-translation-gettext-error-middle-page.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/pofile.py
+     lib/canonical/launchpad/browser/potemplate.py
+     lib/canonical/launchpad/browser/tests/test_potemplate.py
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/database/pomsgset.py
+     lib/canonical/launchpad/database/potemplate.py
+     lib/canonical/launchpad/database/potmsgset.py
+     lib/canonical/launchpad/helpers.py
+     lib/canonical/launchpad/interfaces/pofile.py
+     lib/canonical/launchpad/interfaces/potemplate.py
+     lib/canonical/launchpad/interfaces/potmsgset.py
+     lib/canonical/launchpad/pagetests/rosetta/30-rosetta-pofile-translation-gettext-error.data
+     lib/canonical/launchpad/pagetests/rosetta/30-rosetta-pofile-translation-gettext-error.txt
+     lib/canonical/launchpad/pagetests/rosetta/31-rosetta-pofile-translation-form-long-msgid.data
+     lib/canonical/launchpad/pagetests/rosetta/31-rosetta-pofile-translation-form-long-msgid.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-index.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-translation-form-empty-strings-without-validation.txt
+     lib/canonical/launchpad/templates/pofile-index.pt
+     lib/canonical/launchpad/templates/pofile-translate.pt
+     lib/canonical/launchpad/tests/test_helpers.py
+     lib/canonical/launchpad/zcml/pofile.zcml
+     lib/canonical/launchpad/zcml/potemplate.zcml
+     lib/canonical/rosetta/tests/test_browser.py
+
+    renamed files:
+     lib/canonical/launchpad/pagetests/rosetta/.arch-ids/30-rosetta-potemplate-translation-gettext-error.data.id
+       ==> lib/canonical/launchpad/pagetests/rosetta/.arch-ids/30-rosetta-pofile-translation-gettext-error.data.id
+     lib/canonical/launchpad/pagetests/rosetta/.arch-ids/30-rosetta-potemplate-translation-gettext-error.txt.id
+       ==> lib/canonical/launchpad/pagetests/rosetta/.arch-ids/30-rosetta-pofile-translation-gettext-error.txt.id
+     lib/canonical/launchpad/pagetests/rosetta/.arch-ids/31-rosetta-potemplate-translation-form-long-msgid.data.id
+       ==> lib/canonical/launchpad/pagetests/rosetta/.arch-ids/31-rosetta-pofile-translation-form-long-msgid.data.id
+     lib/canonical/launchpad/pagetests/rosetta/.arch-ids/31-rosetta-potemplate-translation-form-long-msgid.txt.id
+       ==> lib/canonical/launchpad/pagetests/rosetta/.arch-ids/31-rosetta-pofile-translation-form-long-msgid.txt.id
+     lib/canonical/launchpad/pagetests/rosetta/30-rosetta-potemplate-translation-gettext-error.data
+       ==> lib/canonical/launchpad/pagetests/rosetta/30-rosetta-pofile-translation-gettext-error.data
+     lib/canonical/launchpad/pagetests/rosetta/30-rosetta-potemplate-translation-gettext-error.txt
+       ==> lib/canonical/launchpad/pagetests/rosetta/30-rosetta-pofile-translation-gettext-error.txt
+     lib/canonical/launchpad/pagetests/rosetta/31-rosetta-potemplate-translation-form-long-msgid.data
+       ==> lib/canonical/launchpad/pagetests/rosetta/31-rosetta-pofile-translation-form-long-msgid.data
+     lib/canonical/launchpad/pagetests/rosetta/31-rosetta-potemplate-translation-form-long-msgid.txt
+       ==> lib/canonical/launchpad/pagetests/rosetta/31-rosetta-pofile-translation-form-long-msgid.txt
+     lib/canonical/launchpad/templates/.arch-ids/potemplate-translate.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/pofile-translate.pt.id
+     lib/canonical/launchpad/templates/potemplate-translate.pt
+       ==> lib/canonical/launchpad/templates/pofile-translate.pt
+     lib/canonical/rosetta/tests/.arch-ids/test_tarexport.py.id
+       ==> lib/canonical/launchpad/browser/tests/.arch-ids/test_potemplate.py.id
+     lib/canonical/rosetta/tests/test_tarexport.py
+       ==> lib/canonical/launchpad/browser/tests/test_potemplate.py
+
+    new directories:
+     lib/canonical/launchpad/browser/tests
+     lib/canonical/launchpad/browser/tests/.arch-ids
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--base-0
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-1
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-2
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-3
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-4
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-5
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-6
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-7
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-8
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-9
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-10
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-11
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-12
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-13
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-14
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-15
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-16
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-17
+
+
 2005-05-10 16:35:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1683
 
     Summary:

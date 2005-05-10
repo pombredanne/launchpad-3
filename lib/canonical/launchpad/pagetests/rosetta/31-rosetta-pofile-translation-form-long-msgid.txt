@@ -4,30 +4,30 @@ Test if a submit with a big msgid string breaks Rosetta
   >>> import os.path
   >>> data_file_name = os.path.join(
   ...     os.path.dirname(canonical.launchpad.__file__),
-  ...     'pagetests/rosetta/31-rosetta-potemplate-translation-form-long-msgid.data')
+  ...     'pagetests/rosetta/31-rosetta-pofile-translation-form-long-msgid.data')
   >>> data = open(data_file_name)
   >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+translate?languages=es HTTP/1.1
+  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate HTTP/1.1
   ... Accept-Language: en-gb,en;q=0.5
   ... Content-Length: 8126
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+translate?languages=es&offset=20
+  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=20
   ... 
   ... %s""" % data.read())
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+translate?languages=es
+  Location: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate
   ...
 
 
 Check that the previous submit was saved.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+translate?languages=es&offset=20&show=all HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=20 HTTP/1.1
   ... Accept-Language: en-gb,en;q=0.5
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+translate?languages=es
+  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -35,14 +35,19 @@ Check that the previous submit was saved.
   ...
                           <td>Found <span class="interpolation">%i</span> invalid files.</td>
   ...
-                                <input type="text"
+
+                          <input type="text"
       name="set_150_translation_es_0" value="foo %i"
       tabindex="1" />
-  ...
-                                <input type="text"
+
+
+
+
+
+                          <input type="text"
       name="set_150_translation_es_1" value="bar %i"
       tabindex="2" />
   ...
-                                  <input type="checkbox"
+                              <input type="checkbox"
       value="fuzzy" name="set_150_fuzzy_es" tabindex:="3" />
   ...

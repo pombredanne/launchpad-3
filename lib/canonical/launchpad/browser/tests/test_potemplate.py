@@ -1,3 +1,6 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
 
 import tarfile
 import unittest
@@ -19,7 +22,7 @@ class DummyPOTemplate:
     poFiles = [DummyPOFile('bar', None), DummyPOFile('baz', None)]
 
 class BadDummyPOTemplate:
-    '''Bad, because it contains a PO file which has a non-None variant.'''
+    """Bad, because it contains a PO file which has a non-None variant."""
 
     name = 'fnord'
     poFiles = [DummyPOFile('snap', None), DummyPOFile('crackle', 'pop')]
@@ -29,7 +32,8 @@ class DummyExporter:
         return 'dummy export'
 
 def test_POTemplateTarExport():
-    '''
+    """
+
     >>> from canonical.launchpad.browser import POTemplateTarExport
 
     Create a dummy exporter, do the export, and convert the string obtained
@@ -60,7 +64,7 @@ def test_POTemplateTarExport():
     Traceback (most recent call last):
     ...
     RuntimeError: PO files with variants are not supported.
-    '''
+    """
 
 def test_suite():
     return DocTestSuite()

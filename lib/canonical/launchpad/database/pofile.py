@@ -9,11 +9,13 @@ import base64
 # Zope interfaces
 from zope.interface import implements
 from zope.component import getUtility
+from zope.exceptions import NotFoundError
 
 # SQL imports
 from sqlobject import \
     DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound
-from canonical.database.sqlbase import SQLBase, flush_database_updates
+from canonical.database.sqlbase import SQLBase, flush_database_updates, \
+    sqlvalues
 
 # canonical imports
 from canonical.launchpad.interfaces import \
@@ -134,7 +136,7 @@ class POFile(SQLBase, RosettaStats):
         try:
             messageID = POMsgID.byMsgid(key)
         except SQLObjectNotFound:
-            raise KeyError, key
+            raise NotFoundError(key)
 
         # Find a message set with the given message ID.
 
@@ -142,11 +144,11 @@ class POFile(SQLBase, RosettaStats):
             (' AND primemsgid = %d' % messageID.id))
 
         if result is None:
-            raise KeyError, key
+            raise NotFoundError(key)
 
         poresult = POMsgSet.selectOneBy(potmsgsetID=result.id, pofileID=self.id)
         if poresult is None:
-            raise KeyError, key
+            raise NotFoundError(key)
         return poresult
 
     def __getitem__(self, msgid_text):
@@ -161,7 +163,58 @@ class POFile(SQLBase, RosettaStats):
             orderBy='sequence',
             clauseTables = ['POTMsgSet']))
 
+    def getPOTMsgSetTranslated(self, slice=None):
+        """See IPOFile."""
+        # A POT set is translated only if the PO message set have
+        # POMsgSet.iscomplete = TRUE.
+        results = POTMsgSet.select('''
+            POTMsgSet.potemplate = %s AND
+            POTMsgSet.sequence > 0 AND
+            POMsgSet.potmsgset = POTMsgSet.id AND
+            POMsgSet.pofile = %s AND
+            POMsgSet.fuzzy = FALSE AND
+            POMsgSet.iscomplete = TRUE
+            ''' % sqlvalues(self.potemplate.id, self.id),
+            clauseTables=['POMsgSet'],
+            orderBy='POTMsgSet.sequence')
+
+        if slice is None:
+            for potmsgset in results:
+                yield potmsgset
+        else:
+            for potmsgset in results[slice]:
+                yield potmsgset
+
+    def getPOTMsgSetUnTranslated(self, slice=None):
+        """See IPOFile."""
+        # A POT set is not translated if the PO message set have
+        # POMsgSet.iscomplete = FALSE or we don't have such POMsgSet or
+        # POMsgSet.fuzzy = TRUE.
+        results = POTMsgSet.select('''
+            POTMsgSet.potemplate = %s AND
+            POTMsgSet.sequence > 0 AND
+            ((POMsgSet.potmsgset = POTMsgSet.id AND
+              POMsgSet.pofile = %s AND
+              (POMsgSet.iscomplete = FALSE OR POMsgSet.fuzzy = TRUE)) OR
+            NOT EXISTS
+              (SELECT * FROM POMsgSet
+               WHERE POTMsgSet.id = POMsgSet.potmsgset))
+            ''' % sqlvalues(self.potemplate.id, self.id),
+            clauseTables=['POMsgSet'],
+            distinct=True,
+            orderBy='POTMsgSet.sequence')
+
+        if slice is None:
+            # Want all the output.
+            for potmsgset in results:
+                yield potmsgset
+        else:
+            # Want only a subset specified by slice.
+            for potmsgset in results[slice]:
+                yield potmsgset
+
     def hasMessageID(self, messageID):
+        """See IPOFile."""
         results = POMsgSet.select('''
             POMsgSet.pofile = %d AND
             POMsgSet.potmsgset = POTMsgSet.id AND
