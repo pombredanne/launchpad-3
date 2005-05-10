@@ -174,8 +174,9 @@ class ProductSeriesView(object):
         # we don't let people edit the name because it's part of the url
         self.displayname = form.get('displayname', self.displayname)
         self.summary = form.get('summary', self.summary)
-        self.releaseroot = form.get("releaseroot", self.releaseroot)
-        self.releasefileglob = form.get("releasefileglob", self.releasefileglob)
+        self.releaseroot = form.get("releaseroot", self.releaseroot) or None
+        self.releasefileglob = form.get("releasefileglob",
+                self.releasefileglob) or None
         if not validate_release_root(self.releaseroot):
             self.errormsgs.append('Invalid release root URL')
             return
@@ -196,7 +197,10 @@ class ProductSeriesView(object):
         if form.get("Update RCS Details", None) is None:
             return
         if self.context.syncCertified() and not fromAdmin:
-            self.errormsgs.append('This Source is has been certified and is now unmodifiable.')
+            self.errormsgs.append(
+                    'This Source is has been certified and is now '
+                    'unmodifiable.'
+                    )
             return
         # get the form content, defaulting to what was there
         rcstype=form.get("rcstype", None)
@@ -206,10 +210,11 @@ class ProductSeriesView(object):
             self.rcstype = RevisionControlSystems.SVN
         else:
             raise NotImplementedError, 'Unknown RCS %s' % rcstype
-        self.cvsroot = form.get("cvsroot", self.cvsroot)
-        self.cvsmodule = form.get("cvsmodule", self.cvsmodule)
-        self.cvsbranch = form.get("cvsbranch", self.cvsbranch)
-        self.svnrepository = form.get("svnrepository", self.svnrepository)
+        self.cvsroot = form.get("cvsroot", self.cvsroot) or None
+        self.cvsmodule = form.get("cvsmodule", self.cvsmodule) or None
+        self.cvsbranch = form.get("cvsbranch", self.cvsbranch) or None
+        self.svnrepository = form.get("svnrepository",
+                self.svnrepository) or None
         # make sure we at least got something for the relevant rcs
         if rcstype == 'cvs':
             if not (self.cvsroot and self.cvsmodule and self.cvsbranch):
@@ -248,13 +253,13 @@ class ProductSeriesView(object):
             return
         # look for admin changes and retrieve those
         self.targetarcharchive = form.get(
-            'targetarcharchive', self.targetarcharchive)
+            'targetarcharchive', self.targetarcharchive) or None
         self.targetarchcategory = form.get(
-            'targetarchcategory', self.targetarchcategory)
+            'targetarchcategory', self.targetarchcategory) or None
         self.targetarchbranch = form.get(
-            'targetarchbranch', self.targetarchbranch)
+            'targetarchbranch', self.targetarchbranch) or None
         self.targetarchversion = form.get(
-            'targetarchversion', self.targetarchversion)
+            'targetarchversion', self.targetarchversion) or None
         # validate arch target details
         if not pybaz.NameParser.is_archive_name(self.targetarcharchive):
             self.errormsgs.append('Invalid target Arch archive name.')

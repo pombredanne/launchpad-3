@@ -13,7 +13,8 @@ from sqlobject import ForeignKey, StringCol, DateTimeCol, MultipleJoin
 
 # canonical imports
 from canonical.launchpad.interfaces import \
-    IProductSeries, ISeriesSource, ISeriesSourceAdmin, IProductSeriesSet
+    IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin, \
+    IProductSeriesSet
 from canonical.launchpad.database.packaging import Packaging
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.lp.dbschema import \
@@ -23,7 +24,7 @@ from canonical.lp.dbschema import \
 
 class ProductSeries(SQLBase):
     """A series of product releases."""
-    implements(IProductSeries, ISeriesSource, ISeriesSourceAdmin)
+    implements(IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin)
     _table = 'ProductSeries'
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)

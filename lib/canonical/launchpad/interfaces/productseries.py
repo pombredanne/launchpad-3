@@ -16,9 +16,9 @@ class IProductSeries(Interface):
     # field names
     product = Choice( title=_('Product'), required=True,
                       vocabulary='Product')
-    name = Text(title=_('Name'), required=True)
+    name = TextLine(title=_('Name'), required=True)
     title = Attribute('Title')
-    displayname = Text( title=_('Display Name'), required=True)
+    displayname = TextLine( title=_('Display Name'), required=True)
     summary = Text(title=_("Summary"), required=True)
     # convenient joins
     releases = Attribute("An iterator over the releases in this "
@@ -36,7 +36,7 @@ class IProductSeries(Interface):
         distrorelease."""
 
 
-class ISeriesSource(Interface):
+class IProductSeriesSource(Interface):
     # revision control items
     branch = Attribute("The Bazaar branch for this series. Note that there "
         "may be many branches associated with a given series, such as the "
@@ -109,7 +109,7 @@ class ISeriesSource(Interface):
         and are still active."""
 
 
-class ISeriesSourceAdmin(Interface):
+class IProductSeriesSourceAdmin(Interface):
     """Administrative interface to approve syncing on a Product Series
     upstream codebase, publishing it as Bazaar branch."""
 

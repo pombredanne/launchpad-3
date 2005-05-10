@@ -9,14 +9,15 @@
     <!-- This is class ProductSeries -->
     <content class="canonical.launchpad.database.ProductSeries">
         <allow interface="canonical.launchpad.interfaces.IProductSeries" />
-        <allow interface="canonical.launchpad.interfaces.ISeriesSource" />
+        <allow interface="canonical.launchpad.interfaces.IProductSeriesSource"
+            />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IProductSeries"
             />
         <require
             permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.ISeriesSource"
+            set_schema="canonical.launchpad.interfaces.IProductSeriesSource"
             />
         <require
             permission="launchpad.Edit"
@@ -24,7 +25,7 @@
             />
         <require
             permission="launchpad.Admin"
-            interface="canonical.launchpad.interfaces.ISeriesSourceAdmin"
+            interface="canonical.launchpad.interfaces.IProductSeriesSourceAdmin"
             />
     </content>
 
@@ -62,7 +63,7 @@
     </browser:pages>
 
     <browser:pages
-        for="canonical.launchpad.interfaces.ISeriesSource"
+        for="canonical.launchpad.interfaces.IProductSeriesSource"
         class="canonical.launchpad.browser.ProductSeriesView"
         permission="launchpad.Edit">
         <browser:page
@@ -73,7 +74,7 @@
     </browser:pages>
     
     <browser:pages
-        for="canonical.launchpad.interfaces.ISeriesSourceAdmin"
+        for="canonical.launchpad.interfaces.IProductSeriesSourceAdmin"
         class="canonical.launchpad.browser.ProductSeriesView"
         permission="launchpad.Admin">
         <browser:page
