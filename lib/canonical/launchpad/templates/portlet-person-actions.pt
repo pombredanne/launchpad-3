@@ -4,7 +4,7 @@
 
     <div class="portletBody">
 
-        <div class="portletContent even">
+        <div class="portletContent">
 
         <img src="/++resource++edit.gif">
         <a href="+edit">Edit Details</a><br />
@@ -16,17 +16,6 @@
         <img src="/++resource++edit.gif">
         <a href="+editgpgkey">Edit GPG Keys</a><br />
         -->
-        <img src="/++resource++add.gif">
-        <a href="+newteam">Create New Team</a><br />
-        <img src="/++resource++info_icon.gif">
-        <a href="+translations">Translations</a><br />
-        <img src="/++resource++info_icon.gif">
-        <a href="+bugs">Bugs Reported</a><br />
-        <img src="/++resource++info_icon.gif">
-        <a href="+packages">Packages</a><br />
-        <img src="/++resource++info_icon.gif">
-        <a href="+bounties">Bounties</a><br />
-
         </div>
     </div>
 </div>

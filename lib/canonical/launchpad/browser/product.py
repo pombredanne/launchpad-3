@@ -4,14 +4,15 @@
 
 __metaclass__ = type
 
+import zope.security.interfaces
+from zope.component import getUtility, getAdapter
+from zope.event import notify
+from zope.exceptions import NotFoundError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import SequenceWidget, ObjectWidget
 from zope.app.form.browser.add import AddView
-from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
-from zope.component import getUtility, getAdapter
-import zope.security.interfaces
 
 from sqlobject.sqlbuilder import AND, IN, ISNULL
 
@@ -24,22 +25,19 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
      MilestoneVocabulary
 
-from canonical.rosetta.browser import request_languages, TemplateLanguages
 from canonical.launchpad.database import Product, ProductSeriesSet, \
-     BugFactory, ProductMilestoneSet, Milestone, SourceSourceSet, Person
+     BugFactory, ProductMilestoneSet, Milestone, Person
 from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet, \
-     IPersonSet, IBugTaskSet, IAging, ILaunchBag
+     IPersonSet, IBugTaskSet, IMilestoneSet, IAging, ILaunchBag
 from canonical.launchpad.browser.productrelease import newProductRelease
-from canonical.launchpad.helpers import is_maintainer
+from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 
 # Traversal functions that help us look up something
 # about a project or product
 def traverseProduct(product, request, name):
-    if name == '+sources':
-        return SourceSourceSet()
-    elif name == '+series':
+    if name == '+series':
         return ProductSeriesSet(product = product)
     elif name == '+milestones':
         return ProductMilestoneSet(product = product)
@@ -79,6 +77,9 @@ class ProductView:
     milestonePortlet = ViewPageTemplateFile(
         '../templates/portlet-product-milestones.pt')
 
+    packagesPortlet = ViewPageTemplateFile(
+        '../templates/portlet-product-packages.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.product = context
@@ -103,7 +104,7 @@ class ProductView:
         # Extract details from the form and update the Product
         self.context.displayname = form['displayname']
         self.context.title = form['title']
-        self.context.shortdesc = form['shortdesc']
+        self.context.summary = form['summary']
         self.context.description = form['description']
         self.context.homepageurl = form['homepageurl']
         notify(ObjectModifiedEvent(self.context))
@@ -118,25 +119,6 @@ class ProductView:
         return [p for p in self.context.project.products \
                     if p.id <> self.context.id]
 
-    def sourcesources(self):
-        return iter(self.context.sourcesources())
-
-    def newSourceSource(self):
-        form = self.form
-        if (form.get("Register") != "Register Revision Control System"):
-            return
-        if self.request.method != "POST":
-            return
-        owner = IPerson(self.request.principal)
-        #XXX: cprov 20050112
-        # SteveA comments:
-        # Passing form is only slightly more evil than passing **kw.
-        # I'd rather see the correct keyword arguments passed in explicitly.
-        #
-        # Avoid passing obscure arguments as self.form
-        ss = self.context.newSourceSource(form, owner)
-        self.request.response.redirect('+sources/'+ form['name'])
-
     def newProductRelease(self):
         # default owner is the logged in user
         owner = IPerson(self.request.principal)
@@ -145,17 +127,17 @@ class ProductView:
         pr = newProductRelease(self.form, self.context, owner)
 
     def newseries(self):
-        #
-        # Handle a request to create a new series for this product.
-        # The code needs to extract all the relevant form elements,
-        # then call the ProductSeries creation methods.
-        #
+        """Handle a request to create a new series for this product.
+        The code needs to extract all the relevant form elements,
+        then call the ProductSeries creation methods."""
         if not self.form.get("Register") == "Register Series":
             return
         if not self.request.method == "POST":
             return
         #XXX: cprov 20050112
         # Avoid passing obscure arguments as self.form
+        # XXX sabdfl 16/04/05 we REALLY should not be passing this form to
+        # the context object
         series = self.context.newseries(self.form)
         # now redirect to view the page
         self.request.response.redirect('+series/'+series.name)
@@ -178,7 +160,7 @@ class ProductBugsView:
         self.batch = Batch(
             list(self.bugtask_search()), int(request.get('batch_start', 0)))
         self.batchnav = BatchNavigator(self.batch, request)
-        self.is_maintainer = is_maintainer(self.context)
+        self.is_maintainer = helpers.is_maintainer(self.context)
 
     def hideGlobalSearchBox(self):
         """Should the global search box be hidden on the page?"""
@@ -242,20 +224,28 @@ class ProductBugsView:
 
     def assign_to_milestones(self):
         """Assign bug tasks to the given milestone."""
-        if self.request.principal:
-            if self.context.owner.id == self.request.principal.id:
-                milestone_name = self.request.get('milestone')
-                if milestone_name:
-                    milestone = Milestone.byName(milestone_name)
-                    if milestone:
-                        taskids = self.request.get('task')
-                        if taskids:
-                            if not isinstance(taskids, (list, tuple)):
-                                taskids = [taskids]
+        if helpers.is_maintainer(self.context):
+            milestone_id = self.request.get('milestone')
+            if milestone_id:
+                milestoneset = getUtility(IMilestoneSet)
+                try:
+                    milestone = milestoneset.get(milestone_id)
+                except NotFoundError:
+                    # Should only occur if someone entered the milestone
+                    # in the URL manually.
+                    return
+                taskids = self.request.get('task')
+                if taskids:
+                    if not isinstance(taskids, (list, tuple)):
+                        taskids = [taskids]
 
-                            tasks = [BugTask.get(taskid) for taskid in taskids]
-                            for task in tasks:
-                                task.milestone = milestone
+                    bugtaskset = getUtility(IBugTaskSet)
+                    tasks = [bugtaskset.get(taskid) for taskid in taskids]
+                    for task in tasks:
+                        # XXX: When spiv fixes so that proxied objects
+                        #      can be assigned to a SQLBase '.id' can be
+                        #      removed. -- Bjorn Tillenius, 2005-05-04
+                        task.milestone = milestone.id
 
     # XXX: Brad Bollenbach, 2005-02-11: Replace this view method hack with a
     # TALES adapter, perhaps.
@@ -316,7 +306,7 @@ class ProductTranslationView:
         self.form = self.request.form
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
-        self.languages = request_languages(self.request)
+        self.languages = helpers.request_languages(self.request)
         # Cache value for the return value of self.templates
         self._template_languages = None
         # List of the templates we have in this subset.
@@ -335,8 +325,9 @@ class ProductTranslationView:
 
     def templates(self):
         if self._template_languages is None:
-            self._template_languages = [TemplateLanguages(template, self.languages)
-                               for template in self._templates]
+            self._template_languages = [
+                helpers.TemplateLanguages(template, self.languages)
+                for template in self._templates]
 
         return self._template_languages
 
@@ -398,7 +389,7 @@ class ProductSetView:
             self.soyuz is not None):
             self.searchrequested = True
         self.results = None
-        self.gotmatches = 0
+        self.matches = 0
 
 
     def searchresults(self):
@@ -412,7 +403,7 @@ class ProductSetView:
                                                malone=self.malone,
                                                rosetta=self.rosetta,
                                                soyuz=self.soyuz)
-        self.gotmatches = len(list(self.results))
+        self.matches = self.results.count()
         return self.results
 
 
@@ -443,7 +434,7 @@ class ProductSetAddView(AddView):
         # -> try to don't use collapsed dict as argument, use it expanded
         # XXX cprov 20050117
         # The required field are:
-        #    def createProduct(owner, name, displayname, title, shortdesc,
+        #    def createProduct(owner, name, displayname, title, summary,
         #                      description, project=None, homepageurl=None,
         #                      screenshotsurl=None, wikiurl=None,
         #                      downloadurl=None, freshmeatproject=None,

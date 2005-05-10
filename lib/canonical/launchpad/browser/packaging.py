@@ -13,13 +13,11 @@ import zope.security.interfaces
 
 from sqlobject.sqlbuilder import AND, IN, ISNULL
 
-from canonical.lp import dbschema
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.database.sqlbase import quote
 
 from canonical.launchpad.interfaces import IPackaging, IPackagingUtil
-from canonical.launchpad.interfaces import ILaunchBag
 
 class PackagingAddView(AddView):
 
@@ -31,20 +29,20 @@ class PackagingAddView(AddView):
         AddView.__init__(self, context, request)
 
     def createAndAdd(self, data):
-        # recover product id from BAG
-        product = getUtility(ILaunchBag).product.id
-
-        # recover sourcepackage.id and dbschema.value from
-        # received argument (data dict)
-        sourcepackage = data['sourcepackage']
+        # retrieve submitted values from the form
+        productseries = data['productseries']
+        sourcepackagename = data['sourcepackagename']
+        distrorelease = data['distrorelease']
         packaging = data['packaging']
         
         # Invoke utility to create a packaging entry
         util = getUtility(IPackagingUtil)
-        util.createPackaging(product, sourcepackage, packaging)
+        util.createPackaging(productseries, sourcepackagename,
+                             distrorelease, packaging)
 
         # back to Product Page 
         self._nextURL = '.'
 
     def nextURL(self):
         return self._nextURL
+

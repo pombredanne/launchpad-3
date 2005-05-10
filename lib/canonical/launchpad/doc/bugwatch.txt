@@ -1,0 +1,28 @@
+Bug Watches
+===========
+
+Malone is a bug tracker that understands the structure of the Open
+Source world. It's there for people who want to use it, and take
+advantage of this infrastructure.
+
+But realistically, not everyone is going to switch to using Malone. To
+workaround that in Malone, we have bug watches.
+
+Bug watches watch bugs. More specifically, a bug watch watches a bug
+in a bugtracker outside of Malone. By doing this, we can be kept aware
+of the status of a bug that lives outside Malone for the benefit of
+users and maintainers that are using Malone.
+
+Retrieving Bug Watches
+----------------------
+
+Bug watches are accessed via a utility that provides IBugWatchSet.
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login("launchpad.anonymous")
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IBugWatchSet
+    >>> bugwatch = getUtility(IBugWatchSet).get(2)
+    >>> bugwatch.remotebug
+    u'2000'

@@ -1,0 +1,89 @@
+<schema extends="../../zope/app/server/schema.xml">
+
+    <!--
+    The syntax of this file is documented in lib/ZConfig/doc/zconfig.pdf
+
+    I think we should avoid using anything except strings as configuration
+    items. Although we could stick complex objects into the configuration,
+    this will make using the configuration complex and surprising. Instead,
+    I suggest that the complex objects kept as utilities that use the
+    configuration to set themselves up.
+
+    It would be possible to split this file up into a number of smaller
+    components, tieing the configuration to particular areas.
+    -->
+
+    <!-- First we define all the section types. -->
+
+    <sectiontype name="launchpad">
+        <key name="dbuser" datatype="string" default="launchpad" />
+    </sectiontype>
+
+    <sectiontype name="librarian_server">
+        <!-- Not 'existing-directory' because the test runner needs to
+            create it -->
+        <key name="root" datatype="existing-dirpath" required="yes" />
+    </sectiontype>
+
+    <sectiontype name="librarian">
+        <key name="dbuser" datatype="string" default="librarian" />
+
+        <key name="upload_port" datatype="port-number" required="yes">
+            <description>
+                Port number Librarian listens for storage requests on
+            </description>
+        </key>
+
+        <key name="download_port" datatype="port-number" required="yes">
+            <description>
+                Port number Librarian listens for HTTP GET and 
+                HEAD requests on
+            </description>
+        </key>
+
+        <key name="upload_host" datatype="ipaddr-or-hostname" required="yes">
+            <description>
+                Host Librarian is listening on for storage requests
+            </description>
+        </key>
+
+        <key name="download_host" datatype="ipaddr-or-hostname" required="yes">
+            <description>
+                Host Librarian is listening on for HTTP requests
+            </description>
+        </key>
+
+        <section name="*" type="librarian_server" attribute="server" 
+            required="no" />
+    </sectiontype>
+
+    <sectiontype name="zopeless">
+        <description>
+            Clusters zopeless specific configuration. Ideally, this section
+            will disappear as Zope3 land and Python land grow closer
+        </description>
+        <key name="send_email" datatype="boolean" required="yes" />
+        <key name="smtp_host" datatype="ipaddr-or-hostname" required="no" 
+            default="localhost" />
+        <key name="smtp_port" datatype="port-number" required="no"
+            default="25" />
+    </sectiontype>
+
+    <sectiontype name="canonical" type=".BaseConfig">
+        <key name="dbhost" datatype="ipaddr-or-hostname" required="no" />
+        <key name="dbname" datatype="string" required="yes" />
+        <key name="chunkydiff" datatype="boolean"
+            required="no" default="true" />
+        <key name="show_tracebacks" datatype="boolean"
+            required="no" default="false" />
+        <key name="bounce_address" datatype="string" required="no"
+            default="bounces@canonical.com" />
+        <section name="*" type="launchpad" attribute="launchpad" />
+        <section name="*" type="librarian" attribute="librarian" />
+        <section name="*" type="zopeless" attribute="zopeless" />
+    </sectiontype>
+
+    <!-- Now specify where the section types may be rooted in the config file
+    -->
+    <multisection name="+" type="canonical" attribute="canonical" />
+</schema>

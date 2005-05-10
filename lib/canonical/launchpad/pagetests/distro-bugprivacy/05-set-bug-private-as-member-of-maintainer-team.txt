@@ -14,6 +14,11 @@ Team, which is one of the maintainers on this bug.
       <div class="portletBody">
           <div class="portletContent even">
   <BLANKLINE>
+              <h5>submitter:</h5>
+              <ul class="people">
+                  <li><a href="/people/name12">Sample Person</a></li>
+              </ul>
+  <BLANKLINE>
               <h5>maintainers:</h5>
   <BLANKLINE>
               <ul class="people">
@@ -53,6 +58,7 @@ Team, which is one of the maintainers on this bug.
           </div>
   <BLANKLINE>
       </div>
+      </div>
   ...
 
 Foo Bar sets the bug private, and all implicit subscriptions are thus
@@ -73,7 +79,7 @@ is a member.
   ... 
   ... Blackhole Trash folder
   ... -----------------------------115180199804837416230138857
-  ... Content-Disposition: form-data; name="field.shortdesc"
+  ... Content-Disposition: form-data; name="field.summary"
   ... 
   ... Everything put into the folder "Trash" disappears!
   ... -----------------------------115180199804837416230138857
@@ -104,6 +110,11 @@ is a member.
   <BLANKLINE>
       <div class="portletBody">
           <div class="portletContent even">
+  <BLANKLINE>
+              <h5>submitter:</h5>
+              <ul class="people">
+                  <li><a href="/people/name12">Sample Person</a></li>
+              </ul>
   <BLANKLINE>
               <h5>maintainers:</h5>
   <BLANKLINE>

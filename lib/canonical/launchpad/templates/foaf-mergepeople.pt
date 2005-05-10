@@ -30,7 +30,7 @@
       To complete this proccess, just fill in your Launchpad password on the
       form bellow and click on <em>Submit</em>.</p>
 
-      <form name="merge" action="" method="POST">
+      <form autocomplete="off" name="merge" action="" method="POST">
       <table>
         <tr>
           <td>Password:</td>

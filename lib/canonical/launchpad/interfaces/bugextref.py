@@ -50,3 +50,8 @@ class IBugExternalRefSet(Interface):
     def __iter__():
         """Iterate through BugExternalRefs for a given bug."""
 
+    def createBugExternalRef(bug, url, title, owner):
+        """Create and link an external web link to an IBug.
+
+        Returns the IBugExternalRef that's created.
+        """

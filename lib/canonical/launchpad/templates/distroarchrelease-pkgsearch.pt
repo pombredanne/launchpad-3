@@ -55,7 +55,7 @@
       <td><a tal:content="package/name"
              tal:attributes="href package/name">PACKAGENAME
           </a>:
-	  <span tal:replace="package/shortdesc">SHORTDESC</span>
+	  <span tal:replace="package/summary">SHORTDESC</span>
       </td>
       </tal:dummy>
     </tr>    

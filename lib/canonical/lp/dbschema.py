@@ -19,9 +19,11 @@ __metaclass__ = type
 # If you do not do this, from canonical.lp.dbschema import * will not
 # work properly, and the thing/lp:SchemaClass will not work properly.
 
-# This should be in alphabetical order. please keep it that way.
+# The DBSchema subclasses should be in alphabetical order, listed after
+# EnumCol.  Please keep it that way.
 __all__ = (
 'EnumCol',
+# DBSchema types follow.
 'ArchArchiveType',
 'BinaryPackageFileType',
 'BinaryPackageFormat',
@@ -45,7 +47,7 @@ __all__ = (
 'ManifestEntryType',
 'PackagePublishingPriority',
 'PackagePublishingStatus',
-'Packaging',
+'PackagingType',
 'GPGKeyAlgorithms',
 'ProjectRelationship',
 'ProjectStatus',
@@ -56,7 +58,7 @@ __all__ = (
 'SourcePackageFormat',
 'SourcePackageRelationships',
 'SourcePackageUrgency',
-'SourceSourceStatus',
+'ImportStatus',
 'SSHKeyType',
 'TeamMembershipStatus',
 'TeamSubscriptionPolicy',
@@ -113,6 +115,8 @@ class DBSchemaValidator(validators.Validator):
         >>>
 
         """
+        if value is None:
+            return None
         if isinstance(value, int):
             raise TypeError(
                 'Need to set a dbschema Enum column to a dbschema Item,'
@@ -133,6 +137,8 @@ class DBSchemaValidator(validators.Validator):
         True
 
         """
+        if value is None:
+            return None
         return self.schema.items[value]
 
 EnumCol = DBSchemaEnumCol
@@ -412,7 +418,7 @@ class ManifestEntryType(DBSchema):
         """)
 
 
-class Packaging(DBSchema):
+class PackagingType(DBSchema):
     """Source packages.
 
     Source packages include software from one or more Upstream open source
@@ -919,7 +925,7 @@ class SourcePackageUrgency(DBSchema):
         as possible after appropriate review.
         """)
 
-class SourceSourceStatus(DBSchema):
+class ImportStatus(DBSchema):
     """This schema describes the states that a SourceSource record can take
     on."""
 
@@ -1184,6 +1190,13 @@ class PackagePublishingStatus(DBSchema):
         passed the archive maintainance tools will remove the package from
         the on-disk archive and remove the publishing record.  """)
 
+    REMOVED = Item(7, """
+        Removed
+
+        Once a package is removed from the archive, its publishing record
+        is set to this status. This means it won't show up in the SPP view
+        and thus will not be considered in most queries about source
+        packages in distroreleases. """)
 
 class PackagePublishingPriority(DBSchema):
     """Package Publishing Priority
@@ -1712,7 +1725,7 @@ class RevisionControlSystems(DBSchema):
     PACKAGE = Item(4, """
         Package
 
-        XXX Provide a description.
+        DEPRECATED DO NOT USE
         """)
 
 

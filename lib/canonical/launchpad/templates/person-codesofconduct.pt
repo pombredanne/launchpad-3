@@ -39,7 +39,9 @@
       <th>Status</th>
     </tr>
     <tr tal:repeat="sign view/signatures">
-      <td tal:content="sign/signingkey/keyid">GPGKEY</td>
+      <td tal:condition="sign/signingkey"
+          tal:content="sign/signingkey/keyid">GPGKEY</td>
+      <td tal:condition="not:sign/signingkey">PAPER</td>
       <td tal:condition="sign/active">
         <input tal:attributes="value sign/id" name="DEACTIVE_SIGN" 
                type="checkbox" enable/>

@@ -52,6 +52,7 @@ from canonical.launchpad.ftests import MockLaunchBag
 from canonical.publication import BrowserPublication
 from canonical.chunkydiff import elided_source
 from canonical.launchpad.interfaces import ILaunchBag
+from canonical.config import config
 
 # XXX: When we've upgraded Zope 3 to a newer version, we'll just import
 #      IHeaderOutput from zope.publisher.interfaces.http.
@@ -551,7 +552,11 @@ def sample_test_suite():
 
 class SpecialOutputChecker(doctest.OutputChecker):
     def output_difference(self, example, got, optionflags):
-        if False: # optionflags & doctest.ELLIPSIS:
+        if config.chunkydiff is False:
+            return doctest.OutputChecker.output_difference(
+                self, example, got, optionflags)
+
+        if optionflags & doctest.ELLIPSIS:
             normalize_whitespace = optionflags & doctest.NORMALIZE_WHITESPACE
             newgot = elided_source(example.want, got,
                                    normalize_whitespace=normalize_whitespace)

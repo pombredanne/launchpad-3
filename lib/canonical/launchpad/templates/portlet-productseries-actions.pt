@@ -1,0 +1,13 @@
+<div class="portlet">
+    <h4>Actions:</h4>
+
+    <div class="portletBody">
+        <div class="portletContent odd">
+            <ul class="edit">
+                <li><a href="+edit">Edit Series Details</a></li>
+                <li><a href="+source">Edit Source</a></li>
+                <li><a href="+addrelease">Register New Release</a></li>
+            </ul>
+        </div>
+    </div>
+</div>

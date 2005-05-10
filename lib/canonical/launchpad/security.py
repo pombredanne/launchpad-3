@@ -11,7 +11,8 @@ from canonical.launchpad.interfaces import IAuthorization, IHasOwner
 from canonical.launchpad.interfaces import IPerson, ITeam
 from canonical.launchpad.interfaces import ITeamMembershipSubset
 from canonical.launchpad.interfaces import ITeamMembership
-from canonical.launchpad.interfaces import ISourceSource, ISourceSourceAdmin
+from canonical.launchpad.interfaces import IProductSeriesSource
+from canonical.launchpad.interfaces import IProductSeriesSourceAdmin
 from canonical.launchpad.interfaces import IMilestone, IBug, IBugTask
 from canonical.launchpad.interfaces import IUpstreamBugTask, IDistroBugTask
 from canonical.launchpad.interfaces import IReadOnlyUpstreamBugTask
@@ -61,18 +62,18 @@ class EditByOwnerOfProduct(EditByOwnersOrAdmins):
     usedfor = IProduct
 
 
-class AdminSourceSourceByButtSource(AuthorizationBase):
+class AdminSeriesSourceByButtSource(AuthorizationBase):
     permission = 'launchpad.Admin'
-    usedfor = ISourceSourceAdmin
+    usedfor = IProductSeriesSourceAdmin
 
     def checkAuthenticated(self, user):
         buttsource = getUtility(ILaunchpadCelebrities).buttsource
         return user.inTeam(buttsource)
 
 
-class EditSourceSourceByButtSource(AuthorizationBase):
+class EditSeriesSourceByButtSource(AuthorizationBase):
     permission = 'launchpad.Edit'
-    usedfor = ISourceSource
+    usedfor = IProductSeriesSource
 
     def checkAuthenticated(self, user):
         buttsource = getUtility(ILaunchpadCelebrities).buttsource
@@ -80,8 +81,7 @@ class EditSourceSourceByButtSource(AuthorizationBase):
             return True
         elif not self.obj.syncCertified():
             return True
-        else:
-            return False
+        return False
 
 
 class EditMilestoneByProductMaintainer(AuthorizationBase):
@@ -106,7 +106,7 @@ class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
         if user.inTeam(self.obj.teamowner) or user.inTeam(admins):
             return True
         else:
-            for team in self.obj.teamowner.administrators:
+            for team in self.obj.administrators:
                 if user.inTeam(team):
                     return True
 

@@ -262,13 +262,27 @@ class BrowserPublication(BrowserPub):
         # XXX: Debugging code.  Please leave.  SteveAlexander 2005-03-23
         #counter[0] += 1
         #import traceback, sys
+
+        #from zope.exceptions.exceptionformatter import format_exception
+        #error_type, error_object, tb = sys.exc_info()
+        #try:
+        #    tbtext = '\n'.join(
+        #        format_exception(error_type, error_object, tb, as_html=False)
+        #        )
+        #finally:
+        #    del tb
+
         #f = open('/tmp/traceback.txt', 'a')
         #print >>f, '----------------------------------------'
         #print >>f, 'Count:', counter[0]
         #print >>f, 'Request: %r' % request
+        #print >>f, 'object: %r' % object
         #print >>f
         #etype, value, tb = sys.exc_info()
         #traceback.print_exception(etype, value, tb, file=f)
+        #print >>f
+        #print >>f, tbtext
+
         #f.close()
         BrowserPub.handleException(self, object, request, exc_info,
                                    retry_allowed)

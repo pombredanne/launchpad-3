@@ -17,6 +17,12 @@
         <allow interface="canonical.launchpad.interfaces.IMessageChunk" />
     </content>
 
+    <securedutility
+        class="canonical.launchpad.database.MessageSet"
+        provides="canonical.launchpad.interfaces.IMessageSet">
+        <allow interface="canonical.launchpad.interfaces.IMessageSet" />
+    </securedutility>
+
     <adapter
         for="canonical.launchpad.interfaces.IBugMessage"
         provides="canonical.launchpad.interfaces.IMessage"

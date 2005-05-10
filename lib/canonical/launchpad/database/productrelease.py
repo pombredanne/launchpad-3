@@ -1,17 +1,34 @@
-# Zope interfaces
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['ProductRelease', 'ProductReleaseSet', 'ProductReleaseFile']
+
 from zope.interface import implements
 
-# SQL imports
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
+from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, MultipleJoin
 
-# canonical imports
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC
-from canonical.launchpad import helpers
 
 from canonical.launchpad.interfaces import IProductRelease
-##from canonical.lp.dbschema import EnumCol
+from canonical.launchpad.interfaces import IProductReleaseSet
+
+
+class ProductReleaseSet(object):
+    """See IProductReleaseSet""" 
+    implements(IProductReleaseSet)
+
+    def new(self, version, productseries, owner, title=None, summary=None,
+            description=None, changelog=None):
+        """See IProductReleaseSet"""
+        return ProductRelease(version=version,
+                              productseries=productseries,
+                              owner=owner,
+                              title=title,
+                              summary=summary,
+                              description=description,
+                              changelog=changelog)
+
 
 class ProductRelease(SQLBase):
     """A release of a product."""
@@ -21,7 +38,7 @@ class ProductRelease(SQLBase):
     datereleased = DateTimeCol(notNull=True, default=nowUTC)
     version = StringCol(notNull=True)
     title = StringCol(notNull=False, default=None)
-    shortdesc = StringCol(notNull=False, default=None)
+    summary = StringCol(notNull=False, default=None)
     description = StringCol(notNull=False, default=None)
     changelog = StringCol(notNull=False, default=None)
     owner = ForeignKey(dbName="owner", foreignKey="Person", notNull=True)
@@ -32,11 +49,9 @@ class ProductRelease(SQLBase):
 
     files = MultipleJoin('ProductReleaseFile', joinColumn='productrelease')
 
-    # joins
     files = MultipleJoin('ProductReleaseFile', joinColumn='productrelease')
     potemplates = MultipleJoin('POTemplate', joinColumn='productrelease')
 
-    # properties
     def product(self):
         return self.productseries.product
     product = property(product)
@@ -48,22 +63,17 @@ class ProductRelease(SQLBase):
     def potemplatecount(self):
         return len(self.potemplates)
     potemplatecount = property(potemplatecount)
-    
+
     def poTemplate(self, name):
-        results = POTemplate.select(
+        template = POTemplate.selectOne(
             "POTemplate.productrelease = %d AND "
             "POTemplate.potemplatename = POTemplateName.id AND "
             "POTemplateName.name = %s" % (self.id, quote(name)),
             clauseTables=['ProductRelease', 'POTemplateName'])
 
-        # there should never be more than 1 template with a given name for a
-        # specific product release
-        assert results.count() < 2
-        
-        if results.count() == 0:
+        if template is None: 
             raise KeyError, name
-        else:
-            return results[0]
+        return template
 
     def messageCount(self):
         count = 0
@@ -104,5 +114,4 @@ class ProductReleaseFile(SQLBase):
     # This should be changes to EnumCol but seems to do
     # not have an schema defined yet.
     filetype = IntCol(notNull=True)
-
 

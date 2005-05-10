@@ -10,7 +10,7 @@ The BugMessageFactory determines the Bug using the LaunchBag
 >>> from canonical.launchpad.database import Bug
 >>> from canonical.launchpad.database.bugmessage import BugMessageFactory
 >>> login('foo.bar@canonical.com')
->>> launchbag = zapi.getUtility(ILaunchBag)
+>>> launchbag = getUtility(ILaunchBag)
 >>> launchbag.bug = Bug.get(1)
 >>> bmsg = BugMessageFactory(title='The Title', content='The Content')
 >>> msg = bmsg.message
@@ -55,19 +55,19 @@ True
 
 You can build a Message from an email easily. This stuffs the original,
 unadulterated, email into the Librarian and builds all the MessageChunks.
-XXX: Unfortunately, we can't test this until we integrate the Librarian
-into the test harnesses better.
 
-### from canonical.launchpad.database import Message
-### msg = Message.fromEmail("""\
-... Content-Type: multipart/mixed; boundary="===============0294339828=="
+>>> from canonical.launchpad.interfaces import IMessageSet
+>>> msgset = getUtility(IMessageSet)
+>>> raw_msg = u"""\
+... Content-Type: multipart/mixed; charset="latin-1";
+...               boundary="===============0294339828=="
 ... MIME-Version: 1.0
 ... Subject: =?utf-8?q?Unicode=E2=84=A2?=
 ... From: foo.bar@canonical.com
 ... Message-Id: <20050405054002.22134.71562@localhost.localdomain>
 ... To: cabal@ubuntu.com
 ... 
-... The preamble is included
+... The preamble is included, including Unicode\N{COPYRIGHT SIGN}
 ... --===============0294339828==
 ... Content-Type: text/plain; charset="us-ascii"
 ... MIME-Version: 1.0
@@ -79,17 +79,187 @@ into the test harnesses better.
 ... MIME-Version: 1.0
 ... Content-Transfer-Encoding: base64
 ... Content-Disposition: attachment; filename="anna.jpg.exe"
+... X-Comment: A trivial binary containing bytes 0x00 0x01 0x02 0x03
+... X-Comment: This also tests embedded NULLs in the blobs
+... X-Comment: Note we store all attachment types - filtering should
+... X-Comment: be done *before* launchpad is reached. Launchpad is not
+... X-Comment: a virus checker.
 ... 
 ... AAECAw==
 ... --===============0294339828==
 ... Content-Type: text/plain; charset="utf8"
 ... MIME-Version: 1.0
 ... Content-Transfer-Encoding: base64
+... X-Comment: bas64 encoded text saying 'Unicode(tm)'
 ... 
 ... VW5pY29kZeKEoiB0ZXh0
 ... 
+... --===============0294339828==
+... Content-Type: application/xml; charset="utf16"
+... MIME-Version: 1.0
+... Content-Transfer-Encoding: quoted-printable
+... X-Comment: quoted printable binary with a charset - probably illegal
+... X-Comment: but we still can cope with it.
+...
+... =FF=FE<=00?=00x=00m=00l=00=20=00v=00e=00r=00s=00i=00o=00n=00=3D=00"=001=00.=
+... =000=00"=00=20=00e=00n=00c=00o=00d=00i=00n=00g=00=3D=00"=00u=00t=00f=001=00=
+... 6=00"=00?=00>=00
+... =00<=00u=00n=00i=00c=00o=00d=00e=00>=00"!<=00/=00u=00n=00i=00c=00o=00d=00e=
+... =00>=00
 ... --===============0294339828==--
-... The epilogue is included
-... """)
+... The epilogue is included, including Unicode\N{COPYRIGHT SIGN}
+... """.encode('latin1')
+>>> msg = msgset.fromEmail(raw_msg)
 
+Once the email is stuffed into the Message and MessageChunk tables and 
+relevant bits stuffed into the Librarian, you can deal with them as
+normal.
+
+>>> msg_set = getUtility(IMessageSet)
+>>> msg = msg_set.get(
+...     rfc822msgid="<20050405054002.22134.71562@localhost.localdomain>"
+...     )
+>>> msg.title
+u'Unicode\u2122'
+>>> chunks = msg.chunks
+>>> for chunk in chunks:
+...     if chunk.content:
+...         print '%2d - %r' % (chunk.sequence, chunk.content)
+ 1 - u'The preamble is included, including Unicode\xa9'
+ 2 - u'Plain text'
+ 4 - u'Unicode\u2122 text'
+ 6 - u'The epilogue is included, including Unicode\xa9'
+
+Note that the third and fifth chunks were not of type text/plain,
+so are stored as blobs.
+
+>>> chunks[2].sequence
+3
+>>> chunks[2].content is None
+True
+>>> blob = chunks[2].blob
+>>> blob.filename
+u'anna.jpg.exe'
+>>> blob.url.startswith(u'http://localhost:58000/')
+True
+>>> blob.url.endswith(u'/anna.jpg.exe')
+True
+
+>>> blob2 = chunks[4].blob
+>>> blob2.filename
+u'unnamed'
+>>> blob2.mimetype
+u'application/xml; charset="utf16"'
+
+As per normal, we can't access the blobs in the same transaction
+as the request. I don't think this is important outside of tests.
+
+>>> import transaction
+>>> transaction.commit()
+>>> blob.read()
+'\x00\x01\x02\x03'
+
+>>> blob2.read().decode('utf16')
+u'<?xml version="1.0" encoding="utf16"?>\n<unicode>\u2122</unicode>'
+
+
+We can also retrieve a byte-identical copy of the original message
+from the Librarian. This is required for allowing people to verify
+the integrity of GPG signed messages.
+
+>>> msg.raw.read() == raw_msg
+True
+
+If you attempt to stuff the same email in again, you get the same
+Message back out (but we have to check with == rather than is, as
+SQLObject doesn't necessarily give us the same intance back)
+
+>>> msg2 = msgset.fromEmail(raw_msg)
+>>> msg == msg2
+True
+
+But if a duplicate Message-Id: is detected, and the emails are not
+identical, an exception is raised
+>>> msg3 = msgset.fromEmail('''\
+... From: foo.bar@canonical.com
+... Subject: Test
+... Message-Id: <20050405054002.22134.71562@localhost.localdomain>
+...
+... Foo Bar
+... ''')
+Traceback (most recent call last):
+    [...]
+DuplicateMessageId: <20050405054002.22134.71562@localhost.localdomain>
+
+
+The fromEmail method handles non-multipart and minimalist messages 
+quite happily.
+
+>>> msg = msgset.fromEmail('''\
+... From: foo.bar@canonical.com
+... Subject: Test
+... Message-Id: <fnord>
+... 
+... Foo Bar
+... ''')
+>>> msg.title
+u'Test'
+>>> chunks = list(msg.chunks)
+>>> len(chunks)
+1
+>>> chunks[0].content
+u'Foo Bar\n'
+
+
+However, there are some things it refuses to deal with. In particular, it
+will not create Messages if it cannot determine the owner or messages with
+out titles (It would be simple to change this behavior to automatically
+create missing Person instances, but there are no firm use cases for this
+yet).
+
+>>> msg = msgset.fromEmail('''\
+... From: foo.bar@canonical.com
+... Message-Id: <fnord2>
+...
+... Foo Bar
+... ''')
+Traceback (most recent call last):
+    [...]
+MissingSubject: <fnord2>
+
+>>> msg = msgset.fromEmail('''\
+... From: invalid@example.com
+... Message-Id: <fnord3>
+... Subject: Foo
+...
+... Foo Bar
+... ''')
+Traceback (most recent call last):
+    [...]
+UnknownSender: 'invalid@example.com'
+
+It also will refuse to deal with messages without a From: or Reply-To:
+header, or a missing Message-Id: header. These are required, and if they
+are missing then the email was sent from a broken email client or passed
+through a broken MTA and we have no choice but to bounce them.
+
+>>> msg = msgset.fromEmail('''\
+... From: foo.bar@canonical.com
+... Subject: Dud
+...
+... Moo
+... ''')
+Traceback (most recent call last):
+    [...]
+InvalidEmailMessage: Missing Message-Id
+
+>>> msg = msgset.fromEmail('''\
+... Subject: Dud
+... Message-Id: <fnord6>
+...
+... Moo
+... ''')
+Traceback (most recent call last):
+    [...]
+InvalidEmailMessage: No From: or Reply-To: header
 

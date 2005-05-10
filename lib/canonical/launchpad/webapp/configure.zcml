@@ -32,6 +32,32 @@
     <!-- TALES namespaces. -->
 
     <adapter
+        for="zope.interface.Interface"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.MenuAPI"
+        name="menu"
+        />
+    <class class="canonical.launchpad.webapp.tales.FacetListDecorator">
+      <allow interface="canonical.launchpad.interfaces.IFacetList" />
+    </class>
+    <class class="canonical.launchpad.webapp.metazcml.FacetList">
+      <allow interface="canonical.launchpad.interfaces.IFacetList" />
+    </class>
+    <class class="canonical.launchpad.webapp.tales.TabListDecorator">
+      <allow interface="canonical.launchpad.interfaces.ITabList" />
+    </class>
+    <class class="canonical.launchpad.webapp.metazcml.TabList">
+      <allow interface="canonical.launchpad.interfaces.ITabList" />
+    </class>
+    <class class="canonical.launchpad.webapp.metazcml.Link">
+      <allow interface="canonical.launchpad.interfaces.ILink" />
+    </class>
+    <class class="canonical.launchpad.webapp.tales.LinkDecorator">
+      <allow
+        interface="canonical.launchpad.interfaces.ISelectionAwareLink" />
+    </class>
+
+    <adapter
         for="zope.publisher.interfaces.IApplicationRequest"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.RequestAPI"

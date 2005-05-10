@@ -1,14 +1,18 @@
-# Zope imports
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['PublishedPackage', 'PublishedPackageSet']
+
 from zope.interface import implements
 
-# SQLObject/SQLBase
 from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol
 
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.launchpad.interfaces import IPublishedPackage, \
-                                           IPublishedPackageSet
+from canonical.launchpad.interfaces import \
+    IPublishedPackage, IPublishedPackageSet
 from canonical.lp.dbschema import EnumCol
 from canonical.lp.dbschema import PackagePublishingStatus
+
 
 class PublishedPackage(SQLBase):
     """See IPublishedPackage for details."""
@@ -28,19 +32,17 @@ class PublishedPackage(SQLBase):
     section = StringCol(immutable=True)
     binarypackage = IntCol(immutable=True)
     binarypackagename = StringCol(immutable=True)
-    binarypackageshortdesc = StringCol(immutable=True)
+    binarypackagesummary = StringCol(immutable=True)
     binarypackagedescription = StringCol(immutable=True)
     binarypackageversion = StringCol(immutable=True)
-    build = ForeignKey(foreignKey='Build', 
-                       dbName='build')
+    build = ForeignKey(foreignKey='Build', dbName='build')
     datebuilt = DateTimeCol(immutable=True)
     sourcepackagerelease = IntCol(immutable=True)
     sourcepackagereleaseversion = StringCol(immutable=True)
     sourcepackagename = StringCol(immutable=True)
 
 
-
-class PublishedPackageSet(object):
+class PublishedPackageSet:
 
     implements(IPublishedPackageSet)
 
@@ -64,6 +66,4 @@ class PublishedPackageSet(object):
             text = text.lower().strip()
             querytxt += " AND binarypackagefti @@ ftq(%s)" % quote(text)
         return PublishedPackage.select(querytxt)
-
-
 

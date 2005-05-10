@@ -22,8 +22,8 @@
 
     <h1><span tal:replace="context/title">$Branch.title</span></h1>
 
-    <div class="documentDescription" tal:content="context/shortdesc">
-        $Branch.shortdesc goes here. This should be quite short,
+    <div class="documentDescription" tal:content="context/summary">
+        $Branch.summary goes here. This should be quite short,
         just a single paragraph of text really, giving the product
         highlights.
     </div>

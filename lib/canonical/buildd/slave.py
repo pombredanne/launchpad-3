@@ -11,11 +11,18 @@ import sha
 from twisted.internet import protocol
 from twisted.internet import reactor
 from twisted.web import xmlrpc
-from base64 import standard_b64encode as base64encode
-from base64 import standard_b64decode as base64decode
+from canonical.librarian.client import FileDownloadClient
 
 class RunCapture(protocol.ProcessProtocol):
     """Run a command and capture its output to a slave's log"""
+
+    def __init__(self, slave, callback):
+        # Erm, did someone change twisted when I wasn't looking?
+        # XXX: dsilvers: 20050329: Should I be calling this or something
+        # like it?
+        #protocol.ProcessProtocol.__init__(self)
+        self.slave = slave
+        self.notify = callback
 
     def outReceived(self, data):
         self.slave.log(data)
@@ -35,113 +42,138 @@ class BuildManager(object):
         self._cleanpath = slave._config.get("allmanagers", "cleanpath")
         self._mountpath = slave._config.get("allmanagers", "mountpath")
         self._umountpath = slave._config.get("allmanagers", "umountpath")
-
+        
     def runSubProcess(self, command, args):
-        self._subprocess = RunCapture()
-        self._subprocess.slave = self._slave
-        self._subprocess.notify = self.iterate
+        """Run a sub process capturing the results in the log."""
+        self._subprocess = RunCapture(self._slave, self.iterate)
         self._slave.log("RUN: %s %r\n" % (command,args))
-        reactor.spawnProcess(self._subprocess,
-                             command,
-                             args,
-                             environ,
-                             environ["HOME"],
-                             None,
-                             None,
-                             False)
+        reactor.spawnProcess(self._subprocess, command, args,
+                             env=environ, path=environ["HOME"])
 
     def _unpackChroot(self, chroottarfile):
+        """Unpack the buld chroot."""
         self.runSubProcess(self._unpackpath,
                            [ "unpack-chroot", self._buildid, chroottarfile ])
 
     def doCleanup(self):
+        """Remove the build tree etc."""
         self.runSubProcess( self._cleanpath,
-                            ["remove-build", self._buildid] )
+                        ["remove-build", self._buildid] )
 
     def doMounting(self):
+        """Mount things in the chroot, e.g. proc."""
         self.runSubProcess( self._mountpath,
                             ["mount-chroot", self._buildid] )
         
     def doUnmounting(self):
+        """Unmount the chroot."""
         self.runSubProcess( self._umountpath,
                             ["umount-chroot", self._buildid] )
 
-    def symlink(self, old, new):
-        print "create symlink called %s pointing to existing %s" % (new,old)
-        symlink(old,new)
-        
     def initiate(self, files, chroot):
         """Initiate a build given the input files"""
         mkdir("%s/build-%s" % (environ["HOME"], self._buildid))
         for f in files:
-            self.symlink( self._slave.cachePath(files[f]), "%s/build-%s/%s" % (environ["HOME"], self._buildid, f) )
+            symlink( self._slave.cachePath(files[f]), "%s/build-%s/%s" % (environ["HOME"], self._buildid, f) )
         self._unpackChroot(self._slave.cachePath(chroot))
 
     def iterate(self, success):
-        raise UnimplementedError
+        """Perform an iteration of the slave.
+
+        The BuildManager tends to work by invoking several
+        subprocesses in order. the iterate method is called by the
+        object created by runSubProcess to gather the results of the
+        sub process.
+        """
+        raise NotImplementedError, "BuildManager should be subclassed to be used"
 
     def abort(self):
+        """Abort the build by killing the subprocess."""
         if not self.alreadyfailed:
             self.alreadyfailed = True
-        kill(self.subprocess.transport.pid, SIGKILL)
+        self.subprocess.transport.signalProcess('KILL')
 
+class BuilderStatus:
+    """Status values for the builder."""
+    
+    IDLE = "BuilderStatus.IDLE"
+    BUILDING = "BuilderStatus.BUILDING"
+    WAITING = "BuilderStatus.WAITING"
+    ABORTED = "BuilderStatus.ABORTED"
+
+    UNKNOWNSUM = "BuilderStatus.UNKNOWN-SUM"
+    UNKNOWNBUILDER = "BuilderStatus.UNKNOWN-BUILDER"
+    
+
+class BuildStatus:
+    """Status values for builds themselves."""
+    
+    OK = "BuildStatus.OK"
+    DEPFAIL = "BuildStatus.DEPFAIL"
+    PACKAGEFAIL = "BuildStatus.PACKAGEFAIL"
+    CHROOTFAIL = "BuildStatus.CHROOTFAIL"
+    BUILDERFAIL = "BuildStatus.BUILDERFAIL"
+    
 class BuildDSlave(object):
-    """Build Daemon slave
+    """Build Daemon slave.
+
+    XXX: dsilvers: 20050317: Fill this in
     """
 
-    IDLE = "BuilddStatus.IDLE"
-    BUILDING = "BuilddStatus.BUILDING"
-    WAITING = "BuilddStatus.WAITING"
-    ABORTED = "BuilddStatus.ABORTED"
-
-    OK = "BuilddStatus.OK"
-    DEPFAIL = "BuilddStatus.DEPFAIL"
-    PACKAGEFAIL = "BuilddStatus.PACKAGEFAIL"
-    CHROOTFAIL = "BuilddStatus.CHROOTFAIL"
-    BUILDERFAIL = "BuilddStatus.BUILDERFAIL"
-    
     def __init__(self, config):
         object.__init__(self)
         self._config = config
-        self._status = BuildDSlave.IDLE
+        self.builderstatus = BuilderStatus.IDLE
         self._cachepath = self._config.get("slave","filecache")
-        self._buildstatus = BuildDSlave.OK
-        self._waiting = {}
+        self.buildstatus = BuildStatus.OK
+        self.waitingfiles = {}
+        librarian_host = environ.get('LB_HOST', 'localhost')
+        librarian_port = int(environ.get('LB_DPORT', '8000'))
+
+
+        self.downloader = FileDownloadClient(librarian_host, librarian_port)
         
         if not isdir(self._cachepath):
             raise ValueError, "FileCache path is not a dir"
         
-    def arch(self):
+    def getArch(self):
+        """Return the Architecture tag for the slave."""
         return self._config.get("slave","architecturetag")
 
-    def status(self):
-        return self._status
-
-    def buildstatus(self):
-        return self._buildstatus
-
-    def waitingfiles(self, filemap = None):
-        if filemap is not None:
-            self._waiting = filemap
-        return self._waiting
-
     def cachePath(self, file):
+        """Return the path in the cache of the file specified."""
         return "%s/%s" % (self._cachepath, file)
 
-    def have(self, sha1sum):
-        # XXX: dsilvers: 2005/01/21: We could go to a librarian here
+    def testPresent(self, sha1sum, alias=None):
+        """Check for the file with the checksum specified.
+
+        Optionally you can provide the libraryfilealias and
+        the build slave will fetch the file if it doesn't have it.
+        """
+        if alias is not None:
+            if not exists(self.cachePath(sha1sum)):
+                print "Fetching %s by alias %s" % (sha1sum,alias)
+                f = self.downloader.getFileByAlias(alias)
+                of = open(self.cachePath(sha1sum),"w")
+                for chunk in iter(lambda: f.read(4096), ''):
+                    of.write(chunk)
+                of.close()
+                f.close()
         return exists(self.cachePath(sha1sum))
 
-    def give(self, content):
+    def storeFile(self, content):
+        """Take the provided content and store it in the file cache."""
         sha1sum = sha.sha(content).hexdigest()
-        if self.have(sha1sum): return sha1sum
+        if self.testPresent(sha1sum):
+            return sha1sum
         f = open(self.cachePath(sha1sum), "w")
         f.write(content)
         f.close()
         return sha1sum
 
-    def want(self, sha1sum):
-        if not self.have(sha1sum):
+    def fetchFile(self, sha1sum):
+        """Fetch the file of the given sha1sum."""
+        if not self.testPresent(sha1sum):
             raise ValueError, "Unknown SHA1sum %s" % sha1sum
         f = open(self.cachePath(sha1sum), "r")
         c = f.read()
@@ -149,27 +181,29 @@ class BuildDSlave(object):
         return c
 
     def abort(self):
+        """Abort the current build."""
         # XXX: dsilvers: 2005/01/21: Current abort mechanism doesn't wait
         # for abort to complete. This is potentially an issue in a heavy
         # load situation
-        if self._status != BuildDSlave.BUILDING:
+        if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError, "Slave is not BUILDING when asked to abort"
         self.manager.abort()
-        self._status = BuildDSlave.ABORTED
+        self.builderstatus = BuilderStatus.ABORTED
 
     def clean(self):
-        # Delete everything waiting and reset internal state
-        if self._status != BuildDSlave.WAITING:
+        """Clean up pending files and reset the internal build state."""
+        if self.builderstatus != BuilderStatus.WAITING:
             raise ValueError, "Slave is not WAITING when asked to clean"
-        for f in self._waiting:
-            remove(self.cachePath(self._waiting[f]))
-        self._status = BuildDSlave.IDLE
+        for f in self.waitingfiles:
+            remove(self.cachePath(self.waitingfiles[f]))
+        self.builderstatus = BuilderStatus.IDLE
         self._log = ""
-        self._waiting = {}
+        self.waitingfiles = {}
         self.manager = None
-        self._buildstatus = BuildDSlave.OK
+        self.buildstatus = BuildStatus.OK
 
     def emptyLog(self):
+        """Empty the stored log."""
         self._log = ""
 
     def log(self, data):
@@ -180,43 +214,54 @@ class BuildDSlave(object):
             data = data[:-1]
         print "Build log: " + data
 
-    def logtail(self, amount):
-        if amount == -1:
+    def fetchLogTail(self, amount=None):
+        """Get the last 'amount' bytes of the log.
+        
+        This will only return whole lines, so it may return less than 'amount'
+        bytes.
+        
+        If amount is -1, this will return the entire log.
+        """
+        if amount is None:
             return self._log
-        if amount > len(self._log):
-            amount = len(self._log)
-        ret = self._log[len(self._log)-amount:]
+        ret = self._log[-amount:]
         return ret[ret.find("\n")+1:]
-
+    
     def startBuild(self, manager):
-        if self._status != BuildDSlave.IDLE:
+        """Start a build with the provided BuildManager instance."""
+        if self.builderstatus != BuilderStatus.IDLE:
             raise ValueError, "Slave is not IDLE when asked to start building"
         self.manager = manager
-        self._status = BuildDSlave.BUILDING
+        self.builderstatus = BuilderStatus.BUILDING
 
     def builderFail(self):
-        if self._status != BuildDSlave.BUILDING:
+        """Cease building because the builder has a problem."""
+        if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError, "Slave is not BUILDING when set to BUILDERFAIL"
-        self._status = BuildDSlave.WAITING
-        self._buildstatus = BuildDSlave.BUILDERFAIL
+        self.builderstatus = BuilderStatus.WAITING
+        self.buildstatus = BuildStatus.BUILDERFAIL
 
     def buildFail(self):
-        if self._status != BuildDSlave.BUILDING:
+        """Cease building because the package failed to build."""
+        if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError, "Slave is not BUILDING when set to BUILDFAIL"
-        self._status = BuildDSlave.WAITING
-        self._buildstatus = BuildDSlave.PACKAGEFAIL
+        self.builderstatus = BuilderStatus.WAITING
+        self.buildstatus = BuildStatus.PACKAGEFAIL
 
     def depFail(self):
-        if self._status != BuildDSlave.BUILDING:
+        """Cease building due to a dependency issue."""
+        if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError, "Slave is not BUILDING when set to DEPFAIL"
-        self._status = BuildDSlave.WAITING
-        self._buildstatus = BuildDSlave.DEPFAIL
+        self.builderstatus = BuilderStatus.WAITING
+        self.buildstatus = BuildStatus.DEPFAIL
 
     def buildComplete(self):
-        if self._status != BuildDSlave.BUILDING:
+        """Mark the build as complete and waiting interaction from the build
+        daemon master."""
+        if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError, "Slave is not BUILDING when told build is complete"
-        self._status = BuildDSlave.WAITING
-        self._buildstatus = BuildDSlave.OK
+        self.builderstatus = BuilderStatus.WAITING
+        self.buildstatus = BuildStatus.OK
         
 
 class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
@@ -227,10 +272,6 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
     def __init__(self, config):
         xmlrpc.XMLRPC.__init__(self)
         self.protocolversion = 1
-        self.methods = []
-        for k in dir(self):
-            if k.startswith("xmlrpc_"):
-                self.methods.append(k[7:])
         self.slave = BuildDSlave(config)
         self._builders = {}
         
@@ -240,61 +281,99 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
         self._builders[buildertag] = builderclass
 
     def xmlrpc_echo(self, *args):
+        """Echo the argument back."""
         return args
 
     def xmlrpc_info(self):
         # Return the protocol version and the methods supported
-        return self.protocolversion, self.methods, self.slave.arch(), self._builders.keys()
+        return self.protocolversion, [
+            "info", "status", "fetchlogtail", "doyouhave",
+            "storefile", "fetchfile", "abort", "clean", "startbuild"
+            ], self.slave.getArch(), self._builders.keys()
 
     def xmlrpc_status(self):
-        status = self.slave.status()
-        if status == BuildDSlave.IDLE:
-            return status
-        if status == BuildDSlave.BUILDING:
-            return status, self.buildid, self.slave.logtail(1024)
-        if status == BuildDSlave.WAITING:
-            buildstatus = self.slave.buildstatus()
-            if buildstatus == BuildDSlave.OK or \
-                   buildstatus == BuildDSlave.PACKAGEFAIL or \
-                   buildstatus == BuildDSlave.DEPFAIL:
-                print status, buildstatus, self.buildid, \
-                       self.slave.waitingfiles()
-                return status, buildstatus, self.buildid, \
-                       self.slave.waitingfiles()
-            return status, buildstatus, self.buildid
-        if status == BuildDSlave.ABORTED:
-            return status, self.buildid
-        # Some issue
-        raise ValueError, "Unknown status"
+        """Return the status of the build daemon.
+
+        Depending on the builder status we return differing amounts of
+        data. We do however always return the builder status as the first
+        value.
+        """
+        status = self.slave.builderstatus
+        statusname = status.split('.')[-1]
+        func = getattr(self, "status_" + statusname, None)
+        if func is None:
+            raise ValueError, "Unknown status " + status
+        return (status,) + func()
+
+    def status_IDLE(self):
+        """Handler for xmlrpc_status IDLE.
+
+        Returns () since there's nothing to report
+        """
+        return ()
+    
+    def status_BUILDING(self):
+        """Handler for xmlrpc_status BUILDING.
+
+        Returns the build id and up to one kilobyte of log tail
+        """
+
+        return self.buildid, self.slave.fetchLogTail(1024)
+
+    def status_WAITING(self):
+        """Handler for xmlrpc_status WAITING.
+
+        Returns the build id and the set of files waiting to be returned
+        unless the builder failed in which case we return the buildstatus
+        and the build id but no file set.
+        """
+        if self.slave.buildstatus in (
+            BuildStatus.OK, BuildStatus.PACKAGEFAIL, BuildStatus.DEPFAIL ):
+            return (self.slave.buildstatus, self.buildid,
+                    self.slave.waitingfiles)
+        return self.slave.buildstatus, self.buildid
+
+    def status_ABORTED(self):
+        """Handler for xmlrpc_status ABORTED.
+
+        Returns the build id only.
+        """
+        return self.buildid
 
     def xmlrpc_fetchlogtail(self, amount):
-        return self.slave.logtail(amount)
+        """Return the requested amount of log information."""
+        return self.slave.fetchLogTail(amount)
     
-    def xmlrpc_doyouhave(self, sha1sum):
-        return self.slave.have(sha1sum)
+    def xmlrpc_doyouhave(self, sha1sum, alias=None):
+        """Return whether or not the slave has the specified file."""
+        return self.slave.testPresent(sha1sum, alias)
 
     def xmlrpc_storefile(self, content):
-        return self.slave.give(base64decode(content))
+        """Store the provided content in the slave's cache."""
+        return self.slave.storeFile(str(content))
     
     def xmlrpc_fetchfile(self, sha1sum):
-        return base64encode(self.slave.want(sha1sum))
+        """Fetch the content of the file specified from the slave's cache."""
+        return xmlrpclib.Binary(self.slave.fetchFile(sha1sum))
 
     def xmlrpc_abort(self):
+        """Abort the current build."""
         self.slave.abort()
-        return BuildDSlave.ABORTED
+        return BuilderStatus.ABORTED
 
     def xmlrpc_clean(self):
+        """Clean up the waiting files and reset the slave's internal state."""
         self.slave.clean()
-        return BuildDSlave.IDLE
+        return BuilderStatus.IDLE
 
-    def xmlrpc_startbuild(self, buildid, filelist, chrootsum, builder):
+    def xmlrpc_startbuild(self, buildid, filemap, chrootsum, builder):
         if not builder in self._builders:
-            return "UNKNOWN-BUILDER"
-        if not self.slave.have(chrootsum):
-            return "UNKNOWN-SUM", chrootsum
-        for f in filelist:
-            if not self.slave.have(filelist[f]):
-                return "UNKNOWN-SUM", filelist[f]
+            return BuilderStatus.UNKNOWNBUILDER
+        if not self.slave.testPresent(chrootsum):
+            return BuilderStatus.UNKNOWNSUM, chrootsum
+        for checksum in filemap.itervalues():
+            if not self.slave.testPresent(checksum):
+                return BuilderStatus.UNKNOWNSUM, checksum
         if buildid is None or buildid == "" or buildid == 0:
             raise ValueError, buildid
         # builder is available, buildd is non empty,
@@ -303,6 +382,6 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
         self.buildid = buildid
         
         self.slave.startBuild(self._builders[builder](self.slave, buildid))
-        self.slave.manager.initiate(filelist, chrootsum)
-        return "BUILDING"
+        self.slave.manager.initiate(filemap, chrootsum)
+        return BuilderStatus.BUILDING
     

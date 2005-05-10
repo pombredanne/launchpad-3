@@ -15,6 +15,10 @@
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure view/viewsPortlet" />
+</metal:leftportlets>
+
 <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure view/actionsPortlet" />
 </metal:rightportlets>
@@ -29,16 +33,17 @@
   </div>
   </tal:dummy>
   
-  <form name="email" action="" method="POST">
+  <form autocomplete="off" name="email" action="" method="POST">
 
   <p class="documentDescription">A list of the email addresses associated
   with this account in the Launchpad.</p>
   
+  <tal:block tal:condition="view/anyRegisteredEmail">
   <p>Your preferred email address is the only
   one we'll use to communicate with you. There can be only one preferred
   email address at a time, and it cannot be removed.</p>
 
-  <table id="ass_listing" class="listing rowNavigation" width="100%">
+  <table id="ass_listing" class="listing" width="100%">
     <tr>
       <th>Preferred</th>
       <th>Email</th>
@@ -63,16 +68,25 @@
         <input tal:attributes="value email/id" name="REMOVE_EMAIL" type="checkbox" />
       </td>
     </tr>
-    <tr tal:repeat="newemail context/unvalidatedemails">
+    <tr tal:repeat="unvalidated view/unvalidatedAndNotGuessed">
       <td>
         unvalidated
       </td>
-      <td tal:content="newemail">email@foo.com</td>
+      <td tal:content="unvalidated">email@foo.com</td>
       <td> 
+        <input tal:attributes="value unvalidated" name="REMOVE_TOKEN" type="checkbox" />
       </td>
     </tr>
   </table>
   <br />
+  </tal:block>
+
+  <tal:block tal:condition="not: view/anyRegisteredEmail">
+  <p>You don't have any registered email address in Launchpad. You can do so
+  by filling in the form bellow with the email address you want and your
+  password. After that, we will e-mail you to check your address and give you
+  instructions on how to complete the registration of your email address.</p>
+  </tal:block>
 
   <table>
     <tr>

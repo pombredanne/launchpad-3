@@ -1,0 +1,24 @@
+<div class="portlet">
+
+    <h4><span tal:replace="context/browsername" />:</h4>
+
+    <div class="portletBody">
+
+        <div class="portletContent">
+
+        <img src="/++resource++info_icon.gif">
+        <a href=".">Overview</a><br />
+        <img src="/++resource++info_icon.gif">
+        <a href="+translations">Translations</a><br />
+        <img src="/++resource++info_icon.gif">
+        <a href="+bugs">Bugs Reported</a><br />
+        <img src="/++resource++info_icon.gif">
+        <a href="+packages">Packages</a><br />
+        <img src="/++resource++info_icon.gif">
+        <a href="+bounties">Bounties</a><br />
+        <img src="/++resource++info_icon.gif">
+        <a href="+karma">Recent Activities</a><br />
+
+        </div>
+    </div>
+</div>

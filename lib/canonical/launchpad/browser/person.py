@@ -1,5 +1,7 @@
 # Copyright 2004 Canonical Ltd
 
+__metaclass__ = type
+
 # sqlobject/sqlos
 from canonical.database.sqlbase import flush_database_updates
 
@@ -12,7 +14,7 @@ from zope.component import getUtility
 
 # lp imports
 from canonical.lp.dbschema import LoginTokenType, SSHKeyType
-from canonical.lp.dbschema import EmailAddressStatus
+from canonical.lp.dbschema import EmailAddressStatus, GPGKeyAlgorithms
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
@@ -25,19 +27,18 @@ from canonical.launchpad.interfaces import ILaunchBag, ILoginTokenSet
 from canonical.launchpad.interfaces import IPasswordEncryptor, \
                                            ISignedCodeOfConduct,\
                                            ISignedCodeOfConductSet
-from canonical.launchpad.interfaces import IGPGKeySet
+from canonical.launchpad.interfaces import IGPGKeySet, IGpgHandler
 
 from canonical.launchpad.helpers import well_formed_email, obfuscateEmail
-from canonical.launchpad.helpers import convertToHtmlCode
+from canonical.launchpad.helpers import convertToHtmlCode, shortlist
 from canonical.launchpad.mail.sendmail import simple_sendmail
-from canonical.launchpad.browser.emailaddress import sendEmailValidationRequest
 
 ##XXX: (batch_size+global) cprov 20041003
 ## really crap constant definition for BatchPages
 BATCH_SIZE = 40
 
 
-class BaseListView(object):
+class BaseListView:
 
     header = ""
 
@@ -88,12 +89,18 @@ class UbuntiteListView(BaseListView):
         return self.getUbuntitesList()
 
 
-class FOAFSearchView(object):
+class FOAFSearchView:
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.results = []
+
+    def teamsCount(self):
+        return getUtility(IPersonSet).teamsCount()
+
+    def peopleCount(self):
+        return getUtility(IPersonSet).peopleCount()
 
     def searchPeopleBatchNavigator(self):
         name = self.request.get("name")
@@ -124,11 +131,22 @@ class FOAFSearchView(object):
         return getUtility(IPersonSet).findByName(name)
 
 
-class PersonView(object):
-    """A simple View class to be used in all Person's pages."""
+class BasePersonView:
+    """A base class to be used by all IPerson view classes."""
+
+    viewsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-person-views.pt')
 
     actionsPortlet = ViewPageTemplateFile(
         '../templates/portlet-person-actions.pt')
+    
+
+class PersonView(BasePersonView):
+    """A simple View class to be used in all Person's pages."""
+
+    # restricted set of methods to be proxied by form_action()
+    permitted_actions = ['import_gpg', 'claim_gpg', 'remove_gpg',
+                         'add_ssh', 'remove_ssh']
 
     def __init__(self, context, request):
         self.context = context
@@ -198,39 +216,62 @@ class PersonView(object):
             # Nothing to do
             return ''
         action = self.request.form.get('action')
-        # standart action reflected in our local methods
-        try:
-            return getattr(self, action)()
-        except AttributeError:
-            return None
+
+        # primary check on restrict set of 'form-like' methods.
+        if action and (action not in self.permitted_actions):
+            return 'Forbidden Form Method'
         
+        # do not mask anything 
+        return getattr(self, action)()       
 
     # XXX cprov 20050401
     # As "Claim GPG key" takes a lot of time, we should process it
     # throught the NotificationEngine.
     def claim_gpg(self):
-        fpr = self.request.form.get('fpr')
+        fingerprint = self.request.form.get('fingerprint')
 
         #XXX cprov 20050401
         # Add fingerprint checks before claim.
         
-        return 'DEMO: GPG key "%s" claimed.' % fpr
+        return 'DEMO: GPG key "%s" claimed.' % fingerprint
 
     def import_gpg(self):
         pubkey = self.request.form.get('pubkey')
 
-        #XXX cprov 20050401
-        # Add pubkey checks before import.
+        gpghandler = getUtility(IGpgHandler)
+
+        fingerprint = gpghandler.importPubKey(pubkey)        
+
+        if fingerprint == None:
+            return 'DEMO: GPG pubkey not recognized'
+
+        keysize, algorithm, revoked = gpghandler.getKeyInfo(fingerprint)
         
-        return 'DEMO: GPG key "%s" imported.' % pubkey
+        # XXX cprov 20050407
+        # Keyid is totally obsolete        
+        keyid = fingerprint[-8:]
+        # EnumCol doesn't help in this case, at least
+        algorithm_value = GPGKeyAlgorithms.items[algorithm]
+
+        # See IGPGKeySet for further information
+        getUtility(IGPGKeySet).new(self.user.id, keyid, pubkey, fingerprint,
+                                   keysize, algorithm_value, revoked)
+        
+        return 'DEMO: %s imported' % fingerprint
 
     # XXX cprov 20050401
     # is it possible to remove permanently a key from our keyring
     # The best bet should be DEACTIVE it.
     def remove_gpg(self):
         keyid = self.request.form.get('keyid')
+        # retrieve key info
         gpgkey = getUtility(IGPGKeySet).get(keyid)
-        return 'DEMO: GPG key removed ("%s")' % gpgkey.keyid
+        
+        comment = 'DEMO: GPG key removed ("%s")' % gpgkey.fingerprint
+
+        #gpgkey.destroySelf()
+
+        return comment
 
     def add_ssh(self):
         sshkey = self.request.form.get('sshkey')
@@ -267,10 +308,7 @@ class PersonView(object):
         return 'Key "%s" removed' % comment
 
 
-class PersonEditView(object):
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-person-actions.pt')
+class PersonEditView(BasePersonView):
 
     def __init__(self, context, request):
         self.context = context
@@ -348,24 +386,40 @@ class PersonEditView(object):
 
         return True
 
+    def unvalidatedAndNotGuessed(self):
+        """All emails of this person that are waiting for validation but are
+        not yet in the emailaddress table with status = NEW."""
+        guessedemails = [g.email for g in self.context.guessedemails]
+        emails = []
+        for email in self.context.unvalidatedemails:
+            if email not in guessedemails:
+                emails.append(email)
+        return emails
+
+    def anyRegisteredEmail(self):
+        """Return true if this user have any email address that was registered
+        in Launchpad by himself.
+        """
+        return (self.context.preferredemail or self.context.validatedemails or
+                self.context.unvalidatedemails)
+
     def emailFormSubmitted(self):
         if "SUBMIT_CHANGES" in self.request.form:
             self.processEmailChanges()
-            self.message = 'Thank you for your email changes.'
             return True
         elif "VALIDATE_EMAIL" in self.request.form:
             self.processValidationRequest()
-            self.message = 'Thank you for your email validation.'
             return True
         else:
             return False
 
     def processEmailChanges(self):
-        user = self.user
+        person = self.context
         emailset = getUtility(IEmailAddressSet)
-        password = self.request.form.get("password")
+        logintokenset = getUtility(ILoginTokenSet)
         encryptor = getUtility(IPasswordEncryptor)
-        if not encryptor.validate(password, user.password):
+        password = self.request.form.get("password")
+        if not encryptor.validate(password, person.password):
             self.message = "Wrong password. Please try again."
             return
 
@@ -376,7 +430,7 @@ class PersonEditView(object):
                 return
 
             email = emailset.getByEmail(newemail)
-            if email is not None and email.person.id == user.id:
+            if email is not None and email.person.id == person.id:
                 self.message = ("The email address '%s' is already registered "
                                 "as your email address. This can be either "
                                 "because you already added this email address "
@@ -393,12 +447,11 @@ class PersonEditView(object):
                                 "<a href=\"../+requestmerge\">Merge Accounts"
                                 "</a> page to claim this email address and "
                                 "everything that is owned by that account.") % \
-                               (email.email, email.person.browsername())
+                               (email.email, email.person.browsername)
                 return
 
             login = getUtility(ILaunchBag).login
-            logintokenset = getUtility(ILoginTokenSet)
-            token = logintokenset.new(user, login, newemail, 
+            token = logintokenset.new(person, login, newemail, 
                                       LoginTokenType.VALIDATEEMAIL)
             sendEmailValidationRequest(token, self.request.getApplicationURL())
             self.message = ("A new message was sent to '%s', please follow "
@@ -411,11 +464,11 @@ class PersonEditView(object):
             # login *must* have a PREFERRED email, and this will not be
             # needed anymore. But for now we need this cause id may be "".
             id = int(id)
-            if getattr(user.preferredemail, 'id', None) != id:
+            if getattr(person.preferredemail, 'id', None) != id:
                 email = emailset.get(id)
-                assert email.person == user
+                assert email.person.id == person.id
                 assert email.status == EmailAddressStatus.VALIDATED
-                user.preferredemail = email
+                person.preferredemail = email
 
         ids = self.request.form.get("REMOVE_EMAIL")
         if ids is not None:
@@ -428,26 +481,40 @@ class PersonEditView(object):
 
             for id in ids:
                 email = emailset.get(id)
-                assert email.person == user
-                if user.preferredemail != email:
+                assert email.person.id == person.id
+
+                if person.preferredemail != email:
                     # The following lines are a *real* hack to make sure we
                     # don't let the user with no validated email address.
                     # Ideally, we wouldn't need this because all users would
                     # have a preferred email address.
-                    if user.preferredemail is None and \
-                       len(user.validatedemails) > 1:
-                        # No preferred email set. We can only delete this
-                        # email if it's not the last validated one.
+                    if person.preferredemail is None and \
+                       len(person.validatedemails) > 1:
+                        # No preferred email set and this is not the last
+                        # validated one. User can delete it.
                         email.destroySelf()
-                    elif user.preferredemail is not None:
+                    elif person.preferredemail is not None:
                         # This user has a preferred email and it's not this
                         # one, so we can delete it.
                         email.destroySelf()
+
+        emails = self.request.form.get("REMOVE_TOKEN")
+        if emails is not None:
+            # We can have multiple unvalidated email adressess marked for 
+            # deletion, and in this case emails will be a list. Otherwise 
+            # emails will be a string and we need to make a list with that 
+            # value to use in the for loop.
+            if not isinstance(emails, list):
+                emails = [emails]
+
+            for email in emails:
+                logintokenset.deleteByEmailAndRequester(email, person)
 
         # Need to flush all changes we made, so subsequent queries we make
         # with this transaction will see this changes and thus they'll be
         # displayed on the page that calls this method.
         flush_database_updates()
+        self.message = 'Thank you for your email changes.'
 
     def processValidationRequest(self):
         id = self.request.form.get("NOT_VALIDATED_EMAIL")
@@ -456,9 +523,25 @@ class PersonEditView(object):
                         "on how to validate it.") % email.email
         login = getUtility(ILaunchBag).login
         logintokenset = getUtility(ILoginTokenSet)
-        token = logintokenset.new(self.user, login, email.email,
+        token = logintokenset.new(self.context, login, email.email,
                                   LoginTokenType.VALIDATEEMAIL)
         sendEmailValidationRequest(token, self.request.getApplicationURL())
+        self.message = 'Thank you for your email changes.'
+
+
+def sendEmailValidationRequest(token, appurl):
+    template = open('lib/canonical/launchpad/templates/validate-email.txt').read()
+    fromaddress = "Launchpad Email Validator <noreply@ubuntu.com>"
+
+    replacements = {'longstring': token.token,
+                    'requester': token.requester.browsername,
+                    'requesteremail': token.requesteremail,
+                    'toaddress': token.email,
+                    'appurl': appurl}
+    message = template % replacements
+
+    subject = "Launchpad: Validate your email address"
+    simple_sendmail(fromaddress, token.email, subject, message)
 
 
 class RequestPeopleMergeView(AddView):
@@ -510,7 +593,7 @@ class RequestPeopleMergeView(AddView):
         self._nextURL = './+mergerequest-sent'
 
 
-class FinishedPeopleMergeRequestView(object):
+class FinishedPeopleMergeRequestView:
     """A simple view for a page where we only tell the user that we sent the
     email with further instructions to complete the merge."""
 
@@ -519,7 +602,7 @@ class FinishedPeopleMergeRequestView(object):
         self.request = request
 
 
-class RequestPeopleMergeMultipleEmailsView(object):
+class RequestPeopleMergeMultipleEmailsView:
     """A view for the page where the user asks a merge and the dupe account
     have more than one email address."""
 
@@ -535,7 +618,9 @@ class RequestPeopleMergeMultipleEmailsView(object):
             dupe = self.request.get('dupe')
         self.dupe = getUtility(IPersonSet).get(int(dupe))
         emailaddrset = getUtility(IEmailAddressSet)
-        self.dupeemails = emailaddrset.getByPerson(self.dupe.id)
+        # XXX: salgado, 2005-05-06: As soon as we have a __contains__ method
+        # in SelectResults we'll not need to listify self.dupeemails anymore.
+        self.dupeemails = shortlist(emailaddrset.getByPerson(self.dupe.id))
 
     def processForm(self):
         if self.request.method != "POST":
@@ -581,10 +666,7 @@ def sendMergeRequestEmail(token, dupename, appurl):
     simple_sendmail(fromaddress, token.email, subject, message)
 
 
-class TeamAddView(AddView):
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-person-actions.pt')
+class TeamAddView(AddView, BasePersonView):
 
     def __init__(self, context, request):
         self.context = context
@@ -600,7 +682,7 @@ class TeamAddView(AddView):
         for key, value in data.items():
             kw[str(key)] = value
 
-        kw['teamownerID'] = getUtility(ILaunchBag).user.id
+        kw['teamownerID'] = self.context.id
         team = getUtility(IPersonSet).newTeam(**kw)
         notify(ObjectCreatedEvent(team))
         self._nextURL = '/people/%s' % team.name

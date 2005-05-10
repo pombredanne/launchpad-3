@@ -1,16 +1,13 @@
-# Zope imports
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['VSourcePackageReleasePublishing', 'XXXcreateSourcePackage']
+
 from zope.interface import implements
-from zope.component import getUtility
-from zope.exceptions import NotFoundError
 
-# SQLObject/SQLBase
-from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol
+from sqlobject import StringCol, ForeignKey, DateTimeCol
 
-from canonical.database.sqlbase import quote
-
-# interfaces and database 
-from canonical.launchpad.interfaces import ISourcePackageReleasePublishing, \
-    IPOTemplateSet
+from canonical.launchpad.interfaces import ISourcePackageReleasePublishing
 
 from canonical.launchpad.database.sourcepackagerelease import \
      SourcePackageRelease
@@ -20,13 +17,14 @@ from canonical.lp.dbschema import PackagePublishingStatus
 
 
 class VSourcePackageReleasePublishing(SourcePackageRelease):
-    """A SourcePackageRelease that is published in a distrorelease. Note
-    that there are two distrorelease fields: uploaddistrorelease and
-    distrorelease. The one you want is distrorelease which
-    is the distrorelease into which this sourcepackagerelease is published.
-    The other one is the original distrorelease into which this
-    SourcePackageRelease was first uploaded in the Launchpad."""
+    """A SourcePackageRelease that is published in a distrorelease.
 
+    Note that there are two distrorelease fields: uploaddistrorelease and
+    distrorelease. The one you want is distrorelease which is the distrorelease
+    into which this sourcepackagerelease is published.  The other one is the
+    original distrorelease into which this SourcePackageRelease was first
+    uploaded in the Launchpad.
+    """
     implements(ISourcePackageReleasePublishing)
 
     _table = 'VSourcePackageReleasePublishing'
@@ -58,6 +56,7 @@ class VSourcePackageReleasePublishing(SourcePackageRelease):
 
     # XXX sabdfl 24/03/05 this is the hack of the century, please remove
     # asap
+    # XXX SteveAlexander 2004-04-23, wtf?
     def sourcepackage(self):
         from canonical.launchpad.database.sourcepackage import SourcePackage
         return SourcePackage(sourcepackagename=self.sourcepackagename,
@@ -71,10 +70,11 @@ class VSourcePackageReleasePublishing(SourcePackageRelease):
 def XXXcreateSourcePackage(name, maintainer=0):
     # FIXME: maintainer=0 is a hack.  It should be required (or the DB shouldn't
     #        have NOT NULL on that column).
+    # XXX: Totally needs an owner.  SteveAlexander, 2005-04-23
     return SourcePackage(
         name=name, 
         maintainer=maintainer,
         title='', # FIXME
         description='', # FIXME
-    )
+        )
 

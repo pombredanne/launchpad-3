@@ -12,8 +12,10 @@ from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import BugTaskStatus
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad import helpers
+
 from canonical.launchpad.interfaces import IBugTaskSet, ILaunchBag
-from canonical.rosetta.browser import request_languages, TemplateLanguages
+
+from canonical.launchpad.browser.potemplate import ViewPOTemplate
 
 BATCH_SIZE = 20
 
@@ -55,11 +57,7 @@ class DistroReleaseView(object):
         self.is_maintainer = helpers.is_maintainer(self.context)
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
-        self.languages = request_languages(self.request)
-        # Cache value for the return value of self.templates
-        self._template_languages = None
-        # List of the templates we have in this subset.
-        self._templates = self.context.potemplates
+        self.languages = helpers.request_languages(self.request)
         self.status_message = None
 
     def task_columns(self):
@@ -69,21 +67,15 @@ class DistroReleaseView(object):
     def assign_to_milestones(self):
         return []
 
-    def potemplates(self):
-        if self._template_languages is None:
-            self._template_languages = [
-                TemplateLanguages(template,
-                                  self.languages,
-                                  relativeurl='+sources/'+template.sourcepackagename.name+'/+pots/'+template.name)
-                               for template in self._templates]
-
-        return self._template_languages
-
     def requestCountry(self):
         return helpers.requestCountry(self.request)
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
+
+    def templateviews(self):
+        return [ViewPOTemplate(template, self.request)
+                for template in self.context.potemplates]
 
 
 class ReleasesAddView(object):
@@ -99,7 +91,7 @@ class ReleasesAddView(object):
             return False
 
         title = self.request.get("title", "")
-        shortdesc = self.request.get("shortdesc", "")
+        summary = self.request.get("summary", "")
         description = self.request.get("description", "")
         version = self.request.get("version", "")
         parent = self.request.get("parentrelease", "")
@@ -111,7 +103,7 @@ class ReleasesAddView(object):
 
         dt = getUtility(IDistroTools)
         res = dt.createDistroRelease(person.id, title, distro_id,
-                                     shortdesc, description, version,
+                                     summary, description, version,
                                      parent)
         self.results = res
         return res
@@ -130,7 +122,7 @@ class ReleaseEditView(object):
 
         name = self.request.get("name", "")
         title = self.request.get("title", "")
-        shortdesc = self.request.get("shortdesc", "")
+        summary = self.request.get("summary", "")
         description = self.request.get("description", "")
         version = self.request.get("version", "")
 
@@ -140,7 +132,7 @@ class ReleaseEditView(object):
         ##XXX: (uniques) cprov 20041003
         self.context.release.name = name
         self.context.release.title = title
-        self.context.release.shortdesc = shortdesc
+        self.context.release.summary = summary
         self.context.release.description = description
         self.context.release.version = version
         return True

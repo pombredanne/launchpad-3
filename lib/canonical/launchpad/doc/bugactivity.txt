@@ -39,12 +39,14 @@ little functions.
 
   >>> from datetime import datetime
   >>> from zope.event import notify
+  >>> from zope.interface import directlyProvides
   >>> from canonical.launchpad.event.sqlobjectevent import \
   ...     SQLObjectCreatedEvent, SQLObjectModifiedEvent
   >>> from canonical.launchpad.database import Bug, BugActivity, \
   ...     BugPackageInfestation, BugProductInfestation, \
   ...     BugTask
-  >>> from canonical.launchpad.interfaces import IBugAddForm
+  >>> from canonical.launchpad.interfaces import IBugAddForm, \
+  ...     IUpstreamBugTask, IDistroBugTask
   >>> from zope.publisher.browser import TestRequest
 
   >>> request = TestRequest()
@@ -69,7 +71,7 @@ Here's a list of events that happen, and the resulting activity logged:
 EVENT: user files a bug
 
   >>> bug = Bug(
-  ...     title = "a test bug", shortdesc = "this is only a test bug",
+  ...     title = "a test bug", summary = "this is only a test bug",
   ...     description = "this is only a test bug\nplease ignore",
   ...     owner = user.id)
   >>> bug.activity
@@ -87,10 +89,10 @@ EVENT: user files a bug
 EVENT: bug edited
 
   >>> old_state = capture_state(
-  ...     bug, "id", "title", "shortdesc", "description")
+  ...     bug, "id", "title", "summary", "description", "name", "private")
   >>> bug.title = "new bug title"
   >>> bug_edited = SQLObjectModifiedEvent(
-  ...     bug, old_state, ["title", "shortdesc", "description"],
+  ...     bug, old_state, ["title", "summary", "description"],
   ...     user, request)
   >>> notify(bug_edited)
   >>> latest_activity = bug.activity[-1]
@@ -112,14 +114,17 @@ EVENT: bug gets assigned to a source package
   >>> latest_activity.whatchanged
   u'bug'
   >>> latest_activity.message
-  u'assigned to source package mozilla-firefox-dummy'
+  u'assigned to source package mozilla-firefox'
 
 EVENT: source package assignment edited
 
   >>> from canonical.lp.dbschema import BugTaskStatus
-  >>> edit_fields = ["sourcepackagename", "status", "priority", "severity"]
+  >>> edit_fields = [
+  ...     "distribution", "sourcepackagename", "binarypackagename",
+  ...     "status", "priority", "severity", "assignee"]
   >>> old_source_package_assignment = capture_state(
   ...     source_package_assignment, *edit_fields)
+  >>> directlyProvides(old_source_package_assignment, IDistroBugTask)
   >>> source_package_assignment.status = BugTaskStatus.ACCEPTED
   >>> source_package_assignment_edited = SQLObjectModifiedEvent(
   ...     source_package_assignment, old_source_package_assignment,
@@ -127,7 +132,7 @@ EVENT: source package assignment edited
   >>> notify(source_package_assignment_edited)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
-  u'mozilla-firefox-dummy: status'
+  u'mozilla-firefox: status'
   >>> latest_activity.oldvalue == BugTaskStatus.NEW.title
   True
   >>> latest_activity.newvalue == BugTaskStatus.ACCEPTED.title
@@ -147,8 +152,10 @@ EVENT: bug gets assigned to an upstream product
 
 EVENT: upstream product assignment edited
 
-  >>> edit_fields = ["product", "status", "priority", "severity"]
+  >>> edit_fields = [
+  ...     "product", "status", "priority", "severity", "milestone", "assignee"]
   >>> old_product_assignment = capture_state(product_assignment, *edit_fields)
+  >>> directlyProvides(old_product_assignment, IUpstreamBugTask)
   >>> product_assignment.status = BugTaskStatus.REJECTED
   >>> product_assignment_edited = SQLObjectModifiedEvent(
   ...     product_assignment, old_product_assignment, edit_fields, user,
@@ -179,7 +186,7 @@ EVENT: source package infestation gets documented
   >>> latest_activity.whatchanged
   u'bug'
   >>> latest_activity.message
-  u'added infestation of package release mozilla-firefox-dummy 0.9'
+  u'added infestation of package release mozilla-firefox 0.9'
 
 EVENT: source package infestation edited
 
@@ -192,7 +199,7 @@ EVENT: source package infestation edited
   >>> notify(package_infestation_edited)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
-  u'mozilla-firefox-dummy 0.9: infestationstatus'
+  u'mozilla-firefox 0.9: infestationstatus'
   >>> latest_activity.oldvalue == BugInfestationStatus.AFFECTED.title
   True
   >>> latest_activity.newvalue == BugInfestationStatus.VICTIMIZED.title

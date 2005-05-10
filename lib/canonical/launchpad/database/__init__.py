@@ -1,8 +1,5 @@
-#
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-# first the real ones
-#
 from canonical.launchpad.database.milestone import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.product import *
@@ -20,9 +17,16 @@ from canonical.launchpad.database.bugattachment import *
 from canonical.launchpad.database.bugextref import *
 from canonical.launchpad.database.cveref import *
 from canonical.launchpad.database.bugtracker import *
-from canonical.launchpad.database.sourcesource import *
+# from canonical.launchpad.database.sourcesource import *
 from canonical.launchpad.database.potemplatename import *
 from canonical.launchpad.database.pofile import *
+from canonical.launchpad.database.potemplate import *
+from canonical.launchpad.database.potmsgset import *
+from canonical.launchpad.database.pomsgid import *
+from canonical.launchpad.database.pomsgidsighting import *
+from canonical.launchpad.database.pomsgset import *
+from canonical.launchpad.database.potranslation import *
+from canonical.launchpad.database.potranslationsighting import *
 from canonical.launchpad.database.archarchive import *
 from canonical.launchpad.database.archbranch import *
 from canonical.launchpad.database.archchangeset import *
@@ -62,5 +66,5 @@ from canonical.launchpad.database.codeofconduct import *
 from canonical.launchpad.database.distrotool import *
 from canonical.launchpad.database.component import *
 from canonical.launchpad.database.section import *
-
+from canonical.launchpad.database.vpoexport import *
 

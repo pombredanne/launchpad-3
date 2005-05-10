@@ -16,6 +16,7 @@ from zope.app.form.utility import setUpEditWidgets, applyWidgetsChanges, \
 from zope.app.form.browser.submit import Update
 from zope.app.form.interfaces import WidgetsError
 from zope.event import notify
+from zope.interface import providedBy, directlyProvides
 
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent, \
     SQLObjectToBeModifiedEvent
@@ -65,10 +66,21 @@ class SQLObjectEditView(EditView):
                 class Snapshot:
                     pass
                 content_before_modification = Snapshot()
-                for name in self.schema.names():
-                    setattr(
-                        content_before_modification,
-                        name, getattr(content, name))
+                for name in self.schema.names(all=True):
+                    #XXX: Need to check if the attribute exists, since
+                    #     Person doesn't provides all attributes in
+                    #     IPerson. -- Bjorn Tillenius, 2005-04-20
+                    if hasattr(content, name):
+                        setattr(
+                            content_before_modification,
+                            name, getattr(content, name))
+                # transfer the provided interfaces to the Snapshot
+                # because there are some places where the provided
+                # interfaces are important (e.g. get_task_delta
+                # ensures that the tasks it's deltaing provide
+                # compatible interfaces.)
+                directlyProvides(
+                    content_before_modification, providedBy(content))
 
                 changed = applyWidgetsChanges(self, self.schema,
                     target=content, names=self.fieldNames)

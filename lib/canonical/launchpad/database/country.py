@@ -1,18 +1,15 @@
-# Zope
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['Country', 'CountrySet']
+
 from zope.interface import implements
 
-# SQL imports
-from sqlobject import StringCol
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
+from sqlobject import StringCol, RelatedJoin
 
 from canonical.launchpad.interfaces import ICountry, ICountrySet
-
 from canonical.database.sqlbase import SQLBase
 
-
-#
-# CONTENT CLASSES
-#
 
 class Country(SQLBase):
     """A country."""
@@ -37,20 +34,18 @@ class Country(SQLBase):
                             intermediateTable='SpokenIn')
 
 
-class CountrySet(object):
+class CountrySet:
     """A set of countries"""
 
     implements(ICountrySet)
 
     def __getitem__(self, iso3166code2):
-        try:
-            return Country.selectBy(iso3166code2=iso3166code2)[0]
-        except IndexError:
-            # Convert IndexError to KeyErrors to get Zope's NotFound page
-            raise KeyError, id
+        country = Country.selectOneBy(iso3166code2=iso3166code2)
+        if country is None:
+            raise KeyError(iso3166code2)
+        return country
 
     def __iter__(self):
         for row in Country.select():
             yield row
-
 

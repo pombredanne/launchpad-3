@@ -29,11 +29,6 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
-        layer="canonical.launchpad.layers.BazaarLayer"
-        name="+bazaar-index" />
-
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IProject"
         layer="canonical.launchpad.layers.RosettaLayer"
         name="+rosetta-index" />
 
@@ -48,9 +43,10 @@
         <browser:page name="+malone-index"
             template="../templates/project-bugs.pt"
             lp:url="malone/projects/$Project.name/" />
-        <browser:page name="+bazaar-index"
+        <browser:page
+            name="+branches"
             template="../templates/project-branches.pt"
-            lp:url="bazaar/upstream/$Project.name/" />
+            lp:url="/projects/$Project.name/+branches" />
         <browser:page
             name="+bounties"
             template="../templates/related-bounties.pt"
@@ -83,7 +79,7 @@
         for="canonical.launchpad.interfaces.IProject"
         schema="canonical.launchpad.interfaces.IProject"
         label="Edit Open Source Project Details:"
-        fields="displayname title shortdesc description homepageurl
+        fields="displayname title summary description homepageurl
                 wikiurl sourceforgeproject freshmeatproject"
         permission="launchpad.Edit"
         template="../templates/project-edit.pt"
@@ -95,7 +91,7 @@
         for="canonical.launchpad.interfaces.IProject"
         schema="canonical.launchpad.interfaces.IProject"
         label="Review Upstream Project Details:"
-        fields="name displayname title shortdesc description homepageurl
+        fields="name displayname title summary description homepageurl
                 wikiurl sourceforgeproject freshmeatproject owner active
                 reviewed"
         permission="launchpad.Admin"
@@ -108,7 +104,7 @@
         for="canonical.launchpad.interfaces.IProject"
         schema="canonical.launchpad.interfaces.IProduct"
         label="Add a Product to this Project"
-        fields="name displayname title shortdesc description homepageurl
+        fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
                 downloadurl owner"
         class="canonical.launchpad.browser.ProjectAddProductView"

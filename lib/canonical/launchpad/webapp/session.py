@@ -18,7 +18,8 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
 class LaunchpadSessionDataContainer(PersistentSessionDataContainer):
 
     def __init__(self):
-        self.timeout = 1 * 60 * 60
+        # The timeout is in seconds
+        self.timeout = 6 * 60 * 60
         self.resolution = 50*60
 
     def _getData(self):

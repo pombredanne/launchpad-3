@@ -16,6 +16,11 @@ Sample Person views a bug, which they're about to set private:
       <div class="portletBody">
           <div class="portletContent even">
   <BLANKLINE>
+              <h5>submitter:</h5>
+              <ul class="people">
+                  <li><a href="/people/name12">Sample Person</a></li>
+              </ul>
+  <BLANKLINE>
               <h5>maintainers:</h5>
   <BLANKLINE>
               <ul class="people">
@@ -46,6 +51,7 @@ Sample Person views a bug, which they're about to set private:
           </a><br />
           </div>
   <BLANKLINE>
+      </div>
       </div>
   ...
 
@@ -101,6 +107,11 @@ in the process.
       <div class="portletBody">
           <div class="portletContent even">
   <BLANKLINE>
+              <h5>submitter:</h5>
+              <ul class="people">
+                  <li><a href="/people/name12">Sample Person</a></li>
+              </ul>
+  <BLANKLINE>
               <h5>maintainers:</h5>
   <BLANKLINE>
               <ul class="people">
@@ -134,5 +145,6 @@ in the process.
           </a><br />
           </div>
   <BLANKLINE>
+      </div>
       </div>
   ...

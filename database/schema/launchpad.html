@@ -1664,7 +1664,7 @@ The version of the binary package. E.g. "1.0-2"</td>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>shortdesc</td>
+<td>summary</td>
 <td>text</td>
 <td><i>NOT NULL</i><br />
 <br />
@@ -3752,7 +3752,7 @@ A lowercase name uniquely identifying the bug</td>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>shortdesc</td>
+<td>summary</td>
 <td>text</td>
 <td></td>
 </tr>
@@ -5787,7 +5787,7 @@ public</a></p>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>shortdesc</td>
+<td>summary</td>
 <td>text</td>
 <td><i>NOT NULL</i></td>
 </tr>
@@ -8794,7 +8794,7 @@ etc.</p>
 "#public.table.distribution">public.distribution.id</a></td>
 <td>distribution</td>
 <td>integer</td>
-<td><i>NOT NULL</i><br />
+<td><i>UNIQUE#1 NOT NULL</i><br />
 <br />
 The distribution which contains this distrorelease.</td>
 </tr>
@@ -8802,7 +8802,7 @@ The distribution which contains this distrorelease.</td>
 <td></td>
 <td>name</td>
 <td>text</td>
-<td><i>UNIQUE NOT NULL</i><br />
+<td><i>UNIQUE#1 NOT NULL</i><br />
 <br />
 The unique name of the distrorelease. This is a short name in lower
 case and would be used in sources.list configuration and in
@@ -8900,7 +8900,7 @@ uploads and generating archives for this distro release</td>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>shortdesc</td>
+<td>summary</td>
 <td>text</td>
 <td><i>NOT NULL</i></td>
 </tr>
@@ -17472,7 +17472,7 @@ with this product.</td>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>shortdesc</td>
+<td>summary</td>
 <td>text</td>
 <td><i>NOT NULL</i></td>
 </tr>
@@ -18572,7 +18572,7 @@ this field.</td>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>shortdesc</td>
+<td>summary</td>
 <td>text</td>
 <td><br />
 <br />
@@ -18936,7 +18936,7 @@ examples are "2.0", "3.0", "head" and "development".</td>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>shortdesc</td>
+<td>summary</td>
 <td>text</td>
 <td><i>NOT NULL</i><br />
 <br />
@@ -19275,7 +19275,7 @@ include being used as a key in URL traversal.</td>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>shortdesc</td>
+<td>summary</td>
 <td>text</td>
 <td><i>NOT NULL</i></td>
 </tr>
@@ -20050,7 +20050,7 @@ in the distribution, but may be more widely used.</p>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>binarypackageshortdesc</td>
+<td>binarypackagesummary</td>
 <td>text</td>
 <td></td>
 </tr>
@@ -20118,7 +20118,7 @@ SELECT packagepublishing.id
 , section.name AS section
 , binarypackage.id AS binarypackage
 , binarypackagename.name AS binarypackagename
-, binarypackage.shortdesc AS binarypackageshortdesc
+, binarypackage.summary AS binarypackagesummary
 , binarypackage.description AS binarypackagedescription
 , binarypackage."version" AS binarypackageversion
 , build.id AS build
@@ -23715,7 +23715,7 @@ public</a></p>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>shortdesc</td>
+<td>summary</td>
 <td>text</td>
 <td><i>NOT NULL</i></td>
 </tr>

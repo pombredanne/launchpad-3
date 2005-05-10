@@ -1,5 +1,7 @@
 # Copyright 2004 Canonical Ltd
 
+__metaclass__ = type
+
 from datetime import datetime, timedelta
 
 # zope imports
@@ -12,6 +14,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.launchpad.interfaces import IPersonSet, ILaunchBag
 from canonical.launchpad.interfaces import ITeamMembershipSet
 from canonical.launchpad.interfaces import ITeamMembershipSubset
+from canonical.launchpad.interfaces import ILaunchpadCelebrities
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
@@ -26,6 +29,9 @@ from canonical.database.sqlbase import flush_database_updates
 
 class TeamEditView(SQLObjectEditView):
 
+    viewsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-person-views.pt')
+
     actionsPortlet = ViewPageTemplateFile(
         '../templates/portlet-team-actions.pt')
 
@@ -34,10 +40,13 @@ class TeamEditView(SQLObjectEditView):
         self.team = self.context
 
 
-class TeamView(object):
+class TeamView:
     """A simple View class to be used in Team's pages where we don't have
     actions to process.
     """
+
+    viewsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-person-views.pt')
 
     actionsPortlet = ViewPageTemplateFile(
         '../templates/portlet-team-actions.pt')
@@ -48,7 +57,7 @@ class TeamView(object):
         self.team = self.context
 
     def activeMembersCount(self):
-        return len(self.context.approvedmembers + self.context.administrators)
+        return len(self.context.activemembers)
 
     def userIsOwner(self):
         """Return True if the user is the owner of this Team."""
@@ -193,7 +202,10 @@ class TeamLeaveView(TeamView):
         self.request.response.redirect('./')
 
 
-class TeamMembersView(TeamView):
+class TeamMembersView:
+
+    actionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-team-actions.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -205,14 +217,13 @@ class TeamMembersView(TeamView):
         return getUtility(ITeamMembershipSet).getTeamMembersCount(self.team.id)
 
     def activeMembersCount(self):
-        return len(self.team.approvedmembers + self.team.administrators)
+        return len(self.team.activemembers)
 
     def proposedMembersCount(self):
         return len(self.team.proposedmembers)
 
     def inactiveMembersCount(self):
-        return len(self.team.expiredmembers +
-                   self.team.deactivatedmembers)
+        return len(self.team.inactivemembers)
 
     def activeMemberships(self):
         return self.tmsubset.getActiveMemberships()
@@ -231,9 +242,6 @@ class ProposedTeamMembersEditView:
         self.team = context.team
         self.request = request
         self.user = getUtility(ILaunchBag).user
-
-    def allPeople(self):
-        return getUtility(IPersonSet).getAll()
 
     def processProposed(self):
         if self.request.method != "POST":
@@ -318,7 +326,7 @@ class AddTeamMemberView(AddView):
             team.addMember(member, approved, reviewer=self.user)
             self.addedMember = member
 
-class TeamMembershipEditView(object):
+class TeamMembershipEditView:
 
     monthnames = {1: 'January', 2: 'February', 3: 'March', 4: 'April',
                   5: 'May', 6: 'June', 7: 'July', 8: 'August', 9: 'September',
@@ -330,8 +338,9 @@ class TeamMembershipEditView(object):
         self.user = getUtility(ILaunchBag).user
         self.errormessage = ""
 
-    def userIsTeamOwner(self):
-        return self.user.inTeam(self.context.team.teamowner)
+    def userIsTeamOwnerOrLPAdmin(self):
+        return (self.user.inTeam(self.context.team.teamowner) or
+                self.user.inTeam(getUtility(ILaunchpadCelebrities).admin))
 
     def isActive(self):
         return self.context.status in [TeamMembershipStatus.APPROVED,
@@ -353,19 +362,38 @@ class TeamMembershipEditView(object):
     def isDeactivated(self):
         return self.context.status == TeamMembershipStatus.DEACTIVATED
 
+    def canChangeExpirationDate(self):
+        """Return True if the logged in user can change the expiration date of
+        this membership. Team administrators can't change the expiration date
+        of their own membership."""
+        if self.userIsTeamOwnerOrLPAdmin():
+            return True
+
+        if self.user.id == self.context.person.id:
+            return False
+        else:
+            return True
+
+    def membershipExpires(self):
+        """Return True if this membership is scheduled to expire one day."""
+        if self.context.dateexpires is None:
+            return False
+        else:
+            return True
+
     def _getExpirationDate(self):
         """Return a datetime with the expiration date selected on the form.
 
         Return None if the selected date was empty. Also raises ValueError if
         the date selected is invalid.
         """
+        if self.request.form.get('expires') == 'never':
+            return None
+
         year = int(self.request.form.get('year'))
         month = int(self.request.form.get('month'))
         day = int(self.request.form.get('day'))
-        if year or month or day:
-            return datetime(year, month, day)
-        else:
-            return None
+        return datetime(year, month, day)
 
     def _setMembershipData(self, status):
         """Set all data specified on the form, for this TeamMembership.
@@ -431,7 +459,7 @@ class TeamMembershipEditView(object):
                 status = TeamMembershipStatus.APPROVED
         else:
             if (self.request.form.get('admin') == 'yes' and 
-                self.userIsTeamOwner()):
+                self.userIsTeamOwnerOrLPAdmin()):
                 status = TeamMembershipStatus.ADMIN
 
         self._setMembershipData(status)

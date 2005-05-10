@@ -13,11 +13,17 @@ from zope.component import getService
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from sqlos.interfaces import IConnectionName
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, ZopelessTransactionManager
 from canonical.lp import initZopeless
 
 import sqlos
 from sqlos.connection import connCache
+
+__all__ = [
+    'LaunchpadTestSetup', 'LaunchpadTestCase',
+    'LaunchpadZopelessTestSetup',
+    'LaunchpadFunctionalTestSetup', 'LaunchpadFunctionalTestCase',
+    ]
 
 def _disconnect_sqlos():
     try:
@@ -66,20 +72,12 @@ class LaunchpadTestSetup(PgTestSetup):
     dbuser = 'launchpad'
     dbhost = 'localhost'
 
-    reset_db = True
-
-    def setUp(self):
-        super(LaunchpadTestSetup, self).setUp(LaunchpadTestSetup.reset_db)
-        LaunchpadTestSetup.reset_db = False
-
-    def tearDown(self):
-        if ConnectionWrapper.committed:
-            LaunchpadTestSetup.reset_db = True
-        super(LaunchpadTestSetup, self).tearDown(LaunchpadTestSetup.reset_db)
 
 class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
     txn = None
     def setUp(self):
+        assert ZopelessTransactionManager._installed is None, \
+                'Last test using Zopeless failed to tearDown correctly'
         super(LaunchpadZopelessTestSetup, self).setUp()
         LaunchpadZopelessTestSetup.txn = initZopeless(
                 dbname=self.dbname, dbuser=self.dbuser
@@ -87,7 +85,10 @@ class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
 
     def tearDown(self):
         LaunchpadZopelessTestSetup.txn.uninstall()
+        assert ZopelessTransactionManager._installed is None, \
+                'Failed to tearDown Zopeless correctly'
         super(LaunchpadZopelessTestSetup, self).tearDown()
+
 
 class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
     def setUp(self):
@@ -101,6 +102,7 @@ class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
         _disconnect_sqlos()
         super(LaunchpadFunctionalTestSetup, self).tearDown()
 
+
 class LaunchpadTestCase(unittest.TestCase):
     def setUp(self):
         LaunchpadTestSetup().setUp()
@@ -110,6 +112,7 @@ class LaunchpadTestCase(unittest.TestCase):
 
     def connect(self):
         return LaunchpadTestSetup().connect()
+
 
 class LaunchpadFunctionalTestCase(unittest.TestCase):
     def setUp(self):

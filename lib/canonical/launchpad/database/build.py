@@ -1,21 +1,20 @@
-# Python imports
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['Build', 'BuildSet', 'Builder', 'BuildQueue']
+
 from datetime import datetime
 
-# Zope imports
 from zope.interface import implements
 
 # SQLObject/SQLBase
-from sqlobject import StringCol, ForeignKey, DateTimeCol, BoolCol
+from sqlobject import StringCol, ForeignKey, DateTimeCol, BoolCol, IntCol
 
-from canonical.database.sqlbase import SQLBase, quote
-from canonical.launchpad.interfaces import IBuild, IBuilder, IBuildSet, \
-                                           IBuildQueue
-from canonical.lp.dbschema import EnumCol
-from canonical.lp.dbschema import BuildStatus
+from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.launchpad.interfaces import \
+    IBuild, IBuilder, IBuildSet, IBuildQueue
+from canonical.lp.dbschema import EnumCol, BuildStatus
 
-#
-#
-#
 
 class Build(SQLBase):
     implements(IBuild)
@@ -28,8 +27,7 @@ class Build(SQLBase):
     distroarchrelease = ForeignKey(dbName='distroarchrelease', 
                                    foreignKey='DistroArchRelease', 
                                    notNull=True)
-    buildstate = EnumCol(dbName='buildstate', notNull=True,
-                         schema=BuildStatus)
+    buildstate = EnumCol(dbName='buildstate', notNull=True, schema=BuildStatus)
     datebuilt = DateTimeCol(dbName='datebuilt')
     buildduration = DateTimeCol(dbName='buildduration')
     buildlog = ForeignKey(dbName='buildlog', foreignKey='LibraryFileAlias')
@@ -40,15 +38,16 @@ class Build(SQLBase):
                                       foreignKey='SourcePackageRelease', 
                                       notNull=True)
 
-class BuildSet(object):
+
+class BuildSet:
     implements(IBuildSet)
-    
+
     def getBuildBySRAndArchtag(self, sourcepackagereleaseID, archtag):
-        clauseTables = ('DistroArchRelease', )
-        query = ('Build.sourcepackagerelease = %i '
+        clauseTables = ['DistroArchRelease']
+        query = ('Build.sourcepackagerelease = %s '
                  'AND Build.distroarchrelease = DistroArchRelease.id '
                  'AND DistroArchRelease.architecturetag = %s'
-                 % (sourcepackagereleaseID, quote(archtag))
+                 % sqlvalues(sourcepackagereleaseID, archtag)
                  )
 
         return Build.select(query, clauseTables=clauseTables)
@@ -67,15 +66,16 @@ class Builder(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     builderok = BoolCol(dbName='builderok', notNull=True)
     failnotes = StringCol(dbName='failnotes')
-    
+
+
 class BuildQueue(SQLBase):
     implements(IBuildQueue)
     _table = "BuildQueue"
 
     build = ForeignKey(dbName='build', foreignKey='Build', notNull=True)
-    builder = ForeignKey(dbName='builder', foreignKey='Builder',
-                         notNull=False)
+    builder = ForeignKey(dbName='builder', foreignKey='Builder', notNull=False)
     created = DateTimeCol(dbName='created', notNull=True)
     buildstart = DateTimeCol(dbName='buildstart', notNull=False)
     logtail = StringCol(dbName='logtail', notNull=False)
+    lastscore = IntCol(dbName='lastscore', notNull=False)
 

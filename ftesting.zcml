@@ -5,6 +5,11 @@
     xmlns:sqlos="http://namespaces.sqlobject.org/sqlos">
 
     <include file="zopeapp.zcml" />
+    <!-- Session machinery -->
+    <include file="zopeappsession.zcml" />
+
+    <!-- Browser Configurations -->
+    <include file="zopeappbrowser.zcml" />
 
     <include package="canonical" />
 
@@ -15,6 +20,5 @@
     <includeOverrides file="override-configure-testing.zcml" />
 
     <include file="securitypolicy.zcml" />
-    <include file="principals.zcml" />
 
 </configure>

@@ -1,32 +1,41 @@
 
+Make sure we can see the productseries edit page.
 
   >>> print http(r"""
-  ... GET /doap/projects/mozilla/firefox/+series/1.0/+edit HTTP/1.1
+  ... GET /products/firefox/+series/1.0/+edit HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.7,af;q=0.3
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Referer: http://localhost:9000/doap/projects/mozilla/firefox/+series/1.0
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
   ...
-      <h1>Edit ...
-      Release Series Details</h1>
+      <title>Edit
+        Mozilla Firefox
+        1.0 Details
+      </title>
   ...
+
+
+Post the form with updated ProductSeries details for displayname, summary
+and fileroot / fileglob.
 
 
   >>> print http(r"""
-  ... POST /doap/projects/mozilla/firefox/+series/1.0/+edit HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 236
+  ... POST /products/firefox/+series/1.0/+edit HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.7,af;q=0.3
+  ... Content-Length: 361
   ... Content-Type: application/x-www-form-urlencoded
-  ... Referer: http://localhost:9000/doap/projects/mozilla/firefox/+series/1.0/+edit
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/products/firefox/+series/1.0/+edit
   ... 
-  ... displayname=1.0+Stable+Releases&shortdesc=This+is+the+1.0+release+series+of+Mozilla+Firefox.+The+1.0+series+is+the+first+%22stable%22+branch+that+is+considered+suitable+for+very+widespread+end-user+desktop+adoption.&Update=Update+Series""")
+  ... displayname=1.0+Stable+Releases&summary=The+1.0+branch+of+the+Mozilla+web+browser.+Currently%2C+this+is+the+%22stable%22+branch+of+Mozilla%2C+and+all+stable+releases+are+made+off+this+branch.&releaseroot=http%3A%2F%2Fftp.mozilla.org%2Fpub%2Fmozilla.org%2Fmozilla%2Freleases%2Fmozilla1.0%2Fsrc%2F&releasefileglob=mozilla-source-1.0*.tar.gz&Update=Update+Series""")
   HTTP/1.1 303 See Other
-  ...
+  Content-Length: ...
   Content-Type: text/html;charset=utf-8
-  Location: http://localhost:9000/doap/projects/mozilla/firefox/+series/1.0
+  Location: http://localhost:9000/products/firefox/+series/1.0
+  <BLANKLINE>
   ...
-      <h1>Edit ...
-      Release Series Details</h1>
-  ...
+
+

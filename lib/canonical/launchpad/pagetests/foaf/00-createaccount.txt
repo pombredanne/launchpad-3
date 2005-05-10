@@ -17,7 +17,7 @@
   ... POST /+register HTTP/1.1
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... email=ab&submit_registration=Register""")
+  ... loginpage_email=ab&loginpage_submit_registration=Register""")
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
@@ -33,7 +33,7 @@
   ... POST /+register HTTP/1.1
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... email=foo.bar%40canonical.com&submit_registration=Register""")
+  ... loginpage_email=foo.bar%40canonical.com&loginpage_submit_registration=Register""")
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
@@ -48,7 +48,7 @@
   ... POST /+register HTTP/1.1
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... email=foo%40baz.com&submit_registration=Register""")
+  ... loginpage_email=foo%40baz.com&loginpage_submit_registration=Register""")
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8

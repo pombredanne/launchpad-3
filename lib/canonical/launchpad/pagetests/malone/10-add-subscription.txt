@@ -83,6 +83,5 @@ And sees that sabdfl has been added as a subscriber on this bug:
                     <a href="/malone/bugs/2/people/6/+edit">...</a>
                   </li>
   ...
-      <h2>
-        Description
+      <h1>Bug Description and Discussion</h1>
   ...

@@ -9,34 +9,81 @@ import os
 from canonical.functional import FunctionalDocFileSuite
 import sqlos.connection
 from canonical.launchpad.ftests.harness import \
-        LaunchpadTestSetup, _disconnect_sqlos, _reconnect_sqlos
+        LaunchpadTestSetup, LaunchpadZopelessTestSetup, \
+        _disconnect_sqlos, _reconnect_sqlos
 from zope.testing.doctest import DocFileSuite
-from zope.app import zapi
+from zope.component import getUtility
 from canonical.launchpad.interfaces import ILaunchBag
-from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests import login, ANONYMOUS
+from canonical.librarian.ftests.harness import LibrarianTestSetup
 
 here = os.path.dirname(os.path.realpath(__file__))
+
+def setGlobs(test):
+    test.globs['ANONYMOUS'] = ANONYMOUS
+    test.globs['login'] = login
+    test.globs['ILaunchBag'] = ILaunchBag
+    test.globs['getUtility'] = getUtility
 
 def setUp(test):
     sqlos.connection.connCache = {}
     LaunchpadTestSetup().setUp()
     _reconnect_sqlos()
-    test.globs['login'] = login
-    test.globs['ILaunchBag'] = ILaunchBag
-    test.globs['zapi'] = zapi
+    setGlobs(test)
 
 def tearDown(test):
     _disconnect_sqlos()
     sqlos.connection.connCache = {}
     LaunchpadTestSetup().tearDown()
 
+def poExportSetUp(test):
+    sqlos.connection.connCache = {}
+    LaunchpadZopelessTestSetup(dbuser='poexport').setUp()
+    setGlobs(test)
+
+def poExportTearDown(test):
+    LaunchpadZopelessTestSetup().tearDown()
+
+def librarianSetUp(test):
+    setUp(test)
+    login(ANONYMOUS)
+    LibrarianTestSetup().setUp()
+
+def librarianTearDown(test):
+    LibrarianTestSetup().tearDown()
+    tearDown(test)
+
 # Files that have special needs can construct their own suite
 special = {
 
     # No setup or teardown at all, since it is demonstrating these features
     'testing.txt': DocFileSuite('../doc/testing.txt'),
-    'porevisiondate.txt': DocFileSuite('../doc/porevisiondate.txt')
+    'poparser.txt': DocFileSuite('../doc/poparser.txt'),
 
+    # POExport stuff is Zopeless and connects as a different database user.
+    # poexport-distrorelease-date-tarball.txt is excluded, since it adds data
+    # to the database as well.
+    'poexport.txt': FunctionalDocFileSuite(
+            '../doc/poexport.txt',
+            setUp=poExportSetUp, tearDown=poExportTearDown
+            ),
+    'poexport-template-tarball.txt': FunctionalDocFileSuite(
+            '../doc/poexport-template-tarball.txt',
+            setUp=poExportSetUp, tearDown=poExportTearDown
+            ),
+    'poexport-distrorelease-tarball.txt': FunctionalDocFileSuite(
+            '../doc/poexport-distrorelease-tarball.txt',
+            setUp=poExportSetUp, tearDown=poExportTearDown
+            ),
+
+    'librarian.txt': FunctionalDocFileSuite(
+            '../doc/librarian.txt',
+            setUp=librarianSetUp, tearDown=librarianTearDown
+            ),
+    'message.txt': FunctionalDocFileSuite(
+            '../doc/message.txt',
+            setUp=librarianSetUp, tearDown=librarianTearDown
+            ),
     }
 
 def test_suite():

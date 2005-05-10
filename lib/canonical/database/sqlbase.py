@@ -6,8 +6,8 @@ from datetime import datetime, date, time
 from sqlobject import connectionForURI
 import thread, warnings
 
-__all__ = ['SQLBase', 'quote', 'quote_like', 'ZopelessTransactionManager',
-           'ConflictingTransactionManagerError']
+__all__ = ['SQLBase', 'quote', 'quote_like', 'sqlvalues',
+           'ZopelessTransactionManager', 'ConflictingTransactionManagerError']
 
 class LaunchpadStyle(Style):
     """A SQLObject style for launchpad. 
@@ -116,7 +116,7 @@ class _ZopelessConnectionDescriptor(object):
         # Explicitly close all connections we opened.
         descriptor = cls.sqlClass.__dict__.get('_connection')
         for trans in descriptor.transactions.itervalues():
-            trans.rollback() 
+            trans.rollback()
             trans._dbConnection._connection.close()
 
         # Remove the _connection descriptor.  This assumes there was no
@@ -136,86 +136,10 @@ class ConflictingTransactionManagerError(Exception):
 
 class ZopelessTransactionManager(object):
     """Object to use in scripts and tests if you want transactions.
+
     This behaviour used to be in SQLBase, but as more methods and
     attributes became needed, a new class was created to avoid
     namespace pollution.
-
-    Quick & dirty doctest:
-    XXX: DISABLED!  This should be turned into a functional test.
-
-    #>>> from canonical.lp import dbname
-    #>>> ztm = ZopelessTransactionManager('postgres:///' + dbname)
-    #
-    #The _connection attribute of SQLBase should now be a descriptor that returns
-    #sqlobject.dbconnection.Transaction instances.
-    #
-    #>>> from sqlobject.dbconnection import Transaction
-    #>>> t1 = SQLBase._connection
-    #>>> isinstance(t1, Transaction)
-    #True
-    #
-    #And it should give the same connection to the same thread over multiple
-    #accesses.
-    #
-    #>>> t2 = SQLBase._connection
-    #>>> t1 is t2
-    #True
-    #
-    #And different in different threads:
-    #
-    #>>> from threading import Thread, Lock, Event
-    #>>> l = []
-    #>>> t = Thread(target=lambda: l.append(SQLBase._connection))
-    #>>> t.start()
-    #>>> t.join()
-    #>>> l[0] is not t1
-    #True
-
-    XXX: This bit is overly dependent on the db...
-    Show that concurrent transactions in different threads work correctly
-    #>>> from sqlobject import StringCol
-    #>>> class TestPerson(SQLBase):
-    #...     _table = 'Person'
-    #...     displayname = StringCol()
-    #...     givenname = StringCol()
-    #...
-    #>>> mark = TestPerson.selectBy(displayname='Mark Shuttleworth')[0]
-    #>>> mark.id == 1
-    #True
-    #>>> mark.givenname = 'Markk'
-    #>>> mark.givenname = 'Mark'
-    #>>> ztm.commit()
-    #>>> ztm.commit()
-    
-    #>>> event = Event()
-    #>>> event2 = Event()
-    #>>> def foo(TestPerson=TestPerson, ztm=ztm, event=event, event2=event2):
-    #...     andrew = TestPerson.selectBy(displayname='Andrew Bennetts')[0]
-    #...     
-    #...     andrew.givenname = 'Andreww'
-    #...     andrew.givenname = 'Andrew'
-    #...     event.set()
-    #...     event2.wait()
-    #...     ztm.commit()
-    #...
-    #>>> t = Thread(target=foo)
-    #>>> t.start()
-    #>>> event.wait()
-    #>>> mark = TestPerson.selectBy(displayname='Mark Shuttleworth')[0]
-    #>>> mark.id == 1
-    #True
-    #>>> mark.givenname = 'Markk'
-    #>>> mark.givenname = 'Mark'
-    #>>> ztm.commit()
-    #>>> event2.set()
-    #>>> 
-    #>>> t.join()
-
-    Cleanup -- make sure this doctest leaves things in the same state it found
-    them.
-
-    #>>> ztm.uninstall()
-
     """
 
     _installed = None
@@ -265,7 +189,7 @@ class ZopelessTransactionManager(object):
         # We delete self.sqlClass to make sure this instance isn't still
         # used after uninstall was called, which is a little bit of a hack.
         self.manager.free(self.manager.get())
-        del self.sqlClass 
+        del self.sqlClass
         self.__class__._installed = None
 
     def _dm(self):
@@ -379,6 +303,47 @@ def quote_like(x):
         raise TypeError, 'Not a string (%s)' % type(x)
     return quote(x).replace('%', r'\\%').replace('_', r'\\_')
 
+def sqlvalues(*values, **kwvalues):
+    """Return a tuple of converted sql values for each value in some_tuple.
+
+    This safely quotes strings, or gives representations of dbschema items,
+    for example.
+
+    Use it when constructing a string for use in a SELECT.  Always use
+    %s as the replacement marker.
+
+      ('SELECT foo from Foo where bar = %s and baz = %s'
+       % sqlvalues(BugSeverity.CRITICAL, 'foo'))
+
+    >>> sqlvalues()
+    Traceback (most recent call last):
+    ...
+    TypeError: Use either positional or keyword values with sqlvalue.
+    >>> sqlvalues(1)
+    ('1',)
+    >>> sqlvalues(1, "bad ' string")
+    ('1', "'bad '' string'")
+
+    You can also use it when using dict-style substitution.
+
+    >>> sqlvalues(foo=23)
+    {'foo': '23'}
+
+    However, you cannot mix the styles.
+
+    >>> sqlvalues(14, foo=23)
+    Traceback (most recent call last):
+    ...
+    TypeError: Use either positional or keyword values with sqlvalue.
+
+    """
+    if (values and kwvalues) or (not values and not kwvalues):
+        raise TypeError(
+            "Use either positional or keyword values with sqlvalue.")
+    if values:
+        return tuple([quote(item) for item in values])
+    elif kwvalues:
+        return dict([(key, quote(value)) for key, value in kwvalues.items()])
 
 def flush_database_updates():
     """Flushes all pending database updates for the current connection.

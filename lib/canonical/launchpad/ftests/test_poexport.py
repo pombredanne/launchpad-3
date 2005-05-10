@@ -5,7 +5,7 @@ import unittest
 
 from canonical.launchpad.ftests.harness import LaunchpadTestCase
 from canonical.launchpad.database import Project, POTemplate, Product
-from canonical.rosetta.poexport import POExport
+from canonical.launchpad.components.poexport import POExport
 from canonical.lp import initZopeless
 
 # TODO: There is a duplicate line added to make the tests pass temporarily

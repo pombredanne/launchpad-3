@@ -1,21 +1,21 @@
-# Zope imports
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['Mirror']
+
 from zope.interface import implements
 
-# SQLObject/SQLBase
 from canonical.database.sqlbase import SQLBase
 from sqlobject import StringCol, ForeignKey, DateTimeCol, BoolCol
 
 from canonical.lp.dbschema import EnumCol
 from canonical.lp.dbschema import MirrorFreshness
 
-#
-#
-#
 
 class Mirror(SQLBase):
     implements(IMirror)
     _table = 'Mirror'
-    
+
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
     baseurl = StringCol(dbName='baseurl', notNull=True)
     country = ForeignKey(foreignKey='Country', dbName='country', notNull=True)

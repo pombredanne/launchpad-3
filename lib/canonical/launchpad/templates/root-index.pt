@@ -27,9 +27,9 @@
 </head>
 
 <body>
+
  
   <div metal:fill-slot="main">
-
     <h1>Welcome to The Launchpad!</h1>
 
     <p>The Launchpad is a collection of services for projects in the open

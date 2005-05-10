@@ -35,7 +35,7 @@
         for="canonical.launchpad.interfaces.IPOTemplate"
         permission="zope.Public"
         template="../templates/potemplate-index.pt"
-        class="canonical.rosetta.browser.ViewPOTemplate"
+        class="canonical.launchpad.browser.ViewPOTemplate"
         lp:url="Rosetta/products/$Product.name/$POTemplate.name/+index"
         />
 
@@ -44,7 +44,7 @@
         for="canonical.launchpad.interfaces.IPOTemplate"
         permission="launchpad.Edit"
         template="../templates/potemplate-edit.pt"
-        class="canonical.rosetta.browser.ViewPOTemplate"
+        class="canonical.launchpad.browser.ViewPOTemplate"
         lp:url="Rosetta/products/$Product.name/$POTemplate.name/+edit"
         />
 
@@ -52,18 +52,24 @@
         name="+translate"
         for="canonical.launchpad.interfaces.IPOTemplate"
         permission="launchpad.AnyPerson"
-        template="../templates/potemplate-translate.pt"
-        class="canonical.rosetta.browser.TranslatePOTemplate"
-        lp:url="Rosetta/products/$Product.name/$POTemplate.name/+translate"
+        class="canonical.launchpad.browser.POTemplateTranslateView"
+        attribute="__call__"
+        />
+
+    <browser:page
+        name="+chart"
+        for="canonical.launchpad.interfaces.IPOTemplate"
+        permission="zope.Public"
+        template="../templates/potemplate-chart.pt"
+        class="canonical.launchpad.browser.ViewPOTemplate"
         />
 
     <browser:page
         name="+tar-export"
         for="canonical.launchpad.interfaces.IPOTemplate"
         permission="zope.Public"
-        class="canonical.rosetta.browser.POTemplateTarExport"
+        class="canonical.launchpad.browser.POTemplateTarExport"
         attribute="__call__"
-        lp:url="Rosetta/products/$Product.name/$POTemplate.name/+translate"
         />
 
     <content class="canonical.launchpad.database.POTemplateSet">

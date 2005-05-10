@@ -34,15 +34,6 @@
         Distribution Summary
     </p>
 
-    <p tal:content="context/description">
-        Distribution description
-    </p>
-
-    <h2>Releases:</h2>
-
-    <p><span tal:replace="context/title" /> has the following
-    releases under development, or released:</p>
-
     <table width="100%" class="listing rowNavigation">
         <tr>
             <th>Release</th>
@@ -67,6 +58,10 @@
     <i tal:condition="not: context/releases">
       &nbsp&nbsp&nbsp No Releases Yet.
     </i>
+
+    <p tal:content="context/description">
+        Distribution description
+    </p>
 
 </div>
 

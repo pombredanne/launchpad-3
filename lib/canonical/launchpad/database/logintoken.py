@@ -1,18 +1,17 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
+__all__ = ['LoginToken', 'LoginTokenSet']
 
 from datetime import datetime
 import random
 
-# Zope interfaces
 from zope.interface import implements
 
-# SQL imports
-from sqlobject import DateTimeCol, ForeignKey, StringCol
+from sqlobject import \
+    DateTimeCol, ForeignKey, StringCol, SQLObjectNotFound, AND
 from canonical.database.sqlbase import SQLBase
 
-# canonical imports
 from canonical.launchpad.interfaces import ILoginToken, ILoginTokenSet
 from canonical.lp.dbschema import LoginTokenType, EnumCol
 
@@ -31,26 +30,40 @@ class LoginToken(SQLBase):
 
     title = 'Launchpad Email Verification'
 
-class LoginTokenSet(object):
+
+class LoginTokenSet:
     implements(ILoginTokenSet)
 
     def __init__(self):
         self.title = 'Launchpad Email Verification System'
 
+    def get(self, id, default=None):
+        try:
+            return LoginToken.get(id)
+        except SQLObjectNotFound:
+            return default
+
+    def searchByEmailAndRequester(self, email, requester):
+        return LoginToken.select(AND(LoginToken.q.email==email,
+                                     LoginToken.q.requesterID==requester.id))
+
+    def deleteByEmailAndRequester(self, email, requester):
+        for token in self.searchByEmailAndRequester(email, requester):
+            token.destroySelf()
+
     def new(self, requester, requesteremail, email, tokentype):
-        """See ILoginTokenSet"""
+        """See ILoginTokenSet."""
         characters = '0123456789bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ'
         length = 20
         token = ''.join([random.choice(characters) for count in range(length)])
-        return LoginToken(requester=requester, requesteremail=requesteremail,
-                          email=email, token=token, tokentype=tokentype,
-                          created=datetime.utcnow())
+        reqid = getattr(requester, 'id', None)
+        return LoginToken(requesterID=reqid, requesteremail=requesteremail,
+                email=email, token=token, tokentype=tokentype,
+                created=datetime.utcnow())
 
     def __getitem__(self, tokentext):
-        results = LoginToken.selectBy(token=tokentext)
-        if results.count() > 0:
-            assert results.count() == 1
-            return results[0]
-        else:
+        token = LoginToken.selectOneBy(token=tokentext)
+        if token is None:
             raise KeyError, tokentext
+        return token
 

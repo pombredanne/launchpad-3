@@ -22,6 +22,7 @@
     <div tal:replace="structure view/branchesPortlet" />
     <div tal:condition="python:request.principal and request.principal.id == context.owner.id"
          tal:replace="structure view/milestonePortlet" />
+    <div tal:replace="structure view/packagesPortlet" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
@@ -32,93 +33,54 @@
 
 <div metal:fill-slot="main" class="documentContent">
 
-    <h1><span tal:replace="context/title">$Product.title</span></h1>
+  <h1><span tal:replace="context/title">$Product.title</span></h1>
 
-    <div class="documentDescription" tal:content="context/shortdesc">
-        $Product.shortdesc goes here. This should be quite short,
-        just a single paragraph of text really, giving the product
-        highlights.
-    </div>
+  <div class="documentDescription" tal:content="context/summary">
+    $Product.summary goes here. This should be quite short,
+    just a single paragraph of text really, giving the product
+    highlights.
+  </div>
 
-    <div tal:content="context/description">
-        $Product.description goes here. This should be a longer piece of
-        text, up to three paragraphs in length, which gives much more
-        detailed information about the open source product in question.
-        Ideally, this text is formatted using some formatting convention
-        which we have not yet determined (HTML, reStructuredText or
-        something else, for example).
-    </div>
+  <div tal:content="context/description">
+    $Product.description goes here. This should be a longer piece of
+    text, up to three paragraphs in length, which gives much more
+    detailed information about the open source product in question.
+    Ideally, this text is formatted using some formatting convention
+    which we have not yet determined (HTML, reStructuredText or
+    something else, for example).
+  </div>
 
-    <div tal:condition="context/sourcesources">
+  <div tal:condition="context/serieslist">
 
-        <h2>Revision Control System</h2>
+    <h2>Branches and Releases</h2>
 
-        <dl tal:repeat="source context/sourcesources">
-            <dt><a tal:attributes="href python: string('+sources/') + source.name"
-                    tal:content="source/title">Sync Title</a>&nbsp;<a
-                    tal:condition="source/canChangeProduct"
-                    tal:attributes="href python: string('+sources/') + source.name">Assign to product</a></dt>
-            <dd tal:content="source/description"></dd>
-        </dl>
+    <p>We list below each of the known
+    branches of <span tal:replace="context/displayname">displayname</span>
+    and its releases:</p>
 
-    </div>
+    <div tal:repeat="series context/serieslist">
 
-    <div tal:condition="context/sourcepackages">
-
-        <h2>Distro Packages</h2>
-
-        <p>Here you can see distribution packages for this upstream product.</p>
-
-		<ul tal:repeat="package context/sourcepackages">
-			<li><a tal:attributes="href
-            string:/distros/${package/distribution/name}/${package/distrorelease/name}/+sources/${package/name}">
-            <span
-            tal:replace="package/distribution/name">distribution</span>
-            (<span
-            tal:replace="package/distrorelease/name">distrorelease</span>)
-            <span tal:replace="package/name">name</span>
-            </a></li>
-		</ul>
-
-    </div>
-
-    <div tal:condition="context/serieslist">
-
-        <h2>Release Series (or "Branches")</h2>
-
-        <p>Most open source projects issue releases as part of a "series".
-        For example, some releases are from their "unstable" or "head" or
-        "cvs" or "dev" series. Some are from a versioned series, like the "2.0"
-        series might have releases numbered "2.0.0", "2.0.1" and
-        "2.0.2".</p>
-
-        <ul tal:repeat="series context/serieslist">
-
-            <li><a
-                tal:content="series/name"
-	            tal:attributes="href python:string('+series/'+series.name)">$Series.name
-	            </a></li>
+      <p>Branch: <strong tal:content="series/name">seriesname</strong>:
+      <span tal:replace="series/summary">A summary of the series
+      details and status.</span>
+      [&nbsp;<a tal:attributes="href
+      string:+series/${series/name}">Branch&nbsp;Details...</a>&nbsp;]
+      </p>
             
-        </ul>
-    </div>
-
-    <div tal:condition="context/releases">
-
-        <h2>Releases of <span
-        tal:replace="context/displayname">$Product.displayname</span></h2>
-
-        <ol>
+      <ul>
         
-            <li tal:repeat="release context/releases">
-                <b><span tal:content="release/version">version</span></b>: 
-                "<span tal:content="release/title">title</span>"
-                [ <a href="" tal:attributes="href release/version">View</a>
-                ]<br />
-                <span tal:replace="release/shortdesc">feature summary</span></li>
+        <li tal:repeat="release series/releases">
+          <b><span tal:content="release/version">version</span></b>: 
+          "<span tal:content="release/title">title</span>"
+          [&nbsp;<a tal:attributes="href release/version">View</a>&nbsp;]<br />
+          <span tal:replace="release/summary">feature summary</span></li>
 
-        </ol>
+      </ul>
 
     </div>
+
+  </div>
+
 
 </div>
 

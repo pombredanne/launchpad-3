@@ -3,7 +3,7 @@ from zope.component import getUtility
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import IProductSet
-from canonical.lp.dbschema import SourceSourceStatus
+from canonical.lp.dbschema import ImportStatus
 
 class SourceSourceView(object):
     """Present a SourceSource table for a browser."""
@@ -14,14 +14,11 @@ class SourceSourceView(object):
         self.form = request.form
 
     def edit(self):
-        if not self.request.form.get("Update", None) == "Update Upstream Source":
+        if not self.request.form.get("Update", None)=="Update Upstream Source":
             return
         if not self.request.method == "POST":
             return
-        #
         # Extract the form data
-        #
-
         fields = ["title",
                   "description",
                   "cvsroot",
@@ -50,9 +47,8 @@ class SourceSourceView(object):
         product = self.form.get('product', None)
         if product and self.context.canChangeProduct():
             self.context.changeProduct(product)
-            newurl='/doap/products/' + self.context.product.name
+            newurl='/products/' + self.context.product.name
             self.request.response.redirect(newurl)
-
 
     def selectedProduct(self):
         return self.context.product.name # "/" + self.context.product.project.name
@@ -104,7 +100,7 @@ class SourceSourceSetView(object):
         if self.state == None:
             html += ' selected'
         html += '>Any</option>\n'
-        for enum in SourceSourceStatus.items:
+        for enum in ImportStatus.items:
             html += '<option value="'+str(enum.value)+'"'
             if self.state == enum.value:
                 html += ' selected'

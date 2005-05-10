@@ -99,7 +99,7 @@
 
         <ul>
           <li tal:repeat="package python:list(bn.currentBatch())">
-            <a tal:content="string: ${package/name} : ${package/shortdesc}"
+            <a tal:content="string: ${package/name} : ${package/summary}"
                  tal:attributes="href package/name">PACKAGE</a></li>
         </ul>
         <fieldset tal:condition="python:prev_url or next_url">
@@ -124,7 +124,6 @@
       </tal:block>
     </div>
   </tal:block>
-
 
   </div>
 

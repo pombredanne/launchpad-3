@@ -32,8 +32,8 @@
     <span tal:content="context/owner/displayname">(none supplied)</span>
     </div>
 
-    <div class="documentDescription" tal:content="context/shortdesc">
-        $BugTracker.shortdesc goes here. This should be quite short,
+    <div class="documentDescription" tal:content="context/summary">
+        $BugTracker.summary goes here. This should be quite short,
         just a single paragraph of text really, giving the BugTracker
         highlights.
     </div>

@@ -1,0 +1,29 @@
+Add a new comment:
+
+  >>> print http(r"""
+  ... POST /malone/bugs/5/+messages/+new HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 110
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Referer: http://localhost:9000/malone/bugs/5/
+  ... 
+  ... field.title=Re%3A+Firefox+install+instructions+should+be+complete&field.content=New+comment.&UPDATE_SUBMIT=Add""")
+  HTTP/1.1 303 See Other
+  ...
+     ...New comment...
+  ...
+
+ Add a new follow-up to a comment:
+
+  >>> print http(r"""
+  ... POST /malone/bugs/5/+messages/+new HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 112
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Referer: http://localhost:9000/malone/bugs/5/
+  ... 
+  ... field.title=Re%3A+Firefox+install+instructions+should+be+complete&field.content=New+follow-up.&UPDATE_SUBMIT=Add""")
+  HTTP/1.1 303 See Other
+  ...
+     ...New follow-up...
+  ...

@@ -44,7 +44,7 @@
         label="Change Bug Information"
         permission="launchpad.AnyPerson"
         template="../templates/bug-edit.pt"
-        fields="title shortdesc description private name"
+        fields="title summary description private name"
         lp:url="malone/bugs/$Bug.id/+edit">
         <browser:widget
            field="title"
@@ -70,7 +70,7 @@
         provides="zope.app.traversing.browser.interfaces.IAbsoluteURL">
     </view>
 
-    <!-- this is class BugSet -->
+    <!-- BugSet -->
     <content class="canonical.launchpad.database.BugSet">
         <allow interface="canonical.launchpad.interfaces.IBugSet" />
     </content>
@@ -159,4 +159,8 @@
             lp:url="malone/bugs/created/$Bug.owner/index" />
     </browser:pages>
 
+    <!-- BugDelta -->
+    <content class="canonical.launchpad.database.bug.BugDelta">
+        <allow interface="canonical.launchpad.interfaces.IBugDelta" />
+    </content>
 </configure>

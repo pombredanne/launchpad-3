@@ -37,7 +37,7 @@ class IBug(Interface):
             title=_('Title'), required=True,
             description=_("""A one-line summary of the problem"""),
             )
-    shortdesc = Summary(
+    summary = Summary(
             title=_('Summary'), required=False,
             description=_("""The bug summary is a single paragraph
             description that should capture the essence of the bug, where it
@@ -124,6 +124,34 @@ class IBug(Interface):
     def notificationRecipientAddresses():
         """Return the list of email addresses that recieve notifications.
         """
+
+
+class IBugDelta(Interface):
+    """The quantitative change made to a bug that was edited."""
+
+    bug = Attribute("The IBug, after it's been edited.")
+    bugurl = Attribute("The absolute URL to the bug.")
+    user = Attribute("The IPerson that did the editing.")
+
+    # fields on the bug itself
+    title = Attribute("The new bug title or None.")
+    summary = Attribute("The new bug summary or None.")
+    description = Attribute("The new bug description or None.")
+    private = Attribute("A dict with two keys, 'old' and 'new', or None.")
+    name = Attribute("A dict with two keys, 'old' and 'new', or None.")
+
+    # other things linked to the bug
+    external_reference = Attribute(
+        "A dict with two keys, 'old' and 'new', or None. Key values are "
+        "IBugExternalRefs.")
+    bugwatch = Attribute(
+        "A dict with two keys, 'old' and 'new', or None. Key values are "
+        "IBugWatch's.")
+    cveref = Attribute(
+        "A dict with two keys, 'old' and 'new', or None. Key values are "
+        "ICVERef's.")
+    bugtask_deltas = Attribute(
+        "A tuple of IBugTaskDelta, one IBugTaskDelta or None.")
 
 
 class IBugAddForm(IBug):

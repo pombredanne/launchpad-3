@@ -1,0 +1,156 @@
+
+This tests the ability to generate a tarball of PO files for a distribution
+release that only includes PO files which have been changed since a certain
+date.
+
+This is needed to make utilities work.
+
+  >>> login(ANONYMOUS)
+
+First we need to set up some data to test with, and for this we need some DB
+classes.
+
+  >>> from canonical.launchpad.database import Person
+  >>> from canonical.launchpad.database import DistroRelease
+  >>> from canonical.launchpad.database import SourcePackageName
+  >>> from canonical.launchpad.database import POTemplateName
+  >>> from canonical.launchpad.database import POTemplate
+
+Get hold of a person.
+
+  >>> person = Person.get(1)
+
+Get a distro release.
+
+  >>> release = DistroRelease.get(5)
+  >>> release.name
+  u'grumpy'
+
+Get a source package name to go with our distro release.
+
+  >>> spn = SourcePackageName.byName('evolution')
+
+Create a PO template and put a single message set in it.
+
+  >>> ptn = POTemplateName(name='test', translationdomain='test', title='test')
+  >>> template = POTemplate(
+  ...     potemplatename=ptn, distrorelease=release, sourcepackagename=spn,
+  ...     rawfile='', owner=person, title='test', rawimporter=person,
+  ...     languagepack=True)
+  >>> potmsgset = template.createMessageSetFromText(u'blah')
+  >>> potmsgset.sequence = 1
+
+Get some dates.
+
+  >>> import datetime
+  >>> d2000_01_01 = datetime.datetime(year=2000, month=1, day=1)
+  >>> d2000_01_02 = datetime.datetime(year=2000, month=1, day=2)
+  >>> d2000_01_03 = datetime.datetime(year=2000, month=1, day=3)
+
+Create a Spanish PO file, with a translation sighting last made active on
+2000/01/01.
+
+  >>> es = template.getOrCreatePOFile('es')
+  >>> pomsgset = es.createMessageSetFromMessageSet(potmsgset)
+  >>> sighting = pomsgset.makeTranslationSighting(person, u'blah (es)', 0)
+  >>> sighting.datelastactive = d2000_01_01
+
+Create a Welsh PO file, with a translation sighting last made active on
+2000/01/03.
+
+  >>> cy = template.getOrCreatePOFile('cy')
+  >>> pomsgset = cy.createMessageSetFromMessageSet(potmsgset)
+  >>> sighting = pomsgset.makeTranslationSighting(person, u'blah (cy)', 0)
+  >>> sighting.datelastactive = d2000_01_03
+
+Now we try to export the PO files we've just created.
+
+Set up the exporter.
+
+  >>> from canonical.launchpad.components.poexport import \
+  ...     DistroReleasePOExporter
+  >>> exporter = DistroReleasePOExporter(release)
+
+This is handy for examining the tar files that are generated.
+
+  >>> from canonical.launchpad.helpers import string_to_tarfile
+  >>> def examine_tarfile(tarfile):
+  ...     for member in tarfile.getmembers():
+  ...         print "| %5d | %s" % (member.size, member.name)
+
+First, export without a date limit: should get both PO files.
+
+  >>> tarfile = string_to_tarfile(exporter.export_tarball())
+  >>> examine_tarfile(tarfile)
+  |     0 | rosetta-grumpy/
+  |     0 | rosetta-grumpy/es/
+  |     0 | rosetta-grumpy/es/LC_MESSAGES/
+  |   721 | rosetta-grumpy/es/LC_MESSAGES/test.po
+  |     0 | rosetta-grumpy/cy/
+  |     0 | rosetta-grumpy/cy/LC_MESSAGES/
+  |   763 | rosetta-grumpy/cy/LC_MESSAGES/test.po
+  |     9 | rosetta-grumpy/timestamp.txt
+
+Check the files look OK.
+
+  >>> fh = tarfile.extractfile('rosetta-grumpy/es/LC_MESSAGES/test.po')
+  >>> print fh.read()
+  # Spanish translation for evolution
+  # Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
+  # This file is distributed under the same license as the evolution package.
+  # FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
+  #
+  #, fuzzy
+  msgid ""
+  msgstr ""
+  "Project-Id-Version: evolution\n"
+  "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
+  "POT-Creation-Date: ...\n"
+  "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+  "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+  "Language-Team: Spanish <es@li.org>\n"
+  "MIME-Version: 1.0\n"
+  "Content-Type: text/plain; charset=UTF-8\n"
+  "Content-Transfer-Encoding: 8bit\n"
+  "X-Rosetta-Version: 0.1\n"
+  "Plural-Forms: nplurals=2; plural=n != 1\n"
+  <BLANKLINE>
+  msgid "blah"
+  msgstr "blah (es)"
+
+  >>> fh = tarfile.extractfile('rosetta-grumpy/cy/LC_MESSAGES/test.po')
+  >>> print fh.read()
+  # Welsh translation for evolution
+  # Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
+  # This file is distributed under the same license as the evolution package.
+  # FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
+  #
+  #, fuzzy
+  msgid ""
+  msgstr ""
+  "Project-Id-Version: evolution\n"
+  "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
+  "POT-Creation-Date: ...\n"
+  "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+  "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+  "Language-Team: Welsh <cy@li.org>\n"
+  "MIME-Version: 1.0\n"
+  "Content-Type: text/plain; charset=UTF-8\n"
+  "Content-Transfer-Encoding: 8bit\n"
+  "X-Rosetta-Version: 0.1\n"
+  "Plural-Forms: nplurals=4; plural=n==1 ? 0 : n==2 ? 1 : (n != 8 || n != 11) ? "
+  "2 : 3\n"
+  <BLANKLINE>
+  msgid "blah"
+  msgstr "blah (cy)"
+
+Then, export with a date limit: we should only get the second PO file.
+
+  >>> tarfile = string_to_tarfile(exporter.export_tarball(d2000_01_02))
+  >>> examine_tarfile(tarfile)
+  |     0 | rosetta-grumpy/
+  |     0 | rosetta-grumpy/cy/
+  |     0 | rosetta-grumpy/cy/LC_MESSAGES/
+  |   763 | rosetta-grumpy/cy/LC_MESSAGES/test.po
+  |     9 | rosetta-grumpy/timestamp.txt
+

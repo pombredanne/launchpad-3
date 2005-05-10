@@ -16,32 +16,37 @@
 
 <body>
 
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/actionsPortlet" />
+</metal:rightportlets>
+
+
 <div metal:fill-slot="main">
 
-    <h1>"<span tal:replace="context/displayname">$PSeries.displayname</span>"
-    Release Series for: <span
-    tal:replace="context/product/title">$Product.title</span></h1>
+    <h1>Release Series Details</h1>
 
-    <div class="documentDescription" tal:content="context/shortdesc">
-        $ProductSeries.shortdesc goes here. This should be quite short,
+    <p class="documentDescription" tal:content="context/summary">
+        $ProductSeries.summary goes here. This should be quite short,
         just a single paragraph of text really, giving the status of
         this series of releases.
-    </div>
+    </p>
 
     <div>
-        [ <a href="+edit">Edit Series Details</a> ]
+        [ <a href="+review">Review Series Details</a> ]
     </div>
 
     <div tal:condition="context/releases">
-        <h2>Releases:</h2>
+      <h2>Releases:</h2>
 
-        <ol tal:repeat="release context/releases">
-            <li tal:content="release/version">$ProductRelease.version</li>
-        </ol>
+      <ul>
+        <span tal:repeat="release context/releases" tal:omit-tag>
+        <li>
+          <a tal:attributes="href release/version"
+             tal:content="release/version">$ProductRelease.version</a>
+        </li>
+        </span>
+      </ul>
 
-    </div>
-    <div>
-        [ <a href="+addrelease">Register a New Release</a> ]
     </div>
 
 </div>

@@ -19,7 +19,7 @@ class IDistroRelease(IHasOwner):
     title = Title(title=_("Title"), required=True,
         description=_("""The title of this release. It should be distinctive 
                       and designed to look good at the top of a page."""))
-    shortdesc = Summary(title=_("Summary"), required=True,
+    summary = Summary(title=_("Summary"), required=True,
         description=_("A brief summary of the highlights of this release. "
                       "It should be no longer than a single paragraph, up "
                       "to 200 words."))

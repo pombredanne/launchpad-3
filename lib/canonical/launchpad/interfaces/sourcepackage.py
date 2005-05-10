@@ -22,11 +22,6 @@ class ISourcePackage(Interface):
 
     title = Attribute("Title")
 
-    shortdesc = Attribute("Summary")
-    summary = Attribute("Summary")
-
-    description = Attribute("Description")
-
     format = Attribute("Source Package Format. This is the format of the "
                 "current source package release for this name in this "
                 "distribution or distrorelease. Calling this when there is "
@@ -51,7 +46,9 @@ class ISourcePackage(Interface):
                     "associated with this SourcePackage.")
 
     productseries = Attribute("The best guess we have as to the Launchpad "
-                    "ProductSeries for this Source Package.")
+                    "ProductSeries for this Source Package. Try find "
+                    "packaging information for this specific distrorelease "
+                    "then try parent releases and previous ubuntu releases.")
 
     pendingrelease = Attribute("The latest source package release with "
                 "a Publishing status of PENDING, if one exists for "
@@ -66,6 +63,15 @@ class ISourcePackage(Interface):
         "releases currently published in this distrorelease. This does "
         "not include proposed releases, only those actually published. ")
 
+    releases = Attribute("The full set of source package releases that "
+        "have been published in this distrorelease under this source "
+        "package name. The list should be sorted by version number.")
+    
+    releasehistory = Attribute("A list of all the source packages ever "
+        "published in this Distribution (across all distroreleases) with "
+        "this source package name. Note that the list spans "
+        "distroreleases, and should be sorted by version number.")
+
     def potemplates():
         """Returns the set of POTemplates that exist for this
         distrorelease/sourcepackagename combination."""
@@ -78,7 +84,7 @@ class ISourcePackage(Interface):
         bugs for each bug severity, as well as the total number of bugs
         associated with this sourcepackagename in this distribution."""
 
-    def getByVersion(version):
+    def getVersion(version):
         """Returns the SourcePackageRelease that had the name of this
         SourcePackage and the given version, and was published in this
         distribution. NB:
@@ -94,6 +100,12 @@ class ISourcePackage(Interface):
           across all distroreleases. This may turn out not to be true in
           other types of distribution, such as Gentoo.
         """
+
+    shouldimport = Attribute("""Whether we should import this or not.
+        By "import" we mean sourcerer analysis resulting in a manifest and a
+        set of Bazaar branches which describe the source package release.
+        The attribute is True or False.""")
+
 
 class ISourcePackageSet(Interface):
     """A set for ISourcePackage objects."""

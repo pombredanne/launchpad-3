@@ -9,6 +9,10 @@
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure view/importsPortlet" />
+</metal:leftportlets>
+
 <div metal:fill-slot="main">
 
     <h1>Welcome to The Bazaar!</h1>
@@ -19,8 +23,7 @@
     interoperable with the Bazaar revision control system.</p>
 
     <ul>
-        <li><a href="products">See upstream code branches</a></li>
-        <li><a href="sources">See revision control sources</a></li>
+        <li><a href="series">Manage Upstream Bazaar Imports</a></li>
     </ul>
 
 </div>

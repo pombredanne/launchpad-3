@@ -12,7 +12,7 @@ Edit a bug task's severity as user Foo Bar.
   ... -----------------------------19142096961497584187956613781
   ... Content-Disposition: form-data; name="field.sourcepackagename"
   ... 
-  ... mozilla-firefox-dummy
+  ... mozilla-firefox
   ... -----------------------------19142096961497584187956613781
   ... Content-Disposition: form-data; name="field.binarypackagename"
   ... 

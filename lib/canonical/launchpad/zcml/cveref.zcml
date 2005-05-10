@@ -29,6 +29,7 @@
         name="+new"
         schema="canonical.launchpad.interfaces.ICVERef"
         for="canonical.launchpad.interfaces.ICVERefSet"
+        class="canonical.launchpad.browser.addview.SQLObjectAddView"
         label="Add CVE Reference"
         fields="cveref title"
         content_factory="canonical.launchpad.database.CVERefFactory"
@@ -46,6 +47,7 @@
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.ICVERef"
+        class="canonical.launchpad.browser.editview.SQLObjectEditView"
         label="Modify CVE Reference"
         permission="launchpad.AnyPerson"
         template="../templates/default-editform.pt"

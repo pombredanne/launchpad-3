@@ -1,27 +1,20 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
+__all__ = ['SourcePackage', 'SourcePackageSet']
 
-# Python Imports
-from sets import Set
+import sets
 
-# Zope Imports
 from zope.interface import implements
 
-# SQL Imports
-from sqlobject import MultipleJoin
-from sqlobject import StringCol, ForeignKey, MultipleJoin, DateTimeCol, \
-     RelatedJoin
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import quote, sqlvalues
 
-# Launchpad Imports
-from canonical.lp.dbschema import EnumCol, \
-        SourcePackageFormat, BugTaskStatus, BugSeverity, \
-        PackagePublishingStatus
+from canonical.lp.dbschema import \
+    BugTaskStatus, BugSeverity, PackagePublishingStatus, PackagingType
 
 from canonical.launchpad.interfaces import ISourcePackage, ISourcePackageSet
-from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.bugtask import BugTask
+from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.vsourcepackagereleasepublishing import \
     VSourcePackageReleasePublishing
 from canonical.launchpad.database.sourcepackageindistro import \
@@ -30,9 +23,11 @@ from canonical.launchpad.database.sourcepackagerelease import \
     SourcePackageRelease
 from canonical.launchpad.database.sourcepackagename import \
     SourcePackageName
-from canonical.launchpad.database.pofile import POTemplate
+from canonical.launchpad.database.potemplate import POTemplate
+from sourcerer.deb.version import Version
 
-class SourcePackage(object):
+
+class SourcePackage:
     """A source package, e.g. apache2, in a distribution or distrorelease.
     This object implements the MagicSourcePackage specification. It is not a
     true database object, but rather attempts to represent the concept of a
@@ -47,23 +42,35 @@ class SourcePackage(object):
 
     implements(ISourcePackage)
 
-    def __init__(self, sourcepackagename, distrorelease=None):
+    def __init__(self, sourcepackagename, distrorelease=None,
+                 distribution=None):
         """SourcePackage requires a SourcePackageName and a
-        DistroRelease. These must be Launchpad database objects."""
+        DistroRelease or Distribution. These must be Launchpad
+        database objects. If you give it a Distribution, it will try to find
+        and use the Distribution.currentrelease, failing if that is not
+        possible.
+        """
+        if distribution and distrorelease:
+            raise TypeError(
+                'Cannot initialise SourcePackage with both distro and'
+                ' distrorelease.')
         self.sourcepackagename = sourcepackagename
         self.distrorelease = distrorelease
-        # set self.currentrelease based on current published sourcepackage
-        # with this name in the distrorelease. if none is published, leave
-        # self.currentrelease as None
-        try:
-            r = SourcePackageInDistro.selectBy(
-                    sourcepackagenameID=sourcepackagename.id,
-                    distroreleaseID = self.distrorelease.id)[0]
-            self.currentrelease = SourcePackageRelease.get(r.id)
-        except IndexError:
-            # there is no published package in that distrorelease with this
-            # name
+        if distribution:
+            self.distrorelease = distribution.currentrelease
+            if not self.distrorelease:
+                raise ValueError(
+                    "Distro '%s' has no current release" % distribution.name)
+        # Set self.currentrelease based on current published sourcepackage
+        # with this name in the distrorelease.  If none is published, leave
+        # self.currentrelease as None/
+        r = SourcePackageInDistro.selectOneBy(
+                sourcepackagenameID=sourcepackagename.id,
+                distroreleaseID = self.distrorelease.id)
+        if r is None:
             self.currentrelease = None
+        else:
+            self.currentrelease = SourcePackageRelease.get(r.id)
 
     def displayname(self):
         dn = ' the ' + self.sourcepackagename.name + ' source package in '
@@ -77,10 +84,6 @@ class SourcePackage(object):
         titlestr += ' ' + self.distrorelease.displayname
         return titlestr
     title = property(title)
-
-    shortdesc = "XXX this is a source package"
-
-    description = "XXX this is still a source package"
 
     def distribution(self):
         return self.distrorelease.distribution
@@ -102,13 +105,14 @@ class SourcePackage(object):
         """For the moment, the manifest of a SourcePackage is defined as the
         manifest of the .currentrelease of that SourcePackage in the
         distrorelease. In future, we might have a separate table for the
-        current working copy of the manifest for a source package."""
+        current working copy of the manifest for a source package.
+        """
         return self.currentrelease.manifest
     manifest = property(manifest)
 
     def maintainer(self):
-        querystr = "distribution = %i AND sourcepackagename = %i"
-        querystr %= (self.distribution, self.sourcepackagename)
+        querystr = "distribution = %s AND sourcepackagename = %s"
+        querystr %= sqlvalues(self.distribution, self.sourcepackagename)
         return Maintainership.select(querystr)
     maintainer = property(maintainer)
 
@@ -117,34 +121,54 @@ class SourcePackage(object):
         Clearly, this is wrong, because it will mix different flavors of a
         sourcepackage as well as releases of entirely different
         sourcepackages (say, from RedHat and Ubuntu) that have the same
-        name. Later, we want to use the PublishingMorgue table to get a
+        name. Later, we want to use the PublishingMorgue spec to get a
         proper set of sourcepackage releases specific to this
-        distrorelease."""
-        return SourcePackageRelease.select(
-                SourcePackageRelease.q.sourcepackagenameID == self.sourcepackagename.id,
-                orderBy=["version"]
-                )
+        distrorelease. Please update this when PublishingMorgue is
+        implemented. Note that the releases are sorted by debian
+        version number sorting.
+        """
+        ret = SourcePackageRelease.select(
+                      "sourcepackagename = %d" % self.sourcepackagename.id,
+                      orderBy=["version"],
+                      distinct=True)
+        # sort by debian version number
+        L = [(Version(item.version), item) for item in ret]
+        L.sort()
+        ret = [item for sortkey, item in L]
+        return ret
     releases = property(releases)
 
-    products = RelatedJoin('Product', intermediateTable='Packaging')
+    def releasehistory(self):
+        """This is just like .releases but it spans ALL the distroreleases
+        for this distribution. So it is a full history of all the releases
+        ever published in this distribution. Again, it needs to be fixed
+        when PublishingMorgue is implemented.
+        """
+        ret = SourcePackageRelease.select(
+                      "sourcepackagename = %d" % self.sourcepackagename.id,
+                      orderBy=["version"],
+                      distinct=True)
+        # sort by debian version number
+        L = [(Version(item.version), item) for item in ret]
+        L.sort()
+        ret = [item for sortkey, item in L]
+        return ret
+    releasehistory = property(releasehistory)
 
-    #
-    # Properties
-    #
     def name(self):
         return self.sourcepackagename.name
     name = property(name)
 
     def bugtasks(self):
         querystr = "distribution = %i AND sourcepackagename = %i"
-        querystr %= (self.distribution, self.sourcepackagename)
+        querystr %= sqlvalues(self.distribution, self.sourcepackagename)
         return BugTask.select(querystr)
     bugtasks = property(bugtasks)
 
     def potemplates(self):
         return POTemplate.selectBy(
-                    distroreleaseID=self.distrorelease.id,
-                    sourcepackagenameID=self.sourcepackagename.id)
+            distroreleaseID=self.distrorelease.id,
+            sourcepackagenameID=self.sourcepackagename.id)
     potemplates = property(potemplates)
 
     def potemplatecount(self):
@@ -152,27 +176,73 @@ class SourcePackage(object):
     potemplatecount = property(potemplatecount)
 
     def product(self):
-        try:
-            clauseTables = ('Packaging', 'Product')
-            querystr = ( "Product.id = Packaging.product AND "
-                         "Packaging.sourcepackagename = %d AND "
-                         "Packaging.distrorelease = %d" )
-            querystr %= ( self.sourcepackagename.id,
-                          self.distrorelease.id )
-            return Product.select(querystr, clauseTables=clauseTables)[0]
-        except IndexError:
-            # No corresponding product
-            return None
+        # we have moved to focusing on productseries as the linker
+        from warnings import warn
+        warn('SourcePackage.product is deprecated, use .productseries',
+             DeprecationWarning, stacklevel=2)
+        ps = self.productseries
+        if ps is not None:
+            return ps.product
+        return None
     product = property(product)
 
-    def shouldimport(self):
-        """Whether we should import this or not.
+    def productseries(self):
+        # First we look to see if there is packaging data for this
+        # distrorelease and sourcepackagename. If not, we look up through
+        # parent distroreleases, and when we hit Ubuntu, we look backwards in
+        # time through Ubuntu releases till we find packaging information or
+        # blow past the Warty Warthog.
 
-        Right now this is a stub that returns True for hoary source packages.
-        This should be changed to look up in the database, sabdfl says
-        Packaging.
+        # get any packagings matching this sourcepackage
+        packagings = Packaging.selectBy(
+            sourcepackagenameID=self.sourcepackagename.id,
+            distroreleaseID=self.distrorelease.id,
+            orderBy='packaging')
+        # now, return any Primary Packaging's found
+        for pkging in packagings:
+            if pkging.packaging == PackagingType.PRIME:
+                return pkging.productseries
+        # ok, we're scraping the bottom of the barrel, send the first
+        # packaging we have
+        if packagings.count() > 0:
+            return packagings[0].productseries
+        # if we are an ubuntu sourcepackage, try the previous release of
+        # ubuntu
+        if self.distribution.name == 'ubuntu':
+            datereleased = self.distrorelease.datereleased
+            # if this one is unreleased, use the last released one
+            if not datereleased:
+                datereleased = 'NOW'
+            from canonical.launchpad.database.distrorelease import \
+                    DistroRelease
+            ubuntureleases = DistroRelease.select(
+                "distribution = %d AND "
+                "datereleased < %s " % ( self.distribution.id,
+                                         quote(datereleased) ),
+                orderBy=['-datereleased'])
+            if ubuntureleases.count() > 0:
+                previous_ubuntu_release = ubuntureleases[0]
+                sp = SourcePackage(sourcepackagename=self.sourcepackagename,
+                                   distrorelease=previous_ubuntu_release)
+                return sp.productseries
+        # if we have a parent distrorelease, try that
+        if self.distrorelease.parentrelease is not None:
+            sp = SourcePackage(sourcepackagename=self.sourcepackagename,
+                               distrorelease=self.distrorelease.parentrelease)
+            return sp.productseries
+        # capitulate
+        return None
+    productseries = property(productseries)
+
+    def shouldimport(self):
+        """Note that this initial implementation of the method knows that we
+        are only interested in importing hoary and breezy packages
+        initially. Also, it knows that we should only import packages where
+        the upstream revision control is in place and working.
         """
-        return self.distrorelease.name == "hoary"
+        if self.distrorelease.name <> "hoary":
+            return False
+        return self.productseries.branch is not None
     shouldimport = property(shouldimport)
 
     def bugsCounter(self):
@@ -187,39 +257,40 @@ class SourcePackage(object):
             BugSeverity.WISHLIST,
             BugTaskStatus.FIXED,
             BugTaskStatus.ACCEPTED,
-        ]
+            ]
         for severity in severities:
-            n = BugTask.selectBy(severity=int(severity),
-                                 sourcepackagenameID=self.sourcepackagename.id,
-                                 distributionID=self.distribution.id).count()
+            n = BugTask.selectBy(
+                severity=int(severity),
+                sourcepackagenameID=self.sourcepackagename.id,
+                distributionID=self.distribution.id).count()
             ret.append(n)
         return ret
 
-    def getByVersion(self, version):
-        """This will look for a sourcepackage with the given version in the
-        distribution of this sourcepackage, NOT just the distrorelease of
-        the sourcepackage. NB - this assumes that a given
+    def getVersion(self, version):
+        """This will look for a sourcepackage release with the given version
+        in the distribution of this sourcepackage, NOT just the
+        distrorelease of the sourcepackage. NB - this assumes that a given
         sourcepackagerelease version is UNIQUE in a distribution. This is
         true of Ubuntu, RedHat and similar distros, but might not be
-        universally true."""
-        ret = VSourcePackageReleasePublishing.selectBy(
-                sourcepackagename=self.sourcepackagename,
-                distribution=self.distribution,
-                version=version)
-        # XXX sabdfl 24/03/05 cprov: this will fail poorly if there is no 
-        # source package release published in this distro, we need a clearer
-        # plan for how to handle that failure
-        assert ret.count() == 1
-        return ret[0]
+        universally true. Please update when PublishingMorgue spec is
+        implemented to use the full publishing history.
+        """
+        return VSourcePackageReleasePublishing.selectOneBy(
+            sourcepackagename=self.sourcepackagename,
+            distribution=self.distribution,
+            version=version)
 
     def pendingrelease(self):
-        ret = VSourcePackageReleasePublishing.selectBy(
+        # XXX: This needs a system doc test and a page test.
+        #      It had an obvious error in it.
+        #      SteveAlexander, 2005-04-25
+        ret = VSourcePackageReleasePublishing.selectOneBy(
                 sourcepackagenameID=self.sourcepackagename.id,
                 publishingstatus=PackagePublishingStatus.PENDING,
                 distroreleaseID = self.distrorelease.id)
-        if ret.count() == 0:
+        if ret is None:
             return None
-        return SourcePackageRelease.get(r[0].id)
+        return SourcePackageRelease.get(ret.id)
     pendingrelease = property(pendingrelease)
 
     def publishedreleases(self):
@@ -230,9 +301,8 @@ class SourcePackage(object):
                 distroreleaseID = self.distrorelease.id)
         if ret.count() == 0:
             return None
-        return list(ret)
+        return shortlist(ret)
     publishedreleases = property(publishedreleases)
-
 
 
 class SourcePackageSet(object):
@@ -243,7 +313,9 @@ class SourcePackageSet(object):
     def __init__(self, distribution=None, distrorelease=None):
         if distribution is not None and distrorelease is not None:
             if distrorelease.distribution is not distribution:
-                raise TypeError, 'Must instantiate SourcePackageSet with distribution or distrorelease, not both'
+                raise TypeError(
+                    'Must instantiate SourcePackageSet with distribution'
+                    ' or distrorelease, not both.')
         if distribution:
             self.distribution = distribution
             self.distrorelease = distribution.currentrelease
@@ -286,15 +358,14 @@ class SourcePackageSet(object):
                                 distrorelease=row.distrorelease)
 
     def withBugs(self):
-        pkgset = Set()
+        pkgset = sets.Set()
         results = BugTask.select(
-            "distribution = %d AND sourcepackagename IS NOT NULL" % (
-                self.distribution ) )
+            "distribution = %d AND sourcepackagename IS NOT NULL" % sqlvalues(
+                self.distribution))
         for task in results:
             pkgset.add(task.sourcepackagename)
 
         return [SourcePackage(sourcepackagename=sourcepackagename,
                               distribution=self.distribution)
-                    for sourcepackagename in pkgset]
-
+                for sourcepackagename in pkgset]
 

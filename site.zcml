@@ -2,6 +2,12 @@
 
     <include file="zopeapp.zcml" />
 
+    <!-- Session machinery -->
+    <include file="zopeappsession.zcml" />
+
+    <!-- Browser Configurations -->
+    <include file="zopeappbrowser.zcml" />
+
     <include package="canonical" />
 
     <include files="package-includes/*-meta.zcml" />
@@ -21,6 +27,4 @@
     <includeOverrides file="overrides.zcml" />
 
     <include file="securitypolicy.zcml" />
-    <include file="principals.zcml" />
-
 </configure>

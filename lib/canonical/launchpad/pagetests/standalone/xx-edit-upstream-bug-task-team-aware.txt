@@ -11,11 +11,7 @@
   Content-Type: text/html;charset=utf-8
   ...
               <label>Product</label>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
+  ...
                   <div>Mozilla Firefox</div>
   ...
 
@@ -31,14 +27,73 @@
   Content-Type: text/html;charset=utf-8
   ...
               <label>Product</label>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
+  ...
                   <div>
   <input type="text" name="field.product" value="firefox"
          cssclass="" id="field.product" size="20" />
+  ...
+
+Edit the target:
+
+  >>> print http(r"""
+  ... POST /malone/tasks/13/+edit HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.5
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1442
+  ... Content-Type: multipart/form-data; boundary=---------------------------9725916581164147154144110168
+  ... Referer: http://localhost:9000/malone/tasks/13/+edit
+  ... 
+  ... -----------------------------9725916581164147154144110168
+  ... Content-Disposition: form-data; name="field.product"
+  ... 
+  ... firefox
+  ... -----------------------------9725916581164147154144110168
+  ... Content-Disposition: form-data; name="field.milestone"
+  ... 
+  ... 1.0
+  ... -----------------------------9725916581164147154144110168
+  ... Content-Disposition: form-data; name="field.milestone-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------9725916581164147154144110168
+  ... Content-Disposition: form-data; name="field.status"
+  ... 
+  ... New
+  ... -----------------------------9725916581164147154144110168
+  ... Content-Disposition: form-data; name="field.status-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------9725916581164147154144110168
+  ... Content-Disposition: form-data; name="field.priority"
+  ... 
+  ... Medium
+  ... -----------------------------9725916581164147154144110168
+  ... Content-Disposition: form-data; name="field.priority-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------9725916581164147154144110168
+  ... Content-Disposition: form-data; name="field.severity"
+  ... 
+  ... Normal
+  ... -----------------------------9725916581164147154144110168
+  ... Content-Disposition: form-data; name="field.severity-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------9725916581164147154144110168
+  ... Content-Disposition: form-data; name="field.assignee"
+  ... 
+  ... 
+  ... -----------------------------9725916581164147154144110168
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------9725916581164147154144110168--
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+            <p class="portalMessage">Updated on ...</p>
   ...
 
 
@@ -118,11 +173,7 @@
   Content-Type: text/html;charset=utf-8
   ...
               <label>Product</label>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
+  ...
                   <div>
   <input type="text" name="field.product" value="firefox"
          cssclass="" id="field.product" size="20" />

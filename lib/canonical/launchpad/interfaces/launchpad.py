@@ -9,7 +9,7 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-__all__ = ('ILaunchpadApplication', 'IMaloneApplication',
+__all__ = ['ILaunchpadApplication', 'IMaloneApplication',
            'IRosettaApplication', 'IDOAPApplication',
            'IFOAFApplication', 'IPasswordEncryptor',
            'IReadZODBAnnotation', 'IWriteZODBAnnotation',
@@ -17,7 +17,9 @@ __all__ = ('ILaunchpadApplication', 'IMaloneApplication',
            'IHasOwner', 'IHasAssignee', 'IHasProduct', 
            'IHasProductAndAssignee', 'IOpenLaunchBag',
            'IAging', 'IHasDateCreated',
-           'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities')
+           'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities',
+           'IBasicLink', 'ILink', 'ISelectionAwareLink',
+           'ITabList', 'IFacetList']
 
 
 class ILaunchpadCelebrities(Interface):
@@ -205,4 +207,36 @@ class IOpenLaunchBag(ILaunchBag):
         '''Empty the bag'''
     def setLogin(login):
         '''Set the login to the given value.'''
+
+
+class IBasicLink(Interface):
+    """A link."""
+
+    id = Attribute('id')
+    href = Attribute('the relative href')
+    title = Attribute('text for the link')
+    summary = Attribute('summary for this facet')
+
+
+class ILink(IBasicLink):
+    """A link, including whether or not it is disabled."""
+    enabled = Attribute('boolean, whether enabled')
+
+
+class ISelectionAwareLink(ILink):
+    selected = Attribute('bool; is this facet the selected one?')
+
+
+class IFacetList(Interface):
+    """A list of facets in various categories."""
+
+    links = Attribute("List of ILinks that are main links.")
+    overflow = Attribute("List of ILinks that overflow.")
+
+
+class ITabList(Interface):
+    """A list of tabs in various categories."""
+
+    links = Attribute("List of ILinks that are main links.")
+    overflow = Attribute("List of ILinks that overflow.")
 

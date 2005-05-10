@@ -15,8 +15,12 @@
 
 <body>
 
+  <metal:leftportlets fill-slot="portlets_one">
+      <div tal:replace="structure view/viewsPortlet" />
+  </metal:leftportlets>
+
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure view/actionsPortlet" />
+      <div tal:replace="structure view/actionsPortlet" />
   </metal:rightportlets>
 
   <div metal:fill-slot="main">
@@ -59,7 +63,7 @@
 	   Paste the Key Fingerprint (use: `gpg --fingerprint YOU`,
     can only be used with v4 keys)
 	</div>
-        <input type="text" name="fpr" size="60"/>
+        <input type="text" name="fingerprint" size="60"/>
         <input type="submit" value="Find and Import"/>
     </fieldset>
     </form>

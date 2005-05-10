@@ -4,7 +4,7 @@
       i18n:domain="launchpad">
 
 <head>
-    <title metal:fill-slot="title">FOAF: People List</title>
+    <title metal:fill-slot="title">People registered with Launchpad</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Launchpad style sheet -->

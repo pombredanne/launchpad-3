@@ -5,6 +5,17 @@
 -- Project
 COMMENT ON TABLE Project IS 'Project: A DOAP Project. This table is the core of the DOAP section of the Launchpad database. It contains details of a single open source Project and is the anchor point for products, potemplates, and translationefforts.';
 COMMENT ON COLUMN Project.owner IS 'The owner of the project will initially be the person who creates this Project in the system. We will encourage upstream project leaders to take on this role. The Project owner is able to edit the project.';
+COMMENT ON COLUMN Project.summary IS 'A brief summary of this project. This
+will be displayed in bold text just above the description and below the
+title. It should be a single paragraph of not more than 80 words.';
+COMMENT ON COLUMN Project.description IS 'A detailed description of this
+project. This should primarily be focused on the organisational aspects of
+the project, such as the people involved and the structures that the project
+uses to govern itself. It might refer to the primary products of the project
+but the detailed descriptions of those products should be in the
+Product.description field, not here. So, for example, useful information
+such as the dates the project was started and the way the project
+coordinates itself are suitable here.';
 COMMENT ON COLUMN Project.homepageurl IS 'The home page URL of this project. Note that this could well be the home page of the main product of this project as well, if the project is too small to have a separate home page for project and product.';
 COMMENT ON COLUMN Project.wikiurl IS 'This is the URL of a wiki that includes information about the project. It might be a page in a bigger wiki, or it might be the top page of a wiki devoted to this project.';
 COMMENT ON COLUMN Project.lastdoap IS 'This column stores a cached copy of the last DOAP description we saw for this project. We cache the last DOAP fragment for this project because there may be some aspects of it which we are unable to represent in the database (such as multiple homepageurl\'s instead of just a single homepageurl) and storing the DOAP file allows us to re-parse it later and recover this information when our database model has been updated appropriately.';
@@ -36,12 +47,13 @@ COMMENT ON COLUMN ProjectRole.project IS 'The project in which the person plays 
 -- Product
 COMMENT ON TABLE Product IS 'Product: a DOAP Product. This table stores core information about an open source product. In Launchpad, anything that can be shipped as a tarball would be a product, and in some cases there might be products for things that never actually ship, depending on the project. For example, most projects will have a \'website\' product, because that allows you to file a Malone bug against the project website. Note that these are not actual product releases, which are stored in the ProductRelease table.';
 COMMENT ON COLUMN Product.owner IS 'The Product owner would typically be the person who createed this product in Launchpad. But we will encourage the upstream maintainer of a product to become the owner in Launchpad. The Product owner can edit any aspect of the Product, as well as appointing people to specific roles with regard to the Product. Also, the owner can add a new ProductRelease and also edit Rosetta POTemplates associated with this product.';
+COMMENT ON COLUMN Product.summary IS 'A brief summary of the product. This will be displayed in bold at the top of the product page, above the description.';
+COMMENT ON COLUMN Product.description IS 'A detailed description of the product, highlighting primary features of the product that may be of interest to end-users. The description may also include links and other references to useful information on the web about this product. The description will be displayed on the product page, below the product summary.';
 COMMENT ON COLUMN Product.project IS 'Every Product belongs to one and only one Project, which is referenced in this column.';
 COMMENT ON COLUMN Product.listurl IS 'This is the URL where information about a mailing list for this Product can be found. The URL might point at a web archive or at the page where one can subscribe to the mailing list.';
 COMMENT ON COLUMN Product.programminglang IS 'This field records, in plain text, the name of any significant programming languages used in this product. There are no rules, conventions or restrictions on this field at present, other than basic sanity. Examples might be "Python", "Python, C" and "Java".';
 COMMENT ON COLUMN Product.downloadurl IS 'The download URL for a Product should be the best place to download that product, typically off the relevant Project web site. This should not point at the actual file, but at a web page with download information.';
 COMMENT ON COLUMN Product.lastdoap IS 'This column stores a cached copy of the last DOAP description we saw for this product. See the Project.lastdoap field for more info.';
--- COMMENT ON COLUMN Product.manifest IS 'The Product manifest, if it exists, tells us exactly which branches are combined to make up the source of this product. Manifests are a Sourcerer invention, mainly used for distribution packaging, but they can apply equally well to an upstream Product. If a manifest exists for this product then this field points to it.';
 COMMENT ON COLUMN Product.sourceforgeproject IS 'The SourceForge project name for this product. This is not unique as SourceForge doesn\'t use the same project/product structure as DOAP.';
 COMMENT ON COLUMN Product.freshmeatproject IS 'The FreshMeat project name for this product. This is not unique as FreshMeat does not have the same project/product structure as DOAP';
 COMMENT ON COLUMN Product.reviewed IS 'Whether or not someone at Canonical has reviewed this product.';
@@ -65,7 +77,75 @@ COMMENT ON COLUMN ProductRole.product IS 'The product where the person plays thi
 -- ProductSeries
 COMMENT ON TABLE ProductSeries IS 'A ProductSeries is a set of product releases that are related to a specific version of the product. Typically, each major release of the product starts a new ProductSeries. These often map to a branch in the revision control system of the project, such as "2_0_STABLE". A few conventional Series names are "head" for releases of the HEAD branch, "1.0" for releases with version numbers like "1.0.0" and "1.0.1".';
 COMMENT ON COLUMN ProductSeries.name IS 'The name of the ProductSeries is like a unix name, it should not contain any spaces and should start with a letter or number. Good examples are "2.0", "3.0", "head" and "development".';
-COMMENT ON COLUMN ProductSeries.shortdesc IS 'A short description of this Product Series. A good example would include the date the series was initiated and whether this is the current recommended series for people to use.';
+COMMENT ON COLUMN ProductSeries.summary IS 'A summary of this Product Series. A good example would include the date the series was initiated and whether this is the current recommended series for people to use. The summary is usually displayed at the top of the page, in bold, just beneath the title and above the description, if there is a description field.';
+COMMENT ON COLUMN ProductSeries.importstatus IS 'A status flag which
+gives the state of our efforts to import the upstream code from its revision
+control system and publish that in the baz revision control system. The
+allowed values are documented in dbschema.BazImportStatus.';
+COMMENT ON COLUMN ProductSeries.rcstype IS 'The revision control system used
+by upstream for this product series. The value is defined in
+dbschema.RevisionControlSystems.  If NULL, then there should be no CVS or
+SVN information attached to this productseries, otherwise the relevant
+fields for CVS or SVN etc should be filled out.';
+COMMENT ON COLUMN ProductSeries.cvsroot IS 'The CVS root where this
+productseries hosts its code. Only used if rcstype is CVS.';
+COMMENT ON COLUMN ProductSeries.cvsmodule IS 'The CVS module which contains
+the upstream code for this productseries. Only used if rcstype is CVS.';
+COMMENT ON COLUMN ProductSeries.cvsmodule IS 'The CVS branch that contains
+the upstream code for this productseries.  Only used if rcstype is CVS.';
+COMMENT ON COLUMN ProductSeries.cvstarfileurl IS 'The URL of a tarfile of
+the CVS repository for this productseries. This is an optimisation of the
+CVS import process - instead of hitting the server to pass us every set of
+changes in history, we can sometimes arrange to be given a tarfile of the
+CVS repository and then process it all locally. Once imported, we switch
+back to using the CVS server for ongoing syncronization.  Only used if
+rcstype is CVS.';
+COMMENT ON COLUMN ProductSeries.svnrepository IS 'The URL of the SVN branch
+where the upstream productseries code can be found. This single URL is the
+equivalent of the cvsroot, cvsmodule and cvsbranch for CVS. Only used if
+rcstype is SVN.';
+COMMENT ON COLUMN ProductSeries.bkrepository IS 'The URL of the BK branch
+where the upstream productseries code can be found. This single URL is the
+equivalent of the cvsroot, cvsmodule and cvsbranch. Only used if rcstype is
+BK.';
+COMMENT ON COLUMN ProductSeries.releaseroot IS 'The URL to the directory
+which holds upstream releases for this productseries. This allows us to
+monitor the upstream site and detect new upstream release tarballs.';
+COMMENT ON COLUMN ProductSeries.releasefileglob IS 'A fileglob that lets us
+see which files in the releaseroot directory are potentially new upstream
+tarball releases. For example: linux-*.*.*.gz.';
+COMMENT ON COLUMN ProductSeries.releaseverstyle IS 'An enum giving the style
+of this product series release version numbering system.  The options are
+documented in dbschema.UpstreamReleaseVersionStyle.  Most applications use
+Gnu style numbering, but there are other alternatives.';
+COMMENT ON COLUMN ProductSeries.targetarchcategory IS 'The category name of
+the bazaar branch to which we publish new changesets detected in the
+upstream revision control system.';
+COMMENT ON COLUMN ProductSeries.targetarchbranch IS 'The branch name of the
+bazaar branch to which we publish new changesets detected in the upstream
+revision control system.';
+COMMENT ON COLUMN ProductSeries.targetarchversion IS 'The version of the
+bazaar branch to which we publish new changesets detected in the upstream
+revision control system.';
+COMMENT ON COLUMN ProductSeries.dateprocessapproved IS 'The timestamp when
+this upstream import was certified for processing. Processing means it has
+passed autotesting, and is being moved towards production syncing. If the
+sync goes well, it will be approved for sync and then be fully in
+production.';
+COMMENT ON COLUMN ProductSeries.datesyncapproved IS 'The timestamp when this
+upstream import was certified for ongoing syncronisation.';
+COMMENT ON COLUMN ProductSeries.dateautotested IS 'This upstream revision
+control system target has passed automatic testing. It can probably be moved
+towards production sync status. This date is the timestamp when it passed
+the autotester. The autotester allows us to find the low hanging fruit that
+is easily brought into the bazaar import system by highlighting repositories
+which had no apparent difficulty in being imported.';
+COMMENT ON COLUMN ProductSeries.datestarted IS 'The timestamp when we last
+initiated an import test or sync of this upstream repository.';
+COMMENT ON COLUMN ProductSeries.datefinished IS 'The timestamp when we last
+completed an import test or sync of this upstream repository. If this is
+NULL and datestarted is NOT NULL, then there is a sync in progress.';
+
 
 
 
@@ -73,7 +153,7 @@ COMMENT ON COLUMN ProductSeries.shortdesc IS 'A short description of this Produc
 COMMENT ON TABLE ProductRelease IS 'A Product Release. This is table stores information about a specific \'upstream\' software release, like Apache 2.0.49 or Evolution 1.5.4.';
 COMMENT ON COLUMN ProductRelease.version IS 'This is a text field containing the version string for this release, such as \'1.2.4\' or \'2.0.38\' or \'7.4.3\'.';
 COMMENT ON COLUMN ProductRelease.title IS 'This is the GSV Name of this release, like \'The Warty Warthog Release\' or \'All your base-0 are belong to us\'. Many upstream projects are assigning fun names to their releases - these go in this field.';
-COMMENT ON COLUMN ProductRelease.shortdesc IS 'A short description of this ProductRelease. This should be a very brief overview of changes and highlights, just a short paragraph of text.';
+COMMENT ON COLUMN ProductRelease.summary IS 'A summary of this ProductRelease. This should be a very brief overview of changes and highlights, just a short paragraph of text. The summary is usually displayed in bold at the top of a page for this product release, above the more detailed description or changelog.';
 COMMENT ON COLUMN ProductRelease.productseries IS 'A pointer to the Product Series this release forms part of. Using a Product Series allows us to distinguish between releases on stable and development branches of a product even if they are interspersed in time.';
 
 
@@ -135,9 +215,11 @@ manifests.';
 /*
   Malone
 */
-COMMENT ON TABLE Bug IS 'A software bug that requires fixing. This particular bug may be linked to one or more products or sourcepackages to identify the location(s) that this bug is found.';
+COMMENT ON TABLE Bug IS 'A software bug that requires fixing. This particular bug may be linked to one or more products or source packages to identify the location(s) that this bug is found.';
 COMMENT ON COLUMN Bug.name IS 'A lowercase name uniquely identifying the bug';
 COMMENT ON COLUMN Bug.private IS 'Is this bug private? If so, only explicit subscribers will be able to see it';
+COMMENT ON COLUMN Bug.summary IS 'A brief summary of the bug. This will be displayed at the very top of the page in bold. It will also receive a higher ranking in FTI queries than the description and comments of the bug. The bug summary is not created necessarily when the bug is filed, instead we just use the first comment as a description and allow people to fill in the summary later as they converge on a clear description of the bug itself.';
+COMMENT ON COLUMN Bug.description IS 'A detailed description of the bug. Initially this will be set to the contents of the initial email or bug filing comment, but later it can be edited to give a more accurate description of the bug itself rather than the symptoms observed by the reporter.';
 COMMENT ON TABLE BugTask IS 'Links a given Bug to a particular (sourcepackagename, distro) or product.';
 COMMENT ON COLUMN BugTask.bug IS 'The bug that is assigned to this (sourcepackagename, distro) or product.';
 COMMENT ON COLUMN BugTask.product IS 'The product in which this bug shows up.';
@@ -206,6 +288,16 @@ COMMENT ON COLUMN BugPackageInfestation.lastmodified IS 'The timestamp when this
 
 COMMENT ON COLUMN BugPackageInfestation.lastmodifiedby IS 'The person who touched this infestation report last, in any way.';
 
+COMMENT ON TABLE BugTracker IS 'A bug tracker in some other project. Malone allows us to link Malone bugs with bugs recorded in other bug tracking systems, and to keep the status of the relevant bug task in sync with the status in that upstream bug tracker. So, for example, you might note that Malone bug #43224 is the same as a bug in the Apache bugzilla, number 534536. Then when the upstream guys mark that bug fixed in their bugzilla, Malone know that the bug is fixed upstream.';
+COMMENT ON COLUMN BugTracker.bugtrackertype IS 'The type of bug tracker, a pointer to the table of bug tracker types. Currently we know about debbugs and bugzilla bugtrackers, and plan to support roundup and sourceforge as well.';
+COMMENT ON COLUMN BugTracker.name IS 'The unique name of this bugtracker, allowing us to refer to it directly.';
+COMMENT ON COLUMN BugTracker.summary IS 'A brief summary of this bug tracker, which might for example list any interesting policies regarding the use of the bug tracker. The summary is displayed in bold at the top of the bug tracker page.';
+COMMENT ON COLUMN BugTracker.title IS 'A title for the bug tracker, used in listings of all the bug trackers and also displayed at the top of the descriptive page for the bug tracker.';
+COMMENT ON COLUMN BugTracker.contactdetails IS 'The contact details of the people responsible for that bug tracker. This allows us to coordinate the syncing of bugs to and from that bug tracker with the responsible people on the other side.';
+COMMENT ON COLUMN BugTracker.baseurl IS 'The base URL for this bug tracker. Using our knowledge of the bugtrackertype, and the details in the BugWatch table we are then able to calculate relative URL\'s for relevant pages in the bug tracker based on this baseurl.';
+COMMENT ON COLUMN BugTracker.owner IS 'The person who created this bugtracker entry and who thus has permission to modify it. Ideally we would like this to be the person who coordinates the running of the actual bug tracker upstream.';
+
+/* Soyuz */
 
 COMMENT ON COLUMN SourcePackageName.name IS
     'A lowercase name identifying one or more sourcepackages';
@@ -223,10 +315,13 @@ COMMENT ON COLUMN Distribution.members IS 'Person or team with upload and commit
 
 /* DistroRelease */
 
-COMMENT ON COLUMN distrorelease.lucilleconfig IS 'Configuration
+COMMENT ON COLUMN DistroRelease.lucilleconfig IS 'Configuration
 information which lucille will use when processing uploads and
 generating archives for this distro release';
+COMMENT ON COLUMN DistroRelease.summary IS 'A brief summary of the distro release. This will be displayed in bold at the top of the distrorelease page, above the distrorelease description. It should include any high points that are particularly important to draw to the attention of users.';
+COMMENT ON COLUMN DistroRelease.description IS 'An extensive list of the features in this release of the distribution. This will be displayed on the main distro release page, below the summary.';
 
+/* ArchArchive */
 
 COMMENT ON COLUMN ArchArchive.name IS 'The archive name, usually in the format of an email address';
 
@@ -350,14 +445,15 @@ COMMENT ON TABLE DistroBounty IS 'This table records a simple link between a bou
 COMMENT ON TABLE ProjectBounty IS 'This table records a simple link between a bounty and a project. This bounty will be listed on the project web page, and the project will be mentioned on the bounty web page.';
 
 -- SourceSource
-COMMENT ON TABLE SourceSource IS 'The SourceSource table identifies upstream
-revision control systems that can be imported and re-published as bazaar
-(baz) archives. So, for example, there is an entry in this table for each
-upstream CVS or SVN branch that we want to sync-and-publish as a baz branch.';
+COMMENT ON TABLE SourceSourceBackup IS 'The SourceSource table identifies
+upstream revision control systems that can be imported and re-published as
+bazaar (baz) archives. So, for example, there is an entry in this table for
+each upstream CVS or SVN branch that we want to sync-and-publish as a baz
+branch.';
 
-COMMENT ON COLUMN SourceSource.branchpoint IS 'The source specification for an import job to branch from.';
-COMMENT ON COLUMN SourceSource.datestarted IS 'The timestamp of the last time an import or sync was started on this sourcesource.';
-COMMENT ON COLUMN SourceSource.datefinished IS 'The timestamp of the last time an import or sync finished on this sourcesource.';
+COMMENT ON COLUMN SourceSourceBackup.branchpoint IS 'The source specification for an import job to branch from.';
+COMMENT ON COLUMN SourceSourceBackup.datestarted IS 'The timestamp of the last time an import or sync was started on this sourcesource.';
+COMMENT ON COLUMN SourceSourceBackup.datefinished IS 'The timestamp of the last time an import or sync finished on this sourcesource.';
 
 
 -- Maintainership
@@ -459,7 +555,7 @@ COMMENT ON TABLE SourcePackageName IS 'SourcePackageName: A soyuz source package
 COMMENT ON TABLE BinaryPackage IS 'BinaryPackage: A soyuz binary package representation. This table stores the records for each binary package uploaded into the system. Each sourcepackagerelease may build various binarypackages on various architectures.';
 COMMENT ON COLUMN BinaryPackage.binarypackagename IS 'A reference to the name of the binary package';
 COMMENT ON COLUMN BinaryPackage.version IS 'The version of the binary package. E.g. "1.0-2"';
-COMMENT ON COLUMN BinaryPackage.shortdesc IS 'A short description of the binary package. Commonly used on listings of binary packages';
+COMMENT ON COLUMN BinaryPackage.summary IS 'A summary of the binary package. Commonly used on listings of binary packages';
 COMMENT ON COLUMN BinaryPackage.description IS 'A longer more detailed description of the binary package';
 COMMENT ON COLUMN BinaryPackage.build IS 'The build in which this binarypackage was produced';
 COMMENT ON COLUMN BinaryPackage.binpackageformat IS 'The binarypackage format. E.g. RPM, DEB etc';
@@ -579,7 +675,7 @@ COMMENT ON COLUMN PackagePublishing.status IS 'The current status of the package
 
 -- SourcePackagePublishing
 
-COMMENT ON TABLE SourcePackagePublishing IS 'SourcePackagePublishing: Publishing records for Soyuz/Lucille. Lucille publishes sourcepackagereleases in distroreleases. This table represents the publishing of each sourcepackagerelease.';
+COMMENT ON VIEW SourcePackagePublishing IS 'SourcePackagePublishing: Publishing records for Soyuz/Lucille. Lucille publishes sourcepackagereleases in distroreleases. This table represents the currently active publishing of each sourcepackagerelease. For history see SourcePackagePublishingHistory.';
 COMMENT ON COLUMN SourcePackagePublishing.distrorelease IS 'The distrorelease which is having the sourcepackagerelease being published into it.';
 COMMENT ON COLUMN SourcePackagePublishing.sourcepackagerelease IS 'The sourcepackagerelease being published into the distrorelease.';
 COMMENT ON COLUMN SourcePackagePublishing.status IS 'The current status of the sourcepackage publishing record. For example "PUBLISHED" "PENDING" or "PENDINGREMOVAL"';
@@ -624,6 +720,7 @@ COMMENT ON COLUMN BuildQueue.builder IS 'The builder assigned to this build. Som
 COMMENT ON COLUMN BuildQueue.created IS 'The timestamp of the creation of this row. This is used by the buildd master scheduling algorithm to decide how soon to schedule a build to run on a given builder.';
 COMMENT ON COLUMN BuildQueue.buildstart IS 'The timestamp of the start of the build run on the given builder. If this is NULL then the build is not running yet.';
 COMMENT ON COLUMN BuildQueue.logtail IS 'The tail end of the log of the current build. This is updated regularly as the buildd master polls the buildd slaves. Once the build is complete; the full log will be lodged with the librarian and linked into the build table.';
+COMMENT ON COLUMN BuildQueue.lastscore IS 'The last score ascribed to this build record. This can be used in the UI among other places.';
 
 -- Mirrors
 
@@ -644,7 +741,7 @@ COMMENT ON TABLE MirrorSourceContent IS 'Stores which distrorelease and componen
 COMMENT ON COLUMN MirrorSourceContent.distrorelease IS 'A distrorelease that this mirror contains.';
 COMMENT ON COLUMN MirrorSourceContent.component IS 'What component of the distrorelease that this sourcepackage mirror contains.';
 
-
+-- SourcePackagePublishingHistory
 COMMENT ON TABLE SourcePackagePublishingHistory IS 'SourcePackagePublishingHistory: The history of a SourcePackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.sourcepackagerelease IS 'The sourcepackagerelease being published.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.distrorelease IS 'The distrorelease into which the sourcepackagerelease is being published.';
@@ -658,3 +755,34 @@ COMMENT ON COLUMN SourcePackagePublishingHistory.supersededby IS 'The source whi
 COMMENT ON COLUMN SourcePackagePublishingHistory.datemadepending IS 'The date/time on which this publishing record was made to be pending removal from the archive.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.scheduleddeletiondate IS 'The date/time at which the source is/was scheduled to be deleted.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.dateremoved IS 'The date/time at which the source was actually deleted.';
+
+-- Packaging
+COMMENT ON TABLE Packaging IS 'DO NOT JOIN THROUGH THIS TABLE. This is a set
+of information linking upstream product series (branches) to distro
+packages, but it\'s not planned or likely to be complete, in the sense that
+we do not attempt to have information for every branch in every derivative
+distro managed in Launchpad. So don\'t join through this table to get from
+product to source package, or vice versa. Rather, use the
+ProductSeries.sourcepackages attribute, or the
+SourcePackage.productseries attribute. You may need to create a
+SourcePackage with a given sourcepackagename and distrorelease, then use its
+.productrelease attribute. The code behind those methods does more than just
+join through the tables, it is also smart enough to look at related
+distro\'s and parent distroreleases, and at Ubuntu in particular.';
+COMMENT ON COLUMN Packaging.productseries IS 'The upstream product series
+that has been packaged in this distrorelease sourcepackage.';
+COMMENT ON COLUMN Packaging.sourcepackagename IS 'The source package name for
+the source package that includes the upstream productseries described in
+this Packaging record. There is no requirement that such a sourcepackage
+actually be published in the distro.';
+COMMENT ON COLUMN Packaging.distrorelease IS 'The distrorelease in which the
+productseries has been packaged.';
+COMMENT ON COLUMN Packaging.packaging IS 'A dbschema Enum (PackagingType)
+describing the way the upstream productseries has been packaged. Generally
+it will be of type PRIME, meaning that the upstream productseries is the
+primary substance of the package, but it might also be INCLUDES, if the
+productseries has been included as a statically linked library, for example.
+This allows us to say that a given Source Package INCLUDES libneon but is a
+PRIME package of tla, for example. By INCLUDES we mean that the code is
+actually lumped into the package as ancilliary support material, rather
+than simply depending on a separate packaging of that code.';

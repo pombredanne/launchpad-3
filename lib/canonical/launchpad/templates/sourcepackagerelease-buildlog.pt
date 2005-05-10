@@ -43,9 +43,9 @@
    <div class="portletBody">
      <div class="portletContent even">
      <ul>
-     <li><a href="../"><span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">TITLE</span>
+     <li><a href="../"><span tal:content="context/sourcepackagerelease/sourcepackage/summary">TITLE</span>
      </a></li>
-     <li><a href="./"><span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">TITLE</span>
+     <li><a href="./"><span tal:content="context/sourcepackagerelease/sourcepackage/summary">TITLE</span>
      <span tal:content="context/sourcepackagerelease/version">Version</span>
      </a></li>
      </ul>
@@ -61,7 +61,7 @@
 <div metal:fill-slot="main">
 
     <h1> 
-     <span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">
+     <span tal:content="context/sourcepackagerelease/sourcepackage/summary">
 	TITLE </span>
      <span tal:content="context/sourcepackagerelease/version">
 	Version</span>

@@ -1,0 +1,25 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+    <include file="zopeapp.zcml" />
+    <include package="canonical" />
+
+    <include files="package-includes/*-meta.zcml" />
+    <includeOverrides file="override-meta.zcml" />
+
+    <!-- package-includes/*-configure.zcml contains package configuration
+        shared between a normal launchpad instance and the test suite.
+        package-includes/*-configure-normal.zcml and 
+        package-includes/*-configure-testing.zcml contain configuration
+        that needs to be different between normal and test modes.
+    -->
+    <include files="package-includes/*-configure.zcml" />
+    <include files="package-includes/*-configure-normal.zcml" />
+    <includeOverrides file="override-configure-normal.zcml" />
+
+    <!-- Provide local overrides of standard configurations-->
+    <includeOverrides file="overrides.zcml" />
+
+    <!-- In scripts, we allow them to do anything. -->
+    <securityPolicy
+      component="zope.security.simplepolicies.PermissiveSecurityPolicy"
+      />
+</configure>

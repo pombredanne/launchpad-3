@@ -11,19 +11,26 @@ from zope.i18n import MessageIDFactory
 from sqlobject import connectionForURI
 from canonical.database.sqlbase import ZopelessTransactionManager
 
+from canonical.config import config
+
 from psycopgda import adapter
 
 # Single MessageIDFactory for everyone
 _ = MessageIDFactory('launchpad')
 
 
-# Allow override by environment variables. This is needed to allow
-# tests to propogate values to spawned processes. Note that an empty
-# host is different to 'localhost', as the latter connects via TCP/IP
-# instead of a Unix domain socket.
-dbname = os.environ.get('LP_DBNAME', 'launchpad_ftest')
-dbhost = os.environ.get('LP_DBHOST', '')
-dbuser = os.environ.get('LP_DBUSER', 'launchpad')
+# Allow override by environment variables for backwards compatibility.
+# This was needed to allow tests to propogate settings to spawned processes.
+# However, now we just have a single environment variable (LAUNCHPAD_CONF)
+# which specifies which section of the config file to use instead,
+# Note that an empty host is different to 'localhost', as the latter
+# connects via TCP/IP instead of a Unix domain socket. Also note that
+# if the host is empty it can be overridden by the standard PostgreSQL
+# environment variables, this feature currently required by Async's
+# office environment.
+dbname = os.environ.get('LP_DBNAME', config.dbname)
+dbhost = os.environ.get('LP_DBHOST', config.dbhost or '')
+dbuser = os.environ.get('LP_DBUSER', config.launchpad.dbuser)
 
 _typesRegistered = False
 def registerTypes():
@@ -54,6 +61,10 @@ def registerTypes():
         _typesRegistered = True
 
 registerTypes()
+
+def isZopeless():
+    """Returns True if we are running in the Zopeless environment"""
+    return ZopelessTransactionManager._installed is not None
 
 def initZopeless(debug=False, dbname=None, dbhost=None, dbuser=None):
     registerTypes()

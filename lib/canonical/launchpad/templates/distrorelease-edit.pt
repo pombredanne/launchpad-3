@@ -23,7 +23,7 @@
    tal:replace="context/release/title">Release</span> Release
    Information </h1> 
 
-    <div class="documentDescription">	
+    <div class="documentDescription">    
     <p> Here you can edit <span
     tal:content="context/release/title">Release</span>
     Release Information
@@ -33,65 +33,66 @@
     <form name="edit" action="" method="POST">
     <fieldset>
     <legend><h3>Edit Release Information</h3><legend>
-	<table>
-	<tr><td>
-	<div class="field">
-	    <label>Name</label>
-	    <div class="formHelp">
-	    Enter the Release Name.
+    <table>
+    <tr><td>
+    <div class="field">
+        <label>Name</label>
+        <div class="formHelp">
+        Enter the Release Name.
             </div>
-	    <input type="text" name="name"
-	    tal:attributes="value context/release/name|nothing"/>
-	</div>
-	</td></tr>
-	<tr><td>
-	<div class="field">
-	    <label>Title</label>
-	    <div class="formHelp">
-	    Enter the Release Title.
+        <input type="text" name="name"
+        tal:attributes="value context/release/name|nothing"/>
+    </div>
+    </td></tr>
+    <tr><td>
+    <div class="field">
+        <label>Title</label>
+        <div class="formHelp">
+        Enter the Release Title.
             </div>
-	    <input type="text" name="title" size="40"
-	    tal:attributes="value context/release/title|nothing"/>
-	</div>
-	</td></tr>
-	<tr><td>
-	<div class="field">
-	    <label>Short Description</label>
-	    <div class="formHelp">
-	    Enter the Release Short Description.
-            </div>
-            <textarea name="shortdesc" cols="60" rows="2"
-	    tal:content="context/release/shortdesc|nothing">
-	    </textarea>
-	</div>
-	</td></tr>
-	<tr><td>
-	<div class="field">
-	    <label>Description</label>
-	    <div class="formHelp">
-	    Enter the Release Description.
+        <input type="text" name="title" size="40"
+        tal:attributes="value context/release/title|nothing"/>
+    </div>
+    </td></tr>
+    <tr><td>
+    <div class="field">
+        <label>Summary</label>
+        <div class="formHelp">
+          Enter the Release Summary. This should be a single paragraph that
+          briefly summarises the key points about this release.
+        </div>
+        <textarea name="summary" cols="60" rows="2"
+                  tal:content="context/release/summary|nothing">
+        </textarea>
+    </div>
+    </td></tr>
+    <tr><td>
+    <div class="field">
+        <label>Description</label>
+        <div class="formHelp">
+        Enter the Release Description.
             </div>
             <textarea name="description" cols="60" rows="6"
-	    tal:content="context/release/description|nothing">
-	    </textarea>
-	</div>
-	</td></tr>
-	<tr><td>
-	<div class="field">
-	    <label>Version</label>
-	    <div class="formHelp">
-	    Enter the Release Version.
+        tal:content="context/release/description|nothing">
+        </textarea>
+    </div>
+    </td></tr>
+    <tr><td>
+    <div class="field">
+        <label>Version</label>
+        <div class="formHelp">
+        Enter the Release Version.
             </div>
-	    <input type="text" name="version"
-	    tal:attributes="value context/release/version|nothing"/>
-	</div>
-	</td></tr>
-	<tr><td>
-	<div class="formControls">
-	  <input type="submit" value="Edit"/>
-	</div>
-	</td></tr>
-	</table>
+        <input type="text" name="version"
+        tal:attributes="value context/release/version|nothing"/>
+    </div>
+    </td></tr>
+    <tr><td>
+    <div class="formControls">
+      <input type="submit" value="Edit"/>
+    </div>
+    </td></tr>
+    </table>
   </form>
   </div>
 

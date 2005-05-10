@@ -15,13 +15,13 @@ from canonical.launchpad.browser.codeofconduct import *
 from canonical.launchpad.browser.distribution import *
 from canonical.launchpad.browser.distroarchrelease import *
 from canonical.launchpad.browser.distrorelease import *
-from canonical.launchpad.browser.emailaddress import *
 from canonical.launchpad.browser.gpgkey import *
 from canonical.launchpad.browser.logintoken import *
 from canonical.launchpad.browser.message import *
 from canonical.launchpad.browser.packages import *
 from canonical.launchpad.browser.packaging import *
 from canonical.launchpad.browser.person import *
+from canonical.launchpad.browser.pofile import *
 from canonical.launchpad.browser.potemplate import *
 from canonical.launchpad.browser.product import *
 from canonical.launchpad.browser.productrelease import *
@@ -30,7 +30,7 @@ from canonical.launchpad.browser.project import *
 from canonical.launchpad.browser.publishedpackage import *
 from canonical.launchpad.browser.sourcepackage import *
 from canonical.launchpad.browser.sourcepackagename import *
-from canonical.launchpad.browser.sourcesource import *
+# from canonical.launchpad.browser.sourcesource import *
 from canonical.launchpad.browser.soyuz import *
 from canonical.launchpad.browser.sshkey import *
 from canonical.launchpad.browser.team import *

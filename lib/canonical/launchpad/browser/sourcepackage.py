@@ -1,30 +1,21 @@
-# sqlobject/sqlos
-from sqlobject import LIKE, AND
+__metaclass__ = type
 
 # Python standard library imports
 import cgi
 import re
 from apt_pkg import ParseSrcDepends
 
-# lp imports
-from canonical.lp import dbschema
-
-# zope imports
 from zope.component import getUtility
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
-# interface import
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import IPerson,\
-                                           IPersonSet, \
-                                           IDistroTools
-from canonical.launchpad.database import IPOTemplateSet
+from canonical.launchpad.interfaces import IPOTemplateSet
+from canonical.launchpad.browser.potemplate import ViewPOTemplate
 
-# depending on apps
 from canonical.soyuz.generalapp import builddepsSet
-from canonical.rosetta.browser import request_languages, TemplateLanguages
+
 
 BATCH_SIZE = 40
 
@@ -181,11 +172,9 @@ class SourcePackageView:
         self.request = request
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
-        self.languages = request_languages(self.request)
+        self.languages = helpers.request_languages(self.request)
         # Cache value for the return value of self.templates
         self._template_languages = None
-        # List of the templates we have in this subset.
-        self._templates = self.context.potemplates
         self.status_message = None
 
     def binaries(self):
@@ -238,23 +227,18 @@ class SourcePackageView:
         return builddependsindep
 
     def linkified_changelog(self):
-        return linkify_changelog(self.context.changelog, self.context.sourcepackagename.name)
-
-    def potemplates(self):
-        if self._template_languages is None:
-            self._template_languages = [
-                    TemplateLanguages(template,
-                                      self.languages,
-                                      relativeurl='+pots/'+template.name)
-                               for template in self._templates]
-
-        return self._template_languages
+        return linkify_changelog(
+            self.context.changelog, self.context.sourcepackagename.name)
 
     def requestCountry(self):
         return helpers.requestCountry(self.request)
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
+
+    def templateviews(self):
+        return [ViewPOTemplate(template, self.request)
+                for template in self.context.potemplates]
 
 
 class SourcePackageBugsView:

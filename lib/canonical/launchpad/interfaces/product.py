@@ -43,7 +43,7 @@ class IProduct(IHasOwner):
     title = Title(title=_('Title'), description=_("""The product
     title. Should be just a few words."""))
 
-    shortdesc = Summary(title=_('Summary'), description=_("""The summary should
+    summary = Summary(title=_('Summary'), description=_("""The summary should
         be a single short paragraph."""))
 
     description = Description(title=_('Description'), description=_("""The product
@@ -79,15 +79,8 @@ class IProduct(IHasOwner):
     reviewed = Bool(title=_('Reviewed'), description=_("""Whether or not
         this product has been reviewed."""))
     
-    sourcesources = Attribute(_('Sources of source code. These are \
-        pointers to the revision control system for that product, along \
-        with status information about our ability to publish that \
-        source in Arch.'))
-
     sourcepackages = Attribute(_("List of distribution packages for this \
         product"))
-
-    packages = Attribute (_('SourcePackages related to a Product'))
 
     bugtasks = Attribute(
         """A list of BugTasks for this Product.""")
@@ -118,6 +111,9 @@ class IProduct(IHasOwner):
         latest productrelease for this product which includes
         translations.""")
 
+    def getPackage(distrorelease):
+        """return a package in that distrorelease for this product."""
+
     def potemplates():
         """Returns an iterator over this product's PO templates."""
 
@@ -128,15 +124,6 @@ class IProduct(IHasOwner):
     def poTemplate(name):
         """Returns the PO template with the given name."""
 
-    def newPOTemplate(name, title, person=None):
-        """Create a new PO template.
-
-        Return the newly created template. The person argument is optional,
-        the POTemplate can exist without an owner.
-
-        Raise an KeyError if a PO template with that name already exists.
-        """
-
     def fullname():
         """Returns a name that uniquely identifies this product, by combining
             product name and project name
@@ -144,9 +131,6 @@ class IProduct(IHasOwner):
 
     def newseries(form):
         """Creates a new ProductSeries for this series."""
-
-    def newSourceSource(form):
-        """Creates a new SourceSource entry for upstream code sync."""
 
     def messageCount():
         """Returns the number of Current IPOMessageSets in all templates
@@ -194,9 +178,6 @@ class IProduct(IHasOwner):
         Log any error/warning into the logger object, if it's not None.
         """
 
-    def getPackage(distro):
-        """Return the SourcePackage for this product in the supplied distro."""
-
 class IProductSet(Interface):
     """The collection of products."""
 
@@ -215,7 +196,7 @@ class IProductSet(Interface):
         raised.
         """
 
-    def createProduct(owner, name, displayname, title, shortdesc,
+    def createProduct(owner, name, displayname, title, summary,
                       description, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,

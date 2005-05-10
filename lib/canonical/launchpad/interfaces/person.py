@@ -74,12 +74,10 @@ class IPerson(Interface):
 
     # Properties of the Person object.
     ubuntite = Attribute("Ubuntite Flag")
-    unvalidatedEmails = Attribute("The unvalidated emails requested by this person")
     gpgkeys = Attribute("List of GPGkeys")
     irc = Attribute("IRC")
     bugs = Attribute("Bug")
     wiki = Attribute("Wiki")
-    emails = Attribute("Email")
     jabber = Attribute("Jabber")
     archuser = Attribute("Arch user")
     packages = Attribute("A Selection of SourcePackageReleases")
@@ -117,10 +115,6 @@ class IPerson(Interface):
     preferredemail = Int(title=_("The preferred email address for this "
                                  "person. The one we'll use to communicate "
                                  "with him."), readonly=False)
-    email = TextLine(
-            title=_('Email Address'), required=True,
-            description=_("Please give the email address for this Team. "))
-
     defaultmembershipperiod = Int(
             title=_('Number of days a subscription lasts'), required=False,
             description=_("This is the number of days all "
@@ -352,30 +346,60 @@ class IPersonSet(Interface):
           IPerson.arg IS NULL.
         """
 
-    def getAll():
-        """Return all Persons and Teams."""
+    def getAllTeams(orderBy=None):
+        """Return all Teams.
+        
+        If you want the results ordered, you have to explicitly specify an
+        <orderBy>. Otherwise the order used is not predictable.
+        <orderBy> can be either a string with the column name you want to sort
+        or a list of column names as strings.
+        """
 
-    def getAllTeams():
-        """Return all Teams."""
+    def getAllPersons(orderBy=None):
+        """Return all Persons, ignoring the merged ones.
+        
+        If you want the results ordered, you have to explicitly specify an
+        <orderBy>. Otherwise the order used is not predictable.
+        <orderBy> can be either a string with the column name you want to sort
+        or a list of column names as strings.
+        """
 
-    def getAllPersons():
-        """Return all Persons, ignoring the merged ones."""
+    def peopleCount():
+        """Return the number of non-merged persons in the database."""
 
-    def findByName(name):
-        """Return all not-merged Persons and Teams with name matching."""
+    def teamsCount():
+        """Return the number of teams in the database."""
 
-    def findPersonByName(name):
-        """Return all not-merged Persons with name matching."""
+    def findByName(name, orderBy=None):
+        """Return all non-merged Persons and Teams with name matching.
+        
+        If you want the results ordered, you have to explicitly specify an
+        <orderBy>. Otherwise the order used is not predictable.
+        <orderBy> can be either a string with the column name you want to sort
+        or a list of column names as strings.
+        """
 
-    def findTeamByName(name):
-        """Return all Teams with name matching."""
+    def findPersonByName(name, orderBy=None):
+        """Return all not-merged Persons with name matching.
+
+        If you want the results ordered, you have to explicitly specify an
+        <orderBy>. Otherwise the order used is not predictable.
+        <orderBy> can be either a string with the column name you want to sort
+        or a list of column names as strings.
+        """
+
+    def findTeamByName(name, orderBy=None):
+        """Return all Teams with name matching.
+
+        If you want the results ordered, you have to explicitly specify an
+        <orderBy>. Otherwise the order used is not predictable.
+        <orderBy> can be either a string with the column name you want to sort
+        or a list of column names as strings.
+        """
 
     def getContributorsForPOFile(pofile):
         """Return the list of persons that have an active contribution for a
         concrete POFile."""
-
-    def isUbuntite(user):
-        """Return True if User has a valid Signed current version CoC."""
 
     def getUbuntites():
         """Return a set of person with valid Ubuntite flag."""
@@ -458,9 +482,35 @@ class ITeamMembership(Interface):
 class ITeamMembershipSet(Interface):
     """A Set for TeamMembership objects."""
 
-    def getMemberships(teamID, status):
-        """Return all TeamMembership objects for the given team with the given
-        status."""
+    def getActiveMemberships(teamID, orderBy=None):
+        """Return all active TeamMemberships for the given team.
+        
+        Active memberships are the ones with status APPROVED or ADMIN.
+        If you want the results ordered, you have to explicitly specify an
+        <orderBy>. Otherwise the order used is not predictable.
+        <orderBy> can be either a string with the column name you want to sort
+        or a list of column names as strings.
+        """
+
+    def getInactiveMemberships(teamID, orderBy=None):
+        """Return all inactive TeamMemberships for the given team.
+        
+        Inactive memberships are the ones with status EXPIRED or DEACTIVATED.
+        If you want the results ordered, you have to explicitly specify an
+        <orderBy>. Otherwise the order used is not predictable.
+        <orderBy> can be either a string with the column name you want to sort
+        or a list of column names as strings.
+        """
+
+    def getProposedMemberships(teamID, orderBy=None):
+        """Return all proposed TeamMemberships for the given team.
+        
+        Proposed memberships are the ones with status PROPOSED.
+        If you want the results ordered, you have to explicitly specify an
+        <orderBy>. Otherwise the order used is not predictable.
+        <orderBy> can be either a string with the column name you want to sort
+        or a list of column names as strings.
+        """
 
     def getByPersonAndTeam(personID, teamID, default=None):
         """Return the TeamMembership object for the given person and team.
@@ -492,9 +542,6 @@ class ITeamMembershipSubset(Interface):
         If there's no TeamMembership for this person in this team, return the
         default value.
         """
-
-    def getMembershipsByStatus(status):
-        """All TeamMembership objects with the given status for this team."""
 
     def getInactiveMemberships():
         """Return all TeamMembership objects for inactive members of this team.

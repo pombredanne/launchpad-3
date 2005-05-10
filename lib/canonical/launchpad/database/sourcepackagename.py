@@ -1,42 +1,40 @@
-# Zope imports
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['SourcePackageName', 'SourcePackageNameSet']
+
 from zope.interface import implements
 from zope.exceptions import NotFoundError
 
-# SQLObject/SQLBase
 from sqlobject import SQLObjectNotFound
-from sqlobject import StringCol, ForeignKey, DateTimeCol, MultipleJoin
+from sqlobject import StringCol, MultipleJoin
 
 from canonical.database.sqlbase import SQLBase, quote
 
-# interfaces and database 
 from canonical.launchpad.interfaces import ISourcePackageName
 from canonical.launchpad.interfaces import ISourcePackageNameSet
 
-#
-#
-#
 
 class SourcePackageName(SQLBase):
     implements(ISourcePackageName)
     _table = 'SourcePackageName'
 
-    name = StringCol(dbName='name', notNull=True, unique=True,
-        alternateID=True)
+    name = StringCol(dbName='name', notNull=True, unique=True, alternateID=True)
 
     potemplates = MultipleJoin('POTemplate', joinColumn='sourcepackagename')
 
     def __unicode__(self):
         return self.name
 
-    def _ensure(klass, name):
+    def ensure(klass, name):
         try:
             return klass.byName(name)
         except SQLObjectNotFound:
             return klass(name=name)
+    ensure = classmethod(ensure)
 
-    ensure = classmethod(_ensure)
 
-class SourcePackageNameSet(object):
+class SourcePackageNameSet:
     implements(ISourcePackageNameSet)
 
     def __getitem__(self, name):
@@ -59,8 +57,8 @@ class SourcePackageNameSet(object):
             raise NotFoundError(sourcepackagenameid)
 
     def findByName(self, name):
-        """Find sourcepackagenames by its name or part of it"""
+        """Find sourcepackagenames by its name or part of it."""
         name = name.replace('%', '%%')
-        query = ('name ILIKE %s'
-                 %quote('%%' +name+ '%%'))
+        query = ('name ILIKE %s' % quote('%%' +name+ '%%'))
         return SourcePackageName.select(query)
+

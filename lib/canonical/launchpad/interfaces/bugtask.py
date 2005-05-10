@@ -15,20 +15,24 @@ class IEditableUpstreamBugTask(IHasProductAndAssignee):
     user."""
     title = Attribute('Title')
 
+
 class IReadOnlyUpstreamBugTask(IHasProductAndAssignee):
     """A bug assigned to upstream, which is read-only by the current
     user."""
     title = Attribute('Title')
+
 
 class IEditableDistroBugTask(Interface):
     """A bug assigned to a distro package, which is editable by
     the current user."""
     title = Attribute('Title')
 
+
 class IReadOnlyDistroBugTask(Interface):
     """A bug assigned to a distro package, which is read-only by the
     current user."""
     title = Attribute('Title')
+
 
 class IBugTask(IHasDateCreated):
     """A description of a bug needing fixing in a particular product
@@ -37,11 +41,13 @@ class IBugTask(IHasDateCreated):
     bug = Int(title=_("Bug #"))
     product = Choice(title=_('Product'), required=False, vocabulary='Product')
     sourcepackagename = Choice(
-        title=_("Source Package Name"), required=False, vocabulary='SourcePackageName')
+        title=_("Source Package Name"), required=False,
+        vocabulary='SourcePackageName')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
     distrorelease = Choice(
-        title=_("Distribution Release"), required=False, vocabulary='DistroRelease')
+        title=_("Distribution Release"), required=False,
+        vocabulary='DistroRelease')
     milestone = Choice(
         title=_('Target'), required=False, vocabulary='Milestone')
     status = Choice(
@@ -56,9 +62,8 @@ class IBugTask(IHasDateCreated):
     assignee = Choice(
         title=_('Assignee'), required=False, vocabulary='ValidPerson')
     binarypackagename = Choice(
-            title=_('Binary PackageName'), required=False,
-            vocabulary='BinaryPackageName'
-            )
+        title=_('Binary PackageName'), required=False,
+        vocabulary='BinaryPackageName')
     dateassigned = Datetime()
     datecreated  = Datetime()
     owner = Int()
@@ -74,14 +79,56 @@ class IBugTask(IHasDateCreated):
     # used for the page layout
     title = Attribute("Title")
 
+
+class IBugTaskDelta(Interface):
+    """The change made to a bug task (e.g. in an edit screen.)
+
+    Note that if product is not None, *both* sourcepackagename and
+    binarypackagename must be None. Likewise, if either of
+    sourcepackagename and/or binarypackagename is not None, product
+    must be None.
+    """
+    bugtask = Attribute("The modified IBugTask.")
+    product = Attribute("A dict containing two keys, 'old' and 'new' or None.")
+    sourcepackagename = Attribute(
+        "A dict containing two keys, 'old' and 'new' or None.")
+    binarypackagename = Attribute(
+        "A dict containing two keys, 'old' and 'new' or None.")
+    target = Attribute(
+        "A dict containing two keys, 'old' and 'new' or None.")
+    status = Attribute(
+        "A dict containing two keys, 'old' and 'new' or None.")
+    priority = Attribute(
+        "A dict containing two keys, 'old' and 'new' or None.")
+    severity = Attribute(
+        "A dict containing two keys, 'old' and 'new' or None.")
+    assignee = Attribute(
+        "A dict containing two keys, 'old' and 'new' or None.")
+
+
 class IUpstreamBugTask(IBugTask):
-    """Marker interface for upstream bug tasks."""
+    """A description of a bug needing fixing in a particular product."""
+    product = Choice(title=_('Product'), required=True, vocabulary='Product')
+
 
 class IDistroBugTask(IBugTask):
-    """Marker interface for distro bug tasks."""
+    """A description of a bug needing fixing in a particular package."""
+    sourcepackagename = Choice(
+        title=_("Source Package Name"), required=True,
+        vocabulary='SourcePackageName')
+    binarypackagename = Choice(
+        title=_('Binary PackageName'), required=False,
+        vocabulary='BinaryPackageName')
+    distribution = Choice(
+        title=_("Distribution"), required=True, vocabulary='Distribution')
+
 
 class IDistroReleaseBugTask(IDistroBugTask):
-    """Marker interface for distro release bug tasks."""
+    """A description of a bug needing fixing in a particular realease."""
+    distrorelease = Choice(
+        title=_("Distribution Release"), required=True,
+        vocabulary='DistroRelease')
+
 
 # XXX: Brad Bollenbach, 2005-02-03: This interface should be removed
 # when spiv pushes a fix upstream for the bug that makes this hackery
@@ -91,6 +138,7 @@ class IDistroReleaseBugTask(IDistroBugTask):
 class ISelectResultsSlicable(ISelectResults):
     def __getslice__(i, j):
         """Called to implement evaluation of self[i:j]."""
+
 
 class IBugTaskSet(Interface):
 
@@ -141,6 +189,7 @@ class IBugTaskSet(Interface):
 
         Exactly one of product, distribution or distrorelease must be provided.
         """
+
 
 class IBugTasksReport(Interface):
 

@@ -16,7 +16,7 @@
     </h1>
 
     <div class="documentDescription"
-        tal:content="context/shortdesc">$SourcePackage.shortdesc
+        tal:content="context/summary">$SourcePackage.summary
     </div>
     <div tal:content="context/description">$SourcePackage.description
     </div>

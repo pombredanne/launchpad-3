@@ -15,7 +15,7 @@ Check if the sourcepackage page is not broken.
 This page is inside a DistroRelease context.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/warty/+sources/mozilla-firefox-dummy HTTP/1.1
+  ... GET /distros/ubuntu/warty/+sources/mozilla-firefox HTTP/1.1
   ...
   ... """)
   HTTP/1.1 200 Ok
@@ -28,7 +28,7 @@ Check if the sourcepackage changelog page is not broken.
 This page is inside a DistroRelease context.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/warty/+sources/mozilla-firefox-dummy/+changelog HTTP/1.1
+  ... GET /distros/ubuntu/warty/+sources/mozilla-firefox/+changelog HTTP/1.1
   ...
   ... """)
   HTTP/1.1 200 Ok

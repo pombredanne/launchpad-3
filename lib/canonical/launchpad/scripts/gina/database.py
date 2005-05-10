@@ -14,7 +14,8 @@ from canonical.launchpad.database import Distribution, DistroRelease, \
                                          BinaryPackage, BinaryPackageName, \
                                          Person, EmailAddress, GPGKey, \
                                          PackagePublishing, Component, \
-                                         Section, SourcePackagePublishing, \
+                                         Section, \
+                                         SourcePackagePublishingHistory, \
                                          SourcePackageReleaseFile, \
                                          BinaryPackageFile
 
@@ -30,6 +31,8 @@ from canonical.lp.dbschema import PackagePublishingStatus,  \
                                   BinaryPackageFormat, \
                                   BuildStatus, \
                                   GPGKeyAlgorithms
+
+from canonical.database.constants import nowUTC
 
 priomap = {
     "low": SourcePackageUrgency.LOW,
@@ -337,14 +340,25 @@ class Launchpad(SQLThingBase):
         release = self.getSourcePackageRelease(src.package, src.version)[0].id
         componentID = self.getComponentByName(src.component).id
         sectionID = self.getSectionByName(src.section).id
-        status=PackagePublishingStatus.PUBLISHED
 
-        SourcePackagePublishing(distrorelease=self.distrorelease.id,
-                                sourcepackagerelease=release,
-                                status=status,
-                                component=componentID,
-                                section=sectionID)
-                             
+        # XXX dsilvers 20050415: This needs to be changed eventually because
+        # we want gina's published records to be handled by Lucille's
+        # publishing code. I.E. the publishing record should come in as
+        # PENDING and that's that.
+        # Also we should not be adding publishing records if the source was
+        # already published in the distrorelease but that comes for free with
+        # the checks done earlier I hope.
+
+        SourcePackagePublishingHistory(
+            distrorelease=self.distrorelease.id,
+            sourcepackagerelease=release,
+            status=PackagePublishingStatus.PUBLISHED,
+            component=componentID,
+            section=sectionID,
+            datecreated=nowUTC,
+            datepublished=nowUTC
+            )
+
     def createFakeSourcePackageRelease(self, release, src):
         maintid = self.getPeople(*release["parsed_maintainer"])[0]
         # XXX these are hardcoded to the current package's value, which is not
@@ -517,7 +531,9 @@ class Launchpad(SQLThingBase):
             return
                
         description = self.ensure_string_format(bin.description)
-        short_desc = description.split("\n")[0]
+        summary = description.split("\n")[0]
+        if summary[-1] != '.':
+            summary = summary + '.'
         licence = self.ensure_string_format(bin.licence)
         componentID = self.getComponentByName(bin.component).id
         sectionID = self.getSectionByName(bin.section).id
@@ -526,7 +542,7 @@ class Launchpad(SQLThingBase):
             "binarypackagename":    bin_name.id,
             "component":            componentID,
             "version":              bin.version,
-            "shortdesc":            short_desc,
+            "summary":              summary,
             "description":          description,
             "build":                build.id,
             "binpackageformat":     self.getBinaryPackageFormat(bin.filename),
@@ -574,21 +590,29 @@ class Launchpad(SQLThingBase):
         PackagePublishing(**data)
 
     def emptyPublishing(self, source=False, source_only=False):
-        """Empty the publishing tables for this distroarchrelease"""
+        """Empty the publishing tables for this distroarchrelease.
+
+        This is a pretty heavy handed process because it destroys source
+        package publishing history for the given distrorelease which is
+        a bit sucky. Eventually we won't be using this because we'll use
+        Lucille's domination code and publisher to handle it all.
+        """
 
         if source:
-            spps = SourcePackagePublishing.selectBy\
-                   (distroreleaseID=self.distrorelease.id)
+            spps = SourcePackagePublishingHistory.selectBy(
+                distroreleaseID=self.distrorelease.id
+                )
 
             for spp in spps:
                 spp.destroySelf()
 
-        # Source Only mode. Does not mees with binary publishing
+        # Source Only mode. Does not mess with binary publishing
         if source_only:
             return
 
-        pps = PackagePublishing.selectBy(\
-            distroarchreleaseID=self.distroarchrelease.id)
+        pps = PackagePublishing.selectBy(
+            distroarchreleaseID=self.distroarchrelease.id
+            )
 
         for pp in pps:
             pp.destroySelf()

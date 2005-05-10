@@ -82,13 +82,13 @@
 
         <div class="field">
 
-            <label>Short Description</label>
+            <label>Summary</label>
 
                 <div class="formHelp">
-                A short description of the project.
+                A brief (one paragraph) summary of the project.
                 </div>
 
-                <textarea cols="40" rows="5" name="shortdesc"></textarea>
+                <textarea cols="40" rows="5" name="summary"></textarea>
         </div>
 
         <div class="field">
@@ -96,7 +96,12 @@
             <label>Description</label>
 
                 <div class="formHelp">
-                A brief description of the project.
+                A detailed description of the project. Note that each
+                product for this project will have its own separate page and
+                description, so you should use this space to describe the
+                organisation of the project itself - when it was founded,
+                how many contributors there are, and how it is organised and
+                coordinated.
                 </div>
 
                 <textarea cols="40" rows="5" name="description"></textarea>

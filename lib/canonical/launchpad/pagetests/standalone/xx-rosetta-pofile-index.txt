@@ -1,0 +1,22 @@
+Test to check the POFile index page list all contributors as it should.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es HTTP/1.1
+  ... Accept-Language: en-gb,en;q=0.5
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+              <b>Template messages:</b>
+              22
+  ...
+              <b>Todo messages:</b>
+              15
+              <b>Completeness:</b>
+              31.82%
+  ...
+                  Ubuntu Translators<br />
+  ...
+      <h2>Contributors for this translation:</h2>
+  ...
+          <li>Carlos Perelló Marín</li>
+  ...

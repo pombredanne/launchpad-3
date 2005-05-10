@@ -55,10 +55,6 @@
     background-color: #7090a0;
 }
 
-label.language-code {
-    width: 6em;
-}
-
 .collapsed {
     border-style: dashed none none none;
 }
@@ -67,7 +63,7 @@ fieldset.message-strings {
 
 }
 
-fieldset.message-strings input {
+table.data input[type='text'] {
     width: 100%;
 }
 
@@ -398,10 +394,6 @@ Translation template stuff.
     border: 1px solid #364970;
 }
 
-label.fuzzy-checkbox {
-    float: right;
-}
-
 .language-label {
     float: left;
 }
@@ -430,8 +422,8 @@ label.fuzzy-checkbox {
 
 /* === Undo bugs in plone.css === */
 
-/* -- Stop accessing resources on plone.org -- */
-/* XXX change "http://plone.org/" to "/@@/" once they work */
+/* -- Stop accessing resources on plone.org: -- */
+/* XXX mpt 20050407 change http://plone.org/ to /@@/ eventually */
 
 ul {
   list-style-image: none;
@@ -489,15 +481,21 @@ input.searchButton {
   background-image: url(http://plone.org/phone_icon.gif);
 }
 
-/* -- Other bugs -- */
+/* -- "Links must look like links." -- SteveA */
+
+a, #portal-footer a {
+  text-decoration: underline;
+}
+/* -- ... except in portlets for now -- */
+a[name], .portlet :link, .portlet :visited {
+  text-decoration: none;
+}
+
+/* -- Don't stomp on people's preferred font sizes: -- */
 
 body, .listing {
   font-size: 100%;
 }
-.listing td {
-  padding: 0.125em 0.25em;
-}
-
 code {
   font-family: monospace;
   font-size: 100%;
@@ -506,9 +504,45 @@ code {
   border: none;
   padding: inherit;
 }
+pre {
+  font-family: monospace;
+  font-size: 100%;
+}
+
+/* -- Fix icon alignment in notes and error messages: -- */
+
+.portalMessage, .system-message, #error-handling {
+  background-position: 5px 0.5em;
+  padding-left: 30px;
+} /* need a px value because the image has a pixel size */
+
+/* -- Make headings lay out properly -- */
+
+h1 {
+  margin-bottom: 0.5em;
+  padding-right: 0;
+}
+
+/* Not all of a dt should be bold: -- */
+
+dt {
+  font-weight: inherit;
+}
+
+dt dfn {
+  font-style: inherit;
+  font-weight: bold;
+}
+
+/* -- Other bugs: -- */
+
+.listing td {
+  padding: 0.125em 0.25em;
+}
 
 .formHelp, .formHelp:hover {
   color: #666666;
+  cursor: inherit;
 }
 
 .portlet, #portal-top, #portal-footer {
@@ -531,17 +565,17 @@ li.edit, ul.edit li {
     text-decoration: none
 }
 
-pre {
-  font-family: monospace;
-  font-size: 100%;
-}
-
 /* === New design === */
 
 /* -- Stuff browsers should do, but don't -- */
 
 abbr, address {
 	font-style: inherit;
+}
+
+label {
+  font: caption;
+  font-weight: normal;
 }
 
 th {
@@ -555,6 +589,29 @@ thead {
 }
 
 /* -- Launchpad-wide -- */
+
+.debug {
+  background-color: #ffddee;
+}
+.debug th, .debug td {
+  border: 1px dotted red;
+}
+.debug th th, .debug th td, .debug td th, .debug td td {
+  border: 1px dotted green;
+}
+.fixme {
+  color: #ff6699;
+  background-color: #ffff00;
+}
+.actions {
+  margin: 0.5em 0;
+}
+.form {
+  text-align: right;
+}
+.list {
+  text-align: left;
+}
 
 h1, h2, h3, h4, h5, h6 {
   clear: both;
@@ -584,18 +641,23 @@ h3, h4, h5, h6 {
 table {
 	border-collapse: collapse;
 }
+table table {
+  width: 100%;
+}
 table.data, table.data thead, table.data tfoot {
 	border: solid #999;
 	border-width: 1pt 0;
 }
-table.data tr {
+table.data>thead>tr, table.data>tbody>tr, table.data>tfoot>tr {
 	border: dotted #999;
 	border-width: 1pt 0;
 }
-table.data th, table.data td {
-  padding: 0.25em 0.125em;
+table.data>tr>th, table.data>tr>td,
+table.data>thead>tr>th, table.data>thead>tr>td,
+table.data>tbody>tr>th, table.data>tbody>tr>td, table.data>tfoot>tr>th,table.data>tfoot>tr>td {
+  padding: 0.25em 0.125em 0.5em;
 }
-td p, td ol:first-child, td blockquote:first-child {
+td p:first-child, td ol:first-child, td blockquote:first-child {
 	margin-top: 0;
 }
 th {
@@ -608,7 +670,14 @@ tr {
 	vertical-align: top;
 }
 
-
+.results {
+  background-color: #dee7ec;
+  font-family: sans-serif;
+  font-size: small;
+  padding: 0.25em;
+  margin: 1em 0em;
+  clear: both;
+}
 
 .user {
 	float: right;
@@ -677,6 +746,8 @@ address.app {
 .launchpad-apps td {
 }
 
+/* -- Malone: -- */
+
 .bugid {
   text-align: left;
   width: 50%;
@@ -700,4 +771,34 @@ td.selected {
     background-color: #dee7ec;
     color: #436976;
     border: 1px solid #8cacbb;
+}
+
+/* -- Products: -- */
+
+ul.products>li {
+  list-style-image: url(/++resource++product_icon.gif);
+}
+dl.products>dt:before {
+  content: url(/++resource++product_icon.gif);
+}
+
+/* from richard braine for the series source forms */
+/* otherwise inputs don't disappear along with surrounding layer */
+input {
+    visibility:inherit
+}
+/* this lines up text inputs so they don't look a mess */
+.textinput {
+    position: absolute; 
+    left: 250px;
+} 
+/* radios had 1px left and right borders - don't know if intended
+   but looked shit imo */
+.radios {
+    border:none;
+}
+/* this style was making the text '(Required)' invisible:
+   same colour as background */
+.fieldRequired {
+    color: #999999
 }

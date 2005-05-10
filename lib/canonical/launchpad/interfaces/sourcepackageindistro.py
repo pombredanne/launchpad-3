@@ -16,7 +16,7 @@ class ISourcePackageInDistro(Interface):
     distrorelease = Int(title=_("DistroRelease"), required=False)
     maintainer = Int(title=_("Maintainer"), required=True)
     title = TextLine(title=_("Title"), required=True)
-    shortdesc = Text(title=_("Description"), required=True)
+    summary = Text(title=_("Description"), required=True)
     description = Text(title=_("Description"), required=True)
     manifest = Int(title=_("Manifest"), required=False)
     distro = Int(title=_("Distribution"), required=False)

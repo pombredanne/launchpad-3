@@ -1,5 +1,4 @@
-# (c) Canonical Software Ltd. 2004, all rights reserved.
-#
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 # arch-tag: b2309f78-891e-434e-bcdc-9fa635ec013d
 #
 # This is the canonical.rosetta python package.
@@ -9,7 +8,6 @@ __metaclass__ = type
 from zope.interface import implements
 from zope.component import getUtility
 
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.launchpad.interfaces import IRosettaApplication, \
     IProductSet, IDistroReleaseSet
 from canonical.publication import rootObject

@@ -7,10 +7,12 @@
 
     <!-- IBugTask -->
     <content class="canonical.launchpad.database.BugTask">
-        <require permission="launchpad.View"
-                 interface="canonical.launchpad.interfaces.IBugTask" />
-        <require permission="launchpad.Edit"
-                 set_schema="canonical.launchpad.interfaces.IBugTask" />
+        <require
+            permission="launchpad.View"
+            interface="canonical.launchpad.interfaces.IBugTask" />
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IBugTask" />
     </content>
 
     <browser:defaultView
@@ -54,7 +56,7 @@
     -->
     <browser:addform
         name="+upstreamtask"
-        schema="canonical.launchpad.interfaces.IBugTask"
+        schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         for="canonical.launchpad.interfaces.IBug"
         class="canonical.launchpad.browser.bug.BugAddingView"
         label="Add Task to fix bug Upstream"
@@ -72,7 +74,7 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IEditableUpstreamBugTask"
         class="canonical.launchpad.browser.bug.BugTaskEditView"
-        schema="canonical.launchpad.interfaces.IBugTask"
+        schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         fields="product maintainer_displayname bugtitle bugdescription milestone
                 status priority severity assignee"
         label="Edit Product Bug Task"
@@ -84,7 +86,7 @@
     <browser:schemadisplay
         name="+edit"
         for="canonical.launchpad.interfaces.IReadOnlyUpstreamBugTask"
-        schema="canonical.launchpad.interfaces.IBugTask"
+        schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         fields="product maintainer_displayname bugtitle bugdescription milestone
                 status priority severity assignee"
         label="Product Bug Task"
@@ -95,7 +97,7 @@
 
     <browser:addform
         name="+distrotask"
-        schema="canonical.launchpad.interfaces.IBugTask"
+        schema="canonical.launchpad.interfaces.IDistroBugTask"
         for="canonical.launchpad.interfaces.IBug"
         class="canonical.launchpad.browser.bug.BugAddingView"
         label="Add SourcePackage Bug Task"
@@ -113,7 +115,7 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IEditableDistroBugTask"
         class="canonical.launchpad.browser.bug.BugTaskEditView"
-        schema="canonical.launchpad.interfaces.IBugTask"
+        schema="canonical.launchpad.interfaces.IDistroBugTask"
         fields="sourcepackagename binarypackagename bugtitle bugdescription
                 status priority severity assignee"
         label="Edit SourcePackage Bug Task"
@@ -125,7 +127,7 @@
     <browser:schemadisplay
         name="+edit"
         for="canonical.launchpad.interfaces.IReadOnlyDistroBugTask"
-        schema="canonical.launchpad.interfaces.IBugTask"
+        schema="canonical.launchpad.interfaces.IDistroBugTask"
         fields="sourcepackagename binarypackagename bugtitle bugdescription
                 status priority severity assignee"
         label="Source Package Bug Task"
@@ -136,7 +138,7 @@
 
     <browser:addform
         name="+distroreleasetask"
-        schema="canonical.launchpad.interfaces.IBugTask"
+        schema="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         for="canonical.launchpad.interfaces.IBug"
         class="canonical.launchpad.browser.bug.BugAddingView"
         label="Add Distro Release Bug Task"
@@ -176,6 +178,12 @@
         lp:url="malone/tasks/$BugTask.id/+edit">
     </browser:schemadisplay>
 -->
+
+    <!-- BugTaskDelta -->
+    <content class="canonical.launchpad.database.BugTaskDelta">
+        <allow interface="canonical.launchpad.interfaces.IBugTaskDelta" />
+    </content>
+
     <!-- BugTasksReport -->
     <!-- TODO: figure out why we need to give explicit attributes instead of
                using set_schema-->

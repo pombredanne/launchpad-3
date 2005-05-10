@@ -3,7 +3,7 @@ Any logged-in user can edit public bugs.
   >>> print http(r"""
   ... POST /malone/bugs/3/+edit HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 1740
+  ... Content-Length: 1738
   ... Content-Type: multipart/form-data; boundary=---------------------------9007557518154646371082635117
   ... Referer: http://localhost:9000/malone/bugs/3/+edit
   ... 
@@ -16,7 +16,7 @@ Any logged-in user can edit public bugs.
   ... 
   ... Bug Title Testing
   ... -----------------------------9007557518154646371082635117
-  ... Content-Disposition: form-data; name="field.shortdesc"
+  ... Content-Disposition: form-data; name="field.summary"
   ... 
   ... Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo xx ww
   ... -----------------------------9007557518154646371082635117

@@ -48,10 +48,10 @@ DistroRelease.getPublishedReleases:
 
     >>> from canonical.launchpad.database import SourcePackageName, DistroRelease
     >>> warty2 = DistroRelease.get(1)
-    >>> prs = warty2.getPublishedReleases(SourcePackageName.byName('mozilla-firefox-dummy'))
+    >>> prs = warty2.getPublishedReleases(SourcePackageName.byName('mozilla-firefox'))
     >>> print len(prs)
     1
     >>> print prs[0].sourcepackagerelease.sourcepackagename.name
-    mozilla-firefox-dummy
+    mozilla-firefox
 
 [1] https://wiki.launchpad.canonical.com/DerivationOverview

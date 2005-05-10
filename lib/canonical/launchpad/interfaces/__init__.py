@@ -1,4 +1,7 @@
-# XXX from auth/interfaces
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
 from zope.interface import Interface, Attribute
 from persistent import IPersistent
 
@@ -43,6 +46,7 @@ from canonical.launchpad.interfaces.jabber import *
 from canonical.launchpad.interfaces.karma import *
 from canonical.launchpad.interfaces.language import *
 from canonical.launchpad.interfaces.launchpad import *
+from canonical.launchpad.interfaces.librarian import *
 from canonical.launchpad.interfaces.logintoken import *
 from canonical.launchpad.interfaces.maintainership import *
 from canonical.launchpad.interfaces.manifestentry import *
@@ -52,8 +56,17 @@ from canonical.launchpad.interfaces.milestone import *
 from canonical.launchpad.interfaces.package import *
 from canonical.launchpad.interfaces.packaging import *
 from canonical.launchpad.interfaces.person import *
+from canonical.launchpad.interfaces.poexport import *
 from canonical.launchpad.interfaces.pofile import *
+from canonical.launchpad.interfaces.pomsgid import *
+from canonical.launchpad.interfaces.pomsgidsighting import *
+from canonical.launchpad.interfaces.pomsgset import *
+from canonical.launchpad.interfaces.poparser import *
+from canonical.launchpad.interfaces.potemplate import *
 from canonical.launchpad.interfaces.potemplatename import *
+from canonical.launchpad.interfaces.potmsgset import *
+from canonical.launchpad.interfaces.potranslation import *
+from canonical.launchpad.interfaces.potranslationsighting import *
 from canonical.launchpad.interfaces.processor import *
 from canonical.launchpad.interfaces.product import *
 from canonical.launchpad.interfaces.productrelease import *
@@ -63,16 +76,19 @@ from canonical.launchpad.interfaces.publishedpackage import *
 from canonical.launchpad.interfaces.publishing import *
 from canonical.launchpad.interfaces.pyarch import *
 from canonical.launchpad.interfaces.queue import *
+from canonical.launchpad.interfaces.rawfiledata import *
+from canonical.launchpad.interfaces.rosettastats import *
 from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.section import *
 from canonical.launchpad.interfaces.sourcepackage import *
 from canonical.launchpad.interfaces.sourcepackageindistro import *
 from canonical.launchpad.interfaces.sourcepackagename import *
 from canonical.launchpad.interfaces.sourcepackagerelease import *
-from canonical.launchpad.interfaces.sourcesource import *
+#from canonical.launchpad.interfaces.sourcesource import *
 from canonical.launchpad.interfaces.spokenin import *
 from canonical.launchpad.interfaces.ssh import *
 from canonical.launchpad.interfaces.translationeffort import *
+from canonical.launchpad.interfaces.vpoexport import *
 from canonical.launchpad.interfaces.vsourcepackagereleasepublishing import *
 from canonical.launchpad.interfaces.wikiname import *
 
