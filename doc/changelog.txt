@@ -2,6 +2,50 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-10 16:35:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1683
+
+    Summary:
+      remove an unused file dating back to the limiolithic era. [trivial]
+    Revision:
+      launchpad--devel--0--patch-1683
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-513
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-514
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-515
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-516
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-517
+       remove an unused file
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-518
+       merge from rf
+    
+
+    removed files:
+     lib/canonical/launchpad/templates/.arch-ids/severity-priority.html.id
+     lib/canonical/launchpad/templates/severity-priority.html
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-513
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-514
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-515
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-516
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-517
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-518
+
+
 2005-05-10 15:28:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1682
 
     Summary:
