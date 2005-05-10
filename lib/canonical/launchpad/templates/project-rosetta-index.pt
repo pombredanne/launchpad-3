@@ -30,7 +30,7 @@
        tal:attributes="href context/homepageurl|nothing">(None supplied)</a>
     </div>
 
-    <p  tal:content="context/shortdesc"
+    <p  tal:content="context/summary"
         class="documentDescription">Project Summary
     </p>
 

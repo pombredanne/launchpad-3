@@ -58,8 +58,8 @@
                     (<a tal:attributes="href project/name" href="#"
                         tal:content="project/name">$Project.name</a>)
                     <br />
-                <span tal:content="project/shortdesc">
-                    $Project.shortdesc</span>
+                <span tal:content="project/summary">
+                    $Project.summary</span>
                 </td>
             </tr>
         </table>

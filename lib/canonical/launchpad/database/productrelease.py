@@ -21,7 +21,7 @@ class ProductRelease(SQLBase):
     datereleased = DateTimeCol(notNull=True, default=nowUTC)
     version = StringCol(notNull=True)
     title = StringCol(notNull=False, default=None)
-    shortdesc = StringCol(notNull=False, default=None)
+    summary = StringCol(notNull=False, default=None)
     description = StringCol(notNull=False, default=None)
     changelog = StringCol(notNull=False, default=None)
     owner = ForeignKey(dbName="owner", foreignKey="Person", notNull=True)

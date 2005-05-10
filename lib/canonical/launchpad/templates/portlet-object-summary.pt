@@ -3,7 +3,7 @@
 
     <div class="portletBody">
         <div class="portletContent even"
-             tal:content="context/summary | context/shortdesc | string: no summary">
+             tal:content="context/summary | string: no summary">
             Object Summary
         </div>
     </div>

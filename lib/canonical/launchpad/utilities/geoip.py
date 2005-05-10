@@ -6,9 +6,9 @@ from zope.component import getUtility
 
 from zope.i18n.interfaces import IUserPreferredLanguages
 
+from canonical.launchpad.helpers import canonicalise_code
 from canonical.launchpad.interfaces import IGeoIP, ICountrySet, \
-        ILanguageSet, IRequestLocalLanguages, \
-        IRequestPreferredLanguages
+    ILanguageSet, IRequestLocalLanguages, IRequestPreferredLanguages
 
 __all__ = ['GeoIP', 'RequestLocalLanguages', 'RequestPreferredLanguages']
 
@@ -56,7 +56,12 @@ class RequestLocalLanguages(object):
         country = gi.country_by_addr(ip_addr)
         if country in [None, 'A0', 'A1', 'A2']:
             return []
-        return country.languages
+
+        return [
+            language
+            for language in country.languages
+            if language.visible
+            ]
 
 
 class RequestPreferredLanguages(object):
@@ -74,14 +79,15 @@ class RequestPreferredLanguages(object):
         languages = []
 
         for code in codes:
-            if '-' in code:
-                language, country = code.split('-', 1)
-                code = "%s_%s" % (language, country.upper())
+            code = canonicalise_code(code)
 
             try:
                 languages.append(languageset[code])
             except KeyError:
                 pass
 
-        return languages
-
+        return [
+            language
+            for language in languages
+            if language.visible
+            ]

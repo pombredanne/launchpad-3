@@ -1,3 +1,15 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Functions used in Rosetta scripts.
+
+Some of the tests for this file are elsewhere. See:
+
+    lib/canonical/launchpad/doc/po-attach.txt
+    lib/canonical/launchpad/scripts/ftests/test_po_attach.py
+"""
+
+__metaclass__ = type
+
 import doctest
 import os
 import tarfile
@@ -11,12 +23,28 @@ from canonical.launchpad.database import DistributionSet, \
     BinaryPackageNameSet, LanguageNotFound
 from canonical.sourcerer.deb.version import Version
 
-def fetch_date_list(archive_uri, logger):
+class URLOpenerError(Exception):
+    pass
+
+class URLOpener:
+    """Open URLs as file-like objects.
+
+    This class is used to allow functional testing of scripts that fetch
+    things from the network.
+    """
+
+    def open(self, url):
+        try:
+            return urllib2.urlopen(url)
+        except urllib2.HTTPError, e:
+            raise URLOpenerError(str(e))
+
+def fetch_date_list(urlopener, archive_uri, logger):
     uri = archive_uri + '/directories.txt'
 
     try:
-        date_file = urllib2.urlopen(uri)
-    except urllib2.HTTPError, e:
+        date_file = urlopener.open(uri)
+    except URLOpenerError, e:
         logger.error('Got an error fetching the file %s: %s' % (uri, e))
         raise
 
@@ -27,17 +55,17 @@ def fetch_date_list(archive_uri, logger):
 
     return date_list
 
-def fetch_catalog(archive_uri, date, logger):
+def fetch_catalog(urlopener, archive_uri, date, logger):
     uri = "%s/%s/translations.txt" % (archive_uri, date)
 
     try:
-        catalogfile = urllib2.urlopen(uri)
-    except urllib2.HTTPError, e:
+        catalog_file = urlopener.open(uri)
+    except URLOpenerError, e:
         logger.error('Got an error fetching the file %s: %s' %
             (uri, e))
         raise
 
-    return parse_catalog(catalogfile)
+    return parse_catalog(catalog_file)
 
 def parse_catalog(catalog):
     r"""Parse a catalog of package translations.
@@ -80,29 +108,30 @@ def parse_catalog(catalog):
 
     return res
 
-def make_tarball(files):
-    sio = StringIO()
-    tarball = tarfile.open('', 'w', sio)
-
-    sorted_files = files.keys()
-    sorted_files.sort()
-
-    for filename in sorted_files:
-        helpers.tar_add_file(tarball, filename, files[filename])
-
-    tarball.close()
-    sio.seek(0)
-    return tarfile.open('', 'r', sio)
-
 def get_test_tarball():
     """Create a translation tarball for doctests.
 
     >>> tarball = get_test_tarball()
-    >>> len(tarball.getmembers())
-    5
+    >>> for member in tarball.getmembers():
+    ...     print member.name
+    sources/
+    sources/po/
+    sources/po/cy.po
+    sources/po/es.po
+    sources/po/uberfrob.pot
+    uberfrob/
+    uberfrob/usr/
+    uberfrob/usr/share/
+    uberfrob/usr/share/locales/
+    uberfrob/usr/share/locales/cy/
+    uberfrob/usr/share/locales/cy/LC_MESSAGES/
+    uberfrob/usr/share/locales/cy/LC_MESSAGES/uber.mo
+    uberfrob/usr/share/locales/es/
+    uberfrob/usr/share/locales/es/LC_MESSAGES/
+    uberfrob/usr/share/locales/es/LC_MESSAGES/uber.mo
     """
 
-    return make_tarball({
+    return helpers.make_tarball({
         'uberfrob/usr/share/locales/cy/LC_MESSAGES/uber.mo':
             'whatever',
         'uberfrob/usr/share/locales/es/LC_MESSAGES/uber.mo':
@@ -115,7 +144,7 @@ def get_test_tarball():
             'whatever',
         })
 
-def get_domain_binarypackages(tar):
+def get_domain_binarypackages(tarball):
     """Return a dictionary mapping domains to binary package names.
 
     >>> tarball = get_test_tarball()
@@ -124,7 +153,7 @@ def get_domain_binarypackages(tar):
     >>> tarball.close()
     """
 
-    names = tar.getnames()
+    names = tarball.getnames()
 
     domains = {}
 
@@ -163,8 +192,22 @@ class DomainTarballError(Exception):
     """Raised when an error occurs when scanning a translation domain tarball.
     """
 
+def find_pot_and_po_files(tarball):
+    """Return a list of all .pot and .po files in a tarball."""
+
+    pot_files = []
+    po_files = []
+
+    for name in tarball.getnames():
+        if name.endswith('.pot'):
+            pot_files.append(name)
+        elif name.endswith('.po'):
+            po_files.append(name)
+
+    return pot_files, po_files
+
 def get_domains_from_tarball(distrorelease_name, sourcepackage_name,
-                             existing_potemplates, tar):
+                             existing_potemplates, tarball):
     """Return a list with all .pot and .po files from a tarball.
 
     The parameters are: the name of the source package the tarball was
@@ -194,11 +237,11 @@ def get_domains_from_tarball(distrorelease_name, sourcepackage_name,
 
     # Get a mapping of domain names to binary package names.
 
-    domain_binarypackages = get_domain_binarypackages(tar)
+    domain_binarypackages = get_domain_binarypackages(tarball)
 
     # Get lists of the PO templates and PO files in the tarball.
 
-    pot_files, po_files = helpers.examine_tarfile(tar)
+    pot_files, po_files = find_pot_and_po_files(tarball)
 
     # Get the list of PO templates which are not package configuration
     # templates.
@@ -225,30 +268,31 @@ def get_domains_from_tarball(distrorelease_name, sourcepackage_name,
     for pot_file in pot_files:
         pot_dirname, pot_filename = os.path.split(pot_file)
         assert pot_dirname.startswith('source/')
+        pot_dirname = pot_dirname[len('source/'):]
         domain_name = None
 
         if pot_dirname in found_paths:
             # We have alredy a .pot file in this path, we don't handle this
             # situation yet, so the import is not done.
-            raise DomainTarballError("The sourcepackage %s for %s has more"
-                                     " than one .pot file inside %s. Ignoring"
-                                     " the tarball..." % (sourcepackage_name,
-                                     distrorelease_name, pot_dirname))
+            raise DomainTarballError(
+                "The source package %s for %s has more than one .pot file"
+                " in source/%s. Ignoring the tarball." %
+                (sourcepackage_name, distrorelease_name, pot_dirname))
 
         found_paths.append(pot_dirname)
 
-        if pot_dirname == 'source/debian/po':
-            # It's a Debian debconf .pot file.
+        if pot_dirname == 'debian/po':
+            # It's a Debconf PO template.
             domain_name = 'pkgconf-%s' % sourcepackage_name
         elif len(non_pkgconf_templates) == len(domain_binarypackages) == 1:
-            # We have only one non-Debconf .pot file and one domain, therefore
-            # the mapping is direct.
+            # We have only one non-Debconf PO template and one domain,
+            # therefore the mapping is direct.
             domain_name = domain_binarypackages.keys()[0]
         else:
-            # Check to see if there is already a PO Template in the database
+            # Check to see if there is already a PO template in the database
             # with the same path and the same filename as pot_filename.
             for potemplate in existing_potemplates:
-                if ('source/' + potemplate.path == pot_dirname and
+                if (potemplate.path == pot_dirname and
                     potemplate.filename == pot_filename):
                     domain_name = potemplate.potemplatename.translationdomain
 
@@ -284,10 +328,9 @@ def get_domains_from_tarball(distrorelease_name, sourcepackage_name,
 
         # Create the translation domain object.
         td = TranslationDomain(domain_name)
-        td.pot_contents = tar.extractfile(pot_file).read()
+        td.pot_contents = tarball.extractfile(pot_file).read()
         td.pot_filename = pot_filename
-        domain_path = pot_dirname[len('source/'):]
-        td.domain_paths.append(domain_path)
+        td.domain_paths.append(pot_dirname)
 
         if domain_name in domain_binarypackages:
             td.binary_packages = domain_binarypackages[domain_name]
@@ -296,9 +339,9 @@ def get_domains_from_tarball(distrorelease_name, sourcepackage_name,
         # template, and add them to the translation domain.
         for po_file in po_files:
             po_dirname, po_filename = os.path.split(po_file)
-            if po_dirname == pot_dirname:
+            if po_dirname == 'source/' + pot_dirname:
                 lang_code, extension = os.path.splitext(po_filename)
-                td.po_files[lang_code] = tar.extractfile(po_file).read()
+                td.po_files[lang_code] = tarball.extractfile(po_file).read()
 
         domains.append(td)
 
@@ -308,16 +351,17 @@ def get_domains_from_tarball(distrorelease_name, sourcepackage_name,
 class AttachTranslationCatalog:
     """Attach the .po and .pot files of a set of tarballs into Rosetta."""
 
-    def __init__(self, base_uri, catalog, ztm, logger):
+    def __init__(self, urlopener, base_uri, catalog, ztm, logger):
         """Initialize the AttachTranslationCatalog object.
 
         Get Four arguments, the base_uri where the files will be downloaded
         from, the catalog with all files to be attached, the Zope Transaction
         Manager and a logger for the warning/errors messages.
         """
-        self.ztm = ztm
+        self.urlopener = urlopener
         self.base_uri = base_uri
         self.catalog = catalog
+        self.ztm = ztm
         self.logger = logger
 
     def get_distrorelease(self, distribution_name, release_name):
@@ -368,8 +412,8 @@ class AttachTranslationCatalog:
         self.logger.info("Getting %s" % uri)
 
         try:
-            tarfile = urllib2.urlopen(uri)
-        except urllib2.HTTPError, e:
+            tarfile = self.urlopener.open(uri)
+        except URLOpenerError, e:
             self.logger.error('Got an error fetching the file %s: %s' %
                 (uri, e))
             return
@@ -394,7 +438,7 @@ class AttachTranslationCatalog:
                 if Version(version) <= pot.sourcepackageversion:
                     self.logger.debug(
                         "This tarball or a newer one is already imported."
-                        " Ignoring it...")
+                        " Ignoring it.")
                     return
 
         tarball = helpers.string_to_tarfile(tarfile.read())
@@ -535,7 +579,7 @@ class AttachTranslationCatalog:
                 except:
                     # If an exception is raised, we log it before aborting the
                     # attachment.
-                    self.logger.error('We got an unexpected exception', exc_info = 1)
+                    self.logger.error('We got an unexpected exception', exc_info=1)
                     self.ztm.abort()
 
     def run(self):
@@ -544,8 +588,22 @@ class AttachTranslationCatalog:
         except:
             # If an exception is raised, we log it before aborting the
             # attachment.
-            self.logger.error('We got an unexpected exception', exc_info = 1)
+            self.logger.error('We got an unexpected exception', exc_info=1)
             self.ztm.abort()
+
+def attach(urlopener, archive_uri, ztm, logger):
+    """Attach PO templates and PO files from a (possibly remote) archive of
+    tarballs.
+    """
+
+    dates_list = fetch_date_list(urlopener, archive_uri, logger)
+
+    for date in dates_list:
+        catalog = fetch_catalog(urlopener, archive_uri, date, logger)
+        base_uri = archive_uri + '/' + date
+        process = AttachTranslationCatalog(
+            urlopener, base_uri, catalog, ztm, logger)
+        process.run()
 
 if __name__ == '__main__':
     doctest.testmod()

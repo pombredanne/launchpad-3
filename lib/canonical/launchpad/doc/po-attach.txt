@@ -1,9 +1,9 @@
-Scripts helper functions for Rosetta
-====================================
+
+Rosetta PO Attach Cron Script
+=============================
 
 get_domains_from_tarball
 ------------------------
-
 
 >>> from canonical.launchpad import helpers
 >>> from canonical.launchpad.scripts import rosetta
@@ -21,14 +21,14 @@ A case with only Debconf translations.
 ...     distrorelease_name, sourcepackage_name, [], tarball)
 >>> len(domains)
 1
->>> domains[0].name
+>>> domains[0].domainname
 'pkgconf-uberfrob'
 >>> domains[0].pot_contents
 'whatever'
 >>> domains[0].pot_filename
 'templates.pot'
 >>> domains[0].domain_paths
-['source/debian/po']
+['debian/po']
 >>> domains[0].binary_packages
 []
 >>> po_files = domains[0].po_files
@@ -52,14 +52,14 @@ We have only one translation domain, a .pot file and a set of .po files.
 ...     distrorelease_name, sourcepackage_name, [], tarball)
 >>> len(domains)
 1
->>> domains[0].name
+>>> domains[0].domainname
 'uberfrob'
 >>> domains[0].pot_contents
 'whatever'
 >>> domains[0].pot_filename
 'template.pot'
 >>> domains[0].domain_paths
-['source/po']
+['po']
 >>> domains[0].binary_packages
 ['uberfrob-package']
 >>> po_files = domains[0].po_files
@@ -69,18 +69,18 @@ We have only one translation domain, a .pot file and a set of .po files.
 'whatever'
 
 Now pass in some previously existing PO templates which match ones in the
-tarball. The code should use the existing PO templates from the database.
+tarball. The code should reuse the existing PO templates.
 
 >>> class DummyPOTemplateName:
 ...     def __init__(self, name):
 ...         self.name = name
+...         self.translationdomain = name
 ...
 >>> class DummyPOTemplate:
 ...     def __init__(self, name, path, filename):
 ...         self.potemplatename = DummyPOTemplateName(name)
 ...         self.path = path
 ...         self.filename = filename
-
 >>> potemplateset = [
 ...     DummyPOTemplate(
 ...         name='uberfrob',
@@ -93,13 +93,13 @@ tarball. The code should use the existing PO templates from the database.
 ... ]
 >>> tarball = helpers.make_tarball({
 ...     'uberfrob-package/usr/share/locale/cy/LC_MESSAGES/uberfrob.mo':
-...         'binary content for cy translation of uberfrob',
+...         'binary content for cy translation of uberfrob domain',
 ...     'uberfrob-package/usr/share/locale/es/LC_MESSAGES/uberfrob.mo':
-...         'binary content for es translation of uberfrob',
+...         'binary content for es translation of uberfrob domain',
 ...     'uberfrob-package/usr/share/locale/cy/LC_MESSAGES/uberfrob-x.mo':
-...         'binary content for cy translation of uberfrob x domain',
+...         'binary content for cy translation of uberfrob-x domain',
 ...     'uberfrob-package/usr/share/locale/es/LC_MESSAGES/uberfrob-x.mo':
-...         'binary content for es translation of uberfrob x domain',
+...         'binary content for es translation of uberfrob-x domain',
 ...     'source/po/uberfrob-splat.pot': 'whatever',
 ...     'source/po/cy.po': 'whatever',
 ...     'source/po/es.po': 'whatever2',
@@ -114,14 +114,14 @@ tarball. The code should use the existing PO templates from the database.
 
 First domain:
 
->>> domains[0].name
+>>> domains[0].domainname
 'uberfrob-x'
 >>> domains[0].pot_filename
 'uberfrob-xyzzy.pot'
 
 Second domain:
 
->>> domains[1].name
+>>> domains[1].domainname
 'uberfrob'
 >>> domains[1].pot_filename
 'uberfrob-splat.pot'
@@ -132,13 +132,13 @@ there are no existing PO templates in this case which could be used.
 
 >>> tarball = helpers.make_tarball({
 ...     'uberfrob-package/usr/share/locale/cy/LC_MESSAGES/uberfrob.mo':
-...         'binary content for cy translation of uberfrob',
+...         'binary content for cy translation of uberfrob domain',
 ...     'uberfrob-package/usr/share/locale/es/LC_MESSAGES/uberfrob.mo':
-...         'binary content for es translation of uberfrob',
+...         'binary content for es translation of uberfrob domain',
 ...     'uberfrob-package/usr/share/locale/cy/LC_MESSAGES/uberfrob-x.mo':
-...         'binary content for cy translation of uberfrob x domain',
+...         'binary content for cy translation of uberfrob-x domain',
 ...     'uberfrob-package/usr/share/locale/es/LC_MESSAGES/uberfrob-x.mo':
-...         'binary content for es translation of uberfrob x domain',
+...         'binary content for es translation of uberfrob-x domain',
 ...     'source/po/uberfrob.pot': 'whatever',
 ...     'source/po/cy.po': 'whatever',
 ...     'source/po/es.po': 'whatever2',
@@ -153,14 +153,14 @@ there are no existing PO templates in this case which could be used.
 
 First domain:
 
->>> domains[0].name
+>>> domains[0].domainname
 'uberfrob-x'
 >>> domains[0].pot_contents
 'whatever'
 >>> domains[0].pot_filename
 'uberfrob-x.pot'
 >>> domains[0].domain_paths
-['source/po-x']
+['po-x']
 >>> domains[0].binary_packages
 ['uberfrob-package']
 >>> po_files = domains[0].po_files
@@ -171,14 +171,14 @@ First domain:
 
 Second domain:
 
->>> domains[1].name
+>>> domains[1].domainname
 'uberfrob'
 >>> domains[1].pot_contents
 'whatever'
 >>> domains[1].pot_filename
 'uberfrob.pot'
 >>> domains[1].domain_paths
-['source/po']
+['po']
 >>> domains[1].binary_packages
 ['uberfrob-package']
 >>> po_files = domains[1].po_files
@@ -211,19 +211,19 @@ Debconf template.
 
 First domain:
 
->>> domains[0].name
-'review-potemplate-hoary-uberfrob-1'
+>>> domains[0].domainname
+'review-hoary-uberfrob-1'
 >>> domains[0].pot_filename
 'uberfrob-xyzzy.pot'
 
 Second domain:
 
->>> domains[1].name
-'review-potemplate-hoary-uberfrob-2'
+>>> domains[1].domainname
+'review-hoary-uberfrob-2'
 >>> domains[1].pot_filename
 'uberfrob-splat.pot'
 
-This is a combination case, when we have both a Debconf template and two
+This is a combination case, when we have a Debconf template and also two
 unidentifiable templates.
 
 >>> potemplateset = []
@@ -249,22 +249,22 @@ unidentifiable templates.
 
 First domain:
 
->>> domains[0].name
+>>> domains[0].domainname
 'pkgconf-uberfrob'
 >>> domains[0].pot_filename
 'templates.pot'
 
 Second domain:
 
->>> domains[1].name
-'review-potemplate-hoary-uberfrob-1'
+>>> domains[1].domainname
+'review-hoary-uberfrob-1'
 >>> domains[1].pot_filename
 'uberfrob-xyzzy.pot'
 
 Third domain:
 
->>> domains[2].name
-'review-potemplate-hoary-uberfrob-2'
+>>> domains[2].domainname
+'review-hoary-uberfrob-2'
 >>> domains[2].pot_filename
 'uberfrob-splat.pot'
 

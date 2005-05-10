@@ -75,7 +75,7 @@
  <li tal:repeat="source view/sources">
   <a tal:attributes="href string:+sources/${source/name}"
      tal:content="source/name">SOURCE</a> : 
-    <span tal:content="source/shortdesc"/>
+    <span tal:content="source/summary"/>
   </li> 
 </ul>
 </fieldset>
@@ -91,7 +91,7 @@
        tal:attributes="href
        string:${archtag}/${binary/name}" 
     tal:content="string:${binary/name}-${archtag}">BIN</a>  : 
-    <span tal:content="binary/shortdesc"/>
+    <span tal:content="binary/summary"/>
   </li> 
 </ul>
 </fieldset>

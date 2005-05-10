@@ -33,7 +33,7 @@
   ... 
   ... This is a Test Product
   ... -----------------------------43746069110828506211603039137
-  ... Content-Disposition: form-data; name="field.shortdesc"
+  ... Content-Disposition: form-data; name="field.summary"
   ... 
   ... This Summary is for the Test Product
   ... -----------------------------43746069110828506211603039137

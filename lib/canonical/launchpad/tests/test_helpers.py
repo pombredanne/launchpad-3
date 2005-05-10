@@ -9,13 +9,13 @@ from zope.interface import implements
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import ILanguageSet, IPerson, ILaunchBag
 
-def make_test_string_1():
+def make_test_tarball_1():
     '''
     Generate a test tarball that looks something like a source tarball which
     has exactly one directory called 'po' which is interesting (i.e. contains
     some files which look like POT/PO files).
 
-    >>> tarball = helpers.string_to_tarfile(make_test_string_1())
+    >>> tarball = make_test_tarball_1()
 
     Check it looks vaguely sensible.
 
@@ -24,30 +24,28 @@ def make_test_string_1():
     True
     '''
 
-    return helpers.make_tarfile({
-        'uberfrob-0.1' : {
-            'README' : 'Uberfrob is an advanced frobnicator.',
-            'po' : {
-                'cy.po' : '# Blah.',
-                'es.po' : '# Blah blah.',
-                'uberfrob.pot' : '# Yowza!',
-                 },
-            'blah' : {
-                'po' : {
-                    'la' : 'la la' }
-                },
-            'uberfrob.py' :
-                'import sys\n'
-                'print "Frob!"\n'
-            }
-        })
+    return helpers.make_tarball({
+        'uberfrob-0.1/README':
+            'Uberfrob is an advanced frobnicator.',
+        'uberfrob-0.1/po/cy.po':
+            '# Blah.',
+        'uberfrob-0.1/po/es.po':
+            '# Blah blah.',
+        'uberfrob-0.1/po/uberfrob.pot':
+            '# Yowza!',
+        'uberfrob-0.1/blah/po/la':
+            'la la',
+        'uberfrob-0.1/uberfrob.py' :
+            'import sys\n'
+            'print "Frob!"\n'
+    })
 
-def make_test_string_2():
+def make_test_tarball_2():
     r'''
     Generate a test tarball string that has some interesting files in a common
     prefix.
 
-    >>> tarball = helpers.string_to_tarfile(make_test_string_2())
+    >>> tarball = make_test_tarball_2()
 
     Check the expected files are in the archive.
 
@@ -61,32 +59,44 @@ def make_test_string_2():
     '# Test PO file.\n'
     '''
 
+    pot = helpers.join_lines(
+        '# Test POT file.',
+        'msgid "foo"',
+        'msgstr ""',
+        ),
+
     po = helpers.join_lines(
         '# Test PO file.',
         'msgid "foo"',
         'msgstr "bar"',
         )
 
-    return helpers.make_tarfile({
-        'test' : {
-            'test.pot' : helpers.join_lines(
-                '# Test POT file.',
-                'msgid "foo"',
-                'msgstr ""',
-                ),
-            'cy.po' : po,
-            'es.po' : po,
-            }
-        })
+    return helpers.make_tarball({
+        'test/test.pot': pot,
+        'test/cy.po': po,
+        'test/es.po': po,
+    })
 
-def test_make_tarfile():
+def test_make_tarball():
     """
-    >>> s = helpers.make_tarfile({ 'foo' : 'bar', 'zot' : { 'gurgle' : 'sploink' } })
-    >>> tarball = helpers.string_to_tarfile(s)
+    Simple case.
+
+    >>> tarball = helpers.make_tarball({'foo': 'bar'})
     >>> tarball.getnames()
-    ['foo', 'zot/', 'zot/gurgle']
-    >>> tarball.extractfile('zot/gurgle').read()
-    'sploink'
+    ['foo']
+    >>> tarball.extractfile('foo').read()
+    'bar'
+
+    Test implicit directory creation.
+
+    >>> tarball = helpers.make_tarball({
+    ...     'zot/bugblatter': 'traal',
+    ...     'zot/eccentrica': 'galumbits',
+    ... })
+    >>> tarball.getnames()
+    ['zot/', 'zot/bugblatter', 'zot/eccentrica']
+    >>> tarball.extractfile('zot/eccentrica').read()
+    'galumbits'
     """
 
 def test_join_lines():
@@ -95,24 +105,21 @@ def test_join_lines():
     'foo\nbar\nbaz\n'
     """
 
-def test_find_directories():
+def test_find_po_directories():
     """
-    >>> tarball = helpers.string_to_tarfile(make_test_string_1())
-    >>> helpers.find_po_directories(tarball)
+    >>> helpers.find_po_directories(make_test_tarball_1())
     ['uberfrob-0.1/blah/po/', 'uberfrob-0.1/po/']
     """
 
 def test_examine_tarfile():
     """
-    >>> tarball = helpers.string_to_tarfile(make_test_string_1())
-    >>> pot, po = helpers.examine_tarfile(tarball)
+    >>> pot, po = helpers.examine_tarfile(make_test_tarball_1())
     >>> pot
     ('uberfrob-0.1/po/uberfrob.pot',)
     >>> po
     ('uberfrob-0.1/po/cy.po', 'uberfrob-0.1/po/es.po')
 
-    >>> tarball = helpers.string_to_tarfile(make_test_string_2())
-    >>> pot, po = helpers.examine_tarfile(tarball)
+    >>> pot, po = helpers.examine_tarfile(make_test_tarball_2())
     >>> pot
     ('test/test.pot',)
     >>> po

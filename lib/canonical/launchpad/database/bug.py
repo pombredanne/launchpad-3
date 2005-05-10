@@ -41,7 +41,7 @@ class Bug(SQLBase):
     # db field names
     name = StringCol(unique=True, default=None)
     title = StringCol(notNull=True)
-    shortdesc = StringCol(notNull=False, default=None)
+    summary = StringCol(notNull=False, default=None)
     description = StringCol(notNull=False,
                             default=None)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
@@ -156,7 +156,7 @@ class Bug(SQLBase):
 class BugDelta:
     """See canonical.launchpad.interfaces.IBugDelta."""
     implements(IBugDelta)
-    def __init__(self, bug, bugurl, user, title=None, shortdesc=None,
+    def __init__(self, bug, bugurl, user, title=None, summary=None,
                  description=None, name=None, private=None,
                  external_reference=None, bugwatch=None, cveref=None,
                  bugtask_deltas=None):
@@ -164,7 +164,7 @@ class BugDelta:
         self.bugurl = bugurl
         self.user = user
         self.title = title
-        self.shortdesc = shortdesc
+        self.summary = summary
         self.description = description
         self.name = name
         self.private = private
@@ -175,7 +175,7 @@ class BugDelta:
 
 def BugFactory(addview=None, distribution=None, sourcepackagename=None,
                binarypackagename=None, product=None, comment=None,
-               description=None, rfc822msgid=None, shortdesc=None,
+               description=None, rfc822msgid=None, summary=None,
                datecreated=None, title=None, private=False,
                owner=None):
     """Create a bug.
@@ -190,7 +190,7 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
       * if no description is passed, the comment will be used as the
         description
 
-      * if shortdesc is not passed then the shortdesc will be the
+      * if summary is not passed then the summary will be the
         first sentence of the description
 
       * the appropriate bug task (exactly one, from this function) and
@@ -213,16 +213,16 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
 
     # if we have been passed only a description, then we set the summary to
     # be the first paragraph of it, up to 320 characters long
-    if description and not shortdesc:
-        shortdesc = description.split('. ')[0]
-        if len(shortdesc) > 320:
-            shortdesc = shortdesc[:320] + '...'
+    if description and not summary:
+        summary = description.split('. ')[0]
+        if len(summary) > 320:
+            summary = summary[:320] + '...'
 
     if not datecreated:
         datecreated = datetime.now()
 
     bug = Bug(
-        title=title, shortdesc=shortdesc,
+        title=title, summary=summary,
         description=description, private=private,
         owner=owner.id, datecreated=datecreated)
 
@@ -271,7 +271,7 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
         distribution=distribution, sourcepackagename=sourcepackagename,
         binarypackagename=binarypackagename, product=product,
         comment=comment, description=description, rfc822msgid=rfc822msgid,
-        shortdesc=shortdesc, datecreated=datecreated, title=title,
+        summary=summary, datecreated=datecreated, title=title,
         private=private, owner=owner)
     bug_added.id = bug.id
 

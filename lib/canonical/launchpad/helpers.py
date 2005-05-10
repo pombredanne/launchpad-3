@@ -2,18 +2,20 @@
 
 __metaclass__ = type
 
+import base64
+import gettextpo
 import os
+import popen2
 import random
 import re
 import tarfile
+import time
 import warnings
-import base64
-import popen2
-import gettextpo
 from StringIO import StringIO
 from select import select
 from math import ceil
 from xml.sax.saxutils import escape as xml_escape
+from difflib import unified_diff
 
 from zope.component import getUtility
 
@@ -23,6 +25,7 @@ from canonical.launchpad.interfaces import ILaunchBag, IHasOwner, IGeoIP, \
     IRequestPreferredLanguages, ILanguageSet, IRequestLocalLanguages
 from canonical.launchpad.components.poparser import POSyntaxError, \
     POInvalidInputError, POParser
+from canonical.launchpad.components.rosettastats import RosettaStats
 
 charactersPerLine = 50
 SPACE_CHAR = u'<span class="po-message-special">\u2022</span>'
@@ -47,51 +50,61 @@ def is_maintainer(hasowner):
     else:
         return False
 
+def tar_add_file(tf, path, contents):
+    """Convenience function for adding a file to a tar file."""
 
-def tar_add_file(tf, name, contents):
-    """
-    Convenience method for adding a file to a tar file.
-    """
+    now = int(time.time())
+    bits = path.split(os.path.sep)
 
-    tarinfo = tarfile.TarInfo(name)
-    tarinfo.size = len(contents)
+    # Ensure that all the directories in the path are present in the
+    # archive.
 
-    tf.addfile(tarinfo, StringIO(contents))
+    for i in range(1, len(bits)):
+        joined_path = os.path.join(*bits[:i])
 
-def tar_add_files(tf, prefix, files):
-    """Add a tree of files, represented by a dictionary, to a tar file."""
-
-    # Keys are sorted in order to make test cases easier to write.
-
-    names = files.keys()
-    names.sort()
-
-    for name in names:
-        if isinstance(files[name], basestring):
-            # Looks like a file.
-
-            tar_add_file(tf, prefix + name, files[name])
-        else:
-            # Should be a directory.
-
-            tarinfo = tarfile.TarInfo(prefix + name)
+        try:
+            tf.getmember(joined_path + '/')
+        except KeyError:
+            tarinfo = tarfile.TarInfo(joined_path)
             tarinfo.type = tarfile.DIRTYPE
+            tarinfo.mtime = now
             tf.addfile(tarinfo)
 
-            tar_add_files(tf, prefix + name + '/', files[name])
+    tarinfo = tarfile.TarInfo(path)
+    tarinfo.time = now
+    tarinfo.size = len(contents)
+    tf.addfile(tarinfo, StringIO(contents))
 
-def make_tarfile(files):
-    """Return a tar file as string from a dictionary."""
+def make_tarball_filehandle(files):
+    """Return a file handle to a tar file contaning a given set of files.
+
+    @param files: a dictionary mapping paths to file contents
+    """
 
     sio = StringIO()
+    tarball = tarfile.open('', 'w', sio)
 
-    tf = tarfile.open('', 'w', sio)
+    sorted_files = files.keys()
+    sorted_files.sort()
 
-    tar_add_files(tf, '', files)
+    for filename in sorted_files:
+        tar_add_file(tarball, filename, files[filename])
 
-    tf.close()
+    tarball.close()
+    sio.seek(0)
+    return sio
 
-    return sio.getvalue()
+def make_tarball_string(files):
+    """Similar to make_tarball_filehandle, but return the contents of the
+    tarball as a string.
+    """
+
+    return make_tarball_filehandle(files).read()
+
+def make_tarball(files):
+    """Similar to make_tarball_filehandle, but return a tarinfo object."""
+
+    return tarfile.open('', 'r', make_tarball_filehandle(files))
 
 def join_lines(*lines):
     """Concatenate a list of strings, adding a newline at the end of each."""
@@ -755,76 +768,41 @@ def import_tar(potemplate, importer, tarfile, pot_paths, po_paths):
 
     return message
 
-# XXX: Carlos Perello Marin 2005-04-15: TemplateLanguages and TemplateLanguage
-# should be fixed as explained at https://launchpad.ubuntu.com/malone/bugs/397
+class DummyPOFile(RosettaStats):
+    """
+    Represents a POFile where we do not yet actually HAVE a POFile for that
+    language for this template.
+    """
+    def __init__(self, potemplate, language):
+        self.potemplate = potemplate
+        self.language = language
+        self.messageCount = len(potemplate)
+        self.header = ''
+        self.latest_sighting = None
+        self.currentCount = 0
+        self.rosettaCount = 0
+        self.updatesCount = 0
+        self.nonUpdatesCount = 0
+        self.translatedCount = 0
+        self.untranslatedCount = self.messageCount
+        self.currentPercentage = 0
+        self.rosettaPercentage = 0
+        self.updatesPercentage = 0
+        self.nonUpdatesPercentage = 0
+        self.translatedPercentage = 0
+        self.untranslatedPercentage = 100
+        
 
-class TemplateLanguages:
-    """Support class for ProductView."""
+def test_diff(lines_a, lines_b):
+    """Generate a string indicating the difference between expected and actual
+    values in a test.
+    """
 
-    def __init__(self, template, languages, relativeurl=''):
-        self.template = template
-        self.name = template.potemplatename.name
-        self.title = template.title
-        self.description = template.description
-        self._languages = languages
-        self.relativeurl = relativeurl
-
-    def languages(self):
-        for language in self._languages:
-            yield TemplateLanguage(self.template, language, self.relativeurl)
-
-
-class TemplateLanguage:
-    """Support class for ProductView."""
-
-    def __init__(self, template, language, relativeurl=''):
-        self.name = language.englishname
-        self.code = language.code
-        self.translateURL = '+translate?languages=' + self.code
-        self.relativeurl = relativeurl
-
-        poFile = template.queryPOFileByLang(language.code)
-
-        if poFile is not None:
-            # NOTE: To get a 100% value:
-            # 1.- currentPercent + rosettaPercent + untranslatedPercent
-            # 2.- translatedPercent + untranslatedPercent
-            # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
-            #   untranslatedPercent
-
-            self.hasPOFile = True
-            self.poLen = poFile.messageCount()
-            self.lastChangedSighting = poFile.lastChangedSighting()
-
-            self.poCurrentCount = poFile.currentCount()
-            self.poRosettaCount = poFile.rosettaCount()
-            self.poUpdatesCount = poFile.updatesCount()
-            self.poNonUpdatesCount = poFile.nonUpdatesCount()
-            self.poTranslated = poFile.translatedCount()
-            self.poUntranslated = poFile.untranslatedCount()
-
-            self.poCurrentPercent = poFile.currentPercentage()
-            self.poRosettaPercent = poFile.rosettaPercentage()
-            self.poUpdatesPercent = poFile.updatesPercentage()
-            self.poNonUpdatesPercent = poFile.nonUpdatesPercentage()
-            self.poTranslatedPercent = poFile.translatedPercentage()
-            self.poUntranslatedPercent = poFile.untranslatedPercentage()
-        else:
-            self.hasPOFile = False
-            self.poLen = len(template)
-            self.lastChangedSighting = None
-
-            self.poCurrentCount = 0
-            self.poRosettaCount = 0
-            self.poUpdatesCount = 0
-            self.poNonUpdatesCount = 0
-            self.poTranslated = 0
-            self.poUntranslated = template.messageCount()
-
-            self.poCurrentPercent = 0
-            self.poRosettaPercent = 0
-            self.poUpdatesPercent = 0
-            self.poNonUpdatesPercent = 0
-            self.poTranslatedPercent = 0
-            self.poUntranslatedPercent = 100
+    return '\n'.join(list(unified_diff(
+        a=lines_a,
+        b=lines_b,
+        fromfile='expected',
+        tofile='actual',
+        lineterm='',
+        )))
 

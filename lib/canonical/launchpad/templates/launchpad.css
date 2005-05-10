@@ -523,6 +523,17 @@ h1 {
   padding-right: 0;
 }
 
+/* Not all of a dt should be bold: -- */
+
+dt {
+  font-weight: inherit;
+}
+
+dt dfn {
+  font-style: inherit;
+  font-weight: bold;
+}
+
 /* -- Other bugs: -- */
 
 .listing td {
@@ -760,6 +771,15 @@ td.selected {
     background-color: #dee7ec;
     color: #436976;
     border: 1px solid #8cacbb;
+}
+
+/* -- Products: -- */
+
+ul.products>li {
+  list-style-image: url(/++resource++product_icon.gif);
+}
+dl.products>dt:before {
+  content: url(/++resource++product_icon.gif);
 }
 
 /* from richard braine for the series source forms */

@@ -253,7 +253,7 @@ associate the same bug with this product:
     >>> foo_product = productset.createProduct(
     ...     owner = foo_team.id, name = 'foo-product',
     ...     displayname = 'foo product', title = 'Foo',
-    ...     shortdesc = 'a great product', description = 'no long desc')
+    ...     summary = 'a great product', description = 'no long desc')
     >>> upstream_task = bugtaskset.createTask(
     ...     bug = bug_one, product = foo_product, owner = sabdfl,
     ...     status = STATUS_NEW, priority = PRIORITY_MEDIUM,
@@ -373,7 +373,7 @@ and mark one of the Firefox bugs private:
     ...     return state
     >>> old_state = capture_state(
     ...     bug_firefox_no_svg_support.bug, "id", "title",
-    ...     "shortdesc", "description", "private", "name")
+    ...     "summary", "description", "private", "name")
     >>> bug_firefox_no_svg_support.bug.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     bug_firefox_no_svg_support.bug, old_state,

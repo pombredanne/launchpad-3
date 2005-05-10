@@ -111,7 +111,7 @@ class FitData(object):
     name = None
     displayname = None
     title = None
-    shortdesc = None
+    summary = None
     description = None
     homepage = None
     screenshot = None
@@ -130,7 +130,7 @@ class FitData(object):
             self.name = name
             self.displayname = name
             self.title = name
-            self.shortdesc = 'No Short Description Available'
+            self.summary = 'No Summary Available'
             self.description = 'No Description Available'
             return
         
@@ -158,11 +158,12 @@ class FitData(object):
             self.displayname = data_sanitizer(data['product'])
             self.title = data_sanitizer(data['product'])
 
-        ## both have shortdesc        
-        if 'shortdesc' in data.keys():
-            self.shortdesc = data_sanitizer(data['shortdesc'])
+        ## both have summary        
+        if 'summary' in data.keys():
+            self.summary = data_sanitizer(data['summary'])
         else:
-            self.shortdesc = data_sanitizer(data['description']).split(".")[0]
+            self.summary = data_sanitizer(data['description']).split(".")[0]
+            self.summary += '.'
 
         ## both have description
         self.description = data_sanitizer(data['description'])
@@ -347,7 +348,7 @@ class Doap(SQLThing):
                   "name" :               fit.name,
                   "displayname":         fit.displayname,
                   "title":               fit.title,
-                  "shortdesc":           fit.shortdesc,
+                  "summary":             fit.summary,
                   "description":         fit.description,
                   "datecreated":         datecreated,
                   "homepageurl":         fit.homepage,
@@ -371,10 +372,10 @@ class Doap(SQLThing):
         self._insert("productrole", dbdata)
         print '@\tProduct Role %s Created' % role
 
-    def createProductSeries(self, product, name, displayname, shortdesc):
+    def createProductSeries(self, product, name, displayname, summary):
         dbdata = {"product":     product,
                   "name":        name,
-                  "shortdesc":   shortdesc,
+                  "summary":     summary,
                   "displayname": displayname,
                   }
         
@@ -421,12 +422,12 @@ class Doap(SQLThing):
         ## apache-1.2 or Mozilla-head
         displayname = fit.displayname + ' Head'
 
-        shortdesc = """This is the primary HEAD branch of the mainline
+        summary = """This is the primary HEAD branch of the mainline
         revision control system for %s. Releases on this
         series are usually development milestones and test
         releases.""" % fit.displayname
         
-        self.createProductSeries(product, name, displayname, shortdesc)
+        self.createProductSeries(product, name, displayname, summary)
         
 
     def ensurePackaging(self, productname, packagename, distroname):

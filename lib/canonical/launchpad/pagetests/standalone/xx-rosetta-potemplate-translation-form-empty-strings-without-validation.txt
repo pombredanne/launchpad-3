@@ -8,7 +8,7 @@ Checks that an empty translation is not checked with pygettextpo
   ... Content-Type: application/x-www-form-urlencoded
   ... Referer: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+translate?count=1&languages=es&offset=12
   ... 
-  ... set_13_msgid=Migrating+%60%25s%27%3A&set_13_translation_es=&offset=13&languages=es&show=all&SUBMIT=Save+%26+Continue""")
+  ... set_142_msgid=Migrating+%60%25s%27%3A&set_142_translation_es=&offset=13&languages=es&show=all&SUBMIT=Save+%26+Continue""")
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+translate?languages=es&offset=13

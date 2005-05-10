@@ -3,6 +3,7 @@
 #
 
 import re
+import urllib
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -12,6 +13,7 @@ from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 from CVS.protocol import CVSRoot
+import pybaz
 
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
@@ -49,18 +51,48 @@ def validate_cvs_branch(branch):
         return True
     return False
 
-def validate_svn_repo(repo):
-    if not repo:
+def _validate_url(url, valid_schemes):
+    """Returns a boolean stating whether 'url' is a valid URL.
+
+       A URL is valid if:
+           - its URL scheme is in the provided 'valid_schemes' list, and
+           - it has a non-empty host name.
+
+       None and an empty string are not valid URLs::
+
+           >>> _validate_url(None, [])
+           False
+           >>> _validate_url('', [])
+           False
+
+       The valid_schemes list is checked::
+
+           >>> _validate_url('http://example.com', ['http'])
+           True
+           >>> _validate_url('http://example.com', ['https', 'ftp'])
+           False
+
+       A URL without a host name is not valid:
+
+           >>> _validate_url('http://', ['http'])
+           False
+           
+      """
+    if not url:
         return False
-    import urllib
-    scheme, host = urllib.splittype(repo)
-    if not scheme in ["http", "https", "svn", "svn+ssh"]:
+    scheme, host = urllib.splittype(url)
+    if not scheme in valid_schemes:
         return False
-    host,path = urllib.splithost(host)
-    if not len(host):
+    host, path = urllib.splithost(host)
+    if not host:
         return False
     return True
 
+def validate_release_root(repo):
+    return _validate_url(repo, ["http", "https", "ftp"])
+
+def validate_svn_repo(repo):
+    return _validate_url(repo, ["http", "https", "svn", "svn+ssh"])
 
 
 
@@ -79,7 +111,7 @@ class ProductSeriesView(object):
         self.form = request.form
         self.errormsgs = []
         self.displayname = self.context.displayname
-        self.shortdesc = self.context.shortdesc
+        self.summary = self.context.summary
         self.rcstype = self.context.rcstype
         self.cvsroot = self.context.cvsroot
         self.cvsmodule = self.context.cvsmodule
@@ -140,11 +172,18 @@ class ProductSeriesView(object):
             return
         # Extract details from the form and update the Product
         # we don't let people edit the name because it's part of the url
-        # XXX sabdfl 14/04/05 we need to do some validation here
-        self.context.displayname = form.get('displayname', self.displayname)
-        self.context.shortdesc = form.get('shortdesc', self.shortdesc)
-        self.context.releaseroot = form.get("releaseroot", self.releaseroot)
-        self.context.releasefileglob = form.get("releasefileglob", self.releasefileglob)
+        self.displayname = form.get('displayname', self.displayname)
+        self.summary = form.get('summary', self.summary)
+        self.releaseroot = form.get("releaseroot", self.releaseroot) or None
+        self.releasefileglob = form.get("releasefileglob",
+                self.releasefileglob) or None
+        if not validate_release_root(self.releaseroot):
+            self.errormsgs.append('Invalid release root URL')
+            return
+        self.context.summary = self.displayname
+        self.context.displayname = self.displayname
+        self.context.releaseroot = self.releaseroot
+        self.context.releasefileglob = self.releasefileglob
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
 
@@ -158,7 +197,10 @@ class ProductSeriesView(object):
         if form.get("Update RCS Details", None) is None:
             return
         if self.context.syncCertified() and not fromAdmin:
-            self.errormsgs.append('This Source is has been certified and is now unmodifiable.')
+            self.errormsgs.append(
+                    'This Source is has been certified and is now '
+                    'unmodifiable.'
+                    )
             return
         # get the form content, defaulting to what was there
         rcstype=form.get("rcstype", None)
@@ -168,10 +210,11 @@ class ProductSeriesView(object):
             self.rcstype = RevisionControlSystems.SVN
         else:
             raise NotImplementedError, 'Unknown RCS %s' % rcstype
-        self.cvsroot = form.get("cvsroot", self.cvsroot)
-        self.cvsmodule = form.get("cvsmodule", self.cvsmodule)
-        self.cvsbranch = form.get("cvsbranch", self.cvsbranch)
-        self.svnrepository = form.get("svnrepository", self.svnrepository)
+        self.cvsroot = form.get("cvsroot", self.cvsroot) or None
+        self.cvsmodule = form.get("cvsmodule", self.cvsmodule) or None
+        self.cvsbranch = form.get("cvsbranch", self.cvsbranch) or None
+        self.svnrepository = form.get("svnrepository",
+                self.svnrepository) or None
         # make sure we at least got something for the relevant rcs
         if rcstype == 'cvs':
             if not (self.cvsroot and self.cvsmodule and self.cvsbranch):
@@ -209,11 +252,28 @@ class ProductSeriesView(object):
         if form.get("Update RCS Details", None) is None:
             return
         # look for admin changes and retrieve those
-        self.targetarcharchive = form.get('targetarcharchive', self.targetarcharchive)
-        self.targetarchcategory = form.get('targetarchcategory', self.targetarchcategory)
-        self.targetarchbranch = form.get('targetarchbranch', self.targetarchbranch)
-        self.targetarchversion = form.get('targetarchversion', self.targetarchversion)
-        # lifeless 29/04/05 need validation
+        self.targetarcharchive = form.get(
+            'targetarcharchive', self.targetarcharchive) or None
+        self.targetarchcategory = form.get(
+            'targetarchcategory', self.targetarchcategory) or None
+        self.targetarchbranch = form.get(
+            'targetarchbranch', self.targetarchbranch) or None
+        self.targetarchversion = form.get(
+            'targetarchversion', self.targetarchversion) or None
+        # validate arch target details
+        if not pybaz.NameParser.is_archive_name(self.targetarcharchive):
+            self.errormsgs.append('Invalid target Arch archive name.')
+        if not pybaz.NameParser.is_category_name(self.targetarchcategory):
+            self.errormsgs.append('Invalid target Arch category.')
+        if not pybaz.NameParser.is_branch_name(self.targetarchbranch):
+            self.errormsgs.append('Invalid target Arch branch name.')
+        if not pybaz.NameParser.is_version_id(self.targetarchversion):
+            self.errormsgs.append('Invalid target Arch version id.')
+
+        # Return if there were any errors, so as not to update anything.
+        if self.errormsgs:
+            return
+        # update the database
         self.context.targetarcharchive = self.targetarcharchive
         self.context.targetarchcategory = self.targetarchcategory
         self.context.targetarchbranch = self.targetarchbranch

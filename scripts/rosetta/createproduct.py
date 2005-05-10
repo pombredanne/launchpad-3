@@ -25,7 +25,7 @@ if __name__ == '__main__':
     parser.add_option("-t", "--title", dest="title",
                       help="Product title")
     parser.add_option("-s", "--short-description", dest="short",
-                      help="Product's short description")
+                      help="Product's summary")
     parser.add_option("-e", "--description", dest="description",
                       help="Product's description")
     parser.add_option("-u", "--url", dest="url",
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     product = Product(owner=person.id, project=project.id,
                       name=options.name,
                       displayname=options.display, title=options.title,
-                      shortdesc=options.short,
+                      summary=options.short,
                       description=options.description,
                       datecreated=datetime.utcnow(),
                       homepageurl=options.url,

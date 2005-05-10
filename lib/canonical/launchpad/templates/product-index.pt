@@ -35,8 +35,8 @@
 
   <h1><span tal:replace="context/title">$Product.title</span></h1>
 
-  <div class="documentDescription" tal:content="context/shortdesc">
-    $Product.shortdesc goes here. This should be quite short,
+  <div class="documentDescription" tal:content="context/summary">
+    $Product.summary goes here. This should be quite short,
     just a single paragraph of text really, giving the product
     highlights.
   </div>
@@ -61,7 +61,7 @@
     <div tal:repeat="series context/serieslist">
 
       <p>Branch: <strong tal:content="series/name">seriesname</strong>:
-      <span tal:replace="series/shortdesc">A summary of the series
+      <span tal:replace="series/summary">A summary of the series
       details and status.</span>
       [&nbsp;<a tal:attributes="href
       string:+series/${series/name}">Branch&nbsp;Details...</a>&nbsp;]
@@ -73,7 +73,7 @@
           <b><span tal:content="release/version">version</span></b>: 
           "<span tal:content="release/title">title</span>"
           [&nbsp;<a tal:attributes="href release/version">View</a>&nbsp;]<br />
-          <span tal:replace="release/shortdesc">feature summary</span></li>
+          <span tal:replace="release/summary">feature summary</span></li>
 
       </ul>
 

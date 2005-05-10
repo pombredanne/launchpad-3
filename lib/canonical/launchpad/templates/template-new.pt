@@ -62,7 +62,7 @@
                     example example...</i>
                   </div>
 
-                <textarea cols="40" rows="4" name="shortdesc"></textarea>
+                <textarea cols="40" rows="4" name="summary"></textarea>
         </div>
         
         <div class="formControls">

@@ -24,7 +24,7 @@
 
     <h1>Package Overview</h1>
 
-    <p class="documentDescription" tal:content="context/shortdesc">
+    <p class="documentDescription" tal:content="context/summary">
     Package Summary</p>
 
     <p tal:content="context/description" />

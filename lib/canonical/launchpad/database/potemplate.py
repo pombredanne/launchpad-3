@@ -56,180 +56,6 @@ standardPOFileHeader = (
 "Plural-Forms: nplurals=%(nplurals)d; plural=%(pluralexpr)s\n"
 )
 
-class POTemplateSubset:
-    implements(IPOTemplateSubset)
-
-    def __init__(self, sourcepackagename=None,
-                 distrorelease=None, productrelease=None):
-        """Create a new POTemplateSubset object.
-
-        The set of POTemplate depends on the arguments you pass to this
-        constructor. The sourcepackagename, distrorelease and productrelease
-        are just filters for that set.
-        """
-        self.sourcepackagename = sourcepackagename
-        self.distrorelease = distrorelease
-        self.productrelease = productrelease
-
-        if (productrelease is not None and (distrorelease is not None or
-            sourcepackagename is not None)):
-            raise ValueError(
-                'A product release must not be used with a source package name'
-                ' or a distro release.')
-        elif productrelease is not None:
-            self.query = ('POTemplate.productrelease = %d' % productrelease.id)
-            self.orderby = None
-            self.clausetables = None
-        elif distrorelease is not None and sourcepackagename is not None:
-            self.query = ('POTemplate.sourcepackagename = %d AND'
-                          ' POTemplate.distrorelease = %d ' %
-                          (sourcepackagename.id, distrorelease.id))
-            self.orderby = None
-            self.clausetables = None
-        elif distrorelease is not None:
-            self.query = (
-                'POTemplate.distrorelease = DistroRelease.id AND'
-                ' DistroRelease.id = %d' % distrorelease.id)
-            self.orderby = 'DistroRelease.name'
-            self.clausetables = ['DistroRelease']
-        else:
-            raise ValueError(
-                'You need to specify the kind of subset you want.')
-
-    def __iter__(self):
-        """See IPOTemplateSubset."""
-        res = POTemplate.select(self.query, clauseTables=self.clausetables,
-                                orderBy=self.orderby)
-
-        for potemplate in res:
-            yield potemplate
-
-    def __getitem__(self, name):
-        """See IPOTemplateSubset."""
-        try:
-            ptn = POTemplateName.byName(name)
-        except SQLObjectNotFound:
-            raise NotFoundError, name
-
-        if self.query is None:
-            query = 'POTemplate.potemplatename = %d' % ptn.id
-        else:
-            query = '%s AND POTemplate.potemplatename = %d' % (
-                    self.query, ptn.id)
-
-        result = POTemplate.selectOne(query, clauseTables=self.clausetables)
-        if result is None:
-            raise NotFoundError, name
-        return result
-
-    def title(self):
-        titlestr = ''
-        if self.distrorelease:
-            titlestr += ' ' + self.distrorelease.displayname
-        if self.sourcepackagename:
-            titlestr += ' ' + self.sourcepackagename.name
-        if self.productrelease:
-            titlestr += ' '
-            titlestr += self.productrelease.productseries.product.displayname
-            titlestr += ' ' + self.productrelease.version
-        return titlestr
-    title = property(title)
-
-    def new(self, potemplatename, title, contents, owner):
-        if self.sourcepackagename is not None:
-            sourcepackagename_id = self.sourcepackagename.id
-        else:
-            sourcepackagename_id = None
-        if self.distrorelease is not None:
-            distrorelease_id = self.distrorelease.id
-        else:
-            distrorelease_id = None
-        if self.productrelease is not None:
-            productrelease_id = self.productrelease.id
-        else:
-            productrelease_id = None
-
-        encoded_file = base64.encodestring(contents)
-
-        return POTemplate(potemplatenameID=potemplatename.id,
-                          title=title,
-                          sourcepackagenameID=sourcepackagename_id,
-                          distroreleaseID=distrorelease_id,
-                          productreleaseID=productrelease_id,
-                          ownerID=owner.id,
-                          daterawimport=UTC_NOW,
-                          rawfile=encoded_file,
-                          rawimporterID=owner.id,
-                          rawimportstatus=RosettaImportStatus.PENDING)
-
-
-class POTemplateSet:
-    implements(IPOTemplateSet)
-
-    def __iter__(self):
-        """See IPOTemplateSet."""
-        res = POTemplate.select()
-        for potemplate in res:
-            yield potemplate
-
-    def __getitem__(self, name):
-        """See IPOTemplateSet."""
-        try:
-            ptn = POTemplateName.byName(name)
-        except SQLObjectNotFound:
-            raise NotFoundError, name
-
-        result = POTemplate.selectOne('POTemplate.potemplatename = %d' % ptn.id)
-        if result is None:
-            raise NotFoundError, name
-        return result
-
-    def getSubset(self, **kw):
-        """See IPOTemplateSet."""
-        if kw.get('distrorelease'):
-            # XXX: Should this really be an assert?
-            #      -- SteveAlexander 2005-04-23
-            assert 'productrelease' not in kw
-
-            distrorelease = kw['distrorelease']
-
-            if kw.get('sourcepackagename'):
-                sourcepackagename = kw['sourcepackagename']
-                return POTemplateSubset(
-                    distrorelease=distrorelease,
-                    sourcepackagename=sourcepackagename)
-            else:
-                return POTemplateSubset(distrorelease=distrorelease)
-
-        # XXX: Should this really be an assert?
-        #      -- SteveAlexander 2005-04-23
-        assert kw.get('productrelease')
-        return POTemplateSubset(productrelease=kw['productrelease'])
-
-    def getTemplatesPendingImport(self):
-        """See IPOTemplateSet."""
-        results = POTemplate.selectBy(
-            rawimportstatus=RosettaImportStatus.PENDING)
-
-        # XXX: Carlos Perello Marin 2005-03-24
-        # Really ugly hack needed to do the initial import of the whole hoary
-        # archive. It will disappear as soon as the whole
-        # LaunchpadPackagePoAttach and LaunchpadPoImport are implemented so
-        # rawfile is not used anymore and we start using Librarian.
-        # The problem comes with the memory requirements to get more than 7500
-        # rows into memory with about 200KB - 300KB of data each one.
-        total = results.count()
-        done = 0
-        while done < total:
-            for potemplate in results[done:done+100]:
-                yield potemplate
-            done = done + 100
-
-
-class LanguageNotFound(ValueError):
-    """Raised when a a language does not exists in the database."""
-
-
 class POTemplate(SQLBase, RosettaStats):
     implements(IEditPOTemplate, IRawFileData)
 
@@ -482,8 +308,8 @@ class POTemplate(SQLBase, RosettaStats):
             return 0
 
     def hasMessageID(self, messageID):
-        results = POTMsgSet.select(
-            potemplateID=self.id, primemsgid=messageID.id)
+        results = POTMsgSet.selectBy(
+            potemplateID=self.id, primemsgid_ID=messageID.id)
         return results.count() > 0
 
     def hasPluralMessage(self):
@@ -518,7 +344,6 @@ class POTemplate(SQLBase, RosettaStats):
         return False
 
     # Methods defined in IEditPOTemplate
-
     def expireAllMessages(self):
         for msgset in self.currentMessageSets():
             msgset.sequence = 0
@@ -684,4 +509,179 @@ class POTemplate(SQLBase, RosettaStats):
             if logger:
                 logger.warning('We got an error importing %s',
                     self.potemplatename.name, exc_info=1)
+
+
+class POTemplateSubset:
+    implements(IPOTemplateSubset)
+
+    def __init__(self, sourcepackagename=None,
+                 distrorelease=None, productrelease=None):
+        """Create a new POTemplateSubset object.
+
+        The set of POTemplate depends on the arguments you pass to this
+        constructor. The sourcepackagename, distrorelease and productrelease
+        are just filters for that set.
+        """
+        self.sourcepackagename = sourcepackagename
+        self.distrorelease = distrorelease
+        self.productrelease = productrelease
+
+        if (productrelease is not None and (distrorelease is not None or
+            sourcepackagename is not None)):
+            raise ValueError(
+                'A product release must not be used with a source package name'
+                ' or a distro release.')
+        elif productrelease is not None:
+            self.query = ('POTemplate.productrelease = %d' % productrelease.id)
+            self.orderby = None
+            self.clausetables = None
+        elif distrorelease is not None and sourcepackagename is not None:
+            self.query = ('POTemplate.sourcepackagename = %d AND'
+                          ' POTemplate.distrorelease = %d ' %
+                          (sourcepackagename.id, distrorelease.id))
+            self.orderby = None
+            self.clausetables = None
+        elif distrorelease is not None:
+            self.query = (
+                'POTemplate.distrorelease = DistroRelease.id AND'
+                ' DistroRelease.id = %d' % distrorelease.id)
+            self.orderby = 'DistroRelease.name'
+            self.clausetables = ['DistroRelease']
+        else:
+            raise ValueError(
+                'You need to specify the kind of subset you want.')
+
+    def __iter__(self):
+        """See IPOTemplateSubset."""
+        res = POTemplate.select(self.query, clauseTables=self.clausetables,
+                                orderBy=self.orderby)
+
+        for potemplate in res:
+            yield potemplate
+
+    def __getitem__(self, name):
+        """See IPOTemplateSubset."""
+        try:
+            ptn = POTemplateName.byName(name)
+        except SQLObjectNotFound:
+            raise NotFoundError, name
+
+        if self.query is None:
+            query = 'POTemplate.potemplatename = %d' % ptn.id
+        else:
+            query = '%s AND POTemplate.potemplatename = %d' % (
+                    self.query, ptn.id)
+
+        result = POTemplate.selectOne(query, clauseTables=self.clausetables)
+        if result is None:
+            raise NotFoundError, name
+        return result
+
+    def title(self):
+        titlestr = ''
+        if self.distrorelease:
+            titlestr += ' ' + self.distrorelease.displayname
+        if self.sourcepackagename:
+            titlestr += ' ' + self.sourcepackagename.name
+        if self.productrelease:
+            titlestr += ' '
+            titlestr += self.productrelease.productseries.product.displayname
+            titlestr += ' ' + self.productrelease.version
+        return titlestr
+    title = property(title)
+
+    def new(self, potemplatename, title, contents, owner):
+        if self.sourcepackagename is not None:
+            sourcepackagename_id = self.sourcepackagename.id
+        else:
+            sourcepackagename_id = None
+        if self.distrorelease is not None:
+            distrorelease_id = self.distrorelease.id
+        else:
+            distrorelease_id = None
+        if self.productrelease is not None:
+            productrelease_id = self.productrelease.id
+        else:
+            productrelease_id = None
+
+        encoded_file = base64.encodestring(contents)
+
+        return POTemplate(potemplatenameID=potemplatename.id,
+                          title=title,
+                          sourcepackagenameID=sourcepackagename_id,
+                          distroreleaseID=distrorelease_id,
+                          productreleaseID=productrelease_id,
+                          ownerID=owner.id,
+                          daterawimport=UTC_NOW,
+                          rawfile=encoded_file,
+                          rawimporterID=owner.id,
+                          rawimportstatus=RosettaImportStatus.PENDING)
+
+
+class POTemplateSet:
+    implements(IPOTemplateSet)
+
+    def __iter__(self):
+        """See IPOTemplateSet."""
+        res = POTemplate.select()
+        for potemplate in res:
+            yield potemplate
+
+    def __getitem__(self, name):
+        """See IPOTemplateSet."""
+        try:
+            ptn = POTemplateName.byName(name)
+        except SQLObjectNotFound:
+            raise NotFoundError, name
+
+        result = POTemplate.selectOne('POTemplate.potemplatename = %d' % ptn.id)
+        if result is None:
+            raise NotFoundError, name
+        return result
+
+    def getSubset(self, **kw):
+        """See IPOTemplateSet."""
+        if kw.get('distrorelease'):
+            # XXX: Should this really be an assert?
+            #      -- SteveAlexander 2005-04-23
+            assert 'productrelease' not in kw
+
+            distrorelease = kw['distrorelease']
+
+            if kw.get('sourcepackagename'):
+                sourcepackagename = kw['sourcepackagename']
+                return POTemplateSubset(
+                    distrorelease=distrorelease,
+                    sourcepackagename=sourcepackagename)
+            else:
+                return POTemplateSubset(distrorelease=distrorelease)
+
+        # XXX: Should this really be an assert?
+        #      -- SteveAlexander 2005-04-23
+        assert kw.get('productrelease')
+        return POTemplateSubset(productrelease=kw['productrelease'])
+
+    def getTemplatesPendingImport(self):
+        """See IPOTemplateSet."""
+        results = POTemplate.selectBy(
+            rawimportstatus=RosettaImportStatus.PENDING)
+
+        # XXX: Carlos Perello Marin 2005-03-24
+        # Really ugly hack needed to do the initial import of the whole hoary
+        # archive. It will disappear as soon as the whole
+        # LaunchpadPackagePoAttach and LaunchpadPoImport are implemented so
+        # rawfile is not used anymore and we start using Librarian.
+        # The problem comes with the memory requirements to get more than 7500
+        # rows into memory with about 200KB - 300KB of data each one.
+        total = results.count()
+        done = 0
+        while done < total:
+            for potemplate in results[done:done+100]:
+                yield potemplate
+            done = done + 100
+
+
+class LanguageNotFound(ValueError):
+    """Raised when a a language does not exists in the database."""
+
 

@@ -17,12 +17,13 @@ from canonical.launchpad.helpers import well_formed_email
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.interfaces import CookieAuthLoggedInEvent
 from canonical.launchpad.webapp.interfaces import LoggedOutEvent
+from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.interfaces import ILoginTokenSet, IPersonSet
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.lp.dbschema import LoginTokenType
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
-class UnauthorizedView:
+class UnauthorizedView(SystemErrorView):
 
     forbidden_page = ViewPageTemplateFile(
         '../templates/launchpad-forbidden.pt')

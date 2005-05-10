@@ -14,7 +14,6 @@ from zope.testing.doctestunit import DocTestSuite
 from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserRequest
 
-
 class DummySourcePackageNameSet:
     implements(ISourcePackageNameSet)
 
@@ -56,7 +55,14 @@ class DummyProject:
 class DummyProductRelease:
 
     def __init__(self):
-        self.potemplates = [DummyPOTemplate()]
+        self.version = '1.0dummy'
+
+    def potemplates(self):
+        return [DummyPOTemplate()]
+
+    def product(self):
+        return DummyProduct()
+    product = property(product)
 
 class DummyProductSeries:
     def __init__(self):
@@ -67,6 +73,7 @@ class DummyProduct:
 
     def __init__(self):
         self.serieslist = [DummyProductSeries()]
+        self.name = 'dummyproduct'
 
     def potemplates(self):
         templates = []
@@ -163,10 +170,12 @@ class DummyPOTMsgSet:
     def poMsgSet(self, language):
         return DummyPOMsgSet()
 
+dummy_product_release = DummyProductRelease()
 
 class DummyPOTemplate:
     def __init__(self, name='foo'):
         self.name = name
+        self.productrelease = dummy_product_release
 
     def getPOFileByLang(self, language_code):
         self.language_code = language_code

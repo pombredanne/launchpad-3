@@ -58,6 +58,14 @@
         />
 
     <browser:page
+        name="+chart"
+        for="canonical.launchpad.interfaces.IPOTemplate"
+        permission="zope.Public"
+        template="../templates/potemplate-chart.pt"
+        class="canonical.launchpad.browser.ViewPOTemplate"
+        />
+
+    <browser:page
         name="+tar-export"
         for="canonical.launchpad.interfaces.IPOTemplate"
         permission="zope.Public"

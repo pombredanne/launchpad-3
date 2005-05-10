@@ -145,7 +145,7 @@
         <p tal:condition="python: not (context.product.project.reviewed and
         context.product.project.active)" class="portalMessage">This project is
         NOT YET APPROVED.</p>
-        <p><span tal:replace="context/product/project/shortdesc">product
+        <p><span tal:replace="context/product/project/summary">product
         summary</span></p>
       </div>
 
@@ -154,7 +154,7 @@
       <div tal:condition="python: not (context.product.reviewed and
         context.product.active)" class="portalMessage">This product is
         NOT YET APPROVED.</div>
-        <p><span tal:replace="context/product/shortdesc">product
+        <p><span tal:replace="context/product/summary">product
         summary</span></p>
 
         <div tal:condition="context/namesReviewed">

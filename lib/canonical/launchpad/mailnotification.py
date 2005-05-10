@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+import itertools
 from textwrap import wrap
 
 from zope.app import zapi
@@ -46,10 +47,10 @@ def generate_bug_edit_email(bug_delta):
     if bug_delta.title is not None:
         body += "    - Changed title:\n"
         body += "        %s\n" % bug_delta.title
-    if bug_delta.shortdesc is not None:
-        body += "    - Changed short description:\n"
+    if bug_delta.summary is not None:
+        body += "    - Changed summary:\n"
         body += "\n".join(wrap(
-            bug_delta.shortdesc, width = 72,
+            bug_delta.summary, width = 72,
             initial_indent = u"        ",
             subsequent_indent = u"        "))
         body += "\n"
@@ -231,7 +232,7 @@ def get_bug_delta(old_bug, new_bug, user, request):
     IBugDelta if there are changes, or None if there were no changes.
     """
     changes = {}
-    for field_name in ("title", "shortdesc", "description"):
+    for field_name in ("title", "summary", "description"):
         # fields for which we simply show the new value when they
         # change
         old_val = getattr(old_bug, field_name)
@@ -704,13 +705,20 @@ def notify_bug_cveref_edited(edited_cveref, event):
 
 def notify_join_request(event):
     """Notify team administrators that a new membership is pending approval."""
-    if not event.user in event.team.proposedmembers:
+    # XXX: salgado, 2005-05-06: I have an implementation of __contains__ for 
+    # SelectResults, and as soon as it's merged we'll be able to replace this
+    # uggly for/else block by an 
+    # "if not event.user in event.team.proposedmembers: return".
+    for member in event.team.proposedmembers:
+        if member == event.user:
+            break
+    else:
         return
 
     user = event.user
     team = event.team
     to_addrs = []
-    for person in team.administrators + [team.teamowner]:
+    for person in itertools.chain(team.administrators, [team.teamowner]):
         for member in person.allmembers:
             if ITeam.providedBy(member):
                 # Don't worry, this is a team and person.allmembers already

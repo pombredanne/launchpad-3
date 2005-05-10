@@ -79,7 +79,7 @@ is a member.
   ... 
   ... Blackhole Trash folder
   ... -----------------------------115180199804837416230138857
-  ... Content-Disposition: form-data; name="field.shortdesc"
+  ... Content-Disposition: form-data; name="field.summary"
   ... 
   ... Everything put into the folder "Trash" disappears!
   ... -----------------------------115180199804837416230138857

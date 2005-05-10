@@ -115,7 +115,7 @@ class MissingSubject(ValueError):
 
 class DuplicateMessageId(ValueError):
     """Raised if we attempt to store a new email with an existing Message-Id
-    
+
     Indicates a broken mail client or MTA.
     """
 
