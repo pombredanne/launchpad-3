@@ -1,7 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['ProductRelease', 'ProductReleaseFile']
+__all__ = ['ProductRelease', 'ProductReleaseSet', 'ProductReleaseFile']
 
 from zope.interface import implements
 
@@ -11,6 +11,23 @@ from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC
 
 from canonical.launchpad.interfaces import IProductRelease
+from canonical.launchpad.interfaces import IProductReleaseSet
+
+
+class ProductReleaseSet(object):
+    """See IProductReleaseSet""" 
+    implements(IProductReleaseSet)
+
+    def new(self, version, productseries, owner, title=None, summary=None,
+            description=None, changelog=None):
+        """See IProductReleaseSet"""
+        return ProductRelease(version=version,
+                              productseries=productseries,
+                              owner=owner,
+                              title=title,
+                              summary=summary,
+                              description=description,
+                              changelog=changelog)
 
 
 class ProductRelease(SQLBase):

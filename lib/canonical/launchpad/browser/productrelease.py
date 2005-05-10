@@ -5,10 +5,9 @@ from zope.component import getUtility
 
 # launchpad
 from canonical.launchpad.interfaces import IPOTemplateSet
+from canonical.launchpad.interfaces import IProductReleaseSet
 
 from canonical.launchpad import helpers
-
-from canonical.launchpad.database import ProductRelease
 
 from canonical.launchpad.browser.potemplate import ViewPOTemplate
 
@@ -33,20 +32,20 @@ def newProductRelease(form, product, owner, series=None):
     title = form['title']
     summary = form['summary']
     description = form['description']
+    # XXX cprov 20050509
+    # releaseurl is currently ignored because there's no place for it in the
+    # database.
     releaseurl = form['releaseurl']
     # series may be passed in arguments, or in the form
     if not series:
         if form.has_key('series'):
             series = int(form['series'])
     # Create the new ProductRelease
-    productrelease = ProductRelease(
-                          #product=product.id,
-                          version=version,
-                          title=title,
-                          summary=summary,
-                          description=description,
-                          productseries=series,
-                          owner=owner)
+    prset = getUtility(IProductReleaseSet)
+    productrelease = prset.new(version, series, owner,
+                               title=title,
+                               summary=summary,
+                               description=description)
     return productrelease
 
 

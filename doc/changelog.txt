@@ -2,6 +2,54 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-10 15:01:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1681
+
+    Summary:
+      Removing DB class import in browser/productrelease r=spiv.
+    Revision:
+      launchpad--devel--0--patch-1681
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-585
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-586
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-587
+       Removing DB call in browser/productrelease.py in the simplest way, but still not agreeing with its usage in template.
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-588
+       Merge from RF, 2 conflicts solved on browser/interface productrelease.py
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-589
+       Applying the review required changes r=andrew
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-590
+       Better comment for a XXX.
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-591
+       Merge from RF
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/productrelease.py
+     lib/canonical/launchpad/database/productrelease.py
+     lib/canonical/launchpad/interfaces/productrelease.py
+     lib/canonical/launchpad/zcml/productrelease.zcml
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-585
+     celso.providelo@canonical.com/launchpad--devel--0--patch-586
+     celso.providelo@canonical.com/launchpad--devel--0--patch-587
+     celso.providelo@canonical.com/launchpad--devel--0--patch-588
+     celso.providelo@canonical.com/launchpad--devel--0--patch-589
+     celso.providelo@canonical.com/launchpad--devel--0--patch-590
+     celso.providelo@canonical.com/launchpad--devel--0--patch-591
+
+
 2005-05-10 14:35:10 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1680
 
     Summary:
