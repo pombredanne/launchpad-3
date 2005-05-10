@@ -2,6 +2,40 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-10 14:35:10 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1680
+
+    Summary:
+      Remove pyarch dependency from launchpad. r=spiv
+    Revision:
+      launchpad--devel--0--patch-1680
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--de-pyarch--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1678
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--de-pyarch--0--patch-1
+       Changed lib/arch symlink and made sure pyarch is ignored in 'make check'
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--de-pyarch--0--patch-2
+       Remove the lib/arch symlink entirely
+    
+
+    removed files:
+     lib/.arch-ids/arch.id lib/arch
+
+    modified files:
+     doc/changelog.txt lib/canonical/arch/broker.py
+     lib/canonical/launchpad/database/archchangeset.py
+     lib/canonical/launchpad/interfaces/pyarch.py
+     sourcecode/Makefile
+
+    new patches:
+     daniel.silverstone@canonical.com--desktop/launchpad--de-pyarch--0--base-0
+     daniel.silverstone@canonical.com--desktop/launchpad--de-pyarch--0--patch-1
+     daniel.silverstone@canonical.com--desktop/launchpad--de-pyarch--0--patch-2
+
+
 2005-05-10 14:09:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1679
 
     Summary:
