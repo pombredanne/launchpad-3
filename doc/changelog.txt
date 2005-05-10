@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-10 17:56:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1685
+
+    Summary:
+      [trivial] fixed a sample data entry
+    Revision:
+      launchpad--devel--0--patch-1685
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-610
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-611
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-612
+       Fixed Norwegian Bokmål name
+    
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-610
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-611
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-612
+
+
 2005-05-10 17:01:21 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1684
 
     Summary:

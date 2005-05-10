@@ -3056,7 +3056,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (299, 'nic', 'Niger-Kordofanian (Other)', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (300, 'niu', 'Niuean', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (301, 'nn', 'Norwegian Nynorsk', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (302, 'nb', 'Bokmål, Norwegian', NULL, 2, 'n != 1', true);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (302, 'nb', 'Norwegian Bokmål', NULL, 2, 'n != 1', true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (303, 'nog', 'Nogai', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (304, 'non', 'Norse, Old', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (306, 'nso', 'Sotho, Northern', NULL, NULL, NULL, true);
