@@ -153,7 +153,7 @@ class VersionMapper:
             return broker.MissingVersion(name)
         id = archive.id
         version = ArchNamespace.selectOneBy(
-            archarchiveID=id, category=parser.get_category(),
+            archiveID=id, category=parser.get_category(),
             branch=parser.get_branch(), version=parser.get_version()
             )
         from canonical.arch import broker
