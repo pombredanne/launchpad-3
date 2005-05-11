@@ -1,9 +1,11 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['ProductSeries', 'ProductSeriesSet']
 
 import datetime
 import sets
+from warnings import warn
 
 from zope.interface import implements
 
@@ -13,7 +15,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 
 # canonical imports
 from canonical.launchpad.interfaces import \
-    IProductSeries, ISeriesSource, ISeriesSourceAdmin, IProductSeriesSet
+    IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin, \
+    IProductSeriesSet
 from canonical.launchpad.database.packaging import Packaging
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.lp.dbschema import \
@@ -23,13 +26,13 @@ from canonical.lp.dbschema import \
 
 class ProductSeries(SQLBase):
     """A series of product releases."""
-    implements(IProductSeries, ISeriesSource, ISeriesSourceAdmin)
+    implements(IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin)
     _table = 'ProductSeries'
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
     name = StringCol(notNull=True)
     displayname = StringCol(notNull=True)
-    shortdesc = StringCol(notNull=True)
+    summary = StringCol(notNull=True)
     branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
                            schema=ImportStatus, default=None)
@@ -66,6 +69,12 @@ class ProductSeries(SQLBase):
         return self.product.displayname + ' Series: ' + self.displayname
     title = property(title)
 
+    def shortdesc(self):
+        warn('ProductSeries.shortdesc should be ProductSeries.summary',
+             DeprecationWarning)
+        return self.summary
+    shortdesc = property(shortdesc)
+
     def sourcepackages(self):
         from canonical.launchpad.database.sourcepackage import SourcePackage
         ret = Packaging.selectBy(productseriesID=self.id)
@@ -88,21 +97,21 @@ class ProductSeries(SQLBase):
             raise NotFoundError(distrorelease)
 
     def certifyForSync(self):
-        """enable the sync for processing"""
+        """Enable the sync for processing."""
         self.dateprocessapproved = UTC_NOW
         self.syncinterval = datetime.timedelta(1)
         self.importstatus = ImportStatus.PROCESSING
 
     def syncCertified(self):
-        """return true or false indicating if the sync is enabled"""
+        """Return true or false indicating if the sync is enabled"""
         return self.dateprocessapproved is not None
 
     def autoSyncEnabled(self):
-        """is the sync automatically scheduling"""
+        """Is the sync automatically scheduling?"""
         return self.importstatus == ImportStatus.SYNCING
 
     def enableAutoSync(self):
-        """enable autosyncing?"""
+        """Enable autosyncing?"""
         self.datesyncapproved = UTC_NOW
         self.importstatus = ImportStatus.SYNCING
 

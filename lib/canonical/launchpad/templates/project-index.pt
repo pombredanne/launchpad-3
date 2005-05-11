@@ -28,9 +28,9 @@
 
     <h1 tal:content="context/title">Project Title</h1>
 
-    <div class="documentDescription" tal:content="context/shortdesc">
-        This is the project Short Description, which should be no
-        longer than 72 characters, although it might be.
+    <div class="documentDescription" tal:content="context/summary">
+        This is the project Summary, which should be a single paragraph
+        summarising the project's purpose.
     </div>
 
     <div tal:content="context/description">
@@ -63,7 +63,7 @@
                tal:attributes="href product/homepageurl">homepage</a>
             ] </span>
             <br />
-            <span tal:content="product/shortdesc">Product short
+            <span tal:content="product/summary">Product short
             description goes here.</span></li>
             <ul tal:repeat="potemplate product/potemplates">
                     <li>Translations: <span tal:content="potemplate/title" /></li>

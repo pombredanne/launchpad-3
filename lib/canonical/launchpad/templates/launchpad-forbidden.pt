@@ -4,19 +4,27 @@
       i18n:domain="launchpad">
 
 <head>
-  <title metal:fill-slot="title">Forbidden</title>
+    <title metal:fill-slot="title">Forbidden</title>
 </head>
 
-  <body>
+<body>
     <div metal:fill-slot="main">
-      <h1>
-      Sorry, you don't have permission to access this page.
-      </h1>
-      <p>You are logged in as
-        <span tal:content="request/lp:person/title|default">
-          No user is logged in
-        </span>
-      </p>
+        <h1>
+        Sorry, you don't have permission to access this page.
+        </h1>
+        <p>You are logged in as
+            <span tal:content="request/lp:person/title|default">
+            No user is logged in
+            </span>
+        </p>
+
+        <tal:block condition="view/show_tracebacks">
+            <h3>Error type: <span tal:replace="view/error_type" /></h3>
+            <div tal:content="structure view/htmltext | default">
+                HTML rendering of error should go here.
+            </div>
+        </tal:block>
+
     </div>
-  </body>
+</body>
 </html>

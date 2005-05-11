@@ -72,7 +72,7 @@ Here's a list of events that happen, and the resulting activity logged:
 EVENT: user files a bug
 
   >>> bug = Bug(
-  ...     title = "a test bug", shortdesc = "this is only a test bug",
+  ...     title = "a test bug", summary = "this is only a test bug",
   ...     description = "this is only a test bug\nplease ignore",
   ...     owner = user.id)
   >>> bug.activity
@@ -90,10 +90,10 @@ EVENT: user files a bug
 EVENT: bug edited
 
   >>> old_state = capture_state(
-  ...     bug, "id", "title", "shortdesc", "description", "name", "private")
+  ...     bug, "id", "title", "summary", "description", "name", "private")
   >>> bug.title = "new bug title"
   >>> bug_edited = SQLObjectModifiedEvent(
-  ...     bug, old_state, ["title", "shortdesc", "description"],
+  ...     bug, old_state, ["title", "summary", "description"],
   ...     user, request)
   >>> notify(bug_edited)
   >>> latest_activity = bug.activity[-1]

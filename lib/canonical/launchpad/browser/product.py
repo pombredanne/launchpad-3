@@ -104,7 +104,7 @@ class ProductView:
         # Extract details from the form and update the Product
         self.context.displayname = form['displayname']
         self.context.title = form['title']
-        self.context.shortdesc = form['shortdesc']
+        self.context.summary = form['summary']
         self.context.description = form['description']
         self.context.homepageurl = form['homepageurl']
         notify(ObjectModifiedEvent(self.context))
@@ -389,7 +389,7 @@ class ProductSetView:
             self.soyuz is not None):
             self.searchrequested = True
         self.results = None
-        self.gotmatches = 0
+        self.matches = 0
 
 
     def searchresults(self):
@@ -403,7 +403,7 @@ class ProductSetView:
                                                malone=self.malone,
                                                rosetta=self.rosetta,
                                                soyuz=self.soyuz)
-        self.gotmatches = len(list(self.results))
+        self.matches = self.results.count()
         return self.results
 
 
@@ -434,7 +434,7 @@ class ProductSetAddView(AddView):
         # -> try to don't use collapsed dict as argument, use it expanded
         # XXX cprov 20050117
         # The required field are:
-        #    def createProduct(owner, name, displayname, title, shortdesc,
+        #    def createProduct(owner, name, displayname, title, summary,
         #                      description, project=None, homepageurl=None,
         #                      screenshotsurl=None, wikiurl=None,
         #                      downloadurl=None, freshmeatproject=None,

@@ -88,7 +88,7 @@ class PublishedPackageSetView:
         for package in resultset:
             binpkg = binpkgs.get(package.binarypackagename,
                                  BinPackage(package.binarypackagename, 
-                                            package.binarypackageshortdesc,
+                                            package.binarypackagesummary,
                                             package.binarypackagedescription))
             drversions = binpkg.distroreleases.get( \
                 package.distroreleasename,

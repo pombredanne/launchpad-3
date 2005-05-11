@@ -4,6 +4,14 @@ __metaclass__ = type
 
 from zope.interface import Interface
 
+class UploadFailed(Exception):
+    pass
+
+
+class DownloadFailed(Exception):
+    pass
+
+
 class IFileUploadClient(Interface):
     def addFile(name, size, file, contentType):
         """Add a file to the librarian.
@@ -22,7 +30,10 @@ class IFileDownloadClient(Interface):
         """Returns the URL to the given file"""
 
     def getFileByAlias(aliasID):
-        """Returns a file-like object to read the file contents from"""
+        """Returns a file-like object to read the file contents from.
+
+        :raises DownloadFailed: If the alias is not found.
+        """
 
 class ILibrarianClient(IFileUploadClient, IFileDownloadClient):
     pass

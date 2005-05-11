@@ -11,7 +11,8 @@ from canonical.launchpad.interfaces import IAuthorization, IHasOwner
 from canonical.launchpad.interfaces import IPerson, ITeam
 from canonical.launchpad.interfaces import ITeamMembershipSubset
 from canonical.launchpad.interfaces import ITeamMembership
-from canonical.launchpad.interfaces import ISeriesSource, ISeriesSourceAdmin
+from canonical.launchpad.interfaces import IProductSeriesSource
+from canonical.launchpad.interfaces import IProductSeriesSourceAdmin
 from canonical.launchpad.interfaces import IMilestone, IBug, IBugTask
 from canonical.launchpad.interfaces import IUpstreamBugTask, IDistroBugTask
 from canonical.launchpad.interfaces import IReadOnlyUpstreamBugTask
@@ -63,7 +64,7 @@ class EditByOwnerOfProduct(EditByOwnersOrAdmins):
 
 class AdminSeriesSourceByButtSource(AuthorizationBase):
     permission = 'launchpad.Admin'
-    usedfor = ISeriesSourceAdmin
+    usedfor = IProductSeriesSourceAdmin
 
     def checkAuthenticated(self, user):
         buttsource = getUtility(ILaunchpadCelebrities).buttsource
@@ -72,7 +73,7 @@ class AdminSeriesSourceByButtSource(AuthorizationBase):
 
 class EditSeriesSourceByButtSource(AuthorizationBase):
     permission = 'launchpad.Edit'
-    usedfor = ISeriesSource
+    usedfor = IProductSeriesSource
 
     def checkAuthenticated(self, user):
         buttsource = getUtility(ILaunchpadCelebrities).buttsource

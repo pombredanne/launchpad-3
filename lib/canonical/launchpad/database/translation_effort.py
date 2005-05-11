@@ -107,7 +107,7 @@ class TranslationEffort(SQLBase):
             dbName='categories', notNull=False),
         StringCol(name='name', dbName='name', notNull=True, unique=True),
         StringCol(name='title', dbName='title', notNull=True),
-        StringCol(name='shortDescription', dbName='shortdesc', notNull=True),
+        StringCol(name='shortDescription', dbName='summary', notNull=True),
         StringCol(name='description', dbName='description', notNull=True)
         ]
 

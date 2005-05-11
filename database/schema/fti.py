@@ -20,13 +20,13 @@ PATCH_SQL = os.path.join(
         )
 
 ALL_FTI = [
-    ('bug', ['name', 'title', 'shortdesc', 'description']),
+    ('bug', ['name', 'title', 'summary', 'description']),
     ('message', ['title']),
     ('messagechunk', ['content']),
     ('person', ['givenname', 'familyname', 'displayname']),
-    ('product', ['name', 'displayname', 'title', 'shortdesc', 'description']),
-    ('project', ['name', 'displayname', 'title', 'shortdesc', 'description']),
-    ('binarypackage', ['shortdesc', 'description']),
+    ('product', ['name', 'displayname', 'title', 'summary', 'description']),
+    ('project', ['name', 'displayname', 'title', 'summary', 'description']),
+    ('binarypackage', ['summary', 'description']),
     ]
 
 def quote_identifier(identifier):

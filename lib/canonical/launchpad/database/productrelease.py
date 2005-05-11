@@ -1,7 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['ProductRelease', 'ProductReleaseFile']
+__all__ = ['ProductRelease', 'ProductReleaseSet', 'ProductReleaseFile']
 
 from zope.interface import implements
 
@@ -12,6 +12,23 @@ from canonical.database.constants import nowUTC
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import IProductRelease
+from canonical.launchpad.interfaces import IProductReleaseSet
+
+
+class ProductReleaseSet(object):
+    """See IProductReleaseSet""" 
+    implements(IProductReleaseSet)
+
+    def new(self, version, productseries, owner, title=None, summary=None,
+            description=None, changelog=None):
+        """See IProductReleaseSet"""
+        return ProductRelease(version=version,
+                              productseries=productseries,
+                              owner=owner,
+                              title=title,
+                              summary=summary,
+                              description=description,
+                              changelog=changelog)
 
 
 class ProductRelease(SQLBase):
@@ -22,7 +39,7 @@ class ProductRelease(SQLBase):
     datereleased = UtcDateTimeCol(notNull=True, default=nowUTC)
     version = StringCol(notNull=True)
     title = StringCol(notNull=False, default=None)
-    shortdesc = StringCol(notNull=False, default=None)
+    summary = StringCol(notNull=False, default=None)
     description = StringCol(notNull=False, default=None)
     changelog = StringCol(notNull=False, default=None)
     owner = ForeignKey(dbName="owner", foreignKey="Person", notNull=True)

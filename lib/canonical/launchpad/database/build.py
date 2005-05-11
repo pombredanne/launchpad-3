@@ -7,7 +7,8 @@ from datetime import datetime
 
 from zope.interface import implements
 
-from sqlobject import StringCol, ForeignKey, DateTimeCol, BoolCol
+# SQLObject/SQLBase
+from sqlobject import StringCol, ForeignKey, DateTimeCol, BoolCol, IntCol
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -78,4 +79,5 @@ class BuildQueue(SQLBase):
     created = UtcDateTimeCol(dbName='created', notNull=True)
     buildstart = UtcDateTimeCol(dbName='buildstart', notNull=False)
     logtail = StringCol(dbName='logtail', notNull=False)
+    lastscore = IntCol(dbName='lastscore', notNull=False)
 

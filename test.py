@@ -57,11 +57,17 @@ FunctionalTestSetup.__init__ = lambda *x: None
 
 # Install our own test runner to to pre/post sanity checks
 import zope.app.tests.test
+from canonical.database.sqlbase import SQLBase, ZopelessTransactionManager
 class LaunchpadTestRunner(zope.app.tests.test.ImmediateTestRunner):
     def precheck(self, test):
         pass
 
     def postcheck(self, test):
+        '''Tests run at the conclusion of every top level test suite'''
+        # Confirm Zopeless teardown has been called if necessary
+        assert ZopelessTransactionManager._installed is None, \
+                'Test used Zopeless but failed to tearDown correctly'
+
         # Confirm all database connections have been dropped
         assert len(pgsql.PgTestSetup.connections) == 0, \
                 'Not all PostgreSQL connections closed'

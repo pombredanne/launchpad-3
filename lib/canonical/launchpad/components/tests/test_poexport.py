@@ -1,22 +1,8 @@
 
 import unittest
 
-from difflib import unified_diff
-
 from canonical.launchpad.components.poexport import export_rows
-
-def test_diff(lines_a, lines_b):
-    """Generate a string indicating the difference between expected and actual
-    values in a test.
-    """
-
-    return '\n'.join(list(unified_diff(
-        a=lines_a,
-        b=lines_b,
-        fromfile='expected',
-        tofile='actual',
-        lineterm='',
-        )))
+from canonical.launchpad.helpers import test_diff
 
 class TestRow:
     """Pretend to be a database row for testing purposes."""
@@ -32,6 +18,7 @@ class TestRow:
             'pocommenttext': '',
             'sourcecomment': '',
             'filereferences': '',
+            'active': True,
         }
         self.columns.update(kw)
 

@@ -135,20 +135,20 @@
                                                 title string: Untranslated: ${language/poUntranslatedPercent}%" />
                         </td>
                         <td>
-                            <tal:block condition="language/lastChangedSighting">
-                                <span tal:content="language/lastChangedSighting/person/displayname" />
+                            <tal:block condition="language/latest_sighting">
+                                <span tal:content="language/latest_sighting/person/displayname" />
                             </tal:block>
-                            <tal:block condition="not: language/lastChangedSighting">
+                            <tal:block condition="not: language/latest_sighting">
                                 &mdash;
                             </tal:block>
                         </td>
                         <td>
-                            <tal:block condition="language/lastChangedSighting">
+                            <tal:block condition="language/latest_sighting">
                                 <span
-                                tal:content="language/lastChangedSighting/datelastactive/fmt:date"
+                                tal:content="language/latest_sighting/datelastactive/fmt:date"
                                 /> GMT
                             </tal:block>
-                            <tal:block condition="not: language/lastChangedSighting">
+                            <tal:block condition="not: language/latest_sighting">
                                 &mdash;
                             </tal:block>
                         </td>

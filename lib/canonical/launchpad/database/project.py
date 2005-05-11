@@ -32,7 +32,7 @@ class Project(SQLBase):
     name = StringCol(dbName='name', notNull=True)
     displayname = StringCol(dbName='displayname', notNull=True)
     title = StringCol(dbName='title', notNull=True)
-    shortdesc = StringCol(dbName='shortdesc', notNull=True)
+    summary = StringCol(dbName='summary', notNull=True)
     description = StringCol(dbName='description', notNull=True)
     # XXX: https://bugzilla.warthogs.hbd.com/bugzilla/show_bug.cgi?id=1968
     datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True)
@@ -48,7 +48,8 @@ class Project(SQLBase):
                             otherColumn='bounty',
                             intermediateTable='ProjectBounty')
 
-    products = MultipleJoin('Product', joinColumn='project')
+    products = MultipleJoin('Product', joinColumn='project',
+                            orderBy='name')
 
     bugtrackers = RelatedJoin('BugTracker', joinColumn='project',
                                otherColumn='bugtracker',
@@ -73,7 +74,7 @@ class ProjectSet:
             raise KeyError, name
         return project
 
-    def new(self, name, displayname, title, homepageurl, shortdesc,
+    def new(self, name, displayname, title, homepageurl, summary,
             description, owner):
         name = name.encode('ascii')
         displayname = displayname.encode('ascii')
@@ -88,7 +89,7 @@ class ProjectSet:
         return Project(name = name,
                        displayname = displayname,
                        title = title,
-                       shortdesc = shortdesc,
+                       summary = summary,
                        description = description,
                        homepageurl = url,
                        owner = owner,

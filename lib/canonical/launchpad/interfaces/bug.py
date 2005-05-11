@@ -37,7 +37,7 @@ class IBug(Interface):
             title=_('Title'), required=True,
             description=_("""A one-line summary of the problem"""),
             )
-    shortdesc = Summary(
+    summary = Summary(
             title=_('Summary'), required=False,
             description=_("""The bug summary is a single paragraph
             description that should capture the essence of the bug, where it
@@ -135,7 +135,7 @@ class IBugDelta(Interface):
 
     # fields on the bug itself
     title = Attribute("The new bug title or None.")
-    shortdesc = Attribute("The new bug shortdesc or None.")
+    summary = Attribute("The new bug summary or None.")
     description = Attribute("The new bug description or None.")
     private = Attribute("A dict with two keys, 'old' and 'new', or None.")
     name = Attribute("A dict with two keys, 'old' and 'new', or None.")

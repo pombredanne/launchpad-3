@@ -86,7 +86,6 @@ First, export without a date limit: should get both PO files.
   |     0 | rosetta-grumpy/es/
   |     0 | rosetta-grumpy/es/LC_MESSAGES/
   |   721 | rosetta-grumpy/es/LC_MESSAGES/test.po
-  |     0 | rosetta-grumpy/
   |     0 | rosetta-grumpy/cy/
   |     0 | rosetta-grumpy/cy/LC_MESSAGES/
   |   763 | rosetta-grumpy/cy/LC_MESSAGES/test.po

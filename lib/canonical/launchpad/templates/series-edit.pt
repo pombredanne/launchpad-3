@@ -61,7 +61,7 @@
 
         <div class="field">
 
-            <label>Short Description</label>
+            <label>Summary</label>
 
                   <div class="formHelp">
                     A single paragraph introduction or overview of this
@@ -71,8 +71,8 @@
                     server deployments.</i>
                   </div>
 
-                <textarea cols="40" rows="7" name="shortdesc" 
-                          tal:content="context/shortdesc">
+                <textarea cols="40" rows="7" name="summary" 
+                          tal:content="context/summary">
                 </textarea>
         </div>
 

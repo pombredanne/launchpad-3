@@ -27,7 +27,7 @@ class ILibraryFileAlias(Interface):
 
     def read(chunksize=None):
         """Read up to `chunksize` bytes from the file.
-        
+
         `chunksize` defaults to the entire file.
         """
 
@@ -37,7 +37,7 @@ class ILibraryFileAlias(Interface):
 
 class ILibraryFileContent(Interface):
     """Actual data in the Librarian.
-    
+
     This should not be used outside of the librarian internals.
     """
     id = Int(

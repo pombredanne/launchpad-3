@@ -106,7 +106,7 @@ class POMsgSet(SQLBase):
                     new_translations[index] is None):
                     # Make all sightings inactive.
                     sightings = POTranslationSighting.select(
-                        'pomsgset=%d AND pluralform = %d' % 
+                        'pomsgset=%s AND pluralform = %s' % 
                         sqlvalues(self.id, index))
                     for sighting in sightings:
                         sighting.active = False
@@ -253,7 +253,7 @@ class POMsgSet(SQLBase):
                     # .po import.
                     sighting.inlastrevision = True
                     previous_active_results = POTranslationSighting.select(
-                        'pomsgset=%d AND pluralform=%d AND active=FALSE'
+                        'pomsgset=%s AND pluralform=%s AND active=FALSE'
                             % sqlvalues(self.id, pluralForm),
                         orderBy='-datelastactive')
                     if (previous_active_results.count() > 1 and

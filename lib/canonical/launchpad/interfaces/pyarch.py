@@ -1257,9 +1257,9 @@ class INameParser(INamePartParser):
 
 try:
 
-    from arch.errors import TreeRootError
-    from arch.errors import NamespaceError
-    from arch.errors import ArchiveNotRegistered
+    from pybaz.errors import TreeRootError
+    from pybaz.errors import NamespaceError
+    from pybaz.errors import ArchiveNotRegistered
     # TODO place class ArchiveAlreadyRegistered(ValueError) into arch.errors
     class ArchiveAlreadyRegistered(ValueError):
         """attempt to add an already present archive"""

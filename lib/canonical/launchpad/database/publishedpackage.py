@@ -33,7 +33,7 @@ class PublishedPackage(SQLBase):
     section = StringCol(immutable=True)
     binarypackage = IntCol(immutable=True)
     binarypackagename = StringCol(immutable=True)
-    binarypackageshortdesc = StringCol(immutable=True)
+    binarypackagesummary = StringCol(immutable=True)
     binarypackagedescription = StringCol(immutable=True)
     binarypackageversion = StringCol(immutable=True)
     build = ForeignKey(foreignKey='Build', dbName='build')

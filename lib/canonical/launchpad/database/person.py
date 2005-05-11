@@ -10,6 +10,7 @@ __all__ = [
     'TeamParticipation', 'Karma'
     ]
 
+import itertools
 import sets
 from datetime import datetime, timedelta
 import pytz
@@ -46,7 +47,6 @@ from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.searchbuilder import NULL
-from canonical.launchpad.helpers import shortlist
 
 from canonical.lp.dbschema import \
     EnumCol, SSHKeyType, KarmaType, EmailAddressStatus, \
@@ -297,15 +297,13 @@ class Person(SQLBase):
     def getSuperTeams(self):
         query = ('Person.id = TeamParticipation.team AND '
                  'TeamParticipation.person = %d' % self.id)
-        results = Person.select(query, clauseTables=['TeamParticipation'])
-        return shortlist(results)
+        return Person.select(query, clauseTables=['TeamParticipation'])
 
     def getSubTeams(self):
         query = ('Person.id = TeamParticipation.person AND '
                  'TeamParticipation.team = %d AND '
                  'Person.teamowner IS NOT NULL' % self.id)
-        results = Person.select(query, clauseTables=['TeamParticipation'])
-        return shortlist(results)
+        return Person.select(query, clauseTables=['TeamParticipation'])
 
     def addMember(self, person, status=TeamMembershipStatus.APPROVED,
                   reviewer=None, comment=None):
@@ -371,12 +369,12 @@ class Person(SQLBase):
         query = ("TeamMembership.team = %s AND TeamMembership.status = %s "
                  "AND TeamMembership.person = Person.id" %
                  sqlvalues(self.id, status))
-        return shortlist(Person.select(query, clauseTables=['TeamMembership']))
+        return Person.select(query, clauseTables=['TeamMembership'])
 
     def _getEmailsByStatus(self, status):
         query = AND(EmailAddress.q.personID==self.id,
                     EmailAddress.q.status==status)
-        return shortlist(EmailAddress.select(query))
+        return EmailAddress.select(query)
 
     def title(self):
         return self.browsername
@@ -411,15 +409,15 @@ class Person(SQLBase):
     approvedmembers = property(approvedmembers)
 
     def activemembers(self):
-        return self.approvedmembers + self.administrators
+        return self.approvedmembers.union(self.administrators)
     activemembers = property(activemembers)
 
     def inactivemembers(self):
-        return self.expiredmembers + self.deactivatedmembers
+        return self.expiredmembers.union(self.deactivatedmembers)
     inactivemembers = property(inactivemembers)
 
     def memberships(self):
-        return shortlist(TeamMembership.selectBy(personID=self.id))
+        return TeamMembership.selectBy(personID=self.id)
     memberships = property(memberships)
 
     def defaultexpirationdate(self):
@@ -448,8 +446,7 @@ class Person(SQLBase):
         email.status = EmailAddressStatus.PREFERRED
 
     def _getPreferredemail(self):
-        emails = shortlist(
-            self._getEmailsByStatus(EmailAddressStatus.PREFERRED))
+        emails = self._getEmailsByStatus(EmailAddressStatus.PREFERRED)
         # There can be only one preferred email for a given person at a
         # given time, and this constraint must be ensured in the DB, but
         # it's not a problem if we ensure this constraint here as well.
@@ -475,15 +472,15 @@ class Person(SQLBase):
     guessedemails = property(guessedemails)
 
     def bugs(self):
-        return list(Bug.selectBy(ownerID=self.id))
+        return Bug.selectBy(ownerID=self.id)
     bugs= property(bugs)
 
     def translations(self):
-        return list(TranslationEffort.selectBy(ownerID=self.id))
+        return TranslationEffort.selectBy(ownerID=self.id)
     translations = property(translations)
 
     def activities(self):
-        return list(Karma.selectBy(personID=self.id))
+        return Karma.selectBy(personID=self.id)
     activities = property(activities)
 
     def wiki(self):
@@ -521,12 +518,12 @@ class Person(SQLBase):
 
     def maintainerships(self):
         maintainershipsutil = getUtility(IMaintainershipSet)
-        return shortlist(maintainershipsutil.getByPersonID(self.id))
+        return maintainershipsutil.getByPersonID(self.id)
     maintainerships = property(maintainerships)
 
     def packages(self):
         sprutil = getUtility(ISourcePackageReleaseSet)
-        return shortlist(sprutil.getByCreatorID(self.id))
+        return sprutil.getByCreatorID(self.id)
     packages = property(packages)
 
     def ubuntite(self):
@@ -613,7 +610,7 @@ class PersonSet:
         return self._getAllPersons().count()
 
     def getAllPersons(self, orderBy=None):
-        return list(self._getAllPersons(orderBy=orderBy))
+        return self._getAllPersons(orderBy=orderBy)
 
     def _getAllPersons(self, orderBy=None):
         query = AND(Person.q.teamownerID==None, Person.q.mergedID==None)
@@ -623,22 +620,22 @@ class PersonSet:
         return self._getAllTeams().count()
 
     def getAllTeams(self, orderBy=None):
-        return list(self._getAllTeams(orderBy=orderBy))
+        return self._getAllTeams(orderBy=orderBy)
 
     def _getAllTeams(self, orderBy=None):
         return Person.select(Person.q.teamownerID!=None, orderBy=orderBy)
 
     def findByName(self, name, orderBy=None):
         query = "fti @@ ftq(%s) AND merged is NULL" % quote(name)
-        return list(Person.select(query, orderBy=orderBy))
+        return Person.select(query, orderBy=orderBy)
 
     def findPersonByName(self, name, orderBy=None):
         query = "fti @@ ftq(%s) AND teamowner is NULL AND merged is NULL"
-        return list(Person.select(query % quote(name), orderBy=orderBy))
+        return Person.select(query % quote(name), orderBy=orderBy)
 
     def findTeamByName(self, name, orderBy=None):
         query = "fti @@ ftq(%s) AND teamowner is not NULL" % quote(name)
-        return list(Person.select(query, orderBy=orderBy))
+        return Person.select(query, orderBy=orderBy)
 
     def get(self, personid, default=None):
         """See IPersonSet."""
@@ -897,7 +894,7 @@ class EmailAddressSet:
             return email
 
     def getByPerson(self, personid):
-        return shortlist(EmailAddress.selectBy(personID=personid))
+        return EmailAddress.selectBy(personID=personid)
 
     def getByEmail(self, email, default=None):
         try:
@@ -1106,8 +1103,8 @@ class TeamMembershipSet:
         clauses = " OR ".join(clauses)
         query = ("(%s) AND Person.id = TeamMembership.person AND "
                  "TeamMembership.team = %d" % (clauses, teamID))
-        return list(TeamMembership.select(query, clauseTables=['Person'],
-                                          orderBy=orderBy))
+        return TeamMembership.select(query, clauseTables=['Person'],
+                                     orderBy=orderBy)
 
     def getActiveMemberships(self, teamID, orderBy=None):
         statuses = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
@@ -1138,8 +1135,8 @@ class TeamParticipation(SQLBase):
 def _getAllMembers(team, orderBy=None):
     query = ('Person.id = TeamParticipation.person AND '
              'TeamParticipation.team = %d' % team.id)
-    return list(Person.select(query, clauseTables=['TeamParticipation'],
-                              orderBy=orderBy))
+    return Person.select(query, clauseTables=['TeamParticipation'],
+                         orderBy=orderBy)
 
 
 def _cleanTeamParticipation(person, team):
@@ -1164,7 +1161,7 @@ def _cleanTeamParticipation(person, team):
             if member.inTeam(subteam):
                 break
         else:
-            for t in team.getSuperTeams() + [team]:
+            for t in itertools.chain(team.getSuperTeams(), [team]):
                 result = TeamParticipation.selectOneBy(
                     personID=member.id, teamID=t.id)
                 if result is not None:
@@ -1184,7 +1181,7 @@ def _fillTeamParticipation(person, team):
         members.extend(_getAllMembers(person))
 
     for member in members:
-        for t in team.getSuperTeams() + [team]:
+        for t in itertools.chain(team.getSuperTeams(), [team]):
             if not member.inTeam(t):
                 TeamParticipation(personID=member.id, teamID=t.id)
 

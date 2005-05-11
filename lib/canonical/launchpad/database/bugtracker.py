@@ -38,7 +38,7 @@ class BugTracker(SQLBase):
                 foreignKey='BugTrackerType', notNull=True)
     name = StringCol(notNull=True, unique=True)
     title = StringCol(notNull=True)
-    shortdesc = StringCol(notNull=True)
+    summary = StringCol(notNull=True)
     baseurl = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     contactdetails = StringCol(notNull=False)

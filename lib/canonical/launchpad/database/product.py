@@ -50,7 +50,7 @@ class Product(SQLBase):
 
     title = StringCol(dbName='title', notNull=True)
 
-    shortdesc = StringCol(dbName='shortdesc', notNull=True)
+    summary = StringCol(dbName='summary', notNull=True)
 
     description = StringCol(dbName='description', notNull=True)
 
@@ -160,10 +160,10 @@ class Product(SQLBase):
         # Extract the details from the form
         name = form['name']
         displayname = form['displayname']
-        shortdesc = form['shortdesc']
+        summary = form['summary']
         # Now create a new series in the db
         return ProductSeries(
-            name=name, displayname=displayname, shortdesc=shortdesc,
+            name=name, displayname=displayname, summary=summary,
             product=self.id)
 
     def potemplates(self):
@@ -322,7 +322,7 @@ class ProductSet:
 
         return product
 
-    def createProduct(self, owner, name, displayname, title, shortdesc,
+    def createProduct(self, owner, name, displayname, title, summary,
                       description, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
@@ -330,7 +330,7 @@ class ProductSet:
         """See canonical.launchpad.interfaces.product.IProductSet."""
         return Product(
             owner=owner, name=name, displayname=displayname,
-            title=title, project=project, shortdesc=shortdesc,
+            title=title, project=project, summary=summary,
             description=description, homepageurl=homepageurl,
             screenshotsurl=screenshotsurl, wikiurl=wikiurl,
             downloadurl=downloadurl, freshmeatproject=freshmeatproject,

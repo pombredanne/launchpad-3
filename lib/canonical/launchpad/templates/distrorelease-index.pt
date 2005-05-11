@@ -32,7 +32,7 @@
     <h1>Distribution Release Overview</h1> 
 
         <div class="documentDescription"
-             tal:content="context/shortdesc">
+             tal:content="context/summary">
              Release summary
         </div>
             

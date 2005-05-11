@@ -531,7 +531,9 @@ class Launchpad(SQLThingBase):
             return
                
         description = self.ensure_string_format(bin.description)
-        short_desc = description.split("\n")[0]
+        summary = description.split("\n")[0]
+        if summary[-1] != '.':
+            summary = summary + '.'
         licence = self.ensure_string_format(bin.licence)
         componentID = self.getComponentByName(bin.component).id
         sectionID = self.getSectionByName(bin.section).id
@@ -540,7 +542,7 @@ class Launchpad(SQLThingBase):
             "binarypackagename":    bin_name.id,
             "component":            componentID,
             "version":              bin.version,
-            "shortdesc":            short_desc,
+            "summary":              summary,
             "description":          description,
             "build":                build.id,
             "binpackageformat":     self.getBinaryPackageFormat(bin.filename),

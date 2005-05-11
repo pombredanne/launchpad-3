@@ -25,6 +25,9 @@ class ILanguage(Interface):
     countries = Attribute("""A list of Countries where this language is spoken
         in.""")
 
+    visible = Attribute(
+        """Whether this language should ususally be visible or not.""")
+
 
 class ILanguageSet(Interface):
     """The collection of languages."""
