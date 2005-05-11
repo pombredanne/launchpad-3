@@ -2,6 +2,86 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-11 15:10:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1687
+
+    Summary:
+      Get PPH merged in ready for pockets and embargo work. r=stevea
+    Revision:
+      launchpad--devel--0--patch-1687
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-9
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-10
+       PPH DB implementation. SQLObjects pending
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-11
+       star-merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-12
+       Initial packagepublishinghistory sqlobjects
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-13
+       SPPH quick-fix
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-14
+       Gina changes to support PPH
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-15
+       Backslashes and commas. Syntax sucks
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-16
+       more commas and sqlobject frippery
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-17
+       Merge stub's changes to authorise the db patch
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-18
+       star-merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-19
+       Fix up patch to match change in shortdesc name
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-20
+       Respond to review from SteveA
+    
+     * stuart.bishop@canonical.com/launchpad--kinnison--1--base-0
+       tag of daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-10
+    
+     * stuart.bishop@canonical.com/launchpad--kinnison--1--patch-1
+       Reduce noise and move to final position
+    
+
+    new files:
+     database/schema/.arch-ids/patch-17-05-0.sql.id
+     database/schema/patch-17-05-0.sql
+
+    modified files:
+     database/sampledata/current.sql database/schema/comments.sql
+     database/schema/security.cfg doc/changelog.txt
+     lib/canonical/launchpad/database/publishing.py
+     lib/canonical/launchpad/interfaces/publishing.py
+     lib/canonical/launchpad/scripts/gina/database.py
+
+    new patches:
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-9
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-10
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-11
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-12
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-13
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-14
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-15
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-16
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-17
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-18
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-19
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-20
+     stuart.bishop@canonical.com/launchpad--kinnison--1--base-0
+     stuart.bishop@canonical.com/launchpad--kinnison--1--patch-1
+
+
 2005-05-11 02:00:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1686
 
     Summary:
