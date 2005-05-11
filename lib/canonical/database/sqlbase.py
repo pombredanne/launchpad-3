@@ -1,3 +1,8 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
+import psycopg
 from sqlos import SQLOS
 from sqlos.adapter import PostgresAdapter
 from sqlobject.sqlbuilder import sqlrepr
@@ -5,6 +10,8 @@ from sqlobject.styles import Style
 from datetime import datetime, date, time
 from sqlobject import connectionForURI
 import thread, warnings
+
+from canonical.config import config
 
 __all__ = ['SQLBase', 'quote', 'quote_like', 'sqlvalues',
            'ZopelessTransactionManager', 'ConflictingTransactionManagerError']
@@ -345,6 +352,25 @@ def sqlvalues(*values, **kwvalues):
     elif kwvalues:
         return dict([(key, quote(value)) for key, value in kwvalues.items()])
 
+def quoteIdentifier(identifier):
+    r'''Quote an identifier, such as a table name.
+    
+    In SQL, identifiers are quoted using " rather than ' which is reserved
+    for strings.
+
+    >>> print quoteIdentifier('hello')
+    "hello"
+    >>> print quoteIdentifier("'")
+    "'"
+    >>> print quoteIdentifier('"')
+    """"
+    >>> print quoteIdentifier("\\")
+    "\"
+    >>> print quoteIdentifier('\\"')
+    "\"""
+    '''
+    return '"%s"' % identifier.replace('"','""')
+
 def flush_database_updates():
     """Flushes all pending database updates for the current connection.
     
@@ -396,6 +422,20 @@ def rollback():
 def commit():
     SQLBase._connection.commit()
 
+def connect(user, dbname=None):
+    """Return a fresh DB-API connecction to the database.
+
+    Use None for the user to connect as the default PostgreSQL user.
+    This is not the default because the option should be rarely used.
+
+    Default database name is the one specified in the main configuration file.
+    """
+    con_str = 'dbname=%s' % (dbname or config.dbname)
+    if user:
+        con_str += ' user=%s' % user
+    if config.dbhost:
+        con_str += ' host=%s' % config.dbhost
+    return psycopg.connect(con_str)
 
 def cursor():
     '''Return a cursor from the current database connection.

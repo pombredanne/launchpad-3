@@ -131,6 +131,14 @@ class FOAFSearchView:
         return getUtility(IPersonSet).findByName(name)
 
 
+class PersonRdfView(object):
+    """A view that sets its mime-type to application/rdf+xml"""
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        request.response.setHeader('content-type', 'application/rdf+xml')
+
+
 class BasePersonView:
     """A base class to be used by all IPerson view classes."""
 
@@ -451,7 +459,7 @@ class PersonEditView(BasePersonView):
                 return
 
             login = getUtility(ILaunchBag).login
-            token = logintokenset.new(person, login, newemail, 
+            token = logintokenset.new(person, login, newemail,
                                       LoginTokenType.VALIDATEEMAIL)
             sendEmailValidationRequest(token, self.request.getApplicationURL())
             self.message = ("A new message was sent to '%s', please follow "

@@ -4,7 +4,9 @@
 
 __metaclass__ = type
 
-import sys
+import sys, os, os.path
+sys.path.insert(0, os.path.join(
+    os.path.dirname(__file__), os.pardir, os.pardir, 'lib'))
 
 from canonical.launchpad.scripts.sort_sql import Parser, Line, \
     print_lines_sorted
@@ -12,7 +14,11 @@ from canonical.launchpad.scripts.sort_sql import Parser, Line, \
 def main(argv):
     parser = Parser()
 
-    for line in sys.stdin:
+    if len(argv) > 1:
+        inf = open(argv[1])
+    else:
+        inf = sys.stdin
+    for line in inf:
         parser.write_line(line[:-1])
 
     lines = [Line(line) for line in parser.lines]

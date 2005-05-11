@@ -112,9 +112,16 @@ class IPerson(Interface):
     teamdescription = Text(title=_('Team Description'), required=False,
                            readonly=False)
 
-    preferredemail = Int(title=_("The preferred email address for this "
-                                 "person. The one we'll use to communicate "
-                                 "with him."), readonly=False)
+    preferredemail = TextLine(
+            title=_("Preferred Email Address"), description=_(
+                "The preferred email address for this person. The one "
+                "we'll use to communicate with them."), readonly=False)
+
+    preferredemail_sha1 = TextLine(title=_("SHA-1 Hash of Preferred Email"),
+            description=_("The SHA-1 hash of the preferred email address as "
+                "a hexadecimal string. This is used as a key by FOAF RDF spec"
+                ), readonly=True)
+
     defaultmembershipperiod = Int(
             title=_('Number of days a subscription lasts'), required=False,
             description=_("This is the number of days all "

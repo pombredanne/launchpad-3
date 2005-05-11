@@ -69,7 +69,9 @@ class DistroArchRelease(SQLBase):
     def __getitem__(self, name):
         binset = getUtility(IBinaryPackageSet)
         packages = binset.getByNameInDistroRelease(
-            self.distrorelease.id, name=name, archtag=self.architecturetag)
+            self.distrorelease.id, name=name, archtag=self.architecturetag,
+            orderBy='id')
+
         try:
             return packages[0]
         except IndexError:

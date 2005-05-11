@@ -13,6 +13,7 @@ __all__ = [
 import itertools
 import sets
 from datetime import datetime, timedelta
+import sha
 
 # Zope interfaces
 from zope.interface import implements, directlyProvides, directlyProvidedBy
@@ -456,6 +457,15 @@ class Person(SQLBase):
             return None
     preferredemail = property(_getPreferredemail, _setPreferredemail)
 
+    def preferredemail_sha1(self):
+        """See IPerson.preferredemail_sha1"""
+        preferredemail = self.preferredemail
+        if preferredemail:
+            return sha.new(preferredemail.email).hexdigest().upper()
+        else:
+            return None
+    preferredemail_sha1 = property(preferredemail_sha1)
+
     def validatedemails(self):
         return self._getEmailsByStatus(EmailAddressStatus.VALIDATED)
     validatedemails = property(validatedemails)
@@ -696,7 +706,7 @@ class PersonSet:
         # Get a database cursor.
         cur = cursor()
 
-        references = list(postgresql.queryReferences(cur, 'person', 'id'))
+        references = list(postgresql.listReferences(cur, 'person', 'id'))
 
         # These table.columns will be skipped by the 'catch all'
         # update performed later
@@ -790,7 +800,7 @@ class PersonSet:
         # UNIQUE index, it must have already been handled by this point.
         # We can tell this by looking at the skip list.
         for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
-            uniques = postgresql.queryUniques(cur, src_tab, src_col)
+            uniques = postgresql.listUniques(cur, src_tab, src_col)
             if len(uniques) > 0 and (src_tab, src_col) not in skip:
                 raise NotImplementedError(
                         '%s.%s reference to %s.%s is in a UNIQUE index '

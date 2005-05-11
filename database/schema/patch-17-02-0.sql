@@ -29,6 +29,13 @@ UPDATE ProductSeries SET targetarcharchive=NULL WHERE targetarcharchive='';
 UPDATE ProductSeries SET targetarchcategory=NULL WHERE targetarchcategory='';
 UPDATE ProductSeries SET targetarchbranch=NULL WHERE targetarchbranch='';
 UPDATE ProductSeries SET targetarchversion=NULL WHERE targetarchversion='';
+UPDATE ProductSeries
+    SET targetarcharchive=NULL, targetarchcategory=NULL,
+        targetarchbranch=NULL, targetarchversion=NULL
+    WHERE
+        targetarcharchive IS NULL <> targetarchcategory IS NULL
+        OR targetarcharchive IS NULL <> targetarchbranch IS NULL
+        OR targetarcharchive IS NULL <> targetarchversion IS NULL;
 CREATE SEQUENCE tmp_counter;
 UPDATE ProductSeries
     SET targetarcharchive=targetarcharchive||'-DUPE'||nextval('tmp_counter')
