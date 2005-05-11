@@ -2,6 +2,76 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-11 22:43:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1688
+
+    Summary:
+      fix corruption
+    Revision:
+      launchpad--devel--0--patch-1688
+
+    Patches applied:
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-125
+       merge up to last good commit
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-126
+       merge and avoid corruption
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-127
+       final sync
+    
+
+    modified files:
+     doc/changelog.txt
+     {arch}/launchpad/launchpad--karma/launchpad--karma--0/guilherme.salgado@canonical.com/patch-log/patch-1
+     {arch}/launchpad/launchpad--karma/launchpad--karma--0/guilherme.salgado@canonical.com/patch-log/patch-2
+     {arch}/launchpad/launchpad--karma/launchpad--karma--0/guilherme.salgado@canonical.com/patch-log/patch-3
+     {arch}/launchpad/launchpad--karma/launchpad--karma--0/guilherme.salgado@canonical.com/patch-log/patch-4
+     {arch}/launchpad/launchpad--mark-refactor/launchpad--mark-refactor--0/andrew.bennetts@canonical.com/patch-log/patch-1
+     {arch}/launchpad/launchpad--mark-refactor/launchpad--mark-refactor--0/brad.bollenbach@canonical.com/patch-log/base-0
+     {arch}/launchpad/launchpad--membership-rename/launchpad--membership-rename--0/guilherme.salgado@canonical.com/patch-log/patch-1
+     {arch}/launchpad/launchpad--membership-rename/launchpad--membership-rename--0/guilherme.salgado@canonical.com/patch-log/patch-2
+     {arch}/launchpad/launchpad--move-daemons/launchpad--move-daemons--0/andrew.bennetts@canonical.com/patch-log/base-0
+     {arch}/launchpad/launchpad--move-daemons/launchpad--move-daemons--0/andrew.bennetts@canonical.com/patch-log/patch-1
+     {arch}/launchpad/launchpad--mpt-products/launchpad--mpt-products--0/guilherme.salgado@canonical.com/patch-log/base-0
+     {arch}/launchpad/launchpad--mpt-products/launchpad--mpt-products--0/guilherme.salgado@canonical.com/patch-log/patch-1
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/base-0
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-1
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-10
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-11
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-12
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-13
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-14
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-15
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-16
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-17
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-18
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-19
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-2
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-20
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-21
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-22
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-23
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-24
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-25
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-26
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-27
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-28
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-29
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-3
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-4
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-5
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-6
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-7
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-8
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-9
+
+    new patches:
+     robert.collins@canonical.com/launchpad--devel--0--patch-125
+     robert.collins@canonical.com/launchpad--devel--0--patch-126
+     robert.collins@canonical.com/launchpad--devel--0--patch-127
+
+
 2005-05-11 15:10:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1687
 
     Summary:
