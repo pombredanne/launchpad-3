@@ -41,7 +41,15 @@
         class="canonical.launchpad.browser.ViewPOFile"
         for="canonical.launchpad.interfaces.IPOFile"
         template="../templates/pofile-edit.pt"
-        lp:url="/products/$Product.name/+pots/$POTemplate.name/$POFile.language/+edit" />
+        />
+
+    <browser:page
+        name="+translate"
+        for="canonical.launchpad.interfaces.IPOFile"
+        permission="launchpad.AnyPerson"
+        template="../templates/pofile-translate.pt"
+        class="canonical.launchpad.browser.POFileTranslateView"
+        />
 
     <browser:page
         name="po"
@@ -49,7 +57,7 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.ViewPOExport"
         attribute="__call__"
-        lp:url="/products/$Product.name/$POTemplate.name/$Language.code/po" />
+        />
 
     <browser:page
         name="mo"
@@ -57,6 +65,6 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.ViewMOExport"
         attribute="__call__"
-        lp:url="/products/$Product.name/$POTemplate.name/$Language.code/mo" />
+        />
 
 </configure>

@@ -349,11 +349,11 @@ def test_parse_translation_form():
     >>> x[3]['translations']
     {}
     >>> x[3]['fuzzy']
-    {}
+    False
 
     A translation with no message ID.
 
-    >>> parse_translation_form({'set_3_translation_cy' : None})
+    >>> parse_translation_form({'set_3_translation_cy_0' : None})
     Traceback (most recent call last):
     ...
     AssertionError: Orphaned translation in form.
@@ -365,19 +365,13 @@ def test_parse_translation_form():
     ...     'set_1_translation_cy_0' : 'aaa',
     ...     'set_1_translation_cy_1' : 'bbb',
     ...     'set_1_translation_cy_2' : 'ccc',
-    ...     'set_1_translation_es_0' : 'xxx',
-    ...     'set_1_translation_es_1' : 'yyy',
-    ...     'set_1_fuzzy_es' : True
+    ...     'set_1_fuzzy_cy' : True
     ...     })
     >>> x[1]['msgid']
     1
-    >>> x[1]['translations']['cy'][2]
+    >>> x[1]['translations'][2]
     'ccc'
-    >>> x[1]['translations']['es'][0]
-    'xxx'
-    >>> x[1]['fuzzy'].has_key('cy')
-    False
-    >>> x[1]['fuzzy']['es']
+    >>> x[1]['fuzzy']
     True
 
     Test with a language which contains a country code. This is a regression
@@ -387,7 +381,7 @@ def test_parse_translation_form():
     ... 'set_1_msgid' : 1,
     ... 'set_1_translation_pt_BR_0' : 'bar',
     ... })
-    >>> x[1]['translations']['pt_BR'][0]
+    >>> x[1]['translations'][0]
     'bar'
     '''
 

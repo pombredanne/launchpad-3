@@ -98,7 +98,8 @@ class POTemplate(SQLBase, RosettaStats):
         return self.messageCount()
 
     def __iter__(self):
-        return iter(self.currentMessageSets())
+        """See IPOTemplate."""
+        return self.getPOTMsgSets()
 
     def __getitem__(self, key):
         return self.messageSet(key, onlyCurrent=True)
@@ -136,10 +137,40 @@ class POTemplate(SQLBase, RosettaStats):
             raise KeyError, key
         return result
 
-    def currentMessageSets(self):
-        return POTMsgSet.select(
-            'POTMsgSet.potemplate = %d AND POTMsgSet.sequence > 0' % self.id,
-            orderBy='sequence')
+    def getPOTMsgSets(self, current=True, slice=None):
+        """See IPOTemplate."""
+        if current:
+            # Only count the number of POTMsgSet that are current.
+            results = POTMsgSet.select(
+                'POTMsgSet.potemplate = %s AND POTMsgSet.sequence > 0' %
+                    sqlvalues(self.id),
+                orderBy='sequence')
+        else:
+            results = POTMsgSet.select(
+                'POTMsgSet.potemplate = %s' % sqlvalues(self.id),
+                orderBy='sequence')
+
+        if slice is None:
+            # Want all the output.
+            for potmsgset in results:
+                yield potmsgset
+        else:
+            # Want only a subset specified by slice.
+            for potmsgset in results[slice]:
+                yield potmsgset
+
+    def getPOTMsgSetsCount(self, current=True):
+        """See IPOTemplate."""
+        if current:
+            # Only count the number of POTMsgSet that are current
+            results = POTMsgSet.select(
+                'POTMsgSet.potemplate = %s AND POTMsgSet.sequence > 0' %
+                    sqlvalues(self.id))
+        else:
+            results = POTMsgSet.select(
+                'POTMsgSet.potemplate = %s' % sqlvalues(self.id))
+
+        return results.count()
 
     def getPOTMsgSetByID(self, id):
         """See IPOTemplate."""
@@ -345,8 +376,9 @@ class POTemplate(SQLBase, RosettaStats):
 
     # Methods defined in IEditPOTemplate
     def expireAllMessages(self):
-        for msgset in self.currentMessageSets():
-            msgset.sequence = 0
+        """See IPOTemplate."""
+        for potmsgset in self:
+            potmsgset.sequence = 0
 
     def getOrCreatePOFile(self, language_code, variant=None, owner=None):
         """See IPOFile."""
@@ -494,7 +526,7 @@ class POTemplate(SQLBase, RosettaStats):
 
             # We update the cached value that tells us the number of msgsets
             # this .pot file has
-            self.messagecount = self.currentMessageSets().count()
+            self.messagecount = self.getPOTMsgSetsCount()
 
             # And now, we should update the statistics for all po files this
             # .pot file has because a number of msgsets could have change.

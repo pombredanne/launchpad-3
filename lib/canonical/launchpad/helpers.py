@@ -27,9 +27,15 @@ from canonical.launchpad.components.poparser import POSyntaxError, \
     POInvalidInputError, POParser
 from canonical.launchpad.components.rosettastats import RosettaStats
 
-charactersPerLine = 50
-SPACE_CHAR = u'<span class="po-message-special">\u2022</span>'
-NEWLINE_CHAR = u'<span class="po-message-special">\u21b5</span><br/>\n'
+CHARACTERS_PER_LINE = 50
+
+class TranslationConstants:
+    """Set of constants used inside the context of translations."""
+
+    SINGULAR_FORM = 0
+    PLURAL_FORM = 1
+    SPACE_CHAR = u'<span class="po-message-special">\u2022</span>'
+    NEWLINE_CHAR = u'<span class="po-message-special">\u21b5</span><br/>\n'
 
 
 def is_maintainer(hasowner):
@@ -447,7 +453,7 @@ def count_lines(text):
         if len(line) == 0:
             count += 1
         else:
-            count += int(ceil(float(len(line)) / charactersPerLine))
+            count += int(ceil(float(len(line)) / CHARACTERS_PER_LINE))
 
     return count
 
@@ -538,21 +544,14 @@ def parse_translation_form(form):
 
         {
             'msgid': '...',
-            'translations': {
-                'es': ['...', '...'],
-                'cy': ['...', '...', '...', '...'],
-            },
-            'fuzzy': {
-                 'es': False,
-                 'cy': True,
-            },
+            'translations': ['...', '...'],
+            'fuzzy': False,
         }
     """
 
     messageSets = {}
 
     # Extract message IDs.
-
     for key in form:
         match = re.match('set_(\d+)_msgid$', key)
 
@@ -561,24 +560,9 @@ def parse_translation_form(form):
             messageSets[id] = {}
             messageSets[id]['msgid'] = id
             messageSets[id]['translations'] = {}
-            messageSets[id]['fuzzy'] = {}
+            messageSets[id]['fuzzy'] = False
 
-    # Extract non-plural translations.
-
-    for key in form:
-        match = re.match(r'set_(\d+)_translation_([a-z]+(?:_[A-Z]+)?)$', key)
-
-        if match:
-            id = int(match.group(1))
-            code = match.group(2)
-
-            if not id in messageSets:
-                raise AssertionError("Orphaned translation in form.")
-
-            messageSets[id]['translations'][code] = {}
-            messageSets[id]['translations'][code][0] = form[key].replace('\r', '')
-
-    # Extract plural translations.
+    # Extract translations.
 
     for key in form:
         match = re.match(r'set_(\d+)_translation_([a-z]+(?:_[A-Z]+)?)_(\d+)$',
@@ -586,16 +570,12 @@ def parse_translation_form(form):
 
         if match:
             id = int(match.group(1))
-            code = match.group(2)
             pluralform = int(match.group(3))
 
             if not id in messageSets:
                 raise AssertionError("Orphaned translation in form.")
 
-            if not code in messageSets[id]['translations']:
-                messageSets[id]['translations'][code] = {}
-
-            messageSets[id]['translations'][code][pluralform] = form[key]
+            messageSets[id]['translations'][pluralform] = form[key]
 
     # Extract fuzzy statuses.
 
@@ -604,15 +584,12 @@ def parse_translation_form(form):
 
         if match:
             id = int(match.group(1))
-            code = match.group(2)
-            messageSets[id]['fuzzy'][code] = True
+            messageSets[id]['fuzzy'] = True
 
     return messageSets
 
-def escape_msgid(s):
-    return s.replace('\\', r'\\').replace('\n', '\\n').replace('\t', '\\t')
-
-def msgid_html(text, flags, space=SPACE_CHAR, newline=NEWLINE_CHAR):
+def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
+               newline=TranslationConstants.NEWLINE_CHAR):
     '''Convert a message ID to a HTML representation.'''
 
     lines = []
@@ -768,6 +745,7 @@ def import_tar(potemplate, importer, tarfile, pot_paths, po_paths):
 
     return message
 
+
 class DummyPOFile(RosettaStats):
     """
     Represents a POFile where we do not yet actually HAVE a POFile for that
@@ -791,7 +769,7 @@ class DummyPOFile(RosettaStats):
         self.nonUpdatesPercentage = 0
         self.translatedPercentage = 0
         self.untranslatedPercentage = 100
-        
+
 
 def test_diff(lines_a, lines_b):
     """Generate a string indicating the difference between expected and actual

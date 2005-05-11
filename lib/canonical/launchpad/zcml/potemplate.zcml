@@ -52,9 +52,8 @@
         name="+translate"
         for="canonical.launchpad.interfaces.IPOTemplate"
         permission="launchpad.AnyPerson"
-        template="../templates/potemplate-translate.pt"
-        class="canonical.launchpad.browser.TranslatePOTemplate"
-        lp:url="Rosetta/products/$Product.name/$POTemplate.name/+translate"
+        class="canonical.launchpad.browser.POTemplateTranslateView"
+        attribute="__call__"
         />
 
     <browser:page
@@ -71,7 +70,6 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.POTemplateTarExport"
         attribute="__call__"
-        lp:url="Rosetta/products/$Product.name/$POTemplate.name/+translate"
         />
 
     <content class="canonical.launchpad.database.POTemplateSet">

@@ -6,26 +6,32 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
+class IProductReleaseSet(Interface):
+    """Auxiliar class for ProductRelease handling.""" 
+
+    def new(version, owner, productseries, title=None, shortdesc=None,
+            description=None, changelog=None):
+        """Create a new ProductRelease"""
+
+
 class IProductRelease(Interface):
     """A specific release (i.e. has a version) of a product. For example,
     Mozilla 1.7.2 or Apache 2.0.48."""
     id = Int(title=_('ID'), required=True, readonly=True)
-    product = Choice(title=_('Product'), required=True,
-                     vocabulary='Product')
     datereleased = Datetime(title=_('Date Released'), required=True,
                             readonly=True)
-    version = TextLine(title=_('Version'),required=True, readonly=True)
-    displayname = Attribute("Constructed displayname for a productrelease")
-    title = TextLine(title=_('Title'),required=True)
-    summary = Text(title=_("Summary"), required=True)
-    description = Text(title=_("Description"), required=True)
-    changelog = Text(title=_('Changelog'), required=True)
-    ownerID = Int(title=_('Owner'), required=True, readonly=True)
-    owner = Attribute("The owner's IPerson")
+    version = TextLine(title=_('Version'), required=True, readonly=True)
+    owner = Int(title=_('Owner'), required=True, readonly=True)
     productseries = Choice(title=_('ProductSeries'), required=True,
                            vocabulary='FilteredProductSeries')
-    manifest = Attribute("Manifest")
+    title = TextLine(title=_('Title'), required=False)
+    summary = Text(title=_("Summary"), required=False)
+    description = Text(title=_("Description"), required=False)
+    changelog = Text(title=_('Changelog'), required=False)
 
-    files = Attribute(_('Iterable of product release files'))
+    displayname = Attribute(_('Constructed displayname for a productrelease.'))
+    manifest = Attribute(_('Manifest Information.'))
+    product = Attribute(_('Retrive Product Instance from ProductSeries.'))
+    files = Attribute(_('Iterable of product release files.'))
     potemplates = Attribute(
         _("Returns an iterator over this productrelease's PO templates."))

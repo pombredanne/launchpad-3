@@ -108,7 +108,7 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
         """Returns the number of Current IPOMessageSets in this template."""
 
     def __iter__():
-        """Return an iterator over Current IPOMessageSets in this template."""
+        """Return an iterator over current IPOTMsgSets in this template."""
 
     def messageSet(key, onlyCurrent=False):
         """Extract one or several POTMessageSets from this template.
@@ -121,6 +121,21 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
         given slice.
 
         If onlyCurrent is True, then get only current message sets.
+        """
+
+    def getPOTMsgSets(current=True, slice=None):
+        """Return an iterator over IPOTMsgSet objects in this template.
+
+        The 'current' argument is used to select only current POTMsgSets or
+        all of them.
+        'slice' is a slice object that selects a subset of POTMsgSets.
+        """
+
+    def getPOTMsgSetsCount(current=True):
+        """Return the number of POTMsgSet objects related to this object.
+
+        The current argument is used to select only current POTMsgSets or all
+        of them.
         """
 
     def __getitem__(key):
