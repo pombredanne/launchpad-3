@@ -34,7 +34,7 @@ and fileroot / fileglob.
   HTTP/1.1 303 See Other
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
-  Location: http://localhost:9000/products/firefox/+series/1.0
+  Location: ../1.0
   <BLANKLINE>
   ...
 

@@ -2,6 +2,187 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-11 02:00:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1686
+
+    Summary:
+      [r=spiv]  Misc pending changes, including ProductSeries.name changing for bazaar imports, wiring up Daf's sampledata sorting script, enhancing the PostgreSQL test harness to ensure better test isolation (solves the issue of not resetting sequence values between tests, a possible case of occasional test failures).
+    Revision:
+      launchpad--devel--0--patch-1686
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-297
+       SQL lines actually end with ';', not ');'
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-298
+       Be more flexible getting value - id might not be the first column
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-299
+       Code to list sequences in the schema
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-300
+       Test suite and sampledata helper to reset sequences to the correct values
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-301
+       Hack product series edit page to make ProductSeries.name editable (needed NOW)
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-302
+       ProductSeries renaming update to modern codebase, and handle on-submit redirect correctly
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-303
+       Merge in sampledata sort/sequence reset code
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-304
+       star-merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-305
+       Merge in FOAF export
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-306
+       Fix permissions on Person.preferredemail
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-307
+       Set rdf content type correctly and add page tests
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-308
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-309
+       Restore 'Redirect to productseries' fix lost during conflict resolution
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-310
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-311
+       Post review tweaks
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-312
+       More data migration now required on ProductSeries DB patch
+    
+     * stuart.bishop@canonical.com/launchpad--packaging-pkey--0--patch-3
+       Add basic FOAF informat to /people/$Person.name/+rdf
+    
+     * stuart.bishop@canonical.com/launchpad--packaging-pkey--0--patch-4
+       Improve handling of people without preferredemail
+    
+     * stuart.bishop@canonical.com/launchpad--resetsequence--0--base-0
+       tag of stuart.bishop@canonical.com/launchpad--devel--1--patch-300
+    
+     * stuart.bishop@canonical.com/launchpad--resetsequence--0--patch-1
+       Wire up sequence reset to test harness
+    
+     * stuart.bishop@canonical.com/launchpad--resetsequence--0--patch-2
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--resetsequence--0--patch-3
+       Fix person merge
+    
+     * stuart.bishop@canonical.com/launchpad--resetsequence--0--patch-4
+       Remove sequence resets from sampledata, updating them programatically instead
+    
+     * stuart.bishop@canonical.com/launchpad--resetsequence--0--patch-5
+       Reinstate old sampledata until branch can be merged
+    
+
+    new files:
+     database/schema/.arch-ids/reset_sequences.py.id
+     database/schema/reset_sequences.py
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-person-rdf.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-person-rdf.txt
+     lib/canonical/launchpad/templates/.arch-ids/person-foaf.pt.id
+     lib/canonical/launchpad/templates/person-foaf.pt
+
+    modified files:
+     checktitles.py database/schema/Makefile
+     database/schema/patch-17-02-0.sql database/schema/sort_sql.py
+     doc/changelog.txt
+     lib/canonical/database/ftests/test_postgresql.py
+     lib/canonical/database/postgresql.py
+     lib/canonical/database/sqlbase.py
+     lib/canonical/ftests/pgsql.py
+     lib/canonical/ftests/test_pgsql.py
+     lib/canonical/launchpad/browser/person.py
+     lib/canonical/launchpad/browser/productseries.py
+     lib/canonical/launchpad/database/binarypackage.py
+     lib/canonical/launchpad/database/distroarchrelease.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/pagetests/standalone/xx-series-edit.txt
+     lib/canonical/launchpad/scripts/sort_sql.py
+     lib/canonical/launchpad/templates/main-template.pt
+     lib/canonical/launchpad/templates/person-index.pt
+     lib/canonical/launchpad/templates/series-edit.pt
+     lib/canonical/launchpad/zcml/person.zcml
+     {arch}/launchpad/launchpad--karma/launchpad--karma--0/guilherme.salgado@canonical.com/patch-log/patch-1
+     {arch}/launchpad/launchpad--karma/launchpad--karma--0/guilherme.salgado@canonical.com/patch-log/patch-2
+     {arch}/launchpad/launchpad--karma/launchpad--karma--0/guilherme.salgado@canonical.com/patch-log/patch-3
+     {arch}/launchpad/launchpad--karma/launchpad--karma--0/guilherme.salgado@canonical.com/patch-log/patch-4
+     {arch}/launchpad/launchpad--mark-refactor/launchpad--mark-refactor--0/andrew.bennetts@canonical.com/patch-log/patch-1
+     {arch}/launchpad/launchpad--mark-refactor/launchpad--mark-refactor--0/brad.bollenbach@canonical.com/patch-log/base-0
+     {arch}/launchpad/launchpad--membership-rename/launchpad--membership-rename--0/guilherme.salgado@canonical.com/patch-log/patch-1
+     {arch}/launchpad/launchpad--membership-rename/launchpad--membership-rename--0/guilherme.salgado@canonical.com/patch-log/patch-2
+     {arch}/launchpad/launchpad--move-daemons/launchpad--move-daemons--0/andrew.bennetts@canonical.com/patch-log/base-0
+     {arch}/launchpad/launchpad--move-daemons/launchpad--move-daemons--0/andrew.bennetts@canonical.com/patch-log/patch-1
+     {arch}/launchpad/launchpad--mpt-products/launchpad--mpt-products--0/guilherme.salgado@canonical.com/patch-log/base-0
+     {arch}/launchpad/launchpad--mpt-products/launchpad--mpt-products--0/guilherme.salgado@canonical.com/patch-log/patch-1
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/base-0
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-1
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-10
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-11
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-12
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-13
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-14
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-15
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-16
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-17
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-18
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-19
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-2
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-20
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-21
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-22
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-23
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-24
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-25
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-26
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-27
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-28
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-29
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-3
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-4
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-5
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-6
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-7
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-8
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-9
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-297
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-298
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-299
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-300
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-301
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-302
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-303
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-304
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-305
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-306
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-307
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-308
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-309
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-310
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-311
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-312
+     stuart.bishop@canonical.com/launchpad--packaging-pkey--0--patch-3
+     stuart.bishop@canonical.com/launchpad--packaging-pkey--0--patch-4
+     stuart.bishop@canonical.com/launchpad--resetsequence--0--base-0
+     stuart.bishop@canonical.com/launchpad--resetsequence--0--patch-1
+     stuart.bishop@canonical.com/launchpad--resetsequence--0--patch-2
+     stuart.bishop@canonical.com/launchpad--resetsequence--0--patch-3
+     stuart.bishop@canonical.com/launchpad--resetsequence--0--patch-4
+     stuart.bishop@canonical.com/launchpad--resetsequence--0--patch-5
+
+
 2005-05-10 17:56:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1685
 
     Summary:

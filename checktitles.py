@@ -18,6 +18,11 @@ def file_is_macro(path):
 
     return line.startswith('<metal')
 
+def file_is_rdf(path):
+    '''Check if this file is an RDF document'''
+    firstline = file(path).readline()
+    return firstline.startswith('<rdf:RDF')
+
 def file_is_portlet(path):
     '''Check whether a template file is a portlet.'''
 
@@ -49,6 +54,7 @@ def check_file(path):
             or file_is_portlet(path)
             or file_is_snippet(path)
             or file_has_title(path)
+            or file_is_rdf(path)
             )
 
 def find_templates(path):

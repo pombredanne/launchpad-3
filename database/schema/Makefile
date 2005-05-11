@@ -56,6 +56,8 @@ test: create
 	@ echo "* Setting up full text indexes"
 	@ env LP_DBNAME=${EMPTY_DBNAME} ${PYTHON} fti.py
 	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py
+	@ echo "* Resetting sequences"
+	@ ${PYTHON} reset_sequences.py -d ${TEST_DBNAME}
 	@ echo "* Vacuuming"
 	@ psql -d ${TEST_DBNAME} -c 'vacuum full analyze' | grep : | cat
 
@@ -144,7 +146,10 @@ newsample-soyuz:
 	pg_dump -d ${DBNAME} -a -D -O --table=potemplate | grep -v "\(SET \| TOC \)" > ../sampledata/new-rosetta.sql
 
 newsampledata:
-	pg_dump --schema=public --disable-triggers -a -D -O -d ${DBNAME} | grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|^--\)" > $(NEWSAMPLEDATA)
+	pg_dump --schema=public --disable-triggers -a -D -O -d ${DBNAME} \
+	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|^--\)" \
+	| python sort_sql.py \
+	> $(NEWSAMPLEDATA)
 
 .PHONY: default base all
 
