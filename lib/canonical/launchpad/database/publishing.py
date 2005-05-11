@@ -4,7 +4,7 @@ __metaclass__ = type
 __all__ = ['PackagePublishing', 'SourcePackagePublishing',
            'SourcePackageFilePublishing', 'BinaryPackageFilePublishing',
            'SourcePackagePublishingView', 'BinaryPackagePublishingView',
-           'SourcePackagePublishingHistory'
+           'SourcePackagePublishingHistory', 'PackagePublishingHistory'
            ]
 
 from zope.interface import implements
@@ -15,7 +15,8 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import \
     IPackagePublishing, ISourcePackagePublishing, \
     ISourcePackagePublishingView, IBinaryPackagePublishingView, \
-    ISourcePackageFilePublishing, IBinaryPackageFilePublishing
+    ISourcePackageFilePublishing, IBinaryPackageFilePublishing, \
+    ISourcePackagePublishingHistory, IPackagePublishingHistory
 
 from canonical.lp.dbschema import \
     EnumCol, BinaryPackagePriority, PackagePublishingStatus
@@ -172,15 +173,43 @@ class BinaryPackagePublishingView(SQLBase):
 class SourcePackagePublishingHistory(SQLBase):
     """A source package release publishing record."""
 
-    implements(ISourcePackagePublishing)
+    implements(ISourcePackagePublishingHistory)
 
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
-                                      dbName='sourcepackagerelease'),
+                                      dbName='sourcepackagerelease')
     distrorelease = ForeignKey(foreignKey='DistroRelease',
-                               dbName='distrorelease'),
-    component = ForeignKey(foreignKey='Component', dbName='component'),
-    section = ForeignKey(foreignKey='Section', dbName='section'),
-    status = EnumCol(schema=PackagePublishingStatus),
-    scheduleddeletiondate = DateTimeCol(default=None),
+                               dbName='distrorelease')
+    component = ForeignKey(foreignKey='Component', dbName='component')
+    section = ForeignKey(foreignKey='Section', dbName='section')
+    status = EnumCol(schema=PackagePublishingStatus)
+    scheduleddeletiondate = DateTimeCol(default=None)
     datepublished = DateTimeCol(default=None)
+    datecreated = DateTimeCol(default=None)
+    datesuperseded = DateTimeCol(default=None)
+    supersededby = ForeignKey(foreignKey='SourcePackageRelease',
+                              dbName='supersededby', default=None)
+    datemadepending = DateTimeCol(default=None)
+    dateremoved = DateTimeCol(default=None)
+
+class PackagePublishingHistory(SQLBase):
+    """A binary package publishing record."""
+
+    implements(IPackagePublishingHistory)
+
+    binarypackage = ForeignKey(foreignKey='BinaryPackage',
+                               dbName='binarypackage')
+    distroarchrelease = ForeignKey(foreignKey='DistroArchRelease',
+                                   dbName='distroarchrelease')
+    component = ForeignKey(foreignKey='Component', dbName='component')
+    section = ForeignKey(foreignKey='Section', dbName='section')
+    priority = EnumCol(dbName='priority', schema=BinaryPackagePriority)
+    status = EnumCol(dbName='status', schema=PackagePublishingStatus)
+    scheduleddeletiondate = DateTimeCol(default=None)
+    datepublished = DateTimeCol(default=None)
+    datecreated = DateTimeCol(default=None)
+    datesuperseded = DateTimeCol(default=None)
+    supersededby = ForeignKey(foreignKey='Build',dbName='supersededby',
+                              default=None)
+    datemadepending = DateTimeCol(default=None)
+    dateremoved = DateTimeCol(default=None)
 

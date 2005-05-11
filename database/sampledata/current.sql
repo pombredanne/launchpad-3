@@ -1004,13 +1004,13 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'binarypackagefile'::
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'binarypackagefile'::pg_catalog.regclass;
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'packagepublishing'::pg_catalog.regclass;
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'packagepublishinghistory'::pg_catalog.regclass;
 
-INSERT INTO packagepublishing (id, binarypackage, distroarchrelease, component, section, priority, scheduleddeletiondate, status, datepublished) VALUES (9, 12, 1, 1, 1, 1, NULL, 2, NULL);
-INSERT INTO packagepublishing (id, binarypackage, distroarchrelease, component, section, priority, scheduleddeletiondate, status, datepublished) VALUES (11, 15, 6, 1, 1, 4, NULL, 2, NULL);
+INSERT INTO packagepublishinghistory (id, binarypackage, distroarchrelease, component, section, priority, scheduleddeletiondate, status, datepublished, datecreated) VALUES (9, 12, 1, 1, 1, 1, NULL, 2, NULL, '2005-05-05 00:00:00'::timestamp);
+INSERT INTO packagepublishinghistory (id, binarypackage, distroarchrelease, component, section, priority, scheduleddeletiondate, status, datepublished, datecreated) VALUES (11, 15, 6, 1, 1, 4, NULL, 2, NULL, '2005-05-05 00:00:00'::timestamp);
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'packagepublishing'::pg_catalog.regclass;
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'packagepublishinghistory'::pg_catalog.regclass;
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'packageselection'::pg_catalog.regclass;
@@ -10532,10 +10532,6 @@ SELECT pg_catalog.setval('binarypackage_id_seq', 15, true);
 
 
 
-SELECT pg_catalog.setval('packagepublishing_id_seq', 11, true);
-
-
-
 SELECT pg_catalog.setval('packageselection_id_seq', 1, false);
 
 
@@ -10649,10 +10645,6 @@ SELECT pg_catalog.setval('componentselection_id_seq', 1, false);
 
 
 SELECT pg_catalog.setval('sectionselection_id_seq', 1, false);
-
-
-
-SELECT pg_catalog.setval('sourcepackagepublishing_id_seq', 8, true);
 
 
 
@@ -10800,6 +10792,10 @@ SELECT pg_catalog.setval('messagechunk_id_seq', 8, true);
 
 
 
-SELECT pg_catalog.setval('sourcepackagepublishinghistory_id_seq', 1, false);
+SELECT pg_catalog.setval('sourcepackagepublishinghistory_id_seq', 9, false);
+
+
+
+SELECT pg_catalog.setval('packagepublishinghistory_id_seq', 12, false);
 
 

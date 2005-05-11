@@ -13,8 +13,8 @@ from canonical.launchpad.database import Distribution, DistroRelease, \
                                          SourcePackageRelease, Build, \
                                          BinaryPackage, BinaryPackageName, \
                                          Person, EmailAddress, GPGKey, \
-                                         PackagePublishing, Component, \
-                                         Section, \
+                                         PackagePublishingHistory, \
+                                         Component, Section, \
                                          SourcePackagePublishingHistory, \
                                          SourcePackageReleaseFile, \
                                          BinaryPackageFile
@@ -583,11 +583,22 @@ class Launchpad(SQLThingBase):
            "section":           sectionID,
            "priority":          prioritymap[bin.priority],
            "distroarchrelease": self.distroarchrelease.id,
-            # XXX dsilvers 2004-11-01: This *ought* to be pending
-           "status": PackagePublishingStatus.PUBLISHED
+           # XXX dsilvers 2004-11-01: This *ought* to be pending.
+           # Once the publisher is ready such that Gina always writes into
+           # a distrorelease where publishing is occuring, we can change
+           # this to PENDING so that publishing happens properly.
+           # Perhaps we should offer a commandline option to choose?
+           "status":            PackagePublishingStatus.PUBLISHED,
+           # Irritating needed defaults for the sqlobject guff...
+           "datecreated":       nowUTC,
+           "datepublished":     nowUTC,
+           "datesuperseded":    None,
+           "supersededby":      None,
+           "datemadepending":   None,
+           "dateremoved":       None,
         }
 
-        PackagePublishing(**data)
+        PackagePublishingHistory(**data)
 
     def emptyPublishing(self, source=False, source_only=False):
         """Empty the publishing tables for this distroarchrelease.
@@ -610,7 +621,7 @@ class Launchpad(SQLThingBase):
         if source_only:
             return
 
-        pps = PackagePublishing.selectBy(
+        pps = PackagePublishingHistory.selectBy(
             distroarchreleaseID=self.distroarchrelease.id
             )
 
