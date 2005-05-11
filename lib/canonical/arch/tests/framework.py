@@ -30,7 +30,7 @@ class DatabaseTestCase(unittest.TestCase):
         self._archive = None
         self._category = None
         self._branch = None
-        self._version = None
+        self._versions = {}
         self._revision = None
 
     def tearDown(self):
@@ -66,35 +66,35 @@ class DatabaseTestCase(unittest.TestCase):
             self._category = self._getTestCategory()
         return self._category
 
-    def _getTestBranch(self, name="meh"):
+    def _getTestBranch(self):
         """Insert a test branch into the db and return it"""
         from canonical.launchpad.database import BranchMapper
         from canonical.arch.broker import Branch
-        branch = Branch(name, self.getTestCategory())
+        branch = Branch("meh", self.getTestCategory())
         branchMapper = BranchMapper()
         branchMapper.insert(branch)
         return branch
     
-    def getTestBranch(self, name="meh"):
+    def getTestBranch(self):
         """return the stored branch"""
         if self._branch is None:
-            self._branch = self._getTestBranch(name)
+            self._branch = self._getTestBranch()
         return self._branch
 
-    def _getTestVersion(self):
+    def _getTestVersion(self, name):
         """Insert a test version into the db and return it"""
         from canonical.launchpad.database import VersionMapper
         from canonical.arch.broker import Version
-        version = Version("0", self.getTestBranch())
+        version = Version(name, self.getTestBranch())
         versionMapper = VersionMapper()
         versionMapper.insert(version)
         return version
     
-    def getTestVersion(self):
+    def getTestVersion(self, name="0"):
         """return the stored version"""
-        if self._version is None:
-            self._version = self._getTestVersion()
-        return self._version
+        if name not in self._versions:
+            self._versions[name] = self._getTestVersion(name)
+        return self._versions[name]
 
     def _getTestRevision(self):
         """Insert a test revision into the db and return it"""

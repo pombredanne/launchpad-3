@@ -199,19 +199,20 @@ class VersionMapper:
             an.destroySelf()
         return result
 
-    def findVersionQuery(self, version):
-        id = ArchiveMapper()._getId(version.branch.category.archive)
-        return ("archarchive = %s AND category = %s AND branch = %s "
-                 "AND version = %s" 
-                 % sqlvalues(id, version.branch.category.nonarch,
-                             version.branch.name, version.name))
-
     def exists(self, version):
-        return bool(
-            ArchNamespace.select(self.findVersionQuery(version)).count())
+        try:
+            unused = self._getId(version)
+            return True
+        except VersionNotRegistered:
+            return False
 
     def _getId(self, version):
-        result = ArchNamespace.selectOne(self.findVersionQuery(version))
+        archiveID = ArchiveMapper()._getId(version.branch.category.archive)
+        result = ArchNamespace.selectOneBy(
+            archiveID = archiveID,
+            category = version.branch.category.nonarch,
+            branch = version.branch.name,
+            version = version.name)
         if result is None:
             raise VersionNotRegistered(version.fullname)
         else:

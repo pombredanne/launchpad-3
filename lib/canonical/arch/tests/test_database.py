@@ -14,7 +14,7 @@ from zope.interface.verify import verifyClass, verifyObject
 
 from canonical.arch.tests.framework import DatabaseTestCase
 
-from canonical.launchpad.interfaces import VersionAlreadyRegistered
+from canonical.launchpad.interfaces import RevisionAlreadyRegistered
 from canonical.launchpad.interfaces import VersionAlreadyRegistered
 from canonical.launchpad.interfaces import BranchAlreadyRegistered
 from canonical.launchpad.interfaces import CategoryAlreadyRegistered
@@ -488,7 +488,7 @@ class RevisionMapper(DatabaseTestCase):
     tests.append('test_RevisionMapperExists')
 
     def test_RevisionMapperDoesntExist(self):
-        """test revision mapper exists works for non-exustant ones"""
+        """test revision mapper exists works for non-existant ones"""
         from canonical.launchpad.database import VersionMapper, RevisionMapper, BranchMapper
         from canonical.arch.broker import Revision
         from canonical.launchpad.database.archchangeset import Changeset
@@ -501,82 +501,63 @@ class RevisionMapper(DatabaseTestCase):
         self.failIf(mapper.exists(revision))
     tests.append('test_RevisionMapperDoesntExist')
 
-    def test_VersionMapperInsertExisting(self):
-        """Test that inserting an existing Version raises an exception"""
-        # FIXME: That does not test RevisionMapper -- David Allouche 2005-04-09
-        from canonical.launchpad.database import ArchiveMapper, CategoryMapper, BranchMapper, VersionMapper
-        from canonical.arch.broker import Archive, Category, Branch, Version
-        name = "0"
-        mapper = VersionMapper()
-        version = Version(name, self.getTestBranch())
-        mapper.insert(version)
-        self.assertRaises(VersionAlreadyRegistered, mapper.insert, version)
-        self.failUnless(mapper.exists(version))
-#    tests.append('test_VersionMapperInsertExisting')
+    def test_RevisionMapperInsertExisting(self):
+        """RevisionMapper.insert(REV) fails if REV already exists."""
+        from canonical.launchpad.database import RevisionMapper
+        from canonical.arch.broker import Revision
+        mapper = RevisionMapper()
+        revision = Revision("base-0", self.getTestVersion())
+        mapper.insert(revision)
+        self.assertRaises(RevisionAlreadyRegistered, mapper.insert, revision)
+        self.failUnless(mapper.exists(revision))
+    tests.append('test_RevisionMapperInsertExisting')
 
-    def test_version_exist_missing(self):
-        """Test that we can tell that a Version doesn't exist."""
-        # FIXME: That does not test RevisionMapper -- David Allouche 2005-04-09
-        from canonical.launchpad.database import VersionMapper
-        from canonical.arch.broker import Version
-        name = "0"
-        version = Version(name, self.getTestVersion())
-        mapper = VersionMapper()
-        self.failIf(mapper.exists(version))
-#    tests.append('test_version_exist_missing')
-        
-    def test_version_exist_present(self):
-        """Test that we can tell that a Version does exist."""
-        # FIXME: That does not test RevisionMapper -- David Allouche 2005-04-09
-        from canonical.arch.broker import Version
-        from canonical.launchpad.database import VersionMapper
-        name = "0"
-        version = Version(name, self.getTestBranch())
-        mapper = VersionMapper()
-        mapper.insert(version)
-        self.failUnless(mapper.exists(version))
-#    tests.append('test_version_exist_present')
+    def test_revision_exist_missing(self):
+        """RevisionMapper.exists() tells non-existence in existing Version."""
+        from canonical.launchpad.database import RevisionMapper
+        from canonical.arch.broker import Revision
+        revision = Revision("base-0", self.getTestVersion())
+        mapper = RevisionMapper()
+        self.failIf(mapper.exists(revision))
+    tests.append('test_revision_exist_missing')
 
-    def test_version_exist_imposter(self):
-        """Test that we can tell that a Version doesn't exist, regardless of
-        other branches."""
-        # FIXME: That does not test RevisionMapper -- David Allouche 2005-04-09
-        from canonical.arch.broker import Version
-        from canonical.launchpad.database import VersionMapper
-        name = "0"
-        version = Version(name, self.getTestBranch())
-        mapper = VersionMapper()
-        mapper.insert(version)
-        otherversion = Version(name, self.getTestBranch('other'))
-        self.failIf(mapper.exists(otherversion))
-    # 2004-09-09 ddaa: test_version_exist_missing is disabled, no
-    #    wonder this test fails too.
-    # tests.append('test_version_exist_imposter')
+    def test_revision_exist_present(self):
+        """RevisionMapper.exists() tells existence."""
+        from canonical.arch.broker import Revision
+        from canonical.launchpad.database import RevisionMapper
+        revision = Revision("base-0", self.getTestVersion())
+        mapper = RevisionMapper()
+        mapper.insert(revision)
+        self.failUnless(mapper.exists(revision))
+    tests.append('test_revision_exist_present')
 
-    def test_VersionMapperGetId(self):
-        """test we can get the Version id correctly"""
-        # FIXME: That does not test RevisionMapper -- David Allouche 2005-04-09
-        from canonical.launchpad.database import ArchiveMapper, VersionMapper
-        from canonical.launchpad.database import ArchArchive, ArchNamespace
-        from canonical.launchpad.database.archbranch import Branch
-        from canonical.database.sqlbase import quote
+    def test_revision_exist_imposter(self):
+        """RevisionMapper.exists() is not confused by another Version."""
+        from canonical.arch.broker import Revision
+        from canonical.launchpad.database import RevisionMapper
+        name = "base-0"
+        revision = Revision(name, self.getTestVersion())
+        mapper = RevisionMapper()
+        mapper.insert(revision)
+        otherrevision = Revision(name, self.getTestVersion("1"))
+        self.failIf(mapper.exists(otherrevision))
+    tests.append('test_revision_exist_imposter')
+
+    def test_RevisionMapperGetId(self):
+        """test we can get the Revision id correctly"""
+        from canonical.launchpad.database import VersionMapper
+        from canonical.launchpad.database import RevisionMapper, Changeset
+        revision = self.getTestRevision()
         version = self.getTestVersion()
-        mapper = ArchiveMapper()
-        archive_id = mapper._getId(version.branch.category.archive)
-        namespace_query = ArchNamespace.selectBy(
-            archiveID = archive_id,
-            category = version.branch.category.name,
-            branch = version.branch.name,
-            version = version.name)
-        self.assertEqual(namespace_query.count(), 1)
-        namespace = namespace_query[0]
-        new_branch = Branch(archnamespaceID = namespace.id,
-                            title = 'a title',
-                            description = 'a description')
-        new_id = new_branch.id
-        mapper = VersionMapper()
-        self.assertEqual(new_id, mapper._getId(version))
-    #tests.append('test_VersionMapperGetId')
+        versionmapper = VersionMapper()
+        query = Changeset.selectBy(
+            branchID = versionmapper._getDBBranchId(version),
+            name = revision.name)
+        self.assertEqual(query.count(), 1)
+        expected_id = list(query)[0].id
+        mapper = RevisionMapper()
+        self.assertEqual(expected_id, mapper._getId(revision))
+    tests.append('test_RevisionMapperGetId')
 
     def test_insert_file(self):
         """test we can insert a file into the database"""
