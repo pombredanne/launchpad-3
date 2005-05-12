@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-12 09:46:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1689
+
+    Summary:
+      fix VersionMapper.findByName for renaming of ArchNamespace.archarchive to archive [trivial]
+    Revision:
+      launchpad--devel--0--patch-1689
+
+    Patches applied:
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-79
+       merge rocketfuel
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-80
+       fix VersionMapper.findByName for renaming of ArchNamespace.archarchive to archive
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/archbranch.py
+
+    new patches:
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-79
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-80
+
+
 2005-05-11 22:43:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1688
 
     Summary:
