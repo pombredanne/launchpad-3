@@ -23,6 +23,7 @@
     <include file="bugwatch.zcml" />
     <include file="bug.zcml" />
     <include file="build.zcml" />
+    <include file="calendar.zcml" />
     <include file="codeofconduct.zcml" />
     <include file="country.zcml" />
     <include file="crowd.zcml" />
@@ -93,5 +94,6 @@
     <include file="geoip.zcml" />
     <include file="distrotool.zcml" />
     <include file="gpghandler.zcml" />
+    <include file="tzinfo.zcml" />
 
 </configure>

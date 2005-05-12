@@ -14,16 +14,17 @@ from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import \
-    IProject, IProjectSet, IProjectBugTracker
+    IProject, IProjectSet, IProjectBugTracker, ICalendarOwner
 
 from canonical.lp.dbschema import ImportStatus
 from canonical.launchpad.database.product import Product
+from canonical.launchpad.database.cal import Calendar
 
 
 class Project(SQLBase):
     """A Project"""
 
-    implements(IProject)
+    implements(IProject, ICalendarOwner)
 
     _table = "Project"
 
@@ -54,6 +55,16 @@ class Project(SQLBase):
     bugtrackers = RelatedJoin('BugTracker', joinColumn='project',
                                otherColumn='bugtracker',
                                intermediateTable='ProjectBugTracker')
+
+    _calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
+                           default=None, forceDBName=True)
+    def calendar(self):
+        if not self._calendar:
+            self._calendar = Calendar(ownerID=self.owner.id,
+                                      title='%s Project Calendar' % self.displayname,
+                                      revision=0)
+        return self._calendar
+    calendar = property(calendar)
 
     def getProduct(self, name):
         return Product.selectOneBy(projectID=self.id, name=name)

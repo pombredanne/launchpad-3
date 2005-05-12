@@ -67,6 +67,19 @@ class IPerson(Interface):
     subscribedBounties = Attribute('Bounties to which this person subscribes.')
     sshkeys = Attribute(_('List of SSH keys'))
 
+    timezone_name = TextLine(
+        title=_('Timezone Name'), required=False, readonly=False
+        )
+
+    # XXX: These fields are used only to generate the form to create a
+    # new person.
+    email = TextLine(title=_('Email Address'), required=True,
+            description=_("Please give your email address. You will "
+                "log into the Launchpad using your email address and "
+                "password. You will need to receive email at this "
+                "address to complete your registration. We will never "
+                "disclose, share or sell your personal information."))
+
     # XXX: This field is used only to generate the form to create a new person.
     password2 = Password(title=_('Confirm Password'), required=True,
             description=_("Enter your password again to make certain "

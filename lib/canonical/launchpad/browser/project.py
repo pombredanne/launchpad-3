@@ -27,6 +27,8 @@ from canonical.launchpad import helpers
 #
 from canonical.launchpad.browser.bugtracker import newBugTracker
 
+from canonical.launchpad.browser.cal import CalendarInfoPortlet
+
 #
 # Traversal functions that help us look up something
 # about a project or product
@@ -60,6 +62,9 @@ class ProjectView(object):
 
     actionsPortlet = ViewPageTemplateFile(
         '../templates/portlet-project-actions.pt')
+
+    calendarInfoPortlet = CalendarInfoPortlet(
+        '../templates/portlet-calendar-info.pt')
 
     def edit(self):
         """

@@ -33,6 +33,7 @@ from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
+from canonical.launchpad.browser.cal import CalendarInfoPortlet
 
 # Traversal functions that help us look up something
 # about a project or product
@@ -79,6 +80,9 @@ class ProductView:
 
     packagesPortlet = ViewPageTemplateFile(
         '../templates/portlet-product-packages.pt')
+
+    calendarInfoPortlet = CalendarInfoPortlet(
+        '../templates/portlet-calendar-info.pt')
 
     def __init__(self, context, request):
         self.context = context

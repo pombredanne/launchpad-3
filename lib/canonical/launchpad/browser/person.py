@@ -33,6 +33,9 @@ from canonical.launchpad.helpers import well_formed_email, obfuscateEmail
 from canonical.launchpad.helpers import convertToHtmlCode, shortlist
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
+# browser import
+from canonical.launchpad.browser.cal import CalendarInfoPortlet
+
 ##XXX: (batch_size+global) cprov 20041003
 ## really crap constant definition for BatchPages
 BATCH_SIZE = 40
@@ -147,6 +150,8 @@ class PersonView(BasePersonView):
     # restricted set of methods to be proxied by form_action()
     permitted_actions = ['import_gpg', 'claim_gpg', 'remove_gpg',
                          'add_ssh', 'remove_ssh']
+
+    calendarInfoPortlet = CalendarInfoPortlet('../templates/portlet-calendar-info.pt')
 
     def __init__(self, context, request):
         self.context = context

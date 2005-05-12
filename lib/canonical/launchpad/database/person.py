@@ -36,10 +36,12 @@ from canonical.launchpad.interfaces import \
     ITeamMembershipSet, IEmailAddress, IWikiName, IIrcID, IArchUserID, \
     IJabberID, IIrcIDSet, IArchUserIDSet, ISSHKeySet, IJabberIDSet, \
     IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IKarma, IKarmaPointsManager, \
-    IMaintainershipSet, IEmailAddressSet, ISourcePackageReleaseSet
+    IMaintainershipSet, IEmailAddressSet, ISourcePackageReleaseSet, \
+    ICalendarOwner
 
 from canonical.launchpad.database.translation_effort import TranslationEffort
 from canonical.launchpad.database.bug import Bug
+from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
@@ -58,7 +60,7 @@ from canonical.foaf import nickname
 class Person(SQLBase):
     """A Person."""
 
-    implements(IPerson)
+    implements(IPerson, ICalendarOwner)
 
     _defaultOrder = 'displayname'
 
@@ -100,6 +102,18 @@ class Person(SQLBase):
                                      otherColumn='bounty',
                                      intermediateTable='BountySubscription')
     gpgkeys = MultipleJoin('GPGKey', joinColumn='owner')
+
+    _calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
+                           default=None, forceDBName=True)
+    def calendar(self):
+        if not self._calendar:
+            self._calendar = Calendar(ownerID=self.id,
+                                      title=self.displayname,
+                                      revision=0)
+        return self._calendar
+    calendar = property(calendar)
+
+    timezone_name = StringCol(dbName='timezone_name', default=None)
 
     def get(cls, id, connection=None, selectResults=None):
         """Override the classmethod get from the base class.
