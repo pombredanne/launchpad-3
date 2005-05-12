@@ -2,6 +2,39 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-12 14:35:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1693
+
+    Summary:
+      [rs=SteveA] fix the validate_cvs_root regex to not infer a range where one wasn't meant
+    Revision:
+      launchpad--devel--0--patch-1693
+
+    Patches applied:
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-42
+       merge test-case fixes
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-43
+       merge with rocketfuel
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-44
+       catch up with rocketfuel
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-45
+       fix the validate_cvs_root regex to not infer a range where one wasn't meant
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/productseries.py
+
+    new patches:
+     scott@canonical.com--2005/launchpad--devel--0--patch-42
+     scott@canonical.com--2005/launchpad--devel--0--patch-43
+     scott@canonical.com--2005/launchpad--devel--0--patch-44
+     scott@canonical.com--2005/launchpad--devel--0--patch-45
+
+
 2005-05-12 11:28:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1692
 
     Summary:
