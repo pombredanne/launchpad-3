@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-12 10:19:01 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1690
+
+    Summary:
+      fix getUtility thinko in language pack export script [trivial]
+    Revision:
+      launchpad--devel--0--patch-1690
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-450
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-451
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-452
+       fix getUtility thinko in language pack export script
+    
+
+    modified files:
+     cronscripts/rosetta-language-pack-export.py doc/changelog.txt
+
+    new patches:
+     daf@canonical.com--2004/launchpad--devel--0--patch-450
+     daf@canonical.com--2004/launchpad--devel--0--patch-451
+     daf@canonical.com--2004/launchpad--devel--0--patch-452
+
+
 2005-05-12 09:46:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1689
 
     Summary:

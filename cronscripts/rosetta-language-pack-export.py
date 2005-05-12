@@ -46,7 +46,7 @@ def parse_options(args):
 
 def get_distribution(name):
     """Return the distribution with the given name."""
-    return getUtility(IDistributionSet())[name]
+    return getUtility(IDistributionSet)[name]
 
 def get_release(distribution_name, release_name):
     """Return the release with the given name in the distribution with the
