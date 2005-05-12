@@ -425,6 +425,15 @@ class VersionMapper(DatabaseTestCase):
         mapper = VersionMapper()
         self.assertEqual(expected_id, mapper._getDBBranchId(version))
 
+    def test_VersionMapperFindByNameMissing(self):
+        """VersionMapper.findByName works."""
+        from canonical.launchpad.database import VersionMapper
+        from canonical.arch.broker import MissingVersion
+        mapper = VersionMapper()
+        version = mapper.findByName(self.version_fullname)
+        self.assertEqual(type(version), MissingVersion)
+        self.assertEqual(version.exists(), False)
+
 
 class RevisionMapper(DatabaseTestCase):
 

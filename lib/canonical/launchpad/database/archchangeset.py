@@ -68,6 +68,7 @@ class ChangesetFileHash(SQLBase):
 
 class RevisionMapper:
     """Map revisions in and out of the db."""
+
     def findByName(self, name):
         from pybaz import NameParser
         from canonical.arch import broker
