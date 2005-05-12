@@ -67,15 +67,6 @@ class Branch(SQLBase):
 
 class CategoryMapper:
     """Map categories to and from the database."""
-    def findByName(self, name):
-        count = Category.select('category = ' + quote(name)).count()
-        from canonical.arch import broker
-        if count == 0:
-            return broker.MissingCategory(name)
-        if count == 1:
-            return broker.Category(name)
-        else:
-            raise RuntimeError, "Name %r found %d results" % (name, count)
 
     def insert(self, category):
         """Insert a category into the database."""
@@ -101,15 +92,6 @@ class CategoryMapper:
 
 class BranchMapper:
     """Map branch to and from the database"""
-    def findByName(self, name):
-        count = Branch.select('branch = ' + quote(name)).count()
-        from canonical.arch import broker
-        if count == 0:
-            return broker.MissingBranch(name)
-        if count == 1:
-            return broker.Branch(name)
-        else:
-            raise RuntimeError, "Name %r found %d results" % (name, count)
 
     def insert(self, branch):
         """insert a branch into the database"""
@@ -144,8 +126,8 @@ class BranchMapper:
 
 class VersionMapper:
     """Map versions to and from the database"""
+
     def findByName(self, name):
-        #print name
         parser = pybaz.NameParser(name)
         archive = ArchArchive.selectOne(
             'name = ' + quote(parser.get_archive()))
@@ -160,9 +142,6 @@ class VersionMapper:
         if version is None:
             return broker.MissingVersion(name)
         else:
-            # migration code to allow access to the real Version 
-            # and yes, this should be tidied - by moving all to native
-            # sqlobject.
             result = Branch.selectOneBy(archnamespaceID=version.id)
             if result is None:
                 raise VersionNotRegistered(version.fullname)
