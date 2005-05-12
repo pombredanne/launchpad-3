@@ -101,8 +101,8 @@
           <p> 
             Some accounts have been automatically created by Launchpad
             and may be duplicates.
-            If you find you have multiple accounts, please
-            <a href="+requestmerge">merge them</a>.
+            If you find you have more than one, please
+            <a href="+requestmerge">merge the accounts</a>.
           </p>
         </tal:block>
         <tal:block condition="bn">

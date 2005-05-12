@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-12 11:28:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1692
+
+    Summary:
+      tweak merge accounts link as requested by SteveA (trivial)
+    Revision:
+      launchpad--devel--0--patch-1692
+
+    Patches applied:
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-51
+       merge rocketfuel
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-52
+       tweak merge accounts link as requested by SteveA
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/people-index.pt
+
+    new patches:
+     mpt@canonical.com/launchpad--devel--0--patch-51
+     mpt@canonical.com/launchpad--devel--0--patch-52
+
+
 2005-05-12 11:01:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1691
 
     Summary:
