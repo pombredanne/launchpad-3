@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-12 11:01:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1691
+
+    Summary:
+      allow '+' in cvs module names [trivial]
+    Revision:
+      launchpad--devel--0--patch-1691
+
+    Patches applied:
+    
+     * david.allouche@canonical.com--2004/launchpad--quickfixes--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1688
+    
+     * david.allouche@canonical.com--2004/launchpad--quickfixes--0--patch-1
+       allow '+' in cvs module names
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/productseries.py
+
+    new patches:
+     david.allouche@canonical.com--2004/launchpad--quickfixes--0--base-0
+     david.allouche@canonical.com--2004/launchpad--quickfixes--0--patch-1
+
+
 2005-05-12 10:19:01 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1690
 
     Summary:
