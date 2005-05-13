@@ -2,6 +2,90 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-13 06:18:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1694
+
+    Summary:
+      merge fixes from carlos (r=sabdfl) and other small page changes (trivial)
+    Revision:
+      launchpad--devel--0--patch-1694
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-613
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-614
+       Fixed the po template listing
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-615
+       Added three new pagetests to detect the listing problems I just fixed
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-945
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-946
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-947
+       tweak pages and tests to match
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-948
+       add hct stats to bazaar portlet
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-949
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-950
+       oops. remove pdb invocation
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-951
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-952
+       merge from carlos for template view fixes
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-953
+       merge rocketfuel
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-product-index.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-product-series-translations.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-product-translations.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-product-index.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-product-series-translations.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-product-translations.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/bazaar/__init__.py
+     lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/browser/sourcepackage.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/database/productseries.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/interfaces/product.py
+     lib/canonical/launchpad/interfaces/productrelease.py
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-distro-distros-index.txt
+     lib/canonical/launchpad/templates/distros-index.pt
+     lib/canonical/launchpad/templates/portlet-upstream-imports.pt
+     lib/canonical/launchpad/templates/root-index.pt
+     lib/canonical/launchpad/zcml/product.zcml
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-613
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-614
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-615
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-945
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-946
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-947
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-948
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-949
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-950
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-951
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-952
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-953
+
+
 2005-05-12 14:35:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1693
 
     Summary:

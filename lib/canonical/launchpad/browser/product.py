@@ -32,6 +32,7 @@ from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet, \
 from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.browser.potemplate import ViewPOTemplate
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 
 # Traversal functions that help us look up something
@@ -80,11 +81,46 @@ class ProductView:
     packagesPortlet = ViewPageTemplateFile(
         '../templates/portlet-product-packages.pt')
 
+    prefLangPortlet = ViewPageTemplateFile(
+        '../templates/portlet-pref-langs.pt')
+
+    countryPortlet = ViewPageTemplateFile(
+        '../templates/portlet-country-langs.pt')
+
+    browserLangPortlet = ViewPageTemplateFile(
+        '../templates/portlet-browser-langs.pt')
+
+    statusLegend = ViewPageTemplateFile(
+        '../templates/portlet-rosetta-status-legend.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.product = context
         self.request = request
         self.form = request.form
+        # List of languages the user is interested on based on their browser,
+        # IP address and launchpad preferences.
+        self.languages = helpers.request_languages(request)
+        self.status_message = None
+        # Whether there is more than one PO template.
+        self.has_multiple_templates = len(context.potemplates()) > 1
+
+    def templateviews(self):
+        return [ViewPOTemplate(template, self.request)
+                for template in self.context.potemplates()]
+
+    def requestCountry(self):
+        return helpers.requestCountry(self.request)
+
+    def browserLanguages(self):
+        return helpers.browserLanguages(self.request)
+
+    def projproducts(self):
+        """Return a list of other products from the same project."""
+        if self.context.project is None:
+            return []
+        return [product for product in self.context.project.products
+                        if product.id <> self.context.id]
 
     def edit(self):
         """
@@ -275,61 +311,6 @@ class ProductBugsView:
     def statuses(self):
         """Return the list of bug task statuses."""
         return dbschema.BugTaskStatus.items
-
-
-class ProductTranslationView:
-    # XXX sabdfl 17/03/05 please merge this with ProductView.
-    summaryPortlet = ViewPageTemplateFile(
-        '../templates/portlet-object-summary.pt')
-
-    branchesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-branches.pt')
-
-    detailsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-details.pt')
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-actions.pt')
-
-    projectPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-project.pt')
-
-    prefLangsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-pref-langs.pt')
-
-    statusLegend = ViewPageTemplateFile(
-        '../templates/portlet-rosetta-status-legend.pt')
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.form = self.request.form
-        # List of languages the user is interested on based on their browser,
-        # IP address and launchpad preferences.
-        self.languages = helpers.request_languages(self.request)
-        # Cache value for the return value of self.templates
-        self._template_languages = None
-        # List of the templates we have in this subset.
-        self._templates = self.context.potemplates()
-        self.status_message = None
-        # Whether there is more than one PO template.
-        self.has_multiple_templates = len(self._templates) > 1
-
-    def projproducts(self):
-        """Return a list of other products from the same project as this
-        product, excluding this product"""
-        if self.context.project is None:
-            return []
-        return [p for p in self.context.project.products \
-                    if p.id <> self.context.id]
-
-    def templates(self):
-        if self._template_languages is None:
-            self._template_languages = [
-                helpers.TemplateLanguages(template, self.languages)
-                for template in self._templates]
-
-        return self._template_languages
 
 
 class ProductFileBugView(SQLObjectAddView):

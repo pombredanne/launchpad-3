@@ -168,6 +168,9 @@ class Product(SQLBase):
         """See IProduct."""
         # XXX sabdfl 30/03/05 this method is really obsolete, because what
         # we really care about now is ProductRelease.potemplates
+        # XXX Carlos Perello Marin 2005-05-12: That's not true, we need it for
+        # URLs like:
+        # https://launchpad.ubuntu.com/products/bazaar/+translations
         warn("Product.potemplates is obsolete, should be on ProductRelease",
              DeprecationWarning)
         templates = []
@@ -177,6 +180,10 @@ class Product(SQLBase):
                     templates.append(potemplate)
 
         return templates
+
+    def potemplatecount(self):
+        return len(self.potemplates())
+    potemplatecount = property(potemplatecount)
 
     def poTemplatesToImport(self):
         # XXX sabdfl 30/03/05 again, i think we want to be using
