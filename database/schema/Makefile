@@ -100,7 +100,16 @@ check: search_path
 	@if [ "`md5sum ${BASELINE}`" != "${MD5SUM}" ]; then echo "* ${BASELINE} is corrupt or has been modified"; exit 1; else echo "* Using ${BASELINE} as baseline"; fi
 
 search_path:
-	@if [ "`(echo '\t'; echo 'show search_path') | psql -d template1 -q -A -f -`" != "\$$user,public,ts2" ]; then echo "* Add the following to /etc/postgresql/postgresql.conf:"; echo "*   search_path='\$$user,public,ts2'"; echo "* Then reload PostgreSQL:"; echo "*   sudo /etc/init.d/postgresql reload"; exit 1; fi
+	@if [ "`(echo '\t'; echo 'show search_path') | psql -d template1 -q -A -f -`" != "\$$user,public,ts2" ]; then \
+		echo "* It appears your search path is unconfigured."; \
+		echo "	Have you read http://wiki.launchpad.canonical.com/DatabaseSetup?";  \
+		echo; \
+		echo "* Add the following to /etc/postgresql/postgresql.conf:"; \
+		echo "    search_path='\$$user,public,ts2'"; \
+		echo "* Then reload PostgreSQL:";  \
+		echo "    sudo /etc/init.d/postgresql reload";  \
+		exit 1; \
+	 fi
 
 
 all: dev test
