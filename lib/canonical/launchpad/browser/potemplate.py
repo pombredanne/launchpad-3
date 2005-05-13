@@ -292,7 +292,7 @@ class POTemplateTranslateView:
 
     def __call__(self):
         parameters = {}
-        old_url = self.request.getURL
+        old_url = self.request.getURL()
         if old_url.endswith('/'):
             new_url = old_url[:-len('/+translate/')]
         else:
