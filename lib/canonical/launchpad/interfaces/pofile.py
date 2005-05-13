@@ -48,6 +48,10 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
 
     filename = Attribute("The name of the file that was imported")
 
+    latest_sighting = Attribute("""Of all the translation sightings belonging
+        to PO messages sets belonging to this PO file, return the one which
+        was most recently modified (greatest datelastactive), or None if
+        there are no sightings belonging to this PO file.""")
 
     def __len__():
         """Returns the number of current IPOMessageSets in this PO file."""
@@ -104,19 +108,26 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
         message set has sequence=0.
         """
 
+    def getPOTMsgSetTranslated(slice=None):
+        """Get pot message sets that are translated in this PO file.
+
+        'slice' is a slice object that selects a subset of POTMsgSets.
+        Return the message sets using 'slice' or all of them if slice is None.
+        """
+
+    def getPOTMsgSetUnTranslated(slice=None):
+        """Get pot message sets that are untranslated in this PO file.
+
+        'slice' is a slice object that selects a subset of POTMsgSets.
+        Return the message sets using 'slice' or all of them if slice is None.
+        """
+
     def hasMessageID(msgid):
-        """Check whether a message set with the given message ID exists within
-        this PO file."""
+        """Return whether a given message ID exists within this PO file."""
 
     def pendingImport():
         """Gives all pofiles that have a rawfile pending of import into
         Rosetta."""
-
-    def lastChangedSighting():
-        """Of all the translation sightings belonging to PO messages sets
-        belonging to this PO file, return the one which was most recently
-        modified (greatest datelastactive), or None if there are no sightings
-        belonging to this PO file."""
 
     def getContributors():
         """Returns the list of persons that have an active contribution inside

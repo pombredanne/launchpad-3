@@ -79,7 +79,7 @@
         for="canonical.launchpad.interfaces.IProject"
         schema="canonical.launchpad.interfaces.IProject"
         label="Edit Open Source Project Details:"
-        fields="displayname title shortdesc description homepageurl
+        fields="displayname title summary description homepageurl
                 wikiurl sourceforgeproject freshmeatproject"
         permission="launchpad.Edit"
         template="../templates/project-edit.pt"
@@ -91,7 +91,7 @@
         for="canonical.launchpad.interfaces.IProject"
         schema="canonical.launchpad.interfaces.IProject"
         label="Review Upstream Project Details:"
-        fields="name displayname title shortdesc description homepageurl
+        fields="name displayname title summary description homepageurl
                 wikiurl sourceforgeproject freshmeatproject owner active
                 reviewed"
         permission="launchpad.Admin"
@@ -104,7 +104,7 @@
         for="canonical.launchpad.interfaces.IProject"
         schema="canonical.launchpad.interfaces.IProduct"
         label="Add a Product to this Project"
-        fields="name displayname title shortdesc description homepageurl
+        fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
                 downloadurl owner"
         class="canonical.launchpad.browser.ProjectAddProductView"

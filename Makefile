@@ -24,6 +24,7 @@ check_merge: build
 	env PYTHONPATH=$(PYTHONPATH) \
 	${PYTHON} -t ./test_on_merge.py -vv \
 	    --dir hct --dir sourcerer --dir banzai
+	$(MAKE) -C sourcecode check
 
 check: build
 	# Run all tests. test_on_merge.py takes care of setting up the

@@ -28,7 +28,7 @@
         <h3>Project: <span tal:replace="project/title">project title</span></h3>
 
         <p style="margin-left: 20px;">
-            <span tal:content="project/shortdesc">project summary</span>
+            <span tal:content="project/summary">project summary</span>
             <span tal:condition="not: project/reviewed">
                 [ <a tal:attributes="href string:${project/name}/+review">Review</a> ]
             </span>
@@ -47,7 +47,7 @@
                    tal:condition="series/needsSyncReview">
                     <b tal:content="series/name">series name</b>
                     <br />
-                    <span tal:replace="series/shortdesc">source
+                    <span tal:replace="series/summary">source
                     description</span>
                     [ <a tal:attributes="href
                     string:${project/name}/${product/name}/+series/${series/name}/+sourceadmin">Admin</a> ]

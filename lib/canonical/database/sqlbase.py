@@ -1,3 +1,8 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
+import psycopg
 from sqlos import SQLOS
 from sqlos.adapter import PostgresAdapter
 from sqlobject.sqlbuilder import sqlrepr
@@ -5,6 +10,8 @@ from sqlobject.styles import Style
 from datetime import datetime, date, time
 from sqlobject import connectionForURI
 import thread, warnings
+
+from canonical.config import config
 
 __all__ = ['SQLBase', 'quote', 'quote_like', 'sqlvalues',
            'ZopelessTransactionManager', 'ConflictingTransactionManagerError']
@@ -116,7 +123,7 @@ class _ZopelessConnectionDescriptor(object):
         # Explicitly close all connections we opened.
         descriptor = cls.sqlClass.__dict__.get('_connection')
         for trans in descriptor.transactions.itervalues():
-            trans.rollback() 
+            trans.rollback()
             trans._dbConnection._connection.close()
 
         # Remove the _connection descriptor.  This assumes there was no
@@ -136,86 +143,10 @@ class ConflictingTransactionManagerError(Exception):
 
 class ZopelessTransactionManager(object):
     """Object to use in scripts and tests if you want transactions.
+
     This behaviour used to be in SQLBase, but as more methods and
     attributes became needed, a new class was created to avoid
     namespace pollution.
-
-    Quick & dirty doctest:
-    XXX: DISABLED!  This should be turned into a functional test.
-
-    #>>> from canonical.lp import dbname
-    #>>> ztm = ZopelessTransactionManager('postgres:///' + dbname)
-    #
-    #The _connection attribute of SQLBase should now be a descriptor that returns
-    #sqlobject.dbconnection.Transaction instances.
-    #
-    #>>> from sqlobject.dbconnection import Transaction
-    #>>> t1 = SQLBase._connection
-    #>>> isinstance(t1, Transaction)
-    #True
-    #
-    #And it should give the same connection to the same thread over multiple
-    #accesses.
-    #
-    #>>> t2 = SQLBase._connection
-    #>>> t1 is t2
-    #True
-    #
-    #And different in different threads:
-    #
-    #>>> from threading import Thread, Lock, Event
-    #>>> l = []
-    #>>> t = Thread(target=lambda: l.append(SQLBase._connection))
-    #>>> t.start()
-    #>>> t.join()
-    #>>> l[0] is not t1
-    #True
-
-    XXX: This bit is overly dependent on the db...
-    Show that concurrent transactions in different threads work correctly
-    #>>> from sqlobject import StringCol
-    #>>> class TestPerson(SQLBase):
-    #...     _table = 'Person'
-    #...     displayname = StringCol()
-    #...     givenname = StringCol()
-    #...
-    #>>> mark = TestPerson.selectBy(displayname='Mark Shuttleworth')[0]
-    #>>> mark.id == 1
-    #True
-    #>>> mark.givenname = 'Markk'
-    #>>> mark.givenname = 'Mark'
-    #>>> ztm.commit()
-    #>>> ztm.commit()
-    
-    #>>> event = Event()
-    #>>> event2 = Event()
-    #>>> def foo(TestPerson=TestPerson, ztm=ztm, event=event, event2=event2):
-    #...     andrew = TestPerson.selectBy(displayname='Andrew Bennetts')[0]
-    #...     
-    #...     andrew.givenname = 'Andreww'
-    #...     andrew.givenname = 'Andrew'
-    #...     event.set()
-    #...     event2.wait()
-    #...     ztm.commit()
-    #...
-    #>>> t = Thread(target=foo)
-    #>>> t.start()
-    #>>> event.wait()
-    #>>> mark = TestPerson.selectBy(displayname='Mark Shuttleworth')[0]
-    #>>> mark.id == 1
-    #True
-    #>>> mark.givenname = 'Markk'
-    #>>> mark.givenname = 'Mark'
-    #>>> ztm.commit()
-    #>>> event2.set()
-    #>>> 
-    #>>> t.join()
-
-    Cleanup -- make sure this doctest leaves things in the same state it found
-    them.
-
-    #>>> ztm.uninstall()
-
     """
 
     _installed = None
@@ -265,7 +196,7 @@ class ZopelessTransactionManager(object):
         # We delete self.sqlClass to make sure this instance isn't still
         # used after uninstall was called, which is a little bit of a hack.
         self.manager.free(self.manager.get())
-        del self.sqlClass 
+        del self.sqlClass
         self.__class__._installed = None
 
     def _dm(self):
@@ -421,6 +352,25 @@ def sqlvalues(*values, **kwvalues):
     elif kwvalues:
         return dict([(key, quote(value)) for key, value in kwvalues.items()])
 
+def quoteIdentifier(identifier):
+    r'''Quote an identifier, such as a table name.
+    
+    In SQL, identifiers are quoted using " rather than ' which is reserved
+    for strings.
+
+    >>> print quoteIdentifier('hello')
+    "hello"
+    >>> print quoteIdentifier("'")
+    "'"
+    >>> print quoteIdentifier('"')
+    """"
+    >>> print quoteIdentifier("\\")
+    "\"
+    >>> print quoteIdentifier('\\"')
+    "\"""
+    '''
+    return '"%s"' % identifier.replace('"','""')
+
 def flush_database_updates():
     """Flushes all pending database updates for the current connection.
     
@@ -472,6 +422,20 @@ def rollback():
 def commit():
     SQLBase._connection.commit()
 
+def connect(user, dbname=None):
+    """Return a fresh DB-API connecction to the database.
+
+    Use None for the user to connect as the default PostgreSQL user.
+    This is not the default because the option should be rarely used.
+
+    Default database name is the one specified in the main configuration file.
+    """
+    con_str = 'dbname=%s' % (dbname or config.dbname)
+    if user:
+        con_str += ' user=%s' % user
+    if config.dbhost:
+        con_str += ' host=%s' % config.dbhost
+    return psycopg.connect(con_str)
 
 def cursor():
     '''Return a cursor from the current database connection.

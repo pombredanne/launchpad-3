@@ -25,7 +25,7 @@
         <table border="0" cellpadding="1" cellspacing="2" width="100%">
             <tr>
                 <td align="center">
-                    <input name="text" size="60" 
+                    <input name="text" size="40" 
                            tal:attributes="value view/text" />
                     <input type="submit" value="Search" />
                     <br />
@@ -65,13 +65,13 @@
                         <a tal:attributes="href product/homepageurl"
                             tal:content="product/homepageurl">http://www.gnu.org/</a>
                         <br />
-                    <span tal:content="product/shortdesc">
-                        $Product.shortdesc</span>
+                    <span tal:content="product/summary">
+                        $Product.summary</span>
                     </td>
                 </tr>
             </table>
   
-            <div tal:condition="not: view/gotmatches"><b>No matching upstream
+            <div tal:condition="not: view/matches"><b>No matching upstream
             products.</b> You can register your product <a
             href="+new">here</a></div>
 

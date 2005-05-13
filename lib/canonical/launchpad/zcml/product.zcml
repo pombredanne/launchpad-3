@@ -99,12 +99,28 @@
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IProduct"
         label="Edit Upstream Product Details:"
-        fields="displayname title shortdesc description homepageurl
+        fields="displayname title summary description homepageurl
                 screenshotsurl wikiurl programminglang downloadurl
                 sourceforgeproject freshmeatproject"
         permission="launchpad.Edit"
         template="../templates/product-edit.pt"
         lp:url="/products/$Product.name/+edit">
+        <browser:widget
+           field="homepageurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+        <browser:widget
+           field="screenshotsurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+        <browser:widget
+           field="wikiurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+        <browser:widget
+           field="downloadurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
     </browser:editform>
 
     <browser:editform
@@ -112,7 +128,7 @@
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IProduct"
         label="Review Upstream Product Details:"
-        fields="name displayname title shortdesc description homepageurl
+        fields="name displayname title summary description homepageurl
                 screenshotsurl wikiurl programminglang downloadurl
                 sourceforgeproject freshmeatproject project owner active
                 autoupdate reviewed "
@@ -204,7 +220,7 @@
         for="canonical.launchpad.interfaces.IProductSet"
         schema="canonical.launchpad.interfaces.IProduct"
         label="Register an Open Source (Upstream) Product"
-        fields="name displayname title shortdesc description homepageurl
+        fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
                 downloadurl"
         content_factory="canonical.launchpad.database.Product"

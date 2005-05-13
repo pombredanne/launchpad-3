@@ -67,7 +67,7 @@ def do_stanza(bdata, debdistro, ztm, sources):
             emailaddy = database.EmailAddress(email=memail, status=1,
                                      person=maintainer)
 
-    shortdesc = bdata["Description"].split("\n")[0].strip()
+    summary = bdata["Description"].split("\n")[0].strip()
     description = bdata["Description"].split("\n", 1)[1].strip()
 
     # srcpkg can actually contain a version, which we don't care about
@@ -86,12 +86,12 @@ def do_stanza(bdata, debdistro, ztm, sources):
         return
         
     print "* Creating source package %s" % srcpkg
-    print "  + Summary: %s" % shortdesc.split("\n")[0]
+    print "  + Summary: %s" % summary.split("\n")[0]
     print "  + Description: %s [...]" % description.split("\n")[0]
     print "  + Maintainer: %s" % maintainer.name
-    shortdesc = encoding.guess(shortdesc)
+    summary = encoding.guess(summary)
     description = encoding.guess(description)
-    sources[srcpkg] = database.SourcePackage(shortdesc=shortdesc,
+    sources[srcpkg] = database.SourcePackage(summary=summary,
                                              description=description,
                                              manifestID=None,
                                              distro=debdistro,

@@ -9,12 +9,14 @@ import base64
 # Zope interfaces
 from zope.interface import implements
 from zope.component import getUtility
+from zope.exceptions import NotFoundError
 
 # SQL imports
 from sqlobject import \
     ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound
-from canonical.database.sqlbase import SQLBase, flush_database_updates
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.sqlbase import SQLBase, flush_database_updates, \
+    sqlvalues
 
 # canonical imports
 from canonical.launchpad.interfaces import \
@@ -30,28 +32,6 @@ from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgset import POMsgSet
 from canonical.launchpad.database.potranslationsighting import \
     POTranslationSighting
-
-
-class POFileSet:
-    implements(IPOFileSet)
-
-    def getPOFilesPendingImport(self):
-        """See IPOFileSet."""
-        results = POFile.selectBy(rawimportstatus=RosettaImportStatus.PENDING)
-
-        # XXX: Carlos Perello Marin 2005-03-24
-        # Really ugly hack needed to do the initial import of the whole hoary
-        # archive. It will disappear as soon as the whole
-        # LaunchpadPackagePoAttach and LaunchpadPoImport are implemented so
-        # rawfile is not used anymore and we start using Librarian.
-        # The problem comes with the memory requirements to get more than 7500
-        # rows into memory with about 200KB - 300KB of data each one.
-        total = results.count()
-        done = 0
-        while done < total:
-            for potemplate in results[done:done+100]:
-                yield potemplate
-            done = done + 100
 
 
 class POFile(SQLBase, RosettaStats):
@@ -157,7 +137,7 @@ class POFile(SQLBase, RosettaStats):
         try:
             messageID = POMsgID.byMsgid(key)
         except SQLObjectNotFound:
-            raise KeyError, key
+            raise NotFoundError(key)
 
         # Find a message set with the given message ID.
 
@@ -165,11 +145,11 @@ class POFile(SQLBase, RosettaStats):
             (' AND primemsgid = %d' % messageID.id))
 
         if result is None:
-            raise KeyError, key
+            raise NotFoundError(key)
 
         poresult = POMsgSet.selectOneBy(potmsgsetID=result.id, pofileID=self.id)
         if poresult is None:
-            raise KeyError, key
+            raise NotFoundError(key)
         return poresult
 
     def __getitem__(self, msgid_text):
@@ -184,7 +164,58 @@ class POFile(SQLBase, RosettaStats):
             orderBy='sequence',
             clauseTables = ['POTMsgSet']))
 
+    def getPOTMsgSetTranslated(self, slice=None):
+        """See IPOFile."""
+        # A POT set is translated only if the PO message set have
+        # POMsgSet.iscomplete = TRUE.
+        results = POTMsgSet.select('''
+            POTMsgSet.potemplate = %s AND
+            POTMsgSet.sequence > 0 AND
+            POMsgSet.potmsgset = POTMsgSet.id AND
+            POMsgSet.pofile = %s AND
+            POMsgSet.fuzzy = FALSE AND
+            POMsgSet.iscomplete = TRUE
+            ''' % sqlvalues(self.potemplate.id, self.id),
+            clauseTables=['POMsgSet'],
+            orderBy='POTMsgSet.sequence')
+
+        if slice is None:
+            for potmsgset in results:
+                yield potmsgset
+        else:
+            for potmsgset in results[slice]:
+                yield potmsgset
+
+    def getPOTMsgSetUnTranslated(self, slice=None):
+        """See IPOFile."""
+        # A POT set is not translated if the PO message set have
+        # POMsgSet.iscomplete = FALSE or we don't have such POMsgSet or
+        # POMsgSet.fuzzy = TRUE.
+        results = POTMsgSet.select('''
+            POTMsgSet.potemplate = %s AND
+            POTMsgSet.sequence > 0 AND
+            ((POMsgSet.potmsgset = POTMsgSet.id AND
+              POMsgSet.pofile = %s AND
+              (POMsgSet.iscomplete = FALSE OR POMsgSet.fuzzy = TRUE)) OR
+            NOT EXISTS
+              (SELECT * FROM POMsgSet
+               WHERE POTMsgSet.id = POMsgSet.potmsgset))
+            ''' % sqlvalues(self.potemplate.id, self.id),
+            clauseTables=['POMsgSet'],
+            distinct=True,
+            orderBy='POTMsgSet.sequence')
+
+        if slice is None:
+            # Want all the output.
+            for potmsgset in results:
+                yield potmsgset
+        else:
+            # Want only a subset specified by slice.
+            for potmsgset in results[slice]:
+                yield potmsgset
+
     def hasMessageID(self, messageID):
+        """See IPOFile."""
         results = POMsgSet.select('''
             POMsgSet.pofile = %d AND
             POMsgSet.potmsgset = POTMsgSet.id AND
@@ -207,7 +238,6 @@ class POFile(SQLBase, RosettaStats):
         return getUtility(IPersonSet).getContributorsForPOFile(self)
 
     # IEditPOFile
-
     def expireAllMessages(self):
         for msgset in self.currentMessageSets():
             msgset.sequence = 0
@@ -303,21 +333,22 @@ class POFile(SQLBase, RosettaStats):
 
         return self.createMessageSetFromMessageSet(potmsgset)
 
-    def lastChangedSighting(self):
-        '''
-        SELECT * FROM POTranslationSighting WHERE POTranslationSighting.id =
-        POMsgSet.id AND POMsgSet.pofile = 2 ORDER BY datelastactive;
-        '''
+    def latest_sighting(self):
+        """See IPOFile."""
+
         sightings = POTranslationSighting.select('''
             POTranslationSighting.pomsgset = POMsgSet.id AND
             POMsgSet.pofile = %d''' % self.id,
             orderBy='-datelastactive',
-            clauseTables=['POMsgSet'])
+            clauseTables=['POMsgSet'],
+            limit=1)
 
         try:
             return sightings[0]
         except IndexError:
             return None
+
+    latest_sighting = property(latest_sighting)
 
     # ICanAttachRawFileData implementation
 
@@ -423,13 +454,7 @@ class POFile(SQLBase, RosettaStats):
                 # person as the owner.
                 person = default_owner
             else:
-                # This import is here to prevent circular dependencies.
-                from canonical.launchpad.database.person import \
-                    PersonSet, createPerson
-
-                person_set = PersonSet()
-
-                person = person_set.getByEmail(email)
+                person = getUtility(IPersonSet).getByEmail(email)
 
                 if person is None:
                     items = name.split()
@@ -483,4 +508,27 @@ class POFile(SQLBase, RosettaStats):
                     'We got an error importing %s language for %s template' % (
                         self.language.code, self.potemplate.title),
                         exc_info = 1)
+
+
+class POFileSet:
+    implements(IPOFileSet)
+
+    def getPOFilesPendingImport(self):
+        """See IPOFileSet."""
+        results = POFile.selectBy(rawimportstatus=RosettaImportStatus.PENDING)
+
+        # XXX: Carlos Perello Marin 2005-03-24
+        # Really ugly hack needed to do the initial import of the whole hoary
+        # archive. It will disappear as soon as the whole
+        # LaunchpadPackagePoAttach and LaunchpadPoImport are implemented so
+        # rawfile is not used anymore and we start using Librarian.
+        # The problem comes with the memory requirements to get more than 7500
+        # rows into memory with about 200KB - 300KB of data each one.
+        total = results.count()
+        done = 0
+        while done < total:
+            for potemplate in results[done:done+100]:
+                yield potemplate
+            done = done + 100
+
 

@@ -1,0 +1,100 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<head>
+    <title metal:fill-slot="title">Review
+      <span tal:replace="context/product/displayname">Product</span>
+      <span tal:replace="context/name">Series</span> Details
+    </title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <tal:dummy condition="view/edit" replace="nothing">
+    <!--
+    This tal:dummy block never turns into HTML, but it triggers the edit
+    method on the ProductSeriesView class. This checks to see if a form has been
+    submitted to it, and if so updates the product.
+    -->
+    </tal:dummy>
+
+    <h1>Edit "<span
+    tal:content="context/displayname">$ProductSeries.displayname</span>"
+    Release Series Details</h1>
+
+    <div class="documentDescription">
+    Please edit the Product Release Series details below for <span
+    tal:content="context/displayname">$ProductRelease.displayname</span>.
+    </div>
+
+    <fieldset>
+
+        <legend>Product Series Details</legend>
+
+        <form action="+edit" method="post">
+
+        <div class="field">
+
+            <label>Display Name</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+                  <div class="formHelp">
+                    The "display name" of the Series is a short name,
+                    appropriately capitalised. It should make sense as part
+                    of a paragraph of text, and should convey slightly more
+                    information than the plain name. For example, <i>2.0
+                    (Stable)</i> or <i>HEAD (development)</i> or <i>1.3
+                    (Obsolete)</i>.
+                  </div>
+
+                <input type="text" name="displayname" size="30"
+                       value="" tal:attributes="value context/displayname" />
+        </div>
+
+        <div class="field">
+
+            <label>Summary</label>
+
+                  <div class="formHelp">
+                    A single paragraph introduction or overview of this
+                    series. For example: <i>The 2.0 series of Apache was
+                    initiated in July 2002. It represents the current stable
+                    release series, and is recommended for all new web
+                    server deployments.</i>
+                  </div>
+
+                <textarea cols="40" rows="3" name="shortdesc" 
+                          tal:content="context/shortdesc">
+                </textarea>
+        </div>
+        
+        <div class="formControls">
+
+            <!--
+            NB the name and value of the submit field below are essential to
+            clue the ProductView.edit() method in that the form has been
+            submitted.
+            -->
+            <input class="context" type="submit"
+                   name="Update"
+                   value="Update Series" />
+
+        </div>
+        </form>
+
+
+    </fieldset>
+
+</div>
+
+</body>
+</html>

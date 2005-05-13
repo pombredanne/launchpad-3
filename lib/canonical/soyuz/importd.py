@@ -62,7 +62,7 @@ class SoyuzProject(object):
             self.title=self._project.title
             self.url=self._project.homepageurl
             self.description=self._project.description
-            self._shortDescription=self._project.shortdesc
+            self._shortDescription=self._project.summary
             self._displayname=self._project.displayname
         else:
             self._project=None

@@ -29,7 +29,7 @@
   ... 
   ... The GNOME Project
   ... -----------------------------13925234164844313391724926109
-  ... Content-Disposition: form-data; name="field.shortdesc"
+  ... Content-Disposition: form-data; name="field.summary"
   ... 
   ... The GNOME Project is an initiative to prduce a free desktop software framework. GNOME is more than a set of applications, it is a user interface standard (the Gnome HIG) and a set of libraries that allow applications to work together in a harmonious desktop-ish way.
   ... -----------------------------13925234164844313391724926109

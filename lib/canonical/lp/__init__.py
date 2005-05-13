@@ -62,6 +62,10 @@ def registerTypes():
 
 registerTypes()
 
+def isZopeless():
+    """Returns True if we are running in the Zopeless environment"""
+    return ZopelessTransactionManager._installed is not None
+
 def initZopeless(debug=False, dbname=None, dbhost=None, dbuser=None):
     registerTypes()
     if dbname is None:

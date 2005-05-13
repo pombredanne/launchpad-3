@@ -10,6 +10,9 @@
 
 SUDO=/usr/bin/sudo
 BUILDID="$1"
+GREP=/bin/grep
+CUT=/usr/bin/cut
+XARGS=/usr/bin/xargs
 
 set -e
 
@@ -17,6 +20,8 @@ exec 2>&1
 
 set -x
 
-$SUDO umount "$HOME/build-$BUILDID/chroot-autobuild/proc"
-$SUDO umount "$HOME/build-$BUILDID/chroot-autobuild/dev/pts"
-$SUDO umount "$HOME/build-$BUILDID/chroot-autobuild/home/buildd/.ccache"
+#$SUDO umount "$HOME/build-$BUILDID/chroot-autobuild/proc"
+#$SUDO umount "$HOME/build-$BUILDID/chroot-autobuild/dev/pts"
+#$SUDO umount "$HOME/build-$BUILDID/chroot-autobuild/home/buildd/.ccache"
+$GREP "$HOME/build-$BUILDID/chroot-autobuild" /proc/mounts | \
+      $CUT -d\  -f2 | $XARGS -n 1 $SUDO umount

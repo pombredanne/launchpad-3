@@ -74,6 +74,14 @@
           lp:url="/people/$Person.name/+bounties" />
   </browser:pages>
 
+  <browser:page
+      for="canonical.launchpad.interfaces.IPerson"
+      name="+rdf"
+      template="../templates/person-foaf.pt"
+      lp:url="/person/$Person.name/+rdf"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.PersonRdfView" />
+
   <browser:pages
       for="canonical.launchpad.interfaces.IPerson"
       permission="launchpad.Edit"

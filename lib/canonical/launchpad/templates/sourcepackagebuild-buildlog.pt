@@ -15,7 +15,7 @@
 
 
     <h1> 
-     <span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">
+     <span tal:content="context/sourcepackagerelease/sourcepackage/summary">
 	TITLE </span>
      <span tal:content="context/sourcepackagerelease/version">
 	Version</span>-

@@ -9,7 +9,7 @@ from zope.exceptions.exceptionformatter import format_exception
 
 from canonical.config import config
 
-class SystemError:
+class SystemErrorView:
     """Default exception error view
 
     Returns a 500 response instead of 200

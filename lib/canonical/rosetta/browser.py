@@ -49,7 +49,11 @@ class ViewPreferences:
         self.person = getUtility(ILaunchBag).user
 
     def languages(self):
-        return getUtility(ILanguageSet)
+        return [
+            language
+            for language in getUtility(ILanguageSet)
+            if language.visible
+            ]
 
     def selectedLanguages(self):
         return self.person.languages

@@ -25,11 +25,15 @@
 
     <h1>Release Series Details</h1>
 
-    <p class="documentDescription" tal:content="context/shortdesc">
-        $ProductSeries.shortdesc goes here. This should be quite short,
+    <p class="documentDescription" tal:content="context/summary">
+        $ProductSeries.summary goes here. This should be quite short,
         just a single paragraph of text really, giving the status of
         this series of releases.
     </p>
+
+    <div>
+        [ <a href="+review">Review Series Details</a> ]
+    </div>
 
     <div tal:condition="context/releases">
       <h2>Releases:</h2>

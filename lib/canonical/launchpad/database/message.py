@@ -150,7 +150,7 @@ class MessageSet:
         title = self._decode_header(parsed_message.get('subject', '')).strip()
         if not title:
             raise MissingSubject(rfc822msgid)
-        
+
         if owner is None:
             # Try and determine the owner. We raise a NotFoundError
             # if the sender does not exist.

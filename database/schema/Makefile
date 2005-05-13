@@ -51,13 +51,13 @@ test: create
 	@ echo "* Creating database \"$(EMPTY_DBNAME)\" with no sample data."
 	@ createdb -E UNICODE --template ${TEST_DBNAME} ${EMPTY_DBNAME} \
 	    | grep : | cat
-	@ echo "* Loading language data"
-	@ psql -d ${TEST_DBNAME} -f ../languages.sql | grep : | cat
 	@ echo "* Loading sample data"
 	@ psql -d ${TEST_DBNAME} -f $(SAMPLEDATA) | grep : | cat
 	@ echo "* Setting up full text indexes"
 	@ env LP_DBNAME=${EMPTY_DBNAME} ${PYTHON} fti.py
 	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py
+	@ echo "* Resetting sequences"
+	@ ${PYTHON} reset_sequences.py -d ${TEST_DBNAME}
 	@ echo "* Vacuuming"
 	@ psql -d ${TEST_DBNAME} -c 'vacuum full analyze' | grep : | cat
 
@@ -146,7 +146,10 @@ newsample-soyuz:
 	pg_dump -d ${DBNAME} -a -D -O --table=potemplate | grep -v "\(SET \| TOC \)" > ../sampledata/new-rosetta.sql
 
 newsampledata:
-	pg_dump --schema=public --disable-triggers -a -D -O -d ${DBNAME} | grep -v "\( TOC \|INSERT INTO \"language\" \|INSERT INTO spokenin \|INSERT INTO country \|INSERT INTO launchpaddatabaserevision \|'language_id_seq\|country_id_seq\|^--\)" > $(NEWSAMPLEDATA)
+	pg_dump --schema=public --disable-triggers -a -D -O -d ${DBNAME} \
+	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|^--\)" \
+	| python sort_sql.py \
+	> $(NEWSAMPLEDATA)
 
 .PHONY: default base all
 

@@ -65,7 +65,7 @@ class LibraryFileAlias(SQLBase):
             return rv
         else:
             return self._datafile.read(chunksize)
-        
+
     def close(self):
         self._datafile.close()
         self._datafile = None

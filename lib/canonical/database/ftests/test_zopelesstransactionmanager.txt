@@ -1,0 +1,82 @@
+
+Doctests moved from ZopelessTransactionManager.
+
+>>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+>>> LaunchpadTestSetup().setUp()
+>>> dbname = LaunchpadTestSetup().dbname
+>>> from canonical.database.sqlbase import ZopelessTransactionManager
+>>> ztm = ZopelessTransactionManager('postgres:///' + dbname)
+
+The _connection attribute of SQLBase should now be a descriptor that returns
+sqlobject.dbconnection.Transaction instances.
+
+>>> from sqlobject.dbconnection import Transaction
+>>> from canonical.database.sqlbase import SQLBase
+>>> t1 = SQLBase._connection
+>>> isinstance(t1, Transaction)
+True
+
+And it should give the same connection to the same thread over multiple
+accesses.
+
+>>> t2 = SQLBase._connection
+>>> t1 is t2
+True
+
+And different in different threads:
+
+>>> from threading import Thread, Lock, Event
+>>> l = []
+>>> t = Thread(target=lambda: l.append(SQLBase._connection))
+>>> t.start()
+>>> t.join()
+>>> l[0] is not t1
+True
+ 
+XXX: This bit is overly dependent on the db...
+Show that concurrent transactions in different threads work correctly
+
+>>> from sqlobject import StringCol
+>>> class TestPerson(SQLBase):
+...     _table = 'Person'
+...     displayname = StringCol()
+...     givenname = StringCol()
+...
+>>> mark = TestPerson.selectOneBy(displayname='Mark Shuttleworth')
+>>> mark.id == 1
+True
+>>> mark.givenname = 'Markk'
+>>> mark.givenname = 'Mark'
+>>> ztm.commit()
+>>> ztm.commit()
+ 
+>>> event = Event()
+>>> event2 = Event()
+>>> def foo(TestPerson=TestPerson, ztm=ztm, event=event, event2=event2):
+...     andrew = TestPerson.selectOneBy(displayname='Andrew Bennetts')
+...     
+...     andrew.givenname = 'Andreww'
+...     andrew.givenname = 'Andrew'
+...     event.set()
+...     event2.wait()
+...     ztm.commit()
+...
+>>> t = Thread(target=foo)
+>>> t.start()
+>>> event.wait()
+>>> mark = TestPerson.selectOneBy(displayname='Mark Shuttleworth')
+>>> mark.id == 1
+True
+>>> mark.givenname = 'Markk'
+>>> mark.givenname = 'Mark'
+>>> ztm.commit()
+>>> event2.set()
+>>> 
+>>> t.join()
+
+Cleanup -- make sure this doctest leaves things in the same state it found
+them.
+
+>>> ztm.uninstall()
+>>> LaunchpadTestSetup().tearDown()
+

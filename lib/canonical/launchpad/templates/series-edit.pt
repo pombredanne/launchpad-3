@@ -41,6 +41,20 @@
         <form action="+edit" method="post">
 
         <div class="field">
+            <label>Name</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+                <div class="formHelp">
+                    A short, memorable name of the Series used to form
+                    URLs in the Launchpad system.
+                </div>
+
+            <input type="text" name="name" size="30"
+                value="" tal:attributes="value context/name" />
+        </div>
+
+        <div class="field">
 
             <label>Display Name</label>
 
@@ -61,7 +75,7 @@
 
         <div class="field">
 
-            <label>Short Description</label>
+            <label>Summary</label>
 
                   <div class="formHelp">
                     A single paragraph introduction or overview of this
@@ -71,8 +85,8 @@
                     server deployments.</i>
                   </div>
 
-                <textarea cols="40" rows="7" name="shortdesc" 
-                          tal:content="context/shortdesc">
+                <textarea cols="40" rows="7" name="summary" 
+                          tal:content="context/summary">
                 </textarea>
         </div>
 

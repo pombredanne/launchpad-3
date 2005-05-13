@@ -13,7 +13,7 @@
 
 <div metal:fill-slot="main">
 
-<h1><span tal:content="context/binarypackagerelease/shortdesc">
+<h1><span tal:content="context/binarypackagerelease/summary">
      TITLE </span>
     <span tal:content="context/version">Version</span>-
     <span tal:content="context/arch">Arch</span>

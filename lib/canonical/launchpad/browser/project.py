@@ -78,7 +78,7 @@ class ProjectView(object):
         # Extract details from the form and update the Product
         self.context.displayname = self.form['displayname']
         self.context.title = self.form['title']
-        self.context.shortdesc = self.form['shortdesc']
+        self.context.summary = self.form['summary']
         self.context.description = self.form['description']
         self.context.homepageurl = self.form['homepageurl']
         # now redirect to view the product
@@ -164,7 +164,7 @@ class ProjectView(object):
             yield retdict
 
     def languages(self):
-        return [language for language in helpers.request_languages(self.request)]
+        return helpers.request_languages(self.request)
 
 
 class ProjectAddProductView(AddView):
@@ -253,7 +253,7 @@ class ProjectSetView(object):
         name = self.form['name']
         displayname = self.form['displayname']
         title = self.form['title']
-        shortdesc = self.form['shortdesc']
+        summary = self.form['summary']
         description = self.form['description']
         homepageurl = self.form['homepageurl']
         # get the launchpad person who is creating this product
@@ -262,7 +262,7 @@ class ProjectSetView(object):
         project = Project(name=name,
                           displayname=displayname,
                           title=title,
-                          shortdesc=shortdesc,
+                          summary=summary,
                           description=description,
                           owner=owner,
                           homepageurl=homepageurl,

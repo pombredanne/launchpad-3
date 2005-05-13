@@ -2,6 +2,2066 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-12 14:35:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1693
+
+    Summary:
+      [rs=SteveA] fix the validate_cvs_root regex to not infer a range where one wasn't meant
+    Revision:
+      launchpad--devel--0--patch-1693
+
+    Patches applied:
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-42
+       merge test-case fixes
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-43
+       merge with rocketfuel
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-44
+       catch up with rocketfuel
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-45
+       fix the validate_cvs_root regex to not infer a range where one wasn't meant
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/productseries.py
+
+    new patches:
+     scott@canonical.com--2005/launchpad--devel--0--patch-42
+     scott@canonical.com--2005/launchpad--devel--0--patch-43
+     scott@canonical.com--2005/launchpad--devel--0--patch-44
+     scott@canonical.com--2005/launchpad--devel--0--patch-45
+
+
+2005-05-12 11:28:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1692
+
+    Summary:
+      tweak merge accounts link as requested by SteveA (trivial)
+    Revision:
+      launchpad--devel--0--patch-1692
+
+    Patches applied:
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-51
+       merge rocketfuel
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-52
+       tweak merge accounts link as requested by SteveA
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/people-index.pt
+
+    new patches:
+     mpt@canonical.com/launchpad--devel--0--patch-51
+     mpt@canonical.com/launchpad--devel--0--patch-52
+
+
+2005-05-12 11:01:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1691
+
+    Summary:
+      allow '+' in cvs module names [trivial]
+    Revision:
+      launchpad--devel--0--patch-1691
+
+    Patches applied:
+    
+     * david.allouche@canonical.com--2004/launchpad--quickfixes--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1688
+    
+     * david.allouche@canonical.com--2004/launchpad--quickfixes--0--patch-1
+       allow '+' in cvs module names
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/productseries.py
+
+    new patches:
+     david.allouche@canonical.com--2004/launchpad--quickfixes--0--base-0
+     david.allouche@canonical.com--2004/launchpad--quickfixes--0--patch-1
+
+
+2005-05-12 10:19:01 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1690
+
+    Summary:
+      fix getUtility thinko in language pack export script [trivial]
+    Revision:
+      launchpad--devel--0--patch-1690
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-450
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-451
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-452
+       fix getUtility thinko in language pack export script
+    
+
+    modified files:
+     cronscripts/rosetta-language-pack-export.py doc/changelog.txt
+
+    new patches:
+     daf@canonical.com--2004/launchpad--devel--0--patch-450
+     daf@canonical.com--2004/launchpad--devel--0--patch-451
+     daf@canonical.com--2004/launchpad--devel--0--patch-452
+
+
+2005-05-12 09:46:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1689
+
+    Summary:
+      fix VersionMapper.findByName for renaming of ArchNamespace.archarchive to archive [trivial]
+    Revision:
+      launchpad--devel--0--patch-1689
+
+    Patches applied:
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-79
+       merge rocketfuel
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-80
+       fix VersionMapper.findByName for renaming of ArchNamespace.archarchive to archive
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/archbranch.py
+
+    new patches:
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-79
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-80
+
+
+2005-05-11 22:43:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1688
+
+    Summary:
+      fix corruption
+    Revision:
+      launchpad--devel--0--patch-1688
+
+    Patches applied:
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-125
+       merge up to last good commit
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-126
+       merge and avoid corruption
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-127
+       final sync
+    
+
+    modified files:
+     doc/changelog.txt
+     {arch}/launchpad/launchpad--karma/launchpad--karma--0/guilherme.salgado@canonical.com/patch-log/patch-1
+     {arch}/launchpad/launchpad--karma/launchpad--karma--0/guilherme.salgado@canonical.com/patch-log/patch-2
+     {arch}/launchpad/launchpad--karma/launchpad--karma--0/guilherme.salgado@canonical.com/patch-log/patch-3
+     {arch}/launchpad/launchpad--karma/launchpad--karma--0/guilherme.salgado@canonical.com/patch-log/patch-4
+     {arch}/launchpad/launchpad--mark-refactor/launchpad--mark-refactor--0/andrew.bennetts@canonical.com/patch-log/patch-1
+     {arch}/launchpad/launchpad--mark-refactor/launchpad--mark-refactor--0/brad.bollenbach@canonical.com/patch-log/base-0
+     {arch}/launchpad/launchpad--membership-rename/launchpad--membership-rename--0/guilherme.salgado@canonical.com/patch-log/patch-1
+     {arch}/launchpad/launchpad--membership-rename/launchpad--membership-rename--0/guilherme.salgado@canonical.com/patch-log/patch-2
+     {arch}/launchpad/launchpad--move-daemons/launchpad--move-daemons--0/andrew.bennetts@canonical.com/patch-log/base-0
+     {arch}/launchpad/launchpad--move-daemons/launchpad--move-daemons--0/andrew.bennetts@canonical.com/patch-log/patch-1
+     {arch}/launchpad/launchpad--mpt-products/launchpad--mpt-products--0/guilherme.salgado@canonical.com/patch-log/base-0
+     {arch}/launchpad/launchpad--mpt-products/launchpad--mpt-products--0/guilherme.salgado@canonical.com/patch-log/patch-1
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/base-0
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-1
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-10
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-11
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-12
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-13
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-14
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-15
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-16
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-17
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-18
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-19
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-2
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-20
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-21
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-22
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-23
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-24
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-25
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-26
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-27
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-28
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-29
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-3
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-4
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-5
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-6
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-7
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-8
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-9
+
+    new patches:
+     robert.collins@canonical.com/launchpad--devel--0--patch-125
+     robert.collins@canonical.com/launchpad--devel--0--patch-126
+     robert.collins@canonical.com/launchpad--devel--0--patch-127
+
+
+2005-05-11 15:10:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1687
+
+    Summary:
+      Get PPH merged in ready for pockets and embargo work. r=stevea
+    Revision:
+      launchpad--devel--0--patch-1687
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-9
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-10
+       PPH DB implementation. SQLObjects pending
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-11
+       star-merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-12
+       Initial packagepublishinghistory sqlobjects
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-13
+       SPPH quick-fix
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-14
+       Gina changes to support PPH
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-15
+       Backslashes and commas. Syntax sucks
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-16
+       more commas and sqlobject frippery
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-17
+       Merge stub's changes to authorise the db patch
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-18
+       star-merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-19
+       Fix up patch to match change in shortdesc name
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-20
+       Respond to review from SteveA
+    
+     * stuart.bishop@canonical.com/launchpad--kinnison--1--base-0
+       tag of daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-10
+    
+     * stuart.bishop@canonical.com/launchpad--kinnison--1--patch-1
+       Reduce noise and move to final position
+    
+
+    new files:
+     database/schema/.arch-ids/patch-17-05-0.sql.id
+     database/schema/patch-17-05-0.sql
+
+    modified files:
+     database/sampledata/current.sql database/schema/comments.sql
+     database/schema/security.cfg doc/changelog.txt
+     lib/canonical/launchpad/database/publishing.py
+     lib/canonical/launchpad/interfaces/publishing.py
+     lib/canonical/launchpad/scripts/gina/database.py
+
+    new patches:
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-9
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-10
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-11
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-12
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-13
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-14
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-15
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-16
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-17
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-18
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-19
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-20
+     stuart.bishop@canonical.com/launchpad--kinnison--1--base-0
+     stuart.bishop@canonical.com/launchpad--kinnison--1--patch-1
+
+
+2005-05-11 02:00:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1686
+
+    Summary:
+      [r=spiv]  Misc pending changes, including ProductSeries.name changing for bazaar imports, wiring up Daf's sampledata sorting script, enhancing the PostgreSQL test harness to ensure better test isolation (solves the issue of not resetting sequence values between tests, a possible case of occasional test failures).
+    Revision:
+      launchpad--devel--0--patch-1686
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-297
+       SQL lines actually end with ';', not ');'
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-298
+       Be more flexible getting value - id might not be the first column
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-299
+       Code to list sequences in the schema
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-300
+       Test suite and sampledata helper to reset sequences to the correct values
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-301
+       Hack product series edit page to make ProductSeries.name editable (needed NOW)
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-302
+       ProductSeries renaming update to modern codebase, and handle on-submit redirect correctly
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-303
+       Merge in sampledata sort/sequence reset code
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-304
+       star-merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-305
+       Merge in FOAF export
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-306
+       Fix permissions on Person.preferredemail
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-307
+       Set rdf content type correctly and add page tests
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-308
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-309
+       Restore 'Redirect to productseries' fix lost during conflict resolution
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-310
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-311
+       Post review tweaks
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-312
+       More data migration now required on ProductSeries DB patch
+    
+     * stuart.bishop@canonical.com/launchpad--packaging-pkey--0--patch-3
+       Add basic FOAF informat to /people/$Person.name/+rdf
+    
+     * stuart.bishop@canonical.com/launchpad--packaging-pkey--0--patch-4
+       Improve handling of people without preferredemail
+    
+     * stuart.bishop@canonical.com/launchpad--resetsequence--0--base-0
+       tag of stuart.bishop@canonical.com/launchpad--devel--1--patch-300
+    
+     * stuart.bishop@canonical.com/launchpad--resetsequence--0--patch-1
+       Wire up sequence reset to test harness
+    
+     * stuart.bishop@canonical.com/launchpad--resetsequence--0--patch-2
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--resetsequence--0--patch-3
+       Fix person merge
+    
+     * stuart.bishop@canonical.com/launchpad--resetsequence--0--patch-4
+       Remove sequence resets from sampledata, updating them programatically instead
+    
+     * stuart.bishop@canonical.com/launchpad--resetsequence--0--patch-5
+       Reinstate old sampledata until branch can be merged
+    
+
+    new files:
+     database/schema/.arch-ids/reset_sequences.py.id
+     database/schema/reset_sequences.py
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-person-rdf.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-person-rdf.txt
+     lib/canonical/launchpad/templates/.arch-ids/person-foaf.pt.id
+     lib/canonical/launchpad/templates/person-foaf.pt
+
+    modified files:
+     checktitles.py database/schema/Makefile
+     database/schema/patch-17-02-0.sql database/schema/sort_sql.py
+     doc/changelog.txt
+     lib/canonical/database/ftests/test_postgresql.py
+     lib/canonical/database/postgresql.py
+     lib/canonical/database/sqlbase.py
+     lib/canonical/ftests/pgsql.py
+     lib/canonical/ftests/test_pgsql.py
+     lib/canonical/launchpad/browser/person.py
+     lib/canonical/launchpad/browser/productseries.py
+     lib/canonical/launchpad/database/binarypackage.py
+     lib/canonical/launchpad/database/distroarchrelease.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/pagetests/standalone/xx-series-edit.txt
+     lib/canonical/launchpad/scripts/sort_sql.py
+     lib/canonical/launchpad/templates/main-template.pt
+     lib/canonical/launchpad/templates/person-index.pt
+     lib/canonical/launchpad/templates/series-edit.pt
+     lib/canonical/launchpad/zcml/person.zcml
+     {arch}/launchpad/launchpad--karma/launchpad--karma--0/guilherme.salgado@canonical.com/patch-log/patch-1
+     {arch}/launchpad/launchpad--karma/launchpad--karma--0/guilherme.salgado@canonical.com/patch-log/patch-2
+     {arch}/launchpad/launchpad--karma/launchpad--karma--0/guilherme.salgado@canonical.com/patch-log/patch-3
+     {arch}/launchpad/launchpad--karma/launchpad--karma--0/guilherme.salgado@canonical.com/patch-log/patch-4
+     {arch}/launchpad/launchpad--mark-refactor/launchpad--mark-refactor--0/andrew.bennetts@canonical.com/patch-log/patch-1
+     {arch}/launchpad/launchpad--mark-refactor/launchpad--mark-refactor--0/brad.bollenbach@canonical.com/patch-log/base-0
+     {arch}/launchpad/launchpad--membership-rename/launchpad--membership-rename--0/guilherme.salgado@canonical.com/patch-log/patch-1
+     {arch}/launchpad/launchpad--membership-rename/launchpad--membership-rename--0/guilherme.salgado@canonical.com/patch-log/patch-2
+     {arch}/launchpad/launchpad--move-daemons/launchpad--move-daemons--0/andrew.bennetts@canonical.com/patch-log/base-0
+     {arch}/launchpad/launchpad--move-daemons/launchpad--move-daemons--0/andrew.bennetts@canonical.com/patch-log/patch-1
+     {arch}/launchpad/launchpad--mpt-products/launchpad--mpt-products--0/guilherme.salgado@canonical.com/patch-log/base-0
+     {arch}/launchpad/launchpad--mpt-products/launchpad--mpt-products--0/guilherme.salgado@canonical.com/patch-log/patch-1
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/base-0
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-1
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-10
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-11
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-12
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-13
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-14
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-15
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-16
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-17
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-18
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-19
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-2
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-20
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-21
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-22
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-23
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-24
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-25
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-26
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-27
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-28
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-29
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-3
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-4
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-5
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-6
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-7
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-8
+     {arch}/launchpad/launchpad--msgset-split/launchpad--msgset-split--0/carlos.perello@canonical.com--2004/patch-log/patch-9
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-297
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-298
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-299
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-300
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-301
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-302
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-303
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-304
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-305
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-306
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-307
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-308
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-309
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-310
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-311
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-312
+     stuart.bishop@canonical.com/launchpad--packaging-pkey--0--patch-3
+     stuart.bishop@canonical.com/launchpad--packaging-pkey--0--patch-4
+     stuart.bishop@canonical.com/launchpad--resetsequence--0--base-0
+     stuart.bishop@canonical.com/launchpad--resetsequence--0--patch-1
+     stuart.bishop@canonical.com/launchpad--resetsequence--0--patch-2
+     stuart.bishop@canonical.com/launchpad--resetsequence--0--patch-3
+     stuart.bishop@canonical.com/launchpad--resetsequence--0--patch-4
+     stuart.bishop@canonical.com/launchpad--resetsequence--0--patch-5
+
+
+2005-05-10 17:56:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1685
+
+    Summary:
+      [trivial] fixed a sample data entry
+    Revision:
+      launchpad--devel--0--patch-1685
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-610
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-611
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-612
+       Fixed Norwegian Bokmål name
+    
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-610
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-611
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-612
+
+
+2005-05-10 17:01:21 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1684
+
+    Summary:
+      Moved the translation form from potemplate context into pofile context. r=SteveA
+    Revision:
+      launchpad--devel--0--patch-1684
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1619
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-1
+       Translation form moved from POTemplate context to POFile context and added a redirection from the old URL
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-2
+       We don't need the msgid text as a hidden field anymore, this change reduces the size of our translation form.
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-3
+       Fixed all links to point to the new translation form URL
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-4
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-5
+       Fixed tests
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-6
+       Test fixed (really)
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-7
+       Fixed the last test that is failing
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-8
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-9
+       Improved comments and docstrings
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-10
+       Fixed tests
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-11
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-12
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-13
+       Applied review changes, fixed tests + complete change of translation form code to use a Class instead of a dictionary (that let us to remove lots of 'python:' expressions.
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-14
+       Fixed tests and some review changes
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-15
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-16
+       Removed the date as there is a test that makes it change and it's not critical for this pagetest.
+    
+     * carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-17
+       Merge from rocketfuel
+    
+
+    new files:
+     lib/canonical/launchpad/browser/tests/.arch-ids/=id
+     lib/canonical/launchpad/browser/tests/.arch-ids/__init__.py.id
+     lib/canonical/launchpad/browser/tests/.arch-ids/test_pofile.py.id
+     lib/canonical/launchpad/browser/tests/__init__.py
+     lib/canonical/launchpad/browser/tests/test_pofile.py
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-pofile-translation-gettext-error-middle-page.data.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-pofile-translation-gettext-error-middle-page.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-pofile-translation-gettext-error-middle-page.data
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-pofile-translation-gettext-error-middle-page.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/pofile.py
+     lib/canonical/launchpad/browser/potemplate.py
+     lib/canonical/launchpad/browser/tests/test_potemplate.py
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/database/pomsgset.py
+     lib/canonical/launchpad/database/potemplate.py
+     lib/canonical/launchpad/database/potmsgset.py
+     lib/canonical/launchpad/helpers.py
+     lib/canonical/launchpad/interfaces/pofile.py
+     lib/canonical/launchpad/interfaces/potemplate.py
+     lib/canonical/launchpad/interfaces/potmsgset.py
+     lib/canonical/launchpad/pagetests/rosetta/30-rosetta-pofile-translation-gettext-error.data
+     lib/canonical/launchpad/pagetests/rosetta/30-rosetta-pofile-translation-gettext-error.txt
+     lib/canonical/launchpad/pagetests/rosetta/31-rosetta-pofile-translation-form-long-msgid.data
+     lib/canonical/launchpad/pagetests/rosetta/31-rosetta-pofile-translation-form-long-msgid.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-index.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-translation-form-empty-strings-without-validation.txt
+     lib/canonical/launchpad/templates/pofile-index.pt
+     lib/canonical/launchpad/templates/pofile-translate.pt
+     lib/canonical/launchpad/tests/test_helpers.py
+     lib/canonical/launchpad/zcml/pofile.zcml
+     lib/canonical/launchpad/zcml/potemplate.zcml
+     lib/canonical/rosetta/tests/test_browser.py
+
+    renamed files:
+     lib/canonical/launchpad/pagetests/rosetta/.arch-ids/30-rosetta-potemplate-translation-gettext-error.data.id
+       ==> lib/canonical/launchpad/pagetests/rosetta/.arch-ids/30-rosetta-pofile-translation-gettext-error.data.id
+     lib/canonical/launchpad/pagetests/rosetta/.arch-ids/30-rosetta-potemplate-translation-gettext-error.txt.id
+       ==> lib/canonical/launchpad/pagetests/rosetta/.arch-ids/30-rosetta-pofile-translation-gettext-error.txt.id
+     lib/canonical/launchpad/pagetests/rosetta/.arch-ids/31-rosetta-potemplate-translation-form-long-msgid.data.id
+       ==> lib/canonical/launchpad/pagetests/rosetta/.arch-ids/31-rosetta-pofile-translation-form-long-msgid.data.id
+     lib/canonical/launchpad/pagetests/rosetta/.arch-ids/31-rosetta-potemplate-translation-form-long-msgid.txt.id
+       ==> lib/canonical/launchpad/pagetests/rosetta/.arch-ids/31-rosetta-pofile-translation-form-long-msgid.txt.id
+     lib/canonical/launchpad/pagetests/rosetta/30-rosetta-potemplate-translation-gettext-error.data
+       ==> lib/canonical/launchpad/pagetests/rosetta/30-rosetta-pofile-translation-gettext-error.data
+     lib/canonical/launchpad/pagetests/rosetta/30-rosetta-potemplate-translation-gettext-error.txt
+       ==> lib/canonical/launchpad/pagetests/rosetta/30-rosetta-pofile-translation-gettext-error.txt
+     lib/canonical/launchpad/pagetests/rosetta/31-rosetta-potemplate-translation-form-long-msgid.data
+       ==> lib/canonical/launchpad/pagetests/rosetta/31-rosetta-pofile-translation-form-long-msgid.data
+     lib/canonical/launchpad/pagetests/rosetta/31-rosetta-potemplate-translation-form-long-msgid.txt
+       ==> lib/canonical/launchpad/pagetests/rosetta/31-rosetta-pofile-translation-form-long-msgid.txt
+     lib/canonical/launchpad/templates/.arch-ids/potemplate-translate.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/pofile-translate.pt.id
+     lib/canonical/launchpad/templates/potemplate-translate.pt
+       ==> lib/canonical/launchpad/templates/pofile-translate.pt
+     lib/canonical/rosetta/tests/.arch-ids/test_tarexport.py.id
+       ==> lib/canonical/launchpad/browser/tests/.arch-ids/test_potemplate.py.id
+     lib/canonical/rosetta/tests/test_tarexport.py
+       ==> lib/canonical/launchpad/browser/tests/test_potemplate.py
+
+    new directories:
+     lib/canonical/launchpad/browser/tests
+     lib/canonical/launchpad/browser/tests/.arch-ids
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--base-0
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-1
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-2
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-3
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-4
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-5
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-6
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-7
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-8
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-9
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-10
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-11
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-12
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-13
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-14
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-15
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-16
+     carlos.perello@canonical.com--2004/launchpad--translation-form-changes-context--0--patch-17
+
+
+2005-05-10 16:35:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1683
+
+    Summary:
+      remove an unused file dating back to the limiolithic era. [trivial]
+    Revision:
+      launchpad--devel--0--patch-1683
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-513
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-514
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-515
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-516
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-517
+       remove an unused file
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-518
+       merge from rf
+    
+
+    removed files:
+     lib/canonical/launchpad/templates/.arch-ids/severity-priority.html.id
+     lib/canonical/launchpad/templates/severity-priority.html
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-513
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-514
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-515
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-516
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-517
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-518
+
+
+2005-05-10 15:28:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1682
+
+    Summary:
+      move Librarian exceptions into the interface
+    Revision:
+      launchpad--devel--0--patch-1682
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--librarian--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1678
+    
+     * daf@canonical.com--2004/launchpad--librarian--0--patch-1
+       mode UploadFailed/DownloadFailed to interfaces file
+    
+
+    modified files:
+     cronscripts/rosetta-language-pack-export.py doc/changelog.txt
+     lib/canonical/launchpad/interfaces/librarian.py
+     lib/canonical/librarian/client.py
+     lib/canonical/librarian/ftests/test_web.py
+     lib/canonical/librarian/interfaces.py
+
+    new patches:
+     daf@canonical.com--2004/launchpad--librarian--0--base-0
+     daf@canonical.com--2004/launchpad--librarian--0--patch-1
+
+
+2005-05-10 15:01:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1681
+
+    Summary:
+      Removing DB class import in browser/productrelease r=spiv.
+    Revision:
+      launchpad--devel--0--patch-1681
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-585
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-586
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-587
+       Removing DB call in browser/productrelease.py in the simplest way, but still not agreeing with its usage in template.
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-588
+       Merge from RF, 2 conflicts solved on browser/interface productrelease.py
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-589
+       Applying the review required changes r=andrew
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-590
+       Better comment for a XXX.
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-591
+       Merge from RF
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/productrelease.py
+     lib/canonical/launchpad/database/productrelease.py
+     lib/canonical/launchpad/interfaces/productrelease.py
+     lib/canonical/launchpad/zcml/productrelease.zcml
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-585
+     celso.providelo@canonical.com/launchpad--devel--0--patch-586
+     celso.providelo@canonical.com/launchpad--devel--0--patch-587
+     celso.providelo@canonical.com/launchpad--devel--0--patch-588
+     celso.providelo@canonical.com/launchpad--devel--0--patch-589
+     celso.providelo@canonical.com/launchpad--devel--0--patch-590
+     celso.providelo@canonical.com/launchpad--devel--0--patch-591
+
+
+2005-05-10 14:35:10 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1680
+
+    Summary:
+      Remove pyarch dependency from launchpad. r=spiv
+    Revision:
+      launchpad--devel--0--patch-1680
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--de-pyarch--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1678
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--de-pyarch--0--patch-1
+       Changed lib/arch symlink and made sure pyarch is ignored in 'make check'
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--de-pyarch--0--patch-2
+       Remove the lib/arch symlink entirely
+    
+
+    removed files:
+     lib/.arch-ids/arch.id lib/arch
+
+    modified files:
+     doc/changelog.txt lib/canonical/arch/broker.py
+     lib/canonical/launchpad/database/archchangeset.py
+     lib/canonical/launchpad/interfaces/pyarch.py
+     sourcecode/Makefile
+
+    new patches:
+     daniel.silverstone@canonical.com--desktop/launchpad--de-pyarch--0--base-0
+     daniel.silverstone@canonical.com--desktop/launchpad--de-pyarch--0--patch-1
+     daniel.silverstone@canonical.com--desktop/launchpad--de-pyarch--0--patch-2
+
+
+2005-05-10 14:09:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1679
+
+    Summary:
+      [trivial] allow dots in CVS module paths
+    Revision:
+      launchpad--devel--0--patch-1679
+
+    Patches applied:
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-123
+       allow dots in module paths
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-124
+       merge from rf
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/productseries.py
+
+    new patches:
+     robert.collins@canonical.com/launchpad--devel--0--patch-123
+     robert.collins@canonical.com/launchpad--devel--0--patch-124
+
+
+2005-05-10 04:35:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1678
+
+    Summary:
+      Heap of constraints and data sanitization to the ?ProductSeries table. Web form updates and other drive by refactorings.
+    Revision:
+      launchpad--devel--0--patch-1678
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--patch-2
+       ProductSeries constraints for RobertC
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--patch-3
+       Add missing file
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--patch-4
+       Work in progress
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--patch-5
+       ProductSeries branch sanitization
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--patch-6
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--patch-7
+       Make forbidden error page display traceback, if show_tracebacks=true in launchpad.conf
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--patch-8
+       Rename ISeries to IProductSeries to avoid further confusion
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--patch-9
+       ProductSeries.name and ProductSeries.displayname should be single line
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--patch-10
+       Ensure we don't get empty strings where we want NULL
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--patch-11
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--patch-12
+       Remove script not ready for merging
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--patch-13
+       Detect missing Zopeless teardown failures closer to the source
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--patch-14
+       Update sampledata
+    
+
+    new files:
+     database/schema/.arch-ids/patch-17-02-0.sql.id
+     database/schema/patch-17-02-0.sql
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/browser-exception.zcml
+     lib/canonical/launchpad/browser/productseries.py
+     lib/canonical/launchpad/database/productseries.py
+     lib/canonical/launchpad/interfaces/productseries.py
+     lib/canonical/launchpad/security.py
+     lib/canonical/launchpad/templates/launchpad-forbidden.pt
+     lib/canonical/launchpad/webapp/error.py
+     lib/canonical/launchpad/webapp/login.py
+     lib/canonical/launchpad/zcml/productseries.zcml test.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--dba--0--patch-2
+     stuart.bishop@canonical.com/launchpad--dba--0--patch-3
+     stuart.bishop@canonical.com/launchpad--dba--0--patch-4
+     stuart.bishop@canonical.com/launchpad--dba--0--patch-5
+     stuart.bishop@canonical.com/launchpad--dba--0--patch-6
+     stuart.bishop@canonical.com/launchpad--dba--0--patch-7
+     stuart.bishop@canonical.com/launchpad--dba--0--patch-8
+     stuart.bishop@canonical.com/launchpad--dba--0--patch-9
+     stuart.bishop@canonical.com/launchpad--dba--0--patch-10
+     stuart.bishop@canonical.com/launchpad--dba--0--patch-11
+     stuart.bishop@canonical.com/launchpad--dba--0--patch-12
+     stuart.bishop@canonical.com/launchpad--dba--0--patch-13
+     stuart.bishop@canonical.com/launchpad--dba--0--patch-14
+
+
+2005-05-09 21:50:18 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1677
+
+    Summary:
+      shift launchpad to summary from shortdesc (r=spiv)
+    Revision:
+      launchpad--devel--0--patch-1677
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--base-0
+       tag of mark.shuttleworth@canonical.com/launchpad--devel--0--patch-944
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-1
+       start work on shortdesc to summary conversion
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-2
+       fix db and sampledata for bugtracker shortdesc renamed to summary
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-3
+       fix translationeffort.shortdesc too
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-4
+       fix view issues
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-5
+       fix publishedpackageview
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-6
+       fix final test failure
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-7
+       comments for stub
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-8
+       merge rocketfuel, resolving conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-9
+       move db patch to better numbering based on rf updates
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-10
+       misc small fixes
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-11
+       update to latest rocketfuel and resolve sampledata conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-12
+       fix up tests
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-13
+       fixes for test failures
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-14
+       finalise db patch and position
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-15
+       review suggestions from spiv
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-16
+       fixes to add some image files to the resource list
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-17
+       merge rocketfuel resolving conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-18
+       clean up use of short description in favour of summary
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-19
+       merge rocketfuel resolving damn sampledata conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-20
+       resolve test-related problems like ordering the project.products multiplejoin
+    
+     * stuart.bishop@canonical.com/launchpad--sabdfl--3--base-0
+       tag of mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-10
+    
+
+    new files:
+     database/schema/.arch-ids/patch-17-03-0.sql.id
+     database/schema/patch-17-03-0.sql
+
+    modified files:
+     database/sampledata/current.sql database/schema/comments.sql
+     database/schema/fti.py database/schema/launchpad.html
+     doc/changelog.txt lib/canonical/doap/fileimporter.py
+     lib/canonical/launchpad/browser/bugtracker.py
+     lib/canonical/launchpad/browser/distrorelease.py
+     lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/browser/productrelease.py
+     lib/canonical/launchpad/browser/productseries.py
+     lib/canonical/launchpad/browser/project.py
+     lib/canonical/launchpad/browser/publishedpackage.py
+     lib/canonical/launchpad/browser/team.py
+     lib/canonical/launchpad/database/binarypackage.py
+     lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/database/bugtracker.py
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/database/distrotool.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/database/productrelease.py
+     lib/canonical/launchpad/database/productseries.py
+     lib/canonical/launchpad/database/project.py
+     lib/canonical/launchpad/database/publishedpackage.py
+     lib/canonical/launchpad/database/tests/test_sourcepackage.py
+     lib/canonical/launchpad/database/translation_effort.py
+     lib/canonical/launchpad/doc/bug.txt
+     lib/canonical/launchpad/doc/bugactivity.txt
+     lib/canonical/launchpad/doc/bugnotification-email.txt
+     lib/canonical/launchpad/doc/bugnotifications.txt
+     lib/canonical/launchpad/doc/bugtask.txt
+     lib/canonical/launchpad/doc/hatchery.txt
+     lib/canonical/launchpad/doc/poexport-distrorelease-tarball.txt
+     lib/canonical/launchpad/doc/potemplate.txt
+     lib/canonical/launchpad/interfaces/binarypackage.py
+     lib/canonical/launchpad/interfaces/bug.py
+     lib/canonical/launchpad/interfaces/bugtracker.py
+     lib/canonical/launchpad/interfaces/distrorelease.py
+     lib/canonical/launchpad/interfaces/distrotool.py
+     lib/canonical/launchpad/interfaces/product.py
+     lib/canonical/launchpad/interfaces/productrelease.py
+     lib/canonical/launchpad/interfaces/productseries.py
+     lib/canonical/launchpad/interfaces/project.py
+     lib/canonical/launchpad/interfaces/publishedpackage.py
+     lib/canonical/launchpad/interfaces/sourcepackageindistro.py
+     lib/canonical/launchpad/mailnotification.py
+     lib/canonical/launchpad/pagetests/bounty/02-bounty-new.txt
+     lib/canonical/launchpad/pagetests/distro-bugprivacy/05-set-bug-private-as-member-of-maintainer-team.txt
+     lib/canonical/launchpad/pagetests/malone/15-bugtracker.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-edit-commit.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-product-add.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-product-addseries-commit.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-productrelease-add.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-project-edit.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-series-edit.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-distrorelease-edit.txt
+     lib/canonical/launchpad/scripts/gina/babygina.py
+     lib/canonical/launchpad/scripts/gina/database.py
+     lib/canonical/launchpad/templates/bazaar-sync-review.pt
+     lib/canonical/launchpad/templates/binary-index.pt
+     lib/canonical/launchpad/templates/binarypackage-index.pt
+     lib/canonical/launchpad/templates/binarypackage-search.pt
+     lib/canonical/launchpad/templates/binarypackagebuild-index.pt
+     lib/canonical/launchpad/templates/branch-index.pt
+     lib/canonical/launchpad/templates/bugs-assigned.pt
+     lib/canonical/launchpad/templates/bugtracker-edit.pt
+     lib/canonical/launchpad/templates/bugtracker-index.pt
+     lib/canonical/launchpad/templates/bugtracker-new.pt
+     lib/canonical/launchpad/templates/bugtrackers-index.pt
+     lib/canonical/launchpad/templates/distroarchrelease-pkgsearch.pt
+     lib/canonical/launchpad/templates/distrorelease-edit.pt
+     lib/canonical/launchpad/templates/distrorelease-index.pt
+     lib/canonical/launchpad/templates/distrorelease-new.pt
+     lib/canonical/launchpad/templates/distrorelease-search.pt
+     lib/canonical/launchpad/templates/distrorelease-sources.pt
+     lib/canonical/launchpad/templates/doap-review.pt
+     lib/canonical/launchpad/templates/package-bugs.pt
+     lib/canonical/launchpad/templates/packages-bugs.pt
+     lib/canonical/launchpad/templates/portlet-object-summary.pt
+     lib/canonical/launchpad/templates/product-bugs.pt
+     lib/canonical/launchpad/templates/product-index.pt
+     lib/canonical/launchpad/templates/productrelease-edit.pt
+     lib/canonical/launchpad/templates/productrelease-new.pt
+     lib/canonical/launchpad/templates/productrelease.pt
+     lib/canonical/launchpad/templates/products-index.pt
+     lib/canonical/launchpad/templates/products-search.pt
+     lib/canonical/launchpad/templates/productseries-sourceadmin.pt
+     lib/canonical/launchpad/templates/project-branches.pt
+     lib/canonical/launchpad/templates/project-bugs.pt
+     lib/canonical/launchpad/templates/project-index.pt
+     lib/canonical/launchpad/templates/project-new.pt
+     lib/canonical/launchpad/templates/project-rosetta-index.pt
+     lib/canonical/launchpad/templates/projects-index.pt
+     lib/canonical/launchpad/templates/projects-search.pt
+     lib/canonical/launchpad/templates/rosetta-index.pt
+     lib/canonical/launchpad/templates/series-edit.pt
+     lib/canonical/launchpad/templates/series-new.pt
+     lib/canonical/launchpad/templates/series-review.pt
+     lib/canonical/launchpad/templates/series.pt
+     lib/canonical/launchpad/templates/sourcepackagebuild-buildlog.pt
+     lib/canonical/launchpad/templates/sourcepackagebuild-changes.pt
+     lib/canonical/launchpad/templates/sourcepackagebuild-index.pt
+     lib/canonical/launchpad/templates/sourcepackagerelease-buildlog.pt
+     lib/canonical/launchpad/templates/sourcesource-index.pt
+     lib/canonical/launchpad/templates/template-edit.pt
+     lib/canonical/launchpad/templates/template-new.pt
+     lib/canonical/launchpad/templates/widget-searchselection.pt
+     lib/canonical/launchpad/vocabularies/dbobjects.py
+     lib/canonical/launchpad/zcml/bug.zcml
+     lib/canonical/launchpad/zcml/distrorelease.zcml
+     lib/canonical/launchpad/zcml/product.zcml
+     lib/canonical/launchpad/zcml/project.zcml
+     lib/canonical/launchpad/zcml/resources.zcml
+     lib/canonical/not-used/nicole/database.py
+     lib/canonical/soyuz/importd.py scripts/debsync.py
+     scripts/malone.py scripts/rosetta/createproduct.py
+     scripts/rosetta/createproject.py
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--base-0
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-1
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-2
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-3
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-4
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-5
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-6
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-7
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-8
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-9
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-10
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-11
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-12
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-13
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-14
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-15
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-16
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-17
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-18
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-19
+     mark.shuttleworth@canonical.com/launchpad--fixshortdesc--0--patch-20
+     stuart.bishop@canonical.com/launchpad--sabdfl--3--base-0
+
+
+2005-05-09 17:13:12 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1676
+
+    Summary:
+      CountrySpecificLanguage, miscellaneous cleanups (r=Steve)
+    Revision:
+      launchpad--devel--0--patch-1676
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1662
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-1
+       add database patch
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-2
+       update interface/database code with hidden flag
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-3
+       filter hidden languages from GeoIP/Accept-Language lists
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-4
+       hide hidden language in the preferences page
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-5
+       remove duplication of language code canonicalisation
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-6
+       indentation
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-7
+       remove overcomplication
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-8
+       indentation
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-9
+       indentation
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-10
+       s/hidden/visible/
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-11
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-12
+       merge Stuart's DBA stamp of approval
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-13
+       update sample data
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-14
+       add a page test for missing files in web PO file uploads
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-15
+       POFile.lastChangedSighting: improve docstring, add limit=1
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-16
+       replace mid-module import in DB code with getUtility()
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-17
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-18
+       s/lastChangedSighting/latest_sighting/
+    
+     * stuart.bishop@canonical.com/launchpad--daf--1--base-0
+       tag of daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-10
+    
+     * stuart.bishop@canonical.com/launchpad--daf--1--patch-1
+       Move DB patch to proper place and add boilerplate. Sampledata needs work
+    
+
+    new files:
+     database/schema/.arch-ids/patch-17-04-0.sql.id
+     database/schema/patch-17-04-0.sql
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-pofile-edit-missing-file.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-pofile-edit-missing-file.txt
+
+    modified files:
+     cronscripts/rosetta-poimport.py
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/launchpad/browser/project.py
+     lib/canonical/launchpad/components/poexport.py
+     lib/canonical/launchpad/database/language.py
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/interfaces/language.py
+     lib/canonical/launchpad/templates/product-translations.pt
+     lib/canonical/launchpad/utilities/geoip.py
+     lib/canonical/rosetta/browser.py
+
+    new patches:
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--base-0
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-1
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-2
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-3
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-4
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-5
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-6
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-7
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-8
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-9
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-10
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-11
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-12
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-13
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-14
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-15
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-16
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-17
+     daf@canonical.com--2004/launchpad--CountrySpecificLanguages--0--patch-18
+     stuart.bishop@canonical.com/launchpad--daf--1--base-0
+     stuart.bishop@canonical.com/launchpad--daf--1--patch-1
+
+
+2005-05-09 15:00:18 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1675
+
+    Summary:
+      fixrosettatemplateviews
+    Revision:
+      launchpad--devel--0--patch-1675
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-944
+       add validation for arch archive details
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixrosettatemplateviews--0--base-0
+       tag of mark.shuttleworth@canonical.com/launchpad--devel--0--patch-944
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixrosettatemplateviews--0--patch-1
+       eliminate use of TemplateLanguage in rosetta
+    
+     * mark.shuttleworth@canonical.com/launchpad--fixrosettatemplateviews--0--patch-2
+       merge rocketfuel, resolving conflicts
+    
+     * steve.alexander@canonical.com/launchpad--fixrosettatemplateviews--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1674
+    
+     * steve.alexander@canonical.com/launchpad--fixrosettatemplateviews--0--patch-1
+       merge from rf
+    
+     * steve.alexander@canonical.com/launchpad--fixrosettatemplateviews--0--patch-2
+       resolved date conflict from xx-rosetta-potemplate-index.txt
+    
+     * steve.alexander@canonical.com/launchpad--fixrosettatemplateviews--0--patch-3
+       make changes according to code review.
+    
+
+    new files:
+     lib/canonical/launchpad/templates/.arch-ids/potemplate-chart.pt.id
+     lib/canonical/launchpad/templates/potemplate-chart.pt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/distrorelease.py
+     lib/canonical/launchpad/browser/pofile.py
+     lib/canonical/launchpad/browser/potemplate.py
+     lib/canonical/launchpad/browser/productrelease.py
+     lib/canonical/launchpad/browser/productseries.py
+     lib/canonical/launchpad/browser/sourcepackage.py
+     lib/canonical/launchpad/components/rosettastats.py
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/database/potemplate.py
+     lib/canonical/launchpad/database/tests/test_sourcepackage.py
+     lib/canonical/launchpad/helpers.py
+     lib/canonical/launchpad/interfaces/pofile.py
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-index.txt
+     lib/canonical/launchpad/templates/object-pots.pt
+     lib/canonical/launchpad/templates/potemplate-index.pt
+     lib/canonical/launchpad/templates/potemplate-translate.pt
+     lib/canonical/launchpad/templates/products-search.pt
+     lib/canonical/launchpad/templates/rosetta-about.pt
+     lib/canonical/launchpad/templates/rosetta-index.pt
+     lib/canonical/launchpad/zcml/pofile.zcml
+     lib/canonical/launchpad/zcml/potemplate.zcml
+     lib/canonical/rosetta/tests/test_browser.py
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-944
+     mark.shuttleworth@canonical.com/launchpad--fixrosettatemplateviews--0--base-0
+     mark.shuttleworth@canonical.com/launchpad--fixrosettatemplateviews--0--patch-1
+     mark.shuttleworth@canonical.com/launchpad--fixrosettatemplateviews--0--patch-2
+     steve.alexander@canonical.com/launchpad--fixrosettatemplateviews--0--base-0
+     steve.alexander@canonical.com/launchpad--fixrosettatemplateviews--0--patch-1
+     steve.alexander@canonical.com/launchpad--fixrosettatemplateviews--0--patch-2
+     steve.alexander@canonical.com/launchpad--fixrosettatemplateviews--0--patch-3
+
+
+2005-05-07 17:56:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1674
+
+    Summary:
+      [Trivial] POTemplate.hasMessageID was completely broken. Fixed and added a test
+    Revision:
+      launchpad--devel--0--patch-1674
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-609
+       POTemplate.hasMessageID was completely broken. Fixed and added a test
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/potemplate.py
+     lib/canonical/launchpad/doc/potemplate.txt
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-609
+
+
+2005-05-07 17:27:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1673
+
+    Summary:
+      Added more sampledata
+    Revision:
+      launchpad--devel--0--patch-1673
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-602
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-603
+       Added more Sample data to Rosetta and moved languages.sql into the sample data file
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-604
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-605
+       Fixed sampledata and all tests to handle new sampledata
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-606
+       More tests fixes
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-607
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-608
+       More test fixes
+    
+
+    removed files:
+     database/.arch-ids/languages.sql.id database/languages.sql
+
+    modified files:
+     database/sampledata/current.sql database/schema/Makefile
+     doc/changelog.txt
+     lib/canonical/launchpad/database/librarian.py
+     lib/canonical/launchpad/database/message.py
+     lib/canonical/launchpad/database/milestone.py
+     lib/canonical/launchpad/database/productseries.py
+     lib/canonical/launchpad/database/vpoexport.py
+     lib/canonical/launchpad/doc/person.txt
+     lib/canonical/launchpad/doc/poexport-distrorelease-tarball.txt
+     lib/canonical/launchpad/interfaces/message.py
+     lib/canonical/launchpad/pagetests/rosetta/30-rosetta-potemplate-translation-gettext-error.data
+     lib/canonical/launchpad/pagetests/rosetta/30-rosetta-potemplate-translation-gettext-error.txt
+     lib/canonical/launchpad/pagetests/rosetta/31-rosetta-potemplate-translation-form-long-msgid.data
+     lib/canonical/launchpad/pagetests/rosetta/31-rosetta-potemplate-translation-form-long-msgid.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-pofile-index.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-index.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-translation-form-empty-strings-without-validation.txt
+     lib/canonical/launchpad/scripts/ftests/test_po_attach.py
+     lib/canonical/launchpad/vocabularies/dbobjects.py
+     scripts/rosetta/plural-form-data
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-602
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-603
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-604
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-605
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-606
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-607
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-608
+
+
+2005-05-07 15:09:23 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1672
+
+    Summary:
+      PO attach functional test, plus miscellaneous fixes (r=Steve)
+    Revision:
+      launchpad--devel--0--patch-1672
+
+
+    modified files:
+     doc/changelog.txt
+
+
+2005-05-07 14:12:38 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1671
+
+    Summary:
+      PO attach functional test, plus miscellaneous fixes (r=Steve)
+    Revision:
+      launchpad--devel--0--patch-1671
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1606
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-1
+       refactor PO attach script
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-2
+       abstract network access from package attach cron script
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-3
+       move attach() function into library
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-4
+       more abstraction of network access; tidying up
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-5
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-6
+       move test_diff to helpers
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-7
+       remove unused import
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-8
+       tarball helper function deathmatch
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-9
+       reenable and repair PO attach functional doctest
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-10
+       forgot to take the scalpel out of the patient before sewing them up
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-11
+       add make_tarball_{filehandle,string} helpers
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-12
+       tweak logging
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-13
+       add PO attach functional test
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-14
+       fix PO attach test
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-15
+       PO exports: don't export inactive translation sightings, and don't export non-languagepack PO templates to distribution tarballs
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-16
+       implement suggestions from Steve's review
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-17
+       more suggestions from Steve
+    
+     * daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-18
+       merge test setup/teardown fix from Stuart
+    
+     * stuart.bishop@canonical.com/launchpad--daf--0--base-0
+       tag of daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-17
+    
+     * stuart.bishop@canonical.com/launchpad--daf--0--patch-1
+       Fix setUp/tearDown in test_po_attach
+    
+
+    new files:
+     lib/canonical/launchpad/scripts/ftests/.arch-ids/=id
+     lib/canonical/launchpad/scripts/ftests/.arch-ids/__init__.py.id
+     lib/canonical/launchpad/scripts/ftests/.arch-ids/test_po_attach.py.id
+     lib/canonical/launchpad/scripts/ftests/__init__.py
+     lib/canonical/launchpad/scripts/ftests/test_po_attach.py
+
+    modified files:
+     cronscripts/rosetta-package-po-attach.py
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/launchpad/components/poexport.py
+     lib/canonical/launchpad/components/tests/test_poexport.py
+     lib/canonical/launchpad/database/vpoexport.py
+     lib/canonical/launchpad/doc/po-attach.txt
+     lib/canonical/launchpad/doc/poexport-distrorelease-date-tarball.txt
+     lib/canonical/launchpad/helpers.py
+     lib/canonical/launchpad/scripts/rosetta.py
+     lib/canonical/launchpad/tests/test_helpers.py
+
+    renamed files:
+     lib/canonical/launchpad/doc/.arch-ids/rosetta.py.id
+       ==> lib/canonical/launchpad/doc/.arch-ids/po-attach.txt.id
+     lib/canonical/launchpad/doc/rosetta.py
+       ==> lib/canonical/launchpad/doc/po-attach.txt
+
+    new directories:
+     lib/canonical/launchpad/scripts/ftests
+     lib/canonical/launchpad/scripts/ftests/.arch-ids
+
+    new patches:
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--base-0
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-1
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-2
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-3
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-4
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-5
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-6
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-7
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-8
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-9
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-10
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-11
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-12
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-13
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-14
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-15
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-16
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-17
+     daf@canonical.com--2004/launchpad--po-attach-ftest--0--patch-18
+     stuart.bishop@canonical.com/launchpad--daf--0--base-0
+     stuart.bishop@canonical.com/launchpad--daf--0--patch-1
+
+
+2005-05-07 05:09:04 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1670
+
+    Summary:
+      Minor tweak to harness to improve detection of flaky teardowns and silence some SQLObject whining [trivial]
+    Revision:
+      launchpad--devel--0--patch-1670
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--trivial--0--patch-5
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--trivial--0--patch-6
+       Minor tweak to harness to improve detection of flaky teardowns
+    
+     * stuart.bishop@canonical.com/launchpad--trivial--0--patch-7
+       Silence some SQLObject slice warnings
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/arch/tests/test_database.py
+     lib/canonical/launchpad/ftests/harness.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--trivial--0--patch-5
+     stuart.bishop@canonical.com/launchpad--trivial--0--patch-6
+     stuart.bishop@canonical.com/launchpad--trivial--0--patch-7
+
+
+2005-05-06 22:54:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1669
+
+    Summary:
+      remove all listifications of SelectResults in launchpad/database/person.py and some other cleanups. r=SteveA
+    Revision:
+      launchpad--devel--0--patch-1669
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-6
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-7
+       remove all listifications of SelectResults in launchpad/database/person.py and some other cleanups.
+    
+     * guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-8
+       small fixes suggested by steve
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/person.py
+     lib/canonical/launchpad/browser/team.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/mailnotification.py
+     lib/canonical/launchpad/templates/portlet-person-actions.pt
+     lib/canonical/launchpad/templates/portlet-person-views.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-6
+     guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-7
+     guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-8
+
+
+2005-05-06 08:36:33 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1668
+
+    Summary:
+      cleans up /products page (r=spiv)
+    Revision:
+      launchpad--devel--0--patch-1668
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--mpt-products--0--base-0
+       tag of mpt@canonical.com/launchpad--products-index-pt--0--patch-1
+    
+     * guilherme.salgado@canonical.com/launchpad--mpt-products--0--patch-1
+       filled fixmes
+    
+     * mpt@canonical.com/launchpad--products-index-pt--0--base-0
+       tag of mpt@canonical.com/launchpad--devel--0--patch-46
+    
+     * mpt@canonical.com/launchpad--products-index-pt--0--patch-1
+       clean up /products page
+    
+     * mpt@canonical.com/launchpad--products-index-pt--0--patch-2
+       incorporate salgado's code
+    
+     * mpt@canonical.com/launchpad--products-index-pt--0--patch-3
+       change gotmatches to matches as requested by spiv
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/templates/launchpad.css
+     lib/canonical/launchpad/templates/products-index.pt
+     lib/canonical/launchpad/templates/products-search.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--mpt-products--0--base-0
+     guilherme.salgado@canonical.com/launchpad--mpt-products--0--patch-1
+     mpt@canonical.com/launchpad--products-index-pt--0--base-0
+     mpt@canonical.com/launchpad--products-index-pt--0--patch-1
+     mpt@canonical.com/launchpad--products-index-pt--0--patch-2
+     mpt@canonical.com/launchpad--products-index-pt--0--patch-3
+
+
+2005-05-06 00:41:46 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1667
+
+    Summary:
+      [trivial] reenable tests for dependent source code
+    Revision:
+      launchpad--devel--0--patch-1667
+
+    Patches applied:
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-121
+       reenable tests for dependent source code
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-122
+       merge from rocketfuel
+    
+
+    modified files:
+     Makefile doc/changelog.txt
+
+    new patches:
+     robert.collins@canonical.com/launchpad--devel--0--patch-121
+     robert.collins@canonical.com/launchpad--devel--0--patch-122
+
+
+2005-05-05 15:06:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1666
+
+    Summary:
+      Zopeless email [r=jamesh]
+    Revision:
+      launchpad--devel--0--patch-1666
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--zopelessemail--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1652
+    
+     * stuart.bishop@canonical.com/launchpad--zopelessemail--0--patch-1
+       Allow code to check if it is running in Zopeless mode
+    
+     * stuart.bishop@canonical.com/launchpad--zopelessemail--0--patch-2
+       Zopeless email and database test updates
+    
+     * stuart.bishop@canonical.com/launchpad--zopelessemail--0--patch-3
+       Fix shrodingbug and two SQLObject warnings
+    
+     * stuart.bishop@canonical.com/launchpad--zopelessemail--0--patch-4
+       Use consistant test database name, matching configuration on chinstrap
+    
+     * stuart.bishop@canonical.com/launchpad--zopelessemail--0--patch-5
+       Merge from Rocketfuel
+    
+
+    new files:
+     lib/canonical/database/ftests/.arch-ids/test_zopelesstransactionmanager.txt.id
+     lib/canonical/database/ftests/test_zopelesstransactionmanager.txt
+
+    modified files:
+     doc/changelog.txt launchpad.conf
+     lib/canonical/config/schema.xml
+     lib/canonical/database/ftests/test_disconnects.txt
+     lib/canonical/database/ftests/test_doctests.py
+     lib/canonical/database/ftests/test_reconnect_already_closed.txt
+     lib/canonical/database/ftests/test_reconnector.txt
+     lib/canonical/database/sqlbase.py
+     lib/canonical/doap/fileimporter.py
+     lib/canonical/ftests/pgsql.py
+     lib/canonical/launchpad/ftests/harness.py
+     lib/canonical/launchpad/mail/sendmail.py
+     lib/canonical/lp/__init__.py
+     lib/canonical/lp/ftests/test_zopeless.py
+
+    renamed files:
+     lib/canonical/database/ftests/.arch-ids/test_disconnects.py.id
+       ==> lib/canonical/database/ftests/.arch-ids/test_doctests.py.id
+     lib/canonical/database/ftests/test_disconnects.py
+       ==> lib/canonical/database/ftests/test_doctests.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--zopelessemail--0--base-0
+     stuart.bishop@canonical.com/launchpad--zopelessemail--0--patch-1
+     stuart.bishop@canonical.com/launchpad--zopelessemail--0--patch-2
+     stuart.bishop@canonical.com/launchpad--zopelessemail--0--patch-3
+     stuart.bishop@canonical.com/launchpad--zopelessemail--0--patch-4
+     stuart.bishop@canonical.com/launchpad--zopelessemail--0--patch-5
+
+
+2005-05-05 14:27:16 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1665
+
+    Summary:
+      Initial working Build Daemon implementation (master and slave). r=spiv+stub
+    Revision:
+      launchpad--devel--0--patch-1665
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1317
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-1
+       BuildQueue fix, Sourcepackage fix and next stage buildd slave and master
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-2
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-3
+       Buildd now does end-to-end building
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-4
+       star-merge rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-5
+       Deal with initial comments from spiv on code review of slave
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-6
+       Rework fallout and umount code
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-7
+       Move librarian server.tac to daemons/
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-8
+       star-merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-9
+       Add comments to the buildqueue db patch
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-10
+       Missing IntCol import
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-11
+       Lots more buildd work
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-12
+       star-merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-13
+       star-merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-14
+       star-merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-15
+       Merge rocketfuel, solve build.py conflict
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-16
+       Database love from stub
+    
+
+    new files:
+     database/schema/.arch-ids/patch-17-01-0.sql.id
+     database/schema/patch-17-01-0.sql
+
+    modified files:
+     daemons/buildd-slave-example.conf database/schema/comments.sql
+     doc/changelog.txt lib/canonical/buildd/debian.py
+     lib/canonical/buildd/slave.py
+     lib/canonical/buildd/umount-chroot
+     lib/canonical/launchpad/database/build.py
+     scripts/buildd-master.py
+
+    new patches:
+     daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--base-0
+     daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-1
+     daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-2
+     daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-3
+     daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-4
+     daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-5
+     daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-6
+     daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-7
+     daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-8
+     daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-9
+     daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-10
+     daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-11
+     daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-12
+     daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-13
+     daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-14
+     daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-15
+     daniel.silverstone@canonical.com--desktop/launchpad--buildd--0--patch-16
+
+
+2005-05-05 13:53:10 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1664
+
+    Summary:
+      r=spiv, morgan.collett@canonical.com/launchpad--requireProductSeries-cleanup--0 Clean up after RequireProductSeries implementation, use SelectOneBy
+    Revision:
+      launchpad--devel--0--patch-1664
+
+    Patches applied:
+    
+     * morgan.collett@canonical.com/launchpad--requireProductSeries-cleanup--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1591
+    
+     * morgan.collett@canonical.com/launchpad--requireProductSeries-cleanup--0--patch-1
+       Cleanup of comments in fileimporter.py
+    
+     * morgan.collett@canonical.com/launchpad--requireProductSeries-cleanup--0--patch-2
+       merge from rf
+    
+     * morgan.collett@canonical.com/launchpad--requireProductSeries-cleanup--0--patch-3
+       Use selectOneBy per spiv's comments
+    
+     * morgan.collett@canonical.com/launchpad--requireProductSeries-cleanup--0--patch-4
+       Merge from RF
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/doap/fileimporter.py
+
+    new patches:
+     morgan.collett@canonical.com/launchpad--requireProductSeries-cleanup--0--base-0
+     morgan.collett@canonical.com/launchpad--requireProductSeries-cleanup--0--patch-1
+     morgan.collett@canonical.com/launchpad--requireProductSeries-cleanup--0--patch-2
+     morgan.collett@canonical.com/launchpad--requireProductSeries-cleanup--0--patch-3
+     morgan.collett@canonical.com/launchpad--requireProductSeries-cleanup--0--patch-4
+
+
+2005-05-05 13:40:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1663
+
+    Summary:
+      r=spiv, morgan.collett@canonical.com/launchpad--series-release-reviewpages--0 Add +review pages for product series and product release allowing renaming and moving to other products
+    Revision:
+      launchpad--devel--0--patch-1663
+
+    Patches applied:
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1573
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-1
+       Add +review page for series
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-2
+       Link to +review on series page
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-3
+       Add +review page - without productseries selector though
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-4
+       Fix series page template to link to releases and be more verbose about them, fix ol/li structure
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-5
+       Fixed browser/productrelease.py traverseProductRelease per SteveA
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-6
+       Make productrelease +review work to select a different series - at this stage across all products
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-7
+       Merge from RF
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-8
+       Better +review page for productseries - allows assigning to other products, and changing name/url
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-9
+       Implement new vocabulary for productseries so a release can be assigned at +review and see only series which belong to the release's product
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-10
+       Fix typo in vocabulary definition. Strange that it still worked...
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-11
+       merge rocketfuel
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-12
+       Use the FilteredProductSeriesVocabulary, make it use context not ILaunchbag
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-13
+       Results of spiv's code review
+    
+     * morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-14
+       Merge from RF
+    
+
+    new files:
+     lib/canonical/launchpad/templates/.arch-ids/series-review.pt.id
+     lib/canonical/launchpad/templates/series-review.pt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/productrelease.py
+     lib/canonical/launchpad/interfaces/productrelease.py
+     lib/canonical/launchpad/templates/productrelease.pt
+     lib/canonical/launchpad/templates/series.pt
+     lib/canonical/launchpad/vocabularies/configure.zcml
+     lib/canonical/launchpad/vocabularies/dbobjects.py
+     lib/canonical/launchpad/zcml/productrelease.zcml
+     lib/canonical/launchpad/zcml/productseries.zcml
+
+    new patches:
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--base-0
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-1
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-2
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-3
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-4
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-5
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-6
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-7
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-8
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-9
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-10
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-11
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-12
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-13
+     morgan.collett@canonical.com/launchpad--series-release-reviewpages--0--patch-14
+
+
+2005-05-05 12:33:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1662
+
+    Summary:
+      r=spiv, Doctest for TheHatchery
+    Revision:
+      launchpad--devel--0--patch-1662
+
+    Patches applied:
+    
+     * morgan.collett@canonical.com/launchpad--hatchery-development--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1571
+    
+     * morgan.collett@canonical.com/launchpad--hatchery-development--0--patch-1
+       upstream.txt is now hatchery.txt
+    
+     * morgan.collett@canonical.com/launchpad--hatchery-development--0--patch-2
+       Add project test to hatchery doctest
+    
+     * morgan.collett@canonical.com/launchpad--hatchery-development--0--patch-3
+       Merge from RF
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/doc/hatchery.txt
+
+    renamed files:
+     lib/canonical/launchpad/doc/.arch-ids/upstream.txt.id
+       ==> lib/canonical/launchpad/doc/.arch-ids/hatchery.txt.id
+     lib/canonical/launchpad/doc/upstream.txt
+       ==> lib/canonical/launchpad/doc/hatchery.txt
+
+    new patches:
+     morgan.collett@canonical.com/launchpad--hatchery-development--0--base-0
+     morgan.collett@canonical.com/launchpad--hatchery-development--0--patch-1
+     morgan.collett@canonical.com/launchpad--hatchery-development--0--patch-2
+     morgan.collett@canonical.com/launchpad--hatchery-development--0--patch-3
+
+
+2005-05-05 12:05:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1661
+
+    Summary:
+      r=spiv, Production Bug 131: text input widgets too small on product +edit
+    Revision:
+      launchpad--devel--0--patch-1661
+
+    Patches applied:
+    
+     * morgan.collett@canonical.com/launchpad--production-bug-131--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1598
+    
+     * morgan.collett@canonical.com/launchpad--production-bug-131--0--patch-1
+       Increase widget sizes in zcml
+    
+     * morgan.collett@canonical.com/launchpad--production-bug-131--0--patch-2
+       Merge from RF
+    
+     * morgan.collett@canonical.com/launchpad--production-bug-131--0--patch-3
+       Merge from RF
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/zcml/product.zcml
+
+    new patches:
+     morgan.collett@canonical.com/launchpad--production-bug-131--0--base-0
+     morgan.collett@canonical.com/launchpad--production-bug-131--0--patch-1
+     morgan.collett@canonical.com/launchpad--production-bug-131--0--patch-2
+     morgan.collett@canonical.com/launchpad--production-bug-131--0--patch-3
+
+
+2005-05-05 11:31:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1660
+
+    Summary:
+      [trivial] Turn off cron spam for now
+    Revision:
+      launchpad--devel--0--patch-1660
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--trivial--0--patch-4
+       Turn off cron spam for now
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/malone/checkwatches.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--trivial--0--patch-4
+
+
+2005-05-05 03:46:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1659
+
+    Summary:
+      Fix bug #491, don't include values that haven't changed. [trivial]
+    Revision:
+      launchpad--devel--0--patch-1659
+
+    Patches applied:
+    
+     * bjorn.tillenius@canonical.com/launchpad--trivial-fixes--0--patch-2
+       Fix bug #491, don't include values that haven't changed.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/mailnotification.py
+
+    new patches:
+     bjorn.tillenius@canonical.com/launchpad--trivial-fixes--0--patch-2
+
+
 2005-05-05 02:22:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1658
 
     Summary:

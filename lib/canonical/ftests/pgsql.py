@@ -13,6 +13,7 @@ from warnings import warn
 
 import psycopg
 from zope.app.rdb.interfaces import DatabaseException
+from canonical.database.postgresql import resetSequences
 
 def _caller_debug(lvl=1):
     return
@@ -91,7 +92,7 @@ class PgTestSetup(object):
     connections = [] # Shared
 
     template = 'template1'
-    dbname = 'unittest_tmp'
+    dbname = 'launchpad_ftest'
     dbuser = None
 
     # (template, name) of last test. Class attribute.
@@ -117,6 +118,16 @@ class PgTestSetup(object):
         if (self.template, self.dbname) != PgTestSetup._last_db:
             PgTestSetup._reset_db = True
         if not PgTestSetup._reset_db:
+            # The database doesn't need to be reset. We reset the sequences
+            # anyway (because they might have been incremented even if
+            # nothing was committed), making sure not to disturb the
+            # 'committed' flag, and we're done.
+            con = psycopg.connect('dbname=%s' % self.dbname)
+            cur = con.cursor()
+            resetSequences(cur)
+            con.commit()
+            con.close()
+            ConnectionWrapper.committed = False
             return
         self.dropDb()
         con = psycopg.connect('dbname=%s' % self.template)

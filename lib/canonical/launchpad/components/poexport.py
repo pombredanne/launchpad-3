@@ -31,6 +31,8 @@ from StringIO import StringIO
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.launchpad.helpers import tar_add_file
+
 from canonical.launchpad.interfaces import IPOTemplateExporter
 from canonical.launchpad.interfaces import IDistroReleasePOExporter
 from canonical.launchpad.interfaces import IPOFileOutput
@@ -285,8 +287,8 @@ def export_rows(rows, pofile_output):
         if row.msgidpluralform == len(msgset.msgids):
             msgset.add_msgid(row.msgid)
 
-        if row.translationpluralform >= len(msgset.msgstrs):
-            msgset.add_msgstr(row.translationpluralform, row.translation)
+        if row.active and row.translationpluralform >= len(msgset.msgstrs):
+                msgset.add_msgstr(row.translationpluralform, row.translation)
 
         if row.fuzzy and not 'fuzzy' in msgset.flags:
             msgset.flags.append('fuzzy')
@@ -403,32 +405,13 @@ class DistroRelaseTarballPOFileOutput:
 
         code = language.code.encode('ascii')
         domain = potemplate.potemplatename.translationdomain.encode('ascii')
-
-        path = [
+        path = os.path.join(
             'rosetta-%s' % self.release.name,
             code,
             'LC_MESSAGES',
             '%s.po' % domain
-            ]
-
-        # Ensure that all the directories in the path are present in the
-        # archive.
-
-        for i in range(1, len(path)):
-            joined_path = os.path.join(*path[:i])
-
-            try:
-                self.archive.getmember(joined_path)
-            except KeyError:
-                dirinfo = tarfile.TarInfo(joined_path)
-                dirinfo.type = tarfile.DIRTYPE
-                dirinfo.mtime = int(time.time())
-                self.archive.addfile(dirinfo)
-
-        fileinfo = tarfile.TarInfo(os.path.join(*path))
-        fileinfo.size = len(contents)
-        fileinfo.mtime = int(time.time())
-        self.archive.addfile(fileinfo, StringIO(contents))
+            )
+        tar_add_file(self.archive, path, contents)
 
 def export_distrorelease_tarball(filehandle, release, date=None):
     """Export a tarball of translations for a distribution release."""
@@ -582,7 +565,7 @@ class POExport:
 
         # First we get last translator that touched a string and the date when
         # it was done.
-        last_changed = poFile.lastChangedSighting()
+        last_changed = poFile.latest_sighting
 
         if last_changed is not None:
             # We have at least one pomsgset with a translation so we are able

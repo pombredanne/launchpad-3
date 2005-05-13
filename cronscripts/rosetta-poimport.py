@@ -6,6 +6,7 @@ import logging, sys
 from optparse import OptionParser
 
 from canonical.lp import initZopeless
+from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.database import POTemplateSet, POFileSet
 
@@ -114,6 +115,8 @@ def setUpLogger():
     logger.setLevel(loglevel)
 
 if __name__ == '__main__':
+    execute_zcml_for_scripts()
+
     options = parse_options()
 
     # Get the global logger for this task.

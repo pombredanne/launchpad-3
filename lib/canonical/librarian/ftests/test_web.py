@@ -13,7 +13,8 @@ import transaction
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.librarian.ftests.harness import LibrarianTestSetup
-from canonical.librarian.client import DownloadFailed, LibrarianClient
+from canonical.librarian.client import LibrarianClient
+from canonical.librarian.interfaces import DownloadFailed
 from canonical.launchpad.database import LibraryFileAlias
 from canonical.launchpad.database import LibraryFileContent
 from canonical.config import config

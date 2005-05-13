@@ -1,0 +1,58 @@
+Test to check that Rosetta is able to get translation errors.
+
+  >>> import canonical.launchpad
+  >>> import os.path
+  >>> data_file_name = os.path.join(
+  ...     os.path.dirname(canonical.launchpad.__file__),
+  ...     'pagetests/rosetta/30-rosetta-pofile-translation-gettext-error.data')
+  >>> data = open(data_file_name)
+  >>> print http(r"""
+  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=20 HTTP/1.1
+  ... Accept-Language: en-gb,en;q=0.5
+  ... Content-Length: 8159
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=20
+  ... 
+  ... %s""" % data.read())
+  HTTP/1.1 200 Ok
+  ...
+                      <a href="http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate">First</a>
+  ...
+                      <a href="http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=10">Previous
+  ...
+                              <div class="error">
+  <BLANKLINE>
+                                <strong>Error in Translation:</strong>
+                                format specifications in 'msgid' and 'msgstr[0]' for argument 1 are not the sameformat specifications in 'msgid' and 'msgstr[1]' for argument 1 are not the same
+                              </div>
+  ...
+
+
+Check that the previous submit was not saved.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=20 HTTP/1.1
+  ... Accept-Language: en-gb,en;q=0.5
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+                        <td>Found <span class="interpolation">%i</span> invalid file.</td>
+  ...
+                        <td>Found <span class="interpolation">%i</span> invalid files.</td>
+  ...
+
+                          <input type="text"
+      name="set_150_translation_es_0" tabindex="1" />
+
+
+
+
+
+                          <input type="text"
+      name="set_150_translation_es_1" tabindex="2" />
+  ...
+                              <input type="checkbox"
+      value="fuzzy" name="set_150_fuzzy_es" tabindex:="3" />
+  ...

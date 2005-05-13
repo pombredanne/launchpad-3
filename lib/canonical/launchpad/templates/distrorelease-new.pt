@@ -17,12 +17,11 @@
 
 <div metal:fill-slot="main">
 
-   <h1>Create New <span
-   tal:content="context/distribution/name">Distro</span> 
+   <h1>Create New <span tal:content="context/distribution/name">Distro</span> 
    Release</h1>
 
 
-    <div class="documentDescription">	
+    <div class="documentDescription">    
     <p> Here you can create a new release of <span
     tal:content="context/distribution/title">Distro</span>
     Distribution
@@ -32,69 +31,69 @@
     <form name="add" action="" method="POST">
     <fieldset>
     <legend><h3>Create a New Release</h3><legend>
-	<table>
-	<tr><td>
-	<div class="field">
-	    <label>Title</label>
-	    <span class="fieldRequired" title="Required">(Required)</span>
-	    <div class="formHelp">
-	    Enter the Release Title.
+    <table>
+    <tr><td>
+    <div class="field">
+        <label>Title</label>
+        <span class="fieldRequired" title="Required">(Required)</span>
+        <div class="formHelp">
+        Enter the Release Title.
             </div>
-	    <input type="text" name="title" size="40"
-	    tal:attributes="value request/title|nothing"/>
-	</div>
-	</td></tr>
-	<tr><td>
-	<div class="field">
-	    <label>Short Description</label>
-	    <div class="formHelp">
-	    Enter the Release Short Description.
-            </div>
-            <textarea name="shortdesc" cols="60" rows="2"
-	    tal:content="request/shortdesc|nothing">
-	    </textarea>
-	</div>
-	</td></tr>
-	<tr><td>
-	<div class="field">
-	    <label>Description</label>
-	    <div class="formHelp">
-	    Enter the Release Description.
+        <input type="text" name="title" size="40"
+        tal:attributes="value request/title|nothing"/>
+    </div>
+    </td></tr>
+    <tr><td>
+    <div class="field">
+        <label>Summary</label>
+        <div class="formHelp">
+            Enter the Release Summary. This should be 
+        </div>
+        <textarea name="summary" cols="60" rows="2"
+                  tal:content="request/summary|nothing">
+        </textarea>
+    </div>
+    </td></tr>
+    <tr><td>
+    <div class="field">
+        <label>Description</label>
+        <div class="formHelp">
+        Enter the Release Description.
             </div>
             <textarea name="description" cols="60" rows="6"
-	    tal:content="request/description|nothing">
-	    </textarea>
-	</div>
-	</td></tr>
-	<tr><td>
-	<div class="field">
-	    <label>Parent Release</label>
-	    <div class="formHelp">
-	    Select a Parent DistroRelease.
+        tal:content="request/description|nothing">
+        </textarea>
+    </div>
+    </td></tr>
+    <tr><td>
+    <div class="field">
+        <label>Parent Release</label>
+        <div class="formHelp">
+        Select a Parent DistroRelease.
             </div>
             <select class="listing" name="parentrelease">
-	        <option tal:repeat="release view/getReleases" 
-		        tal:attributes="value release/id"
+            <option tal:repeat="release view/getReleases" 
+                tal:attributes="value release/id"
                         tal:content="release/displayname">PARENT</option>
             </select>
-	</div>
-	</td></tr>
-	<tr><td>
-	<div class="field">
-	    <label>Version</label>
-	    <div class="formHelp">
-	    Enter the Release Version.
+    </div>
+    </td></tr>
+    <tr><td>
+    <div class="field">
+        <label>Version</label>
+        <div class="formHelp">
+        Enter the Release Version.
             </div>
-	    <input type="text" name="version"
-	    tal:attributes="value request/version|nothing"/>
-	</div>
-	</td></tr>
-	<tr><td>
-	<div class="formControls">
-	  <input type="submit" value="Create"/>
-	</div>
-	</td></tr>
-	</table>
+        <input type="text" name="version"
+        tal:attributes="value request/version|nothing"/>
+    </div>
+    </td></tr>
+    <tr><td>
+    <div class="formControls">
+      <input type="submit" value="Create"/>
+    </div>
+    </td></tr>
+    </table>
   </form>
   </div>
 

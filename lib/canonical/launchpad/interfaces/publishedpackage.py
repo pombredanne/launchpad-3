@@ -23,7 +23,7 @@ class IPublishedPackage(Interface):
     section = Attribute("The section in which it is published.")
     binarypackage = Attribute("The id of the binary package in question")
     binarypackagename = Attribute("The binary package name")
-    binarypackageshortdesc = Attribute("The binary package summary")
+    binarypackagesummary = Attribute("The binary package summary")
     binarypackagedescription = Attribute("The binary package description")
     binarypackageversion = Attribute("The binary package version")
     build = Attribute("The build id")

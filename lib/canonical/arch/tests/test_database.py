@@ -436,7 +436,7 @@ class VersionMapper(DatabaseTestCase):
             branch = version.branch.name,
             version = version.name)
         self.assertEqual(query.count(), 1)
-        expected_id = query[0].id
+        expected_id = list(query)[0].id
         mapper = VersionMapper()
         self.assertEqual(expected_id, mapper._getId(version))
     tests.append('test_VersionMapperGetId')
@@ -450,7 +450,7 @@ class VersionMapper(DatabaseTestCase):
         version_id=VersionMapper()._getId(version)
         query = Branch.selectBy(archnamespaceID = version_id)
         self.assertEqual(query.count(), 1)
-        expected_id = query[0].id
+        expected_id = list(query)[0].id
         mapper = VersionMapper()
         self.assertEqual(expected_id, mapper._getDBBranchId(version))
     tests.append('test_VersionMapperGetDBBranchId')
