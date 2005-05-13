@@ -2,6 +2,44 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-13 23:08:52 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1699
+
+    Summary:
+      small wording change to edit notification emails [trivial]
+    Revision:
+      launchpad--devel--0--patch-1699
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-519
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-520
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-521
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-522
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-523
+       small wording change to edit notification emails
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/doc/bugnotification-email.txt
+     lib/canonical/launchpad/mailnotification.py
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-519
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-520
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-521
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-522
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-523
+
+
 2005-05-13 18:16:05 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1698
 
     Summary:
