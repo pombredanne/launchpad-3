@@ -43,9 +43,11 @@ Create a PO template and put a single message set in it.
 Get some dates.
 
   >>> import datetime
-  >>> d2000_01_01 = datetime.datetime(year=2000, month=1, day=1)
-  >>> d2000_01_02 = datetime.datetime(year=2000, month=1, day=2)
-  >>> d2000_01_03 = datetime.datetime(year=2000, month=1, day=3)
+  >>> import pytz
+  >>> UTC = pytz.timezone('UTC')
+  >>> d2000_01_01 = datetime.datetime(year=2000, month=1, day=1, tzinfo=UTC)
+  >>> d2000_01_02 = datetime.datetime(year=2000, month=1, day=2, tzinfo=UTC)
+  >>> d2000_01_03 = datetime.datetime(year=2000, month=1, day=3, tzinfo=UTC)
 
 Create a Spanish PO file, with a translation sighting last made active on
 2000/01/01.
