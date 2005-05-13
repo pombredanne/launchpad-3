@@ -2,6 +2,66 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-13 18:16:05 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1698
+
+    Summary:
+      A small change on database/schema/Makefile, from kiko. r=stub
+    Revision:
+      launchpad--devel--0--patch-1698
+
+    Patches applied:
+    
+     * christian.reis@canonical.com--lozenge/launchpad--devel--0--patch-1
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1685
+    
+     * christian.reis@canonical.com--lozenge/launchpad--devel--0--patch-2
+       Fix makefile message indicating an unprepared database to be a bit more verbose
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-290
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-291
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-292
+       Allow team.name changes.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-293
+       Fix pagetests broken by last commit
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-294
+       last fix for allowing team.name changes. this requires using ILaunchBag in database code. ugh
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-295
+       reverting changes to allow team name change.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-296
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-297
+       merge from christian.reis@canonical.com--lozenge/launchpad--devel--0
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-298
+       merge from rf
+    
+
+    modified files:
+     database/schema/Makefile doc/changelog.txt
+
+    new patches:
+     christian.reis@canonical.com--lozenge/launchpad--devel--0--patch-1
+     christian.reis@canonical.com--lozenge/launchpad--devel--0--patch-2
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-290
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-291
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-292
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-293
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-294
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-295
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-296
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-297
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-298
+
+
 2005-05-13 15:54:07 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1697
 
     Summary:
