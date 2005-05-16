@@ -2,6 +2,40 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-16 03:52:28 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1700
+
+    Summary:
+      [r=jamesh] config.launchpad.root_url for building URLs even when there is no request
+    Revision:
+      launchpad--devel--0--patch-1700
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--rooturl--0--base-0
+       tag of stuart.bishop@canonical.com/launchpad--devel--1--patch-312
+    
+     * stuart.bishop@canonical.com/launchpad--rooturl--0--patch-1
+       Add config.launchpad.root_url for use in generating URLs
+    
+     * stuart.bishop@canonical.com/launchpad--rooturl--0--patch-2
+       Strip stale import
+    
+     * stuart.bishop@canonical.com/launchpad--rooturl--0--patch-3
+       Merge from Rocketfuel
+    
+
+    modified files:
+     doc/changelog.txt launchpad.conf
+     lib/canonical/config/__init__.py
+     lib/canonical/config/schema.xml
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--rooturl--0--base-0
+     stuart.bishop@canonical.com/launchpad--rooturl--0--patch-1
+     stuart.bishop@canonical.com/launchpad--rooturl--0--patch-2
+     stuart.bishop@canonical.com/launchpad--rooturl--0--patch-3
+
+
 2005-05-13 23:08:52 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1699
 
     Summary:
