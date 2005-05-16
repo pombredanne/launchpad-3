@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-16 11:20:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1701
+
+    Summary:
+      fix bug in SQL sorting scripts which affects mult-line statements [r=Kiko]
+    Revision:
+      launchpad--devel--0--patch-1701
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-453
+       fix sorting of mult-line statements by SQL sorting script
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/scripts/sort_sql.py
+     lib/canonical/launchpad/scripts/tests/test_rundoctests.py
+
+    new patches:
+     daf@canonical.com--2004/launchpad--devel--0--patch-453
+
+
 2005-05-16 03:52:28 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1700
 
     Summary:
