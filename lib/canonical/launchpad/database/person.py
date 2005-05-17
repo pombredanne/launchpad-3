@@ -38,7 +38,7 @@ from canonical.launchpad.interfaces import \
     IMaintainershipSet, IEmailAddressSet, ISourcePackageReleaseSet
 
 from canonical.launchpad.database.translation_effort import TranslationEffort
-from canonical.launchpad.database.bug import Bug
+from canonical.launchpad.database.bug import BugTask
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
@@ -479,9 +479,9 @@ class Person(SQLBase):
         return self._getEmailsByStatus(EmailAddressStatus.NEW)
     guessedemails = property(guessedemails)
 
-    def bugs(self):
-        return Bug.selectBy(ownerID=self.id)
-    bugs= property(bugs)
+    def reportedbugs(self):
+        return BugTask.selectBy(ownerID=self.id)
+    reportedbugs= property(reportedbugs)
 
     def translations(self):
         return TranslationEffort.selectBy(ownerID=self.id)

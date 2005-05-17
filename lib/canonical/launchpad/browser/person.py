@@ -19,7 +19,7 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
 # interface import
-from canonical.launchpad.interfaces import ISSHKeySet
+from canonical.launchpad.interfaces import ISSHKeySet, IBugTaskSet
 from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
 from canonical.launchpad.interfaces import IWikiNameSet, IJabberIDSet
 from canonical.launchpad.interfaces import IIrcIDSet, IArchUserIDSet
@@ -161,6 +161,54 @@ class PersonView(BasePersonView):
         self.request = request
         self.message = None
         self.user = getUtility(ILaunchBag).user
+
+    def assignedBugsToShow(self):
+        """Return True if there's any bug assigned to this person that match
+        the criteria of mostImportantBugTasks() or mostRecentBugTasks()."""
+        return bool(self.mostImportantBugTasks() or self.mostRecentBugTasks())
+
+    def mostRecentBugTasks(self):
+        """Return up to 10 bug tasks (ordered by date assigned) that are 
+        assigned to this person.
+
+        These bug tasks are either the ones reported on packages/products this
+        person is the maintainer or the ones assigned directly to him.
+        """
+        bts = getUtility(IBugTaskSet)
+        orderBy = ('-dateassigned', '-priority', '-severity')
+        results = bts.assignedBugTasks(self.context, orderBy=orderBy)
+        return results[:10]
+
+    def mostImportantBugTasks(self):
+        """Return up to 10 bug tasks (ordered by priority and severity) that
+        are assigned to this person.
+
+        These bug tasks are either the ones reported on packages/products this
+        person is the maintainer or the ones assigned directly to him.
+        """
+        bts = getUtility(IBugTaskSet)
+        orderBy = ('-priority', '-severity', '-dateassigned')
+        results = bts.assignedBugTasks(self.context, orderBy=orderBy)
+        return results[:10]
+
+    def bugTasksWithSharedInterest(self):
+        """Return up to 10 bug tasks (ordered by date assigned) which this
+        person and the logged in user share some interest.
+
+        We assume they share some interest if they're both members of the
+        maintainer or if one is the maintainer and the task is directly
+        assigned to the other.
+        """
+        assert self.user is not None, (
+                'This method should not be called without a logged in user')
+        if self.context.id == self.user.id:
+            return []
+
+        bts = getUtility(IBugTaskSet)
+        orderBy = ('-dateassigned', '-priority', '-severity')
+        results = bts.bugTasksWithSharedInterest(
+                self.context, self.user, orderBy=orderBy)
+        return results[:10]
 
     def obfuscatedEmail(self):
         if self.context.preferredemail is not None:
@@ -695,5 +743,4 @@ class TeamAddView(AddView, BasePersonView):
         notify(ObjectCreatedEvent(team))
         self._nextURL = '/people/%s' % team.name
         return team
-
 

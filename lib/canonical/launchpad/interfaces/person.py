@@ -76,7 +76,7 @@ class IPerson(Interface):
     ubuntite = Attribute("Ubuntite Flag")
     gpgkeys = Attribute("List of GPGkeys")
     irc = Attribute("IRC")
-    bugs = Attribute("Bug")
+    reportedbugs = Attribute("All BugTasks reported by this Person.")
     wiki = Attribute("Wiki")
     jabber = Attribute("Jabber")
     archuser = Attribute("Arch user")

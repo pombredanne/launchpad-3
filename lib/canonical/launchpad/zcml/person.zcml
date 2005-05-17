@@ -49,9 +49,13 @@
           template="../templates/person-packages.pt"
           lp:url="/people/$Person.name/+packages" />
       <browser:page
-          name="+bugs"
-          template="../templates/person-bugs.pt"
-          lp:url="/people/$Person.name/+bugs" />
+          name="+assignedbugs"
+          template="../templates/person-assignedbugs.pt"
+          lp:url="/people/$Person.name/+assignedbugs" />
+      <browser:page
+          name="+reportedbugs"
+          template="../templates/person-reportedbugs.pt"
+          lp:url="/people/$Person.name/+reportedbugs" />
       <browser:page
           name="+karma"
           template="../templates/person-karma.pt"

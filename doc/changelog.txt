@@ -2,6 +2,127 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-17 19:18:41 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1706
+
+    Summary:
+      Refactor people/$person/+bugs into $person/+assignedbugs and $person/+reportedbugs. r=SteveA
+    Revision:
+      launchpad--devel--0--patch-1706
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--person-bugs--0--base-0
+       tag of guilherme.salgado@canonical.com/launchpad--devel--0--patch-266
+    
+     * guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-1
+       Adding lots of new stuff to BugTaskSet (unfortunatelly almost everything depends on UNION support in sqlobject), and use it to display the most recent bugs assigned to a given person and the ones with greater priority on the person's bugs page.
+    
+     * guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-2
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-3
+       Refactor person-bugs into person-assignedbugs and person-reportedbugs. Add some docstrings and did lots of improvements to person-assignedbugs.
+    
+     * guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-4
+       Fix PersonView.assignedBugs() and add a docstring to it.
+    
+     * guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-5
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-6
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-7
+       person-assignedbugs now show bugs that the logged in user and the person (s)he's looking at share some interest.
+    
+     * guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-8
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-9
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-10
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-11
+       user shortlist where it can be used.
+    
+     * guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-12
+       better comments
+    
+     * guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-13
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-14
+       some wording fixes
+    
+     * guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-15
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-16
+       adding pagetest for person-assignedbugs and person-reportedbugs. also removing needless listification of SelectResults.
+    
+     * guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-17
+       Fix IPerson.bugs; it should be IPerson.reportedbugs. Also fix table in person-reportedbugs to not use javascript for links.
+    
+     * guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-18
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-19
+       Small fixes requested by Steve.
+    
+     * guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-20
+       IBug.shortdesc doesn't exist anymore. it's called IBug.summary now.
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-person-assignedbugs.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-person-reportedbugs.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-person-assignedbugs.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-person-reportedbugs.txt
+     lib/canonical/launchpad/templates/.arch-ids/person-reportedbugs.pt.id
+     lib/canonical/launchpad/templates/person-reportedbugs.pt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/person.py
+     lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/bugtask.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/templates/person-assignedbugs.pt
+     lib/canonical/launchpad/templates/portlet-person-views.pt
+     lib/canonical/launchpad/zcml/person.zcml
+
+    renamed files:
+     lib/canonical/launchpad/templates/.arch-ids/person-bugs.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/person-assignedbugs.pt.id
+     lib/canonical/launchpad/templates/person-bugs.pt
+       ==> lib/canonical/launchpad/templates/person-assignedbugs.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--person-bugs--0--base-0
+     guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-1
+     guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-2
+     guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-3
+     guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-4
+     guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-5
+     guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-6
+     guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-7
+     guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-8
+     guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-9
+     guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-10
+     guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-11
+     guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-12
+     guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-13
+     guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-14
+     guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-15
+     guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-16
+     guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-17
+     guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-18
+     guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-19
+     guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-20
+
+
 2005-05-17 18:48:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1705
 
     Summary:
