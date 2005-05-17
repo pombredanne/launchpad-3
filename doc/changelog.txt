@@ -2,6 +2,69 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-17 17:17:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1703
+
+    Summary:
+      Merge in embargo and pocket support. r=SteveA
+    Revision:
+      launchpad--devel--0--patch-1703
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-21
+       star-merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-22
+       Add the pockets and embargo patch
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-23
+       Move the patch into place and move comments to comments.sql
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-24
+       PackagePublishingPocket schema
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-25
+       SQLObject changes for pockets and embargo
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-26
+       Merge in dba blessing from stub
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-27
+       star-merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-28
+       Respond to review from SteveA
+    
+     * stuart.bishop@canonical.com/launchpad--kinnison--2--base-0
+       tag of daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-25
+    
+     * stuart.bishop@canonical.com/launchpad--kinnison--2--patch-1
+       Trivial tweaks and blessing
+    
+
+    new files:
+     database/schema/.arch-ids/patch-17-08-0.sql.id
+     database/schema/patch-17-08-0.sql
+
+    modified files:
+     database/schema/comments.sql doc/changelog.txt
+     lib/canonical/launchpad/database/publishing.py
+     lib/canonical/launchpad/interfaces/publishing.py
+     lib/canonical/lp/dbschema.py
+
+    new patches:
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-21
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-22
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-23
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-24
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-25
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-26
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-27
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-28
+     stuart.bishop@canonical.com/launchpad--kinnison--2--base-0
+     stuart.bishop@canonical.com/launchpad--kinnison--2--patch-1
+
+
 2005-05-17 04:45:54 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1702
 
     Summary:

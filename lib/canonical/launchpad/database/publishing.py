@@ -9,7 +9,7 @@ __all__ = ['PackagePublishing', 'SourcePackagePublishing',
 
 from zope.interface import implements
 
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
+from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces import \
@@ -19,7 +19,8 @@ from canonical.launchpad.interfaces import \
     ISourcePackagePublishingHistory, IPackagePublishingHistory
 
 from canonical.lp.dbschema import \
-    EnumCol, BinaryPackagePriority, PackagePublishingStatus
+    EnumCol, BinaryPackagePriority, PackagePublishingStatus, \
+    PackagePublishingPocket
 
 
 class PackagePublishing(SQLBase):
@@ -37,6 +38,7 @@ class PackagePublishing(SQLBase):
     status = EnumCol(dbName='status', schema=PackagePublishingStatus)
     scheduleddeletiondate = DateTimeCol(default=None)
     datepublished = DateTimeCol(default=None)
+    pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
 
 
 class SourcePackagePublishing(SQLBase):
@@ -53,6 +55,7 @@ class SourcePackagePublishing(SQLBase):
     status = EnumCol(schema=PackagePublishingStatus)
     scheduleddeletiondate = DateTimeCol(default=None)
     datepublished = DateTimeCol(default=None)
+    pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
 
 
 class SourcePackageFilePublishing(SQLBase):
@@ -190,7 +193,10 @@ class SourcePackagePublishingHistory(SQLBase):
                               dbName='supersededby', default=None)
     datemadepending = DateTimeCol(default=None)
     dateremoved = DateTimeCol(default=None)
-
+    pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
+    embargo = BoolCol(dbName='embargo', default=False)
+    embargolifted = DateTimeCol(default=None)
+    
 class PackagePublishingHistory(SQLBase):
     """A binary package publishing record."""
 
@@ -212,4 +218,7 @@ class PackagePublishingHistory(SQLBase):
                               default=None)
     datemadepending = DateTimeCol(default=None)
     dateremoved = DateTimeCol(default=None)
+    pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
+    embargo = BoolCol(dbName='embargo', default=False)
+    embargolifted = DateTimeCol(default=None)
 
