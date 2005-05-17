@@ -2,6 +2,18 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-17 18:48:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1705
+
+    Summary:
+      Rename ValidPersonVocabulary to ValidPersonOrTeamVocabulary and fix it. Also adds ValidTeamOwnerVocabulary. r=SteveA
+    Revision:
+      launchpad--devel--0--patch-1705
+
+
+    modified files:
+     doc/changelog.txt
+
+
 2005-05-17 17:45:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1704
 
     Summary:
