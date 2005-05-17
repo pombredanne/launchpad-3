@@ -108,7 +108,8 @@ class IPerson(Interface):
                                  "DEACTIVATED status"))
     deactivatedmembers = Attribute("List of members with DEACTIVATED status")
 
-    teamowner = Int(title=_('Team Owner'), required=False, readonly=False)
+    teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
+                       vocabulary='ValidTeamOwner')
     teamdescription = Text(title=_('Team Description'), required=False,
                            readonly=False)
 

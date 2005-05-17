@@ -29,9 +29,10 @@ class ISignedCodeOfConduct(Interface):
              readonly=True
              )
 
-    owner = Choice(title=_('Owner'), required=True, vocabulary='ValidPerson',
-                    description=_("""Signature owner, it must be a valid
-                    Person inside Launchpad context."""))
+    owner = Choice(
+        title=_('Owner'), required=True, vocabulary='ValidOwner',
+        description=_('The owner of the signature. '
+                      'This must be a valid Person.'))
     
     signedcode = Text(title=_("Signed Code"), 
                       description=_("""GPG Signed Code of Conduct.

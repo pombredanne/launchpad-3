@@ -563,7 +563,7 @@ class PersonSet:
         """See IPersonSet."""
         person = self.get(personid)
         if person is None:
-            raise KeyError, personid
+            raise KeyError(personid)
         else:
             return person
 
@@ -692,16 +692,16 @@ class PersonSet:
         """
         # Sanity checks
         if ITeam.providedBy(from_person):
-            raise TypeError, 'Got a team as from_person'
+            raise TypeError('Got a team as from_person.')
         if ITeam.providedBy(to_person):
-            raise TypeError, 'Got a team as to_person'
+            raise TypeError('Got a team as to_person.')
         if not IPerson.providedBy(from_person):
-            raise TypeError, 'from_person is not a person'
+            raise TypeError('from_person is not a person.')
         if not IPerson.providedBy(to_person):
-            raise TypeError, 'to_person is not a person'
+            raise TypeError('to_person is not a person.')
 
         if len(getUtility(IEmailAddressSet).getByPerson(from_person.id)) > 0:
-            raise ValueError, 'from_person still has email addresses'
+            raise ValueError('from_person still has email addresses.')
 
         # Get a database cursor.
         cur = cursor()
@@ -897,7 +897,7 @@ class EmailAddressSet:
         """See IEmailAddressSet."""
         email = self.get(emailid)
         if email is None:
-            raise KeyError, emailid
+            raise KeyError(emailid)
         else:
             return email
 

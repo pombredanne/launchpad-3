@@ -24,8 +24,9 @@ from canonical.launchpad.database import Project
 from canonical.launchpad.database import ProductRelease
 from canonical.launchpad.database import ProductSeries
 from canonical.launchpad.database import BugTracker
-from canonical.launchpad.interfaces import ILaunchBag
-from canonical.database.sqlbase import SQLBase, quote_like, quote
+from canonical.launchpad.interfaces import ILaunchBag, ITeam
+from canonical.lp.dbschema import EmailAddressStatus
+from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 
 from sqlobject import AND, OR, CONTAINSSTRING
 
@@ -264,48 +265,78 @@ class PersonVocabulary(NamedSQLObjectVocabulary):
         return [self._toTerm(obj) for obj in objs]
 
 
-class ValidOwnerVocabulary(PersonVocabulary):
-    """
-    ValidOwnerVocabulary implements a Vocabulary Describing valid Owner
-    entities, People and Teams, according the Ubuntu Membership
-    Management System.
-    """
-    ## XXX cprov 20050124
-    ## Waiting for the FOAF support to follow implementation path.
-    pass
+class ValidPersonOrTeamVocabulary(PersonVocabulary):
+    """The set of valid Persons/Teams in Launchpad.
 
+    A Person is considered valid if he have at least one validated email 
+    address, a password set and Person.merged is None. Teams have no 
+    restrictions at all, which means that all teams are considered valid.
 
-class ValidPersonVocabulary(PersonVocabulary):
+    This vocabulary is registered as ValidPersonOrTeam, ValidAssignee,
+    ValidMaintainer and ValidOwner, because they have exactly the same
+    requisites.
+    """
+
+    _validpersons = ('''
+        teamowner IS NULL AND password IS NOT NULL AND merged IS NULL AND 
+        emailaddress.person = person.id AND 
+        (emailaddress.status = %s OR emailaddress.status = %s)'''
+         % sqlvalues(EmailAddressStatus.VALIDATED,
+                     EmailAddressStatus.PREFERRED))
+    _validteams = 'teamowner IS NOT NULL'
+    _basequery = '(%s) OR (%s)' % (_validpersons, _validteams)
+    _clausetables = ['EmailAddress']
+
+    def _select(self, query):
+        return self._table.select(
+                query,
+                orderBy=self._orderBy,
+                clauseTables=self._clausetables,
+                distinct=True)
+
     def __iter__(self):
-        kw = {}
-        if self._orderBy:
-            kw['orderBy'] = self._orderBy
-        for obj in self._table.select('password IS NOT NULL', **kw):
+        for obj in self._select(self._basequery):
             yield self._toTerm(obj)
 
     def __contains__(self, obj):
-        objs = list(self._table.select(AND(
-            self._table.q.id == int(obj),
-            self._table.q.password is not None
-            )))
-        return len(objs) > 0
+        # XXX: salgado, 2005-05-09: Soon we'll be able to say: "obj in
+        # self._table.select(self._basequery)" and I'll fix this method.
+        query = '(%s) AND (person.id = %d)' % (self._basequery, obj.id)
+        return bool(self._select(query).count())
 
-    def search(self, query):
-        """Return terms where query is a subtring of the name"""
-        if not query:
+    def search(self, text):
+        """Return persons where <text> is a subtring of either the name,
+        givenname, familyname or displayname.
+        """
+        if not text:
             return []
-        query = query.lower()
-        like_query = quote('%%%s%%' % quote_like(query)[1:-1])
-        fti_query = quote(query)
-        kw = {}
-        if self._orderBy:
-            kw['orderBy'] = self._orderBy
-        objs = self._table.select("""
-            password IS NOT NULL
-            AND (name LIKE %s OR fti @@ ftq(%s))
-            """ % (like_query, fti_query), **kw
-            )
-        return [self._toTerm(obj) for obj in objs]
+        text = text.lower()
+        like_query = quote('%%%s%%' % quote_like(text)[1:-1])
+        fti_query = quote(text)
+        query = ('(%s) AND (name LIKE %s OR fti @@ ftq(%s))' % 
+                 (self._basequery, like_query, fti_query))
+        return [self._toTerm(obj) for obj in self._select(query)]
+
+
+class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
+    """The set of Persons/Teams that can be owner of a team.
+
+    With the exception of the team itself and all teams owned by that team,
+    all valid persons and teams are valid owners for the team.
+    """
+
+    def __init__(self, context):
+        if not context:
+            raise ValueError('ValidTeamOwnerVocabulary needs a context.')
+        if not ITeam.providedBy(context):
+            raise ValueError(
+                    "ValidTeamOwnerVocabulary's context must be a team.")
+        ValidPersonOrTeamVocabulary.__init__(self, context)
+        extraclause = ('''
+            (person.teamowner != %d OR person.teamowner IS NULL) AND
+            person.id != %d''' % (context.id, context.id))
+        self._basequery = '(%s) AND (%s)' % (self._basequery, extraclause)
+
 
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
     _table = ProductRelease

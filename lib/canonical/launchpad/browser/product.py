@@ -22,7 +22,7 @@ from canonical.lp.batching import BatchNavigator
 from canonical.database.sqlbase import quote
 
 from canonical.launchpad.searchbuilder import any, NULL
-from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
+from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary, \
      MilestoneVocabulary
 
 from canonical.launchpad.database import Product, ProductSeriesSet, \
@@ -293,8 +293,8 @@ class ProductBugsView:
     def people(self):
         """Return the list of people in Launchpad."""
         # the vocabulary doesn't need context since the
-        # ValidPerson is independent of it in LP
-        return ValidPersonVocabulary(None)
+        # ValidPersonOrTeam is independent of it in LP
+        return ValidPersonOrTeamVocabulary(None)
 
     def milestones(self):
         """Return the list of milestones for this product."""

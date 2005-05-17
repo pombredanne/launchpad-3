@@ -2,6 +2,50 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-17 17:45:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1704
+
+    Summary:
+      Rename ValidPersonVocabulary to ValidPersonOrTeamVocabulary and fix it. Also adds ValidTeamOwnerVocabulary. r=SteveA
+    Revision:
+      launchpad--devel--0--patch-1704
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-9
+       Rename ValidPersonVocabulary to ValidPersonOrTeamVocabulary and fix it. Also adds ValidTeamOwnerVocabulary.
+    
+     * guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-10
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-11
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-12
+       small fixes requested by SteveA
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/bugtask.py
+     lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/doc/vocabularies.txt
+     lib/canonical/launchpad/interfaces/bountysubscription.py
+     lib/canonical/launchpad/interfaces/bugsubscription.py
+     lib/canonical/launchpad/interfaces/bugtask.py
+     lib/canonical/launchpad/interfaces/codeofconduct.py
+     lib/canonical/launchpad/interfaces/maintainership.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/pagetests/standalone/xx-show-people-with-password-only.txt
+     lib/canonical/launchpad/vocabularies/configure.zcml
+     lib/canonical/launchpad/vocabularies/dbobjects.py
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-9
+     guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-10
+     guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-11
+     guilherme.salgado@canonical.com/launchpad--smallfixes--0--patch-12
+
+
 2005-05-17 17:17:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1703
 
     Summary:

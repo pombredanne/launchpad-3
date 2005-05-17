@@ -8,7 +8,7 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import IPersonSet, ILaunchBag
 from canonical.lp import dbschema
-from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
+from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary, \
      ProductVocabulary, SourcePackageNameVocabulary
 from canonical.launchpad.searchbuilder import NULL
 
@@ -166,7 +166,7 @@ class BugTasksView:
 
     def people(self):
         """Return the list of people in Launchpad."""
-        return ValidPersonVocabulary(None)
+        return ValidPersonOrTeamVocabulary(None)
 
     def statuses(self):
         """Return the list of bug task statuses."""
