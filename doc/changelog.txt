@@ -2,6 +2,43 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-17 20:43:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1707
+
+    Summary:
+      Massive redesign of people/$person/+emails; much better (and simpler) UI which allowed a much clearer code. r=SteveA
+    Revision:
+      launchpad--devel--0--patch-1707
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-299
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-300
+       Massive redesign of people//+emails; much better (and simpler) UI which allowed a much clearer code.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-301
+       some fixes Steve requested.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-302
+       merge from rf
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/person.py
+     lib/canonical/launchpad/pagetests/foaf/02-addemail.txt
+     lib/canonical/launchpad/pagetests/foaf/31-deleteemail.txt
+     lib/canonical/launchpad/pagetests/foaf/32-setpreferredemail.txt
+     lib/canonical/launchpad/pagetests/foaf/98-validateemail.txt
+     lib/canonical/launchpad/templates/person-emails.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-299
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-300
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-301
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-302
+
+
 2005-05-17 19:18:41 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1706
 
     Summary:
