@@ -2,6 +2,36 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-17 04:45:54 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1702
+
+    Summary:
+      [r=stub] Indexes for importd and rosetta performance (already in production)
+    Revision:
+      launchpad--devel--0--patch-1702
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--dba--1--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1701
+    
+     * stuart.bishop@canonical.com/launchpad--dba--1--patch-1
+       Indexes for importd and rosetta performance (already in production)
+    
+
+    new files:
+     database/schema/.arch-ids/patch-17-06-0.sql.id
+     database/schema/.arch-ids/patch-17-07-0.sql.id
+     database/schema/patch-17-06-0.sql
+     database/schema/patch-17-07-0.sql
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--dba--1--base-0
+     stuart.bishop@canonical.com/launchpad--dba--1--patch-1
+
+
 2005-05-16 11:20:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1701
 
     Summary:
