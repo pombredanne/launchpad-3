@@ -190,27 +190,43 @@ class POFile(SQLBase, RosettaStats):
         # A POT set is not translated if the PO message set have
         # POMsgSet.iscomplete = FALSE or we don't have such POMsgSet or
         # POMsgSet.fuzzy = TRUE.
-        results = POTMsgSet.select('''
-            POTMsgSet.potemplate = %s AND
-            POTMsgSet.sequence > 0 AND
-            ((POMsgSet.potmsgset = POTMsgSet.id AND
-              POMsgSet.pofile = %s AND
-              (POMsgSet.iscomplete = FALSE OR POMsgSet.fuzzy = TRUE)) OR
-            NOT EXISTS
-              (SELECT * FROM POMsgSet
-               WHERE POTMsgSet.id = POMsgSet.potmsgset))
-            ''' % sqlvalues(self.potemplate.id, self.id),
-            clauseTables=['POMsgSet'],
-            distinct=True,
+        #
+        # We are using raw queries because the LEFT JOIN.
+        potmsgids = self._connection.queryAll('''
+            SELECT POTMsgSet.id, POTMsgSet.sequence
+            FROM POTMsgSet
+            JOIN POTemplate ON POTemplate.id = POTMsgSet.potemplate
+            JOIN POFile ON POTemplate.id = POFile.potemplate
+            LEFT OUTER JOIN POMsgSet ON POTMsgSet.id = POMsgSet.potmsgset
+            WHERE
+                (POMsgSet.id IS NULL OR
+                 POMsgSet.pofile=POFile.id) AND
+                (POMsgSet.fuzzy = TRUE OR
+                 POMsgSet.iscomplete = FALSE OR
+                 POMsgSet.id IS NULL) AND
+                POTMsgSet.sequence > 0 AND
+                POTemplate.id = %s AND
+                POFile.id = %s
+            ORDER BY POTMsgSet.sequence
+            ''' % sqlvalues(self.potemplate.id, self.id))
+
+        if slice is not None:
+            # Want only a subset specified by slice.
+            potmsgids = potmsgids[slice]
+
+        ids = [str(L[0]) for L in potmsgids]
+
+        if len(ids) > 0:
+            # Get all POTMsgSet requested by the function using the ids that
+            # we know are not 100% translated.
+            # NOTE: This implementation put a hard limit on len(ids) == 9000
+            # if we get more elements there we will get an exception. It
+            # should not be a problem with our current usage of this method.
+            results = POTMsgSet.select(
+                'POTMsgSet.id IN (%s)' % ', '.join(ids),
             orderBy='POTMsgSet.sequence')
 
-        if slice is None:
-            # Want all the output.
             for potmsgset in results:
-                yield potmsgset
-        else:
-            # Want only a subset specified by slice.
-            for potmsgset in results[slice]:
                 yield potmsgset
 
     def hasMessageID(self, messageID):

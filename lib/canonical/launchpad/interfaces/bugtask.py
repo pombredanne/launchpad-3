@@ -60,7 +60,7 @@ class IBugTask(IHasDateCreated):
         title=_('Severity'), vocabulary='BugSeverity',
         default=dbschema.BugSeverity.NORMAL)
     assignee = Choice(
-        title=_('Assignee'), required=False, vocabulary='ValidPerson')
+        title=_('Assignee'), required=False, vocabulary='ValidAssignee')
     binarypackagename = Choice(
         title=_('Binary PackageName'), required=False,
         vocabulary='BinaryPackageName')
@@ -190,6 +190,35 @@ class IBugTaskSet(Interface):
         Exactly one of product, distribution or distrorelease must be provided.
         """
 
+    def assignedBugTasks(person, minseverity=None, minpriority=None,
+                         showclosed=None, orderby=None):
+        """Return all bug tasks assigned to the given person or to a
+        package/product this person maintains.
+
+        By default, closed (FIXED, REJECTED) tasks are not returned. If you
+        want closed tasks too, just pass showclosed=True.
+
+        If minseverity is not None, return only the bug tasks with severity 
+        greater than minseverity. The same is valid for minpriority/priority.
+
+        If you want the results ordered, you have to explicitly specify an
+        <orderBy>. Otherwise the order used is not predictable.
+        <orderBy> can be either a string with the column name you want to sort
+        or a list of column names as strings.
+        """
+
+    def bugTasksWithSharedInterest(person1, person2, orderBy=None):
+        """Return all bug tasks which person1 and person2 share some interest.
+
+        We assume they share some interest if they're both members of the
+        maintainer or if one is the maintainer and the task is directly
+        assigned to the other.
+
+        If you want the results ordered, you have to explicitly specify an
+        <orderBy>. Otherwise the order used is not predictable.
+        <orderBy> can be either a string with the column name you want to sort
+        or a list of column names as strings.
+        """
 
 class IBugTasksReport(Interface):
 

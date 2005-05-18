@@ -11,7 +11,9 @@
         <img src="/++resource++info_icon.gif">
         <a href="+translations">Translations</a><br />
         <img src="/++resource++info_icon.gif">
-        <a href="+bugs">Bugs Reported</a><br />
+        <a href="+assignedbugs">Bugs Assigned</a><br />
+        <img src="/++resource++info_icon.gif">
+        <a href="+reportedbugs">Bugs Reported</a><br />
         <img src="/++resource++info_icon.gif">
         <a href="+packages">Packages</a><br />
         <img src="/++resource++info_icon.gif">

@@ -166,7 +166,7 @@ class ProductSeriesSet:
             clauseTables.add('Project')
             clauseTables.add('Product')
         # now just add filters on import status
-        if forimport:
+        if forimport or importstatus:
             if len(query) > 0:
                 query += ' AND '
             query += 'ProductSeries.importstatus IS NOT NULL'

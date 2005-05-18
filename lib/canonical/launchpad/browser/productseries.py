@@ -34,7 +34,7 @@ def validate_cvs_root(cvsroot, cvsmodule):
         root = CVSRoot(cvsroot + '/' + cvsmodule)
     except ValueError, e:
         return False
-    valid_module = re.compile('^[a-zA-Z][a-zA-Z0-9_/.-]*$')
+    valid_module = re.compile('^[a-zA-Z][a-zA-Z0-9_/.+-]*$')
     if not valid_module.match(cvsmodule):
         return False
     # 'CVS' is illegal as a module name

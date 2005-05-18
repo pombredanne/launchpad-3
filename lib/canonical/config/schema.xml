@@ -17,6 +17,8 @@
 
     <sectiontype name="launchpad">
         <key name="dbuser" datatype="string" default="launchpad" />
+        <key name="root_url" datatype="canonical.config.urlbase"
+            required="yes" />
     </sectiontype>
 
     <sectiontype name="librarian_server">

@@ -12,3 +12,7 @@ def test_suite():
     suite.addTest(DocTestSuite('canonical.launchpad.scripts.sort_sql'))
     return suite
 
+if __name__ == '__main__':
+    runner = unittest.TextTestRunner()
+    runner.run(test_suite())
+

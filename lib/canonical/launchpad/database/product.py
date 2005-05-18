@@ -178,6 +178,11 @@ class Product(SQLBase):
 
         return templates
 
+    def potemplatecount(self):
+        """See IProduct."""
+        return len(self.potemplates())
+    potemplatecount = property(potemplatecount)
+
     def poTemplatesToImport(self):
         # XXX sabdfl 30/03/05 again, i think we want to be using
         # ProductRelease.poTemplatesToImport

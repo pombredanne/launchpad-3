@@ -67,6 +67,15 @@
     <a title="DOAP Registry" href="doap">Find or register apps
     now!</a></p>
 
+    <h2><a title="Soyuz" href="/distros/">Soyuz - Distribution
+    Management</a></h2>
+
+    <p>The Launchpad also keeps track of software in the Ubuntu distribution
+    as well as other Linux distributions. Using this aspect of Launchpad,
+    which we call Soyuz, you can see which versions of a package are
+    published in the distribution at any time. <a title="Soyuz Distribution
+    Interface" href="/distros/">Explore Soyuz Now!</a></p>
+
   </div>
 
 </body>

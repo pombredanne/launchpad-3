@@ -35,94 +35,57 @@
   
   <form autocomplete="off" name="email" action="" method="POST">
 
-  <p class="documentDescription">A list of the email addresses associated
-  with this account in the Launchpad.</p>
-  
-  <tal:block tal:condition="view/anyRegisteredEmail">
-  <p>Your preferred email address is the only
-  one we'll use to communicate with you. There can be only one preferred
-  email address at a time, and it cannot be removed.</p>
-
-  <table id="ass_listing" class="listing" width="100%">
-    <tr>
-      <th>Preferred</th>
-      <th>Email</th>
-      <th>Remove</th>
-    </tr>
-    <tr tal:define="email context/preferredemail" tal:condition="email">
-      <td>
-        <input type="radio" name="PREFERRED_EMAIL"
-               tal:attributes="value email/id" checked />
-      </td>
-      <td tal:content="email/email">email</td>
-      <td>
-        <input tal:attributes="value email/id" name="REMOVE_EMAIL" type="checkbox" disabled/>
-      </td>
-    </tr>
-    <tr tal:repeat="email context/validatedemails">
-      <td>
-        <input type="radio" name="PREFERRED_EMAIL" tal:attributes="value email/id" />
-      </td>
-      <td tal:content="email/email">email</td>
-      <td> 
-        <input tal:attributes="value email/id" name="REMOVE_EMAIL" type="checkbox" />
-      </td>
-    </tr>
-    <tr tal:repeat="unvalidated view/unvalidatedAndNotGuessed">
-      <td>
-        unvalidated
-      </td>
-      <td tal:content="unvalidated">email@foo.com</td>
-      <td> 
-        <input tal:attributes="value unvalidated" name="REMOVE_TOKEN" type="checkbox" />
-      </td>
-    </tr>
-  </table>
-  <br />
+  <tal:block tal:condition="context/preferredemail">
+  <p>Your contact address for all Launchpad e-mail is: <b tal:content="context/preferredemail/email" /></p>
   </tal:block>
 
-  <tal:block tal:condition="not: view/anyRegisteredEmail">
-  <p>You don't have any registered email address in Launchpad. You can do so
-  by filling in the form bellow with the email address you want and your
-  password. After that, we will e-mail you to check your address and give you
-  instructions on how to complete the registration of your email address.</p>
+  <tal:block tal:condition="not: context/preferredemail">
+  <p>Currently you don't have a contact address in Launchpad. Please choose
+  one from the list of confirmed addresses.</p>
   </tal:block>
 
-  <table>
-    <tr>
-      <td>Add a New Email: </td>
-      <td><input type="text" name="newemail" /></td>
-    </tr>
+  <tal:block tal:condition="context/validatedemails">
+  These other addresses are confirmed as being yours:
 
-    <tr>
-      <td>Your password: </td>
-      <td><input type="password" name="password" /></td>
-    </tr>
-    <tr>
-      <td></td>
-      <td align="right"><input type="submit" name="SUBMIT_CHANGES" value="Submit"/>
-      </td>
-    </tr>
-  </table>
-
-  <tal:block define="guessedemails context/guessedemails">
-  <fieldset tal:condition="guessedemails">
-    <legend>Detected Emails</legend>
-    <p>The following email addresses have been detected by our system as 
-    probably being yours. In order to use them on Launchpad, you must 
-    validate them. To do so, just select one from the list below and 
-    click on the Validate button.</p>
-    <select name="NOT_VALIDATED_EMAIL">
-      <option tal:repeat="email guessedemails"
-              tal:attributes="value email/id"
-              tal:content="email/email">email</option>
-    </select>
-    <input type="submit" value="Validate" name="VALIDATE_EMAIL" />
-  </fieldset>
+  <div style="padding: 0.7em 0em">
+    <div tal:repeat="email context/validatedemails" >
+      <label tal:attributes="for email/email">
+        <input type="radio" tal:attributes="value email/email; id email/email"
+               name="VALIDATED_SELECTED" /> 
+        <b tal:content="email/email" />
+      </label>
+    </div>
+  </div>
+  <input type="submit" value="Remove" name="REMOVE_VALIDATED" />
+  <input type="submit" value="Set as Contact Address" name="SET_PREFERRED" />
+  <br /><br /><br />
   </tal:block>
 
-  </form>
+  <tal:block tal:condition="view/unvalidatedAndGuessedEmails">
+  These addresses may also be yours:
+
+  <div style="padding: 0.7em 0em">
+    <div tal:repeat="email view/unvalidatedAndGuessedEmails">
+      <label tal:attributes="for string:${email}_unvalidated">
+        <input type="radio" name="UNVALIDATED_SELECTED"
+               tal:attributes="value email; id string:${email}_unvalidated" />
+        <b tal:content="email" />
+      </label>
+    </div>
+  </div>
+  <input type="submit" value="Remove" name="REMOVE_UNVALIDATED" />
+  <input type="submit" value="Confirm" name="VALIDATE" />
+  <br /><br /><br />
+  </tal:block>
+
+  <div>
+    Add a new address:
+    <input type="text" tal:attributes="value view/notWellFormedEmail|nothing"
+           name="newemail" size="30"/>
+    <input type="submit" value="Add" name="ADD_EMAIL" />
   </div>
 
+  </form>
+</div>
 </body>
 </html>

@@ -45,17 +45,17 @@ def generate_bug_edit_email(bug_delta):
     # figure out what's been changed; add that information to the
     # email as appropriate
     if bug_delta.title is not None:
-        body += "    - Changed title:\n"
+        body += "    - Changed title to:\n"
         body += "        %s\n" % bug_delta.title
     if bug_delta.summary is not None:
-        body += "    - Changed summary:\n"
+        body += "    - Changed summary to:\n"
         body += "\n".join(wrap(
             bug_delta.summary, width = 72,
             initial_indent = u"        ",
             subsequent_indent = u"        "))
         body += "\n"
     if bug_delta.description is not None:
-        body += "    - Changed description:\n"
+        body += "    - Changed description to:\n"
         body += "\n".join(wrap(
             bug_delta.description, width = 72,
             initial_indent = u"        ",

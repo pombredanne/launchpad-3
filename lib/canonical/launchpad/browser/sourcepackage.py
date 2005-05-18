@@ -173,8 +173,6 @@ class SourcePackageView:
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(self.request)
-        # Cache value for the return value of self.templates
-        self._template_languages = None
         self.status_message = None
 
     def binaries(self):

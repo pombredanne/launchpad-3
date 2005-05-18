@@ -380,6 +380,9 @@ COMMENT ON COLUMN PackagePublishingHistory.supersededby IS 'The build which supe
 COMMENT ON COLUMN PackagePublishingHistory.datemadepending IS 'The date/time on which this publishing record was made to be pending removal from the archive.';
 COMMENT ON COLUMN PackagePublishingHistory.scheduleddeletiondate IS 'The date/time at which the package is/was scheduled to be deleted.';
 COMMENT ON COLUMN PackagePublishingHistory.dateremoved IS 'The date/time at which the package was actually deleted.';
+COMMENT ON COLUMN PackagePublishingHistory.pocket IS 'The pocket into which this record is published. The PLAIN pocket (zero) provides behaviour as normal. Other pockets may append things to the distrorelease name such as the UPDATES pocket (-updates) or the SECURITY pocket (-security).';
+COMMENT ON COLUMN PackagePublishingHistory.embargo IS 'The publishing record is embargoed from publication if this is set to TRUE. When TRUE, this column prevents the publication record from even showing up in the publishing tables.';
+COMMENT ON COLUMN PackagePublishingHistory.embargolifted IS 'The date and time when we lifted the embargo on this publishing record. I.E. when embargo was set to FALSE having previously been set to TRUE.';
 
 -- PersonLanguage
 COMMENT ON TABLE PersonLanguage IS 'PersonLanguage: This table stores the preferred languages that a Person has, it''s used in Rosetta to select the languages that should be showed to be translated.';
@@ -771,6 +774,9 @@ COMMENT ON COLUMN SourcePackagePublishingHistory.supersededby IS 'The source whi
 COMMENT ON COLUMN SourcePackagePublishingHistory.datemadepending IS 'The date/time on which this publishing record was made to be pending removal from the archive.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.scheduleddeletiondate IS 'The date/time at which the source is/was scheduled to be deleted.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.dateremoved IS 'The date/time at which the source was actually deleted.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.pocket IS 'The pocket into which this record is published. The PLAIN pocket (zero) provides behaviour as normal. Other pockets may append things to the distrorelease name such as the UPDATES pocket (-updates) or the SECURITY pocket (-security).';
+COMMENT ON COLUMN SourcePackagePublishingHistory.embargo IS 'The publishing record is embargoed from publication if this is set to TRUE. When TRUE, this column prevents the publication record from even showing up in the publishing tables.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.embargolifted IS 'The date and time when we lifted the embargo on this publishing record. I.E. when embargo was set to FALSE having previously been set to TRUE.';
 
 -- Packaging
 COMMENT ON TABLE Packaging IS 'DO NOT JOIN THROUGH THIS TABLE. This is a set

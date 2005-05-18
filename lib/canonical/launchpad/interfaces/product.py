@@ -111,6 +111,9 @@ class IProduct(IHasOwner):
         latest productrelease for this product which includes
         translations.""")
 
+    potemplatecount = Attribute("The number of POTemplates for this "
+                        "Product.")
+
     def getPackage(distrorelease):
         """return a package in that distrorelease for this product."""
 

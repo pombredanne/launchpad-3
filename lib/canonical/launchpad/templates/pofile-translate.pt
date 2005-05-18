@@ -150,22 +150,18 @@
 
                   <!-- Show which messages are displayed. -->
                   <div style="width: 50%; float: left;">
-                    <tal:block tal:condition="view/atBeginning">
-                      <tal:block tal:condition="view/atEnd">
-                        All
-                        <strong tal:content="context/potemplate/__len__">23</strong>
-                        items
-                      </tal:block>
-                    </tal:block>
-                    <tal:block tal:condition="not:view/atBeginning">
-                      <tal:block tal:condition="not:view/atEnd">
-                      Items
-                      <strong tal:content="view/getFirstMessageShown">5</strong>
-                      &rarr;
-                      <strong tal:content="view/getLastMessageShown">10</strong>
-                      of
+                    <tal:block tal:condition="view/onlyOneForm">
+                      All
                       <strong tal:content="context/potemplate/__len__">23</strong>
-                      </tal:block>
+                      items
+                    </tal:block>
+                    <tal:block tal:condition="not:view/onlyOneForm">
+                    Items
+                    <strong tal:content="view/getFirstMessageShown">5</strong>
+                    &rarr;
+                    <strong tal:content="view/getLastMessageShown">10</strong>
+                    of
+                    <strong tal:content="context/potemplate/__len__">23</strong>
                     </tal:block>
                   </div>
 

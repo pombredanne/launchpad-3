@@ -31,7 +31,7 @@ class Line:
 
         ins_re = re.compile('''
             ^INSERT \s+ INTO \s+ .* VALUES \s+ \(.*? (\d+),.*\);
-            ''', re.X)
+            ''', re.X | re.S)
         match = ins_re.match(line)
         if match is not None:
             self.value = int(match.group(1))
@@ -131,18 +131,18 @@ def print_lines_sorted(file, lines):
 
     >>> lines = [
     ...     Line("INSERT INTO foo (id, x) VALUES (10, 'data');"),
-    ...     Line("INSERT INTO foo (id, x) VALUES (1, 'data\nmore\nmore');"),
+    ...     Line("INSERT INTO foo (id, x) VALUES (4, 'data\nmore\nmore');"),
     ...     Line("INSERT INTO foo (id, x) VALUES (7, 'data');"),
-    ...     Line("INSERT INTO foo (id, x) VALUES (4, 'data');"),
+    ...     Line("INSERT INTO foo (id, x) VALUES (1, 'data');"),
     ...     Line(""),
     ...     Line("INSERT INTO baz (id, x) VALUES (2, 'data');"),
     ...     Line("INSERT INTO baz (id, x) VALUES (1, 'data');"),
     ...     ]
     >>> print_lines_sorted(sys.stdout, lines)
-    INSERT INTO foo (id, x) VALUES (1, 'data
+    INSERT INTO foo (id, x) VALUES (1, 'data');
+    INSERT INTO foo (id, x) VALUES (4, 'data
     more
     more');
-    INSERT INTO foo (id, x) VALUES (4, 'data');
     INSERT INTO foo (id, x) VALUES (7, 'data');
     INSERT INTO foo (id, x) VALUES (10, 'data');
     <BLANKLINE>

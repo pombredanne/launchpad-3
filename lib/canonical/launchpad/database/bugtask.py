@@ -15,6 +15,7 @@ from zope.interface import implements, directlyProvides, directlyProvidedBy
 
 from canonical.lp import dbschema
 from canonical.lp.dbschema import EnumCol, BugPriority
+from canonical.lp.dbschema import BugTaskStatus
 from canonical.launchpad.interfaces import IBugTask, IBugTaskDelta
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import nowUTC
@@ -275,6 +276,57 @@ class BugTaskSet:
             }
 
         return BugTask(**bugtask_args)
+
+    def assignedBugTasks(self, person, minseverity=None, minpriority=None,
+                         showclosed=False, orderBy=None):
+        if showclosed:
+            showclosed = ""
+        else:
+            showclosed = (
+                ' AND BugTask.status < %s' % sqlvalues(BugTaskStatus.FIXED))
+
+        prioAndSevFilter = ""
+        if minpriority is not None:
+            prioAndSevFilter = (
+                ' AND BugTask.priority >= %s' % sqlvalues(minpriority))
+        if minseverity is not None:
+            prioAndSevFilter += (
+                ' AND BugTask.severity >= %s' % sqlvalues(minseverity))
+
+        maintainedPackageBugTasksQuery = ('''
+            BugTask.sourcepackagename = Maintainership.sourcepackagename AND
+            BugTask.distribution = Maintainership.distribution AND
+            Maintainership.maintainer = TeamParticipation.team AND
+            TeamParticipation.person = %s''' % person.id)
+
+        maintainedPackageBugTasks = BugTask.select(
+            maintainedPackageBugTasksQuery + prioAndSevFilter + showclosed, 
+            clauseTables=['Maintainership', 'TeamParticipation'])
+
+        maintainedProductBugTasksQuery = ('''
+            BugTask.product = Product.id AND
+            Product.owner = TeamParticipation.team AND
+            TeamParticipation.person = %s''' % person.id)
+
+        maintainedProductBugTasks = BugTask.select(
+            maintainedProductBugTasksQuery + prioAndSevFilter + showclosed,
+            clauseTables=['Product', 'TeamParticipation'])
+
+        assignedBugTasksQuery = ('''
+            BugTask.assignee = TeamParticipation.team AND
+            TeamParticipation.person = %s''' % person.id)
+
+        assignedBugTasks = BugTask.select(
+            assignedBugTasksQuery + prioAndSevFilter + showclosed,
+            clauseTables=['TeamParticipation'])
+
+        results = assignedBugTasks.union(maintainedProductBugTasks)
+        return results.union(maintainedPackageBugTasks, orderBy=orderBy)
+
+    def bugTasksWithSharedInterest(self, person1, person2, orderBy=None):
+        person1Tasks = self.assignedBugTasks(person1)
+        person2Tasks = self.assignedBugTasks(person2)
+        return person1Tasks.intersect(person2Tasks, orderBy=orderBy)
 
 
 class BugTaskDelta:
