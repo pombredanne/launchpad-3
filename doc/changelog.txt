@@ -2,6 +2,28 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-18 15:10:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1710
+
+    Summary:
+      Make foaf buglists link to bug pages instead of task pages.[trivial]
+    Revision:
+      launchpad--devel--0--patch-1710
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-21
+       Fix foaf buglistings to point to bug instead of task pages.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/person-assignedbugs.pt
+     lib/canonical/launchpad/templates/person-reportedbugs.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--person-bugs--0--patch-21
+
+
 2005-05-18 14:02:35 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1709
 
     Summary:
