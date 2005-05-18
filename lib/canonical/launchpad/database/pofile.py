@@ -4,7 +4,6 @@ __metaclass__ = type
 __all__ = ['POFileSet', 'POFile']
 
 import StringIO
-import base64
 
 # Zope interfaces
 from zope.interface import implements
@@ -369,13 +368,20 @@ class POFile(SQLBase, RosettaStats):
 
     def attachRawFileData(self, contents, importer=None):
         """See ICanAttachRawFileData."""
-        helpers.attachRawFileData(self, contents, importer)
+        if self.variant:
+            filename = '%s@%s.po' % (
+                self.language.code, self.variant.encode('utf8'))
+        else:
+            filename = '%s.po' % self.language.code
+
+        helpers.attachRawFileData(self, filename, contents, importer)
 
     # IRawFileData implementation
 
     # Any use of this interface should adapt this object as an IRawFileData.
 
-    rawfile = StringCol(dbName='rawfile', notNull=False, default=None)
+    rawfile = ForeignKey(foreignKey='LibraryFileAlias', dbName='rawfile',
+                         notNull=False, default=None)
     rawimporter = ForeignKey(foreignKey='Person', dbName='rawimporter',
                              notNull=False, default=None)
     daterawimport = DateTimeCol(dbName='daterawimport', notNull=False,
@@ -390,7 +396,7 @@ class POFile(SQLBase, RosettaStats):
             # We don't have anything to import.
             return
 
-        rawdata = base64.decodestring(self.rawfile)
+        rawdata = helpers.getRawFileData(self)
 
         # We need to parse the file to get the last translator information so
         # the translations are not assigned to the person who imports the

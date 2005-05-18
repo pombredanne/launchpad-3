@@ -21,8 +21,11 @@ from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import RosettaImportStatus
+from canonical.librarian.interfaces import ILibrarianClient, UploadFailed, \
+    DownloadFailed
 from canonical.launchpad.interfaces import ILaunchBag, IHasOwner, IGeoIP, \
-    IRequestPreferredLanguages, ILanguageSet, IRequestLocalLanguages
+    IRequestPreferredLanguages, ILanguageSet, IRequestLocalLanguages, \
+    RawFileAttachFailed, RawFileFetchFailed
 from canonical.launchpad.components.poparser import POSyntaxError, \
     POInvalidInputError, POParser
 from canonical.launchpad.components.rosettastats import RosettaStats
@@ -435,12 +438,39 @@ def shortlist(sequence, longest_expected=15):
               longest_expected)
     return L
 
-def attachRawFileData(raw_file_data, contents, importer):
-    """Attach the contents of a file to a raw_file_data object."""
-    raw_file_data.rawfile = base64.encodestring(contents)
+def uploadRosettaFile(filename, contents):
+    client = getUtility(ILibrarianClient)
+
+    try:
+        size = len(contents)
+        file = StringIO(contents)
+
+        alias = client.addFile(
+            name=filename,
+            size=size,
+            file=file,
+            contentType='application/x-po')
+    except UploadFailed, e:
+        raise RawFileAttachFailed(str(e))
+
+    return alias
+
+def attachRawFileData(raw_file_data, filename, contents, importer):
+    """Attach the contents of a file to a raw file data object."""
+    raw_file_data.rawfile = uploadRosettaFile(filename, contents)
     raw_file_data.daterawimport = UTC_NOW
     raw_file_data.rawimporter = importer
     raw_file_data.rawimportstatus = RosettaImportStatus.PENDING
+
+def getRawFileData(raw_file_data):
+    client = getUtility(ILibrarianClient)
+
+    try:
+        file = client.getFileByAlias(raw_file_data.rawfile)
+    except DownloadFailed, e:
+        raise RawFileFetchFailed(str(e))
+
+    return file.read()
 
 def count_lines(text):
     '''Count the number of physical lines in a string. This is always at least

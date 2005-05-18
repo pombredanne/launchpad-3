@@ -2,6 +2,142 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-18 15:46:39 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1711
+
+    Summary:
+      PoTemplateRawFile [r=JamesH]
+    Revision:
+      launchpad--devel--0--patch-1711
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1674
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-1
+       data migration code/SQL
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-2
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-3
+       merge Librarian changes
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-4
+       adapt migration to account for PO files
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-5
+       adjust SQL patches for clarity
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-6
+       don't re-apply constraint before data migration
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-7
+       database class changes, interface changes, helper changes, test
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-8
+       fix filename generation
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-9
+       make exceptions in the PO attach ftest easier to debug
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-10
+       POFile.rawfile can be null
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-11
+       use a default value of None for POFile.rawfile
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-12
+       adapt tests to using LibrarianTestSetup
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-13
+       tweak migration script
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-14
+       migrate sample data
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-15
+       some suggestions from Carlos
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-16
+       fixes from James H's review
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-17
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-18
+       merge DBA magic from Stuart
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-19
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-20
+       sort sample data
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-21
+       fix broken test
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-22
+       disable SQL sorter
+    
+     * daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-23
+       fix sample data
+    
+     * stuart.bishop@canonical.com/launchpad--daf--2--base-0
+       tag of daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-17
+    
+     * stuart.bishop@canonical.com/launchpad--daf--2--patch-1
+       Bless DB patch including non-standard upgrade procedure
+    
+
+    new files:
+     database/schema/.arch-ids/patch-17-09-0.sql.id
+     database/schema/.arch-ids/patch-17-99-0.sql.id
+     database/schema/patch-17-09-0.sql
+     database/schema/patch-17-99-0.sql
+     database/schema/pending/.arch-ids/daf-migrate-pre-po-template-rawfile-2.py.id
+     database/schema/pending/daf-migrate-pre-po-template-rawfile-2.py
+     lib/canonical/launchpad/doc/.arch-ids/rawfiledata.txt.id
+     lib/canonical/launchpad/doc/rawfiledata.txt
+
+    modified files:
+     database/sampledata/current.sql database/schema/Makefile
+     doc/changelog.txt lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/database/potemplate.py
+     lib/canonical/launchpad/doc/poexport-distrorelease-date-tarball.txt
+     lib/canonical/launchpad/helpers.py
+     lib/canonical/launchpad/interfaces/rawfiledata.py
+     lib/canonical/launchpad/scripts/ftests/test_po_attach.py
+
+    new patches:
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--base-0
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-1
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-2
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-3
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-4
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-5
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-6
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-7
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-8
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-9
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-10
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-11
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-12
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-13
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-14
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-15
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-16
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-17
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-18
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-19
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-20
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-21
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-22
+     daf@canonical.com--2004/launchpad--PoTemplateRawFile--0--patch-23
+     stuart.bishop@canonical.com/launchpad--daf--2--base-0
+     stuart.bishop@canonical.com/launchpad--daf--2--patch-1
+
+
 2005-05-18 15:10:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1710
 
     Summary:
