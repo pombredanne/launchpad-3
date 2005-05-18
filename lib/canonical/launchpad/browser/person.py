@@ -461,7 +461,7 @@ class PersonEditView(BasePersonView):
         form = self.request.form
         if "REMOVE_VALIDATED" in form:
             self._deleteValidatedEmail()
-        elif "SET_PREFEERED" in form:
+        elif "SET_PREFERRED" in form:
             self._setPreferred()
         elif "REMOVE_UNVALIDATED" in form:
             self._deleteUnvalidatedEmail()

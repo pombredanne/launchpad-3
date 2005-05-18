@@ -57,7 +57,7 @@
     </div>
   </div>
   <input type="submit" value="Remove" name="REMOVE_VALIDATED" />
-  <input type="submit" value="Set as Contact Address" name="SET_PREFEERED" />
+  <input type="submit" value="Set as Contact Address" name="SET_PREFERRED" />
   <br /><br /><br />
   </tal:block>
 
