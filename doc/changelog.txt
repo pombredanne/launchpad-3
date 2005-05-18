@@ -2,6 +2,68 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-18 14:02:35 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1709
+
+    Summary:
+      reduce horizontal scrolling in tables across Launchpad, especially in Malone search results (r=spiv)
+    Revision:
+      launchpad--devel--0--patch-1709
+
+    Patches applied:
+    
+     * mpt@canonical.com/launchpad--malone-search-results--0--base-0
+       tag of mpt@canonical.com/launchpad--devel--0--patch-46
+    
+     * mpt@canonical.com/launchpad--malone-search-results--0--patch-1
+       clean up Malone search results
+    
+     * mpt@canonical.com/launchpad--malone-search-results--0--patch-2
+       trying to fix pagetests
+    
+     * mpt@canonical.com/launchpad--malone-search-results--0--patch-3
+       fix pagetests
+    
+     * mpt@canonical.com/launchpad--malone-search-results--0--patch-4
+       merge rocketfuel
+    
+     * mpt@canonical.com/launchpad--malone-search-results--0--patch-5
+       fixes from Andrew's review
+    
+     * mpt@canonical.com/launchpad--malone-search-results--0--patch-6
+       resolve launchpad.css conflict
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/pagetests/distro-bugprivacy/10-file-private-distro-bug.txt
+     lib/canonical/launchpad/pagetests/distro-bugprivacy/20-private-distro-bug-not-visible-to-anonymous.txt
+     lib/canonical/launchpad/pagetests/distro-bugprivacy/30-private-distro-bug-not-visible-to-nonsubscriber-user.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-anonymous.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-authenticated.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-critical.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-maintainer.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-my-todo.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-submitted-by-me.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-unassigned.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/10-file-private-upstream-bug.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/20-private-upstream-bug-not-visible-to-anonymous.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/40-private-upstream-bug-not-visible-to-nonsubscriber-user.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/50-private-upstream-bug-not-accessible-to-nonsubscriber-user.txt
+     lib/canonical/launchpad/templates/bugtask-search-listing.pt
+     lib/canonical/launchpad/templates/distribution-bugs.pt
+     lib/canonical/launchpad/templates/launchpad.css
+     lib/canonical/launchpad/templates/product-bugs.pt
+
+    new patches:
+     mpt@canonical.com/launchpad--malone-search-results--0--base-0
+     mpt@canonical.com/launchpad--malone-search-results--0--patch-1
+     mpt@canonical.com/launchpad--malone-search-results--0--patch-2
+     mpt@canonical.com/launchpad--malone-search-results--0--patch-3
+     mpt@canonical.com/launchpad--malone-search-results--0--patch-4
+     mpt@canonical.com/launchpad--malone-search-results--0--patch-5
+     mpt@canonical.com/launchpad--malone-search-results--0--patch-6
+
+
 2005-05-18 00:17:00 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1708
 
     Summary:

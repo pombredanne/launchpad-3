@@ -90,7 +90,6 @@ h3 {
 
 .listing td {
     padding-bottom: 0.3em;
-    white-space: nowrap;
 }
 
 .listing th {
@@ -227,7 +226,8 @@ table.rowNavigation tr:hover {
     background-color: #93bee2 !important;
     cursor:pointer;
 }
-table.rowNavigation th:hover {
+table.rowNavigation>thead>tr:hover {
+    background-color: #dee7ec !important;
     cursor: default;
 }
 
@@ -523,7 +523,16 @@ h1 {
   padding-right: 0;
 }
 
-/* Not all of a dt should be bold: -- */
+/* Fix missing borders in tables: */
+
+table.listing>tr>td, table.listing>tbody>tr>td {
+  border: 1px dotted #8cacbb;
+}
+table.listing>thead>tr>th, table.listing>thead>tr>td {
+  border: 1px solid #8cacbb;
+}
+
+/* Not all of a <dt> should be bold: -- */
 
 dt {
   font-weight: inherit;
@@ -644,7 +653,7 @@ table {
 table table {
   width: 100%;
 }
-table.data, table.data thead, table.data tfoot {
+table.data, table.data>thead, table.data>tfoot {
 	border: solid #999;
 	border-width: 1pt 0;
 }
@@ -655,7 +664,7 @@ table.data>thead>tr, table.data>tbody>tr, table.data>tfoot>tr {
 table.data>tr>th, table.data>tr>td,
 table.data>thead>tr>th, table.data>thead>tr>td,
 table.data>tbody>tr>th, table.data>tbody>tr>td, table.data>tfoot>tr>th,table.data>tfoot>tr>td {
-  padding: 0.25em 0.125em 0.5em;
+  padding: 0.25em 0.125em 0.25em;
 }
 td p:first-child, td ol:first-child, td blockquote:first-child {
 	margin-top: 0;
@@ -677,6 +686,10 @@ tr {
   padding: 0.25em;
   margin: 1em 0em;
   clear: both;
+}
+.results .navigation {
+  float: right;
+  text-align: right;
 }
 
 .user {
@@ -712,6 +725,7 @@ address.app {
 	content: '\2022';
 	margin-right: 0.25em;
 }
+
 #main {
 	border-top: 2pt solid black;
 	clear: both;
