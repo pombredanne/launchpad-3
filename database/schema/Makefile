@@ -2,7 +2,7 @@
 # One day the guts of this will be migrated to Python
 #
 
-PYTHON=python2.3
+PYTHON=python2.4
 
 # The database dump to restore on database creation
 SAMPLEDATA=../sampledata/current.sql
