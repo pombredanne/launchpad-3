@@ -14,6 +14,7 @@ from canonical.launchpad.ftests.harness import \
 from zope.testing.doctest import DocFileSuite
 from zope.component import getUtility
 from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.mail import stub
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 
@@ -35,6 +36,7 @@ def tearDown(test):
     _disconnect_sqlos()
     sqlos.connection.connCache = {}
     LaunchpadTestSetup().tearDown()
+    stub.test_emails = []
 
 def poExportSetUp(test):
     sqlos.connection.connCache = {}

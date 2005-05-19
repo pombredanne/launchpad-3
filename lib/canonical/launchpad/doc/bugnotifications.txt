@@ -21,7 +21,6 @@ Then, let's get a handle to our mailer. This is the thing we'll examine to show
 what email has been sent, to whom, and what the body of the message contains:
 
     >>> from canonical.launchpad.mail import stub
-    >>> stub.test_emails = []
 
 And with that, here are the things that cause bug notifications to be sent, and
 what those notifications look like.
