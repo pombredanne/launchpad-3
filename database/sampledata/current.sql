@@ -85,7 +85,6 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (3, 'carlos@canonica
 INSERT INTO emailaddress (id, email, person, status) VALUES (4, 'daf@canonical.com', 14, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (6, 'foo.bar@canonical.com', 16, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (21, 'david.allouche@canonical.com', 23, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (5, 'lalo@canonical.com', 15, 3);
 INSERT INTO emailaddress (id, email, person, status) VALUES (15, 'justdave@bugzilla.org', 3, 3);
 INSERT INTO emailaddress (id, email, person, status) VALUES (16, 'test@canonical.com', 12, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (19, 'testing@canonical.com', 12, 2);
@@ -284,7 +283,6 @@ INSERT INTO teamparticipation (id, team, person) VALUES (37, 14, 14);
 INSERT INTO teamparticipation (id, team, person) VALUES (38, 23, 23);
 INSERT INTO teamparticipation (id, team, person) VALUES (39, 9, 9);
 INSERT INTO teamparticipation (id, team, person) VALUES (40, 1, 1);
-INSERT INTO teamparticipation (id, team, person) VALUES (41, 15, 15);
 INSERT INTO teamparticipation (id, team, person) VALUES (42, 22, 22);
 INSERT INTO teamparticipation (id, team, person) VALUES (43, 16, 16);
 INSERT INTO teamparticipation (id, team, person) VALUES (44, 28, 28);

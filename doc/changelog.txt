@@ -2,6 +2,65 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-19 12:40:58 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1715
+
+    Summary:
+      [r=jamesh] Simple database restoration script and sampledata fixes
+    Revision:
+      launchpad--devel--0--patch-1715
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--patch-15
+       Add back dbrestore.py
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--patch-16
+       Attempt fix to broken text traceback page
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--patch-17
+       Work in progress
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--patch-18
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--patch-19
+       Remove dud entries from sampledata causing contraints to be switched off
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--patch-20
+       Database restore script
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--patch-21
+       Tweaks after tests with a production dump
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--patch-22
+       Make dbrestore.py silent unless in verbose mode
+    
+     * stuart.bishop@canonical.com/launchpad--dba--0--patch-23
+       Incorporate reviewer comments
+    
+
+    new files:
+     utilities/.arch-ids/dbrestore.py.id utilities/dbrestore.py
+
+    removed files:
+     utilities/.arch-ids/dbdump.id utilities/dbdump
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/launchpad/templates/errorservice-tbentry.pt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--dba--0--patch-15
+     stuart.bishop@canonical.com/launchpad--dba--0--patch-16
+     stuart.bishop@canonical.com/launchpad--dba--0--patch-17
+     stuart.bishop@canonical.com/launchpad--dba--0--patch-18
+     stuart.bishop@canonical.com/launchpad--dba--0--patch-19
+     stuart.bishop@canonical.com/launchpad--dba--0--patch-20
+     stuart.bishop@canonical.com/launchpad--dba--0--patch-21
+     stuart.bishop@canonical.com/launchpad--dba--0--patch-22
+     stuart.bishop@canonical.com/launchpad--dba--0--patch-23
+
+
 2005-05-19 11:32:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1714
 
     Summary:
