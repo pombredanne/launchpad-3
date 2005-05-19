@@ -192,3 +192,25 @@ Let's look at the tabs for an ITeam.
     ...
     link2 Link two linktwo True False
     link3 Link three linkthree False False
+
+
+Test the 'required:' namespace.  We're already logged in as the anonymous user,
+and anonymous users can't edit any person:
+
+    >>> person = getUtility(IPersonSet).getByName('sabdfl')
+    >>> test_tales('person/required:launchpad.Edit', person=person)
+    False
+
+Anonymous users can do anything with the zope.Public permission.
+
+    >>> test_tales('person/required:zope.Public', person=person)
+    True
+
+Queries about permissions that don't exist will raise an exception:
+
+    >>> test_tales('person/required:mushroom.Badger', person=person)
+    Traceback (most recent call last):
+    ...
+    ValueError: ('Undefined permission id', 'mushroom.Badger')
+
+

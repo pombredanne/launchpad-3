@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces import \
 import canonical.lp.dbschema
 from canonical.lp import decorates
 import zope.security.management
+import zope.app.security.permission
 
 
 class TraversalError(NotFoundError):
@@ -383,4 +384,25 @@ class FormattersAPI:
             return self.shorten(maxlength)
         else:
             raise TraversalError, name
+
+
+class PermissionRequiredQuery:
+    """Check if the logged in user has a given permission on a given object.
+
+    Example usage::
+        tal:condition="person/required:launchpad.Edit"
+    """
+    
+    implements(ITraversable)
+
+    def __init__(self, context):
+        self.context = context
+
+    def traverse(self, name, furtherPath):
+        if len(furtherPath) > 0:
+            raise TraversalError(
+                    "There should be no further path segments after "
+                    "required:permission")
+        zope.app.security.permission.checkPermission(self.context, name)
+        return zope.security.management.checkPermission(name, self.context)
 

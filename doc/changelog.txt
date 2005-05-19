@@ -2,6 +2,36 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-19 11:32:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1714
+
+    Summary:
+      r=SteveA. Add 'required:' TALES namespace, as per PermissionQueryNamespace spec.
+    Revision:
+      launchpad--devel--0--patch-1714
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/launchpad--PersmissionQueryNamespace--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1702
+    
+     * andrew.bennetts@canonical.com/launchpad--PersmissionQueryNamespace--0--patch-1
+       'required:' TALES namespace, as per PermissionQueryNamespace spec.
+    
+     * andrew.bennetts@canonical.com/launchpad--PersmissionQueryNamespace--0--patch-2
+       Make 'required:' TALES expressions raise an exception if the permission doesn't exist.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/doc/tales.txt
+     lib/canonical/launchpad/webapp/configure.zcml
+     lib/canonical/launchpad/webapp/tales.py
+
+    new patches:
+     andrew.bennetts@canonical.com/launchpad--PersmissionQueryNamespace--0--base-0
+     andrew.bennetts@canonical.com/launchpad--PersmissionQueryNamespace--0--patch-1
+     andrew.bennetts@canonical.com/launchpad--PersmissionQueryNamespace--0--patch-2
+
+
 2005-05-19 07:38:03 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1713
 
     Summary:

@@ -110,6 +110,13 @@
         name="fmt"
         />
 
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PermissionRequiredQuery"
+        name="required"
+        />
+
     <!-- Authentication. -->
     <utility
         component="canonical.launchpad.webapp.authentication.authService"
