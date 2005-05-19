@@ -2,6 +2,40 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-19 07:38:03 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1713
+
+    Summary:
+      [trivial] Librarian upload shouldn't hang if passed an empty file
+    Revision:
+      launchpad--devel--0--patch-1713
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--librarian--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1712
+    
+     * stuart.bishop@canonical.com/launchpad--librarian--0--patch-1
+       Raise ValueError instead of hanging if trying to add an empty file
+    
+     * stuart.bishop@canonical.com/launchpad--librarian--0--patch-2
+       None should raise a TypeError
+    
+     * stuart.bishop@canonical.com/launchpad--librarian--0--patch-3
+       Update daf's data migration script that triggered the problem on dogfood
+    
+
+    modified files:
+     database/schema/pending/daf-migrate-pre-po-template-rawfile-2.py
+     doc/changelog.txt lib/canonical/launchpad/doc/librarian.txt
+     lib/canonical/librarian/client.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--librarian--0--base-0
+     stuart.bishop@canonical.com/launchpad--librarian--0--patch-1
+     stuart.bishop@canonical.com/launchpad--librarian--0--patch-2
+     stuart.bishop@canonical.com/launchpad--librarian--0--patch-3
+
+
 2005-05-19 04:41:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1712
 
     Summary:

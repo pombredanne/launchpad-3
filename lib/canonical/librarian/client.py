@@ -79,6 +79,8 @@ class FileUploadClient(object):
         :returns: 2-tuple of (contentID, aliasID) as ints.
         
         :raises UploadFailed: If the server rejects the upload for some reason
+
+        :raises ValueError: If file contains no data
         """
         # Detect if this method was not called from the LibrarianClient
         #
@@ -89,7 +91,10 @@ class FileUploadClient(object):
                     'Utility.',
                     DeprecationWarning, stacklevel=2
                     )
-
+        if file is None:
+            raise TypeError('No data')
+        if size <= 0:
+            raise ValueError('No data')
         self._connect()
         try:
             # Import in this method to avoid a circular import
@@ -116,9 +121,13 @@ class FileUploadClient(object):
             
             # Send file
             digester = sha.sha()
+            has_data = False
             for chunk in iter(lambda: file.read(1024*64), ''):
                 self.f.write(chunk)
                 digester.update(chunk)
+                has_data = True
+            if not has_data:
+                raise ValueError('No data')
 
             # Read response
             response = self.f.readline().strip()

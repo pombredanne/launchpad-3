@@ -14,7 +14,9 @@ def migrate(table, desc, filename_function):
 
     # Get a list of template IDs.
     c = cursor()
-    c.execute('SELECT id FROM %s WHERE rawfile_ IS NOT NULL' % tablename)
+    c.execute("""
+        SELECT id FROM %s WHERE rawfile_ IS NOT NULL AND rawfile <> ''
+        """ % tablename)
     ids = [id for (id,) in c.fetchall()]
 
     if not ids:
