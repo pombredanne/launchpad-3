@@ -24,6 +24,7 @@ Now it's empty, so let's add some mails to it by using simple_sendmail:
     ...                         'Hello',
     ...                         'bla bla bla',
     ...                         headers={'Message-ID': '<test1>'})
+    >>> transaction.commit()
     >>> msgid = simple_sendmail('test@canonical.com',
     ...                         '456@bugs.canonical.com', 
     ...                         'Hello',
