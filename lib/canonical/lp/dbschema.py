@@ -44,6 +44,7 @@ __all__ = (
 'HashAlgorithms',
 'ImportTestStatus',
 'KarmaType',
+'LoginTokenType',
 'ManifestEntryType',
 'PackagePublishingPriority',
 'PackagePublishingStatus',
@@ -2033,6 +2034,14 @@ class LoginTokenType(DBSchema):
         A user has added more email addresses to their account and they
         need to be validated.
         """)
+
+    VALIDATETEAMEMAIL = Item(5, """
+        Validate Team Email
+
+        One of the team administrators is trying to add a contact email
+        address for the team, but this address need to be validated first.
+        """)
+
 
 class BuildStatus(DBSchema):
     """Build status type

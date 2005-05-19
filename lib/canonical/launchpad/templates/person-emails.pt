@@ -6,7 +6,7 @@
 <head>
   <title metal:fill-slot="title">Edit
     <span tal:replace="context/displayname">Name</span>
-    Information</title>
+    Email Addresses</title>
   <!-- Plone style sheet -->
   <style type="text/css" media="screen">@import url(plone.css);</style>
   <!-- Launchpad style sheet -->
