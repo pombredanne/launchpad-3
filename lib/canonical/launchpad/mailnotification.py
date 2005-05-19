@@ -12,7 +12,7 @@ from zope.app.mail.interfaces import IMailDelivery
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IBug, IBugSet, ITeam, IPerson, \
-    IUpstreamBugTask, IDistroBugTask
+    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.database import Bug, BugTracker, EmailAddress, \
      BugDelta, BugTaskDelta
@@ -110,8 +110,20 @@ def generate_bug_edit_email(bug_delta):
             if IUpstreamBugTask.providedBy(bugtask_delta.bugtask):
                 body += "Task: Upstream %s\n" % (
                     bugtask_delta.bugtask.product.displayname)
-            elif IDistroBugTask.providedBy(bugtask_delta.bugtask):
-                distroname = bugtask_delta.bugtask.distribution.name
+            else:
+                if IDistroBugTask.providedBy(bugtask_delta.bugtask):
+                    distro_or_distrorelease_name = \
+                        bugtask_delta.bugtask.distribution.name
+                elif IDistroReleaseBugTask.providedBy(bugtask_delta.bugtask):
+                    distro_or_distrorelease_name = "%s %s" % (
+                        bugtask_delta.bugtask.distrorelease.distribution.name,
+                        bugtask_delta.bugtask.distrorelease.name)
+                else:
+                    raise ValueError(
+                        "BugTask of unknown type: %s. Must provide either "
+                        "IUpstreamBugTask or IDistroBugTask." %
+                        str(bugtask_delta.bugtask))
+
                 spname = None
                 if (bugtask_delta.sourcepackagename is not None and
                     bugtask_delta.sourcepackagename.get("old") is not None):
@@ -121,13 +133,10 @@ def generate_bug_edit_email(bug_delta):
                         spname = bugtask_delta.bugtask.sourcepackagename.name
 
                 if spname:
-                    body += "Task: %s %s\n" % (distroname, spname)
+                    body += "Task: %s %s\n" % (
+                        distro_or_distrorelease_name, spname)
                 else:
-                    body += "Task: %s\n" % distroname
-            else:
-                raise ValueError(
-                    "BugTask of unknown type: %s. Must provide either "
-                    "IUpstreamBugTask or IDistroBugTask." % str(bugtask))
+                    body += "Task: %s\n" % distro_or_distrorelease_name
 
             for fieldname, displayattrname in (
                 ("product", "displayname"),
@@ -282,8 +291,10 @@ def get_task_delta(old_task, new_task):
             changes["milestone"] = {}
             changes["milestone"]["old"] = old_task.milestone
             changes["milestone"]["new"] = new_task.milestone
-    elif (IDistroBugTask.providedBy(old_task) and
-          IDistroBugTask.providedBy(new_task)):
+    elif ((IDistroBugTask.providedBy(old_task) and
+           IDistroBugTask.providedBy(new_task)) or
+          (IDistroReleaseBugTask.providedBy(old_task) and
+           IDistroReleaseBugTask.providedBy(new_task))):
         if old_task.sourcepackagename != new_task.sourcepackagename:
             changes["sourcepackagename"] = {}
             changes["sourcepackagename"]["old"] = old_task.sourcepackagename

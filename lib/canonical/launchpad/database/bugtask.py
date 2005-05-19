@@ -26,7 +26,8 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import IBugTasksReport, \
     IBugTaskSet, IEditableUpstreamBugTask, IReadOnlyUpstreamBugTask, \
     IEditableDistroBugTask, IReadOnlyDistroBugTask, IUpstreamBugTask, \
-    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, IAuthorization
+    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, IAuthorization, \
+    IEditableDistroReleaseBugTask, IReadOnlyDistroReleaseBugTask
 
 
 class BugTask(SQLBase):
@@ -100,7 +101,7 @@ class BugTask(SQLBase):
         return self.bug.description
     bugdescription = property(bugdescription)
 
-    def _title(self):
+    def title(self):
         title = 'Malone Bug #' + str(self.bug.id)
         title += ' (' + self.bug.title + ')' + ' on '
         if self.distribution:
@@ -114,32 +115,32 @@ class BugTask(SQLBase):
         if self.product:
             title += self.product.displayname
         return title
-    title = property(_title)
+    title = property(title)
 
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""
         SQLBase._init(self, *args, **kw)
 
-        if self.product is not None:
-            mark_task(self, IUpstreamBugTask)
-        elif self.distrorelease is not None:
-            mark_task(self, IDistroReleaseBugTask)
-        else:
-            mark_task(self, IDistroBugTask)
-
-        #XXX: Bjorn Tillenius, 2005-03-15, This decision should be moved to
-        #     some view class.
         user = getUtility(ILaunchBag).user
-        if self.product:
-            # upstream self
-            checker = getAdapter(self, IAuthorization, 'launchpad.Edit') 
-            if user and checker.checkAuthenticated(user):
+        if self.product is not None:
+            # upstream task
+            mark_task(self, IUpstreamBugTask)
+            checker = getAdapter(self, IAuthorization, 'launchpad.Edit')
+            if user is not None and checker.checkAuthenticated(user):
                 mark_task(self, IEditableUpstreamBugTask)
             else:
                 mark_task(self, IReadOnlyUpstreamBugTask)
+        elif self.distrorelease is not None:
+            # distro release task
+            mark_task(self, IDistroReleaseBugTask)
+            if user is not None:
+                mark_task(self, IEditableDistroReleaseBugTask)
+            else:
+                mark_task(self, IReadOnlyDistroReleaseBugTask)
         else:
-            # sourcepackage self
-            if user:
+            # distro task
+            mark_task(self, IDistroBugTask)
+            if user is not None:
                 mark_task(self, IEditableDistroBugTask)
             else:
                 mark_task(self, IReadOnlyDistroBugTask)

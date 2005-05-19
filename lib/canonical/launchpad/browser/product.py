@@ -4,13 +4,13 @@
 
 __metaclass__ = type
 
+from zope.interface import implements
 import zope.security.interfaces
 from zope.component import getUtility, getAdapter
 from zope.event import notify
 from zope.exceptions import NotFoundError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser import SequenceWidget, ObjectWidget
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
 
@@ -28,8 +28,9 @@ from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary, \
 from canonical.launchpad.database import Product, ProductSeriesSet, \
      BugFactory, ProductMilestoneSet, Milestone, Person
 from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet, \
-     IPersonSet, IBugTaskSet, IMilestoneSet, IAging, ILaunchBag
+     IBugTaskSet, IMilestoneSet, IAging, ILaunchBag, IBugTaskSearchListingView
 from canonical.launchpad.browser.productrelease import newProductRelease
+from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.potemplate import ViewPOTemplate
@@ -185,78 +186,14 @@ class ProductView:
         return tasklist[:quantity]
 
 
-class ProductBugsView:
-    DEFAULT_STATUS = (
-        dbschema.BugTaskStatus.NEW.value,
-        dbschema.BugTaskStatus.ACCEPTED.value)
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.batch = Batch(
-            list(self.bugtask_search()), int(request.get('batch_start', 0)))
-        self.batchnav = BatchNavigator(self.batch, request)
-        self.is_maintainer = helpers.is_maintainer(self.context)
-
-    def hideGlobalSearchBox(self):
-        """Should the global search box be hidden on the page?"""
-        if not self.request.form.get("searchtext"):
-            return True
-
-    def bugtask_search(self):
-        """Search for bug tasks, pulling the params out of the request."""
-        params = {}
-        searchtext = self.request.form.get("searchtext")
-        if searchtext:
-            params["searchtext"] = searchtext
-
-        status = self.request.form.get("status")
-        if status and status != 'all':
-            if isinstance(status, (list, tuple)):
-                params["status"] = any(*status)
-            else:
-                params["status"] = status
-        elif not status:
-            params["status"] = any(
-                dbschema.BugTaskStatus.NEW, dbschema.BugTaskStatus.ACCEPTED)
-
-        severity = self.request.form.get("severity")
-        if severity and severity != 'all':
-            if isinstance(severity, (list, tuple)):
-                params["severity"] = any(*severity)
-            else:
-                params["severity"] = severity
-
-        assignee = self.request.form.get("assignee")
-        milestone = self.request.form.get("target")
-        if assignee and assignee != 'all':
-            if assignee == "unassigned":
-                params["assignee"] = NULL
-            else:
-                personset = getUtility(IPersonSet)
-                params["assignee"] = personset.getByName(assignee)
-
-        if milestone:
-            pass
-
-        # Brad Bollenbach, 2005-02-02: Clean this up while integrating
-        # new skin from mpt.
-        if params.has_key("target"):
-            params["milestone"] = params["target"]
-            del params["target"]
-
-        # make this search context-sensitive
-        params["product"] = self.context
-
-        bugtaskset = getUtility(IBugTaskSet)
-        return bugtaskset.search(**params)
+class ProductBugsView(BugTaskSearchListingView):
+    implements(IBugTaskSearchListingView)
 
     def task_columns(self):
-        """The columns to show in the bug task listing."""
+        """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
         return [
             "select", "id", "title", "milestone", "status",
-            "submittedby", "assignedto"
-            ]
+            "submittedby", "assignedto"]
 
     def assign_to_milestones(self):
         """Assign bug tasks to the given milestone."""
@@ -282,36 +219,6 @@ class ProductBugsView:
                         #      can be assigned to a SQLBase '.id' can be
                         #      removed. -- Bjorn Tillenius, 2005-05-04
                         task.milestone = milestone.id
-
-    # XXX: Brad Bollenbach, 2005-02-11: Replace this view method hack with a
-    # TALES adapter, perhaps.
-    def currentApproximateAge(self, bugtask):
-        """Return a human readable string of the age of a bug task."""
-        aging_bugtask = getAdapter(bugtask, IAging, '')
-        return aging_bugtask.currentApproximateAge()
-
-    def people(self):
-        """Return the list of people in Launchpad."""
-        # the vocabulary doesn't need context since the
-        # ValidPersonOrTeam is independent of it in LP
-        return ValidPersonOrTeamVocabulary(None)
-
-    def milestones(self):
-        """Return the list of milestones for this product."""
-        # Produce an empty context
-        class HackedContext:
-            pass
-
-        context = HackedContext()
-        # Set context.product as required by Vocabulary
-        context.product = self.context
-        # Pass the designed context
-        return MilestoneVocabulary(context)
-
-    def statuses(self):
-        """Return the list of bug task statuses."""
-        return dbschema.BugTaskStatus.items
-
 
 class ProductFileBugView(SQLObjectAddView):
 

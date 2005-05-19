@@ -2,6 +2,174 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-05-19 04:41:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1712
+
+    Summary:
+      fix critical bugs in distro side searching. huge code cleanup.
+ browser-form-without-the-browser-form. ALA, HAMRA, MONKEY, BAZAAM,
+ I COMMAND THEE TO MERGE. r=[spiv,SteveA]
+    Revision:
+      launchpad--devel--0--patch-1712
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1687
+    
+     * brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-1
+       checkpoint commit
+    
+     * brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-2
+       merge from rocketfuel
+    
+     * brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-3
+       add some page tests for the search fixes. remove crufty pagetests that are no longer applicable.
+    
+     * brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-4
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-5
+       pagetest fixes; more shuffling around of pagetest files
+    
+     * brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-6
+       small touchups
+    
+     * brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-7
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-8
+       small fixes after manual testing
+    
+     * brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-9
+       more tiny cleanups
+    
+     * brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-10
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-11
+       response to code review
+    
+     * brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-12
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-13
+       update vocabulary name to fit with recent changes
+    
+     * brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-14
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-15
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-16
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-17
+       merge from rf, fixing conflicts and test breakage
+    
+     * brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-18
+       merge from rf
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/bugtask-searches/.arch-ids/=id
+     lib/canonical/launchpad/pagetests/bugtask-searches/.arch-ids/xx-distro-bug-quick-search-text.txt.id
+     lib/canonical/launchpad/pagetests/bugtask-searches/.arch-ids/xx-distro-bug-quick-search-todo.txt.id
+     lib/canonical/launchpad/pagetests/bugtask-searches/.arch-ids/xx-distro-bug-search-status-critical.txt.id
+     lib/canonical/launchpad/pagetests/bugtask-searches/xx-distro-bug-quick-search-text.txt
+     lib/canonical/launchpad/pagetests/bugtask-searches/xx-distro-bug-quick-search-todo.txt
+     lib/canonical/launchpad/pagetests/bugtask-searches/xx-distro-bug-search-status-critical.txt
+
+    removed files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-upstream-bug-task-listing-critical.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-upstream-bug-task-listing-my-todo.txt.id
+     lib/canonical/launchpad/pagetests/standalone/deprecated/.arch-ids/=id
+     lib/canonical/launchpad/pagetests/standalone/deprecated/.arch-ids/xx-bug-list.txt.id
+     lib/canonical/launchpad/pagetests/standalone/deprecated/.arch-ids/xx-bug-quick-search-submittedbyme.txt.id
+     lib/canonical/launchpad/pagetests/standalone/deprecated/.arch-ids/xx-bug-search-package-firefox.txt.id
+     lib/canonical/launchpad/pagetests/standalone/deprecated/xx-bug-list.txt
+     lib/canonical/launchpad/pagetests/standalone/deprecated/xx-bug-quick-search-submittedbyme.txt
+     lib/canonical/launchpad/pagetests/standalone/deprecated/xx-bug-search-package-firefox.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-critical.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-my-todo.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/bugtask.py
+     lib/canonical/launchpad/browser/distribution.py
+     lib/canonical/launchpad/browser/distrorelease.py
+     lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/interfaces/bugtask.py
+     lib/canonical/launchpad/mailnotification.py
+     lib/canonical/launchpad/pagetests/bugtask-searches/xx-upstream-bug-quick-search-text.txt
+     lib/canonical/launchpad/pagetests/bugtask-searches/xx-upstream-bug-quick-search-todo.txt
+     lib/canonical/launchpad/pagetests/bugtask-searches/xx-upstream-bug-search-status-critical.txt
+     lib/canonical/launchpad/pagetests/bugtask-searches/xx-upstream-bug-task-listing-authenticated.txt
+     lib/canonical/launchpad/pagetests/bugtask-searches/xx-upstream-bug-task-listing-maintainer.txt
+     lib/canonical/launchpad/pagetests/bugtask-searches/xx-upstream-bug-task-listing-unassigned.txt
+     lib/canonical/launchpad/security.py
+     lib/canonical/launchpad/templates/bugtask-search-listing.pt
+     lib/canonical/launchpad/vocabularies/dbobjects.py
+     lib/canonical/launchpad/zcml/bug.zcml
+     lib/canonical/launchpad/zcml/bugtask.zcml
+     lib/canonical/lp/batching.py lib/canonical/lp/interfaces.py
+
+    renamed files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-upstream-bug-task-listing-authenticated.txt.id
+       ==> lib/canonical/launchpad/pagetests/bugtask-searches/.arch-ids/xx-upstream-bug-task-listing-authenticated.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-upstream-bug-task-listing-maintainer.txt.id
+       ==> lib/canonical/launchpad/pagetests/bugtask-searches/.arch-ids/xx-upstream-bug-task-listing-maintainer.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-upstream-bug-task-listing-unassigned.txt.id
+       ==> lib/canonical/launchpad/pagetests/bugtask-searches/.arch-ids/xx-upstream-bug-task-listing-unassigned.txt.id
+     lib/canonical/launchpad/pagetests/standalone/deprecated/.arch-ids/xx-bug-quick-search-text.txt.id
+       ==> lib/canonical/launchpad/pagetests/bugtask-searches/.arch-ids/xx-upstream-bug-quick-search-text.txt.id
+     lib/canonical/launchpad/pagetests/standalone/deprecated/.arch-ids/xx-bug-quick-search-todo.txt.id
+       ==> lib/canonical/launchpad/pagetests/bugtask-searches/.arch-ids/xx-upstream-bug-quick-search-todo.txt.id
+     lib/canonical/launchpad/pagetests/standalone/deprecated/.arch-ids/xx-bug-search-status-accepted.txt.id
+       ==> lib/canonical/launchpad/pagetests/bugtask-searches/.arch-ids/xx-upstream-bug-search-status-critical.txt.id
+     lib/canonical/launchpad/pagetests/standalone/deprecated/xx-bug-quick-search-text.txt
+       ==> lib/canonical/launchpad/pagetests/bugtask-searches/xx-upstream-bug-quick-search-text.txt
+     lib/canonical/launchpad/pagetests/standalone/deprecated/xx-bug-quick-search-todo.txt
+       ==> lib/canonical/launchpad/pagetests/bugtask-searches/xx-upstream-bug-quick-search-todo.txt
+     lib/canonical/launchpad/pagetests/standalone/deprecated/xx-bug-search-status-accepted.txt
+       ==> lib/canonical/launchpad/pagetests/bugtask-searches/xx-upstream-bug-search-status-critical.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-authenticated.txt
+       ==> lib/canonical/launchpad/pagetests/bugtask-searches/xx-upstream-bug-task-listing-authenticated.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-maintainer.txt
+       ==> lib/canonical/launchpad/pagetests/bugtask-searches/xx-upstream-bug-task-listing-maintainer.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-unassigned.txt
+       ==> lib/canonical/launchpad/pagetests/bugtask-searches/xx-upstream-bug-task-listing-unassigned.txt
+
+    new directories:
+     lib/canonical/launchpad/pagetests/bugtask-searches
+     lib/canonical/launchpad/pagetests/bugtask-searches/.arch-ids
+
+    removed directories:
+     lib/canonical/launchpad/pagetests/standalone/deprecated
+     lib/canonical/launchpad/pagetests/standalone/deprecated/.arch-ids
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--base-0
+     brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-1
+     brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-2
+     brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-3
+     brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-4
+     brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-5
+     brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-6
+     brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-7
+     brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-8
+     brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-9
+     brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-10
+     brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-11
+     brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-12
+     brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-13
+     brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-14
+     brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-15
+     brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-16
+     brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-17
+     brad.bollenbach@canonical.com/launchpad--bugsearch-refactoring--0--patch-18
+
+
 2005-05-18 15:46:39 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1711
 
     Summary:

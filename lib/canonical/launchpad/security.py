@@ -14,7 +14,8 @@ from canonical.launchpad.interfaces import ITeamMembership
 from canonical.launchpad.interfaces import IProductSeriesSource
 from canonical.launchpad.interfaces import IProductSeriesSourceAdmin
 from canonical.launchpad.interfaces import IMilestone, IBug, IBugTask
-from canonical.launchpad.interfaces import IUpstreamBugTask, IDistroBugTask
+from canonical.launchpad.interfaces import IUpstreamBugTask, IDistroBugTask, \
+     IDistroReleaseBugTask
 from canonical.launchpad.interfaces import IReadOnlyUpstreamBugTask
 from canonical.launchpad.interfaces import IProduct
 from canonical.launchpad.interfaces import IPOTemplate, IPOFile
@@ -169,6 +170,24 @@ class EditUpstreamBugTask(AuthorizationBase):
 class EditDistroBugTask(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IDistroBugTask
+
+    def checkAuthenticated(self, user):
+        """Allow all authenticated users to edit the task."""
+        if not self.obj.bug.private:
+            # public bug
+            return True
+        else:
+            # private bug
+            for subscription in self.obj.bug.subscriptions:
+                if user.inTeam(subscription.person):
+                    return True
+
+            return False
+
+
+class EditDistroReleaseBugTask(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IDistroReleaseBugTask
 
     def checkAuthenticated(self, user):
         """Allow all authenticated users to edit the task."""

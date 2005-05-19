@@ -1,0 +1,14 @@
+The bugtask search facility supports searching on a simple text
+string.
+
+  >>> print http(r"""
+  ... GET /malone/products/firefox?field.searchtext=install&search=Search&advanced=&milestone=1&status=10&status=20&assignee=all HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/malone/products/firefox/+bugs
+  ... """)
+  HTTP/1.1 200 Ok
+  ...2...results...
+              <a href="/malone/tasks/14/+edit">5</a>
+  ...
+              <a href="/malone/tasks/2/+edit">1</a>
+  ...
