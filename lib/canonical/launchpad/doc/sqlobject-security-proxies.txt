@@ -1,0 +1,36 @@
+Demonstrate that SQLObject works with security proxies
+------------------------------------------------------
+
+Do some imports.
+    
+    >>> from canonical.launchpad.ftests import login, ANONYMOUS
+    >>> from canonical.launchpad.interfaces import IBugTaskSet, IPersonSet
+    >>> from canonical.launchpad.database import BugTask
+    >>> from zope.component import getUtility
+
+Login as Mark.
+
+    >>> login('mark@hbd.com')
+
+Get Mark's person and another person, wrapped in security proxies.
+
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> spiv = getUtility(IPersonSet).getByName('spiv')
+    >>> print type(sabdfl)
+    <type 'zope.security._proxy._Proxy'>
+
+Get a bug task assigned to Mark.  The bug task is also security-proxied.
+
+    >>> bugtask = BugTask.get(2)
+    >>> print bugtask.assignee.name
+    sabdfl
+    >>> print type(sabdfl)
+    <type 'zope.security._proxy._Proxy'>
+
+Assign a different person as the assignee, and check that it worked by reading
+it back, despite the security proxies.
+
+    >>> bugtask.assignee = spiv
+    >>> print bugtask.assignee.name
+    spiv
+

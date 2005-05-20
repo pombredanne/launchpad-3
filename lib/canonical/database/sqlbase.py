@@ -16,6 +16,14 @@ from canonical.config import config
 __all__ = ['SQLBase', 'quote', 'quote_like', 'sqlvalues',
            'ZopelessTransactionManager', 'ConflictingTransactionManagerError']
 
+
+# First, let's monkey-patch SQLObject a little, to stop its getID function from
+# returning None for security-proxied SQLObjects!
+import zope.security.proxy
+import sqlobject.main
+sqlobject.main.isinstance = zope.security.proxy.isinstance
+
+
 class LaunchpadStyle(Style):
     """A SQLObject style for launchpad. 
     
