@@ -41,6 +41,17 @@
         </a>
     </div>
     <br />
+    <tal:duplicatebug condition="context/bug/duplicateof">
+      <div>
+        <p class="portalMessage">
+          This bug is a duplicate of
+          <a href="#"
+             tal:attributes="href context/bug/duplicateof/@@absolute_url"
+             tal:content="context/bug/duplicateof/id">42</a>
+        </p>
+      </div>
+      <br />
+    </tal:duplicatebug>
     <div metal:define-macro="editform">
 
       <form action="." tal:attributes="action request/URL" method="post"

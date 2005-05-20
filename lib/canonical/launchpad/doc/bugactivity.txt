@@ -27,6 +27,8 @@ o add a web link related to this bug
 o add a reference to a bug on an external bugtracker to track the status of the
   same bug as reported on other bug trackers
 
+o mark the bug as a duplicate of another bug
+
 Each of these can happen more than once to a bug over the course of its
 lifetime. For auditing reasons, it's useful to track when these happen, why
 these things happen, and who made them happen.
@@ -34,8 +36,14 @@ these things happen, and who made them happen.
 Tracking Bug Activity in Launchpad
 ==================================
 
-Bug activity tracking is done using event subscribers. The handlers are simple
-little functions.
+Before going any further--because editing a bug requires an
+authenticated user--let's login:
+
+  >>> from canonical.launchpad.ftests import login
+  >>> login("test@canonical.com")
+
+Bug activity tracking is done using event subscribers. The handlers
+are simple little functions.
 
   >>> from datetime import datetime
   >>> from zope.event import notify
@@ -57,13 +65,8 @@ little functions.
   ...         setattr(state, field, getattr(obj, field))
   ...     return state
 
-XXX: Bjorn Tillenius, 2005-03-15,  Since BugTask._init() checks the
-     current user, we need to login first:
-
-  >>> from canonical.launchpad.ftests import login
-  >>> login('launchpad.anonymous')
-
-Here's a list of events that happen, and the resulting activity logged:
+Here's a list of events that happen, and the resulting activity
+logged:
 
   >>> from canonical.launchpad.database import Person
   >>> user = Person.get(12)
@@ -89,7 +92,8 @@ EVENT: user files a bug
 EVENT: bug edited
 
   >>> old_state = capture_state(
-  ...     bug, "id", "title", "summary", "description", "name", "private")
+  ...     bug, "id", "title", "summary", "description", "name", "private",
+  ...     "duplicateof")
   >>> bug.title = "new bug title"
   >>> bug_edited = SQLObjectModifiedEvent(
   ...     bug, old_state, ["title", "summary", "description"],
@@ -238,6 +242,24 @@ EVENT: product infestation edited
   >>> latest_activity.oldvalue == BugInfestationStatus.AFFECTED.title
   True
   >>> latest_activity.newvalue == BugInfestationStatus.UNKNOWN.title
+  True
+
+EVENT: this bug report is marked as a duplicate of another bug report
+
+  >>> edit_fields = [
+  ...     "id", "title", "summary", "description", "name",
+  ...     "private", "duplicateof"]
+  >>> old_bug = capture_state(bug, *edit_fields)
+  >>> bug.duplicateof = 1
+  >>> bug_edited = SQLObjectModifiedEvent(
+  ...     bug, old_bug, edit_fields, user, request)
+  >>> notify(bug_edited)
+  >>> latest_activity = bug.activity[-1]
+  >>> latest_activity.whatchanged
+  u'marked as duplicate'
+  >>> latest_activity.oldvalue is None
+  True
+  >>> latest_activity.newvalue == u'1'
   True
 
 For the future?

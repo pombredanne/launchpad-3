@@ -404,6 +404,8 @@ def flush_database_updates():
     """
     # XXX: turn that comment into a doctest
     #        - Andrew Bennetts, 2005-02-16
+    # https://launchpad.ubuntu.com/malone/bugs/452
+    #        - Brad Bollenbach, 2005-04-20
     for object in list(SQLBase._connection._dm.objects):
         object.syncUpdate()
 

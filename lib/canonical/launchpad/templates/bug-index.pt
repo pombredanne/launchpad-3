@@ -35,6 +35,16 @@
         product or source package in which this bug should be fixed.
     </div>
 
+    <h2>Status</h2>
+    <div tal:condition="context/duplicateof">
+      <p class="portalMessage">
+        This bug is a duplicate of
+        <a href="#"
+           tal:attributes="href context/duplicateof/@@absolute_url"
+           tal:content="context/duplicateof/id">42</a>
+      </p>
+    </div>
+
     <div tal:replace="structure view/tasksHeadline" />
 
     <div class="discreet">

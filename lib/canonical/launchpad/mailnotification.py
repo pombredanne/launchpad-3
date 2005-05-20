@@ -5,9 +5,10 @@
 __metaclass__ = type
 
 import itertools
+import sets
 from textwrap import wrap
 
-from zope.app import zapi
+from zope.app.traversing.browser.absoluteurl import absoluteURL
 from zope.app.mail.interfaces import IMailDelivery
 from zope.component import getUtility
 
@@ -44,6 +45,10 @@ def generate_bug_edit_email(bug_delta):
 
     # figure out what's been changed; add that information to the
     # email as appropriate
+    if bug_delta.duplicateof is not None:
+        body += (
+            "*** This bug has been marked a duplicate of %d ***\n\n" %
+            bug_delta.duplicateof.id)
     if bug_delta.title is not None:
         body += "    - Changed title to:\n"
         body += "        %s\n" % bug_delta.title
@@ -196,9 +201,38 @@ def send_bug_edit_notification(from_addr, to_addrs, bug_delta):
 
     simple_sendmail(from_addr, to_addrs, subject, body)
 
+def send_bug_duplicate_notification(from_addr, dup_target_to_addrs,
+                                    duplicate_bug, original_bug_url):
+    """Send a notification that a bug was marked a dup of a bug.
+
+    The email is sent from from_addr to the dup_target_to_addrs
+    telling them which bug ID has been marked as a dup of their bug.
+    duplicate_bug is an IBug whose .duplicateof is not
+    None. original_bug_url is a string that is the URL of the dup
+    target.
+    """
+
+    assert duplicate_bug.duplicateof is not None, (
+        "Can't send bug duplicate notification on non-duplicate bug: %s" %
+            repr(duplicate_bug))
+
+    subject = "[Bug %d] %s" % (
+        duplicate_bug.duplicateof.id, duplicate_bug.duplicateof.title)
+
+    body = """\
+%(bugurl)s
+
+*** Bug %(duplicate_id)d has been marked a duplicate of this bug ***""" % {
+        'duplicate_id' : duplicate_bug.id, 'bugurl' : original_bug_url}
+
+    simple_sendmail(from_addr, dup_target_to_addrs, subject, body)
 
 def get_cc_list(bug):
-    """Return the list of people that are CC'd on this bug."""
+    """Return the list of people that are CC'd on this bug.
+
+    Appends people CC'd on the dup target as well, if this bug is a
+    duplicate.
+    """
     subscriptions = []
     if not bug.private:
         subscriptions = list(GLOBAL_NOTIFICATION_EMAIL_ADDRS)
@@ -241,7 +275,7 @@ def get_bug_delta(old_bug, new_bug, user, request):
     IBugDelta if there are changes, or None if there were no changes.
     """
     changes = {}
-    for field_name in ("title", "summary", "description"):
+    for field_name in ("title", "summary", "description", "duplicateof"):
         # fields for which we simply show the new value when they
         # change
         old_val = getattr(old_bug, field_name)
@@ -260,7 +294,7 @@ def get_bug_delta(old_bug, new_bug, user, request):
 
     if changes:
         changes["bug"] = new_bug
-        changes["bugurl"] = zapi.absoluteURL(new_bug, request)
+        changes["bugurl"] = absoluteURL(new_bug, request)
         changes["user"] = user
 
         return BugDelta(**changes)
@@ -365,7 +399,7 @@ Comment: %(comment)s
 Source Package: %(source_package)s
 Product: %(product)s
 Submitted By: %(owner)s
-""" % {'url': zapi.absoluteURL(bug, event.request),
+""" % {'url': absoluteURL(bug, event.request),
        'title' : bug.title,
        'comment' : bug.description,
        'source_package' : spname,
@@ -394,6 +428,16 @@ def notify_bug_modified(modified_bug, event):
             from_addr = FROM_ADDR,
             to_addrs = notification_recipient_emails,
             bug_delta = bug_delta)
+        if bug_delta.duplicateof is not None:
+            # This bug was marked as a duplicate, so notify the dup
+            # target subscribers of this as well.
+            dup_target_recipient_emails = get_cc_list(event.object.duplicateof)
+            send_bug_duplicate_notification(
+                from_addr = FROM_ADDR,
+                dup_target_to_addrs = notification_recipient_emails,
+                duplicate_bug = bug_delta.bug,
+                original_bug_url = absoluteURL(
+                    bug_delta.bug.duplicateof, event.request))
 
 def notify_bugtask_added(bugtask, event):
     """Notify CC'd list that this bug has been marked as needing fixing
@@ -410,7 +454,7 @@ def notify_bugtask_added(bugtask, event):
 
         msg = (
             "Comments and other information can be added to this bug at\n" +
-            zapi.absoluteURL(bugtask.bug, event.request) + "\n\n")
+            absoluteURL(bugtask.bug, event.request) + "\n\n")
 
         if bugtask.product:
             msg += "Upstream: %s" % bugtask.product.displayname
@@ -442,7 +486,7 @@ def notify_bugtask_edited(modified_bugtask, event):
             event.object_before_modification, event.object)
         bug_delta = BugDelta(
             bug = event.object.bug,
-            bugurl = zapi.absoluteURL(event.object.bug, event.request),
+            bugurl = absoluteURL(event.object.bug, event.request),
             bugtask_deltas = bugtask_delta,
             user = IPerson(event.principal))
         send_bug_edit_notification(
@@ -563,30 +607,52 @@ def notify_bug_comment_added(bugmessage, event):
     """Notify CC'd list that a message was added to this bug.
 
     bugmessage must be an IBugMessage. event must be an
-    ISQLObjectCreatedEvent.
+    ISQLObjectCreatedEvent. If bugmessage.bug is a duplicate the
+    comment will also be sent to the dup target's subscribers.
     """
-    notification_recipient_emails = get_cc_list(bugmessage.bug)
+    bug = bugmessage.bug
+    notification_recipient_emails = get_cc_list(bug)
+
+    if ((bug.duplicateof is not None) and (not bug.private)):
+        # This bug is a duplicate of another bug, so include the dup
+        # target's subscribers in the recipient list, for comments
+        # only.
+        #
+        # NOTE: if the dup is private, the dup target will not receive
+        # notifications from the dup.
+        #
+        # Even though this use case seems highly contrived, I'd rather
+        # be paranoid and not reveal anything unexpectedly about a
+        # private bug.
+        #
+        # -- Brad Bollenbach, 2005-04-19
+        duplicate_target_emails = \
+            bug.duplicateof.notificationRecipientAddresses()
+        # Merge the duplicate's notification recipient addresses with
+        # those belonging to the dup target.
+        notification_recipient_emails = list(sets.Set(
+            notification_recipient_emails + duplicate_target_emails))
+        notification_recipient_emails.sort()
 
     if notification_recipient_emails:
-        msg = """\
-Comments and other information can be added to this bug at
-%(url)s
+        msg = "%s\n\n" % absoluteURL(bug, event.request)
 
-%(submitter)s said:
+        if bug.duplicateof is not None:
+            msg += "*** This bug is a duplicate of %d ***\n\n" % (
+                bug.duplicateof.id)
 
-%(subject)s
+        message = bugmessage.message
+        msg += """\
+%(submitter)s <%(email)s> said:
 
 %(contents)s""" % {
-            'url' : zapi.absoluteURL(bugmessage.bug, event.request),
-            'submitter' :bugmessage.message.owner.displayname,
-            'subject' : bugmessage.message.title,
-            'contents' : bugmessage.message.contents}
+            'submitter' : message.owner.displayname,
+            'email' : message.owner.preferredemail.email,
+            'contents' : message.contents}
 
         simple_sendmail(
             FROM_ADDR, notification_recipient_emails,
-            "[Bug %d] %s" % (
-                bugmessage.bug.id, bugmessage.bug.title),
-            msg)
+            "[Bug %d] %s" % (bug.id, bug.title), msg)
 
 def notify_bug_external_ref_added(ext_ref, event):
     """Notify CC'd list that a new web link has been added for this
@@ -600,7 +666,7 @@ def notify_bug_external_ref_added(ext_ref, event):
     if notification_recipient_emails:
         bug_delta = BugDelta(
             bug = ext_ref.bug,
-            bugurl = zapi.absoluteURL(ext_ref.bug, event.request),
+            bugurl = absoluteURL(ext_ref.bug, event.request),
             user = IPerson(event.request.principal),
             external_reference = {'new' : ext_ref})
 
@@ -623,7 +689,7 @@ def notify_bug_external_ref_edited(edited_ext_ref, event):
             # notification about.
             bug_delta = BugDelta(
                 bug = new.bug,
-                bugurl = zapi.absoluteURL(new.bug, event.request),
+                bugurl = absoluteURL(new.bug, event.request),
                 user = IPerson(event.request.principal),
                 external_reference = {'old' : old, 'new' : new})
 
@@ -641,7 +707,7 @@ def notify_bug_watch_added(watch, event):
     if notification_recipient_emails:
         bug_delta = BugDelta(
             bug = watch.bug,
-            bugurl = zapi.absoluteURL(watch.bug, event.request),
+            bugurl = absoluteURL(watch.bug, event.request),
             user = IPerson(event.request.principal),
             bugwatch = {'new' : watch})
 
@@ -665,7 +731,7 @@ def notify_bug_watch_modified(modified_bug_watch, event):
             # so let's keep going
             bug_delta = BugDelta(
                 bug = new.bug,
-                bugurl = zapi.absoluteURL(new.bug, event.request),
+                bugurl = absoluteURL(new.bug, event.request),
                 user = IPerson(event.request.principal),
                 bugwatch = {'old' : old, 'new' : new})
             send_bug_edit_notification(
@@ -684,7 +750,7 @@ def notify_bug_cveref_added(cveref, event):
     if notification_recipient_emails:
         bug_delta = BugDelta(
             bug = cveref.bug,
-            bugurl = zapi.absoluteURL(cveref.bug, event.request),
+            bugurl = absoluteURL(cveref.bug, event.request),
             user = IPerson(event.request.principal),
             cveref = {'new': cveref})
 
@@ -707,7 +773,7 @@ def notify_bug_cveref_edited(edited_cveref, event):
             # ahead and send a notification email.
             bug_delta = BugDelta(
                 bug = new.bug,
-                bugurl = zapi.absoluteURL(new.bug, event.request),
+                bugurl = absoluteURL(new.bug, event.request),
                 user = IPerson(event.request.principal),
                 cveref = {'old' : old, 'new': new})
 
@@ -716,9 +782,9 @@ def notify_bug_cveref_edited(edited_cveref, event):
 
 def notify_join_request(event):
     """Notify team administrators that a new membership is pending approval."""
-    # XXX: salgado, 2005-05-06: I have an implementation of __contains__ for 
+    # XXX: salgado, 2005-05-06: I have an implementation of __contains__ for
     # SelectResults, and as soon as it's merged we'll be able to replace this
-    # uggly for/else block by an 
+    # uggly for/else block by an
     # "if not event.user in event.team.proposedmembers: return".
     for member in event.team.proposedmembers:
         if member == event.user:

@@ -36,7 +36,7 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
     provided. to_addrs can be a list, tuple, or ASCII/Unicode string.
 
     Arbitrary headers can be set using the headers parameter.
-   
+
     Returns the Message-Id.
     """
 

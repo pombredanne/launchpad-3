@@ -49,7 +49,7 @@ class IHugeVocabulary(IVocabulary):
         IHugeVocabulary implementation.
         """
 
-class SQLObjectVocabularyBase(object):
+class SQLObjectVocabularyBase:
     """A base class for widgets that are rendered to collect values
     for attributes that are SQLObjects, e.g. ForeignKey.
 

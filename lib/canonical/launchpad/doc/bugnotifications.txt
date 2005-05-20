@@ -209,7 +209,7 @@ let's hang a bug onto the ILaunchBag utility.
     '[Bug ...] firefox crashes all the time'
 
     >>> msg.get_payload(decode = True)
-    'Comments and other information can be added to this bug at\nhttp://127.0.0.1/malone/bugs/...'
+    'http://127.0.0.1/malone/bugs/...'
 
     >>> stub.test_emails = []
 
@@ -467,6 +467,7 @@ report private:
     >>> bug_before_modification.private = False
     >>> bug_before_modification.subscriptions = firefox_bug.subscriptions
     >>> bug_before_modification.bugtasks = firefox_bug.bugtasks
+    >>> bug_before_modification.duplicateof = firefox_bug.duplicateof
     >>> bug_modified = SQLObjectModifiedEvent(
     ...     firefox_bug, bug_before_modification,
     ...     ["private"], bug_submitter, request)
