@@ -131,7 +131,7 @@ notification about the comment.
 
     >>> from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
     >>> from canonical.launchpad.database.bugmessage import BugMessageFactory
-    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from canonical.launchpad.interfaces import IOpenLaunchBag
     >>> from canonical.lp.dbschema import BugSubscription
 
 Because the subscriber lists for bugs 1 and 2 are identical, let's
@@ -143,7 +143,7 @@ demonstrate that this really works.
 
     >>> stub.test_emails = []
 
-    >>> getUtility(ILaunchBag).bug = duplicate
+    >>> getUtility(IOpenLaunchBag).add(duplicate)
     >>> some_comment = BugMessageFactory(
     ...     title = "some title", content = "some content")
     >>> notify(SQLObjectCreatedEvent(some_comment, request))

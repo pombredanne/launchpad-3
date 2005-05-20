@@ -80,8 +80,8 @@ Before we do that, note that BugTaskFactory uses the ILaunchBag
 utility to figure out the "current bug" on which to file the task, so
 let's hang a bug onto the ILaunchBag utility.
 
-    >>> from canonical.launchpad.interfaces import ILaunchBag
-    >>> getUtility(ILaunchBag).bug = firefox_crashes
+    >>> from canonical.launchpad.interfaces import IOpenLaunchBag
+    >>> getUtility(IOpenLaunchBag).add(firefox_crashes)
 
   2.1 Distro Task
 

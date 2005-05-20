@@ -14,13 +14,6 @@ Bugs are created and retrieved via IBugSet.
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> bugset = getUtility(IBugSet)
 
-To demonstrate how to retrieve a specific bug, let's simulate that we're
-interacting with the system as an anonymous user:
-
-    >>> import zope.security.management
-    >>> from canonical.launchpad.ftests import login
-    >>> login("launchpad.anonymous")
-
 To retrieve a specific Bug, use IBugSet.get:
 
     >>> firefox_crashes = bugset.get(6)

@@ -48,6 +48,7 @@ from canonical.launchpad.interfaces.language import *
 from canonical.launchpad.interfaces.launchpad import *
 from canonical.launchpad.interfaces.librarian import *
 from canonical.launchpad.interfaces.logintoken import *
+from canonical.launchpad.interfaces.mail import *
 from canonical.launchpad.interfaces.mailbox import *
 from canonical.launchpad.interfaces.maintainership import *
 from canonical.launchpad.interfaces.manifestentry import *

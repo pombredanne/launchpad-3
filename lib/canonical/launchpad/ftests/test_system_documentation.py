@@ -13,7 +13,7 @@ from canonical.launchpad.ftests.harness import \
         _disconnect_sqlos, _reconnect_sqlos
 from zope.testing.doctest import DocFileSuite
 from zope.component import getUtility
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces import ILaunchBag, IOpenLaunchBag
 from canonical.launchpad.mail import stub
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.librarian.ftests.harness import LibrarianTestSetup
@@ -31,8 +31,11 @@ def setUp(test):
     LaunchpadTestSetup().setUp()
     _reconnect_sqlos()
     setGlobs(test)
+    # Set up an anonymous interaction.
+    login(ANONYMOUS)
 
 def tearDown(test):
+    getUtility(IOpenLaunchBag).clear()
     _disconnect_sqlos()
     sqlos.connection.connCache = {}
     LaunchpadTestSetup().tearDown()
