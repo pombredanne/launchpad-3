@@ -629,10 +629,10 @@ h1, h2, h3, h4, h5, h6 {
 	text-align: left;
 }
 h2 {
-	text-transform: uppercase;
+  font-size: 1.25em;
 	margin: 0.5em 0;
 }
-h2, h3, h4, h5, h6 {
+h3, h4, h5, h6 {
 	font-size: 1em;
 }
 /* temporary while page-header exists: */
