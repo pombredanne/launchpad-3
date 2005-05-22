@@ -344,7 +344,12 @@ class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
 
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
     _table = ProductRelease
-    _orderBy = 'name'
+    # XXX carlos Perello Marin 2005-05-16:
+    # Sorting by version won't give the expected results, because it's just a
+    # text field.  e.g. ["1.0", "2.0", "11.0"] would be sorted as ["1.0",
+    # "11.0", "2.0"].
+    # See https://launchpad.ubuntu.com/malone/bugs/687
+    _orderBy = 'version'
 
     def _toTerm(self, obj):
         return SimpleTerm(

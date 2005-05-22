@@ -1,7 +1,16 @@
-
+Check that the product main page works.
 
   >>> print http(r"""
   ... GET /doap/products/ubuntu HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...
+
+Check that the product index page works for product with translations.
+
+  >>> print http(r"""
+  ... GET /products/evolution HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...

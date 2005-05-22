@@ -1,0 +1,39 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+    i18n:domain="launchpad">
+
+<head>
+  <title metal:fill-slot="title" i18n:translate="">Rosetta Translation
+    Templates for <span tal:replace="context/title">Hoary</span>
+  </title>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+  <!-- Launchpad style sheet -->
+  <style type="text/css" media="screen">@import url(launchpad.css);</style>
+</head>
+
+<body>
+
+<tal:comment tal:replace="nothing">
+  The content of this page will change based on the number of potemplate
+  objects we have. We do the same with the portlets.
+</tal:comment>
+<metal:rightportlets fill-slot="portlets_two"
+    tal:condition="python:context.potemplatecount <= 5">
+    <div tal:replace="structure view/prefLangPortlet" />
+    <div tal:replace="structure view/countryPortlet" />
+    <div tal:replace="structure view/browserLangPortlet" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1 i18n:translate="">Translation Templates</h1>
+
+  <div tal:replace="structure context/@@+potlist" />
+
+</div>
+
+</body>
+</html>

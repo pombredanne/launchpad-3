@@ -4,8 +4,10 @@
 
 __metaclass__ = type
 
-from zope.interface import implements
+from warnings import warn
+
 import zope.security.interfaces
+from zope.interface import implements
 from zope.component import getUtility, getAdapter
 from zope.event import notify
 from zope.exceptions import NotFoundError
@@ -28,7 +30,8 @@ from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary, \
 from canonical.launchpad.database import Product, ProductSeriesSet, \
      BugFactory, ProductMilestoneSet, Milestone, Person
 from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet, \
-     IBugTaskSet, IMilestoneSet, IAging, ILaunchBag, IBugTaskSearchListingView
+     IBugTaskSet, IMilestoneSet, IAging, ILaunchBag, IProductRelease, \
+     ISourcePackage, IBugTaskSearchListingView
 from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad import helpers
@@ -57,6 +60,9 @@ class ProductView:
 
     translationsPortlet = ViewPageTemplateFile(
         '../templates/portlet-product-translations.pt')
+
+    translatablesPortlet = ViewPageTemplateFile(
+        '../templates/portlet-product-translatables.pt')
 
     latestBugPortlet = ViewPageTemplateFile(
         '../templates/portlet-latest-bugs.pt')
@@ -105,6 +111,54 @@ class ProductView:
         self.status_message = None
         # Whether there is more than one PO template.
         self.has_multiple_templates = len(context.potemplates()) > 1
+
+    def primary_translatable(self):
+        """Return a dictionary with the info for a primary translatable.
+
+        If there is no primary translatable object, returns None.
+
+        The dictionary has the keys:
+         * 'title': The title of the translatable object.
+         * 'potemplates': a set of PO Templates for this object.
+         * 'base_url': The base URL to reach the base URL for this object.
+        """
+        translatable = self.context.primary_translatable
+
+        if translatable is not None:
+            if ISourcePackage.providedBy(translatable):
+                sourcepackage = translatable
+
+                object_translatable = {
+                    'title': sourcepackage.title,
+                    'potemplates': sourcepackage.potemplates,
+                    'base_url': '/distros/%s/%s/+sources/%s' % (
+                        sourcepackage.distribution.name,
+                        sourcepackage.distrorelease.name,
+                        sourcepackage.name)
+                    }
+
+            elif IProductRelease.providedBy(translatable):
+                productrelease = translatable
+
+                object_translatable = {
+                    'title': productrelease.title,
+                    'potemplates': productrelease.title,
+                    'url': '/products/%s/%s' %(
+                        self.context.name,
+                        productrelease.version)
+                    }
+            else:
+                # The translatable object does not implements an
+                # ISourcePackage nor a IProductRelease. As it's not a critical
+                # failure, we log only it instead of raise an exception.
+                warn("Got an unknown type object as primary translatable",
+                     RuntimeWarning)
+                return None
+
+            return object_translatable
+
+        else:
+            return None
 
     def templateviews(self):
         return [ViewPOTemplate(template, self.request)

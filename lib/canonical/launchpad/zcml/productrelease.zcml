@@ -72,8 +72,13 @@
         class="canonical.launchpad.browser.ProductReleaseView" >
         <browser:page
             name="+translations"
+            template="../templates/productrelease-translations.pt"
+            lp:url="/products/evolution/2.1.6/+translations" />
+	    <browser:page
+            name="+potlist"
             template="../templates/object-pots.pt"
-            lp:url="/products/$Product.name/$Series.name/$ProductRelease.version/+rosetta" />
+	        lp:url="/products/evolution/2.1.6/+potlist"
+	        />
     </browser:pages>
 
 </configure>

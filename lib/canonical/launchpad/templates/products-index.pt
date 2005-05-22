@@ -48,7 +48,6 @@
                   type="submit"
                   value="Search"
                 />
-                <a href="+search">Advanced search</a>
               </div>
             </td>
           </tr>

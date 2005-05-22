@@ -58,8 +58,10 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Translation Template: <span tal:replace="context/title">Potemplate Title</span>
-    </h1>
+    <h1>Translation Template</h1>
+
+    <p tal:content="context/description">A brief paragraph describing the
+    potemplate would go here.</p>
 
     <div tal:replace="structure context/@@+chart" />
 

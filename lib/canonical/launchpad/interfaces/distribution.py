@@ -94,6 +94,9 @@ class IDistributionSet(Interface):
     def get(distributionid):
         """Return the IDistribution with the given distributionid."""
 
+    def getByName(distroname):
+        """Return the IDistribution with the given name."""
+
 class IDistroPackageFinder(Interface):
     """A tool to find packages in a distribution."""
 

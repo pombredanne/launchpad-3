@@ -78,7 +78,7 @@
             <img src="/++resource++product_icon.gif"> <b><span
             tal:replace="product/title">product title</span></b>
             [ <a tal:attributes="href
-            string:products/${product/name}">Translate</a> ]
+            string:/products/${product/name}/+translations">Translate</a> ]
             <br />
             <span tal:replace="product/summary">product
             summary</span>
