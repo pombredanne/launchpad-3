@@ -3,32 +3,8 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-
-    <title metal:fill-slot="title">The Launchpad Home Page</title>
-    <style type="text/css" media="screen">
-    @import url(/++resource++plone.css);
-    @import url(/++resource++launchpad.css);
-
-    body {
-        padding: 3em;
-        }
-
-    h1 {
-        font-size: 300%;
-        font-weight: bold;
-        border: none;
-        }
-
-    h2 {
-        border: none;
-        }
-    </style>
-</head>
-
 <body>
 
- 
   <div metal:fill-slot="main">
     <h1>Welcome to The Launchpad!</h1>
 

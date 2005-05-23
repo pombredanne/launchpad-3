@@ -3,10 +3,6 @@
     metal:use-macro="context/@@launchpad_template/master"
     i18n:domain="launchpad">
 
-<head>
-  <title metal:fill-slot="title">redirection</title>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">

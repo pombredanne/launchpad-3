@@ -2,10 +2,6 @@
   condition="view/issueChallenge" />
 <html metal:use-macro="context/@@standard_macros/page">
 
-<head>
-  <title metal:fill-slot="title">Launchpad Permissions Notice</title>
-<body>
-
 <div xmetal:fill-slot="body">
 
 <h1 i18n:translate="">Unauthorized</h1>

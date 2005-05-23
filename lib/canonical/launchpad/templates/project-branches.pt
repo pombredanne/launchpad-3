@@ -3,11 +3,6 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="rosetta">
 
-<head>
-  <title metal:fill-slot="title">Bazaar Summary for
-    <span tal:replace="context/title">The Project</span>
-  </title>
-</head>
 <body>
 
 <div metal:fill-slot="main">

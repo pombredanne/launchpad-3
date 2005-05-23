@@ -3,13 +3,6 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="malone">
 
-<head>
-  <title metal:fill-slot="title">
-    <span tal:replace="context/displayname">$Product.displayname</span>
-    upstream bug reports
-  </title>
-</head>
-
 <body>
 
 <div metal:fill-slot="column_one">

@@ -10,9 +10,7 @@ specifically Hoary.
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-      <title>
-      Release The Hoary Hedgehog Release: Bugs
-      </title>
+      <title>Release The Hoary Hedgehog Release: Bugs</title>
   ...
 
 This page checks that we can see a list of bugs on the distributions, in
@@ -27,7 +25,5 @@ this case Ubuntu.
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-      <title>
-      Release Ubuntu Linux: Bugs
-      </title>
+      <title>Release Ubuntu Linux: Bugs</title>
   ...

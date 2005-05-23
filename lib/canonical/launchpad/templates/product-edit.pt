@@ -3,10 +3,6 @@
       lang="en"
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="launchpad">
-      
-    <title metal:fill-slot="title">Edit Upstream Details: <span
-    tal:replace="context/title">product title</span>
-    </title>
 
   <body>
 

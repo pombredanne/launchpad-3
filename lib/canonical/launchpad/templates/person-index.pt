@@ -4,10 +4,6 @@
       i18n:domain="launchpad">
 
 <head>
-  <title metal:fill-slot="title">
-    <span tal:replace="context/displayname">Name</span>
-    Personal Information</title>
-
     <tal:block metal:fill-slot="head_epilogue">
         <link rel="meta" type="application/rdf+xml" title="FOAF" href="+rdf"
             tal:condition="context/preferredemail" />

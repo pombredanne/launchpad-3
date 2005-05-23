@@ -5,10 +5,6 @@
     metal:use-macro="context/@@malone_template/master"
     i18n:domain="launchpad">
 
-  <head>
-    <title metal:fill-slot="title">Launchpad Auto-Add Form</title>
-  </head>
-
   <body>
 
   <!-- This page uses the launchpad-addform.pt METAL -->

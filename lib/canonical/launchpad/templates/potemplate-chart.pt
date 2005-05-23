@@ -1,5 +1,3 @@
-<metal:dummy />
-
 <table class="listing rowNavigation" width="100%">
   <thead>
     <th>Language</th>

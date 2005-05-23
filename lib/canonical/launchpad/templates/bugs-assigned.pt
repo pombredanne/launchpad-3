@@ -3,10 +3,6 @@
     metal:use-macro="context/@@malone_template/master"
     i18n:domain="malone">
 
-    <title metal:fill-slot="title">Malone Bugs assigned to
-    <span tal:replace="view/user/browsername"></span>
-    </title>
-
 <body>
 
 <metal:rightportlets fill-slot="portlets_two">

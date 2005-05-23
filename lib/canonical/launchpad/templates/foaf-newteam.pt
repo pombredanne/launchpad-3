@@ -3,8 +3,6 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="launchpad">
 
-    <title metal:fill-slot="title">FOAF: Create a new Team</title>
-
   <body>
 
   <metal:rightportlets fill-slot="portlets_two">

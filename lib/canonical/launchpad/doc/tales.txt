@@ -52,6 +52,23 @@ Test the 'fmt:' namespace where the context is a string.
      'wrap: break-word;">hello &amp; goodbye</pre>']
 
 
+Test the 'fmt:' namespace where the context is a dict.
+
+This case ought to apply only to a page template's CONTEXTS dict.  However, we
+have to make this namespace available for all dicts, as there is no type
+information to distinguish a page template CONTEXTS dict from any other dict.
+
+'fmt:pagetitle' is the only operation available from the 'fmt:' namespace
+as applied to a dict.
+
+    >>> class MockPageTemplateFile:
+    ...     filename = '/blah/blah/debug-root-index.pt'
+    ...
+    >>> CONTEXTS = {'template': MockPageTemplateFile}
+    >>> test_tales('foo/fmt:pagetitle', foo=CONTEXTS)
+    'Launchpad Debug Home Page'
+
+
 Test the 'fmt:' namespace where the context is None.
 
     >>> test_tales('foo/fmt:shorten', foo=None)
@@ -72,6 +89,8 @@ Test the 'fmt:' namespace where the context is None.
     >>> test_tales('foo/fmt:time', foo=None)
     ''
     >>> test_tales('foo/fmt:datetime', foo=None)
+    ''
+    >>> test_tales('foo/fmt:pagetitle', foo=None)
     ''
 
 The 'menu:' namespace allows access to links, in the form of facets and tabs.

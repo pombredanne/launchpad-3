@@ -9,8 +9,6 @@
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Bounties for
-        the Mozilla Project
-      </title>
+      <title>Bounties for the Mozilla Project</title>
   ...
 

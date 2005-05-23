@@ -3,11 +3,6 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="launchpad">
 
-  <head>
-    <title tal:content="view/page_title|default"
-           metal:fill-slot="title">Launchpad</title>
-  </head>
-
   <body>
 
   <div metal:fill-slot="main">

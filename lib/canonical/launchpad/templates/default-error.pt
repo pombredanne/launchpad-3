@@ -1,7 +1,4 @@
 <html metal:use-macro="context/@@main_template/master">
-    <head>
-        <title metal:fill-slot="title">System Error</title>
-    </head>
     <body>
         <div metal:fill-slot="main">
           <h1 class="exception">

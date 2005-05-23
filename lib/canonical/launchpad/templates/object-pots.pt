@@ -1,5 +1,3 @@
-<metal:dummy />
-
   <!-- indicate if no templates are registered for this object and
      redirect to the mailing lists in case that is incorrect
   -->

@@ -3,9 +3,6 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="launchpad">
 
-    <title metal:fill-slot="title">Malone: Add a New Bug
-    </title>
-
   <body>
 
   <!-- This page uses the launchpad-addform.pt METAL -->

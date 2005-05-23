@@ -3,15 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">
-      Launchpad Distribution Manager: <span
-      tal:replace="context/title">distribution title</span>
-      </title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-</head>
-
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">

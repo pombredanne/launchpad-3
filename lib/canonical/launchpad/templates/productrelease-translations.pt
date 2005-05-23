@@ -4,17 +4,6 @@
     xmlns:i18n="http://xml.zope.org/namespaces/i18n"
     i18n:domain="launchpad">
 
-<head>
-  <title metal:fill-slot="title" i18n:translate="">Rosetta Translation
-    Templates for <span tal:replace="context/title">foopackage in
-    Hoary</span>
-  </title>
-  <!-- Plone style sheet -->
-  <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Launchpad style sheet -->
-  <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
 <metal:rightportlets fill-slot="portlets_two">

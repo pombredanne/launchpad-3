@@ -3,17 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-  <title metal:fill-slot="title">
-    <span tal:content="context/release/distribution/title">Distro
-    Title</span>
-    <span tal:content="context/release/title">DistroRelease Title</span>:
-    Source Packages
-  </title>
-  <!-- Plone style sheet -->
-  <style type="text/css" media="screen">@import url(plone.css);</style>
-</head>
-
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
