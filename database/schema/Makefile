@@ -52,7 +52,7 @@ test: create
 	@ createdb -E UNICODE --template ${TEST_DBNAME} ${EMPTY_DBNAME} \
 	    | grep : | cat
 	@ echo "* Loading sample data"
-	@ psql -d ${TEST_DBNAME} -f $(SAMPLEDATA) | grep : | cat
+	@ psql -v ON_ERROR_STOP=1 -d ${TEST_DBNAME} -f $(SAMPLEDATA) > /dev/null
 	@ echo "* Setting up full text indexes"
 	@ env LP_DBNAME=${EMPTY_DBNAME} ${PYTHON} fti.py
 	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py

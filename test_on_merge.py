@@ -88,7 +88,7 @@ def main():
     schema_dir = os.path.join(here, 'database', 'schema')
     if os.system('cd %s; make test PYTHON=%s > /dev/null' % (
         schema_dir, sys.executable)) != 0:
-        print 'Failed to create database'
+        print 'Failed to create database or load sampledata.'
         return 1
 
     # Sanity check the database. No point running tests if the
@@ -101,13 +101,6 @@ def main():
         print 'Search path incorrect.'
         print 'Add the following line to /etc/postgresql/postgresql.conf:'
         print "    search_path = '$user,public,ts2'"
-        return 1
-    cur.execute("""
-        select count(*) from person where displayname='Mark Shuttleworth'
-        """)
-    cnt = cur.fetchone()[0]
-    if cnt < 1:
-        print 'Sample data not loaded.'
         return 1
     cur.execute("""
         select pg_encoding_to_char(encoding) as encoding from pg_database
