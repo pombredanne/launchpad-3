@@ -811,8 +811,8 @@ def notify_join_request(event):
                         'name': user.name,
                         'teamname': team.browsername,
                         'url': url}
-        file = 'lib/canonical/launchpad/templates/pending-membership-approval.txt'
-        msg = open(file).read() % replacements
-        fromaddress = "Launchpad <launchpad@ubuntu.com>"
+        f = 'lib/canonical/launchpad/emailtemplates/pending-membership-approval.txt'
+        msg = open(f).read() % replacements
+        fromaddress = "Launchpad <noreply@ubuntu.com>"
         subject = "Launchpad: New member awaiting approval."
         simple_sendmail(fromaddress, to_addrs, subject, msg)

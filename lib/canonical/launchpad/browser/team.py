@@ -123,7 +123,8 @@ class TeamEmailView:
 
 def sendEmailValidationRequest(token, appurl):
     # XXX: must use another template.
-    template = open('lib/canonical/launchpad/templates/validate-email.txt').read()
+    template = open(
+        'lib/canonical/launchpad/emailtemplates/validate-email.txt').read()
     fromaddress = "Launchpad Email Validator <noreply@ubuntu.com>"
 
     replacements = {'longstring': token.token,
