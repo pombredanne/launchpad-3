@@ -225,6 +225,8 @@ class ProductView:
             return
         if not self.request.method == "POST":
             return
+        # Make sure series name is lowercase
+        self.form["name"] = self.form['name'].lower()
         #XXX: cprov 20050112
         # Avoid passing obscure arguments as self.form
         # XXX sabdfl 16/04/05 we REALLY should not be passing this form to

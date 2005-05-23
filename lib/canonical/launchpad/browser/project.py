@@ -36,7 +36,7 @@ def traverseProject(project, request, name):
 
 
 #
-# This is a View on a Project object, which is used in the DOAP
+# This is a View on a Project object, which is used in the Hatchery
 # system.
 #
 class ProjectView(object):
@@ -249,6 +249,8 @@ class ProjectSetView(object):
             return
         if not self.request.method == "POST":
             return
+        # Enforce lowercase project name
+        self.form['name'] = self.form['name'].lower()
         # Extract the details from the form
         name = self.form['name']
         displayname = self.form['displayname']
