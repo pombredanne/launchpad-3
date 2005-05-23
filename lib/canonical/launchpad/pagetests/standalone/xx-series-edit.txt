@@ -17,6 +17,7 @@ Make sure we can see the productseries edit page.
       </title>
   ...
 
+Test that the page to edit an existing product series works.
 
 Post the form with updated ProductSeries details for displayname, summary
 and fileroot / fileglob.

@@ -1,4 +1,4 @@
-
+Test to add a product series
 
   >>> print http(r"""
   ... GET /products/firefox/+addseries HTTP/1.1

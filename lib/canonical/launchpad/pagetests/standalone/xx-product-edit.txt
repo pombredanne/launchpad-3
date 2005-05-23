@@ -1,4 +1,4 @@
-
+Page to edit a product - does the page load?
 
   >>> print http(r"""
   ... GET /doap/products/firefox/+edit HTTP/1.1
