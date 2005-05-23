@@ -453,6 +453,7 @@ class Person(SQLBase):
         # There can be only one preferred email for a given person at a
         # given time, and this constraint must be ensured in the DB, but
         # it's not a problem if we ensure this constraint here as well.
+        emails = list(emails)
         length = len(emails)
         assert length <= 1
         if length:
