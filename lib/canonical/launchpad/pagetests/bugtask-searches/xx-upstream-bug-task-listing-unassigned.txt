@@ -1,0 +1,21 @@
+View the unassigned bug tasks listing as user Sample Person.
+
+  >>> print http(r"""
+  ... GET /malone/products/firefox?searchtext=&advanced=%5Bu%27Advanced%27%2C+u%27%27%5D&field.milestone-empty-marker=1&field.status%3Alist=New&field.status%3Alist=Accepted&field.status-empty-marker=1&field.severity-empty-marker=1&field.assignee=&field.unassigned.used=&field.unassigned=on&field.milestone-empty-marker=1&search=Search HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/malone/products/firefox
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...1...
+  ...2...
+  of 2 results
+  ...
+            <td>
+                <a href="/malone/tasks/15/+edit">6</a>
+            </td>
+  ...
+            <td>
+                <a href="/malone/tasks/13/+edit">4</a>
+            </td>
+  ...

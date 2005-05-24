@@ -27,7 +27,7 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
         layer="canonical.launchpad.layers.RosettaLayer"
-        name="+rosetta-index"
+        name="+translations"
         />
 
     <browser:traverse
@@ -49,7 +49,8 @@
             lp:url="/products/$Product.name/" />
         <browser:page
             name="+translations"
-            template="../templates/object-pots.pt" />
+            template="../templates/product-translations.pt"
+            lp:url="/products/evolution/+translations" />
     </browser:pages>
 
     <browser:pages
@@ -59,16 +60,6 @@
             name="+bounties"
             template="../templates/related-bounties.pt"
             lp:url="/products/$Product.name/+bounties/" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProduct"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.ProductView" >
-        <browser:page
-            name="+rosetta-index"
-            template="../templates/object-pots.pt"
-            lp:url="/rosetta/products/$Product.name/" />
     </browser:pages>
 
     <browser:pages
@@ -203,9 +194,9 @@
             template="../templates/products-index.pt"
             lp:url="/products/+index" />
         <browser:page
-            name="+search"
-            template="../templates/products-search.pt"
-            lp:url="/products/+search" />
+            name="+all"
+            template="../templates/doap-listall.pt"
+            lp:url="/products/+all" />
     </browser:pages>
 
     <browser:pages

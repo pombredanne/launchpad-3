@@ -14,13 +14,12 @@ translations.
   ...
                   Rosetta Administrators<br />
   ...
-      <h1>Translation Template: Template for evolution in hoary
+      <h1>Translation Template</h1>
   ...
         <a href="/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate">
           <td>
             <a href="/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate">Spanish</a>
           </td>
-          <td>7</td>
           <td>15</td>
   ...
               Carlos Perelló Marín

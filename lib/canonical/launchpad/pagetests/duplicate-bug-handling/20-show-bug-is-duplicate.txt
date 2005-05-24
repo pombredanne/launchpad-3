@@ -1,0 +1,15 @@
+When a bug is marked as a duplicate of another bug, the main bug page
+will show such information in a prominent way.
+
+  >>> print http(r"""
+  ... GET /malone/bugs/2 HTTP/1.1
+  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+      <h2>Status</h2>
+  ...
+          This bug is a duplicate of
+          <a href="...">1</a>
+  ...

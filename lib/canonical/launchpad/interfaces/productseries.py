@@ -5,6 +5,8 @@ from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
                         TextLine, Password
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
+
+from canonical.launchpad.validators.name import valid_name
 _ = MessageIDFactory('launchpad')
 
 class IProductSeries(Interface):
@@ -16,6 +18,7 @@ class IProductSeries(Interface):
     # field names
     product = Choice( title=_('Product'), required=True,
                       vocabulary='Product')
+    name = Text(title=_('Name'), required=True, constraint=valid_name)
     name = TextLine(title=_('Name'), required=True)
     title = Attribute('Title')
     displayname = TextLine( title=_('Display Name'), required=True)

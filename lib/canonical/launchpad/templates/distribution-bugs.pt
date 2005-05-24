@@ -3,22 +3,7 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-
-    <title metal:fill-slot="title">
-    Release <span tal:replace="context/title">Title</span>: Bugs
-    </title>
-
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-    <title>Open bugs on <span tal:content="context/name">Distro</span></title>
-</head>
-
 <body>
-
-<div metal:fill-slot="column_one"></div>
 
 <div metal:fill-slot="main">
 

@@ -3,24 +3,12 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">
-        Generate ISO image for 
-        <span tal:replace="context/release/title">Title</span>
-    </title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-    <title>Generate ISOs</title>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">
 
    <h1>Generate ISO for <span tal:content="context/release/title">Title</span> 
-	Release</h1>
+Release</h1>
 
 </div>
 

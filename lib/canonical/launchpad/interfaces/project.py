@@ -4,6 +4,7 @@
 """
 
 from canonical.launchpad.fields import Title, Summary
+from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 
@@ -23,11 +24,15 @@ class IProject(IHasOwner):
                    description=_("""Project owner, it can either a valid
                    Person or Team inside Launchpad context."""))
     
-    name = TextLine(title=_('Name'), required=True, description=_("""The short
-        name of this project, which must be unique among all the products.
-        It should be at least one lowercase letters or number followed by
-        one or more chars, numbers, plusses, dots or hyphens and will be
-        part of the url to this project in the Launchpad."""))
+    name = TextLine(
+            title=_('Name'), required=True, 
+            description=_("""The short
+            name of this project, which must be unique among all the products.
+            It should be at least one lowercase letters or number followed by
+            one or more chars, numbers, plusses, dots or hyphens and will be
+            part of the url to this project in the Launchpad."""),
+            constraint=valid_name,
+            )
 
     displayname = TextLine(title=_('Display Name'), description=_("""The
         display name of the project is a short name, appropriately

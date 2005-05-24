@@ -65,7 +65,7 @@ class ProjectSet:
         self.title = 'Open Source Projects in the Launchpad'
 
     def __iter__(self):
-        return iter(Project.select())
+        return iter(Project.selectBy(active=True))
 
     def __getitem__(self, name):
         project = Project.selectOneBy(name=name)

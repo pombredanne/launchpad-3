@@ -192,11 +192,13 @@ COMMENT ON COLUMN POTemplateName.description IS 'A brief text about this POTempl
 COMMENT ON COLUMN POTemplateName.translationdomain IS 'The translation domain name for this POTemplateName';
 
 -- POFile
-COMMENT ON TABLE POFile IS 'This table stores a po file for a given product.';
-COMMENT ON COLUMN POFile.rawfile IS 'The po file itself encoded as a base64 string.';
-COMMENT ON COLUMN POFile.rawimporter IS 'The person that attached the rawfile.';
-COMMENT ON COLUMN POFile.daterawimport IS 'The date when the rawfile was attached.';
-COMMENT ON COLUMN POFile.rawimportstatus IS 'The status of the import: 0 pending import, 1 imported, 2 failed.';
+COMMENT ON TABLE POFile IS 'This table stores a PO file for a given PO template.';
+COMMENT ON COLUMN POFile.rawfile IS 'The Library file alias of the PO file as imported.';
+COMMENT ON COLUMN POFile.rawimporter IS 'The person that attached the raw file.';
+COMMENT ON COLUMN POFile.daterawimport IS 'The date when the raw file was attached.';
+COMMENT ON COLUMN POFile.rawimportstatus IS 'The status of the import. See the RosettaImportStatus schema.';
+COMMENT ON COLUMN POFile.exportfile IS 'The Library file alias of an export of this PO file.';
+COMMENT ON COLUMN POFile.exporttime IS 'The time at which the file referenced by exportfile was generated.';
 
 /*
   Bazaar

@@ -149,7 +149,7 @@ class DistributionSet:
         """Returns all Distributions available on the database"""
         return Distribution.select()
 
-    def getDistribution(self, name):
+    def getByName(self, name):
         """Returns a Distribution with name = name"""
         return self[name]
 

@@ -133,6 +133,15 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
         """Returns the list of persons that have an active contribution inside
         this POFile."""
 
+    def validExportCache():
+        """Does this PO file have a cached export that is up to date?"""
+
+    def updateExportCache(contents):
+        """Update this PO file's export cache with a string."""
+
+    def export():
+        """Export this PO file as a string."""
+
 
 class IEditPOFile(IPOFile):
     """Edit interface for a PO File."""

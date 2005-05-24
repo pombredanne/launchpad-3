@@ -32,10 +32,10 @@ ZDOptions.schemafile = os.path.abspath(os.path.join(
 
 def run(argv=list(sys.argv)):
 
-    if sys.version_info < ( 2,3,4 ):
-        print """\
-        ERROR: Your python version is not supported by Zope3.
-        Zope3 needs Python 2.3.4 or greater. You are running:""" + sys.version
+    if sys.version_info < (2, 4, 0):
+        print ("ERROR: Your python version is not supported by Launchpad."
+               "Launchpad needs Python 2.4 or greater. You are running: " 
+               + sys.version)
         sys.exit(1)
 
     # setting python paths

@@ -1,9 +1,13 @@
-"""
-Vocabularies pulling stuff from the database.
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Vocabularies pulling stuff from the database.
 
 You probably don't want to use these classes directly - see the
-docstring in __init__.py for details
+docstring in __init__.py for details.
 """
+
+__metaclass__ = type
+
 from zope.component import getUtility
 from zope.interface import implements, Interface
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
@@ -32,7 +36,7 @@ from sqlobject import AND, OR, CONTAINSSTRING
 
 class IHugeVocabulary(IVocabulary):
     """Interface for huge vocabularies.
-    
+
     Items in an IHugeVocabulary should have human readable tokens or the
     default UI will suck.
 
@@ -41,11 +45,11 @@ class IHugeVocabulary(IVocabulary):
         """Return an iterable of ITokenizedTerm that match the
         search string.
 
-        Note that what is searched and how the match is the choice of the 
+        Note that what is searched and how the match is the choice of the
         IHugeVocabulary implementation.
         """
 
-class SQLObjectVocabularyBase(object):
+class SQLObjectVocabularyBase:
     """A base class for widgets that are rendered to collect values
     for attributes that are SQLObjects, e.g. ForeignKey.
 
@@ -115,7 +119,7 @@ class SQLObjectVocabularyBase(object):
 class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
     """A SQLObjectVocabulary base for database tables that have a unique
         name column.
-        
+
         Provides all methods required by IHugeVocabulary,
         although it doesn't actually specify this interface since it may
         not actually be huge and require the custom widgets.
@@ -340,7 +344,12 @@ class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
 
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
     _table = ProductRelease
-    _orderBy = 'name'
+    # XXX carlos Perello Marin 2005-05-16:
+    # Sorting by version won't give the expected results, because it's just a
+    # text field.  e.g. ["1.0", "2.0", "11.0"] would be sorted as ["1.0",
+    # "11.0", "2.0"].
+    # See https://launchpad.ubuntu.com/malone/bugs/687
+    _orderBy = 'version'
 
     def _toTerm(self, obj):
         return SimpleTerm(
@@ -427,8 +436,12 @@ class MilestoneVocabulary(NamedSQLObjectVocabulary):
         return SimpleTerm(obj, obj.name, obj.name)
 
     def __iter__(self):
-        if self.context.product:
-            for ms in self.context.product.milestones:
+        product = getUtility(ILaunchBag).product
+        if product is None:
+            product = self.context.product
+
+        if product is not None:
+            for ms in product.milestones:
                 yield SimpleTerm(ms, ms.name, ms.name)
 
 class PackageReleaseVocabulary(SQLObjectVocabularyBase):
@@ -487,7 +500,7 @@ class DistributionVocabulary(NamedSQLObjectVocabulary):
 
 class ValidGPGKeyVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
-    
+
     _table = GPGKey
     _orderBy = 'keyid'
 
@@ -507,7 +520,7 @@ class ValidGPGKeyVocabulary(SQLObjectVocabularyBase):
                                        "Person.fti @@ ftq(%s)" % query),
                                       orderBy=self._orderBy,
                                       clauseTables=clauseTables)
-            
+
             return [self._toTerm(obj) for obj in objs]
 
         return []

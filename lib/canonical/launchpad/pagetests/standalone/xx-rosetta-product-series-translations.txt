@@ -7,8 +7,7 @@ serie is working.
   ... """)
   HTTP/1.1 200 Ok
   ...
-      <title>Rosetta Translation
-      Templates for 
+      <title>Rosetta Translation Templates for Evolution 2.1.6</title>
   ...
       <tr onclick="window.location='/products/evolution/2.1.6/+pots/evolution-2.2/af/+translate'">
   <BLANKLINE>
@@ -16,6 +15,5 @@ serie is working.
           <td>
             <a href="/products/evolution/2.1.6/+pots/evolution-2.2/af/+translate">Afrikaans</a>
           </td>
-          <td>0</td>
           <td>22</td>
   ...

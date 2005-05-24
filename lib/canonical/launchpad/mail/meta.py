@@ -1,8 +1,50 @@
-from zope.app.component.metaconfigure import handler
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
+from zope.app.component.metaconfigure import handler, utility
 from zope.app.mail.interfaces import IMailer
 from zope.app.mail.metadirectives import IMailerDirective
+from zope.interface import Interface
 from zope.schema import ASCII, Bool
-from stub import StubMailer, TestMailer
+
+from canonical.launchpad.interfaces import IMailBox
+from canonical.launchpad.mail.stub import StubMailer, TestMailer
+from canonical.launchpad.mail.mailbox import TestMailBox, POP3MailBox
+
+
+
+class ITestMailBoxDirective(Interface):
+    """Configure a mail box which operates on test_emails."""
+
+def testMailBoxHandler(_context):
+    utility(_context, IMailBox, component=TestMailBox())
+
+
+class IPOP3MailBoxDirective(Interface):
+    """Configure a mail box which interfaces to a POP3 server."""
+    host = ASCII(
+            title=u"Host",
+            description=u"Host name of the POP3 server.",
+            required=True,
+            )
+    
+    user = ASCII(
+            title=u"User",
+            description=u"User name to connect to the POP3 server with.",
+            required=True,
+            )
+    
+    password = ASCII(
+            title=u"Password",
+            description=u"Password to connect to the POP3 server with.",
+            required=True,
+            )
+
+def pop3MailBoxHandler(_context, host, user, password):
+    utility(_context, IMailBox, component=POP3MailBox(host,
+                                                      user, password))
+
 
 class IStubMailerDirective(IMailerDirective):
     from_addr = ASCII(
@@ -46,6 +88,7 @@ def stubMailerHandler(
                IMailer, StubMailer(from_addr, [to_addr], mailer, rewrite), name,
                )
            )
+
 
 class ITestMailerDirective(IMailerDirective):
     pass

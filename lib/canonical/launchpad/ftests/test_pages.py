@@ -14,6 +14,7 @@ import sqlos.connection
 from canonical.functional import FunctionalDocFileSuite
 from canonical.launchpad.ftests.harness import _disconnect_sqlos
 from canonical.launchpad.ftests.harness import _reconnect_sqlos
+from canonical.librarian.ftests.harness import LibrarianTestSetup
 
 here = os.path.dirname(os.path.realpath(__file__))
 
@@ -23,6 +24,7 @@ class StartStory(unittest.TestCase):
     def setUp(self):
         """Setup the database"""
         LaunchpadFunctionalTestSetup().setUp()
+        LibrarianTestSetup().setUp()
         global _db_is_setup
         _db_is_setup = True
 
@@ -43,6 +45,7 @@ class EndStory(unittest.TestCase):
 
     def tearDown(self):
         """Tear down the database"""
+        LibrarianTestSetup().tearDown()
         LaunchpadFunctionalTestSetup().tearDown()
         global _db_is_setup
         _db_is_setup = False

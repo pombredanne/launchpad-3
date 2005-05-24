@@ -1,0 +1,211 @@
+  'name16' is an administrator of 'name17', so he can manage this 
+  team's contact email address. In this test 'name16' adds a new
+  contact email address, validates it, then change it (having to
+  validate the new one to) and finally removes the new contact
+  email address.
+
+
+  Adding the new contact email address...
+
+  >>> print http(r"""
+  ... GET /people/name17/+editemail HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...Contact Email Address...
+  ...
+
+
+  >>> print http(r"""
+  ... POST /people/name17/+editemail HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... newcontactemail=name17%40foo.com&ADD_EMAIL=Add""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...A new message was sent to...
+  ...
+
+  Get the token we'll have to use to finish the registration process.
+
+  >>> import email, re
+  >>> from canonical.launchpad.mail import stub
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> msg = email.message_from_string(raw_msg)
+  >>> body = msg.get_payload()
+  >>> link = re.findall(r'http.*/token/.*', body)[0]
+  >>> token = re.sub(r'.*token/', '', link)
+  >>> base_path = '/token/%s' % token
+
+  Check if the email was sent to the right address.
+
+  >>> to_addrs
+  ['name17@foo.com']
+
+
+  Go to the link sent by email, to validate the email address.
+
+  >>> print http(r"""
+  ... GET %s HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """ % base_path)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+
+
+  >>> path = '%s/+validateteamemail' % base_path
+  >>> print http(r"""
+  ... GET %s HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """ % path)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...Validate email: name17@foo.com...
+  ...
+
+
+  >>> print http(r"""
+  ... POST %s HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... VALIDATE=Ok""" % path)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...Contact email address validated successfully...
+  ...
+
+
+  
+  Now that we have a contact email address, I want to change it...
+
+  >>> print http(r"""
+  ... GET /people/name17/+editemail HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...All notifications directed to this team...
+  ...
+  ...name17@foo.com...
+  ...
+
+
+  >>> print http(r"""
+  ... POST /people/name17/+editemail HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... newcontactemail=name17%40bar.com&CHANGE_EMAIL=Change""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...A new message was sent to...
+  ...
+
+
+  Get the token we'll have to use to finish the registration process.
+
+  >>> import email, re
+  >>> from canonical.launchpad.mail import stub
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> msg = email.message_from_string(raw_msg)
+  >>> body = msg.get_payload()
+  >>> link = re.findall(r'http.*/token/.*', body)[0]
+  >>> token = re.sub(r'.*token/', '', link)
+  >>> base_path = '/token/%s' % token
+
+  Check if the email was sent to the right address.
+
+  >>> to_addrs
+  ['name17@bar.com']
+
+
+  Go to the link sent by email, to validate the email address.
+
+  >>> print http(r"""
+  ... GET %s HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """ % base_path)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+
+
+  >>> path = '%s/+validateteamemail' % base_path
+  >>> print http(r"""
+  ... GET %s HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """ % path)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...Validate email: name17@bar.com...
+  ...
+
+
+  >>> print http(r"""
+  ... POST %s HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... VALIDATE=Ok""" % path)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...Contact email address validated successfully...
+  ...
+
+
+
+  Finally, remove the new contact email address.
+
+  >>> print http(r"""
+  ... GET /people/name17/+editemail HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...All notifications directed to...
+  ...
+  ...name17@bar.com...
+  ...
+
+
+  >>> print http(r"""
+  ... POST /people/name17/+editemail HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... REMOVE_EMAIL=Remove&newcontactemail=""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...The contact email address of this team have been removed...
+  ...

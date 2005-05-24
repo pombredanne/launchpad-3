@@ -26,11 +26,19 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
-        name="+validate"
+        name="+validateemail"
         permission="zope.Public"
         class="canonical.launchpad.browser.ValidateEmailView"
         template="../templates/foaf-validateemail.pt"
-        lp:url="token/$token/+validate" />
+        lp:url="token/$token/+validateemail" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ILoginToken"
+        name="+validateteamemail"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ValidateEmailView"
+        template="../templates/foaf-validateteamemail.pt"
+        lp:url="token/$token/+validateteamemail" />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"

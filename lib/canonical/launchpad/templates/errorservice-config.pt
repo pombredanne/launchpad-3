@@ -1,7 +1,4 @@
 <html metal:use-macro="context/@@main_template/master">
-<head>
-  <title metal:fill-slot="title" i18n:translate="">Configure Error Log</title>
-</head>
 <body>
 <div metal:fill-slot="main">
 

@@ -9,8 +9,6 @@
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Bounties for
-        Foo Bar
-      </title>
+      <title>Bounties for Foo Bar</title>
   ...
 

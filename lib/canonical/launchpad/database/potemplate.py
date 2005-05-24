@@ -5,7 +5,6 @@ __all__ = ['POTemplateSubset', 'POTemplateSet', 'LanguageNotFound',
            'POTemplate']
 
 import StringIO
-import base64
 import datetime
 
 # Zope interfaces
@@ -491,13 +490,15 @@ class POTemplate(SQLBase, RosettaStats):
 
     def attachRawFileData(self, contents, importer=None):
         """See ICanAttachRawFileData."""
-        helpers.attachRawFileData(self, contents, importer)
+        filename = '%s.pot' % self.potemplatename.translationdomain
+        helpers.attachRawFileData(self, filename, contents, importer)
 
     # IRawFileData implementation
 
     # Any use of this interface should adapt this object as an IRawFileData.
 
-    rawfile = StringCol(dbName='rawfile', notNull=True)
+    rawfile = ForeignKey(foreignKey='LibraryFileAlias', dbName='rawfile',
+                         notNull=True)
     rawimporter = ForeignKey(foreignKey='Person', dbName='rawimporter',
         notNull=True)
     daterawimport = DateTimeCol(dbName='daterawimport', notNull=True,
@@ -512,7 +513,7 @@ class POTemplate(SQLBase, RosettaStats):
 
         importer = TemplateImporter(self, self.rawimporter)
 
-        file = StringIO.StringIO(base64.decodestring(self.rawfile))
+        file = helpers.getRawFileData(self)
 
         try:
             importer.doImport(file)
@@ -636,8 +637,8 @@ class POTemplateSubset:
         else:
             productrelease_id = None
 
-        encoded_file = base64.encodestring(contents)
-
+        filename = '%s.pot' % potemplatename.translationdomain
+        alias = helpers.uploadRosettaFile(filename, contents)
         return POTemplate(potemplatenameID=potemplatename.id,
                           title=title,
                           sourcepackagenameID=sourcepackagename_id,
@@ -645,7 +646,7 @@ class POTemplateSubset:
                           productreleaseID=productrelease_id,
                           ownerID=owner.id,
                           daterawimport=UTC_NOW,
-                          rawfile=encoded_file,
+                          rawfile=alias,
                           rawimporterID=owner.id,
                           rawimportstatus=RosettaImportStatus.PENDING)
 

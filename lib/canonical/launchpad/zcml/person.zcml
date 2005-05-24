@@ -146,6 +146,16 @@
           lp:url="/people/$Person.name/+bounties" />
   </browser:pages>
 
+  <browser:pages
+      for="canonical.launchpad.interfaces.ITeam"
+      permission="launchpad.Edit"
+      class="canonical.launchpad.browser.TeamEmailView">
+        <browser:page
+            name="+editemail"
+            template="../templates/team-editemail.pt"
+            lp:url="/people/$team.id/+editemail" />
+  </browser:pages>
+
   <browser:editform
       name="+edit"
       for="canonical.launchpad.interfaces.ITeam"

@@ -11,4 +11,8 @@
     <mail:testMailer name="test" />
     <mail:directDelivery name="Mail" permission="zope.SendMail" mailer="test" />
 
+    <!-- Configure a mail box which can be used when testing. Every email that
+         you send using testMailer will appear in this mail box. -->
+    <mail:testMailBox />
+
 </configure>

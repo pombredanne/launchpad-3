@@ -2,7 +2,7 @@
 # One day the guts of this will be migrated to Python
 #
 
-PYTHON=python2.3
+PYTHON=python2.4
 
 # The database dump to restore on database creation
 SAMPLEDATA=../sampledata/current.sql
@@ -52,7 +52,7 @@ test: create
 	@ createdb -E UNICODE --template ${TEST_DBNAME} ${EMPTY_DBNAME} \
 	    | grep : | cat
 	@ echo "* Loading sample data"
-	@ psql -d ${TEST_DBNAME} -f $(SAMPLEDATA) | grep : | cat
+	@ psql -v ON_ERROR_STOP=1 -d ${TEST_DBNAME} -f $(SAMPLEDATA) > /dev/null
 	@ echo "* Setting up full text indexes"
 	@ env LP_DBNAME=${EMPTY_DBNAME} ${PYTHON} fti.py
 	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py
@@ -157,7 +157,6 @@ newsample-soyuz:
 newsampledata:
 	pg_dump --schema=public --disable-triggers -a -D -O -d ${DBNAME} \
 	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|^--\)" \
-	| python sort_sql.py \
 	> $(NEWSAMPLEDATA)
 
 .PHONY: default base all

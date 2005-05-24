@@ -4,11 +4,6 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="malone">
 
-    <title metal:fill-slot="title">Malone: Edit Bug #<span
-    tal:replace="context/id">1234</span>
-    </title>
-
-
 <body>
 
   <metal:leftportlets fill-slot="portlets_one">

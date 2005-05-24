@@ -6,7 +6,9 @@ from zope.testing.doctestunit import DocTestSuite
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts.rosetta import attach
 from canonical.launchpad.helpers import join_lines, make_tarball_string
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
+from canonical.launchpad.ftests import login, ANONYMOUS
+from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
+from canonical.librarian.ftests.harness import LibrarianTestSetup
 
 files = {
     'directories.txt': join_lines(
@@ -59,10 +61,11 @@ class FakeLogger:
             import sys
             import traceback
             exc_info = sys.exc_info()
-            print exc_info[0]
-            print exc_info[1]
-            traceback.print_tb(exc_info[2])
-            print
+            self.append(exc_info[0])
+            self.append(exc_info[1])
+            tb = traceback.format_tb(exc_info[2])
+            for line in tb:
+                self.append(line[:-1])
 
     def warning(self, *args, **kw):
         self.append("WARNING", *args)
@@ -75,12 +78,20 @@ class FakeLogger:
 
 def test():
     """
-    Set up the database stuff, but hobble the transaction manager so that it
-    can't commit.
+    Set up stuff.
 
-    >>> LaunchpadZopelessTestSetup().setUp()
-    >>> ztm = LaunchpadZopelessTestSetup().txn
-    >>> ztm.commit = lambda: None
+    >>> LaunchpadFunctionalTestSetup().setUp()
+    >>> LibrarianTestSetup().setUp()
+    >>> login(ANONYMOUS)
+
+    >>> class FakeTransactionManager:
+    ...     def commit(self):
+    ...         pass
+    ...
+    ...     def abort(self):
+    ...         pass
+    ...
+    >>> ztm = FakeTransactionManager()
 
     Get our mock objects, and set attach() loose on them.
 
@@ -102,8 +113,8 @@ def test():
     DEBUG foo/bar/evolution_2.2.0-0ubuntu2_translations.tar.gz attached to evolution sourcepackage
     DEBUG This tarball or a newer one is already imported. Ignoring it.
 
-    >>> LaunchpadZopelessTestSetup().tearDown()
-
+    >>> LibrarianTestSetup().tearDown()
+    >>> LaunchpadFunctionalTestSetup().tearDown()
     """
 
 def test_suite():

@@ -3,14 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">Launchpad Project Registry</title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">
@@ -31,9 +23,6 @@
             <input type="submit" value="Search" />
 
             &nbsp;
-
-            <a style="font-size: 0.85;" href="+search">Advanced
-            Search</a>
 
             <p class="formHelp">
             Enter any part of the project name, title or

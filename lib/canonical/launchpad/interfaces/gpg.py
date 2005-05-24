@@ -28,8 +28,7 @@ class IGPGKey(Interface):
 class IGPGKeySet(Interface):
     """The set of GPGKeys."""
 
-    def new(self, ownerID, keyid, pubkey, fingerprint, keysize,
-            algorithm, revoked):
+    def new(ownerID, keyid, pubkey, fingerprint, keysize, algorithm, revoked):
         """Create a new GPGKey pointing to the given Person."""
 
     def get(id, default=None):

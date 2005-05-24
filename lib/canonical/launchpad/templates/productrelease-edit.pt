@@ -5,17 +5,6 @@
     metal:use-macro="context/@@main_template/master"
     i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">Edit Details for 
-      <span
-      tal:replace="context/product/displayname">$Product.displayname</span>
-      <span
-      tal:replace="context/version">$ProductRelease.version</span>
-    </title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">

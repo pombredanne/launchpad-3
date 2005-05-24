@@ -16,16 +16,16 @@ class IProduct(IHasOwner):
     Products.  For example, the Mozilla Project has Firefox, Thunderbird and
     The Mozilla App Suite as Products, among others.
     """
-    
+
     # XXX Mark Shuttleworth comments: lets get rid of ID's in interfaces
     # unless we really need them. BradB says he can remove the need for them
     # in SQLObject soon. 12/10/04
     id = Int(title=_('The Product ID'))
-    
+
     project = Choice(title=_('Project'), required=False,
     vocabulary='Project', description=_("""Optional related Project. Used to
     group similar products in a coherent way."""))
-    
+
     owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
     description=_("""Product owner, it can either a valid Person or Team
     inside Launchpad context."""))
@@ -53,7 +53,7 @@ class IProduct(IHasOwner):
     homepageurl = TextLine(title=_('Homepage URL'), required=False)
 
     wikiurl = TextLine(title=_('Wiki URL'), required=False)
-    
+
     screenshotsurl = TextLine(title=_('Screenshots URL'), required=False)
 
     downloadurl = TextLine(title=_('Download URL'), required=False)
@@ -71,14 +71,12 @@ class IProduct(IHasOwner):
         description=_("""Whether or not this product's attributes are
         updated automatically."""))
 
-    manifest = Attribute(_('Manifest'))
-
     active = Bool(title=_('Active'), description=_("""Whether or not
         this product is considered active."""))
-    
+
     reviewed = Bool(title=_('Reviewed'), description=_("""Whether or not
         this product has been reviewed."""))
-    
+
     sourcepackages = Attribute(_("List of distribution packages for this \
         product"))
 
@@ -105,14 +103,21 @@ class IProduct(IHasOwner):
 
     bounties = Attribute(_("The bounties that are related to this product."))
 
-    primary_translatable = Attribute(
-        """The SourcePackage or ProductRelease which is the main
-        translatable item for this product. Currently this should be the
-        latest productrelease for this product which includes
-        translations.""")
+    translatable_packages = Attribute(
+        "A list of the source packages for this product that can be"
+        " translated sorted by distrorelease.name and sourcepackage.name.")
 
-    potemplatecount = Attribute("The number of POTemplates for this "
-                        "Product.")
+    translatable_releases = Attribute(
+        "A list of the releases of this product for which we have translation"
+        " templates.")
+
+    primary_translatable = Attribute(
+        "The best guess we have for what new translators will want to"
+        " translate for a given product. First, tries the current development"
+        " Ubuntu package. Then tries the latest release for which we have"
+        " potemplates.")
+
+    potemplatecount = Attribute("The number of POTemplates for this Product.")
 
     def getPackage(distrorelease):
         """return a package in that distrorelease for this product."""
@@ -126,11 +131,6 @@ class IProduct(IHasOwner):
 
     def poTemplate(name):
         """Returns the PO template with the given name."""
-
-    def fullname():
-        """Returns a name that uniquely identifies this product, by combining
-            product name and project name
-        """
 
     def newseries(form):
         """Creates a new ProductSeries for this series."""
@@ -164,22 +164,6 @@ class IProduct(IHasOwner):
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
 
-    def attachTranslations(tarfile, prefix=None, sourcepackagename=None,
-                           distrorelease=None, version=None, logger=None):
-        """Attach all .pot and .po files inside tarfile into a product.
-
-        The .pot and .po files are attached to the POTemplate and POFile
-        objects of this product creating them first if needed.
-
-        Associates the POTemplates with the sourcepackagename and the
-        distrorelease (if not None) and its name will have the prefix
-        specified in case it's not None.
-
-        In case all files are imported correctly, set the potemplate's
-        sourcepackageversion field to version.
-
-        Log any error/warning into the logger object, if it's not None.
-        """
 
 class IProductSet(Interface):
     """The collection of products."""

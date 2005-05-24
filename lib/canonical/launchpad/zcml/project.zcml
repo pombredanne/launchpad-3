@@ -140,13 +140,13 @@
         class="canonical.launchpad.browser.ProjectSetView"
         lp:url="/projects/">
         <browser:page
+            name="+all" 
+            template="../templates/doap-listall.pt"
+            lp:url="/projects/+all" />
+        <browser:page
             name="+index" 
             template="../templates/projects-index.pt"
             lp:url="/projects/+index" />
-        <browser:page
-            name="+search"
-            template="../templates/projects-search.pt"
-            lp:url="/projects/+search" />
     </browser:pages>
 
     <browser:pages

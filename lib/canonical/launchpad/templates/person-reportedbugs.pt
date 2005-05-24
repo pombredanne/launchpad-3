@@ -3,15 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-  <title metal:fill-slot="title">Bugs Reported By
-      <span tal:replace="context/displayname">Name</span></title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
   <metal:leftportlets fill-slot="portlets_one">
@@ -42,8 +33,8 @@
       </tr>
 
       <tr tal:repeat="bugtask context/reportedbugs" class="rowLinkified">
-        <tal:block tal:define="url string:/malone/tasks/${bugtask/id}">
-        <td><a tal:attributes="href url"><span tal:replace="bugtask/id" /></a></td>
+        <tal:block tal:define="url string:/malone/bugs/${bugtask/bug/id}">
+        <td><a tal:attributes="href url"><span tal:replace="bugtask/bug/id" /></a></td>
         <td tal:attributes="title bugtask/bug/summary">
           <a tal:attributes="href url"><span tal:replace="bugtask/bug/title" /></a></td>
         <td><a tal:attributes="href url" 

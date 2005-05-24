@@ -7,11 +7,6 @@ reference to the Arch Branch that it is on.
 We need to represent this as an Arch "package" string suitable for
 the command-line tool.  So we provide a function to do that.
 
-We login anonymously:
-
-    >>> from canonical.launchpad.ftests import login
-    >>> login('launchpad.anonymous')
-
 We can get a Changeset object in the normal way:
 
     >>> from canonical.launchpad.database.archchangeset import Changeset

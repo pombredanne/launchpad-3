@@ -1,7 +1,14 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Interfaces for things related to bug tasks."""
+
+__metaclass__ = type
+
+from zope.component.interfaces import IView
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
+from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine, List
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from sqlos.interfaces import ISelectResults
@@ -30,6 +37,18 @@ class IEditableDistroBugTask(Interface):
 
 class IReadOnlyDistroBugTask(Interface):
     """A bug assigned to a distro package, which is read-only by the
+    current user."""
+    title = Attribute('Title')
+
+
+class IEditableDistroReleaseBugTask(Interface):
+    """A bug in a distro release package, which is editable by
+    the current user."""
+    title = Attribute('Title')
+
+
+class IReadOnlyDistroReleaseBugTask(Interface):
+    """A bug in a distro release package, which is read-only by the
     current user."""
     title = Attribute('Title')
 
@@ -80,6 +99,66 @@ class IBugTask(IHasDateCreated):
     title = Attribute("Title")
 
 
+class IBugTaskSearch(Interface):
+    """The schema used by a bug task search form.
+
+    Note that this is slightly different than simply IBugTask because
+    some of the field types are different (e.g. it makes sense for
+    status to be a Choice on a bug task edit form, but it makes sense
+    for status to be a List field on a search form, where more than
+    one value can be selected.)
+    """
+    searchtext = TextLine(title=_("Bug ID or Text"), required=False)
+    status = List(
+        title=_('Bug Status'),
+        value_type=IBugTask['status'],
+        default=[dbschema.BugTaskStatus.NEW, dbschema.BugTaskStatus.ACCEPTED],
+        required=False)
+    severity = List(
+        title=_('Severity'),
+        value_type=IBugTask['severity'],
+        required=False)
+    assignee = Choice(
+        title=_('Assignee'), vocabulary='ValidAssignee', required=False)
+    unassigned = Bool(title=_('show only unassigned bugs'), required=False)
+    milestone = List(
+        title=_('Target'), value_type=IBugTask['milestone'], required=False)
+
+
+class IBugTaskSearchListingView(IView):
+    """A view that can be used with a bugtask search listing."""
+
+    searchtext_widget = Attribute("""The widget for entering a free-form text
+                                     query on bug task details.""")
+
+    status_widget = Attribute("""The widget for selecting task statuses to
+                                 filter on. None if the widget is not to be
+                                 shown.""")
+
+    severity_widget = Attribute("""The widget for selecting task severities to
+                                   filter on. None is the widget is not to be
+                                   shown.""")
+
+    assignee_widget = Attribute("""The widget for selecting task assignees
+                                   to filter on. None if the widget is not to be
+                                   shown.""")
+
+    milestone_widget = Attribute("""The widget for selecting task targets to
+                                    filter on. None if the widget is not to be
+                                    shown.""")
+
+    def task_columns():
+        """Returns a sequence of column names to be shown in the listing.
+
+        This list may be calculated on the fly, e.g. in the case of a
+        listing that allows the user to choose which columns to show
+        in the listing.
+        """
+
+    def search():
+        """Return an IBatchNavigator for the POSTed search criteria."""
+
+
 class IBugTaskDelta(Interface):
     """The change made to a bug task (e.g. in an edit screen.)
 
@@ -123,8 +202,14 @@ class IDistroBugTask(IBugTask):
         title=_("Distribution"), required=True, vocabulary='Distribution')
 
 
-class IDistroReleaseBugTask(IDistroBugTask):
+class IDistroReleaseBugTask(IBugTask):
     """A description of a bug needing fixing in a particular realease."""
+    sourcepackagename = Choice(
+        title=_("Source Package Name"), required=True,
+        vocabulary='SourcePackageName')
+    binarypackagename = Choice(
+        title=_('Binary PackageName'), required=False,
+        vocabulary='BinaryPackageName')
     distrorelease = Choice(
         title=_("Distribution Release"), required=True,
         vocabulary='DistroRelease')

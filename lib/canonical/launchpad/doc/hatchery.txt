@@ -28,12 +28,6 @@ XXX: Brad Bollenbach, 2005-03-08: This document currently focusses on
 products, but a discussion of projects should be included at some
 point too.
 
-For the purposes of this document, we'll interact with the system as an
-anonymous user:
-
-    >>> from canonical.launchpad.ftests import login
-    >>> login('launchpad.anonymous')
-
 Creation and retrieval of products in Launchpad is done via the IProductSet
 utility.
 

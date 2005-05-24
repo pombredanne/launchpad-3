@@ -9,9 +9,10 @@ The BugMessageFactory determines the Bug using the LaunchBag
 
 >>> from canonical.launchpad.database import Bug
 >>> from canonical.launchpad.database.bugmessage import BugMessageFactory
+>>> from canonical.launchpad.interfaces import IOpenLaunchBag
 >>> login('foo.bar@canonical.com')
->>> launchbag = getUtility(ILaunchBag)
->>> launchbag.bug = Bug.get(1)
+>>> launchbag = getUtility(IOpenLaunchBag)
+>>> launchbag.add(Bug.get(1))
 >>> bmsg = BugMessageFactory(title='The Title', content='The Content')
 >>> msg = bmsg.message
 >>> msg.title

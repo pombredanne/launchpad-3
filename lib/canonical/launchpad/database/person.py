@@ -436,9 +436,13 @@ class Person(SQLBase):
     defaultrenewedexpirationdate = property(defaultrenewedexpirationdate)
 
     def _setPreferredemail(self, email):
+        if not IEmailAddress.providedBy(email):
+            raise TypeError, ("Any person's email address must provide "
+                              "the IEmailAddress interface. %s doesn't."
+                              % email)
         # XXX: Should this be an assert?
         #      -- SteveAlexander, 2005-04-23
-        assert email.person == self
+        assert email.person.id == self.id
         preferredemail = self.preferredemail
         if preferredemail is not None:
             preferredemail.status = EmailAddressStatus.VALIDATED
@@ -449,6 +453,7 @@ class Person(SQLBase):
         # There can be only one preferred email for a given person at a
         # given time, and this constraint must be ensured in the DB, but
         # it's not a problem if we ensure this constraint here as well.
+        emails = list(emails)
         length = len(emails)
         assert length <= 1
         if length:

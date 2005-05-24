@@ -3,10 +3,6 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="rosetta">
 
-    <title metal:fill-slot="title">Malone: Bug #<span
-    tal:replace="context/id">1234</span>
-    </title>
-
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -33,6 +29,16 @@
         this bug should be fixed. The state, severity, priority and person
         assigned to fix a bug is determined by the maintainer(s) of each
         product or source package in which this bug should be fixed.
+    </div>
+
+    <h2>Status</h2>
+    <div tal:condition="context/duplicateof">
+      <p class="portalMessage">
+        This bug is a duplicate of
+        <a href="#"
+           tal:attributes="href context/duplicateof/@@absolute_url"
+           tal:content="context/duplicateof/id">42</a>
+      </p>
     </div>
 
     <div tal:replace="structure view/tasksHeadline" />

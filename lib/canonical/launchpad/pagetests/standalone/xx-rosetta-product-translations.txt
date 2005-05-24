@@ -7,15 +7,13 @@ is working.
   ... """)
   HTTP/1.1 200 Ok
   ...
-      <title>Rosetta Translation
-      Templates for The Evolution Groupware Application
+      <title>Rosetta Translations for The Evolution Groupware Application</title>
   ...
-      <tr onclick="window.location='/products/evolution/2.1.6/+pots/evolution-2.2/af/+translate'">
+      <tr onclick="window.location='/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+translate'">
   <BLANKLINE>
-        <a href="/products/evolution/2.1.6/+pots/evolution-2.2/af/+translate">
+        <a href="/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+translate">
           <td>
-            <a href="/products/evolution/2.1.6/+pots/evolution-2.2/af/+translate">Afrikaans</a>
+            <a href="/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+translate">Afrikaans</a>
           </td>
-          <td>0</td>
           <td>22</td>
   ...

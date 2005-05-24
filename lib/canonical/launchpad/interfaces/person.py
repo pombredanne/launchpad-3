@@ -284,7 +284,8 @@ class IPerson(Interface):
 class ITeam(IPerson):
     """ITeam extends IPerson.
 
-    The teamowner should never be None."""
+    The teamowner should never be None.
+    """
 
 
 class IPersonSet(Interface):

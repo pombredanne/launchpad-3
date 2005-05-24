@@ -4,7 +4,6 @@ __metaclass__ = type
 __all__ = ['POFileSet', 'POFile']
 
 import StringIO
-import base64
 
 # Zope interfaces
 from zope.interface import implements
@@ -18,10 +17,9 @@ from canonical.database.sqlbase import SQLBase, flush_database_updates, \
     sqlvalues
 
 # canonical imports
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import \
-    IPOFileSet, IEditPOFile, IPersonSet, IRawFileData
-from canonical.lp.dbschema import EnumCol
-from canonical.lp.dbschema import RosettaImportStatus
+    IPOFileSet, IEditPOFile, IPersonSet, IRawFileData, IPOTemplateExporter
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.pofile_adapters import POFileImporter
 from canonical.launchpad.components.poparser import POParser, POHeader
@@ -31,6 +29,10 @@ from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgset import POMsgSet
 from canonical.launchpad.database.potranslationsighting import \
     POTranslationSighting
+from canonical.librarian.interfaces import ILibrarianClient, DownloadFailed, \
+    UploadFailed
+from canonical.lp.dbschema import EnumCol
+from canonical.lp.dbschema import RosettaImportStatus
 
 
 class POFile(SQLBase, RosettaStats):
@@ -88,6 +90,13 @@ class POFile(SQLBase, RosettaStats):
     filename = StringCol(dbName='filename',
                          notNull=False,
                          default=None)
+    exportfile = ForeignKey(foreignKey='LibraryFileAlias',
+                            dbName='exportfile',
+                            notNull=False,
+                            default=None)
+    exporttime = DateTimeCol(dbName='exporttime',
+                           notNull=False,
+                           default=None)
 
 
     def currentMessageSets(self):
@@ -369,13 +378,20 @@ class POFile(SQLBase, RosettaStats):
 
     def attachRawFileData(self, contents, importer=None):
         """See ICanAttachRawFileData."""
-        helpers.attachRawFileData(self, contents, importer)
+        if self.variant:
+            filename = '%s@%s.po' % (
+                self.language.code, self.variant.encode('utf8'))
+        else:
+            filename = '%s.po' % self.language.code
+
+        helpers.attachRawFileData(self, filename, contents, importer)
 
     # IRawFileData implementation
 
     # Any use of this interface should adapt this object as an IRawFileData.
 
-    rawfile = StringCol(dbName='rawfile', notNull=False, default=None)
+    rawfile = ForeignKey(foreignKey='LibraryFileAlias', dbName='rawfile',
+                         notNull=False, default=None)
     rawimporter = ForeignKey(foreignKey='Person', dbName='rawimporter',
                              notNull=False, default=None)
     daterawimport = DateTimeCol(dbName='daterawimport', notNull=False,
@@ -390,7 +406,7 @@ class POFile(SQLBase, RosettaStats):
             # We don't have anything to import.
             return
 
-        rawdata = base64.decodestring(self.rawfile)
+        rawdata = helpers.getRawFileData(self)
 
         # We need to parse the file to get the last translator information so
         # the translations are not assigned to the person who imports the
@@ -524,6 +540,59 @@ class POFile(SQLBase, RosettaStats):
                         self.language.code, self.potemplate.title),
                         exc_info = 1)
 
+    def validExportCache(self):
+        """See IPOFile."""
+        if self.exportfile is None:
+            return False
+
+        change_time = self.latest_sighting.datelastactive
+        return change_time < self.exporttime
+
+    def updateExportCache(self, contents):
+        """See IPOFile."""
+        client = getUtility(ILibrarianClient)
+
+        if self.variant:
+            filename = '%s@%s.po' % (
+                self.language.code, self.variant.encode('UTF-8'))
+        else:
+            filename = '%s.po' % (self.language.code)
+
+        size = len(contents)
+        file = StringIO.StringIO(contents)
+
+        # Note that UTC_NOW is resolved at the time at the beginning of the
+        # transaction, rather than when the transaction is committed. This is
+        # significant because translations could be added to the database
+        # while the export transaction is in progress, and the export would
+        # not include those translations.
+
+        self.exportfile = client.addFile(filename, size, file,
+            'appliction/x-po')
+        self.exporttime = UTC_NOW
+
+    def fetchExportCache(self):
+        """Return the cached export file, if it exists, or None otherwise."""
+
+        if self.exportfile is None:
+            return None
+        else:
+            client = getUtility(ILibrarianClient)
+            return client.getFileByAlias(self.exportfile).read()
+
+    def uncachedExport(self):
+        """Export this PO file without looking in the cache."""
+        exporter = IPOTemplateExporter(self.potemplate)
+        return exporter.export_pofile(self.language, self.variant)
+
+    def export(self):
+        """See IPOFile."""
+        if self.validExportCache():
+            return self.fetchExportCache()
+        else:
+            contents = self.uncachedExport()
+            self.updateExportCache(contents)
+            return contents
 
 class POFileSet:
     implements(IPOFileSet)

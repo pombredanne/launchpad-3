@@ -613,7 +613,8 @@ class PersonEditView(BasePersonView):
 
 
 def sendEmailValidationRequest(token, appurl):
-    template = open('lib/canonical/launchpad/templates/validate-email.txt').read()
+    template = open(
+        'lib/canonical/launchpad/emailtemplates/validate-email.txt').read()
     fromaddress = "Launchpad Email Validator <noreply@ubuntu.com>"
 
     replacements = {'longstring': token.token,
@@ -734,7 +735,8 @@ class RequestPeopleMergeMultipleEmailsView:
 
 
 def sendMergeRequestEmail(token, dupename, appurl):
-    template = open('lib/canonical/launchpad/templates/request-merge.txt').read()
+    template = open(
+        'lib/canonical/launchpad/emailtemplates/request-merge.txt').read()
     fromaddress = "Launchpad Account Merge <noreply@ubuntu.com>"
 
     replacements = {'longstring': token.token,

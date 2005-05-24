@@ -4,9 +4,6 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="launchpad">
 
-    <title metal:fill-slot="title">Edit Team Information
-    </title>
-
   <body>
 
   <metal:rightportlets fill-slot="portlets_two">

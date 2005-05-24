@@ -33,7 +33,7 @@ class SourcePackage:
     true database object, but rather attempts to represent the concept of a
     source package in a distribution, with links to the relevant dataase
     objects.
-    
+
     Note that the Magic SourcePackage can be initialised with EITHER a
     distrorelease OR a distribution. This means you can specify either
     "package foo in ubuntu" or "package foo in warty", and then methods

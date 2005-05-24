@@ -2,15 +2,21 @@
 
 __metaclass__ = type
 
+from zope.app.traversing.browser import absoluteurl
+from zope.interface import implements
 from zope.component import getUtility
+from zope.app.form.utility import setUpWidgets, getWidgetsData
+from zope.app.form.interfaces import IInputWidget
 
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
-from canonical.launchpad.interfaces import IPersonSet, ILaunchBag
+from canonical.launchpad.interfaces import IPersonSet, ILaunchBag, \
+     IBugTaskSearch, IBugSet, IBugTaskSet, IProduct, IDistribution, \
+     IDistroRelease
 from canonical.lp import dbschema
-from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary, \
-     ProductVocabulary, SourcePackageNameVocabulary
-from canonical.launchpad.searchbuilder import NULL
+from canonical.launchpad.interfaces import IBugTaskSearchListingView
+from canonical.launchpad.searchbuilder import any, NULL
+from canonical.launchpad import helpers
 
 # Bug Reports
 class BugTasksReportView:
@@ -108,73 +114,82 @@ class BugTasksReportView:
         #      -- Steve Alexander, 2005-04-22
         return getUtility(IPersonSet).search(password = NULL)
 
-# XXX: 2004-11-13, Brad Bollenbach: Much of the code in BugTasksView
-# is a dirty hack in the abscense of a more clean way of handling generating
-# non-add, non-edit forms in Zope 3. I had a chat with SteveA on this subject
-# and it looks like a browser:form directive will be introduced early next week
-# in which case most of this hackishness can go away.
-# XXX: 2004-12-02, Stuart Bishop: I'm not sure what this class is doing in here
-# since it is actually a view on IBugSet.
-class BugTasksView:
-
-    DEFAULT_STATUS = (
-        dbschema.BugTaskStatus.NEW.value,
-        dbschema.BugTaskStatus.ACCEPTED.value)
+class BugTaskSearchListingView:
+    implements(IBugTaskSearchListingView)
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.batch = Batch(list(self.search()),
-                           int(request.get('batch_start', 0)))
-        self.batchnav = BatchNavigator(self.batch, request)
-
-        # XXX: Brad Bollenbach, 2005-03-10: Effectively "disable"
-        # the Anorak Search Page for now by redirecting to the
-        # Malone front page. We'll reenable this page if user
-        # feedback necessitates.
-        self.request.response.redirect("/malone")
+        self.is_maintainer = helpers.is_maintainer(self.context)
+        setUpWidgets(self, IBugTaskSearch, IInputWidget)
 
     def search(self):
-        """Find the bug tasks the user wants to see."""
-        # XXX: Brad Bollenbach, 2005-03-31: Cut out a huge chunk
-        # of code here because this view should no longer be used.
-        # I will fully rip this out in the next round of refactoring
-        # (because I'm in the middle of refactoring something else
-        # right now, and ripping this out right now will break other
-        # things.)
-        return []
+        """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
+        search_params = {}
+        form_params = getWidgetsData(self, IBugTaskSearch)
 
-    def status_message(self):
-        # XXX: Brad Bollenbach, 2004-11-30: This method is a bit of a dirty
-        # hack at outputting a useful message if a bug has just been added, in
-        # lieu of a more general status message mechanism that avoids
-        # defacement attacks
-        # (e.g. http://www.example.com?status_message=You+have+been+hax0red).
-        bugadded = self.request.get('bugadded', None)
-        if bugadded:
-            try:
-                int(bugadded)
-                return ('Successfully added <a href="%s">bug # %s</a>.'
-                        ' Thank you!') % (bugadded, bugadded)
-            except ValueError:
-                pass
+        searchtext = form_params.get("searchtext")
+        if searchtext:
+            if searchtext.isdigit():
+                # user wants to jump to a bug with a specific id
+                bug = getUtility(IBugSet).get(int(searchtext))
+                self.request.response.redirect(absoluteurl(bug, self.request))
+            else:
+                # user wants to filter in certain text
+                search_params["searchtext"] = searchtext
 
-        return ''
+        statuses = form_params.get("status")
+        if statuses:
+            search_params["status"] = any(*statuses)
+        else:
+            # likely coming into the form by clicking on a URL
+            # (vs. having submitted it with POSTed search criteria),
+            # so show NEW and ACCEPTED bugs by default
+            search_params["status"] = any(
+                dbschema.BugTaskStatus.NEW, dbschema.BugTaskStatus.ACCEPTED)
 
-    def submitted(self):
-        return self.request.get('search')
+        severities = form_params.get("severity")
+        if severities:
+            search_params["severity"] = any(*severities)
 
-    def people(self):
-        """Return the list of people in Launchpad."""
-        return ValidPersonOrTeamVocabulary(None)
+        assignee = form_params.get("assignee")
+        if assignee:
+            search_params["assignee"] = assignee
 
-    def statuses(self):
-        """Return the list of bug task statuses."""
-        return dbschema.BugTaskStatus.items
+        unassigned = form_params.get("unassigned")
+        if unassigned:
+            if search_params.get("assignee") is not None:
+                raise ValueError(
+                    "Conflicting search criteria: can't specify an assignee "
+                    "to filter on when 'show only unassigned bugs' is checked.")
+            search_params["assignee"] = NULL
 
-    def packagenames(self):
-        """Return the list of source package names."""
-        return SourcePackageNameVocabulary(None)
+        milestones = form_params.get("milestone")
+        if milestones:
+            search_params["milestone"] = any(*milestones)
+
+        # make this search context-sensitive
+        if IProduct.providedBy(self.context):
+            search_params["product"] = self.context
+        elif IDistribution.providedBy(self.context):
+            search_params["distribution"] = self.context
+        elif IDistroRelease.providedBy(self.context):
+            search_params["distrorelease"] = self.context
+        else:
+            raise TypeError("Unknown search context: %s" % repr(self.context))
+
+        bugtaskset = getUtility(IBugTaskSet)
+        tasks = bugtaskset.search(**search_params)
+
+        return BatchNavigator(
+            batch=Batch(tasks, int(self.request.get('batch_start', 0))),
+            request=self.request)
+
+    def task_columns(self):
+        """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
+        return [
+            "select", "id", "title", "package", "milestone", "status",
+            "submittedby", "assignedto"]
 
     def advanced(self):
         """Should the form be rendered in advanced search mode?"""
@@ -189,6 +204,16 @@ class BugTasksView:
         return False
     advanced = property(advanced)
 
-    def products(self):
-        """Return the list of products."""
-        return ProductVocabulary(None)
+class BugTaskAnorakSearchPageBegoneView:
+    """This view simply kicks the user somewhere else.
+
+    Despite being a bit dirty, it's better for /malone/bugs to kick
+    the user somewhere else (and *not* the old, scary Anorak search
+    page) until we've clearly defined what /malone/bugs would actually
+    look like (though that URL might be completely gone before we even
+    get to thinking about it. :)
+    """
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.request.response.redirect("/malone")

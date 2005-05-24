@@ -1,9 +1,4 @@
 <html tal:replace="python:request.response.redirect('..')">
-<!--
-    <head>
-      <title metal:fill-slot="title">redirection</title>
-    </head>
--->
     <body>
         <a href=".">Here</a>
     </body>

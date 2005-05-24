@@ -3,18 +3,6 @@
       lang="en"
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="launchpad">
-  <head>
-    <title metal:fill-slot="title">
-      Malone
-      #<span tal:replace="context/bug/id">1234</span><span
-        tal:condition="context/product"
-      >
-        on <span
-          tal:replace="context/product/displayname"
-      >Ubuntu Dodgy</span></span>:
-      <span tal:replace="context/bug/title">Can't smegging smeg</span>
-    </title>
-  </head>
   <body>
 
   <div metal:fill-slot="main">
@@ -41,6 +29,17 @@
         </a>
     </div>
     <br />
+    <tal:duplicatebug condition="context/bug/duplicateof">
+      <div>
+        <p class="portalMessage">
+          This bug is a duplicate of
+          <a href="#"
+             tal:attributes="href context/bug/duplicateof/@@absolute_url"
+             tal:content="context/bug/duplicateof/id">42</a>
+        </p>
+      </div>
+      <br />
+    </tal:duplicatebug>
     <div metal:define-macro="editform">
 
       <form action="." tal:attributes="action request/URL" method="post"

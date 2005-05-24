@@ -78,9 +78,20 @@
         name="fmt"
         />
 
+    <!-- The next directive is registered for all dicts, but we really only
+         want it to apply to the page template's CONTEXTS dict.
+      -->
+    <adapter
+        for="dict"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PageTemplateContextsAPI"
+        name="fmt"
+        />
+
     <!-- The next directive should be registered for 'int' only.
         However, there's a bug in adapter registration that stops
         this working.  To be fixed in ZopeX3 RSN.
+        XXX: SteveAlexander, 2005-05-21.
         -->
     <adapter
         for="*"
@@ -108,6 +119,13 @@
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.NoneFormatter"
         name="fmt"
+        />
+
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PermissionRequiredQuery"
+        name="required"
         />
 
     <!-- Authentication. -->

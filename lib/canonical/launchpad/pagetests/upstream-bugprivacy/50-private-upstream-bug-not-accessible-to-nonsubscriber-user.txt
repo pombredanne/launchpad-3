@@ -7,7 +7,7 @@ View bugs on Mozilla Firefox as Foo Bar:
   ... """)
   HTTP/1.1 200 Ok
   ...
-      <h1>Upstream Bugs for:
+      <h1>Bug reports on upstream
           Mozilla Firefox
       </h1>
   ...
