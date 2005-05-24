@@ -95,13 +95,14 @@
       </tal:block>
       <tal:block condition="mass_edit">
         <tal:block condition="python: 'id' in listing_columns">
-          <th tal:condition="python: 'title' in listing_columns" colspan="3">
-            Report
-          </th>
-          <th tal:condition="python: 'title' not in listing_columns"
-              colspan="2">
-            Report
-          </th>
+          <th
+            tal:condition="python: 'title' in listing_columns"
+            colspan="3"
+          >Report</th>
+          <th
+            tal:condition="python: 'title' not in listing_columns"
+            colspan="2"
+          >Report</th>
         </tal:block>
         <tal:block condition="python: 'id' not in listing_columns">
           <th tal:condition="python: 'title' in listing_columns"
