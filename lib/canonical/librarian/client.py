@@ -128,6 +128,7 @@ class FileUploadClient(object):
                 has_data = True
             if not has_data:
                 raise ValueError('No data')
+            self.f.flush()
 
             # Read response
             response = self.f.readline().strip()
