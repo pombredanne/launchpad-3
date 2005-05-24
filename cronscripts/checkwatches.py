@@ -79,7 +79,7 @@ def check_one_watch(watch):
     except externalsystem.UnknownBugTrackerTypeError, val:
         logger.error("BugTrackerType '%s' is not known", val.bugtrackertypename)
     except externalsystem.BugTrackerConnectError:
-        logger.exeption("Got error trying to contact %s", bugtracker.name)
+        logger.exception("Got error trying to contact %s", bugtracker.name)
     else:
         versioncache.update({ bugtracker.baseurl : remotesystem.version })
         remotestatus = remotesystem.get_bug_status(watch.remotebug)

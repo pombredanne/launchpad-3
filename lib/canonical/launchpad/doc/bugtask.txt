@@ -22,7 +22,7 @@ All BugTask creation and retrieval is done through an IBugTaskSet utility.
 
 To create a bug task, you have to be logged in:
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.launchpad.ftests import login, ANONYMOUS
     >>> login('foo.bar@canonical.com')
 
 There are three kinds of bug tasks. We need to pass the bug task creation
@@ -105,7 +105,7 @@ with the system as an anonymous (i.e. unauthenticated) user:
 
     >>> from canonical.launchpad.interfaces import IPerson
     >>> from canonical.launchpad.database import Person
-    >>> login('launchpad.anonymous')
+    >>> login(ANONYMOUS)
 
 let's fetch the BugTask with ID 1:
 
@@ -217,7 +217,7 @@ Upstream Bug Tasks
 Only the maintainer and the assignee (if there is one) may edit upstream
 bug tasks.
 
-    >>> login('launchpad.anonymous')
+    >>> login(ANONYMOUS)
     >>> upstream_task.status = STATUS_ACCEPTED
     Traceback (most recent call last):
       ...
@@ -319,7 +319,7 @@ Distro and Distro Release Bug Tasks
 Any logged-in user can edit tasks filed on distros as long as the bug
 is not marked private. So, as an anonymous user, we can edit anything:
 
-    >>> login('launchpad.anonymous')
+    >>> login(ANONYMOUS)
     >>> distro_task.status = STATUS_FIXED
     Traceback (most recent call last):
       ...

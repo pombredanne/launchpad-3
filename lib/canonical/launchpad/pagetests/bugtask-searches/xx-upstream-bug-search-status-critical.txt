@@ -8,5 +8,5 @@ clicking the "critical" quick search link.
   ... """)
   HTTP/1.1 200 Ok
   ...1...result...
-              <a href="/malone/tasks/15/+edit">6</a>
+              <a href="...">6</a>
   ...

@@ -5,6 +5,7 @@ __metaclass__ = type
 from zope.app.traversing.browser import absoluteurl
 from zope.interface import implements
 from zope.component import getUtility
+from zope.app.publisher.browser import BrowserView
 from zope.app.form.utility import setUpWidgets, getWidgetsData
 from zope.app.form.interfaces import IInputWidget
 
@@ -203,6 +204,15 @@ class BugTaskSearchListingView:
             return True
         return False
     advanced = property(advanced)
+
+
+class BugTaskAbsoluteURL(BrowserView):
+    """The view for an absolute URL of a bug task."""
+    def __str__(self):
+        return "%s/malone/tasks/%d" % (
+            self.request.getApplicationURL(),
+            self.context.id)
+
 
 class BugTaskAnorakSearchPageBegoneView:
     """This view simply kicks the user somewhere else.

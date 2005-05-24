@@ -102,7 +102,7 @@ class BugTask(SQLBase):
     bugdescription = property(bugdescription)
 
     def title(self):
-        title = 'Malone Bug #' + str(self.bug.id)
+        title = 'Bug #' + str(self.bug.id)
         title += ' (' + self.bug.title + ')' + ' on '
         if self.distribution:
             title += self.distribution.name + ' '

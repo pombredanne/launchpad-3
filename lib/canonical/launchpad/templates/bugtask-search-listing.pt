@@ -38,12 +38,12 @@
           <td
             colspan="0"
             tal:define="startno task_batch/startNumber;
-              endno task_batch/endNumber;
-              total task_batch/total">
+                        endno task_batch/endNumber;
+                        total task_batch/total">
             <div
               class="navigation"
               tal:define="prev_page_url task_batch_navigator/prevBatchURL;
-                next_page_url task_batch_navigator/nextBatchURL">
+                          next_page_url task_batch_navigator/nextBatchURL">
               <a tal:condition="prev_page_url"
                  tal:attributes="href prev_page_url"
                  rel="previous">
@@ -95,24 +95,23 @@
       </tal:block>
       <tal:block condition="mass_edit">
         <tal:block condition="python: 'id' in listing_columns">
-          <th
-            tal:condition="python: 'title' in listing_columns">
-            colspan="3"
-          >Report</th>
-          <th
-            tal:condition="python: 'title' not in listing_columns"
-            colspan="2"
-          >Report</th>
+          <th tal:condition="python: 'title' in listing_columns" colspan="3">
+            Report
+          </th>
+          <th tal:condition="python: 'title' not in listing_columns"
+              colspan="2">
+            Report
+          </th>
         </tal:block>
         <tal:block condition="python: 'id' not in listing_columns">
-          <th
-            tal:condition="python: 'title' in listing_columns"
-            colspan="2"
-          >Report</th>
-          <th
-            tal:condition="python: 'title' not in listing_columns"
-            colspan="1"
-          >Report</th>
+          <th tal:condition="python: 'title' in listing_columns"
+              colspan="2">
+            Report
+          </th>
+          <th tal:condition="python: 'title' not in listing_columns"
+              colspan="1">
+            Report
+          </th>
         </tal:block>
       </tal:block>
       <tal:block condition="not: mass_edit">
@@ -130,8 +129,9 @@
           tal:condition="python: ('id' not in listing_columns)
             and ('title' in listing_columns)
           "
-          colspan="1"
-        >Report</th>
+          colspan="1">
+          Report
+        </th>
       </tal:block>
 
       <th tal:condition="python:'product' in listing_columns">Product</th>
@@ -156,8 +156,7 @@
                         product_name task/product/name|nothing;
                         project_name task/product/project/name|nothing;
                         package_name task/sourcepackagename/name|nothing;
-                        collection_name string:tasks;
-                        ass_link string:/malone/$collection_name/$assid/+edit;
+                        bug_link task/bug/@@absolute_url;
                         ass_owner task/owner/name|nothing;
                         potential_assignee logged_in/displayname|nothing;
                         status task/status/title;
@@ -170,51 +169,51 @@
             <input type="checkbox" name="task" value="" tal:attributes="value task/id" />
           </td>
           <td tal:condition="python:'id' in listing_columns">
-              <a tal:attributes="href ass_link" tal:content="bugid">247</a>
+              <a tal:attributes="href bug_link" tal:content="bugid">42</a>
           </td>
           <td tal:condition="python:'title' in listing_columns">
-              <a tal:attributes="href ass_link"
+              <a tal:attributes="href bug_link"
                  tal:content="task/bug/title/fmt:shorten/60">title</a>
           </td>
           <td tal:condition="python:('product' in listing_columns) and product_name">
               <a tal:content="python: (project_name == product_name) and product_name or (project_name + ' ' + product_name)"
-                 tal:attributes="href ass_link">product</a>
+                 tal:attributes="href bug_link">product</a>
           </td>
           <td tal:condition="python:product_name and ('product' in listing_columns)">
-              <a tal:attributes="href ass_link">-</a>
+              <a tal:attributes="href bug_link">-</a>
           </td>
           <td tal:condition="python:'package' in listing_columns">
               <a tal:content="python:package_name and package_name or '-'"
-                 tal:attributes="href ass_link">-</a>
+                 tal:attributes="href bug_link">-</a>
           </td>
           <td tal:condition="python:'milestone' in listing_columns">
-              <a tal:attributes="href ass_link"
+              <a tal:attributes="href bug_link"
                  tal:content="task/milestone/name|string:-">milestone</a>
           </td>
           <td tal:condition="python:'status' in listing_columns">
               <a tal:content="status"
-                 tal:attributes="href ass_link;
+                 tal:attributes="href bug_link;
                                  id statusid">New</a>
           </td>
           <td tal:condition="python:'priority' in listing_columns">
               <a tal:content="priority"
-                 tal:attributes="href ass_link">High</a>
+                 tal:attributes="href bug_link">High</a>
           </td>
           <td tal:condition="python:'severity' in listing_columns">
               <a tal:content="severity"
-                 tal:attributes="href ass_link">Medium</a>
+                 tal:attributes="href bug_link">Medium</a>
           </td>
           <td tal:condition="python:'submittedon' in listing_columns">
               <a tal:content="python:task.datecreated.strftime('%d %b %y')"
-                 tal:attributes="href ass_link">date</a>
+                 tal:attributes="href bug_link">date</a>
           </td>
           <td tal:condition="python:'submittedby' in listing_columns">
               <a tal:content="task/owner/displayname|string:-"
-                 tal:attributes="href ass_link">name</a>
+                 tal:attributes="href bug_link">name</a>
           </td>
           <td tal:condition="python:'assignedto' in listing_columns">
               <a tal:content="task/assignee/displayname|string:-"
-                 tal:attributes="href ass_link;
+                 tal:attributes="href bug_link;
                                  id assigneeid;">somebody</a>
           </td>
       </span>

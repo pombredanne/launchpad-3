@@ -8,5 +8,5 @@ quickly see which bugs have been assigned to them.
   ... """)
   HTTP/1.1 200 Ok
   ...1...result...
-              <a href="/malone/tasks/14/+edit">5</a>
+              <a href="...">5</a>
   ...

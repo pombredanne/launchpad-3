@@ -44,7 +44,7 @@ To search for bugs matching specific criteria, use IBugSet.search:
     >>> print dups_of_bug_six.count()
     0
 
-    >>> login("launchpad.anonymous")
+    >>> login(ANONYMOUS)
 
 Absolute URLs
 -------------
