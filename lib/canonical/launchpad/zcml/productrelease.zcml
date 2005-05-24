@@ -64,6 +64,10 @@
         permission="launchpad.Admin"
         template="../templates/launchpad-editform.pt"
         lp:url="/products/$Product.name/$ProductRelease.name/+review">
+        <browser:widget
+            field="version"
+            class="zope.app.form.browser.TextWidget"
+            displayWidth="20" />
     </browser:editform>
 
     <browser:pages
