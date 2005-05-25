@@ -14,7 +14,7 @@
 
     <h1>Products in Launchpad</h1>
 
-    <form method="post">
+    <form method="get">
         <table>
           <tr>
             <th>
@@ -54,8 +54,7 @@
 
     <div tal:condition="view/searchrequested">
 
-      <tal:block tal:define="results view/searchresults">
-        <table class="data">
+        <table class="data" tal:define="results view/searchresults">
           <thead>
             <tr class="results">
               <td colspan="0">
@@ -95,7 +94,6 @@
             </tr>
           </tbody>
         </table>
-      </tal:block>
 
 
     </div>
