@@ -94,8 +94,8 @@
         schema="canonical.launchpad.interfaces.IProduct"
         label="Edit Upstream Product Details:"
         fields="displayname title summary description homepageurl
-                screenshotsurl wikiurl programminglang downloadurl
-                sourceforgeproject freshmeatproject"
+                sourceforgeproject freshmeatproject wikiurl screenshotsurl
+                downloadurl programminglang"
         permission="launchpad.Edit"
         template="../templates/product-edit.pt"
         lp:url="/products/$Product.name/+edit">
@@ -216,13 +216,29 @@
         label="Register an Open Source (Upstream) Product"
         fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
-                downloadurl"
+                downloadurl programminglang"
         content_factory="canonical.launchpad.database.Product"
         class="canonical.launchpad.browser.ProductSetAddView"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
         lp:url="doap/products/+new">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget
+           field="homepageurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+        <browser:widget
+           field="screenshotsurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+        <browser:widget
+           field="wikiurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+        <browser:widget
+           field="downloadurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
     </browser:addform>
 
 </configure>

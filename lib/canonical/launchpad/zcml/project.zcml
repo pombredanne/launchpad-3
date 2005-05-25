@@ -106,12 +106,28 @@
         label="Add a Product to this Project"
         fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
-                downloadurl owner"
+                downloadurl programminglang owner"
         class="canonical.launchpad.browser.ProjectAddProductView"
         permission="launchpad.AnyPerson"
         template="../templates/product-add.pt"
         lp:url="/projects/$Project.name/+newproduct">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget
+           field="homepageurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+        <browser:widget
+           field="screenshotsurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+        <browser:widget
+           field="wikiurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+        <browser:widget
+           field="downloadurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
     </browser:addform>
 
 
