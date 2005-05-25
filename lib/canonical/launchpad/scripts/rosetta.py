@@ -363,9 +363,17 @@ class AttachTranslationCatalog:
         self.catalog = catalog
         self.ztm = ztm
         self.logger = logger
+        self.missing_distributions = []
+        self.missing_releases = []
 
     def get_distrorelease(self, distribution_name, release_name):
         """Get the distrorelease object for a distribution and a release."""
+
+        if distribution_name in self.missing_distributions:
+            return None
+
+        if (distribution_name, release_name) in self.missing_releases:
+            return None
 
         distributionset = DistributionSet()
 
@@ -377,6 +385,7 @@ class AttachTranslationCatalog:
             # warning so we can add it later and return.
             self.logger.warning("No distribution called %s in the "
                                 "database" % distribution_name)
+            self.missing_distributions.append(distribution_name)
             return None
 
         # Check that we have the needed release for the current distribution
@@ -389,6 +398,8 @@ class AttachTranslationCatalog:
             self.logger.warning("No release called %s for the "
                                 "distribution %s in the database" % (
                                 release_name, distribution_name))
+            self.missing_distributions.append(
+                (distribution_name, release_name))
             return None
 
     def get_sourcepackagename(self, sourcepackagename):
