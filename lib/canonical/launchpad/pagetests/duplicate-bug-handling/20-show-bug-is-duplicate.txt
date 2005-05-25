@@ -11,5 +11,5 @@ will show such information in a prominent way.
       <h2>Status</h2>
   ...
           This bug is a duplicate of
-          <a href="...">1</a>
+          <a href="...">bug 1</a>
   ...

@@ -37,7 +37,7 @@
         This bug is a duplicate of
         <a href="#"
            tal:attributes="href context/duplicateof/@@absolute_url"
-           tal:content="context/duplicateof/id">42</a>
+           tal:content="string:bug ${context/duplicateof/id}">bug 42</a>
       </p>
     </div>
 
