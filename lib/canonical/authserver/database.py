@@ -36,14 +36,23 @@ class UserDetailsStorageMixin(object):
         return [row[0] for row in transaction.fetchall()]
 
     def _addEmailAddresses(self, transaction, emailAddresses, personID):
-        """Add some email addresses to a person"""
-        for emailAddress in emailAddresses:
+        """Add some email addresses to a person
+       
+        First email address is PREFERRED, others are VALIDATED
+        """
+        transaction.execute(
+            "INSERT INTO EmailAddress (person, email, status) "
+            "VALUES (%d, %s, %d)" % (
+                personID, quote(emailAddresses[0]),
+                dbschema.EmailAddressStatus.PREFERRED.value
+                )
+            )
+        for emailAddress in emailAddresses[1:]:
             transaction.execute(
                 "INSERT INTO EmailAddress (person, email, status) "
                 "VALUES (%d, %s, %d)"
-                % (personID,
-                   quote(emailAddress),
-                   dbschema.EmailAddressStatus.PREFERRED.value)
+                % (personID, quote(emailAddress),
+                   dbschema.EmailAddressStatus.VALIDATED.value)
             )
 
     def getSSHKeys(self, archiveName):

@@ -34,6 +34,7 @@ COMMENT ON COLUMN ProjectRelationship.label IS 'The nature of the relationship. 
 
 -- EmailAddress
 COMMENT ON COLUMN EmailAddress.email IS 'An email address used by a Person. The email address is stored in a casesensitive way, but must be case insensitivly unique.';
+COMMENT ON INDEX emailaddress_person_key IS 'Ensures that a person only has one preferred email address';
 
 -- ProjectRole
 /*

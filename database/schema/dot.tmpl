@@ -1,10 +1,17 @@
 digraph g {
 graph [
-    page="8.27,11.69",
-    /*size="10.69,7.27",*/
-    size="42.76,29.08",
+    /* A4 */
+    page="11.69,8.27",
+    size="10.69,7.27",
+    /* A3
+    page="16.54,11.69",
+    size="15.54,10.69",
+    */
+    fontsize=22,
+    ratio=compress,
+
+/*
     overlap=false,
-    fontsize=16,
     ratio=fill,
     dpi=144,
     pack=true,
@@ -16,14 +23,14 @@ graph [
     maxiter=60000,
     k=1,
     damping=0.9,
-    /*packmode="graph",*/
-    /*model=subset,*/
+*/
 ];
 node [
     shape = plaintext, fontsize=6
 ];
 edge [
-    fontsize=6, len=.1, w=1000
+    fontsize=6
+/*, len=.1, w=1000*/
 ];
 <TMPL_LOOP name="schemas">
     <TMPL_LOOP name="tables">
