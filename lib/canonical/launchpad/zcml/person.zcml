@@ -36,6 +36,21 @@
           height="10" />
   </browser:addform>
 
+    <browser:editform
+        name="+review"
+        for="canonical.launchpad.interfaces.IPerson"
+        schema="canonical.launchpad.interfaces.IPerson"
+        label="Person Review"
+        fields="name displayname givenname familyname password"
+        permission="launchpad.Admin"
+        template="../templates/person-review.pt"
+        lp:url="/people/$person.id/+review">
+        <browser:widget
+            field="password"
+            class="canonical.widgets.PasswordChangeWidget"
+            />
+    </browser:editform>
+
   <browser:pages
       for="canonical.launchpad.interfaces.IPerson"
       permission="zope.Public"

@@ -16,7 +16,7 @@ import textwrap
 
 here = os.path.dirname(os.path.realpath(__file__))
 listen_port = 9000
-forward_port = 8085
+forward_port = 8086
 
 EXIT_SYNTAX_ERROR = 2
 EXIT_ERROR = 1
