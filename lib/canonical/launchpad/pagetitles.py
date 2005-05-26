@@ -122,14 +122,14 @@ bugs_index = 'Malone Master Bug List'
 bugsubscription_edit = 'Modify Your Bug Subscription'
 
 def bugtask_display(context, view):
-    return 'Bug Task on Malone #%s' % context.bug.id
+    return 'Bug #%s in %s: %s' % (
+      context.bug.id, context.contextname, context.bug.title
+    )
 
 def bugtask_editform(context, view):
-    title = 'Malone #%s' % context.bug.id
-    if context.product:
-        title += ' on %s' % context.product.displayname
-    title += ': %s' % context.bug.title
-    return title
+    return 'Editing bug #%s in %s: %s' % (
+      context.bug.id, context.contextname, context.bug.title
+    )
 
 # bugtask_search_listing contains only macros
 # bugtasks_index is a redirect

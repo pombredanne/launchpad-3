@@ -7,7 +7,7 @@ needs to be fixed.
   ... """)
   HTTP/1.1 200 Ok
   ...
-            <h3>Edit SourcePackage Bug Task</h3>
+            <input type="text" name="field.sourcepackagename"
   ...
 
 Any authenticated user can edit a source package bug task.

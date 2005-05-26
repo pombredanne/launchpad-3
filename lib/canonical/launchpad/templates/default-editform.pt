@@ -56,12 +56,13 @@
           <div class="separator"></div>
         </div>
 
-        <div class="row">
-          <div class="controls">
-            <input type="submit" name="UPDATE_SUBMIT"
-                   value="Change" style="float: right;"
-                   i18n:attributes="value submit-button"/>
-          </div>
+        <div class="form actions">
+          <input
+            type="submit"
+            name="UPDATE_SUBMIT"
+            value="Change"
+            i18n:attributes="value submit-button"
+          />
         </div>
         <div class="row" metal:define-slot="extra_buttons"
               tal:replace="nothing">

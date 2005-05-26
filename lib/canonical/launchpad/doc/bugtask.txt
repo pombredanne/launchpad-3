@@ -121,6 +121,108 @@ zope.exceptions.NotFoundError:
       ...
     NotFoundError: 'BugTask with ID -1 does not exist'
 
+Each task has a "contextname", a string describing the site of the
+task. It concatenates the display names of the distribution,
+
+    >>> bugtask = bugtaskset.get(1)
+    >>> bugtask.contextname
+    u'Ubuntu'
+
+distro release, or product;
+
+    >>> bugtask = bugtaskset.get(2)
+    >>> bugtask.contextname
+    u'Mozilla Firefox'
+
+the name of the source package (if any); and the name of the binary
+package (but only if it's named differently from the source
+package).
+
+Let's thoroughly test BugTask.contextname.  We'll set up a dummy bugtask
+class into which we put a copy of the contextname method, so we can test
+it in isolation.
+
+    >>> from canonical.launchpad.database import BugTask
+    >>> class DummyBugTask:
+    ...     distribution = None
+    ...     distrorelease = None
+    ...     sourcepackagename = None
+    ...     binarypackagename = None
+    ...     product = None
+    ...
+    ...     # This next line is a hack to take a copy of the method and
+    ...     # add it to this class.
+    ...     contextname = BugTask.contextname.fget
+    >>> class NamedThing:
+    ...     def __init__(self, name):
+    ...         self.name = '[%s.name]' % name
+    ...         self.displayname = '[%s.displayname]' % name
+
+When all the important attributes are None, then the bugtask is in an invalid
+state.
+
+    >>> bugtask = DummyBugTask()
+    >>> bugtask.contextname()
+    Traceback (most recent call last):
+    ...
+    AssertionError
+
+Product alone:
+
+    >>> bugtask.product = NamedThing('product')
+    >>> bugtask.contextname()
+    '[product.displayname]'
+
+Put things back the way they were.
+
+    >>> bugtask.product = None
+
+Distribution alone.
+
+    >>> bugtask.distribution = NamedThing('distribution')
+    >>> bugtask.contextname()
+    '[distribution.displayname]'
+
+Distribution and sourcepackagename.
+
+    >>> bugtask.sourcepackagename = NamedThing('spn')
+    >>> bugtask.contextname()
+    '[distribution.displayname] [spn.name]'
+
+Distribution and sourcepackagename and binarypackagename.
+
+    >>> bugtask.binarypackagename = NamedThing('bpn')
+    >>> bugtask.contextname()
+    '[distribution.displayname] [spn.name] [bpn.name]'
+
+Reset the state of our bugtask.
+
+    >>> bugtask.binarypackagename = None
+    >>> bugtask.sourcepackagename = None
+    >>> bugtask.distribution = None
+
+Just a distrorelease.
+
+    >>> bugtask.distrorelease = NamedThing('distrorelease')
+    >>> bugtask.contextname()
+    '[distrorelease.displayname]'
+
+Distrorelease and sourcepackagename.
+
+    >>> bugtask.sourcepackagename = NamedThing('spn')
+    >>> bugtask.contextname()
+    '[distrorelease.displayname] [spn.name]'
+
+Distrorelease, sourcepackagename and binarypackagename.
+
+    >>> bugtask.binarypackagename = NamedThing('bpn')
+    >>> bugtask.contextname()
+    '[distrorelease.displayname] [spn.name] [bpn.name]'
+
+Note that we haven't tested any combinations that shouldn't occur, except
+for the case when everything is None.
+
+
 To retrieve a set of bug tasks matching a set of search criteria, use
 BugTaskSet.search. Here's how you'd grab all the NEW and ACCEPTED tasks:
 

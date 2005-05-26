@@ -4,117 +4,78 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="launchpad">
   <body>
-
-  <div metal:fill-slot="main">
-
-  <div tal:condition="nothing">
-    This file is a modified version of zope/app/form/browser/edit.pt for use
-    in the Launchpad system. You should not edit this file, but rather use
-    it from your custom editform. You create your own template for the
-    specific editform, called table-edit.pt for example, which is the template
-    which uses this one.</div>
-
-    <br />
-
-    <div>
-        <a href="" tal:attributes="href string:/malone/bugs/${context/bug/id}">
-            More information on this bug...
-        </a>
-    </div>
-    <div tal:condition="context/product">
-        <a href=""
-           tal:attributes="href string:/malone/products/${context/product/name}"
-           tal:content="string:More ${context/product/displayname} bugs...">
-           More Mozilla Firefox bugs...
-        </a>
-    </div>
-    <br />
-    <tal:duplicatebug condition="context/bug/duplicateof">
+    <div metal:fill-slot="main">
       <div>
-        <p class="portalMessage">
-          This bug is a duplicate of
-          <a href="#"
-             tal:attributes="href context/bug/duplicateof/@@absolute_url"
-             tal:content="context/bug/duplicateof/id">42</a>
-        </p>
+        Bug #<span tal:replace="context/bug/id">1234</span> in
+        <span tal:replace="context/contextname">some context</span>
       </div>
-      <br />
-    </tal:duplicatebug>
-    <div metal:define-macro="editform">
+      <h1 tal:content="context/bug/title">Can't smegging smeg</h1>
+      <p
+        tal:condition="context/bug/duplicateof"
+        class="portalMessage"
+      >
+        This bug is a duplicate of
+        <a href="#"
+            tal:attributes="href context/bug/duplicateof/@@absolute_url"
+            tal:content="context/bug/duplicateof/id">42</a>
+      </p>
+      <h2>
+        Status in
+        <span tal:replace="context/contextname">something</span>
+      </h2>
 
-      <form action="." tal:attributes="action request/URL" method="post"
-            enctype="multipart/form-data">
+      <div metal:define-macro="editform">
 
-        <div metal:define-macro="formbody">
-
-          <h3 tal:condition="view/label"
-              tal:content="view/label"
-              metal:define-slot="heading"
-              >Edit something</h3>
-
-          <p class="portalMessage"
-             tal:define="status view/update"
-             tal:condition="status"
-             tal:content="status" />
-
-          <p tal:condition="view/errors"
-             class="portalMessage"
-             i18n:translate="">
-             There are <strong tal:content="python:len(view.errors)"
-                              i18n:name="num_errors">6</strong> input errors.
+        <form
+          action="."
+          tal:attributes="action request/URL"
+          method="post"
+          enctype="multipart/form-data"
+        >
+          <div metal:define-macro="formbody">
+            <p class="portalMessage"
+               tal:define="status view/update"
+               tal:condition="status"
+               tal:content="status"
+            />
+            <p tal:condition="view/errors"
+               class="portalMessage"
+               i18n:translate=""
+            >
+              There are <strong
+              tal:content="python:len(view.errors)"
+              i18n:name="num_errors">6</strong> input errors.
+            </p>
+            <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows"
+            />
+          </div>
+          <div class="actions">
+            <input
+              type="submit"
+              name="UPDATE_SUBMIT"
+              value="Save Changes"
+              i18n:attributes="value submit-button"
+            />
+          </div>
+          <br />
+          <p>
+            <a
+              href=""
+              tal:attributes="href string:/malone/bugs/${context/bug/id}"
+            >Subscribers and status elsewhere</a>
           </p>
-
-          <div metal:define-slot="extra_info"
-            class="documentDescription"
-            tal:replace="nothing">
-            This is where a document heading paragraph can be inserted. In
-            your actual customised editform, you can fill-slot this with 
-            a descriptive paragraph.
+          <h2>Description</h2>
+          <div tal:content="context/bug/description">
+            Bad stuff happens. Steps to reproduce: Walk outside.
           </div>
-
-          <fieldset>
-
-          <legend metal:define-slot="editform_legend" tal:replace="nothing">
-             Fieldset Legend
-          </legend>
-
-          <div class="row"
-               metal:define-slot="extra_top" tal:replace="nothing">
-            <div class="label">Extra top</div>
-            <div class="field"><input type="text" style="width:100%" /></div>
-          </div>
-        
-          <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
-        
-          <div class="separator"></div>
-        
-          <div class="row"
-               metal:define-slot="extra_bottom" tal:replace="nothing">
-            <div class="label">Extra bottom</div>
-            <div class="field"><input type="text" style="width:100%" /></div>
-          </div>
-
-          </fieldset>
-
-        </div>
-
-        <div class="form actions">
-          <input type="submit" name="UPDATE_SUBMIT"
-                 value="Change" style="float: right;"
-                 i18n:attributes="value submit-button"
-          />
-        </div>
-
-        <div class="row" metal:define-slot="extra_buttons"
-              tal:replace="nothing">
-        </div>
-
-        <div class="separator"></div>
-
-      </form>
-
+        </form>
+      </div>
+      <p tal:condition="context/product">
+        <a href=""
+            tal:attributes="href string:/malone/products/${context/product/name}"
+            tal:content="string:More ${context/product/displayname} bugs"
+        >More Mozilla Firefox bugs</a>
+      </p>
     </div>
-  </div>
-
   </body>
 </html>
