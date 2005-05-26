@@ -17,6 +17,7 @@ from canonical.launchpad.interfaces import \
     IProductSeriesSet
 from canonical.launchpad.database.packaging import Packaging
 from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import \
     EnumCol, ImportStatus, RevisionControlSystems
 
@@ -96,7 +97,7 @@ class ProductSeries(SQLBase):
 
     def certifyForSync(self):
         """Enable the sync for processing."""
-        self.dateprocessapproved = 'NOW'
+        self.dateprocessapproved = UTC_NOW
         self.syncinterval = datetime.timedelta(1)
         self.importstatus = ImportStatus.PROCESSING
 
@@ -110,7 +111,7 @@ class ProductSeries(SQLBase):
 
     def enableAutoSync(self):
         """Enable autosyncing?"""
-        self.datesyncapproved = 'NOW'
+        self.datesyncapproved = UTC_NOW
         self.importstatus = ImportStatus.SYNCING
 
 

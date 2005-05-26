@@ -12,6 +12,7 @@ from zope.interface import implements
 
 from sqlobject import DateTimeCol, ForeignKey, StringCol
 from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.interfaces import \
     ISourceSource, ISourceSourceAdmin, ISourceSourceSet
@@ -91,7 +92,7 @@ class XXXXSourceSource(SQLBase):
 
     def certifyForSync(self):
         """Enable the sync for processing."""
-        self.processingapproved = 'NOW'
+        self.processingapproved = UTC_NOW
         self.syncinterval = datetime.timedelta(1)
         self.importstatus = ImportStatus.PROCESSING
 
@@ -105,7 +106,7 @@ class XXXXSourceSource(SQLBase):
 
     def enableAutoSync(self):
         """Enable autosyncing?"""
-        self.syncingapproved = 'NOW'
+        self.syncingapproved = UTC_NOW
         self.importstatus = ImportStatus.SYNCING
 
     def canChangeProductSeries(self):

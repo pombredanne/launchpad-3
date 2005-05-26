@@ -8,7 +8,7 @@ import datetime
 
 from zope.interface import implements
 
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
+from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, IntervalCol
 from sqlobject import CurrencyCol
 from sqlobject import MultipleJoin, RelatedJoin
 
@@ -35,7 +35,7 @@ class Bounty(SQLBase):
     description = StringCol( notNull=True)
     usdvalue = CurrencyCol(notNull=True)
     difficulty = IntCol(notNull=True, default=50)
-    duration = DateTimeCol(notNull=True, default=datetime.timedelta(7))
+    duration = IntervalCol(notNull=True, default=datetime.timedelta(7))
     reviewer = ForeignKey(dbName='reviewer', notNull=True, foreignKey='Person')
     datecreated = DateTimeCol(notNull=True, default=DEFAULT)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)

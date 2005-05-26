@@ -5,6 +5,7 @@ __all__ = ['Changeset', 'ChangesetFileName', 'ChangesetFileHash',
            'ChangesetFile', 'RevisionMapper']
 
 from canonical.database.sqlbase import quote, SQLBase
+from canonical.database.constants import UTC_NOW
 from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol
 
 from canonical.launchpad.interfaces import RevisionNotRegistered
@@ -86,7 +87,7 @@ class RevisionMapper:
         #FIXME: ask Mark if we should include correct date?
         revision.set_changeset(Changeset(
             branch=VersionMapper()._getDBBranchId(revision.version),
-            datecreated='now',
+            datecreated=UTC_NOW,
             name=revision.name,
             logmessage='',
             ))

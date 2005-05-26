@@ -1214,7 +1214,7 @@ class Karma(SQLBase):
     points = IntCol(dbName='points', notNull=True, default=0)
     karmatype = EnumCol(dbName='karmatype', notNull=True, schema=KarmaType)
     datecreated = DateTimeCol(dbName='datecreated', notNull=True,
-                              default='NOW')
+                              default=UTC_NOW)
 
     def karmatypename(self):
         return self.karmatype.title

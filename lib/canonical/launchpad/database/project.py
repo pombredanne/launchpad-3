@@ -11,6 +11,7 @@ from zope.interface import implements
 from sqlobject import DateTimeCol, ForeignKey, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.interfaces import \
     IProject, IProjectSet, IProjectBugTracker
@@ -92,7 +93,7 @@ class ProjectSet:
                        description = description,
                        homepageurl = url,
                        owner = owner,
-                       datecreated = 'now')
+                       datecreated = UTC_NOW)
 
     def forReview(self):
         return Project.select("reviewed IS FALSE")
