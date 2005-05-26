@@ -160,17 +160,23 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
             'salt': salt,
         }
 
-    def createUser(self, loginID, sshaDigestedPassword, displayname,
+    def createUser(self, preferredEmail, sshaDigestedPassword, displayname,
                    emailAddresses):
         """Create a user.
+
+        :param preferredEmail: Preferred email address for this user.
+
+        :param emailAddresses: Other email addresses for this user.
         
-        This method should only be called if the email address has been
-        validated, or the password is only known by the controller of the
-        given email address
+        This method should only be called if the email addresses have all
+        been validated, or if emailAddresses is an empty list and the
+        password only known by the controller of the preferredEmail address.
         """
         ri = self.connectionPool.runInteraction
-        if loginID not in emailAddresses:
-            emailAddresses = emailAddresses + [loginID]
+        emailAddresses = (
+                [preferredEmail]
+                + [e for e in emailAddresses if e != preferredEmail]
+                )
         deferred = ri(self._createUserInteraction,
                       sshaDigestedPassword.encode('base64'),
                       displayname, emailAddresses)
@@ -422,11 +428,13 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             'emailaddresses': emailaddresses,
         }
 
-    def createUser(self, loginID, password, displayname, emailAddresses):
+    def createUser(self, preferredEmail, password, displayname, emailAddresses):
         ri = self.connectionPool.runInteraction
-        if loginID not in emailAddresses:
-            emailAddresses = emailAddresses + [loginID]
-        deferred = ri(self._createUserInteraction, 
+        emailAddresses = (
+                [preferredEmail]
+                + [e for e in emailAddresses if e != preferredEmail]
+                )
+        deferred = ri(self._createUserInteraction,
                       password, displayname, emailAddresses)
         deferred.addErrback(self._eb_createUser)
         return deferred

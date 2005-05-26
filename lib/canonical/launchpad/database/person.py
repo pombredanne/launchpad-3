@@ -23,7 +23,6 @@ from zope.component import ComponentLookupError, getUtility
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, SQLObjectNotFound
 from sqlobject.sqlbuilder import AND
-from canonical.database.sqlbase import flush_database_updates
 from canonical.database.sqlbase import SQLBase, quote, cursor, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database import postgresql
@@ -450,7 +449,7 @@ class Person(SQLBase):
             # We need to flush updates, because we don't know what order
             # SQLObject will issue the changes and we can't set the new
             # address to PREFERRED until the old one has been set to VALIDATED
-            flush_database_updates()
+            preferredemail.syncUpdate()
         email.status = EmailAddressStatus.PREFERRED
 
     def _getPreferredemail(self):
