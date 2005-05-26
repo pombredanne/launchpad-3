@@ -987,6 +987,7 @@ INSERT INTO sourcepackagename (id, name) VALUES (10, 'netapplet');
 INSERT INTO sourcepackagename (id, name) VALUES (14, 'pmount');
 INSERT INTO sourcepackagename (id, name) VALUES (15, 'a52dec');
 INSERT INTO sourcepackagename (id, name) VALUES (16, 'mozilla');
+INSERT INTO sourcepackagename (id, name) VALUES (17, 'uberfrob');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackagename'::pg_catalog.regclass;
@@ -6794,7 +6795,7 @@ SELECT pg_catalog.setval('libraryfilealias_id_seq', 33, true);
 
 
 
-SELECT pg_catalog.setval('sourcepackagename_id_seq', 16, true);
+SELECT pg_catalog.setval('sourcepackagename_id_seq', 17, true);
 
 
 

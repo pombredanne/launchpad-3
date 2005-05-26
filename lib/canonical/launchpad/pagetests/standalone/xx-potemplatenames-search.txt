@@ -1,0 +1,32 @@
+Check that the PO Template Names search form loads.
+
+  >>> print http(r"""
+  ... GET /potemplatenames HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Submit a search and check that we get the expected output.
+
+  >>> print http(r"""
+  ... POST /potemplatenames HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 8
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Referer: http://localhost:9000/potemplatenames
+  ... 
+  ... text=evo""")
+  HTTP/1.1 200 Ok
+  ...
+                <input name="text" size="30" value="evo" />
+  ...
+                  <tr class="results">
+                <td colspan="0">
+                  1
+  ...
+                        <a href="1"><dfn>Main translation domain for the Evolution 2.2</dfn>
+                          (evolution-2.2)</a>
+                      </dt>
+                      <dd>This is a description about Evolution 2.2 POTemplateName</dd>
+  ...

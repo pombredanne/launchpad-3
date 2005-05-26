@@ -44,8 +44,14 @@
       <div class="portlet">
         <h4>template description</h4>
 
-        <div class="portletBody" tal:content="context/description">
-            portlet description
+        <div class="portletBody">
+          <tal:block tal:condition="context/description"
+                     tal:content="context/description">
+            template description
+          </tal:block>
+          <tal:block tal:condition="not:context/description">
+            This template has no description.
+          </tal:block>
         </div>
       </div>
     </div>
@@ -360,7 +366,7 @@
             tal:content="context/language/englishname"
             tal:omit-tag=""
           >Spanish</span>
-          <span tal:replace="view/completeness" tal:omit-tag="">0</span> %
+          <span tal:replace="view/completeness" tal:omit-tag="">0 %</span>
         </p>
       </div> <!-- condition: not: view/lacksPluralFormInformation -->
     </div>

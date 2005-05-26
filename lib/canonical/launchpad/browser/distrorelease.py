@@ -16,7 +16,7 @@ from canonical.launchpad import helpers
 
 from canonical.launchpad.interfaces import IBugTaskSet, ILaunchBag, \
      IBugTaskSearchListingView
-from canonical.launchpad.browser.potemplate import ViewPOTemplate
+from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 
 class DistroReleaseView(BugTaskSearchListingView):
@@ -67,7 +67,7 @@ class DistroReleaseView(BugTaskSearchListingView):
         return helpers.browserLanguages(self.request)
 
     def templateviews(self):
-        return [ViewPOTemplate(template, self.request)
+        return [POTemplateView(template, self.request)
                 for template in self.context.potemplates]
 
 

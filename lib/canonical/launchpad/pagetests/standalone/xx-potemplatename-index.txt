@@ -1,0 +1,14 @@
+Check that the index page for a PO Template Name works.
+
+  >>> print http(r"""
+  ... GET /potemplatenames/1 HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+          <dfn>Main translation domain for the Evolution 2.2</dfn>
+  ...
+                  <a href="/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/">
+  ...
+                  <a href="/products/evolution/2.1.6/+pots/evolution-2.2">
+  ...

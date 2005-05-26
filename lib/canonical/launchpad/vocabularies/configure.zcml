@@ -140,6 +140,11 @@
         factory="canonical.launchpad.vocabularies.ValidGPGKeyVocabulary"
         />
 
+    <vocabulary
+        name="POTemplateName"
+        factory="canonical.launchpad.vocabularies.POTemplateNameVocabulary"
+        />
+
     <!-- Define the widget used by Choice fields that use huge vocabularies -->
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"

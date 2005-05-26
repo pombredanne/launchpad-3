@@ -384,6 +384,19 @@ ul.people li {
     padding-left: 18px
 }
 
+ul.add>li, li.add {
+    list-style-image: url(/++resource++add.gif);
+}
+
+ul.edit>li, li.edit {
+    list-style-image: url(/++resource++edit.gif);
+}
+
+ul.locked>li, li.locked {
+    list-style-image: url(/++resource++lock_icon.gif);
+}
+
+
 /*
 Translation template stuff.
 */

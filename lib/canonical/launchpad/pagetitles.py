@@ -325,6 +325,8 @@ notfound = 'Launchpad Page Not Found'
 
 # object_pots is a fragment.
 
+object_potemplatenames = ContextDisplayName('Template names for %s')
+
 def package_bugs(context, view):
     return 'Package Bug Listing for %s' % context.name
 
@@ -377,11 +379,21 @@ def pofile_translate(context, view):
 
 # portlet_* are portlets
 
+potemplage_admin = ContextTitle('%s admin in Rosetta')
+
 # potemplate_chart is a fragment
 
-potemplate_edit = ContextTitle('Rosetta: %s - Edit')
+potemplate_edit = ContextTitle('%s edit in Rosetta')
 
-potemplate_index = ContextTitle('Rosetta %s')
+potemplate_index = ContextTitle('%s in Rosetta')
+
+potemplatename_add = 'Add a new template name to Rosetta'
+
+potemplatename_edit = ContextTitle('%s edit in Rosetta')
+
+potemplatename_index = ContextTitle('%s in Rosetta')
+
+potemplatenames_index = 'Template names in Launchpad'
 
 product_add = 'Register a new Product with the Launchpad'
 

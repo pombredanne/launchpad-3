@@ -26,7 +26,8 @@ class ILaunchpadCelebrities(Interface):
 
     buttsource = Attribute("The 'buttsource' team.")
     admin = Attribute("The 'admins' team.")
-    ubuntu = Attribute("The ubuntu Distribution")
+    ubuntu = Attribute("The ubuntu Distribution.")
+    rosetta_expert = Attribute("The Rosetta Experts team.")
 
 
 class ICrowd(Interface):

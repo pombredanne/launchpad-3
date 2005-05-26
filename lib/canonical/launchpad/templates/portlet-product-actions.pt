@@ -4,12 +4,19 @@
     <div class="portletBody">
         <div class="portletContent even">
 
-            <ul class="edit">
-                <li><a href="+edit">Edit Product</a></li>
-                <li><a href="+addseries">Add Branch</a></li>
-                <li><a href="+addpackage">Add Package</a></li>
-              
-                <li tal:condition="python:request.principal and request.principal.id == context.owner.id"><a href="+milestone">Add Milestone</a></li>
+            <ul>
+                <li class="edit"><a href="+edit">Edit Product</a></li>
+                <li class="edit"
+                    tal:condition="context/required:launchpad.Admin">
+                  <a href="+potemplatenames">Edit template names</a>
+                </li>
+                <li class="add"><a href="+addseries">Add Branch</a></li>
+                <li class="add"><a href="+addpackage">Add Package</a></li>
+                <li class="add"
+                    tal:condition="python:request.principal and request.principal.id == context.owner.id">
+                  <a href="+milestone">Add Milestone</a>
+                </li>
+            </ul>
         </div>
     </div>
 </div>

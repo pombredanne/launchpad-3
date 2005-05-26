@@ -10,8 +10,78 @@
         <require
             permission="zope.Public"
             interface="canonical.launchpad.interfaces.IPOTemplateName"
-            set_attributes="name"
+            set_attributes="name title description translationdomain"
             />
     </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IPOTemplateName"
+        name="+index"
+        />
+
+    <browser:page
+        name="+index"
+        for="canonical.launchpad.interfaces.IPOTemplateName"
+        permission="launchpad.Edit"
+        template="../templates/potemplatename-index.pt"
+        class="canonical.launchpad.browser.POTemplateNameView"
+        />
+
+    <browser:editform
+        name="+edit"
+        schema="canonical.launchpad.interfaces.IPOTemplateName"
+        class="canonical.launchpad.browser.POTemplateNameEditView"
+        label="Change PO Template Name Information"
+        permission="launchpad.Edit"
+        template="../templates/potemplatename-edit.pt"
+        fields="name title description translationdomain" >
+        <browser:widget
+            field="title"
+            class="zope.app.form.browser.TextWidget"
+            displayWidth="55"
+            />
+    </browser:editform>
+
+    <securedutility
+        class="canonical.launchpad.database.POTemplateNameSet"
+        provides="canonical.launchpad.interfaces.IPOTemplateNameSet">
+        <allow interface="canonical.launchpad.interfaces.IPOTemplateNameSet" />
+    </securedutility>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IPOTemplateNameSet"
+        name="+index" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IPOTemplateNameSet"
+        function="canonical.launchpad.browser.traversePOTemplateNames" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IPOTemplateNameSet"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.POTemplateNameSetView" >
+        <browser:page
+            name="+index"
+            template="../templates/potemplatenames-index.pt"
+            lp:url="/potemplatenames/+index" />
+    </browser:pages>
+
+    <browser:addform
+        name="+add"
+        for="canonical.launchpad.interfaces.IPOTemplateNameSet"
+        schema="canonical.launchpad.interfaces.IPOTemplateName"
+        class="canonical.launchpad.browser.POTemplateNameAddView"
+        label="Add a new PO Template Name"
+        fields="name title description translationdomain"
+        arguments=""
+        keyword_arguments="name title description translationdomain"
+        content_factory="canonical.launchpad.database.POTemplateName"
+        permission="launchpad.Edit"
+        template="../templates/potemplatename-add.pt" >
+        <browser:widget
+           field="title"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="55" />
+    </browser:addform>
 
 </configure>

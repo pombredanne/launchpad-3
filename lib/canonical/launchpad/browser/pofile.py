@@ -90,7 +90,9 @@ class ViewPOFile:
                 self.status_message = 'Please, review the po file seems to have a problem'
                 return
 
-            self.request.response.redirect('./')
+            self.status_message = (
+                'Thank you for your upload. The PO file content will appear'
+                ' in Rosetta in a few minutes.')
             self.submitted = True
 
 
@@ -347,6 +349,9 @@ class POFileTranslateView:
         else:
             return length - (length % self.count)
 
+    def completeness(self):
+        return '%.2f%%' % self.context.translatedPercentage()
+
     def processForm(self):
         """Process the translation form."""
         # This sets up the following instance variables:
@@ -370,7 +375,7 @@ class POFileTranslateView:
         # Submit any translations.
         submitted = self.submitTranslations()
 
-        # Get plural form and completeness information.
+        # Get plural form information.
         #
         # For each language:
         #
@@ -384,11 +389,6 @@ class POFileTranslateView:
         # - Otherwise, we don't have any plural form information for that
         #   language.
         #
-        # - If there exists a PO file, work out the completeness of the PO
-        #   file as a percentage.
-        #
-        # - Otherwise, the completeness for that language is 0 (since the PO
-        #   file doesn't exist).
         all_languages = getUtility(ILanguageSet)
         pofile = self.context
         potemplate = pofile.potemplate
@@ -405,15 +405,6 @@ class POFileTranslateView:
                 self.pluralFormCounts = pofile.pluralforms
 
             self.lacksPluralFormInformation = self.pluralFormCounts is None
-
-        # Get completeness information.
-        template_size = len(potemplate)
-
-        if template_size > 0:
-            self.completeness = (float(pofile.translatedCount()) / 
-                                 template_size * 100)
-        else:
-            self.completeness = 0
 
         # Get pagination information.
         offset = form.get('offset')
@@ -473,7 +464,7 @@ class POFileTranslateView:
             if self.offset == 0:
                 # The submit was done from the last set of potmsgset so we
                 # need to calculate that last page
-                self.offset = self._computeLastOffset(template_size)
+                self.offset = self._computeLastOffset(len(potemplate))
             else:
                 # We just go back self.count messages
                 self.offset = self.offset - self.count
