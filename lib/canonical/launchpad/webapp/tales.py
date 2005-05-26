@@ -143,6 +143,20 @@ class MenuAPI:
             return selectedfacets[0].id
 
 
+class CountAPI:
+    """Namespace to provide counting-related functions, such as length.
+
+    This is available for tuples, lists, dicts, and ISelectResults.
+
+    somelist/count:len  gives you an int that is len(somelist).
+    """
+    def __init__(self, context):
+        self._context = context
+
+    def len(self):
+        return len(self._context)
+
+
 class HTMLFormAPI:
     """HTML form helper API, available as request/htmlform:.
 

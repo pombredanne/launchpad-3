@@ -16,6 +16,34 @@ TALES features.
     ...
 
 
+Test the 'count:' namespace where the context is a tuple, list or dict.
+
+count:len gives you a number that is the number of items in the tuple, list
+or dict.  Note that it works only for these types of object.  It does not
+work for just any object that has a __len__ method.
+
+    >>> test_tales('foo/count:len', foo=())
+    0
+    >>> test_tales('foo/count:len', foo=[])
+    0
+    >>> test_tales('foo/count:len', foo={})
+    0
+    >>> test_tales('foo/count:len', foo=(1, 2, 3))
+    3
+    >>> test_tales('foo/count:len', foo=[1, 2, 3])
+    3
+    >>> test_tales('foo/count:len', foo={1:1, 2:2, 3:3})
+    3
+
+Test the 'count:' namespace where the context is a SelectResults.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> allteams = getUtility(IPersonSet).getAllTeams()
+    >>> test_tales('foo/count:len', foo=allteams)
+    10
+
+
 Test the 'fmt:' namespace where the context is a datetime.
 
    >>> from datetime import datetime
@@ -54,12 +82,12 @@ Test the 'fmt:' namespace where the context is a string.
 
 Test the 'fmt:' namespace where the context is a dict.
 
+fmt:pagetitle takes a page template CONTEXTS dict, and gives you a string
+for use in the <title> element of a page.
+
 This case ought to apply only to a page template's CONTEXTS dict.  However, we
 have to make this namespace available for all dicts, as there is no type
 information to distinguish a page template CONTEXTS dict from any other dict.
-
-'fmt:pagetitle' is the only operation available from the 'fmt:' namespace
-as applied to a dict.
 
     >>> class MockPageTemplateFile:
     ...     filename = '/blah/blah/debug-root-index.pt'
