@@ -183,10 +183,11 @@ class ProductSeriesView(object):
         self.releaseroot = form.get("releaseroot", self.releaseroot) or None
         self.releasefileglob = form.get("releasefileglob",
                 self.releasefileglob) or None
-        if not validate_release_root(self.releaseroot):
-            self.errormsgs.append('Invalid release root URL')
-            return
-        self.context.summary = self.displayname
+        if self.releaseroot:
+            if not validate_release_root(self.releaseroot):
+                self.errormsgs.append('Invalid release root URL')
+                return
+        self.context.summary = self.summary
         self.context.displayname = self.displayname
         self.context.releaseroot = self.releaseroot
         self.context.releasefileglob = self.releasefileglob
