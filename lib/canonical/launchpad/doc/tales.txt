@@ -157,7 +157,6 @@ Make a mock-up IBrowserRequest, and use this as the interaction.
 
     >>> participation = MockBrowserRequest('/foo/bar/linkone/baz')
 
-    >>> from canonical.launchpad.ftests import login, ANONYMOUS
     >>> login(ANONYMOUS, participation)
 
     >>> from canonical.launchpad.interfaces import IPersonSet

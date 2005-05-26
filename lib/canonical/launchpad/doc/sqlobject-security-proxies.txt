@@ -2,8 +2,7 @@ Demonstrate that SQLObject works with security proxies
 ------------------------------------------------------
 
 Do some imports.
-    
-    >>> from canonical.launchpad.ftests import login, ANONYMOUS
+
     >>> from canonical.launchpad.interfaces import IBugTaskSet, IPersonSet
     >>> from canonical.launchpad.database import BugTask
     >>> from zope.component import getUtility

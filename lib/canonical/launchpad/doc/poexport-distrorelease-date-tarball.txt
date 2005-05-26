@@ -8,7 +8,6 @@ date.
   >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
   >>> LaunchpadFunctionalTestSetup().setUp()
   >>> LibrarianTestSetup().setUp()
-  >>> login(ANONYMOUS)
 
 First we need to set up some data to test with, and for this we need some DB
 classes.

@@ -45,6 +45,8 @@ def poExportSetUp(test):
     sqlos.connection.connCache = {}
     LaunchpadZopelessTestSetup(dbuser='poexport').setUp()
     setGlobs(test)
+    # Set up an anonymous interaction.
+    login(ANONYMOUS)
 
 def poExportTearDown(test):
     LaunchpadZopelessTestSetup().tearDown()
