@@ -13,6 +13,9 @@ CREATE UNIQUE INDEX emailaddress_person_key
 
 -- Add a check to ensure teams don't get passwords set, as requested by
 -- Salgado I think.
+UPDATE Person
+    SET givenname=NULL, familyname=NULL, password=NULL, language=NULL
+    WHERE teamowner IS NOT NULL;
 ALTER TABLE Person ADD CONSTRAINT valid_team_fields CHECK (
     teamowner IS NULL OR (
         givenname IS NULL
