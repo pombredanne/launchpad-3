@@ -10,7 +10,6 @@ class IDistroArchRelease(IHasOwner):
     processorfamily = Attribute("ProcessorFamily")
     architecturetag = Attribute("ArchitectureTag")
     owner = Attribute("Owner")
-    chroot = Attribute("Chroot")
     
     #joins
     packages = Attribute('List of binary packages in this port.')
@@ -30,3 +29,10 @@ class IDistroArchRelease(IHasOwner):
     def __getitem__(name):
         """Getter"""
 
+class IPocketChroot(Interface):
+    """PocketChroot Table Interface"""
+
+    distroarchrelease = Attribute("The DistroArchRelease this chroot belongs to.")
+    pocket = Attribute("The Pocket this chroot is for.")
+    chroot = Attribute("The file alias of the chroot.")
+    
