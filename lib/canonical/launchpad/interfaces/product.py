@@ -8,6 +8,7 @@ _ = MessageIDFactory('launchpad')
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces.launchpad import IHasOwner, IHasAssignee
+from canonical.launchpad.validators.name import valid_name
 
 class IProduct(IHasOwner):
     """
@@ -30,7 +31,8 @@ class IProduct(IHasOwner):
     description=_("""Product owner, it can either a valid Person or Team
     inside Launchpad context."""))
 
-    name = TextLine(title=_('Name'), description=_("""The short name of this
+    name = TextLine(title=_('Name'), constraint=valid_name,
+        description=_("""The short name of this
         product, which must be unique among all the products. It should be
         at least one lowercase letters or number followed by one or more chars,
         numbers, plusses, dots or hyphens and will be part of the url to this
