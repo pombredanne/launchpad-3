@@ -6,6 +6,7 @@
 
             <ul>
                 <li class="edit"><a href="+edit">Edit Product</a></li>
+                <li class="edit"><a href="+review">Review Product</a></li>
                 <li class="edit"
                     tal:condition="context/required:launchpad.Admin">
                   <a href="+potemplatenames">Edit template names</a>
