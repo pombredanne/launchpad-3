@@ -16,32 +16,18 @@ TALES features.
     ...
 
 
-Test the 'count:' namespace where the context is a tuple, list or dict.
+Test the 'count:' namespace.
 
-count:len gives you a number that is the number of items in the tuple, list
-or dict.  Note that it works only for these types of object.  It does not
-work for just any object that has a __len__ method.
+count:len gives you a number which is len(thing).
 
-    >>> test_tales('foo/count:len', foo=())
-    0
     >>> test_tales('foo/count:len', foo=[])
     0
-    >>> test_tales('foo/count:len', foo={})
-    0
-    >>> test_tales('foo/count:len', foo=(1, 2, 3))
-    3
     >>> test_tales('foo/count:len', foo=[1, 2, 3])
     3
-    >>> test_tales('foo/count:len', foo={1:1, 2:2, 3:3})
-    3
-
-Test the 'count:' namespace where the context is a SelectResults.
-
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> allteams = getUtility(IPersonSet).getAllTeams()
-    >>> test_tales('foo/count:len', foo=allteams)
-    10
+    >>> test_tales('foo/count:len', foo=object())
+    Traceback (most recent call last):
+    ...
+    TypeError: len() of unsized object
 
 
 Test the 'fmt:' namespace where the context is a datetime.

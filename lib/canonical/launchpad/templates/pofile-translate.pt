@@ -149,7 +149,7 @@
                   <div style="width: 50%; float: left;">
                     <tal:block tal:condition="view/onlyOneForm">
                       All
-                      <strong tal:content="context/potemplate/__len__">23</strong>
+                      <strong tal:content="context/potemplate/count:len">23</strong>
                       items
                     </tal:block>
                     <tal:block tal:condition="not:view/onlyOneForm">
@@ -158,7 +158,7 @@
                     &rarr;
                     <strong tal:content="view/getLastMessageShown">10</strong>
                     of
-                    <strong tal:content="context/potemplate/__len__">23</strong>
+                    <strong tal:content="context/potemplate/count:len">23</strong>
                     </tal:block>
                   </div>
 

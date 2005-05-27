@@ -15,7 +15,7 @@
 
         <div class="portletContent even">
             <b>Template messages:</b>
-            <span tal:replace="context/potemplate/__len__">N</span>
+            <span tal:replace="context/potemplate/count:len">N</span>
             <br/>
             <b>Todo messages:</b>
             <span tal:replace="view/untranslated">N</span>

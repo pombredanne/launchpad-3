@@ -146,14 +146,14 @@ class MenuAPI:
 class CountAPI:
     """Namespace to provide counting-related functions, such as length.
 
-    This is available for tuples, lists, dicts, and ISelectResults.
-
-    somelist/count:len  gives you an int that is len(somelist).
+    This is available for all objects.  Individual operations may fail for
+    objects that do not support them.
     """
     def __init__(self, context):
         self._context = context
 
     def len(self):
+        """somelist/count:len  gives you an int that is len(somelist)."""
         return len(self._context)
 
 

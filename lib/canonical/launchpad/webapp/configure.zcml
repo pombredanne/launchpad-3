@@ -66,28 +66,7 @@
 
     <!-- TALES count: namespace -->
     <adapter
-        for="tuple"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.CountAPI"
-        name="count"
-        />
-
-    <adapter
-        for="list"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.CountAPI"
-        name="count"
-        />
-
-    <adapter
-        for="dict"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.CountAPI"
-        name="count"
-        />
-
-    <adapter
-        for="sqlos.interfaces.ISelectResults"
+        for="*"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.CountAPI"
         name="count"

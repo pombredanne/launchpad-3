@@ -15,7 +15,8 @@
     <small>release bugs:
     <tal:block repeat="distrorelease context/releases">
       <a href="#"
-         tal:content="python:distrorelease.name + '(' + str(len(distrorelease.bugtasks)) + ')'"
+
+         tal:content="string:${distrorelease/name}(${distrorelease/bugtasks/count:len})"
          tal:attributes="href distrorelease/name"/>
     </tal:block>
     </small>

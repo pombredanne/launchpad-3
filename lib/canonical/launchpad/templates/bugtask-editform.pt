@@ -43,7 +43,7 @@
                i18n:translate=""
             >
               There are <strong
-              tal:content="python:len(view.errors)"
+              tal:content="view/errors/count:len"
               i18n:name="num_errors">6</strong> input errors.
             </p>
             <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows"

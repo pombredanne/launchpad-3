@@ -65,7 +65,7 @@
             <tal:dummy tal:condition="context/validatedemails">
             <tr>
               <td>Email:</td>
-              <td><span tal:content="python: len(context.validatedemails)" />
+              <td><span tal:content="context/validatedemails/count:len" />
                   validated email addresses. [<a href="+emails">Add emails or
                     set one of yours as preferred</a>]
               </td>
