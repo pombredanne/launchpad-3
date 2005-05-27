@@ -5,9 +5,12 @@
 __metaclass__ = type
 
 import os
+import threading
+import atexit
 import zope.app.appsetup
 from zope.configuration.config import ConfigurationMachine
 from zope.configuration.config import GroupingContextDecorator
+import zope.app.mail.delivery
 
 # XXX: This is a total mess.  I need to work out what this all means.
 # -- SteveAlexander, 2005-04-11
@@ -59,6 +62,19 @@ def execute_zcml_for_scripts():
     context = CustomMachine()
     xmlconfig.registerCommonDirectives(context)
     context = xmlconfig.file(scriptzcmlfilename, execute=True, context=context)
+
+    # Register atexit handler to kill off mail delivery daemon threads, and
+    # thus avoid spew at exit.  See:
+    # http://mail.python.org/pipermail/python-list/2003-October/192044.html
+    # http://mail.python.org/pipermail/python-dev/2003-September/038151.html
+    # http://mail.python.org/pipermail/python-dev/2003-September/038153.html
+
+    def kill_queue_processor_threads():
+        for thread in threading.enumerate():
+            if isinstance(thread, zope.app.mail.delivery.QueueProcessorThread):
+                thread.stop()
+    atexit.register(kill_queue_processor_threads)
+
     # This is a convenient hack to set up a zope interaction, before we get
     # the proper API for having a principal / user running in scripts.
     # The script will have full permissions because of the
