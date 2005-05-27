@@ -144,7 +144,7 @@ class ProductView:
                 object_translatable = {
                     'title': productrelease.title,
                     'potemplates': productrelease.title,
-                    'url': '/products/%s/%s' %(
+                    'base_url': '/products/%s/%s' %(
                         self.context.name,
                         productrelease.version)
                     }

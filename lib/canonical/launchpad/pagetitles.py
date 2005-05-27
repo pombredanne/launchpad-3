@@ -387,6 +387,8 @@ potemplate_edit = ContextTitle('%s edit in Rosetta')
 
 potemplate_index = ContextTitle('%s in Rosetta')
 
+potemplate_upload = ContextTitle('%s upload in Rosetta')
+
 potemplatename_add = 'Add a new template name to Rosetta'
 
 potemplatename_edit = ContextTitle('%s edit in Rosetta')

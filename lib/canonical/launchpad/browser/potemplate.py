@@ -150,7 +150,7 @@ class POTemplateView:
             try:
                 self.context.attachRawFileData(potfile, owner)
                 self.status_message = (
-                    'Thank you for your upload. The PO template content will'
+                    'Thank you for your upload. The template content will'
                     ' appear in Rosetta in a few minutes.')
             except RawFileAttachFailed, error:
                 # We had a problem while uploading it.
