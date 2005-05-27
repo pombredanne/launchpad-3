@@ -23,17 +23,11 @@
 
     <div metal:use-macro="context/@@launchpad_editform/editform">
     
-      <div metal:fill-slot="extra_info"
-           class="documentDescription">
-        Edit the details of this bug using the form fields below. Your
-        changes will affect the bug description upstream as well as in
-        all of the distro packages where the bug has been recorded.
-      </div>
-
-      <legend metal:fill-slot="editform_legend">
-        Bug Details
-      </legend>
-
+      <p metal:fill-slot="extra_info">
+        Your changes will affect the bug description upstream,
+        as well as in all the distro packages
+        where the bug has been recorded.
+      </p>
 
     </div>
     

@@ -21,10 +21,6 @@
             tal:replace="context/displayname">product</span>" below. Your
             changes will become immediately visible.
           </div>
-
-          <legend metal:fill-slot="editform_legend" tal:replace="nothing">
-             Upstream Product Details
-          </legend>
         
           <div class="row"
                metal:fill-slot="extra_top" tal:replace="nothing">

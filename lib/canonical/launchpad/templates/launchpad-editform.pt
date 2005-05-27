@@ -47,12 +47,6 @@
             a descriptive paragraph.
           </div>
 
-          <fieldset>
-
-          <legend metal:define-slot="editform_legend" tal:replace="nothing">
-             Fieldset Legend
-          </legend>
-
           <div class="row"
                metal:define-slot="extra_top" tal:replace="nothing">
             <div class="label">Extra top</div>
@@ -68,8 +62,6 @@
             <div class="label">Extra bottom</div>
             <div class="field"><input type="text" style="width:100%" /></div>
           </div>
-
-          </fieldset>
 
         </div>
 

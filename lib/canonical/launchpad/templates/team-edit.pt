@@ -53,16 +53,6 @@
 
           <fieldset>
 
-          <legend metal:define-slot="editform_legend" tal:replace="nothing">
-             Fieldset Legend
-          </legend>
-
-          <div class="row"
-               metal:define-slot="extra_top" tal:replace="nothing">
-            <div class="label">Extra top</div>
-            <div class="field"><input type="text" style="width:100%" /></div>
-          </div>
-        
           <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
         
           <div class="separator"></div>

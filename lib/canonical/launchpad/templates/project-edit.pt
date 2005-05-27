@@ -19,14 +19,10 @@
 
           <div metal:fill-slot="extra_info"
             class="documentDescription">
-            Edit the Project Details using the form below. Your changes
-            become visible immediately so please do take care when editing a
-            field, particularly the display name and title fields.
+            Your changes will be visible immediately,
+            so please take care,
+            especially with the display name and title fields.
           </div>
-
-          <legend metal:fill-slot="editform_legend">
-             Project Details
-          </legend>
         
       </div>
     

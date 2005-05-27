@@ -19,14 +19,11 @@
             metal:fill-slot="heading">Create a new Team</h3>
 
         <div metal:fill-slot="extra_info" class="formHelp">
-          Teams are usually a way for grouping people based on a common
-          task. For example, you can create a Team called "Bazaar
-          Translators" to manage who can add new translations for the
-          bazaar product.
+          Use a team to group people involved in a common task.
+          For example, a team can be the maintainer of a product,
+          the assignee of a bug,
+          or the editor of a package for a particular language.
         </div>
-
-        <legend metal:fill-slot="addform_legend">
-          Team Information</legend>
 
   </div>
 

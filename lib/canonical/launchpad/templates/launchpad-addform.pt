@@ -27,12 +27,11 @@
             metal:define-slot="heading"
             >Add Something</h1>
 
-        <div class="documentDescription" 
-            metal:define-slot="extra_info"
-            tal:replace="nothing">This is the description of the add form.
+          <p metal:define-slot="extra_info" tal:replace="nothing">
+            This is the description of the add form.
             This text will be in bold, beneath the title of the add form,
             and should explain a little bit about the form.
-        </div>
+          </p>
 
         <p tal:define="status view/update"
            tal:condition="status"
@@ -48,14 +47,7 @@
             <div class="label"><input type="text" style="width:100%" /></div>
         </div>
 
-        <fieldset>
-
-        <legend metal:define-slot="addform_legend" tal:replace="nothing">Add
-        Form Legend</legend>
-
         <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
-
-        </fieldset>
 
         <div class="row"
             metal:define-slot="extra_bottom" tal:replace="nothing">
