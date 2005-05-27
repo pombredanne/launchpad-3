@@ -131,10 +131,10 @@ class ProductSeriesView(object):
         self.name = self.context.name
         if self.context.product.project:
             self.default_targetarcharchive = self.context.product.project.name
-            self.default_targetarcharchive += '@projects.ubuntu.com'
+            self.default_targetarcharchive += '@bazaar.ubuntu.com'
         else:
             self.default_targetarcharchive = self.context.product.name
-            self.default_targetarcharchive += '@products.ubuntu.com'
+            self.default_targetarcharchive += '@bazaar.ubuntu.com'
         self.default_targetarchcategory = self.context.product.name
         if self.cvsbranch:
             self.default_targetarchbranch = self.cvsbranch
