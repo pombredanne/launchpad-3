@@ -225,7 +225,8 @@ class ProductSeriesView(object):
         # make sure we at least got something for the relevant rcs
         if rcstype == 'cvs':
             if not (self.cvsroot and self.cvsmodule and self.cvsbranch):
-                self.errormsgs.append('Please give valid CVS details')
+                if not fromAdmin:
+                    self.errormsgs.append('Please give valid CVS details')
                 return
             if not validate_cvs_branch(self.cvsbranch):
                 self.errormsgs.append('Your CVS branch name is invalid.')
