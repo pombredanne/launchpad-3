@@ -7,11 +7,28 @@ Check that the product main page works.
   Content-Length: ...
   ...
 
-Check that the product index page works for product with translations.
+Check that the product index page works for a product with translations for
+upstream and in a distribution.
 
   >>> print http(r"""
   ... GET /products/evolution HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
+  ...
+
+Check that the product index page works for a product with translations for
+upstream that does not have translations in a distribution.
+
+  >>> print http(r"""
+  ... GET /products/netapplet HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+          <div class="portletContent even">
+  <BLANKLINE>
+          <table class="rowNavigation" border="0">
+  <BLANKLINE>
+              <tr onclick="window.location='/products/netapplet/1.0/+pots/netapplet'">
+                  <td>Template for netapplet</td>
   ...
