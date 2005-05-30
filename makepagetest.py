@@ -121,8 +121,8 @@ def main():
 
     # The necessary evil of munging the PYTHONPATH so that we can import
     # zope libraries, launchpad stuff, and tcpwatch.
-    sys.path.append(os.path.join(here, 'lib'))
-    sys.path.append(os.path.join(here, 'utilities', 'tcpwatch'))
+    sys.path.insert(0, os.path.join(here, 'lib'))
+    sys.path.insert(0, os.path.join(here, 'utilities', 'tcpwatch'))
     import tcpwatch
     import zope.app.tests.dochttp as dochttp
 
