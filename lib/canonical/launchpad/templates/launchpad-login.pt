@@ -107,7 +107,7 @@
                         type="submit"
                         name="loginpage_submit_login"
                         value="Log In" />
-                      [<a href="+forgottenpassword">Forgotten your password?</a>]
+                      [<a href="/+forgottenpassword">Forgotten your password?</a>]
                     </div>
                   </td>
                 </tr>
