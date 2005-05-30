@@ -259,6 +259,11 @@ class ProductSeriesView(object):
         if form.get("Update RCS Details", None) is None:
             return
         # look for admin changes and retrieve those
+        self.cvsroot = form.get('cvsroot', self.cvsroot) or None
+        self.cvsmodule = form.get('cvsmodule', self.cvsmodule) or None
+        self.cvsbranch = form.get('cvsbranch', self.cvsbranch) or None
+        self.svnrepository = form.get(
+            'svnrepository', self.svnrepository) or None
         self.targetarcharchive = form.get(
             'targetarcharchive', self.targetarcharchive) or None
         self.targetarchcategory = form.get(
