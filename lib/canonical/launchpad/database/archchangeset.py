@@ -7,7 +7,7 @@ __all__ = ['Changeset', 'ChangesetFileName', 'ChangesetFileHash',
 from canonical.database.sqlbase import quote, SQLBase
 from canonical.database.constants import UTC_NOW
 from sqlobject import StringCol, ForeignKey, IntCol
-from sqlobject import StringCol, ForeignKey, IntCol
+from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import RevisionNotRegistered
 from canonical.launchpad.interfaces import RevisionAlreadyRegistered

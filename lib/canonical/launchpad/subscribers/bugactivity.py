@@ -89,7 +89,7 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
             oldvalue, newvalue = changes[changed_field]
             BugActivity(
                 bug = bug_edited.id,
-                datechanged = nowUTC,
+                datechanged = UTC_NOW,
                 person = int(sqlobject_modified_event.principal.id),
                 whatchanged = changed_field,
                 oldvalue = oldvalue,
@@ -109,7 +109,7 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
 
             BugActivity(
                 bug = sqlobject_modified_event.object_before_modification.id,
-                datechanged = nowUTC,
+                datechanged = UTC_NOW,
                 person = int(sqlobject_modified_event.principal.id),
                 whatchanged = "marked as duplicate",
                 oldvalue = oldid,
