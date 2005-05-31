@@ -3,17 +3,7 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="rosetta">
 
-<head>
-    <title metal:fill-slot="title">Rosetta
-        <span tal:replace="context/title">template title</span></title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
-
 
 <metal:leftportlets fill-slot="portlets_one">
 
@@ -58,8 +48,10 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Translation Template: <span tal:replace="context/title">Potemplate Title</span>
-    </h1>
+    <h1>Translation Template</h1>
+
+    <p tal:content="context/description">A brief paragraph describing the
+    potemplate would go here.</p>
 
     <div tal:replace="structure context/@@+chart" />
 

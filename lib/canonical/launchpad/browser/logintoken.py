@@ -26,13 +26,14 @@ class LoginTokenView(object):
 
     This view will check the token type and then redirect to the specific view
     for that type of token. We use this view so we don't have to add
-    "+validate", "+newaccount", etc, on URLs we send by email.
+    "+validateemail", "+newaccount", etc, on URLs we send by email.
     """
 
     PAGES = {LoginTokenType.PASSWORDRECOVERY: '+resetpassword',
              LoginTokenType.ACCOUNTMERGE: '+accountmerge',
              LoginTokenType.NEWACCOUNT: '+newaccount',
-             LoginTokenType.VALIDATEEMAIL: '+validate'}
+             LoginTokenType.VALIDATEEMAIL: '+validateemail',
+             LoginTokenType.VALIDATETEAMEMAIL: '+validateteamemail'}
 
     def __init__(self, context, request):
         self.context = context
@@ -127,20 +128,36 @@ class ValidateEmailView(object):
         if self.request.method != "POST":
             return
 
-        self.formProcessed = True
-        self.validate()
-
-    def validate(self):
-        """Check the requester and requesteremail, verify if the user provided
-        the correct password and then set the email address status to
-        VALIDATED. Also, if this is the first validated email for this user,
-        we set it as the PREFERRED one for that user.
-        When everything went ok, we delete the LoginToken (self.context) from
-        the database, so nobody can use it again.
-        """
         # Email validation requests must have a registered requester.
         assert self.context.requester is not None
-        assert self.context.requesteremail is not None
+        self.formProcessed = True
+        if self.context.tokentype == LoginTokenType.VALIDATEEMAIL:
+            self.validatePersonEmail()
+        elif self.context.tokentype == LoginTokenType.VALIDATETEAMEMAIL:
+            self.validateTeamEmail()
+
+    def validateTeamEmail(self):
+        """Set the new email address as the team's contact email address."""
+        requester = self.context.requester
+        email = self._registerEmail(self.context.email)
+        if email is not None:
+            if requester.preferredemail is not None:
+                requester.preferredemail.destroySelf()
+            requester.preferredemail = email
+
+        # At this point, either this email address is validated or it can't be
+        # validated for this team because it's owned by someone else in
+        # Launchpad, so we can safely delete all logintokens for this team 
+        # and this email address.
+        logintokenset = getUtility(ILoginTokenSet)
+        logintokenset.deleteByEmailAndRequester(self.context.email, requester)
+
+    def validatePersonEmail(self):
+        """Check the password and validate a person's email address.
+        
+        Also, if this is the first validated email for this user, we 
+        set it as the PREFERRED one for that user. 
+        """
         requester = self.context.requester
         password = self.request.form.get("password")
         encryptor = getUtility(IPasswordEncryptor)
@@ -155,8 +172,28 @@ class ValidateEmailView(object):
             # with the user.
             status = EmailAddressStatus.PREFERRED
 
+        email = self._registerEmail(self.context.email)
+        if email is not None:
+            email.status = status
+
+        # At this point, either this email address is validated or it can't be
+        # validated for this user because it's owned by someone else in
+        # Launchpad, so we can safely delete all logintokens for this user 
+        # and this email address.
+        logintokenset = getUtility(ILoginTokenSet)
+        logintokenset.deleteByEmailAndRequester(self.context.email, requester)
+
+    def _registerEmail(self, emailaddress):
+        """Register <emailaddress> with status VALIDATED and return it.
+
+        If <emailaddress> is already registered in Launchpad, we just set 
+        it as VALIDATED and then return.
+        """
+        validated = (EmailAddressStatus.VALIDATED, EmailAddressStatus.PREFERRED)
+        status = EmailAddressStatus.VALIDATED
+        requester = self.context.requester
         emailset = getUtility(IEmailAddressSet)
-        email = emailset.getByEmail(self.context.email)
+        email = emailset.getByEmail(emailaddress)
         if email is not None:
             if email.person.id != requester.id:
                 self.errormessage = (
@@ -166,29 +203,22 @@ class ValidateEmailView(object):
                         'in this case you should be able to '
                         '<a href="/people/+requestmerge">merge them</a> '
                         'into a single one.')
-                self.context.destroySelf()
-                return
+                return None
 
-            if email.status != EmailAddressStatus.NEW:
-                self.errormessage = ("This email is already validated. "
-                                     "There's no need to validate it again.")
-                self.context.destroySelf()
-                return
+            elif email.status in validated:
+                self.errormessage = (
+                        "This email is already registered and validated "
+                        "for your Launchpad account. There's no need to "
+                        "validate it again.")
+                return None
 
-            # This email was obtained via gina or lucille and have been
-            # marked as NEW on the DB. In this case all we have to do is
-            # set that email status to VALIDATED (or PREFERRED, if it's the
-            # first validated).
-            email.status = status
-            self.context.destroySelf()
-            return
+            else:
+                return email
 
         # New email validated by the user. We must add it to our emailaddress
         # table.
-        email = emailset.new(self.context.email, status, requester.id)
-        self.context.destroySelf()
-        logintokenset = getUtility(ILoginTokenSet)
-        logintokenset.deleteByEmailAndRequester(self.context.email, requester)
+        email = emailset.new(emailaddress, status, requester.id)
+        return email
 
 
 class NewAccountView(AddView):

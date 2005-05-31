@@ -12,6 +12,7 @@ from sqlobject import ForeignKey, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.interfaces import \
     IProject, IProjectSet, IProjectBugTracker
@@ -66,7 +67,7 @@ class ProjectSet:
         self.title = 'Open Source Projects in the Launchpad'
 
     def __iter__(self):
-        return iter(Project.select())
+        return iter(Project.selectBy(active=True))
 
     def __getitem__(self, name):
         project = Project.selectOneBy(name=name)
@@ -93,7 +94,7 @@ class ProjectSet:
                        description = description,
                        homepageurl = url,
                        owner = owner,
-                       datecreated = 'now')
+                       datecreated = UTC_NOW)
 
     def forReview(self):
         return Project.select("reviewed IS FALSE")

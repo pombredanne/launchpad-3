@@ -40,10 +40,20 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductRelease"
+        class="canonical.launchpad.browser.ProductReleaseView"
         permission="zope.Public">
         <browser:page
             name="+index"
             template="../templates/productrelease.pt" />
+        <browser:page
+            name="+translations"
+            template="../templates/productrelease-translations.pt"
+            lp:url="/products/evolution/2.1.6/+translations" />
+        <browser:page
+            name="+potlist"
+            template="../templates/object-pots.pt"
+            lp:url="/products/evolution/2.1.6/+potlist"
+            />
     </browser:pages>
 
     <browser:pages
@@ -64,16 +74,30 @@
         permission="launchpad.Admin"
         template="../templates/launchpad-editform.pt"
         lp:url="/products/$Product.name/$ProductRelease.name/+review">
+        <browser:widget
+            field="version"
+            class="zope.app.form.browser.TextWidget"
+            displayWidth="20" />
     </browser:editform>
 
-    <browser:pages
+    <browser:addform
+        name="+addpotemplate"
         for="canonical.launchpad.interfaces.IProductRelease"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.ProductReleaseView" >
-        <browser:page
-            name="+translations"
-            template="../templates/object-pots.pt"
-            lp:url="/products/$Product.name/$Series.name/$ProductRelease.version/+rosetta" />
-    </browser:pages>
+        schema="canonical.launchpad.interfaces.IPOTemplateWithContent"
+        class="canonical.launchpad.browser.POTemplateAddView"
+        label="Add a new template"
+        fields="potemplatename title description iscurrent owner path filename
+                content"
+        arguments=""
+        keyword_arguments="potemplatename title description iscurrent owner
+                           path filename content"
+        content_factory="canonical.launchpad.database.POTemplate"
+        permission="launchpad.Admin"
+        template="../templates/potemplate-add.pt" >
+        <browser:widget
+           field="title"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="55" />
+    </browser:addform>
 
 </configure>

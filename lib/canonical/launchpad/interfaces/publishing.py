@@ -43,6 +43,11 @@ class IPackagePublishing(Interface):
             title=_('The status of this publishing record'),
             required=False, readonly=False,
             )
+
+    pocket = Int(
+            title=_('The pocket into which this entry is published'),
+            required=True, readonly=True,
+            )
     
 class ISourcePackagePublishing(Interface):
     """A source package publishing record."""
@@ -77,6 +82,11 @@ class ISourcePackagePublishing(Interface):
     scheduleddeletiondate = Datetime(
             title=_('The date on which this record is scheduled for deletion'),
             required=False, readonly=False,
+            )
+    
+    pocket = Int(
+            title=_('The pocket into which this entry is published'),
+            required=True, readonly=True,
             )
     
 class ISourcePackageFilePublishing(Interface):
@@ -267,6 +277,21 @@ class ISourcePackagePublishingHistory(Interface):
             required=False, readonly=False,
             )
 
+    pocket = Int(
+            title=_('The pocket into which this entry is published'),
+            required=True, readonly=False,
+            )
+    
+    embargo = Bool(
+            title=_('Whether or not this record is under embargo'),
+            required=True, readonly=False,
+            )
+
+    embargolifted = Datetime(
+            title=_('The date on which this record had its embargo lifted'),
+            required=False, readonly=False,
+            )
+
 class IPackagePublishingHistory(Interface):
     """A binary package publishing record."""
 
@@ -330,3 +355,19 @@ class IPackagePublishingHistory(Interface):
             title=_('The date on which this record was removed from the published set'),
             required=False, readonly=False,
             )
+
+    pocket = Int(
+            title=_('The pocket into which this entry is published'),
+            required=True, readonly=False,
+            )
+    
+    embargo = Bool(
+            title=_('Whether or not this record is under embargo'),
+            required=True, readonly=False,
+            )
+
+    embargolifted = Datetime(
+            title=_('The date and time at which this record had its embargo lifted'),
+            required=False, readonly=False,
+            )
+

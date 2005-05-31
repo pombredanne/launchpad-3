@@ -61,13 +61,14 @@ class Builder(SQLBase):
 
     processor = ForeignKey(dbName='processor', foreignKey='Processor', 
                            notNull=True)
-    fqdn = StringCol(dbName='fqdn')
+    url = StringCol(dbName='url')
     name = StringCol(dbName='name')
     title = StringCol(dbName='title')
     description = StringCol(dbName='description')
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     builderok = BoolCol(dbName='builderok', notNull=True)
     failnotes = StringCol(dbName='failnotes')
+    trusted = BoolCol(dbName='trusted', notNull=True, default=False)
 
 
 class BuildQueue(SQLBase):

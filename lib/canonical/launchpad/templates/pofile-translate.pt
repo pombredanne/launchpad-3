@@ -4,15 +4,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="rosetta">
 
-  <head>
-    <title metal:fill-slot="title">Translating
-      <span tal:replace="context/potemplate/title">template title</span>
-    </title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-  </head>
   <body>
 
     <div metal:fill-slot="portlets_one">
@@ -53,8 +44,14 @@
       <div class="portlet">
         <h4>template description</h4>
 
-        <div class="portletBody" tal:content="context/description">
-            portlet description
+        <div class="portletBody">
+          <tal:block tal:condition="context/description"
+                     tal:content="context/description">
+            template description
+          </tal:block>
+          <tal:block tal:condition="not:context/description">
+            This template has no description.
+          </tal:block>
         </div>
       </div>
     </div>
@@ -150,22 +147,18 @@
 
                   <!-- Show which messages are displayed. -->
                   <div style="width: 50%; float: left;">
-                    <tal:block tal:condition="view/atBeginning">
-                      <tal:block tal:condition="view/atEnd">
-                        All
-                        <strong tal:content="context/potemplate/__len__">23</strong>
-                        items
-                      </tal:block>
+                    <tal:block tal:condition="view/onlyOneForm">
+                      All
+                      <strong tal:content="context/potemplate/count:len">23</strong>
+                      items
                     </tal:block>
-                    <tal:block tal:condition="not:view/atBeginning">
-                      <tal:block tal:condition="not:view/atEnd">
-                      Items
-                      <strong tal:content="view/getFirstMessageShown">5</strong>
-                      &rarr;
-                      <strong tal:content="view/getLastMessageShown">10</strong>
-                      of
-                      <strong tal:content="context/potemplate/__len__">23</strong>
-                      </tal:block>
+                    <tal:block tal:condition="not:view/onlyOneForm">
+                    Items
+                    <strong tal:content="view/getFirstMessageShown">5</strong>
+                    &rarr;
+                    <strong tal:content="view/getLastMessageShown">10</strong>
+                    of
+                    <strong tal:content="context/potemplate/count:len">23</strong>
                     </tal:block>
                   </div>
 
@@ -373,7 +366,7 @@
             tal:content="context/language/englishname"
             tal:omit-tag=""
           >Spanish</span>
-          <span tal:replace="view/completeness" tal:omit-tag="">0</span> %
+          <span tal:replace="view/completeness" tal:omit-tag="">0 %</span>
         </p>
       </div> <!-- condition: not: view/lacksPluralFormInformation -->
     </div>

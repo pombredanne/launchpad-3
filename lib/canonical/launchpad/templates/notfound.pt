@@ -1,11 +1,8 @@
-<html metal:use-macro="context/@@standard_macros/dialog">
+<html metal:use-macro="context/@@main_template/master">
 
-<head>
-  <title metal:fill-slot="title">Launchpad Page Not Found</title>
-</head>
 <body>
 
-<div metal:fill-slot="body">
+<div metal:fill-slot="main">
 
 <h3  i18n:translate="">
   The page that you are trying to access is not available

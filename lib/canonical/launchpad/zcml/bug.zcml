@@ -42,7 +42,7 @@
         schema="canonical.launchpad.interfaces.IBug"
         class="canonical.launchpad.browser.bug.BugEditView"
         label="Change Bug Information"
-        permission="launchpad.AnyPerson"
+        permission="launchpad.Edit"
         template="../templates/bug-edit.pt"
         fields="title summary description private name"
         lp:url="malone/bugs/$Bug.id/+edit">
@@ -50,6 +50,20 @@
            field="title"
            class="zope.app.form.browser.TextWidget"
            displayWidth="55" />
+    </browser:editform>
+
+    <browser:editform
+        name="+duplicate"
+        schema="canonical.launchpad.interfaces.IBug"
+        class="canonical.launchpad.browser.bug.SQLObjectEditView"
+        label="Mark as Duplicate Bug Report"
+        permission="launchpad.AnyPerson"
+        template="../templates/default-editform.pt"
+        fields="duplicateof"
+        lp:url="malone/bugs/$Bug.id/+duplicate">
+        <browser:widget
+            field="duplicateof"
+            class="canonical.widgets.bug.BugWidget" />
     </browser:editform>
 
     <browser:view
@@ -62,7 +76,27 @@
         <defaultPage name="+index" />
     </browser:view>
 
+    <!--
+    Brad Bollenbach, 2005-05-16:
+
+    Two views are currently required to be registered for handling the
+    absolute_url of an object: one that plays nicely with
+    zope.app.traversing.browser.absoluteurl.absoluteURL and one that
+    plays nicely with foo/@@absolute_url.
+
+    The former requires an unnamed view; the latter requires, of
+    course, a view named absolute_url.
+    -->
     <view
+        for="canonical.launchpad.interfaces.IBug"
+        factory="canonical.launchpad.browser.bug.BugAbsoluteURL"
+        type="zope.publisher.interfaces.http.IHTTPRequest"
+        permission="zope.Public"
+        provides="zope.app.traversing.browser.interfaces.IAbsoluteURL">
+    </view>
+
+    <view
+        name="absolute_url"
         for="canonical.launchpad.interfaces.IBug"
         factory="canonical.launchpad.browser.bug.BugAbsoluteURL"
         type="zope.publisher.interfaces.http.IHTTPRequest"
@@ -139,7 +173,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBugSet"
-        class="canonical.launchpad.browser.BugTasksView"
+        class="canonical.launchpad.browser.BugTaskAnorakSearchPageBegoneView"
         permission="zope.Public"
         lp:url="malone/bugs/$Bug.id">
         <browser:page

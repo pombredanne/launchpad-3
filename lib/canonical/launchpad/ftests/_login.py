@@ -2,28 +2,9 @@
 
 __metaclass__ = type
 
-import zope.security.management
-from zope.interface import implements
-from zope.app.tests import ztapi
 from zope.component import getUtility
-from canonical.launchpad.interfaces import ILaunchBag, IPerson
-from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
-
-
-class MockLaunchBag(object):
-    implements(ILaunchBag)
-    def __init__(self, login=None, user=None):
-        self.login = login
-        self.user = user
-
-class MockParticipation:
-    interaction = None
-    principal = None
-
-class MockPrincipal:
-    def __init__(self, id):
-        self.id = id
-        self.groups = []
+from canonical.launchpad.helpers import setupInteraction
+from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 
 ANONYMOUS = 'launchpad.anonymous'
 
@@ -38,21 +19,11 @@ def login(email, participation=None):
 
     The participation passed in must allow setting of its principal.
     """
-    # First end any running interaction, and start a new one
-    zope.security.management.endInteraction()
-    if participation is None:
-        participation = MockParticipation()
-    zope.security.management.newInteraction(participation)
+    authutil = getUtility(IPlacelessAuthUtility)
 
     if email == ANONYMOUS:
-        principal = MockPrincipal(ANONYMOUS)
-        launchbag = MockLaunchBag()
+        principal = authutil.unauthenticatedPrincipal()
     else:
-        login_src = getUtility(IPlacelessLoginSource)
-        principal = login_src.getPrincipalByLogin(email)
-        user = IPerson(principal)
-        launchbag = MockLaunchBag(email, user)
+        principal = authutil.getPrincipalByLogin(email)
 
-    participation.principal = principal
-    ztapi.provideUtility(ILaunchBag, launchbag)
-
+    setupInteraction(principal, login=email, participation=participation)

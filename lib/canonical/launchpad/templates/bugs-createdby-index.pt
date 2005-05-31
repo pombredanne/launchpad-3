@@ -3,10 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="malone">
 
-<head>
-  <title metal:fill-slot="title">Malone Bug Report by Creator</title>
-</head>
-
 <body>
 
 <div metal:fill-slot="main" tal:define="owner python:request.get('owner', '')">

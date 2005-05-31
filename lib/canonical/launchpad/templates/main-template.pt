@@ -4,7 +4,7 @@
     tal:attributes="lang default_language|default;
                     xml:lang default_language|default;">
 <head>
-    <metal:block define-slot="title"></metal:block>
+    <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
     <!-- Plone style sheet -->
     <style type="text/css"
         media="screen">@import url(/@@/plone.css);</style>
@@ -19,7 +19,6 @@
 </head>
 
 <body>
-
     <div class="page-header">
         <div class="page-header-ribbon"
             tal:define="path_info request/PATH_INFO">

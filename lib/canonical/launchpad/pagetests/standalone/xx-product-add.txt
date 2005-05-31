@@ -1,4 +1,4 @@
-
+Test that the page to add a new product loads.
 
   >>> print http(r"""
   ... GET /doap/products/+new HTTP/1.1
@@ -12,6 +12,7 @@
           <h1>Register an Open Source (Upstream) Product</h1>
   ...
 
+Test that the page to add a new product works.
 
   >>> print http(r"""
   ... POST /doap/products/+new HTTP/1.1

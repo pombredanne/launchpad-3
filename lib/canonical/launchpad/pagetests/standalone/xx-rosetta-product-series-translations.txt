@@ -1,0 +1,19 @@
+Check to be sure that listing available resources to translate for a product
+serie is working.
+
+  >>> print http(r"""
+  ... GET /products/evolution/2.1.6/+translations HTTP/1.1
+  ... Accept-Language: en-gb,en;q=0.5
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+      <title>Rosetta Translation Templates for Evolution 2.1.6</title>
+  ...
+      <tr onclick="window.location='/products/evolution/2.1.6/+pots/evolution-2.2/af/+translate'">
+  <BLANKLINE>
+        <a href="/products/evolution/2.1.6/+pots/evolution-2.2/af/+translate">
+          <td>
+            <a href="/products/evolution/2.1.6/+pots/evolution-2.2/af/+translate">Afrikaans</a>
+          </td>
+          <td>22</td>
+  ...

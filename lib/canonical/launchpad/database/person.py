@@ -40,7 +40,7 @@ from canonical.launchpad.interfaces import \
     IMaintainershipSet, IEmailAddressSet, ISourcePackageReleaseSet
 
 from canonical.launchpad.database.translation_effort import TranslationEffort
-from canonical.launchpad.database.bug import Bug
+from canonical.launchpad.database.bug import BugTask
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
@@ -438,12 +438,20 @@ class Person(SQLBase):
     defaultrenewedexpirationdate = property(defaultrenewedexpirationdate)
 
     def _setPreferredemail(self, email):
+        if not IEmailAddress.providedBy(email):
+            raise TypeError, ("Any person's email address must provide "
+                              "the IEmailAddress interface. %s doesn't."
+                              % email)
         # XXX: Should this be an assert?
         #      -- SteveAlexander, 2005-04-23
-        assert email.person == self
+        assert email.person.id == self.id
         preferredemail = self.preferredemail
         if preferredemail is not None:
             preferredemail.status = EmailAddressStatus.VALIDATED
+            # We need to flush updates, because we don't know what order
+            # SQLObject will issue the changes and we can't set the new
+            # address to PREFERRED until the old one has been set to VALIDATED
+            preferredemail.syncUpdate()
         email.status = EmailAddressStatus.PREFERRED
 
     def _getPreferredemail(self):
@@ -451,6 +459,7 @@ class Person(SQLBase):
         # There can be only one preferred email for a given person at a
         # given time, and this constraint must be ensured in the DB, but
         # it's not a problem if we ensure this constraint here as well.
+        emails = list(emails)
         length = len(emails)
         assert length <= 1
         if length:
@@ -481,9 +490,9 @@ class Person(SQLBase):
         return self._getEmailsByStatus(EmailAddressStatus.NEW)
     guessedemails = property(guessedemails)
 
-    def bugs(self):
-        return Bug.selectBy(ownerID=self.id)
-    bugs= property(bugs)
+    def reportedbugs(self):
+        return BugTask.selectBy(ownerID=self.id)
+    reportedbugs= property(reportedbugs)
 
     def translations(self):
         return TranslationEffort.selectBy(ownerID=self.id)
@@ -565,7 +574,7 @@ class PersonSet:
         """See IPersonSet."""
         person = self.get(personid)
         if person is None:
-            raise KeyError, personid
+            raise KeyError(personid)
         else:
             return person
 
@@ -694,16 +703,16 @@ class PersonSet:
         """
         # Sanity checks
         if ITeam.providedBy(from_person):
-            raise TypeError, 'Got a team as from_person'
+            raise TypeError('Got a team as from_person.')
         if ITeam.providedBy(to_person):
-            raise TypeError, 'Got a team as to_person'
+            raise TypeError('Got a team as to_person.')
         if not IPerson.providedBy(from_person):
-            raise TypeError, 'from_person is not a person'
+            raise TypeError('from_person is not a person.')
         if not IPerson.providedBy(to_person):
-            raise TypeError, 'to_person is not a person'
+            raise TypeError('to_person is not a person.')
 
         if len(getUtility(IEmailAddressSet).getByPerson(from_person.id)) > 0:
-            raise ValueError, 'from_person still has email addresses'
+            raise ValueError('from_person still has email addresses.')
 
         # Get a database cursor.
         cur = cursor()
@@ -719,6 +728,7 @@ class PersonSet:
             ('teamparticipation', 'team'),
             ('personlanguage', 'person'),
             ('person', 'merged'),
+            ('emailaddress', 'person'),
             ]
 
         # Sanity check. If we have an indirect reference, it must
@@ -899,7 +909,7 @@ class EmailAddressSet:
         """See IEmailAddressSet."""
         email = self.get(emailid)
         if email is None:
-            raise KeyError, emailid
+            raise KeyError(emailid)
         else:
             return email
 

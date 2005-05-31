@@ -147,7 +147,7 @@ class LoginOrRegister:
         if person is not None:
             msg = ('The email address %s is already registered in our system. '
                    'If you are sure this is your email address, please go to '
-                   'the <a href="+forgottenpassword">Forgotten Password</a> '
+                   'the <a href="/+forgottenpassword">Forgotten Password</a> '
                    'page and follow the instructions to retrieve your '
                    'password.') % cgi.escape(self.email)
             self.registration_error = msg
@@ -258,8 +258,8 @@ class ForgottenPasswordPage:
 
 
 def sendPasswordResetEmail(token, appurl):
-    template_file = 'lib/canonical/launchpad/templates/forgottenpassword.txt'
-    template = open(template_file).read()
+    template = open(
+        'lib/canonical/launchpad/emailtemplates/forgottenpassword.txt').read()
     fromaddress = "Launchpad Team <noreply@canonical.com>"
 
     replacements = {'longstring': token.token,
@@ -273,7 +273,8 @@ def sendPasswordResetEmail(token, appurl):
 
 
 def sendNewUserEmail(token, appurl):
-    template = open('lib/canonical/launchpad/templates/newuser-email.txt').read()
+    template = open(
+        'lib/canonical/launchpad/emailtemplates/newuser-email.txt').read()
     replacements = {'longstring': token.token, 'appurl': appurl}
     message = template % replacements
 

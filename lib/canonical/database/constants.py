@@ -1,14 +1,10 @@
 # Copyright 2004 Canonical Ltd
 #
 
-class NowUTC(object):
-    def __sqlrepr__(self, dbName):
-        return "CURRENT_TIMESTAMP AT TIME ZONE 'UTC'"
-UTC_NOW = NowUTC() # All upper because this is the constants module
-nowUTC = UTC_NOW
+from sqlobject.sqlbuilder import SQLConstant
 
-class Default(object):
-    def __sqlrepr__(self, dbName):
-        return "DEFAULT"
-DEFAULT = Default()
+nowUTC = SQLConstant("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
+UTC_NOW = nowUTC # All upper because this is the constants module
+
+DEFAULT = SQLConstant("DEFAULT")
 

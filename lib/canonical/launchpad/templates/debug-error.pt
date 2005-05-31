@@ -1,12 +1,4 @@
 <html metal:use-macro="context/@@standard_macros/dialog">
-
-    <!-- Using the Z3 standard template so we can see bugs with our
-        customized templates -->
-
-<head>
-  <title metal:fill-slot="title">Launchpad - Error Debug Page</title>
-</head>
-
 <body>
 <div metal:fill-slot="body">
 

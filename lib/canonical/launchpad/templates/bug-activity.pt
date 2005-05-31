@@ -3,11 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="malone">
 
-<head>
-  <title metal:fill-slot="title">Activity History of Malone Bug #
-    <span tal:replace="context/id">234</span></title>
-</head>
-
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">

@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-__metaclass__ = type
+from zope.i18n.messageid import MessageIDFactory
+_ = MessageIDFactory("canonical")
 

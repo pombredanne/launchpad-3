@@ -3,10 +3,6 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="launchpad">
 
-<head>
-  <title metal:fill-slot="title">Malone Bug Attachments</title>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">

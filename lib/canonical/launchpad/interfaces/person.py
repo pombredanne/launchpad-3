@@ -76,7 +76,7 @@ class IPerson(Interface):
     ubuntite = Attribute("Ubuntite Flag")
     gpgkeys = Attribute("List of GPGkeys")
     irc = Attribute("IRC")
-    bugs = Attribute("Bug")
+    reportedbugs = Attribute("All BugTasks reported by this Person.")
     wiki = Attribute("Wiki")
     jabber = Attribute("Jabber")
     archuser = Attribute("Arch user")
@@ -108,7 +108,8 @@ class IPerson(Interface):
                                  "DEACTIVATED status"))
     deactivatedmembers = Attribute("List of members with DEACTIVATED status")
 
-    teamowner = Int(title=_('Team Owner'), required=False, readonly=False)
+    teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
+                       vocabulary='ValidTeamOwner')
     teamdescription = Text(title=_('Team Description'), required=False,
                            readonly=False)
 
@@ -283,7 +284,8 @@ class IPerson(Interface):
 class ITeam(IPerson):
     """ITeam extends IPerson.
 
-    The teamowner should never be None."""
+    The teamowner should never be None.
+    """
 
 
 class IPersonSet(Interface):

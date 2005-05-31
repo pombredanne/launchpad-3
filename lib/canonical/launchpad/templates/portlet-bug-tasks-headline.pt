@@ -21,39 +21,32 @@
 
     <tbody>
         <!-- Upstream Tasks -->
-        <tr tal:repeat="bugtask context/bugtasks"
-            tal:attributes="onclick string:window.location='/malone/tasks/${bugtask/id}/+edit';">
-
+        <tr tal:repeat="bugtask context/bugtasks">
             <td>
                 <a href=""
-                    tal:condition="bugtask/product"
-                    tal:attributes="href string:/malone/products/${bugtask/product/name}"
-                    >
+                   tal:condition="bugtask/product"
+                   tal:attributes="href bugtask/@@absolute_url">
                     upstream <span tal:replace="bugtask/product/name">$Product.name</span>
                 </a>
+
                 <a href=""
-                    tal:condition="python: bugtask.distribution and bugtask.sourcepackagename"
-                    tal:attributes="href string:/malone/distros/${bugtask/distribution/name}/${bugtask/sourcepackagename/name}"
-                    >
-                        <span tal:replace="bugtask/distribution/name">
-                            distro
-                        </span>
-                        <span tal:replace="bugtask/sourcepackagename/name">
-                            sourcepackagename
-                        </span>
+                   tal:condition="python: bugtask.distribution and bugtask.sourcepackagename"
+                   tal:attributes="href bugtask/@@absolute_url">
+                    <span tal:replace="bugtask/distribution/name">distro</span>
+                    <span tal:replace="bugtask/sourcepackagename/name">
+                        sourcepackagename
+                    </span>
                 </a>
+
                 <a href=""
-                    tal:condition="python: bugtask.distribution and not bugtask.sourcepackagename"
-                    tal:attributes="href string:/malone/distros/${bugtask/distribution/name}/}"
-                    >
-                        <span tal:replace="bugtask/distribution/name">
-                            distro
-                        </span>
+                   tal:condition="python: bugtask.distribution and not bugtask.sourcepackagename"
+                   tal:attributes="href bugtask/@@absolute_url">
+                    <span tal:replace="bugtask/distribution/name">distro</span>
                 </a>
+
                 <a href=""
                     tal:condition="python: bugtask.distrorelease and bugtask.sourcepackagename"
-                    tal:attributes="href string:/malone/distros/${bugtask/distrorelease/distribution/name}/${bugtask/sourcepackagename/name}"
-                    >
+                    tal:attributes="href bugtask/@@absolute_url">
                         <span tal:replace="string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
                             distro
                         </span>
@@ -61,10 +54,10 @@
                             sourcepackagename
                         </span>
                 </a>
+
                 <a href=""
                     tal:condition="python: bugtask.distrorelease and not bugtask.sourcepackagename"
-                    tal:attributes="href string:/malone/distros/${bugtask/distrorelease/distribution/name}/}"
-                    >
+                    tal:attributes="href bugtask/@@absolute_url">
                         <span tal:replace="string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
                             distro
                         </span>
@@ -86,13 +79,11 @@
             </td>
 
             <td>
-                <a tal:condition="bugtask/assignee"
-                   tal:attributes="href string:/malone/bugs/assigned?name=${bugtask/assignee/name}">
-                   <img src="/++resource++user.gif" alt=""
-                    /><span tal:replace="bugtask/assignee/browsername">
-                    assignee.browsername
-                    </span>
-                </a>
+              <img src="/++resource++user.gif" alt=""
+                   tal:condition="bugtask/assignee" />
+              <tal:assignee content="bugtask/assignee/browsername|nothing">
+                assignee.browsername
+              </tal:assignee>
             </td>
 
         </tr>

@@ -9,9 +9,7 @@
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Bounties for
-        Mozilla Firefox
-      </title>
+      <title>Bounties for Mozilla Firefox</title>
   ...
       <table width="100%" class="listing rowNavigation">
         <tr>

@@ -1,10 +1,4 @@
 <html metal:use-macro="context/@@main_template/master">
-    <head>
-        <title metal:fill-slot="title">
-            Launchpad Changelog
-        </title>
-        <link rel="shortcut icon" href="/++resource++defaultFavicon.gif" />
-    </head>
     <body>
         <div metal:fill-slot="main">
             <h1>Changelog</h1>

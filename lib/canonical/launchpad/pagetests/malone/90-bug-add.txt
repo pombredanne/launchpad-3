@@ -9,8 +9,7 @@ A bug is a problem in software.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Malone: Add a New Bug
-      </title>
+      <title>Malone: Add a New Bug</title>
   ...
 
 At the moment, Malone still has a bug filing page on which you can
@@ -50,6 +49,5 @@ You must be logged-in to file a bug.
   ... """)
   HTTP/1.1 303 See Other
   ...
-      <title>Malone: Add a New Bug
-      </title>
+      <title>Malone: Add a New Bug</title>
   ...

@@ -2,12 +2,6 @@
 for launchpad use -->
 <html>
 
-<!--
-  <head>
-    <title metal:fill-slot="title">Launchpad Widget Macros</title>
-  </head>
--->
-
   <body>
     <metal:block define-macro="launchpad_widget_rows">
       <div class="row" tal:repeat="widget view/widgets">

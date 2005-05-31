@@ -8,6 +8,7 @@ __metaclass__ = type
 import cgi
 import re
 import sets
+import os.path
 import warnings
 from zope.interface import Interface, Attribute, implements
 from zope.component import getAdapter
@@ -15,12 +16,14 @@ from zope.component import getAdapter
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.app.traversing.interfaces import ITraversable
+import zope.security.management
+import zope.app.security.permission
 from zope.exceptions import NotFoundError
 from canonical.launchpad.interfaces import \
     IPerson, ILink, IFacetList, ITabList, ISelectionAwareLink
 import canonical.lp.dbschema
 from canonical.lp import decorates
-import zope.security.management
+import canonical.launchpad.pagetitles
 
 
 class TraversalError(NotFoundError):
@@ -140,6 +143,20 @@ class MenuAPI:
             return selectedfacets[0].id
 
 
+class CountAPI:
+    """Namespace to provide counting-related functions, such as length.
+
+    This is available for all objects.  Individual operations may fail for
+    objects that do not support them.
+    """
+    def __init__(self, context):
+        self._context = context
+
+    def len(self):
+        """somelist/count:len  gives you an int that is len(somelist)."""
+        return len(self._context)
+
+
 class HTMLFormAPI:
     """HTML form helper API, available as request/htmlform:.
 
@@ -247,6 +264,7 @@ class NoneFormatter:
         'date',
         'time',
         'datetime',
+        'pagetitle'
         ])
 
     def __init__(self, context):
@@ -331,6 +349,57 @@ class RequestFormatterAPI:
         return sep.join(L)
 
 
+class PageTemplateContextsAPI:
+    """Adapter from page tempate's CONTEXTS object to fmt:pagetitle.
+
+    This is registered to be used for the dict type.
+    """
+
+    implements(ITraversable)
+
+    def __init__(self, contextdict):
+        self.contextdict = contextdict
+
+    def traverse(self, name, furtherPath):
+        if name == 'pagetitle':
+            return self.pagetitle()
+        else:
+            raise TraversalError(name)
+
+    def pagetitle(self):
+        """Return the string title for the page template CONTEXTS dict.
+
+        Take the simple filename without extension from
+        self.contextdict['template'].filename, replace any hyphens with
+        underscores, and use this to look up a string, unicode or function in
+        the module canonical.launchpad.pagetitles.
+
+        If no suitable object is found in canonical.launchpad.pagetitles,
+        emit a warning that this page has no title, and return the default
+        page title.
+        """
+        template = self.contextdict['template']
+        filename = os.path.basename(template.filename)
+        name, ext = os.path.splitext(filename)
+        name = name.replace('-', '_')
+        titleobj = getattr(canonical.launchpad.pagetitles, name, None)
+        if titleobj is None:
+            warnings.warn(
+                 "No page title in canonical.launchpad.pagetitles for %s"
+                 % name)
+            return canonical.launchpad.pagetitles.DEFAULT_LAUNCHPAD_TITLE
+        elif isinstance(titleobj, basestring):
+            return titleobj
+        else:
+            context = self.contextdict['context']
+            view = self.contextdict['view']
+            title = titleobj(context, view)
+            if title is None:
+                return canonical.launchpad.pagetitles.DEFAULT_LAUNCHPAD_TITLE
+            else:
+                return title
+
+
 class FormattersAPI:
     """Adapter from strings to HTML formatted text."""
 
@@ -385,5 +454,26 @@ class FormattersAPI:
             maxlength = int(furtherPath.pop())
             return self.shorten(maxlength)
         else:
-            raise TraversalError, name
+            raise TraversalError(name)
+
+
+class PermissionRequiredQuery:
+    """Check if the logged in user has a given permission on a given object.
+
+    Example usage::
+        tal:condition="person/required:launchpad.Edit"
+    """
+
+    implements(ITraversable)
+
+    def __init__(self, context):
+        self.context = context
+
+    def traverse(self, name, furtherPath):
+        if len(furtherPath) > 0:
+            raise TraversalError(
+                    "There should be no further path segments after "
+                    "required:permission")
+        zope.app.security.permission.checkPermission(self.context, name)
+        return zope.security.management.checkPermission(name, self.context)
 

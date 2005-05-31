@@ -1,0 +1,177 @@
+Duplicate Bugs
+==============
+
+If a bug tracker never had more than one bug report in it, we'd never
+have to worry about duplicate bug reports. Realistically though,
+Malone is a bug tracker that will have hundreds, then thousands then
+*billions* of bug reports in it.
+
+Okay, maybe not /billions/.
+
+But we still have to provide maintainers a way to manage duplicate bug
+reports as the size of their bug database grows, and as more and more
+duplicate reports come in.
+
+Marking a Bug Report as a Dup
+-----------------------------
+
+First, you must be authenticated to edit a bug:
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> login("foo.bar@canonical.com")
+    >>> foobar = getUtility(IPersonSet).get(16)
+
+To mark a bug as a duplicate of another bug, set IBug.duplicateof to
+an integer that is the ID of the original bug. For an IBug whose
+.duplicateof value is not null, IBug.id is the ID of the "duplicate"
+or "dup" and IBug.duplicateof is the ID of the "dup target".
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+
+    >>> bugset = getUtility(IBugSet)
+    >>> duplicate = bugset.get(2)
+    >>> print duplicate.duplicateof
+    None
+    >>> duplicate.duplicateof = 1
+
+When a bug is marked as a duplicate of another bug, an
+SQLObjectModifiedEvent is published.
+
+    >>> from zope.event import notify
+    >>> from zope.publisher.browser import TestRequest
+    >>> from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
+
+    >>> request = TestRequest()
+
+    >>> class MockObject(object):
+    ...     pass
+    >>> old_bug = MockObject()
+    >>> old_bug.id = duplicate.id
+    >>> old_bug.title = duplicate.title
+    >>> old_bug.summary = duplicate.summary
+    >>> old_bug.description = duplicate.description
+    >>> old_bug.private = duplicate.private
+    >>> old_bug.name = duplicate.name
+    >>> old_bug.duplicateof = None
+
+    >>> bug_marked_duplicate = SQLObjectModifiedEvent(
+    ...     object_before_modification = old_bug,
+    ...     object = duplicate,
+    ...     edited_fields = ["duplicateof"],
+    ...     principal = foobar,
+    ...     request = request)
+    >>> notify(bug_marked_duplicate)
+
+When an SQLObjectModifiedEvent is published, in which the .duplicateof
+attribute of an IBug was modified, the following two notification
+emails are sent out:
+
+    >>> import email
+    >>> import transaction
+    >>> from canonical.launchpad.mail import stub
+
+(Our mailer is transactional, so note that the emails won't be sent
+until the transaction is committed.)
+
+    >>> stub.test_emails = []
+
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    2
+
+(Sort the emails by subject.)
+
+    >>> def by_subject(a, b):
+    ...     msg1 = email.message_from_string(a[2])
+    ...     msg2 = email.message_from_string(b[2])
+    ...     return cmp(msg1["Subject"], msg2["Subject"])
+
+    >>> sent_emails = list(stub.test_emails)
+    >>> sent_emails.sort(by_subject)
+
+  1. To the subscribers of the duplicate bug.
+
+    >>> from_addr, to_addrs, raw_message = sent_emails.pop()
+
+    >>> print from_addr
+    Malone Bugtracker <noreply@canonical.com>
+    >>> print to_addrs
+    ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["Subject"]
+    '[Bug 2] Blackhole Trash folder'
+
+    >>> msg.get_payload(decode = True)
+    'Foo Bar <foo.bar@canonical.com> made changes to:\n\n    http://127.0.0.1/malone/bugs/2\n\n*** This bug has been marked a duplicate of 1 ***\n\n'
+
+  2. To the subscribers of the dup-target bug.
+
+    >>> from_addr, to_addrs, raw_message = sent_emails.pop()
+
+    >>> print from_addr
+    Malone Bugtracker <noreply@canonical.com>
+    >>> print to_addrs
+    ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["Subject"]
+    '[Bug 1] Firefox does not support SVG'
+
+    >>> msg.get_payload(decode = True)
+    'http://127.0.0.1/malone/bugs/1\n\n*** Bug 2 has been marked a duplicate of this bug ***'
+
+Comments on Duplicate Bug Reports
+---------------------------------
+
+When a comment is submitted to a bug that is a duplicate of another
+bug, the subscribers of the dup target will also receive a
+notification about the comment.
+
+    >>> from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
+    >>> from canonical.launchpad.database.bugmessage import BugMessageFactory
+    >>> from canonical.launchpad.interfaces import IOpenLaunchBag
+    >>> from canonical.lp.dbschema import BugSubscription
+
+Because the subscriber lists for bugs 1 and 2 are identical, let's
+subscribe an additional user to the dup target temporarily, to
+demonstrate that this really works.
+
+    >>> duplicate.duplicateof.subscribe(foobar, BugSubscription.CC)
+    <BugSubscription at ...>
+
+    >>> stub.test_emails = []
+
+    >>> getUtility(IOpenLaunchBag).add(duplicate)
+    >>> some_comment = BugMessageFactory(
+    ...     title = "some title", content = "some content")
+    >>> notify(SQLObjectCreatedEvent(some_comment, request))
+
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    1
+
+The email notification includes a note that this bug is a duplicate of
+another bug.
+
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> print from_addr
+    Malone Bugtracker <noreply@canonical.com>
+    >>> print to_addrs
+    ['dilys@muse.19inch.net', 'foo.bar@canonical.com', 'mark@hbd.com', 'test@canonical.com']
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["Subject"]
+    '[Bug 2] Blackhole Trash folder'
+    >>> msg.get_payload(decode = True)
+    'http://127.0.0.1/malone/bugs/2\n\n*** This bug is a duplicate of 1 ***\n\nFoo Bar <foo.bar@canonical.com> said:\n\nsome content'
+
+Duplicates of Duplicates
+------------------------
+
+Currently, a bug can not be marked a duplicate of a bug that is itself
+already a duplicate. Trying to do so will raise a XXX.
+
+XXX: Brad Bollenbach, 2005-04-19: Come back to this when you know how
+to get field validation to Just Work (TM).

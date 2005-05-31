@@ -110,30 +110,30 @@ class Bug(SQLBase):
                 # realistically, we've got some corruption in our db
                 # still that prevents us from guaranteeing that all
                 # subscribers will have a preferredemail
-                if preferred_email:
+                if preferred_email is not None:
                     emails.add(preferred_email.email)
 
         if not self.private:
             # Collect implicit subscriptions. This only happens on
             # public bugs.
             for task in self.bugtasks:
-                if task.assignee:
+                if task.assignee is not None:
                     preferred_email = task.assignee.preferredemail
                     # XXX: Brad Bollenbach, 2005-03-14: Subscribed users
                     # should always have a preferred email, but
                     # realistically, we've got some corruption in our db
                     # still that prevents us from guaranteeing that all
                     # subscribers will have a preferredemail
-                    if preferred_email:
+                    if preferred_email is not None:
                         emails.add(preferred_email.email)
 
-                if task.product:
+                if task.product is not None:
                     preferred_email = task.product.owner.preferredemail
-                    if preferred_email:
+                    if preferred_email is not None:
                         emails.add(preferred_email.email)
                 else:
-                    if task.sourcepackagename:
-                        if task.distribution:
+                    if task.sourcepackagename is not None:
+                        if task.distribution is not None:
                             distribution = task.distribution
                         else:
                             distribution = task.distrorelease.distribution
@@ -147,8 +147,9 @@ class Bug(SQLBase):
                                 emails.add(preferred_email.email)
 
         preferred_email = self.owner.preferredemail
-        if preferred_email:
+        if preferred_email is not None:
             emails.add(preferred_email.email)
+
         emails = list(emails)
         emails.sort()
         return emails
@@ -158,7 +159,7 @@ class BugDelta:
     """See canonical.launchpad.interfaces.IBugDelta."""
     implements(IBugDelta)
     def __init__(self, bug, bugurl, user, title=None, summary=None,
-                 description=None, name=None, private=None,
+                 description=None, name=None, private=None, duplicateof=None,
                  external_reference=None, bugwatch=None, cveref=None,
                  bugtask_deltas=None):
         self.bug = bug
@@ -169,6 +170,7 @@ class BugDelta:
         self.description = description
         self.name = name
         self.private = private
+        self.duplicateof = duplicateof
         self.external_reference = external_reference
         self.bugwatch = bugwatch
         self.cveref = cveref
@@ -300,3 +302,6 @@ class BugSet(BugSetBase):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
         return self.table.get(bugid)
 
+    def search(self, duplicateof=None):
+        """See canonical.launchpad.interfaces.bug.IBugSet."""
+        return self.table.selectBy(duplicateofID = duplicateof.id)

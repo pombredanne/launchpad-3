@@ -4,10 +4,6 @@
       i18n:domain="launchpad">
 
 <head>
-  <title metal:fill-slot="title">
-    <span tal:replace="context/displayname">Name</span>
-    Personal Information</title>
-
     <tal:block metal:fill-slot="head_epilogue">
         <link rel="meta" type="application/rdf+xml" title="FOAF" href="+rdf"
             tal:condition="context/preferredemail" />
@@ -69,7 +65,7 @@
             <tal:dummy tal:condition="context/validatedemails">
             <tr>
               <td>Email:</td>
-              <td><span tal:content="python: len(context.validatedemails)" />
+              <td><span tal:content="context/validatedemails/count:len" />
                   validated email addresses. [<a href="+emails">Add emails or
                     set one of yours as preferred</a>]
               </td>

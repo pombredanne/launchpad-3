@@ -120,7 +120,7 @@
 <!-- Primary Index -->
 <p><br />
 <br />
-Dumped on 2005-04-07</p>
+Dumped on 2005-05-26</p>
 <h1><a name="index" id="index">Index of database -
 launchpad_dev</a></h1>
 <ul>
@@ -225,7 +225,9 @@ launchpad_dev</a></h1>
 <li><a href=
 "#public.table.osfileinpackage">osfileinpackage</a></li>
 <li><a href=
-"#public.table.packagepublishing">packagepublishing</a></li>
+"#public.view.packagepublishing">packagepublishing</a></li>
+<li><a href=
+"#public.table.packagepublishinghistory">packagepublishinghistory</a></li>
 <li><a href=
 "#public.table.packageselection">packageselection</a></li>
 <li><a href="#public.table.packaging">packaging</a></li>
@@ -233,6 +235,7 @@ launchpad_dev</a></h1>
 <li><a href="#public.table.personlabel">personlabel</a></li>
 <li><a href="#public.table.personlanguage">personlanguage</a></li>
 <li><a href="#public.table.pocomment">pocomment</a></li>
+<li><a href="#public.view.poexport">poexport</a></li>
 <li><a href="#public.table.pofile">pofile</a></li>
 <li><a href="#public.table.pomsgid">pomsgid</a></li>
 <li><a href=
@@ -284,7 +287,7 @@ launchpad_dev</a></h1>
 <li><a href=
 "#public.table.sourcepackagename">sourcepackagename</a></li>
 <li><a href=
-"#public.table.sourcepackagepublishing">sourcepackagepublishing</a></li>
+"#public.view.sourcepackagepublishing">sourcepackagepublishing</a></li>
 <li><a href=
 "#public.table.sourcepackagepublishinghistory">sourcepackagepublishinghistory</a></li>
 <li><a href=
@@ -293,7 +296,8 @@ launchpad_dev</a></h1>
 "#public.table.sourcepackagerelease">sourcepackagerelease</a></li>
 <li><a href=
 "#public.table.sourcepackagereleasefile">sourcepackagereleasefile</a></li>
-<li><a href="#public.table.sourcesource">sourcesource</a></li>
+<li><a href=
+"#public.table.sourcesourcebackup">sourcesourcebackup</a></li>
 <li><a href="#public.table.spokenin">spokenin</a></li>
 <li><a href="#public.table.sshkey">sshkey</a></li>
 <li><a href="#public.table.teammembership">teammembership</a></li>
@@ -535,7 +539,7 @@ ts2.tsvector )</a></li>
 <td></td>
 <td>name</td>
 <td>text</td>
-<td><i>NOT NULL</i><br />
+<td><i>UNIQUE NOT NULL</i><br />
 <br />
 The archive name, usually in the format of an email address</td>
 </tr>
@@ -679,6 +683,20 @@ The archive name, usually in the format of an email address</td>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr0">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -1475,6 +1493,20 @@ public</a></p>
 <center>&diams;</center>
 </td>
 </tr>
+<tr class="tr1">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
@@ -1668,8 +1700,8 @@ The version of the binary package. E.g. "1.0-2"</td>
 <td>text</td>
 <td><i>NOT NULL</i><br />
 <br />
-A short description of the binary package. Commonly used on
-listings of binary packages</td>
+A summary of the binary package. Commonly used on listings of
+binary packages</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -1861,7 +1893,7 @@ distroarchreleases which pertain.</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.packagepublishing">public.packagepublishing</a></li>
+"#public.table.packagepublishinghistory">public.packagepublishinghistory</a></li>
 </ul>
 <!-- View Definition -->
 <!-- List off permissions -->
@@ -3251,7 +3283,7 @@ public</a></p>
 </ul>
 <ul>
 <li><a href=
-"#public.table.sourcesource">public.sourcesource</a></li>
+"#public.table.productseries">public.productseries</a></li>
 </ul>
 <!-- View Definition -->
 <!-- List off permissions -->
@@ -3357,6 +3389,20 @@ public</a></p>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr0">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -3656,7 +3702,7 @@ public</a></p>
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.bug" id="public.table.bug">bug</a></h2>
 <p>A software bug that requires fixing. This particular bug may be
-linked to one or more products or sourcepackages to identify the
+linked to one or more products or source packages to identify the
 location(s) that this bug is found.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.bug Structure</caption>
@@ -3697,10 +3743,15 @@ A lowercase name uniquely identifying the bug</td>
 <td></td>
 <td>description</td>
 <td>text</td>
-<td></td>
+<td><br />
+<br />
+A detailed description of the bug. Initially this will be set to
+the contents of the initial email or bug filing comment, but later
+it can be edited to give a more accurate description of the bug
+itself rather than the symptoms observed by the reporter.</td>
 </tr>
 <tr class="tr1">
-<td></td>
+<td><a href="#public.table.person">public.person.id</a></td>
 <td>owner</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
@@ -3754,7 +3805,15 @@ A lowercase name uniquely identifying the bug</td>
 <td></td>
 <td>summary</td>
 <td>text</td>
-<td></td>
+<td><br />
+<br />
+A brief summary of the bug. This will be displayed at the very top
+of the page in bold. It will also receive a higher ranking in FTI
+queries than the description and comments of the bug. The bug
+summary is not created necessarily when the bug is filed, instead
+we just use the first comment as a description and allow people to
+fill in the summary later as they converge on a clear description
+of the bug itself.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -5752,6 +5811,13 @@ public</a></p>
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.bugtracker" id=
 "public.table.bugtracker">bugtracker</a></h2>
+<p>A bug tracker in some other project. Malone allows us to link
+Malone bugs with bugs recorded in other bug tracking systems, and
+to keep the status of the relevant bug task in sync with the status
+in that upstream bug tracker. So, for example, you might note that
+Malone bug #43224 is the same as a bug in the Apache bugzilla,
+number 534536. Then when the upstream guys mark that bug fixed in
+their bugzilla, Malone know that the bug is fixed upstream.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.bugtracker Structure</caption>
 <tr>
@@ -5771,43 +5837,73 @@ public</a></p>
 "#public.table.bugtrackertype">public.bugtrackertype.id</a></td>
 <td>bugtrackertype</td>
 <td>integer</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+The type of bug tracker, a pointer to the table of bug tracker
+types. Currently we know about debbugs and bugzilla bugtrackers,
+and plan to support roundup and sourceforge as well.</td>
 </tr>
 <tr class="tr0">
 <td></td>
 <td>name</td>
 <td>text</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+The unique name of this bugtracker, allowing us to refer to it
+directly.</td>
 </tr>
 <tr class="tr1">
 <td></td>
 <td>title</td>
 <td>text</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+A title for the bug tracker, used in listings of all the bug
+trackers and also displayed at the top of the descriptive page for
+the bug tracker.</td>
 </tr>
 <tr class="tr0">
 <td></td>
 <td>summary</td>
 <td>text</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+A brief summary of this bug tracker, which might for example list
+any interesting policies regarding the use of the bug tracker. The
+summary is displayed in bold at the top of the bug tracker
+page.</td>
 </tr>
 <tr class="tr1">
 <td></td>
 <td>baseurl</td>
 <td>text</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+The base URL for this bug tracker. Using our knowledge of the
+bugtrackertype, and the details in the BugWatch table we are then
+able to calculate relative URL's for relevant pages in the bug
+tracker based on this baseurl.</td>
 </tr>
 <tr class="tr0">
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>owner</td>
 <td>integer</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+The person who created this bugtracker entry and who thus has
+permission to modify it. Ideally we would like this to be the
+person who coordinates the running of the actual bug tracker
+upstream.</td>
 </tr>
 <tr class="tr1">
 <td></td>
 <td>contactdetails</td>
 <td>text</td>
-<td></td>
+<td><br />
+<br />
+The contact details of the people responsible for that bug tracker.
+This allows us to coordinate the syncing of bugs to and from that
+bug tracker with the responsible people on the other side.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -6398,6 +6494,10 @@ public</a></p>
 <li><a href=
 "#public.table.distroreleasequeuebuild">public.distroreleasequeuebuild</a></li>
 </ul>
+<ul>
+<li><a href=
+"#public.table.packagepublishinghistory">public.packagepublishinghistory</a></li>
+</ul>
 <!-- View Definition -->
 <!-- List off permissions -->
 <p> </p>
@@ -6747,25 +6847,6 @@ be waiting to be assigned into a builder's queue</td>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>created</td>
-<td>timestamp with time zone</td>
-<td><i>NOT NULL</i><br />
-<br />
-The timestamp of the creation of this row. This is used by the
-buildd master scheduling algorithm to decide how soon to schedule a
-build to run on a given builder.</td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>buildstart</td>
-<td>timestamp with time zone</td>
-<td><br />
-<br />
-The timestamp of the start of the build run on the given builder.
-If this is NULL then the build is not running yet.</td>
-</tr>
-<tr class="tr1">
-<td></td>
 <td>logtail</td>
 <td>text</td>
 <td><br />
@@ -6774,6 +6855,34 @@ The tail end of the log of the current build. This is updated
 regularly as the buildd master polls the buildd slaves. Once the
 build is complete; the full log will be lodged with the librarian
 and linked into the build table.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>created</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL</i><br />
+<br />
+The timestamp of the creation of this row. This is used by the
+buildd master scheduling algorithm to decide how soon to schedule a
+build to run on a given builder.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>buildstart</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The timestamp of the start of the build run on the given builder.
+If this is NULL then the build is not running yet.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>lastscore</td>
+<td>integer</td>
+<td><br />
+<br />
+The last score ascribed to this build record. This can be used in
+the UI among other places.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -6904,13 +7013,13 @@ public</a></p>
 <td></td>
 <td>id</td>
 <td>serial</td>
-<td><i>UNIQUE#1 PRIMARY KEY</i></td>
+<td><i>UNIQUE#2 UNIQUE#1 PRIMARY KEY</i></td>
 </tr>
 <tr class="tr1">
 <td><a href="#public.table.branch">public.branch.id</a></td>
 <td>branch</td>
 <td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
+<td><i>UNIQUE#2 UNIQUE#1 NOT NULL</i></td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -7064,6 +7173,20 @@ public</a></p>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr0">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -7575,15 +7698,11 @@ public</a></p>
 </ul>
 <ul>
 <li><a href=
-"#public.table.packagepublishing">public.packagepublishing</a></li>
+"#public.table.packagepublishinghistory">public.packagepublishinghistory</a></li>
 </ul>
 <ul>
 <li><a href=
 "#public.table.packageselection">public.packageselection</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.sourcepackagepublishing">public.sourcepackagepublishing</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -8402,6 +8521,18 @@ future.</td>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -8424,6 +8555,18 @@ future.</td>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr1">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -8511,7 +8654,7 @@ schedule builds for this distroarchrelease.</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.packagepublishing">public.packagepublishing</a></li>
+"#public.table.packagepublishinghistory">public.packagepublishinghistory</a></li>
 </ul>
 <!-- View Definition -->
 <!-- List off permissions -->
@@ -8902,7 +9045,12 @@ uploads and generating archives for this distro release</td>
 <td></td>
 <td>summary</td>
 <td>text</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+A brief summary of the distro release. This will be displayed in
+bold at the top of the distrorelease page, above the distrorelease
+description. It should include any high points that are
+particularly important to draw to the attention of users.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -8969,19 +9117,11 @@ uploads and generating archives for this distro release</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.sourcepackagepublishing">public.sourcepackagepublishing</a></li>
-</ul>
-<ul>
-<li><a href=
 "#public.table.sourcepackagepublishinghistory">public.sourcepackagepublishinghistory</a></li>
 </ul>
 <ul>
 <li><a href=
 "#public.table.sourcepackagerelease">public.sourcepackagerelease</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.sourcesource">public.sourcesource</a></li>
 </ul>
 <!-- View Definition -->
 <!-- List off permissions -->
@@ -9065,6 +9205,18 @@ uploads and generating archives for this distro release</td>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -9087,6 +9239,18 @@ uploads and generating archives for this distro release</td>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr1">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -10596,6 +10760,12 @@ public</a></p>
 <td>text</td>
 <td></td>
 </tr>
+<tr class="tr0">
+<td></td>
+<td>visible</td>
+<td>boolean</td>
+<td><i>NOT NULL</i></td>
+</tr>
 </table>
 <!-- Constraint List -->
 <p> </p>
@@ -10716,6 +10886,18 @@ NULL))))</td>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -10976,16 +11158,18 @@ The mime type of the file. E.g. "application/x-debian-package"</td>
 "#public.table.messagechunk">public.messagechunk</a></li>
 </ul>
 <ul>
+<li><a href="#public.table.pofile">public.pofile</a></li>
+</ul>
+<ul>
+<li><a href="#public.table.potemplate">public.potemplate</a></li>
+</ul>
+<ul>
 <li><a href=
 "#public.table.productreleasefile">public.productreleasefile</a></li>
 </ul>
 <ul>
 <li><a href=
 "#public.table.sourcepackagereleasefile">public.sourcepackagereleasefile</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.sourcesource">public.sourcesource</a></li>
 </ul>
 <!-- View Definition -->
 <!-- List off permissions -->
@@ -11058,7 +11242,9 @@ public.libraryfilealias</caption>
 <td>
 <center>&diams;</center>
 </td>
-<td></td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -11073,9 +11259,7 @@ public.libraryfilealias</caption>
 <td>
 <center>&diams;</center>
 </td>
-<td>
-<center>&diams;</center>
-</td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -11242,7 +11426,9 @@ public.libraryfilecontent</caption>
 <td>
 <center>&diams;</center>
 </td>
-<td></td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -11257,9 +11443,7 @@ public.libraryfilecontent</caption>
 <td>
 <center>&diams;</center>
 </td>
-<td>
-<center>&diams;</center>
-</td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -11964,6 +12148,22 @@ not end up with orphaned manifests.</p>
 <center>&diams;</center>
 </td>
 </tr>
+<tr class="tr0">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
@@ -12163,6 +12363,22 @@ public</a></p>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr0">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -13570,14 +13786,259 @@ public.osfileinpackage</caption>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
 <hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.packagepublishing" id=
-"public.table.packagepublishing">packagepublishing</a></h2>
+<h2>View: <a href="#public.schema">public</a>.<a name=
+"public.view.packagepublishing" id=
+"public.view.packagepublishing">packagepublishing</a></h2>
 <p>PackagePublishing: Publishing records for Soyuz/Lucille. Lucille
-publishes binarypackages in distroarchreleases. This table
-represents the publishing of each binarypackage.</p>
+publishes binarypackages in distroarchreleases. This view
+represents the publishing of each binarypackage not yet deleted
+from the distroarchrelease.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.packagepublishing Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>distroarchrelease</td>
+<td>integer</td>
+<td><br />
+<br />
+The distroarchrelease in which the binarypackage is published</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>binarypackage</td>
+<td>integer</td>
+<td><br />
+<br />
+The binarypackage which is being published</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>status</td>
+<td>integer</td>
+<td><br />
+<br />
+The current status of the packagepublishing record. For example
+"PUBLISHED" "PENDING" or "PENDINGREMOVAL"</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>component</td>
+<td>integer</td>
+<td><br />
+<br />
+The component in which the binarypackage is published</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>section</td>
+<td>integer</td>
+<td><br />
+<br />
+The section in which the binarypackage is published</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>priority</td>
+<td>integer</td>
+<td><br />
+<br />
+The priority at which the binarypackage is published</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>datepublished</td>
+<td>timestamp without time zone</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>scheduleddeletiondate</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The datetime at which this publishing entry is scheduled to be
+removed from the distroarchrelease</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>pocket</td>
+<td>integer</td>
+<td></td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<pre>
+SELECT packagepublishinghistory.id
+, packagepublishinghistory.distroarchrelease
+, packagepublishinghistory.binarypackage
+, packagepublishinghistory.status
+, packagepublishinghistory.component
+, packagepublishinghistory.section
+, packagepublishinghistory.priority
+, packagepublishinghistory.datepublished
+, packagepublishinghistory.scheduleddeletiondate
+, packagepublishinghistory.pocket 
+FROM packagepublishinghistory 
+WHERE (
+     (packagepublishinghistory.status &lt;&gt; 7)
+   AND (packagepublishinghistory.embargo = false)
+);
+</pre>
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.packagepublishing</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>gina</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr0">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>group write</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>lucille</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.packagepublishinghistory" id=
+"public.table.packagepublishinghistory">packagepublishinghistory</a></h2>
+<p>PackagePublishingHistory: The history of a PackagePublishing
+record. This table represents the lifetime of a publishing record
+from inception to deletion. Records are never removed from here and
+in time the publishing table may become a view onto this table. A
+column being NULL indicates there's no data for that state
+transition. E.g. a package which is removed without being
+superseded won't have datesuperseded or supersededby filled in.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.packagepublishinghistory Structure</caption>
 <tr>
 <th>F-Key</th>
 <th>Name</th>
@@ -13597,7 +14058,7 @@ represents the publishing of each binarypackage.</p>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-The binarypackage which is being published</td>
+The binarypackage being published.</td>
 </tr>
 <tr class="tr0">
 <td><a href=
@@ -13606,40 +14067,8 @@ The binarypackage which is being published</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-The distroarchrelease in which the binarypackage is published</td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.component">public.component.id</a></td>
-<td>component</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The component in which the binarypackage is published</td>
-</tr>
-<tr class="tr0">
-<td><a href="#public.table.section">public.section.id</a></td>
-<td>section</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The section in which the binarypackage is published</td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>priority</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The priority at which the binarypackage is published</td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>scheduleddeletiondate</td>
-<td>timestamp without time zone</td>
-<td><br />
-<br />
-The datetime at which this publishing entry is scheduled to be
-removed from the distroarchrelease</td>
+The distroarchrelease into which the binarypackage is being
+published.</td>
 </tr>
 <tr class="tr1">
 <td></td>
@@ -13647,14 +14076,124 @@ removed from the distroarchrelease</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-The current status of the packagepublishing record. For example
-"PUBLISHED" "PENDING" or "PENDINGREMOVAL"</td>
+The current status of the publishing.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.component">public.component.id</a></td>
+<td>component</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The component into which the publishing takes place.</td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.section">public.section.id</a></td>
+<td>section</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The section into which the publishing takes place.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>priority</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The priority at which the publishing takes place.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>datecreated</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL</i><br />
+<br />
+The date/time on which the publishing record was created.</td>
 </tr>
 <tr class="tr0">
 <td></td>
 <td>datepublished</td>
 <td>timestamp without time zone</td>
+<td><br />
+<br />
+The date/time on which the source was actually published into an
+archive.</td>
+</tr>
+<tr class="tr1">
 <td></td>
+<td>datesuperseded</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The date/time on which the source was superseded by a new
+source.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.build">public.build.id</a></td>
+<td>supersededby</td>
+<td>integer</td>
+<td><br />
+<br />
+The build which superseded this package. This seems odd but it is
+important because a new build may not actually build a given
+binarypackage and we need to supersede it appropriately</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>datemadepending</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The date/time on which this publishing record was made to be
+pending removal from the archive.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>scheduleddeletiondate</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The date/time at which the package is/was scheduled to be
+deleted.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>dateremoved</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The date/time at which the package was actually deleted.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>pocket</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The pocket into which this record is published. The PLAIN pocket
+(zero) provides behaviour as normal. Other pockets may append
+things to the distrorelease name such as the UPDATES pocket
+(-updates) or the SECURITY pocket (-security).</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>embargo</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i><br />
+<br />
+The publishing record is embargoed from publication if this is set
+to TRUE. When TRUE, this column prevents the publication record
+from even showing up in the publishing tables.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>embargolifted</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The date and time when we lifted the embargo on this publishing
+record. I.E. when embargo was set to FALSE having previously been
+set to TRUE.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -13664,7 +14203,7 @@ The current status of the packagepublishing record. For example
 <p> </p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>Permissions which apply to
-public.packagepublishing</caption>
+public.packagepublishinghistory</caption>
 <tr>
 <th>User</th>
 <th>
@@ -13983,6 +14522,19 @@ public</a></p>
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.packaging" id=
 "public.table.packaging">packaging</a></h2>
+<p>DO NOT JOIN THROUGH THIS TABLE. This is a set of information
+linking upstream product series (branches) to distro packages, but
+it's not planned or likely to be complete, in the sense that we do
+not attempt to have information for every branch in every
+derivative distro managed in Launchpad. So don't join through this
+table to get from product to source package, or vice versa. Rather,
+use the ProductSeries.sourcepackages attribute, or the
+SourcePackage.productseries attribute. You may need to create a
+SourcePackage with a given sourcepackagename and distrorelease,
+then use its .productrelease attribute. The code behind those
+methods does more than just join through the tables, it is also
+smart enough to look at related distro's and parent distroreleases,
+and at Ubuntu in particular.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.packaging Structure</caption>
 <tr>
@@ -13995,33 +14547,57 @@ public</a></p>
 <td></td>
 <td>packaging</td>
 <td>integer</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+A dbschema Enum (PackagingType) describing the way the upstream
+productseries has been packaged. Generally it will be of type
+PRIME, meaning that the upstream productseries is the primary
+substance of the package, but it might also be INCLUDES, if the
+productseries has been included as a statically linked library, for
+example. This allows us to say that a given Source Package INCLUDES
+libneon but is a PRIME package of tla, for example. By INCLUDES we
+mean that the code is actually lumped into the package as
+ancilliary support material, rather than simply depending on a
+separate packaging of that code.</td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.product">public.product.id</a></td>
-<td>product</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
 <td></td>
 <td>id</td>
 <td>integer</td>
-<td><i>DEFAULT nextval('packaging_id_seq'::text)</i></td>
+<td><i>PRIMARY KEY DEFAULT
+nextval('packaging_id_seq'::text)</i></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td><a href=
 "#public.table.sourcepackagename">public.sourcepackagename.id</a></td>
 <td>sourcepackagename</td>
 <td>integer</td>
-<td></td>
+<td><i>UNIQUE#1</i><br />
+<br />
+The source package name for the source package that includes the
+upstream productseries described in this Packaging record. There is
+no requirement that such a sourcepackage actually be published in
+the distro.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href=
 "#public.table.distrorelease">public.distrorelease.id</a></td>
 <td>distrorelease</td>
 <td>integer</td>
-<td></td>
+<td><i>UNIQUE#1</i><br />
+<br />
+The distrorelease in which the productseries has been
+packaged.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.productseries">public.productseries.id</a></td>
+<td>productseries</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The upstream product series that has been packaged in this
+distrorelease sourcepackage.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -14293,6 +14869,12 @@ displayed in this language wherever possible.</td>
 <td>valid_name</td>
 <td>CHECK (valid_name(name))</td>
 </tr>
+<tr class="tr0">
+<td>valid_team_fields</td>
+<td>CHECK (((teamowner IS NULL) OR ((((givenname IS NULL) AND
+(familyname IS NULL)) AND ("password" IS NULL)) AND ("language" IS
+NULL))))</td>
+</tr>
 </table>
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
@@ -14314,6 +14896,9 @@ displayed in this language wherever possible.</td>
 </ul>
 <ul>
 <li><a href="#public.table.branch">public.branch</a></li>
+</ul>
+<ul>
+<li><a href="#public.table.bug">public.bug</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -14449,10 +15034,6 @@ displayed in this language wherever possible.</td>
 <ul>
 <li><a href=
 "#public.table.sourcepackagerelease">public.sourcepackagerelease</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.sourcesource">public.sourcesource</a></li>
 </ul>
 <ul>
 <li><a href="#public.table.sshkey">public.sshkey</a></li>
@@ -15059,9 +15640,451 @@ public</a></p>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
 <hr />
+<h2>View: <a href="#public.schema">public</a>.<a name=
+"public.view.poexport" id="public.view.poexport">poexport</a></h2>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.poexport Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>name</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>translationdomain</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>potemplate</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>productrelease</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>sourcepackagename</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>distrorelease</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>potheader</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>languagepack</td>
+<td>boolean</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>pofile</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>language</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>variant</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>potopcomment</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>poheader</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>pofuzzyheader</td>
+<td>boolean</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>popluralforms</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>potmsgset</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>potsequence</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>potcommenttext</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>sourcecomment</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>flagscomment</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>filereferences</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>pomsgset</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>posequence</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>iscomplete</td>
+<td>boolean</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>obsolete</td>
+<td>boolean</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>fuzzy</td>
+<td>boolean</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>pocommenttext</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>msgidpluralform</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>translationpluralform</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>active</td>
+<td>boolean</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>msgid</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>translation</td>
+<td>text</td>
+<td></td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<pre>
+SELECT (
+     (
+           (
+                 (
+                       (
+                             (COALESCE
+                                   (
+                                         (potmsgset.id)::text
+                                         ,'X'::text
+                                   ) || '.'::text
+                             ) || COALESCE
+                             (
+                                   (pomsgset.id)::text
+                                   ,'X'::text
+                             )
+                       ) || '.'::text
+                 ) || COALESCE
+                 (
+                       (pomsgidsighting.id)::text
+                       ,'X'::text
+                 )
+           ) || '.'::text
+     ) || COALESCE
+     (
+           (potranslationsighting.id)::text
+           ,'X'::text
+     )
+) AS id
+, potemplatename.name
+, potemplatename.translationdomain
+, potemplate.id AS potemplate
+, potemplate.productrelease
+, potemplate.sourcepackagename
+, potemplate.distrorelease
+, potemplate.header AS potheader
+, potemplate.languagepack
+, pofile.id AS pofile
+, pofile."language"
+, pofile.variant
+, pofile.topcomment AS potopcomment
+, pofile.header AS poheader
+, pofile.fuzzyheader AS pofuzzyheader
+, pofile.pluralforms AS popluralforms
+, potmsgset.id AS potmsgset
+, potmsgset."sequence" AS potsequence
+, potmsgset.commenttext AS potcommenttext
+, potmsgset.sourcecomment
+, potmsgset.flagscomment
+, potmsgset.filereferences
+, pomsgset.id AS pomsgset
+, pomsgset."sequence" AS posequence
+, pomsgset.iscomplete
+, pomsgset.obsolete
+, pomsgset.fuzzy
+, pomsgset.commenttext AS pocommenttext
+, pomsgidsighting.pluralform AS msgidpluralform
+, potranslationsighting.pluralform AS translationpluralform
+, potranslationsighting.active
+, pomsgid.msgid
+, potranslation.translation 
+FROM (
+     (
+           (
+                 (
+                       (
+                             (
+                                   (
+                                         (pomsgid 
+                                            JOIN pomsgidsighting 
+                                              ON (
+                                                     (pomsgid.id = pomsgidsighting.pomsgid)
+                                               )
+                                         )
+                                      JOIN potmsgset 
+                                        ON (
+                                               (potmsgset.id = pomsgidsighting.potmsgset)
+                                         )
+                                   )
+                                JOIN potemplate 
+                                  ON (
+                                         (potemplate.id = potmsgset.potemplate)
+                                   )
+                             )
+                          JOIN potemplatename 
+                            ON (
+                                   (potemplatename.id = potemplate.potemplatename)
+                             )
+                       )
+                    JOIN pofile 
+                      ON (
+                             (potemplate.id = pofile.potemplate)
+                       )
+                 )
+         LEFT JOIN pomsgset 
+                ON (
+                       (potmsgset.id = pomsgset.potmsgset)
+                 )
+           )
+   LEFT JOIN potranslationsighting 
+          ON (
+                 (pomsgset.id = potranslationsighting.pomsgset)
+           )
+     )
+LEFT JOIN potranslation 
+    ON (
+           (potranslation.id = potranslationsighting.potranslation)
+     )
+)
+WHERE (
+     (pomsgset.id IS NULL)
+    OR (pomsgset.pofile = pofile.id)
+);
+</pre>
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.poexport</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.pofile" id="public.table.pofile">pofile</a></h2>
-<p>This table stores a po file for a given product.</p>
+<p>This table stores a PO file for a given PO template.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.pofile Structure</caption>
 <tr>
@@ -15074,14 +16097,14 @@ public</a></p>
 <td></td>
 <td>id</td>
 <td>serial</td>
-<td><i>UNIQUE#1 PRIMARY KEY</i></td>
+<td><i>PRIMARY KEY</i></td>
 </tr>
 <tr class="tr1">
 <td><a href=
 "#public.table.potemplate">public.potemplate.id</a></td>
 <td>potemplate</td>
 <td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
+<td><i>NOT NULL</i></td>
 </tr>
 <tr class="tr0">
 <td><a href="#public.table.language">public.language.id</a></td>
@@ -15180,38 +16203,56 @@ public</a></p>
 <td></td>
 </tr>
 <tr class="tr0">
-<td></td>
-<td>rawfile</td>
-<td>text</td>
-<td><br />
-<br />
-The po file itself encoded as a base64 string.</td>
-</tr>
-<tr class="tr1">
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>rawimporter</td>
 <td>integer</td>
 <td><br />
 <br />
-The person that attached the rawfile.</td>
+The person that attached the raw file.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>daterawimport</td>
 <td>timestamp without time zone</td>
 <td><i>DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6)
 with time zone)</i><br />
 <br />
-The date when the rawfile was attached.</td>
+The date when the raw file was attached.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>rawimportstatus</td>
 <td>integer</td>
 <td><i>NOT NULL DEFAULT 1</i><br />
 <br />
-The status of the import: 0 pending import, 1 imported, 2
-failed.</td>
+The status of the import. See the RosettaImportStatus schema.</td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.libraryfilealias">public.libraryfilealias.id</a></td>
+<td>rawfile</td>
+<td>integer</td>
+<td><br />
+<br />
+The Library file alias of the PO file as imported.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.libraryfilealias">public.libraryfilealias.id</a></td>
+<td>exportfile</td>
+<td>integer</td>
+<td><br />
+<br />
+The Library file alias of an export of this PO file.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>exporttime</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The time at which the file referenced by exportfile was
+generated.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -15315,6 +16356,18 @@ failed.</td>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -15802,6 +16855,18 @@ public</a></p>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -16069,14 +17134,6 @@ public</a></p>
 <td><i>NOT NULL</i></td>
 </tr>
 <tr class="tr1">
-<td></td>
-<td>rawfile</td>
-<td>text</td>
-<td><i>NOT NULL</i><br />
-<br />
-The pot file itself encoded as a base64 string.</td>
-</tr>
-<tr class="tr0">
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>rawimporter</td>
 <td>integer</td>
@@ -16084,7 +17141,7 @@ The pot file itself encoded as a base64 string.</td>
 <br />
 The person that attached the rawfile.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>daterawimport</td>
 <td>timestamp without time zone</td>
@@ -16093,7 +17150,7 @@ The person that attached the rawfile.</td>
 <br />
 The date when the rawfile was attached.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>rawimportstatus</td>
 <td>integer</td>
@@ -16102,7 +17159,7 @@ The date when the rawfile was attached.</td>
 The status of the import: 0 pending import, 1 imported, 2
 failed.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td><a href=
 "#public.table.sourcepackagename">public.sourcepackagename.id</a></td>
 <td>sourcepackagename</td>
@@ -16112,7 +17169,7 @@ failed.</td>
 A reference to a sourcepackage name from where this POTemplate
 comes.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href=
 "#public.table.distrorelease">public.distrorelease.id</a></td>
 <td>distrorelease</td>
@@ -16122,7 +17179,7 @@ comes.</td>
 A reference to the distribution from where this POTemplate
 comes.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>sourcepackageversion</td>
 <td>text</td>
@@ -16131,7 +17188,7 @@ comes.</td>
 The sourcepackage version string from where this potemplate was
 imported last time with our buildd &lt;-&gt; Rosetta gateway.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>header</td>
 <td>text</td>
@@ -16140,7 +17197,7 @@ imported last time with our buildd &lt;-&gt; Rosetta gateway.</td>
 The header of a .pot file when we import it. Most important info
 from it is POT-Creation-Date and custom headers.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td><a href=
 "#public.table.potemplatename">public.potemplatename.id</a></td>
 <td>potemplatename</td>
@@ -16150,7 +17207,7 @@ from it is POT-Creation-Date and custom headers.</td>
 A reference to a POTemplateName row that tells us the name/domain
 for this POTemplate.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href=
 "#public.table.productrelease">public.productrelease.id</a></td>
 <td>productrelease</td>
@@ -16160,24 +17217,33 @@ for this POTemplate.</td>
 A reference to a ProductRelease from where this POTemplate
 comes.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td><a href=
 "#public.table.binarypackagename">public.binarypackagename.id</a></td>
 <td>binarypackagename</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>languagepack</td>
 <td>boolean</td>
 <td><i>NOT NULL DEFAULT false</i></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>filename</td>
 <td>text</td>
 <td><i>UNIQUE#3</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.libraryfilealias">public.libraryfilealias.id</a></td>
+<td>rawfile</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The pot file itself encoded as a base64 string.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -16296,6 +17362,18 @@ NULL))))</td>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -16477,6 +17555,18 @@ The translation domain name for this POTemplateName</td>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -17021,6 +18111,18 @@ public.potranslationsighting</caption>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -17474,13 +18576,22 @@ with this product.</td>
 <td></td>
 <td>summary</td>
 <td>text</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+A brief summary of the product. This will be displayed in bold at
+the top of the product page, above the description.</td>
 </tr>
 <tr class="tr1">
 <td></td>
 <td>description</td>
 <td>text</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+A detailed description of the product, highlighting primary
+features of the product that may be of interest to end-users. The
+description may also include links and other references to useful
+information on the web about this product. The description will be
+displayed on the product page, below the product summary.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -17624,9 +18735,6 @@ Whether or not this product should be considered active.</td>
 <li><a href="#public.table.milestone">public.milestone</a></li>
 </ul>
 <ul>
-<li><a href="#public.table.packaging">public.packaging</a></li>
-</ul>
-<ul>
 <li><a href=
 "#public.table.productbkbranch">public.productbkbranch</a></li>
 </ul>
@@ -17653,10 +18761,6 @@ Whether or not this product should be considered active.</td>
 <ul>
 <li><a href=
 "#public.table.productsvnmodule">public.productsvnmodule</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.sourcesource">public.sourcesource</a></li>
 </ul>
 <!-- View Definition -->
 <!-- List off permissions -->
@@ -17762,6 +18866,18 @@ Whether or not this product should be considered active.</td>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr0">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -18576,9 +19692,11 @@ this field.</td>
 <td>text</td>
 <td><br />
 <br />
-A short description of this ProductRelease. This should be a very
-brief overview of changes and highlights, just a short paragraph of
-text.</td>
+A summary of this ProductRelease. This should be a very brief
+overview of changes and highlights, just a short paragraph of text.
+The summary is usually displayed in bold at the top of a page for
+this product release, above the more detailed description or
+changelog.</td>
 </tr>
 <tr class="tr0">
 <td><a href=
@@ -18732,6 +19850,20 @@ in time.</td>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr0">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -18940,9 +20072,226 @@ examples are "2.0", "3.0", "head" and "development".</td>
 <td>text</td>
 <td><i>NOT NULL</i><br />
 <br />
-A short description of this Product Series. A good example would
-include the date the series was initiated and whether this is the
-current recommended series for people to use.</td>
+A summary of this Product Series. A good example would include the
+date the series was initiated and whether this is the current
+recommended series for people to use. The summary is usually
+displayed at the top of the page, in bold, just beneath the title
+and above the description, if there is a description field.</td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.branch">public.branch.id</a></td>
+<td>branch</td>
+<td>integer</td>
+<td><i>UNIQUE</i></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>importstatus</td>
+<td>integer</td>
+<td><br />
+<br />
+A status flag which gives the state of our efforts to import the
+upstream code from its revision control system and publish that in
+the baz revision control system. The allowed values are documented
+in dbschema.BazImportStatus.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>datelastsynced</td>
+<td>timestamp without time zone</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>syncinterval</td>
+<td>interval</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>rcstype</td>
+<td>integer</td>
+<td><br />
+<br />
+The revision control system used by upstream for this product
+series. The value is defined in dbschema.RevisionControlSystems. If
+NULL, then there should be no CVS or SVN information attached to
+this productseries, otherwise the relevant fields for CVS or SVN
+etc should be filled out.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>cvsroot</td>
+<td>text</td>
+<td><i>UNIQUE#2</i><br />
+<br />
+The CVS root where this productseries hosts its code. Only used if
+rcstype is CVS.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>cvsmodule</td>
+<td>text</td>
+<td><i>UNIQUE#2</i><br />
+<br />
+The CVS branch that contains the upstream code for this
+productseries. Only used if rcstype is CVS.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>cvsbranch</td>
+<td>text</td>
+<td><i>UNIQUE#2</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>cvstarfileurl</td>
+<td>text</td>
+<td><br />
+<br />
+The URL of a tarfile of the CVS repository for this productseries.
+This is an optimisation of the CVS import process - instead of
+hitting the server to pass us every set of changes in history, we
+can sometimes arrange to be given a tarfile of the CVS repository
+and then process it all locally. Once imported, we switch back to
+using the CVS server for ongoing syncronization. Only used if
+rcstype is CVS.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>svnrepository</td>
+<td>text</td>
+<td><i>UNIQUE</i><br />
+<br />
+The URL of the SVN branch where the upstream productseries code can
+be found. This single URL is the equivalent of the cvsroot,
+cvsmodule and cvsbranch for CVS. Only used if rcstype is SVN.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>bkrepository</td>
+<td>text</td>
+<td><i>UNIQUE</i><br />
+<br />
+The URL of the BK branch where the upstream productseries code can
+be found. This single URL is the equivalent of the cvsroot,
+cvsmodule and cvsbranch. Only used if rcstype is BK.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>releaseroot</td>
+<td>text</td>
+<td><br />
+<br />
+The URL to the directory which holds upstream releases for this
+productseries. This allows us to monitor the upstream site and
+detect new upstream release tarballs.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>releasefileglob</td>
+<td>text</td>
+<td><br />
+<br />
+A fileglob that lets us see which files in the releaseroot
+directory are potentially new upstream tarball releases. For
+example: linux-*.*.*.gz.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>releaseverstyle</td>
+<td>integer</td>
+<td><br />
+<br />
+An enum giving the style of this product series release version
+numbering system. The options are documented in
+dbschema.UpstreamReleaseVersionStyle. Most applications use Gnu
+style numbering, but there are other alternatives.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>targetarcharchive</td>
+<td>text</td>
+<td><i>UNIQUE#3</i></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>targetarchcategory</td>
+<td>text</td>
+<td><i>UNIQUE#3</i><br />
+<br />
+The category name of the bazaar branch to which we publish new
+changesets detected in the upstream revision control system.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>targetarchbranch</td>
+<td>text</td>
+<td><i>UNIQUE#3</i><br />
+<br />
+The branch name of the bazaar branch to which we publish new
+changesets detected in the upstream revision control system.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>targetarchversion</td>
+<td>text</td>
+<td><i>UNIQUE#3</i><br />
+<br />
+The version of the bazaar branch to which we publish new changesets
+detected in the upstream revision control system.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>dateautotested</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+This upstream revision control system target has passed automatic
+testing. It can probably be moved towards production sync status.
+This date is the timestamp when it passed the autotester. The
+autotester allows us to find the low hanging fruit that is easily
+brought into the bazaar import system by highlighting repositories
+which had no apparent difficulty in being imported.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>dateprocessapproved</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The timestamp when this upstream import was certified for
+processing. Processing means it has passed autotesting, and is
+being moved towards production syncing. If the sync goes well, it
+will be approved for sync and then be fully in production.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>datesyncapproved</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The timestamp when this upstream import was certified for ongoing
+syncronisation.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>datestarted</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The timestamp when we last initiated an import test or sync of this
+upstream repository.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>datefinished</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The timestamp when we last completed an import test or sync of this
+upstream repository. If this is NULL and datestarted is NOT NULL,
+then there is a sync in progress.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -18954,12 +20303,36 @@ current recommended series for people to use.</td>
 <th>Constraint</th>
 </tr>
 <tr class="tr0">
+<td>complete_cvs</td>
+<td>CHECK ((((cvsroot IS NULL) = (cvsmodule IS NULL)) AND ((cvsroot
+IS NULL) = (cvsbranch IS NULL))))</td>
+</tr>
+<tr class="tr1">
+<td>complete_targetarch</td>
+<td>CHECK (((((targetarcharchive IS NULL) = (targetarchcategory IS
+NULL)) AND ((targetarcharchive IS NULL) = (targetarchbranch IS
+NULL))) AND ((targetarcharchive IS NULL) = (targetarchversion IS
+NULL))))</td>
+</tr>
+<tr class="tr0">
+<td>no_empty_strings</td>
+<td>CHECK ((((((((((targetarcharchive &lt;&gt; ''::text) AND
+(targetarchcategory &lt;&gt; ''::text)) AND (targetarchbranch
+&lt;&gt; ''::text)) AND (targetarchversion &lt;&gt; ''::text)) AND
+(cvsroot &lt;&gt; ''::text)) AND (cvsmodule &lt;&gt; ''::text)) AND
+(cvsbranch &lt;&gt; ''::text)) AND (svnrepository &lt;&gt;
+''::text)) AND (bkrepository &lt;&gt; ''::text)))</td>
+</tr>
+<tr class="tr1">
 <td>valid_name</td>
 <td>CHECK (valid_name(name))</td>
 </tr>
 </table>
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href="#public.table.packaging">public.packaging</a></li>
+</ul>
 <ul>
 <li><a href=
 "#public.table.productrelease">public.productrelease</a></li>
@@ -19068,6 +20441,18 @@ current recommended series for people to use.</td>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr0">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -19277,13 +20662,26 @@ include being used as a key in URL traversal.</td>
 <td></td>
 <td>summary</td>
 <td>text</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+A brief summary of this project. This will be displayed in bold
+text just above the description and below the title. It should be a
+single paragraph of not more than 80 words.</td>
 </tr>
 <tr class="tr0">
 <td></td>
 <td>description</td>
 <td>text</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+A detailed description of this project. This should primarily be
+focused on the organisational aspects of the project, such as the
+people involved and the structures that the project uses to govern
+itself. It might refer to the primary products of the project but
+the detailed descriptions of those products should be in the
+Product.description field, not here. So, for example, useful
+information such as the dates the project was started and the way
+the project coordinates itself are suitable here.</td>
 </tr>
 <tr class="tr1">
 <td></td>
@@ -20659,7 +22057,7 @@ public</a></p>
 </ul>
 <ul>
 <li><a href=
-"#public.table.packagepublishing">public.packagepublishing</a></li>
+"#public.table.packagepublishinghistory">public.packagepublishinghistory</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -20668,10 +22066,6 @@ public</a></p>
 <ul>
 <li><a href=
 "#public.table.sectionselection">public.sectionselection</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.sourcepackagepublishing">public.sourcepackagepublishing</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -21405,10 +22799,6 @@ A lowercase name identifying one or more sourcepackages</td>
 <li><a href=
 "#public.table.sourcepackagerelease">public.sourcepackagerelease</a></li>
 </ul>
-<ul>
-<li><a href=
-"#public.table.sourcesource">public.sourcesource</a></li>
-</ul>
 <!-- View Definition -->
 <!-- List off permissions -->
 <p> </p>
@@ -21515,16 +22905,30 @@ public.sourcepackagename</caption>
 <center>&diams;</center>
 </td>
 </tr>
+<tr class="tr0">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
 <hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.sourcepackagepublishing" id=
-"public.table.sourcepackagepublishing">sourcepackagepublishing</a></h2>
+<h2>View: <a href="#public.schema">public</a>.<a name=
+"public.view.sourcepackagepublishing" id=
+"public.view.sourcepackagepublishing">sourcepackagepublishing</a></h2>
 <p>SourcePackagePublishing: Publishing records for Soyuz/Lucille.
 Lucille publishes sourcepackagereleases in distroreleases. This
-table represents the publishing of each sourcepackagerelease.</p>
+table represents the currently active publishing of each
+sourcepackagerelease. For history see
+SourcePackagePublishingHistory.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.sourcepackagepublishing Structure</caption>
 <tr>
@@ -21534,54 +22938,51 @@ table represents the publishing of each sourcepackagerelease.</p>
 <th>Description</th>
 </tr>
 <tr class="tr0">
-<td><a href=
-"#public.table.distrorelease">public.distrorelease.id</a></td>
+<td></td>
+<td>id</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
 <td>distrorelease</td>
 <td>integer</td>
-<td><i>NOT NULL</i><br />
+<td><br />
 <br />
 The distrorelease which is having the sourcepackagerelease being
 published into it.</td>
 </tr>
-<tr class="tr1">
-<td><a href=
-"#public.table.sourcepackagerelease">public.sourcepackagerelease.id</a></td>
+<tr class="tr0">
+<td></td>
 <td>sourcepackagerelease</td>
 <td>integer</td>
-<td><i>NOT NULL</i><br />
+<td><br />
 <br />
 The sourcepackagerelease being published into the
 distrorelease.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>status</td>
 <td>integer</td>
-<td><i>NOT NULL</i><br />
+<td><br />
 <br />
 The current status of the sourcepackage publishing record. For
 example "PUBLISHED" "PENDING" or "PENDINGREMOVAL"</td>
 </tr>
-<tr class="tr1">
-<td></td>
-<td>id</td>
-<td>integer</td>
-<td><i>PRIMARY KEY DEFAULT
-nextval('sourcepackagepublishing_id_seq'::text)</i></td>
-</tr>
 <tr class="tr0">
-<td><a href="#public.table.component">public.component.id</a></td>
+<td></td>
 <td>component</td>
 <td>integer</td>
-<td><i>NOT NULL</i><br />
+<td><br />
 <br />
 The component in which the sourcepackagerelease is published</td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.section">public.section.id</a></td>
+<td></td>
 <td>section</td>
 <td>integer</td>
-<td><i>NOT NULL</i><br />
+<td><br />
 <br />
 The section in which the sourcepackagerelease is published</td>
 </tr>
@@ -21602,10 +23003,32 @@ THIS COLUMN IS PROBABLY UNUSED</td>
 The datetime at which this publishing entry is scheduled to be
 removed from the distrorelease.</td>
 </tr>
+<tr class="tr0">
+<td></td>
+<td>pocket</td>
+<td>integer</td>
+<td></td>
+</tr>
 </table>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
 <!-- View Definition -->
+<pre>
+SELECT sourcepackagepublishinghistory.id
+, sourcepackagepublishinghistory.distrorelease
+, sourcepackagepublishinghistory.sourcepackagerelease
+, sourcepackagepublishinghistory.status
+, sourcepackagepublishinghistory.component
+, sourcepackagepublishinghistory.section
+, sourcepackagepublishinghistory.datepublished
+, sourcepackagepublishinghistory.scheduleddeletiondate
+, sourcepackagepublishinghistory.pocket 
+FROM sourcepackagepublishinghistory 
+WHERE (
+     (sourcepackagepublishinghistory.status &lt;&gt; 7)
+   AND (sourcepackagepublishinghistory.embargo = false)
+);
+</pre>
 <!-- List off permissions -->
 <p> </p>
 <table width="100%" cellspacing="0" cellpadding="3">
@@ -21640,15 +23063,9 @@ public.sourcepackagepublishing</caption>
 <td>
 <center>&diams;</center>
 </td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
+<td></td>
+<td></td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -21694,12 +23111,8 @@ public.sourcepackagepublishing</caption>
 <td>
 <center>&diams;</center>
 </td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
+<td></td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -21710,15 +23123,9 @@ public.sourcepackagepublishing</caption>
 <td>
 <center>&diams;</center>
 </td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
+<td></td>
+<td></td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -21880,6 +23287,37 @@ deleted.</td>
 <br />
 The date/time at which the source was actually deleted.</td>
 </tr>
+<tr class="tr1">
+<td></td>
+<td>pocket</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The pocket into which this record is published. The PLAIN pocket
+(zero) provides behaviour as normal. Other pockets may append
+things to the distrorelease name such as the UPDATES pocket
+(-updates) or the SECURITY pocket (-security).</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>embargo</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i><br />
+<br />
+The publishing record is embargoed from publication if this is set
+to TRUE. When TRUE, this column prevents the publication record
+from even showing up in the publishing tables.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>embargolifted</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The date and time when we lifted the embargo on this publishing
+record. I.E. when embargo was set to FALSE having previously been
+set to TRUE.</td>
+</tr>
 </table>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
@@ -21918,9 +23356,15 @@ public.sourcepackagepublishinghistory</caption>
 <td>
 <center>&diams;</center>
 </td>
-<td></td>
-<td></td>
-<td></td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -21957,6 +23401,40 @@ public.sourcepackagepublishinghistory</caption>
 <td></td>
 <td></td>
 <td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>group write</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>lucille</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -22411,10 +23889,6 @@ dbschema.SourcePackageFormat</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.sourcepackagepublishing">public.sourcepackagepublishing</a></li>
-</ul>
-<ul>
-<li><a href=
 "#public.table.sourcepackagepublishinghistory">public.sourcepackagepublishinghistory</a></li>
 </ul>
 <ul>
@@ -22526,6 +24000,20 @@ public.sourcepackagerelease</caption>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr0">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -22692,15 +24180,15 @@ public.sourcepackagereleasefile</caption>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.sourcesource" id=
-"public.table.sourcesource">sourcesource</a></h2>
+"public.table.sourcesourcebackup" id=
+"public.table.sourcesourcebackup">sourcesourcebackup</a></h2>
 <p>The SourceSource table identifies upstream revision control
 systems that can be imported and re-published as bazaar (baz)
 archives. So, for example, there is an entry in this table for each
 upstream CVS or SVN branch that we want to sync-and-publish as a
 baz branch.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.sourcesource Structure</caption>
+<caption>public.sourcesourcebackup Structure</caption>
 <tr>
 <th>F-Key</th>
 <th>Name</th>
@@ -22710,32 +24198,32 @@ baz branch.</p>
 <tr class="tr0">
 <td></td>
 <td>id</td>
-<td>serial</td>
-<td><i>PRIMARY KEY</i></td>
+<td>integer</td>
+<td></td>
 </tr>
 <tr class="tr1">
 <td></td>
 <td>name</td>
 <td>text</td>
-<td><i>UNIQUE NOT NULL</i></td>
+<td></td>
 </tr>
 <tr class="tr0">
 <td></td>
 <td>title</td>
 <td>text</td>
-<td><i>NOT NULL</i></td>
+<td></td>
 </tr>
 <tr class="tr1">
 <td></td>
 <td>description</td>
 <td>text</td>
-<td><i>NOT NULL</i></td>
+<td></td>
 </tr>
 <tr class="tr0">
-<td><a href="#public.table.product">public.product.id</a></td>
+<td></td>
 <td>product</td>
 <td>integer</td>
-<td><i>NOT NULL</i></td>
+<td></td>
 </tr>
 <tr class="tr1">
 <td></td>
@@ -22750,8 +24238,7 @@ baz branch.</p>
 <td></td>
 </tr>
 <tr class="tr1">
-<td><a href=
-"#public.table.libraryfilealias">public.libraryfilealias.id</a></td>
+<td></td>
 <td>cvstarfile</td>
 <td>integer</td>
 <td></td>
@@ -22793,16 +24280,16 @@ baz branch.</p>
 <td></td>
 </tr>
 <tr class="tr0">
-<td><a href="#public.table.branch">public.branch.id</a></td>
+<td></td>
 <td>releaseparentbranch</td>
 <td>integer</td>
 <td></td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.branch">public.branch.id</a></td>
+<td></td>
 <td>branch</td>
 <td>integer</td>
-<td><i>UNIQUE</i></td>
+<td></td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -22820,7 +24307,7 @@ baz branch.</p>
 <td></td>
 <td>rcstype</td>
 <td>integer</td>
-<td><i>NOT NULL</i></td>
+<td></td>
 </tr>
 <tr class="tr1">
 <td></td>
@@ -22883,10 +24370,10 @@ baz branch.</p>
 <td></td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.person">public.person.id</a></td>
+<td></td>
 <td>owner</td>
 <td>integer</td>
-<td><i>NOT NULL</i></td>
+<td></td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -22912,14 +24399,13 @@ The source specification for an import job to branch from.</td>
 <td></td>
 <td>autotested</td>
 <td>integer</td>
-<td><i>NOT NULL</i></td>
+<td></td>
 </tr>
 <tr class="tr0">
 <td></td>
 <td>datestarted</td>
 <td>timestamp without time zone</td>
-<td><i>DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6)
-with time zone)</i><br />
+<td><br />
 <br />
 The timestamp of the last time an import or sync was started on
 this sourcesource.</td>
@@ -22928,22 +24414,19 @@ this sourcesource.</td>
 <td></td>
 <td>datefinished</td>
 <td>timestamp without time zone</td>
-<td><i>DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6)
-with time zone)</i><br />
+<td><br />
 <br />
 The timestamp of the last time an import or sync finished on this
 sourcesource.</td>
 </tr>
 <tr class="tr0">
-<td><a href=
-"#public.table.sourcepackagename">public.sourcepackagename.id</a></td>
+<td></td>
 <td>sourcepackagename</td>
 <td>integer</td>
 <td></td>
 </tr>
 <tr class="tr1">
-<td><a href=
-"#public.table.distrorelease">public.distrorelease.id</a></td>
+<td></td>
 <td>distrorelease</td>
 <td>integer</td>
 <td></td>
@@ -22955,7 +24438,8 @@ sourcesource.</td>
 <!-- List off permissions -->
 <p> </p>
 <table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to public.sourcesource</caption>
+<caption>Permissions which apply to
+public.sourcesourcebackup</caption>
 <tr>
 <th>User</th>
 <th>
@@ -22981,58 +24465,6 @@ sourcesource.</td>
 </th>
 </tr>
 <tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
 <td>postgres</td>
 <td>
 <center>&diams;</center>

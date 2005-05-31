@@ -5,20 +5,20 @@
   <page
       for="canonical.publication.RootObject"
       name="robots.txt"
-      template="templates/robots.txt"
+      template="templates/robotstxt.pt"
       permission="zope.Public"
       />
 
   <page
       for="canonical.rosetta.RosettaApplication"
       name="robots.txt"
-      template="templates/robots.txt"
+      template="templates/robotstxt.pt"
       permission="zope.Public"
       />
   <page
       for="canonical.malone.MaloneApplication"
       name="robots.txt"
-      template="templates/robots.txt"
+      template="templates/robotstxt.pt"
       permission="zope.Public"
       />
 

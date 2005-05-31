@@ -3,16 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">
-      Product: <span tal:replace="context/title">Product Title</span>
-      </title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -60,7 +50,8 @@
 
     <div tal:repeat="series context/serieslist">
 
-      <p>Branch: <strong tal:content="series/name">seriesname</strong>:
+      <p><strong>Branch:
+      <span tal:replace="series/name">seriesname</span></strong><br />
       <span tal:replace="series/summary">A summary of the series
       details and status.</span>
       [&nbsp;<a tal:attributes="href
@@ -74,6 +65,8 @@
           "<span tal:content="release/title">title</span>"
           [&nbsp;<a tal:attributes="href release/version">View</a>&nbsp;]<br />
           <span tal:replace="release/summary">feature summary</span></li>
+        <li tal:condition="not: series/releases">No releases on this branch
+        registered yet.</li>
 
       </ul>
 

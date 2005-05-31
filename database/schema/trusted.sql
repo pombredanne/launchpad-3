@@ -74,6 +74,17 @@ COMMENT ON FUNCTION valid_cve(text) IS 'validate a common vulnerability number
     As defined on www.cve.mitre.org';
 
 
+CREATE OR REPLACE FUNCTION valid_absolute_url(text) RETURNS boolean AS '
+    from urlparse import urlparse
+    (scheme, netloc, path, params, query, fragment) = urlparse(args[0])
+    if not (scheme and netloc):
+        return False
+    return True
+' LANGUAGE plpythonu IMMUTABLE;
+
+COMMENT ON FUNCTION valid_absolute_url(text) IS 'Ensure the given test is a valid absolute URL, containing both protocol and network location';
+
+
 CREATE OR REPLACE FUNCTION sha1(text) RETURNS char(40) AS '
     import sha
     return sha.new(args[0]).hexdigest()

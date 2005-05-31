@@ -9,6 +9,7 @@ from warnings import warn
 
 from zope.interface import implements
 from zope.exceptions import NotFoundError
+from zope.component import getUtility
 
 from sqlobject import \
     ForeignKey, StringCol, BoolCol, MultipleJoin, RelatedJoin, \
@@ -27,7 +28,8 @@ from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.interfaces import IProduct, IProductSet, IDistribution
+from canonical.launchpad.interfaces import IProduct, IProductSet, \
+    IDistribution, ILaunchpadCelebrities
 
 
 class Product(SQLBase):
@@ -124,27 +126,55 @@ class Product(SQLBase):
         else:
             raise NotFoundError(distrorelease)
 
-    def primary_translatable(self):
-        """Returns the latest release for which we have potemplates.
+    def translatable_packages(self):
+        """See IProduct."""
+        packages = sets.Set([package
+                            for package in self.sourcepackages
+                            if package.potemplatecount > 0])
+        # Sort the list of packages by distrorelease.name and package.name
+        L = [(item.distrorelease.name + item.name, item)
+             for item in packages]
+        L.sort()
+        # Get the final list of sourcepackages.
+        packages = [item for sortkey, item in L]
+        return packages
+    translatable_packages = property(translatable_packages)
 
-        In future it may return the ubuntu sourcepackage which
-        corresponds to this product in the current development release of
-        ubuntu... if it has templates.
-        """
-        # XXX Not in system doc tests.  SteveAlexander, 2005-04-24
-        # XXX Not directly tested by page tests either, that is, this can
-        #     be rather broken, and still work.  SteveAlexander, 2005-04-24
+    def translatable_releases(self):
+        """See IProduct."""
         releases = ProductRelease.select(
                         "POTemplate.productrelease=ProductRelease.id AND "
                         "ProductRelease.productseries=ProductSeries.id AND "
                         "ProductSeries.product=%d" % self.id,
                         clauseTables=['POTemplate', 'ProductRelease',
                                       'ProductSeries'],
-                        orderBy='-datereleased', distinct=True)
-        try:
+                        orderBy='version', distinct=True)
+        return list(releases)
+    translatable_releases = property(translatable_releases)
+
+    def primary_translatable(self):
+        """See IProduct."""
+        packages = self.translatable_packages
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        targetrelease = ubuntu.currentrelease
+        # first look for an ubuntu package in the current distrorelease
+        for package in packages:
+            if package.distrorelease == targetrelease:
+                return package
+        # now go with the latest release for which we have templates
+        releases = self.translatable_releases
+        if releases:
             return releases[0]
-        except IndexError:
-            return None
+        # now let's make do with any ubuntu package
+        for package in packages:
+            if package.distribution == ubuntu:
+                return package
+        # or just any package
+        if len(packages) > 0:
+            return packages[0]
+        # capitulate
+        return None
+    primary_translatable = property(primary_translatable)
 
     def newseries(self, form):
         # XXX sabdfl 16/04/05 HIDEOUS even if I was responsible. We should
@@ -179,6 +209,11 @@ class Product(SQLBase):
                     templates.append(potemplate)
 
         return templates
+
+    def potemplatecount(self):
+        """See IProduct."""
+        return len(self.potemplates())
+    potemplatecount = property(potemplatecount)
 
     def poTemplatesToImport(self):
         # XXX sabdfl 30/03/05 again, i think we want to be using
@@ -303,7 +338,7 @@ class ProductSet:
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        return iter(Product.select())
+        return iter(Product.selectBy(active=True))
 
     def __getitem__(self, name):
         """See canonical.launchpad.interfaces.product.IProductSet."""

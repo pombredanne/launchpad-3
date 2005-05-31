@@ -128,7 +128,7 @@ class CodeOfConductConf:
     ## Integrate this class with LaunchpadCentral configuration
     ## in the future
 
-    path = 'lib/canonical/launchpad/templates/codesofconduct/'
+    path = 'lib/canonical/launchpad/codesofconduct/'
     prefix = 'Ubuntu Code of Conduct - '
     current = '1.0'
 
@@ -327,7 +327,7 @@ class SignedCodeOfConductSet:
                             active=active)
 
 def sendAdvertisementEmail(user, subject, content):
-    template = open('lib/canonical/launchpad/templates/'
+    template = open('lib/canonical/launchpad/emailtemplates/'
                     'signedcoc-acknowledge.txt').read()
 
     fromaddress = "Launchpad Code Of Conduct System <noreply@ubuntu.com>"

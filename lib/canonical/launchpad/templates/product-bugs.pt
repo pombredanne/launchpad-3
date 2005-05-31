@@ -3,19 +3,13 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="malone">
 
-<head>
-  <title metal:fill-slot="title">Upstream Bugs on
-    <span tal:replace="context/displayname">$Product.displayname</span>
-  </title>
-</head>
-
 <body>
 
 <div metal:fill-slot="column_one">
 </div>
 
 <div metal:fill-slot="main" class="visualPadding">
-    <h1>Upstream Bugs for:
+    <h1>Bug reports on upstream
         <span tal:replace="context/displayname">$Product.displayname</span>
     </h1>
 
@@ -28,16 +22,16 @@
     <p tal:condition="not: context/bugtasks">No bugs filed against
         <span tal:replace="context/displayname">$Product.displayname</span>
     </p>
-
-    <p><img src="/++resource++add.gif" alt="+">
-    <a href="+filebug">File a new bug</a><br />
-    <img src="/++resource++add.gif" alt="+">
-    <a href="#"
-       tal:attributes="href string:/products/${context/name}">
-       View <span tal:replace="context/displayname">Product</span>
-       Details</a>
-    </p>
-    
+    <ul>
+      <li style="list-style-image: url(/++resource++add.gif)">
+        <a href="+filebug">Report a new bug</a>
+      </li>
+      <li style="list-style-image: url(/++resource++product_icon.gif)">
+        <a tal:attributes="href string:/products/${context/name}"
+        ><span tal:replace="context/displayname">Product</span>
+        details</a>
+      </li>
+    </ul>
 </div>
 
 </body>

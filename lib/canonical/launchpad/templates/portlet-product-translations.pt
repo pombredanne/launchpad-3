@@ -1,8 +1,9 @@
 <div class="portlet"
-     tal:define="translatable context/primary_translatable"
+     tal:define="translatable view/primary_translatable"
      tal:condition="translatable">
 
-    <h4>Translation Sets:</h4>
+    <h4>Translation Sets:<br />
+        <span tal:replace="translatable/title" /></h4>
 
     <div class="portletBody">
 
@@ -13,7 +14,7 @@
             <tr tal:repeat="template translatable/potemplates"
 
                 tal:attributes="onclick
-                string:window.location='/products/${context/name}/${translatable/version}/+pots/${template/name}';">
+                string:window.location='${translatable/base_url}/+pots/${template/name}';">
                 <td tal:content="template/title">template title</td>
             </tr>
 

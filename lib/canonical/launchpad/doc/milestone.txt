@@ -18,12 +18,6 @@ IMilestoneSet can be accessed as a utility.
     >>> from canonical.launchpad.interfaces import IMilestoneSet
     >>> milestoneset = getUtility(IMilestoneSet)
 
-For the purposes of this document, we'll interact with the system as an
-anonymous user:
-
-    >>> from canonical.launchpad.ftests import login
-    >>> login('launchpad.anonymous')
-
 To create a new Milestone, use IMilestoneSet.new:
 
     >>> from canonical.launchpad.interfaces import IProductSet

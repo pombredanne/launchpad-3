@@ -3,14 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">Products in Launchpad</title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
 <metal:leftportlets fill-slot="portlets_two">
@@ -22,7 +14,7 @@
 
     <h1>Products in Launchpad</h1>
 
-    <form method="post">
+    <form method="get">
         <table>
           <tr>
             <th>
@@ -48,7 +40,6 @@
                   type="submit"
                   value="Search"
                 />
-                <a href="+search">Advanced search</a>
               </div>
             </td>
           </tr>
@@ -63,8 +54,7 @@
 
     <div tal:condition="view/searchrequested">
 
-      <tal:block tal:define="results view/searchresults">
-        <table class="data">
+        <table class="data" tal:define="results view/searchresults">
           <thead>
             <tr class="results">
               <td colspan="0">
@@ -104,7 +94,6 @@
             </tr>
           </tbody>
         </table>
-      </tal:block>
 
 
     </div>
