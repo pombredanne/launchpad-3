@@ -24,20 +24,20 @@
    <h1><span tal:replace="context/title">TITLE</span>:
     Distribution Members</h1>
 
-    <p class="documentDescription" tal:content="context/members/displayname">
+    <p class="documentDescription" tal:content="context/members/browsername">
         Members team
     </p>
 
     <p tal:condition="not:context/memberslist">
        <i>
-          <span tal:replace="context/members/displayname" /> 
+          <span tal:replace="context/members/browsername" /> 
           is not a team. Click 
           <a href="+selectmemberteam">here</a> to change the members team.
        </i>
     </p>
 
     <div tal:repeat="membership context/memberslist">
-        <a tal:content="membership/person/displayname"
+        <a tal:content="membership/person/browsername"
            tal:attributes="href string:/people/${membership/person/name}" />
     </div>
 

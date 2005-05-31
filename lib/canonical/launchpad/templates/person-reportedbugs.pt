@@ -18,7 +18,7 @@
    <h1>Bugs Reported</h1>
 
     <p tal:condition="not: context/reportedbugs">No bugs have been reported by <span
-    tal:replace="context/displayname" />. You can use the Launchpad to
+    tal:replace="context/browsername" />. You can use the Launchpad to
     report a bug on any product or distribution package.</p>
 
     <table tal:condition="context/reportedbugs"

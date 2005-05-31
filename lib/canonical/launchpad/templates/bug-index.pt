@@ -110,8 +110,8 @@
             <strong tal:content="message/title">$Bugmessage.title</strong>
 
             Posted by <span
-            tal:replace="message/owner/displayname|string:(none)">
-            $Person.displayname
+            tal:replace="message/owner/browsername|string:(none)">
+            $Person.browsername
             </span>
             at <span tal:replace="message/datecreated/fmt:datetime">Thursday 13:21</span>
         </div>
