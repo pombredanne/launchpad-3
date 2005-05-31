@@ -5,8 +5,9 @@ __all__ = ['POTranslationSighting']
 
 from zope.interface import implements
 
-from sqlobject import DateTimeCol, ForeignKey, IntCol, BoolCol
+from sqlobject import ForeignKey, IntCol, BoolCol
 from canonical.database.sqlbase import SQLBase
+from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import IPOTranslationSighting
 from canonical.lp.dbschema import EnumCol
@@ -24,8 +25,8 @@ class POTranslationSighting(SQLBase):
     potranslation = ForeignKey(foreignKey='POTranslation',
         dbName='potranslation', notNull=True)
     license = IntCol(dbName='license', notNull=False, default=None)
-    datefirstseen = DateTimeCol(dbName='datefirstseen', notNull=True)
-    datelastactive = DateTimeCol(dbName='datelastactive', notNull=True)
+    datefirstseen = UtcDateTimeCol(dbName='datefirstseen', notNull=True)
+    datelastactive = UtcDateTimeCol(dbName='datelastactive', notNull=True)
     inlastrevision = BoolCol(dbName='inlastrevision', notNull=True)
     pluralform = IntCol(dbName='pluralform', notNull=True)
     active = BoolCol(dbName='active', notNull=True, default=DEFAULT)

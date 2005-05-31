@@ -5,10 +5,11 @@ __all__ = ['ProductRelease', 'ProductReleaseSet', 'ProductReleaseFile']
 
 from zope.interface import implements
 
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, MultipleJoin
+from sqlobject import ForeignKey, IntCol, StringCol, MultipleJoin
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC
+from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import IProductRelease
 from canonical.launchpad.interfaces import IProductReleaseSet
@@ -35,7 +36,7 @@ class ProductRelease(SQLBase):
     implements(IProductRelease)
     _table = 'ProductRelease'
 
-    datereleased = DateTimeCol(notNull=True, default=nowUTC)
+    datereleased = UtcDateTimeCol(notNull=True, default=nowUTC)
     version = StringCol(notNull=True)
     # XXX: Carlos Perello Marin 2005-05-22:
     # The DB field should be renamed to something better than title.

@@ -6,7 +6,7 @@ __all__ = ['BugTask', 'BugTaskSet', 'BugTaskDelta', 'mark_task',
 
 from sets import Set
 
-from sqlobject import DateTimeCol, ForeignKey
+from sqlobject import ForeignKey
 from sqlobject import SQLObjectNotFound
 
 from zope.exceptions import NotFoundError
@@ -19,6 +19,7 @@ from canonical.lp.dbschema import BugTaskStatus
 from canonical.launchpad.interfaces import IBugTask, IBugTaskDelta
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import nowUTC
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.maintainership import Maintainership
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.helpers import shortlist
@@ -69,8 +70,8 @@ class BugTask(SQLBase):
     assignee = ForeignKey(
         dbName='assignee', foreignKey='Person',
         notNull=False, default=None)
-    dateassigned = DateTimeCol(notNull=False, default=nowUTC)
-    datecreated  = DateTimeCol(notNull=False, default=nowUTC)
+    dateassigned = UtcDateTimeCol(notNull=False, default=nowUTC)
+    datecreated  = UtcDateTimeCol(notNull=False, default=nowUTC)
     owner = ForeignKey(
         foreignKey='Person', dbName='owner', notNull=False, default=None)
 

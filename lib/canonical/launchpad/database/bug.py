@@ -11,13 +11,14 @@ from email.Utils import make_msgid
 from zope.interface import implements
 from zope.exceptions import NotFoundError
 
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
+from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
 
 from canonical.launchpad.interfaces import \
     IBug, IBugAddForm, IBugSet, IBugDelta
 from canonical.database.sqlbase import SQLBase
-from canonical.database.constants import nowUTC, DEFAULT
+from canonical.database.constants import UTC_NOW, DEFAULT
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp import dbschema
 from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.database.message \
@@ -47,16 +48,16 @@ class Bug(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     duplicateof = ForeignKey(
         dbName='duplicateof', foreignKey='Bug', default=None)
-    datecreated = DateTimeCol(notNull=True, default=nowUTC)
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     communityscore = IntCol(dbName='communityscore', notNull=True, default=0)
-    communitytimestamp = DateTimeCol(dbName='communitytimestamp',
-                                     notNull=True, default=DEFAULT)
+    communitytimestamp = UtcDateTimeCol(dbName='communitytimestamp',
+                                        notNull=True, default=DEFAULT)
     hits = IntCol(dbName='hits', notNull=True, default=0)
-    hitstimestamp = DateTimeCol(dbName='hitstimestamp', notNull=True,
-                                default=DEFAULT)
+    hitstimestamp = UtcDateTimeCol(dbName='hitstimestamp', notNull=True,
+                                   default=DEFAULT)
     activityscore = IntCol(dbName='activityscore', notNull=True, default=0)
-    activitytimestamp = DateTimeCol(dbName='activitytimestamp', notNull=True,
-                                    default=DEFAULT)
+    activitytimestamp = UtcDateTimeCol(dbName='activitytimestamp',
+                                       notNull=True, default=DEFAULT)
     private = BoolCol(notNull=True, default=False)
 
     # useful Joins
@@ -221,7 +222,7 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
             summary = summary[:320] + '...'
 
     if not datecreated:
-        datecreated = datetime.now()
+        datecreated = UTC_NOW
 
     bug = Bug(
         title=title, summary=summary,

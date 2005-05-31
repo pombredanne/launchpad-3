@@ -17,9 +17,11 @@ from zope.interface import implements
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
 
-from sqlobject import DateTimeCol, ForeignKey, StringCol, BoolCol
+from sqlobject import ForeignKey, StringCol, BoolCol
 
 from canonical.database.sqlbase import SQLBase, quote, flush_database_updates
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
 from canonical.launchpad.interfaces import \
@@ -145,8 +147,8 @@ class SignedCodeOfConduct(SQLBase):
     signingkey = ForeignKey(foreignKey="GPGKey", dbName="signingkey",
                             notNull=False, default=None)
 
-    datecreated = DateTimeCol(dbName='datecreated', notNull=False,
-                              default=datetime.utcnow())
+    datecreated = UtcDateTimeCol(dbName='datecreated', notNull=False,
+                                 default=UTC_NOW)
 
     recipient = ForeignKey(foreignKey="Person", dbName="recipient",
                            notNull=False, default=None)

@@ -4,6 +4,8 @@ __metaclass__ = type
 
 from datetime import datetime, timedelta
 
+import pytz
+
 # zope imports
 from zope.event import notify
 from zope.app.form.browser.add import AddView
@@ -492,7 +494,7 @@ class TeamMembershipEditView:
         year = int(self.request.form.get('year'))
         month = int(self.request.form.get('month'))
         day = int(self.request.form.get('day'))
-        return datetime(year, month, day)
+        return datetime(year, month, day, tzinfo=pytz.timezone('UTC'))
 
     def _setMembershipData(self, status):
         """Set all data specified on the form, for this TeamMembership.

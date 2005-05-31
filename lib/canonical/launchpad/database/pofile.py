@@ -12,7 +12,8 @@ from zope.exceptions import NotFoundError
 
 # SQL imports
 from sqlobject import \
-    DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound
+    ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, flush_database_updates, \
     sqlvalues
 
@@ -76,9 +77,9 @@ class POFile(SQLBase, RosettaStats):
     rosettacount = IntCol(dbName='rosettacount',
                           notNull=True,
                           default=0)
-    lastparsed = DateTimeCol(dbName='lastparsed',
-                             notNull=False,
-                             default=None)
+    lastparsed = UtcDateTimeCol(dbName='lastparsed',
+                                notNull=False,
+                                default=None)
     owner = ForeignKey(foreignKey='Person',
                        dbName='owner',
                        notNull=True)
@@ -94,9 +95,9 @@ class POFile(SQLBase, RosettaStats):
                             dbName='exportfile',
                             notNull=False,
                             default=None)
-    exporttime = DateTimeCol(dbName='exporttime',
-                           notNull=False,
-                           default=None)
+    exporttime = UtcDateTimeCol(dbName='exporttime',
+                                notNull=False,
+                                default=None)
 
 
     def currentMessageSets(self):
@@ -394,8 +395,8 @@ class POFile(SQLBase, RosettaStats):
                          notNull=False, default=None)
     rawimporter = ForeignKey(foreignKey='Person', dbName='rawimporter',
                              notNull=False, default=None)
-    daterawimport = DateTimeCol(dbName='daterawimport', notNull=False,
-                                default=None)
+    daterawimport = UtcDateTimeCol(dbName='daterawimport', notNull=False,
+                                   default=None)
     rawimportstatus = EnumCol(dbName='rawimportstatus', notNull=True,
         schema=RosettaImportStatus, default=RosettaImportStatus.IGNORE)
 

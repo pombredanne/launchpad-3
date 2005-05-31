@@ -9,7 +9,9 @@ from warnings import warn
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol, DateTimeCol, MultipleJoin
+from sqlobject import ForeignKey, StringCol, MultipleJoin, DateTimeCol
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 
 # canonical imports
 from canonical.launchpad.interfaces import \
@@ -35,7 +37,7 @@ class ProductSeries(SQLBase):
     branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
                            schema=ImportStatus, default=None)
-    datelastsynced = DateTimeCol(default=None)
+    datelastsynced = UtcDateTimeCol(default=None)
     syncinterval = DateTimeCol(default=None)
     rcstype = EnumCol(dbName='rcstype',
                       schema=RevisionControlSystems,
@@ -55,11 +57,11 @@ class ProductSeries(SQLBase):
     targetarchbranch = StringCol(default=None)
     targetarchversion = StringCol(default=None)
     # key dates on the road to import happiness
-    dateautotested = DateTimeCol(default=None)
-    datestarted = DateTimeCol(default=None)
-    datefinished = DateTimeCol(default=None)
-    dateprocessapproved = DateTimeCol(default=None)
-    datesyncapproved = DateTimeCol(default=None)
+    dateautotested = UtcDateTimeCol(default=None)
+    datestarted = UtcDateTimeCol(default=None)
+    datefinished = UtcDateTimeCol(default=None)
+    dateprocessapproved = UtcDateTimeCol(default=None)
+    datesyncapproved = UtcDateTimeCol(default=None)
 
     releases = MultipleJoin('ProductRelease', joinColumn='productseries',
                              orderBy=['version'])

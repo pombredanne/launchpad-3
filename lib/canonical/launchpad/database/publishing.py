@@ -9,8 +9,9 @@ __all__ = ['PackagePublishing', 'SourcePackagePublishing',
 
 from zope.interface import implements
 
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
+from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from canonical.database.sqlbase import SQLBase
+from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import \
     IPackagePublishing, ISourcePackagePublishing, \
@@ -36,8 +37,8 @@ class PackagePublishing(SQLBase):
     section = ForeignKey(foreignKey='Section', dbName='section')
     priority = EnumCol(dbName='priority', schema=BinaryPackagePriority)
     status = EnumCol(dbName='status', schema=PackagePublishingStatus)
-    scheduleddeletiondate = DateTimeCol(default=None)
-    datepublished = DateTimeCol(default=None)
+    scheduleddeletiondate = UtcDateTimeCol(default=None)
+    datepublished = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
 
 
@@ -53,8 +54,8 @@ class SourcePackagePublishing(SQLBase):
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
     status = EnumCol(schema=PackagePublishingStatus)
-    scheduleddeletiondate = DateTimeCol(default=None)
-    datepublished = DateTimeCol(default=None)
+    scheduleddeletiondate = UtcDateTimeCol(default=None)
+    datepublished = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
 
 
@@ -185,17 +186,17 @@ class SourcePackagePublishingHistory(SQLBase):
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
     status = EnumCol(schema=PackagePublishingStatus)
-    scheduleddeletiondate = DateTimeCol(default=None)
-    datepublished = DateTimeCol(default=None)
-    datecreated = DateTimeCol(default=None)
-    datesuperseded = DateTimeCol(default=None)
+    scheduleddeletiondate = UtcDateTimeCol(default=None)
+    datepublished = UtcDateTimeCol(default=None)
+    datecreated = UtcDateTimeCol(default=None)
+    datesuperseded = UtcDateTimeCol(default=None)
     supersededby = ForeignKey(foreignKey='SourcePackageRelease',
                               dbName='supersededby', default=None)
-    datemadepending = DateTimeCol(default=None)
-    dateremoved = DateTimeCol(default=None)
+    datemadepending = UtcDateTimeCol(default=None)
+    dateremoved = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
     embargo = BoolCol(dbName='embargo', default=False)
-    embargolifted = DateTimeCol(default=None)
+    embargolifted = UtcDateTimeCol(default=None)
     
 class PackagePublishingHistory(SQLBase):
     """A binary package publishing record."""
@@ -210,15 +211,15 @@ class PackagePublishingHistory(SQLBase):
     section = ForeignKey(foreignKey='Section', dbName='section')
     priority = EnumCol(dbName='priority', schema=BinaryPackagePriority)
     status = EnumCol(dbName='status', schema=PackagePublishingStatus)
-    scheduleddeletiondate = DateTimeCol(default=None)
-    datepublished = DateTimeCol(default=None)
-    datecreated = DateTimeCol(default=None)
-    datesuperseded = DateTimeCol(default=None)
+    scheduleddeletiondate = UtcDateTimeCol(default=None)
+    datepublished = UtcDateTimeCol(default=None)
+    datecreated = UtcDateTimeCol(default=None)
+    datesuperseded = UtcDateTimeCol(default=None)
     supersededby = ForeignKey(foreignKey='Build',dbName='supersededby',
                               default=None)
-    datemadepending = DateTimeCol(default=None)
-    dateremoved = DateTimeCol(default=None)
+    datemadepending = UtcDateTimeCol(default=None)
+    dateremoved = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
     embargo = BoolCol(dbName='embargo', default=False)
-    embargolifted = DateTimeCol(default=None)
+    embargolifted = UtcDateTimeCol(default=None)
 

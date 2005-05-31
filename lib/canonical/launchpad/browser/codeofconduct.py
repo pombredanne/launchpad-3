@@ -16,6 +16,8 @@ from zope.component import getUtility
 from zope.exceptions import NotFoundError
 import zope.security.interfaces
 
+from canonical.database.constants import UTC_NOW
+
 # lp imports
 from canonical.lp import dbschema                       
 from canonical.lp.z3batching import Batch
@@ -230,7 +232,7 @@ class SignedCodeOfConductEditView(EditView):
         EditView.__init__(self, context, request)
 
     def changed(self):
-        self.context.datecreated = datetime.utcnow()
+        self.context.datecreated = UTC_NOW
         self.context.recipient = None
         self.context.admincomment = None
         self.context.active = None

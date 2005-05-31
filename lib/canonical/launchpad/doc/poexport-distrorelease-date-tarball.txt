@@ -56,9 +56,11 @@ Create a PO template and put a single message set in it.
 Get some dates.
 
   >>> import datetime
-  >>> d2000_01_01 = datetime.datetime(year=2000, month=1, day=1)
-  >>> d2000_01_02 = datetime.datetime(year=2000, month=1, day=2)
-  >>> d2000_01_03 = datetime.datetime(year=2000, month=1, day=3)
+  >>> import pytz
+  >>> UTC = pytz.timezone('UTC')
+  >>> d2000_01_01 = datetime.datetime(year=2000, month=1, day=1, tzinfo=UTC)
+  >>> d2000_01_02 = datetime.datetime(year=2000, month=1, day=2, tzinfo=UTC)
+  >>> d2000_01_03 = datetime.datetime(year=2000, month=1, day=3, tzinfo=UTC)
 
 Create a Spanish PO file, with a translation sighting last made active on
 2000/01/01.
@@ -98,10 +100,10 @@ First, export without a date limit: should get both PO files.
   |     0 | rosetta-grumpy/
   |     0 | rosetta-grumpy/es/
   |     0 | rosetta-grumpy/es/LC_MESSAGES/
-  |   721 | rosetta-grumpy/es/LC_MESSAGES/test.po
+  |   720 | rosetta-grumpy/es/LC_MESSAGES/test.po
   |     0 | rosetta-grumpy/cy/
   |     0 | rosetta-grumpy/cy/LC_MESSAGES/
-  |   763 | rosetta-grumpy/cy/LC_MESSAGES/test.po
+  |   762 | rosetta-grumpy/cy/LC_MESSAGES/test.po
   |     9 | rosetta-grumpy/timestamp.txt
 
 Check the files look OK.
@@ -164,7 +166,7 @@ Then, export with a date limit: we should only get the second PO file.
   |     0 | rosetta-grumpy/
   |     0 | rosetta-grumpy/cy/
   |     0 | rosetta-grumpy/cy/LC_MESSAGES/
-  |   763 | rosetta-grumpy/cy/LC_MESSAGES/test.po
+  |   762 | rosetta-grumpy/cy/LC_MESSAGES/test.po
   |     9 | rosetta-grumpy/timestamp.txt
 
   >>> LibrarianTestSetup().tearDown()
