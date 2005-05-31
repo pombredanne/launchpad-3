@@ -15,7 +15,7 @@ HERE:=$(shell pwd)
 # DO NOT ALTER : this should just build by default
 default: inplace
 
-check_merge: build
+check_merge: build importdcheck
 	# Work around the current idiom of 'make check' getting too long
 	# because of hct and related tests. note that this is a short
 	# term solution, the long term solution will need to be 
@@ -27,6 +27,9 @@ check_merge: build
 		--dir hct --dir sourcerer --dir banzai
 	    $(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION}
+
+importdcheck:
+	PYTHONPATH=lib:lib/canonical/sourcerer/util lib/importd/test_all.py
 
 check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
