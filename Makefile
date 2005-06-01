@@ -88,8 +88,8 @@ ftest_inplace: inplace
 #ftest: ftest_inplace
 
 run: inplace
-	PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) $(PYTHON) -t \
-            $(STARTSCRIPT) -C $(CONFFILE)
+	LPCONFIG=default PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
+		 $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE)
 
 debug:
 	PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) $(PYTHON) -i -c \
