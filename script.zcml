@@ -17,9 +17,4 @@
 
     <!-- Provide local overrides of standard configurations-->
     <includeOverrides file="overrides.zcml" />
-
-    <!-- In scripts, we allow them to do anything. -->
-    <securityPolicy
-      component="zope.security.simplepolicies.PermissiveSecurityPolicy"
-      />
 </configure>
