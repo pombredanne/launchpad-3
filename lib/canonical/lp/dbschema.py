@@ -44,9 +44,11 @@ __all__ = (
 'HashAlgorithms',
 'ImportTestStatus',
 'KarmaType',
+'LoginTokenType',
 'ManifestEntryType',
 'PackagePublishingPriority',
 'PackagePublishingStatus',
+'PackagePublishingPocket',
 'PackagingType',
 'GPGKeyAlgorithms',
 'ProjectRelationship',
@@ -1242,6 +1244,41 @@ class PackagePublishingPriority(DBSchema):
         other priority levels; or packages which are only useful to people
         who have very specialised needs.  """)
 
+class PackagePublishingPocket(DBSchema):
+    """Package Publishing Pocket
+
+    A single distrorelease can at its heart be more than one logical
+    distrorelease as the tools would see it. For example there may be a
+    distrorelease called 'hoary' and a SECURITY pocket subset of that would
+    be referred to as 'hoary-security' by the publisher and the distro side
+    tools.
+    """
+
+    PLAIN = Item(0, """
+        Plain
+
+        This pocket indicates a lack of suffix. It is the default pocket and
+        by default will be the only one supported by a distrorelease.
+
+        If a distrorelease is FROZEN CURRENT or STABLE then this pocket is
+        considered an immutable set.
+        """)
+
+    UPDATES = Item(1, """
+        Updates
+
+        This pocket indicates the '-updates' suffix. This is the common pocket
+        into which uploads might go when a distrorelease is FROZEN or CURRENT.
+        """)
+
+    SECURITY = Item(2, """
+        Security
+
+        This pocket indicates the '-security' suffix. It also enforces initial
+        embargos and similar security related behaviour. The Security pocket is
+        commonly not used until a distrorelease is in CURRENT or STABLE.
+        """)
+
 class SourcePackageRelationships(DBSchema):
     """Source Package Relationships
 
@@ -1997,6 +2034,14 @@ class LoginTokenType(DBSchema):
         A user has added more email addresses to their account and they
         need to be validated.
         """)
+
+    VALIDATETEAMEMAIL = Item(5, """
+        Validate Team Email
+
+        One of the team administrators is trying to add a contact email
+        address for the team, but this address need to be validated first.
+        """)
+
 
 class BuildStatus(DBSchema):
     """Build status type

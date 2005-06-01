@@ -4,10 +4,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-  <title metal:fill-slot="title">Log in or register with Launchpad</title>
-</head>
-
   <body>
     <!--
       This page handles cases in this order:
@@ -111,7 +107,7 @@
                         type="submit"
                         name="loginpage_submit_login"
                         value="Log In" />
-                      [<a href="+forgottenpassword">Forgotten your password?</a>]
+                      [<a href="/+forgottenpassword">Forgotten your password?</a>]
                     </div>
                   </td>
                 </tr>

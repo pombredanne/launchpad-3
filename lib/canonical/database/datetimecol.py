@@ -1,3 +1,5 @@
+# Copyright 2005 Canonical Ltd.  All rights reserved.
+'''UtcDateTimeCol for SQLObject'''
 
 import datetime
 import pytz
@@ -10,12 +12,34 @@ __all__ = ['UtcDateTimeCol']
 _utc_tz = pytz.timezone('UTC')
 
 class SOUtcDateTimeCol(SOCol):
+    '''An SQLObject column type that returns time zone aware datetimes.
+
+    The standard SQLObject DateTimeCol returns naiive datetime values.
+    This can cause problems in the following cases:
+     * naiive datetime values can not be compared with time zone aware
+       ones.
+     * if an application is working with datetime values in multiple
+       time zones, then errors can be introduced if values represented
+       in different time zones are stored.
+
+    The UtcDateTimeCol solves this problem through the following
+    differences:
+     * return database values with the UTC time zone attached.
+     * convert values to UTC before storing.  This also catches
+       attempts to store naiive datetime values.
+    '''
 
     def __init__(self, **kw):
         SOCol.__init__(self, **kw)
         self.validator = validators.All.join(
             UtcDateTimeValidator(), self.validator)
     def _sqlType(self):
+        # The PostgreSQL "TIMESTAMP WITH TIME ZONE" column type does
+        # not actually store a time zone -- instead, it returns the
+        # stored time stamp in what PostgreSQL believes is local time.
+        # By using "TIMESTAMP WITHOUT TIME ZONE", we can make sure
+        # that PostgreSQL's time zone code doesn't cause data to be
+        # misinterpreted.
         return 'TIMESTAMP WITHOUT TIME ZONE'
 
 class UtcDateTimeCol(Col):

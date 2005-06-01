@@ -2,13 +2,15 @@
 """
 PostgreSQL specific helper functions, such as database introspection
 and table manipulation
-
-XXX: Work in progress -- StuartBishop 2005-03-07
 """
 
 __metaclass__ = type
 
-def queryReferences(cur, table, column, _state=None):
+import re
+
+from sqlbase import quote, quoteIdentifier, cursor
+
+def listReferences(cur, table, column, _state=None):
     """Return a list of all foreign key references to the given table column
 
     `table` and `column` are both case sensitive strings (so they should
@@ -28,7 +30,7 @@ def queryReferences(cur, table, column, _state=None):
     Entries are returned in order traversed, so with care this can be used
     to change keys.
 
-    >>> for r in queryReferences(cur, 'a', 'aid'):
+    >>> for r in listReferences(cur, 'a', 'aid'):
     ...     print repr(r)
     ('a', 'selfref', 'a', 'aid', u'a', u'a')
     ('b', 'aid', 'a', 'aid', u'c', u'c')
@@ -37,7 +39,7 @@ def queryReferences(cur, table, column, _state=None):
 
     Of course, there might not be any references
 
-    >>> queryReferences(cur, 'a', 'selfref')
+    >>> listReferences(cur, 'a', 'selfref')
     []
 
     """
@@ -83,12 +85,12 @@ def queryReferences(cur, table, column, _state=None):
         if t not in _state: # Avoid loops
             _state.append(t)
             # Recurse, Locating references to the reference we just found.
-            queryReferences(cur, t[0], t[1], _state)
+            listReferences(cur, t[0], t[1], _state)
     # Don't sort. This way, we return the columns in order of distance
     # from the original (table, column), making it easier to change keys
     return _state
 
-def queryUniques(cur, table, column):
+def listUniques(cur, table, column):
     '''Return a list of unique indexes on `table` that include the `column`
 
     `cur` must be an open DB-API cursor.
@@ -98,31 +100,31 @@ def queryUniques(cur, table, column):
 
     Simple UNIQUE index
 
-    >>> queryUniques(cur, 'b', 'aid')
+    >>> listUniques(cur, 'b', 'aid')
     [('aid',)]
 
     Primary keys are UNIQUE indexes too
 
-    >>> queryUniques(cur, 'a', 'aid')
+    >>> listUniques(cur, 'a', 'aid')
     [('aid',)]
 
     Compound indexes
 
-    >>> queryUniques(cur, 'c', 'aid')
+    >>> listUniques(cur, 'c', 'aid')
     [('aid', 'bid')]
-    >>> queryUniques(cur, 'c', 'bid')
+    >>> listUniques(cur, 'c', 'bid')
     [('aid', 'bid')]
 
     And any combination
 
-    >>> l = queryUniques(cur, 'd', 'aid')
+    >>> l = listUniques(cur, 'd', 'aid')
     >>> l.sort()
     >>> l
     [('aid',), ('aid', 'bid')]
 
     If there are no UNIQUE indexes using the secified column
 
-    >>> queryUniques(cur, 'a', 'selfref')
+    >>> listUniques(cur, 'a', 'selfref')
     []
 
     '''
@@ -165,11 +167,100 @@ def queryUniques(cur, table, column):
             rv.append(tuple(keys))
     return rv
 
+def listSequences(cur):
+    """Return a list of (schema, sequence, table, column) tuples.
+
+    `table` and `column` refer to the column that appears to be automatically
+    populated from the sequence. They will be None if this sequence is
+    standalone.
+
+    >>> for r in listSequences(cur):
+    ...     print repr(r)
+    ('public', 'a_aid_seq', 'a', 'aid')
+    ('public', 'standalone', None, None)
+
+    """
+    sql = """
+        SELECT
+            n.nspname AS schema,
+            c.relname AS seqname
+        FROM
+            pg_class c
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE
+            c.relkind = 'S'
+            AND n.nspname NOT IN ('pg_catalog', 'pg_toast')
+            AND pg_table_is_visible(c.oid)
+        ORDER BY schema, seqname
+        """
+    rv = []
+    cur.execute(sql)
+    for schema, sequence in list(cur.fetchall()):
+        match = re.search('^(\w+)_(\w+)_seq$', sequence)
+        if match is None:
+            rv.append( (schema, sequence, None, None) )
+        else:
+            table = match.group(1)
+            column = match.group(2)
+            sql = """
+                SELECT count(*)
+                FROM
+                    pg_class c
+                    JOIN pg_namespace n ON n.oid = c.relnamespace
+                    JOIN pg_attribute a ON c.oid = a.attrelid
+                WHERE
+                    a.attnum > 0 AND NOT a.attisdropped
+                    AND n.nspname = %(schema)s
+                    AND c.relname = %(table)s
+                    AND a.attname = %(column)s
+                """
+            cur.execute(sql, vars())
+            num = cur.fetchone()[0]
+            if num == 1:
+                rv.append( (schema, sequence, table, column) )
+            else:
+                rv.append( (schema, sequence, None, None) )
+    return rv
+
+def resetSequences(cur):
+    """Reset table sequences to match the data in them.
+    
+    Goes through the database resetting the values of sequences to match
+    what is in their corresponding tables, where corresponding tables are
+    known.
+
+    >>> cur.execute("SELECT nextval('a_aid_seq')")
+    >>> int(cur.fetchone()[0])
+    1
+    >>> cur.execute("SELECT nextval('a_aid_seq')")
+    >>> cur.execute("SELECT nextval('a_aid_seq')")
+    >>> resetSequences(cur)
+    >>> cur.execute("SELECT nextval('a_aid_seq')")
+    >>> int(cur.fetchone()[0])
+    1
+    """
+    for schema, sequence, table, column in listSequences(cur):
+        if table is None or column is None:
+            continue
+        sql = "SELECT max(%s) FROM %s" % (
+                quoteIdentifier(column), quoteIdentifier(table)
+                )
+        cur.execute(sql)
+        last_value = cur.fetchone()[0]
+        if last_value is None:
+            last_value = 1
+            flag = 'false'
+        else:
+            flag = 'true'
+        sql = "SELECT setval(%s, %d, %s)" % (
+                quote('%s.%s' % (schema, sequence)), int(last_value), flag
+                )
+        cur.execute(sql)
 
 if __name__ == '__main__':
     import psycopg
     con = psycopg.connect('dbname=launchpad_dev user=launchpad')
     cur = con.cursor()
     
-    for table, column in queryReferences(cur, 'person', 'id'):
+    for table, column in listReferences(cur, 'person', 'id'):
         print '%32s %32s' % (table, column)

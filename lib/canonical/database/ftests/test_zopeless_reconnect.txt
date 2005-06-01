@@ -1,0 +1,153 @@
+
+This test demonstrates the behaviour of initZopeless with implicitBegin=False,
+especially the auto-reconnect on ztm.begin() (but not at any other time).
+
+Setup the database.
+
+    >>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+    >>> LaunchpadTestSetup().setUp()
+
+Make a TCP proxy to postgres. Note we have to match the version of
+twisted we use with our version of Python.
+
+    >>> import os, sys
+    >>> import canonical.lp
+    >>> from canonical.database.ftests import getDBHost
+    >>> dbhost = getDBHost()
+    >>> ver = sys.version[:3]
+    >>> cmd = ('mktap%s portforward --port 5555 --dest_port 5432 '
+    ...        '--host %s' % (ver, dbhost))
+    >>> os.system(cmd)
+    0
+    >>> os.system('twistd%s -of portforward.tap' % ver)
+    0
+
+Wait for the proxy to start.
+
+    >>> import time
+    >>> def wait_until_proxy_is_ready():
+    ...     start = time.time()
+    ...     while time.time() - start < 5:  # loop for a maximum of 5 seconds
+    ...         try:
+    ...             if 'Starting factory' in open('twistd.log').read():
+    ...                 return
+    ...         except IOError:
+    ...             pass
+    ...     raise RuntimeError('Proxy not ready')
+    >>> wait_until_proxy_is_ready()
+
+Init Zopeless via the proxy, with implicit begin disabled.
+
+    >>> from canonical.lp import initZopeless
+    >>> ztm = initZopeless(dbhost='localhost port=5555',
+    ...                    implicitBegin=False)
+
+Without explicitly beginning, _connection is None, so queries will fail:
+
+    >>> from canonical.launchpad.database import Person
+    >>> print Person._connection
+    None
+    >>> Person.get(1)
+    Traceback (most recent call last):
+    ...
+    AttributeError: 'NoneType' object has no attribute 'cache'
+
+Begin, and issue a query:
+
+    >>> ztm.begin()
+    >>> print Person.get(1).name
+    sabdfl
+
+Errors in queries still propagate as normal:
+
+    >>> print Person.select("garbage invalid sql")[0]
+    Traceback (most recent call last):
+    ...
+    ProgrammingError: ERROR:  syntax error at or near "invalid" at ...
+    ...
+
+Start a new transaction, to show that everything will recover smoothly.
+
+    >>> ztm.abort()
+    >>> print Person._connection
+    None
+    >>> ztm.begin()
+    >>> print Person.get(1).name
+    sabdfl
+
+Break the connection by stopping the proxy.
+
+    >>> os.system('kill `cat twistd.pid`')
+    0
+
+Wait for the proxy to stop.
+
+    >>> import os.path
+    >>> def wait_until_proxy_is_stopped():
+    ...     start = time.time()
+    ...     while time.time() - start < 5:  # loop for a maximum of 5 seconds
+    ...         if not os.path.exists('twistd.pid'):
+    ...             return
+    ...     raise RuntimeError('Proxy would not stop')
+    >>> wait_until_proxy_is_stopped()
+
+Executing a query now blocks until the database connection can be reestablished.
+
+    >>> import threading
+    >>> thread_result = []
+    >>> def foo():
+    ...     ztm.begin()
+    ...     name = Person.get(1).name
+    ...     print "thread after execute"
+    ...     thread_result.append(name)
+    ...     print "thread end"
+    >>> thread = threading.Thread(target=foo)
+    >>> thread.start()
+    >>> time.sleep(1)
+    >>> thread_result
+    []
+    >>> thread.isAlive()
+    True
+
+# TODO: test that the disconnection is logged -- spiv
+
+And restart it.
+
+    >>> os.system('twistd%s -of portforward.tap' % ver)
+    0
+    >>> wait_until_proxy_is_ready()
+
+Now, our blocked thread should've finished successfully.
+
+    >>> time.sleep(1)
+    thread after execute
+    thread end
+    >>> thread_result
+    [u'sabdfl']
+    >>> thread.isAlive()
+    False
+
+The interrupted transaction in this thread still fails.
+
+    >>> Person.get(2)
+    Traceback (most recent call last):
+    ...
+    ProgrammingError: server closed the connection unexpectedly
+    ...
+
+Clean up the proxy.
+
+    >>> os.system('kill `cat twistd.pid`')
+    0
+    >>> wait_until_proxy_is_stopped()
+    >>> os.remove('twistd.log')
+    >>> os.remove('portforward.tap')
+
+Uninstall the zopeless transaction manager.
+
+    >>> ztm.uninstall()
+
+Tear down the database
+
+    >>> LaunchpadTestSetup().tearDown()
+

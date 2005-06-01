@@ -42,7 +42,7 @@ class SourcePackageRelease(SQLBase):
     urgency = EnumCol(dbName='urgency', schema=SourcePackageUrgency,
                       notNull=True)
     dateuploaded = UtcDateTimeCol(dbName='dateuploaded', notNull=True,
-                               default=UTC_NOW)
+                                  default=UTC_NOW)
     dsc = StringCol(dbName='dsc')
     version = StringCol(dbName='version', notNull=True)
     changelog = StringCol(dbName='changelog')

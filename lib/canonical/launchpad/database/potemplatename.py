@@ -6,28 +6,80 @@ __all__ = ['POTemplateNameSet', 'POTemplateName']
 from zope.interface import implements
 from zope.exceptions import NotFoundError
 
-from sqlobject import StringCol, MultipleJoin, SQLObjectNotFound
+from sqlobject import StringCol, MultipleJoin, SQLObjectNotFound, OR, \
+    CONTAINSSTRING
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import IPOTemplateName
+from canonical.launchpad.interfaces import IPOTemplateName, IPOTemplateNameSet
 
 class POTemplateNameSet:
+    implements(IPOTemplateNameSet)
+
     def __getitem__(self, name):
+        """See IPOTemplateNameSet."""
         try:
             return POTemplateName.byName(name)
         except SQLObjectNotFound:
             raise NotFoundError, name
 
     def __iter__(self):
+        """See IPOTemplateNameSet."""
         for potemplatename in POTemplateName.select():
             yield potemplatename
 
-    def new(self, translationdomain, title, name=None):
+    def get(self, potemplatenameid):
+        """See IPOTemplateNameSet."""
+        try:
+            return POTemplateName.get(potemplatenameid)
+        except SQLObjectNotFound:
+            raise NotFoundError, potemplatenameid
+
+    def new(self, translationdomain, title, name=None, description=None):
+        """See IPOTemplateNameSet."""
         if name is None:
             name = helpers.getValidNameFromString(translationdomain)
-        return POTemplateName(name=name, title=title,
+        return POTemplateName(name=name, title=title, description=description,
                               translationdomain=translationdomain)
+
+    def _search(self, text):
+        """Return an SQLObject ResultSet with all POTemplateName that matches.
+
+        The search is done in name, title, description and translationdomain
+        fields based on the 'text' input.
+        """
+        query = '1=1 '
+        if text:
+            text.lower()
+            results = POTemplateName.select(
+                OR (
+                    CONTAINSSTRING(POTemplateName.q.name, text),
+                    CONTAINSSTRING(POTemplateName.q.title, text),
+                    CONTAINSSTRING(POTemplateName.q.description, text),
+                    CONTAINSSTRING(POTemplateName.q.translationdomain, text)
+                    ),
+                orderBy='name'
+                )
+        else:
+            results = None
+
+        return results
+
+    def search(self, text):
+        """See IPOTemplateNameSet."""
+        results = self._search(text)
+
+        for potemplatename in results:
+            yield potemplatename
+
+    def searchCount(self, text):
+        """See IPOTemplateNameSet."""
+        results = self._search(text)
+
+        if results is not None:
+            return results.count()
+        else:
+            return 0
 
 
 class POTemplateName(SQLBase):

@@ -193,8 +193,8 @@ class BinaryPackageSet:
                                     orderBy='BinaryPackageName.name')
 
     def getByNameInDistroRelease(self, distroreleaseID, name=None,
-                                 version=None, archtag=None):
-        """Get an BinaryPackage in a DistroRelease by its name."""
+                                 version=None, archtag=None, orderBy=None):
+        """Get a BinaryPackage in a DistroRelease by its name."""
 
         clauseTables = ['PackagePublishing', 'DistroArchRelease',
                         'BinaryPackage', 'BinaryPackageName']
@@ -224,7 +224,8 @@ class BinaryPackageSet:
                       % sqlvalues(archtag))
 
         return BinaryPackage.select(query, distinct=True,
-                                    clauseTables=clauseTables)
+                                    clauseTables=clauseTables,
+                                    orderBy=orderBy)
 
     # Used outside
 

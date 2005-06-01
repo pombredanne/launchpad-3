@@ -4,13 +4,10 @@
       i18n:domain="launchpad">
 
 <head>
-  <title metal:fill-slot="title">
-    <span tal:replace="context/displayname">Name</span>
-    Personal Information</title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
+    <tal:block metal:fill-slot="head_epilogue">
+        <link rel="meta" type="application/rdf+xml" title="FOAF" href="+rdf"
+            tal:condition="context/preferredemail" />
+    </tal:block>
 </head>
 
 <body>
@@ -69,7 +66,7 @@
             <tal:dummy tal:condition="context/validatedemails">
             <tr>
               <td>Email:</td>
-              <td><span tal:content="python: len(context.validatedemails)" />
+              <td><span tal:content="context/validatedemails/count:len" />
                   validated email addresses. [<a href="+emails">Add emails or
                     set one of yours as preferred</a>]
               </td>

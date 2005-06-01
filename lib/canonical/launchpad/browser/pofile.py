@@ -90,7 +90,9 @@ class ViewPOFile:
                 self.status_message = 'Please, review the po file seems to have a problem'
                 return
 
-            self.request.response.redirect('./')
+            self.status_message = (
+                'Thank you for your upload. The PO file content will appear'
+                ' in Rosetta in a few minutes.')
             self.submitted = True
 
 
@@ -313,8 +315,9 @@ class POMsgSetView:
 
 class POFileTranslateView:
     """View class for the PO file translation form."""
-    _default_count = 10
-    _show_default = 'all'
+    DEFAULT_COUNT = 10
+    MAX_COUNT = 100
+    DEFAULT_SHOW = 'all'
 
     def __init__(self, context, request):
         self.context = context
@@ -346,6 +349,9 @@ class POFileTranslateView:
         else:
             return length - (length % self.count)
 
+    def completeness(self):
+        return '%.2f%%' % self.context.translatedPercentage()
+
     def processForm(self):
         """Process the translation form."""
         # This sets up the following instance variables:
@@ -369,7 +375,7 @@ class POFileTranslateView:
         # Submit any translations.
         submitted = self.submitTranslations()
 
-        # Get plural form and completeness information.
+        # Get plural form information.
         #
         # For each language:
         #
@@ -383,11 +389,6 @@ class POFileTranslateView:
         # - Otherwise, we don't have any plural form information for that
         #   language.
         #
-        # - If there exists a PO file, work out the completeness of the PO
-        #   file as a percentage.
-        #
-        # - Otherwise, the completeness for that language is 0 (since the PO
-        #   file doesn't exist).
         all_languages = getUtility(ILanguageSet)
         pofile = self.context
         potemplate = pofile.potemplate
@@ -405,15 +406,6 @@ class POFileTranslateView:
 
             self.lacksPluralFormInformation = self.pluralFormCounts is None
 
-        # Get completeness information.
-        template_size = len(potemplate)
-
-        if template_size > 0:
-            self.completeness = (float(pofile.translatedCount()) / 
-                                 template_size * 100)
-        else:
-            self.completeness = 0
-
         # Get pagination information.
         offset = form.get('offset')
         if offset is None:
@@ -427,19 +419,23 @@ class POFileTranslateView:
 
         count = form.get('count')
         if count is None:
-            self.count = self._default_count
+            self.count = self.DEFAULT_COUNT
         else:
             try:
                 self.count = int(count)
             except ValueError:
                 # We didn't get any value or it's not an integer
-                self.count = self._default_count
+                self.count = self.DEFAULT_COUNT
+
+            # Never show more than self.MAX_COUNT items in a form.
+            if self.count > self.MAX_COUNT:
+                self.count = self.MAX_COUNT
 
         # Get message display settings.
         self.show = form.get('show')
 
         if not self.show in ('translated', 'untranslated', 'all'):
-            self.show = self._show_default
+            self.show = self.DEFAULT_SHOW
 
         # Now, check restrictions to implement HoaryTranslations spec.
         if not potemplate.canEditTranslations(self.user):
@@ -468,7 +464,7 @@ class POFileTranslateView:
             if self.offset == 0:
                 # The submit was done from the last set of potmsgset so we
                 # need to calculate that last page
-                self.offset = self._computeLastOffset(template_size)
+                self.offset = self._computeLastOffset(len(potemplate))
             else:
                 # We just go back self.count messages
                 self.offset = self.offset - self.count
@@ -516,6 +512,14 @@ class POFileTranslateView:
         """Say if we are at the end of the form."""
         return self.offset + self.count >= len(self.context.potemplate)
 
+    def onlyOneForm(self):
+        """Say if we have all POTMsgSets in one form.
+
+        That will only be true when we are atBeginning and atEnd at the same
+        time.
+        """
+        return self.atBeginning() and self.atEnd()
+
     def createURL(self, count=None, show=None, offset=None):
         """Build the current URL based on the arguments."""
         parameters = {}
@@ -527,14 +531,14 @@ class POFileTranslateView:
                 parameters[name] = self.request.form.get(name)
 
         # Removed the arguments if are the same as the defaults ones or None
-        if (parameters['show'] == self._show_default or
+        if (parameters['show'] == self.DEFAULT_SHOW or
             parameters['show'] is None):
             del parameters['show']
 
         if parameters['offset'] == 0 or parameters['offset'] is None:
             del parameters['offset']
 
-        if (parameters['count'] == self._default_count or
+        if (parameters['count'] == self.DEFAULT_COUNT or
             parameters['count'] is None):
             del parameters['count']
 

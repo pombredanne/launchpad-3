@@ -38,7 +38,14 @@ class ProductRelease(SQLBase):
 
     datereleased = UtcDateTimeCol(notNull=True, default=nowUTC)
     version = StringCol(notNull=True)
-    title = StringCol(notNull=False, default=None)
+    # XXX: Carlos Perello Marin 2005-05-22:
+    # The DB field should be renamed to something better than title.
+    # A ProductRelease has a kind of title that is not really the final title,
+    # we use a method to create the title that we display based on
+    # ProductRelease.displayname and the title in the DB.
+    # See: https://launchpad.ubuntu.com/malone/bugs/736/
+    _title = StringCol(dbName='title', forceDBName=True, notNull=False,
+        default=None)
     summary = StringCol(notNull=False, default=None)
     description = StringCol(notNull=False, default=None)
     changelog = StringCol(notNull=False, default=None)
@@ -60,6 +67,17 @@ class ProductRelease(SQLBase):
     def displayname(self):
         return self.productseries.product.displayname + ' ' + self.version
     displayname = property(displayname)
+
+    def title(self):
+        """See IProductRelease."""
+        thetitle = self.displayname
+        if self._title:
+            thetitle += ' "' + self._title + '"'
+        return thetitle
+
+    def set_title(self, title):
+        self._title = title
+    title = property(title, set_title)
 
     def potemplatecount(self):
         return len(self.potemplates)

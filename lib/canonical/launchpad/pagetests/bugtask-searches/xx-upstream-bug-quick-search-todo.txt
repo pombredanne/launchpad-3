@@ -1,0 +1,12 @@
+The "my todo list" link gives the logged in user the ability to
+quickly see which bugs have been assigned to them.
+
+  >>> print http(r"""
+  ... GET /malone/products/firefox/+malone-index?field.status%3Alist=New&field.status%3Alist=Accepted&field.assignee=name12&search=Search HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/malone/bugs
+  ... """)
+  HTTP/1.1 200 Ok
+  ...1...result...
+              <a href="...">5</a>
+  ...

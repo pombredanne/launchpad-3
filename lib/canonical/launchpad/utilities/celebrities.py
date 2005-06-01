@@ -7,6 +7,7 @@ from zope.interface import implements
 from zope.component import getUtility
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.launchpad.interfaces import IPersonSet
+from canonical.launchpad.interfaces import IDistributionSet
 
 class LaunchpadCelebrities:
 
@@ -20,3 +21,10 @@ class LaunchpadCelebrities:
         return getUtility(IPersonSet).getByName('admins')
     admin = property(admin)
 
+    def ubuntu(self):
+        return getUtility(IDistributionSet).getByName('ubuntu')
+    ubuntu = property(ubuntu)
+
+    def rosetta_expert(self):
+        return getUtility(IPersonSet).getByName('rosetta-admins')
+    rosetta_expert = property(rosetta_expert)

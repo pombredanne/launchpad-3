@@ -34,6 +34,7 @@ COMMENT ON COLUMN ProjectRelationship.label IS 'The nature of the relationship. 
 
 -- EmailAddress
 COMMENT ON COLUMN EmailAddress.email IS 'An email address used by a Person. The email address is stored in a casesensitive way, but must be case insensitivly unique.';
+COMMENT ON INDEX emailaddress_person_key IS 'Ensures that a person only has one preferred email address';
 
 -- ProjectRole
 /*
@@ -192,11 +193,13 @@ COMMENT ON COLUMN POTemplateName.description IS 'A brief text about this POTempl
 COMMENT ON COLUMN POTemplateName.translationdomain IS 'The translation domain name for this POTemplateName';
 
 -- POFile
-COMMENT ON TABLE POFile IS 'This table stores a po file for a given product.';
-COMMENT ON COLUMN POFile.rawfile IS 'The po file itself encoded as a base64 string.';
-COMMENT ON COLUMN POFile.rawimporter IS 'The person that attached the rawfile.';
-COMMENT ON COLUMN POFile.daterawimport IS 'The date when the rawfile was attached.';
-COMMENT ON COLUMN POFile.rawimportstatus IS 'The status of the import: 0 pending import, 1 imported, 2 failed.';
+COMMENT ON TABLE POFile IS 'This table stores a PO file for a given PO template.';
+COMMENT ON COLUMN POFile.rawfile IS 'The Library file alias of the PO file as imported.';
+COMMENT ON COLUMN POFile.rawimporter IS 'The person that attached the raw file.';
+COMMENT ON COLUMN POFile.daterawimport IS 'The date when the raw file was attached.';
+COMMENT ON COLUMN POFile.rawimportstatus IS 'The status of the import. See the RosettaImportStatus schema.';
+COMMENT ON COLUMN POFile.exportfile IS 'The Library file alias of an export of this PO file.';
+COMMENT ON COLUMN POFile.exporttime IS 'The time at which the file referenced by exportfile was generated.';
 
 /*
   Bazaar
@@ -364,6 +367,26 @@ COMMENT ON COLUMN SourcePackagePublishing.scheduleddeletiondate IS 'This column 
 COMMENT ON COLUMN SourcePackagePublishing.status IS 'This column contains the status of the publishing record. The valid states are described in dbschema.py in PackagePublishingStatus. Example states are "Pending" and "Published"';
 
 COMMENT ON COLUMN PackagePublishing.status IS 'This column contains the status of the publishing record. The valid states are described in dbschema.py in PackagePublishingStatus. Example states are "Pending" and "Published"';
+
+-- PackagePublishingHistory
+COMMENT ON TABLE PackagePublishingHistory IS 'PackagePublishingHistory: The history of a PackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
+COMMENT ON COLUMN PackagePublishingHistory.binarypackage IS 'The binarypackage being published.';
+COMMENT ON COLUMN PackagePublishingHistory.distroarchrelease IS 'The distroarchrelease into which the binarypackage is being published.';
+COMMENT ON COLUMN PackagePublishingHistory.status IS 'The current status of the publishing.';
+COMMENT ON COLUMN PackagePublishingHistory.component IS 'The component into which the publishing takes place.';
+COMMENT ON COLUMN PackagePublishingHistory.section IS 'The section into which the publishing takes place.';
+COMMENT ON COLUMN PackagePublishingHistory.priority IS 'The priority at which the publishing takes place.';
+COMMENT ON COLUMN PackagePublishingHistory.datecreated IS 'The date/time on which the publishing record was created.';
+COMMENT ON COLUMN PackagePublishingHistory.datepublished IS 'The date/time on which the source was actually published into an archive.';
+COMMENT ON COLUMN PackagePublishingHistory.datesuperseded IS 'The date/time on which the source was superseded by a new source.';
+COMMENT ON COLUMN PackagePublishingHistory.supersededby IS 'The build which superseded this package. This seems odd but it is important because a new build may not actually build a given binarypackage and we need to supersede it appropriately';
+COMMENT ON COLUMN PackagePublishingHistory.datemadepending IS 'The date/time on which this publishing record was made to be pending removal from the archive.';
+COMMENT ON COLUMN PackagePublishingHistory.scheduleddeletiondate IS 'The date/time at which the package is/was scheduled to be deleted.';
+COMMENT ON COLUMN PackagePublishingHistory.dateremoved IS 'The date/time at which the package was actually deleted.';
+COMMENT ON COLUMN PackagePublishingHistory.pocket IS 'The pocket into which this record is published. The PLAIN pocket (zero) provides behaviour as normal. Other pockets may append things to the distrorelease name such as the UPDATES pocket (-updates) or the SECURITY pocket (-security).';
+COMMENT ON COLUMN PackagePublishingHistory.embargo IS 'The publishing record is embargoed from publication if this is set to TRUE. When TRUE, this column prevents the publication record from even showing up in the publishing tables.';
+COMMENT ON COLUMN PackagePublishingHistory.embargolifted IS 'The date and time when we lifted the embargo on this publishing record. I.E. when embargo was set to FALSE having previously been set to TRUE.';
+COMMENT ON VIEW PackagePublishingPublicHistory IS 'View on PackagePublishingHistory that restricts access to embargoed entries';
 
 -- PersonLanguage
 COMMENT ON TABLE PersonLanguage IS 'PersonLanguage: This table stores the preferred languages that a Person has, it''s used in Rosetta to select the languages that should be showed to be translated.';
@@ -629,7 +652,6 @@ COMMENT ON COLUMN DistroRelease.owner IS 'The ultimate owner of this distrorelea
 
 COMMENT ON TABLE DistroArchRelease IS 'DistroArchRelease: A soyuz distribution release for a given architecture. A distrorelease runs on various architectures. The distroarchrelease groups that architecture-specific stuff.';
 COMMENT ON COLUMN DistroArchRelease.distrorelease IS 'The distribution which this distroarchrelease is part of.';
-COMMENT ON COLUMN DistroArchRelease.chroot IS 'The chroot tarball used to build packages for this distroarchrelease. Without this, the buildd master is unable to schedule builds for this distroarchrelease.';
 
 -- DistributionRole
 /*
@@ -664,7 +686,7 @@ COMMENT ON COLUMN LibraryFileAlias.mimetype IS 'The mime type of the file. E.g. 
 
 -- PackagePublishing
 
-COMMENT ON TABLE PackagePublishing IS 'PackagePublishing: Publishing records for Soyuz/Lucille. Lucille publishes binarypackages in distroarchreleases. This table represents the publishing of each binarypackage.';
+COMMENT ON VIEW PackagePublishing IS 'PackagePublishing: Publishing records for Soyuz/Lucille. Lucille publishes binarypackages in distroarchreleases. This view represents the publishing of each binarypackage not yet deleted from the distroarchrelease.';
 COMMENT ON COLUMN PackagePublishing.binarypackage IS 'The binarypackage which is being published';
 COMMENT ON COLUMN PackagePublishing.distroarchrelease IS 'The distroarchrelease in which the binarypackage is published';
 COMMENT ON COLUMN PackagePublishing.component IS 'The component in which the binarypackage is published';
@@ -713,6 +735,9 @@ COMMENT ON COLUMN PushMirrorAccess.person IS 'A person that has access to update
 -- Builder
 COMMENT ON COLUMN Builder.builderok IS 'Should a builder fail for any reason, from out-of-disk-space to not responding to the buildd master, the builderok flag is set to false and the failnotes column is filled with a reason.';
 COMMENT ON COLUMN Builder.failnotes IS 'This column gets filled out with a textual description of how/why a builder has failed. If the builderok column is true then the value in this column is irrelevant and should be treated as NULL or empty.';
+COMMENT ON COLUMN Builder.trusted IS 'Whether or not the builder is cleared to do SECURITY pocket builds. Such a builder will have firewall access to the embargo archives etc.';
+COMMENT ON COLUMN Builder.url IS 'The url to the build slave. There may be more than one build slave on a given host so this url includes the port number to use. The default port number for a build slave is 8221';
+
 
 COMMENT ON TABLE BuildQueue IS 'BuildQueue: The queue of builds in progress/scheduled to run. This table is the core of the build daemon master. It lists all builds in progress or scheduled to start.';
 COMMENT ON COLUMN BuildQueue.build IS 'The build for which this queue item exists. This is how the buildd master will find all the files it needs to perform the build';
@@ -755,6 +780,10 @@ COMMENT ON COLUMN SourcePackagePublishingHistory.supersededby IS 'The source whi
 COMMENT ON COLUMN SourcePackagePublishingHistory.datemadepending IS 'The date/time on which this publishing record was made to be pending removal from the archive.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.scheduleddeletiondate IS 'The date/time at which the source is/was scheduled to be deleted.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.dateremoved IS 'The date/time at which the source was actually deleted.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.pocket IS 'The pocket into which this record is published. The PLAIN pocket (zero) provides behaviour as normal. Other pockets may append things to the distrorelease name such as the UPDATES pocket (-updates) or the SECURITY pocket (-security).';
+COMMENT ON COLUMN SourcePackagePublishingHistory.embargo IS 'The publishing record is embargoed from publication if this is set to TRUE. When TRUE, this column prevents the publication record from even showing up in the publishing tables.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.embargolifted IS 'The date and time when we lifted the embargo on this publishing record. I.E. when embargo was set to FALSE having previously been set to TRUE.';
+COMMENT ON VIEW SourcePackagePublishingPublicHistory IS 'A view on SourcePackagePublishingHistory that restricts access to embargoed entries';
 
 -- Packaging
 COMMENT ON TABLE Packaging IS 'DO NOT JOIN THROUGH THIS TABLE. This is a set
@@ -786,3 +815,9 @@ This allows us to say that a given Source Package INCLUDES libneon but is a
 PRIME package of tla, for example. By INCLUDES we mean that the code is
 actually lumped into the package as ancilliary support material, rather
 than simply depending on a separate packaging of that code.';
+
+-- PocketChroot
+COMMENT ON TABLE PocketChroot IS 'PocketChroots: Which chroot belongs to which pocket of which distroarchrelease. Any given pocket of any given distroarchrelease needs a specific chroot in order to be built. This table links it all together.';
+COMMENT ON COLUMN PocketChroot.distroarchrelease IS 'Which distroarchrelease this chroot applies to.';
+COMMENT ON COLUMN PocketChroot.pocket IS 'Which pocket of the distroarchrelease this chroot applies to. Valid values are specified in dbschema.PackagePublishingPocket';
+COMMENT ON COLUMN PocketChroot.chroot IS 'The chroot used by the pocket of the distroarchrelease.';

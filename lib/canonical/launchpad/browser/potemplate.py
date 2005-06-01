@@ -5,18 +5,20 @@ __metaclass__ = type
 import tarfile
 from sets import Set
 from StringIO import StringIO
+from datetime import datetime
 
 from zope.component import getUtility
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.app.i18n import ZopeMessageIDFactory as _
 from zope.publisher.browser import FileUpload
+from zope.app.form.browser.add import AddView
 
 from canonical.launchpad import helpers
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces import ILaunchBag, IPOTemplateSet, \
+    IPOTemplateNameSet, IPersonSet, RawFileAttachFailed
 from canonical.launchpad.components.poexport import POExport
-from canonical.launchpad.components.poparser import POSyntaxError, \
-    POInvalidInputError
-
+from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.pofile import ViewPOFile
 
 
@@ -31,7 +33,7 @@ class POTemplateSubsetView:
         return self.request.response.redirect('../+translations')
 
 
-class ViewPOTemplate:
+class POTemplateView:
 
     statusLegend = ViewPageTemplateFile(
         '../templates/portlet-rosetta-status-legend.pt')
@@ -112,44 +114,10 @@ class ViewPOTemplate:
         was submitted with the request."""
 
         if self.request.method == 'POST':
-            if 'EDIT' in self.request.form:
-                self.edit()
-            elif 'UPLOAD' in self.request.form:
+            if 'UPLOAD' in self.request.form:
                 self.upload()
 
         return ''
-
-    def editAttributes(self):
-        """Use form data to change a PO template's name or title."""
-
-        # Early returns are used to avoid the redirect at the end of the
-        # method, which prevents the status message from being shown.
-
-        # XXX Dafydd Harries 2005/01/28
-        # We should check that there isn't a template with the new name before
-        # doing the rename.
-
-        if 'name' in self.request.form:
-            name = self.request.form['name']
-
-            if name == '':
-                self.status_message = 'The name field cannot be empty.'
-                return
-
-            self.context.name = name
-
-        if 'title' in self.request.form:
-            title = self.request.form['title']
-
-            if title == '':
-                self.status_message = 'The title field cannot be empty.'
-                return
-
-            self.context.title = title
-
-        # Now redirect to view the template. This lets us follow the template
-        # in case the user changed the name.
-        self.request.response.redirect('../' + self.context.name)
 
     def upload(self):
         """Handle a form submission to change the contents of the template."""
@@ -161,7 +129,7 @@ class ViewPOTemplate:
 
         if type(file) is not FileUpload:
             if file == '':
-                self.request.response.redirect('../' + self.context.name)
+                self.status_message = 'Please, select a file to upload.'
             else:
                 # XXX: Carlos Perello Marin 2004/12/30
                 # Epiphany seems to have an aleatory bug with upload forms (or
@@ -172,6 +140,7 @@ class ViewPOTemplate:
                 # info, look at bug #116.
                 self.status_message = (
                     'There was an unknown error in uploading your file.')
+            return
 
         filename = file.filename
 
@@ -180,13 +149,14 @@ class ViewPOTemplate:
 
             try:
                 self.context.attachRawFileData(potfile, owner)
-            except (POSyntaxError, POInvalidInputError):
-                # The file is not correct.
                 self.status_message = (
-                    'There was a problem parsing the file you uploaded.'
-                    ' Please check that it is correct.')
+                    'Thank you for your upload. The template content will'
+                    ' appear in Rosetta in a few minutes.')
+            except RawFileAttachFailed, error:
+                # We had a problem while uploading it.
+                self.status_message = (
+                    'There was a problem uploading the file: %s.' % error)
 
-            self.context.attachRawFileData(potfile, owner)
         elif helpers.is_tar_filename(filename):
             tarball = helpers.string_to_tarfile(file.read())
             pot_paths, po_paths = helpers.examine_tarfile(tarball)
@@ -203,6 +173,70 @@ class ViewPOTemplate:
             self.status_message = (
                 'The file you uploaded was not recognised as a file that '
                 'can be imported.')
+
+
+class POTemplateEditView(POTemplateView, SQLObjectEditView):
+    """View class that lets you edit a POTemplate object."""
+    def __init__(self, context, request):
+        POTemplateView.__init__(self, context, request)
+        SQLObjectEditView.__init__(self, context, request)
+
+    def changed(self):
+        formatter = self.request.locale.dates.getFormatter(
+            'dateTime', 'medium')
+        status = _("Updated on ${date_time}")
+        status.mapping = {'date_time': formatter.format(
+            datetime.utcnow())}
+        self.update_status = status
+
+class POTemplateAdminView(POTemplateEditView):
+    """View class that lets you admin a POTemplate object."""
+
+
+class POTemplateAddView(AddView):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        AddView.__init__(self, context, request)
+
+    def createAndAdd(self, data):
+        # retrieve submitted values from the form
+        potemplatenameid = data.get('potemplatename')
+        title = data.get('title')
+        description = data.get('description')
+        iscurrent = data.get('iscurrent')
+        ownerid = data.get('owner')
+        path = data.get('path')
+        filename = data.get('filename')
+        content = data.get('content')
+
+        # Get the POTemplateName
+        potemplatenameset = getUtility(IPOTemplateNameSet)
+        potemplatename = potemplatenameset.get(potemplatenameid)
+
+        # Get the Owner
+        personset = getUtility(IPersonSet)
+        owner = personset.get(ownerid)
+
+        potemplateset = getUtility(IPOTemplateSet)
+        potemplatesubset = potemplateset.getSubset(
+            productrelease=self.context)
+        # Create the new POTemplate
+        potemplate = potemplatesubset.new(
+            potemplatename=potemplatename, title=title, contents=content,
+            owner=owner)
+
+        # Update the other fields
+        potemplate.description = description
+        potemplate.iscurrent = iscurrent
+        potemplate.path = path
+        potemplate.filename = filename
+
+        self._nextURL = "%s" % potemplate.potemplatename.name
+
+    def nextURL(self):
+        return self._nextURL
 
 
 class POTemplateTarExport:
@@ -292,7 +326,7 @@ class POTemplateTranslateView:
 
     def __call__(self):
         parameters = {}
-        old_url = self.request.getURL
+        old_url = self.request.getURL()
         if old_url.endswith('/'):
             new_url = old_url[:-len('/+translate/')]
         else:

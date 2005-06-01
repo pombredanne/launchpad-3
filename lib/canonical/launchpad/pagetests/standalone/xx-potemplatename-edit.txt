@@ -1,0 +1,44 @@
+Check that the PO Template Name edit form loads.
+
+  >>> print http(r"""
+  ... GET /potemplatenames/1/+edit HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+      <title>Main translation domain for the Evolution 2.2 edit in Rosetta</title>
+  ...
+
+Check that we can submit the PO Template Name edit form.
+
+  >>> print http(r"""
+  ... POST /potemplatenames/1/+edit HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 790
+  ... Content-Type: multipart/form-data; boundary=---------------------------10223405945464989901049815383
+  ... Referer: http://localhost:9000/potemplatenames/1/+edit
+  ... 
+  ... -----------------------------10223405945464989901049815383
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... evolution-2.2
+  ... -----------------------------10223405945464989901049815383
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Main translation domain for the Evolution 2.2
+  ... -----------------------------10223405945464989901049815383
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... This is a description about Evolution 2.2 POTemplateName
+  ... -----------------------------10223405945464989901049815383
+  ... Content-Disposition: form-data; name="field.translationdomain"
+  ... 
+  ... evolution
+  ... -----------------------------10223405945464989901049815383
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------10223405945464989901049815383--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...

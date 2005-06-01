@@ -3,6 +3,9 @@
 # (c) 2004 Canonical Software Ltd.
 # Author: Daniel Silverstone <daniel.silverstone@canonical.com>
 
+PYTHON_VERSION=2.4
+PYTHON=python${PYTHON_VERSION}
+
 .PHONY: all
 all:
 
@@ -12,8 +15,8 @@ export PYTHONPATH
 check: check-lucile
 
 check-lucile:
-#	./test_tagfiles.py
-#	./test_signedfiles.py
-#	./test_utils.py
-	./test_domination.py
+#	${PYTHON} ./test_tagfiles.py
+#	${PYTHON} ./test_signedfiles.py
+#	${PYTHON} ./test_utils.py
+	${PYTHON} ./test_domination.py
 

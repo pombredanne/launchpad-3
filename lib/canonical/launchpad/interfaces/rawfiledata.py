@@ -4,16 +4,26 @@ from zope.interface import Interface, Attribute
 
 __metaclass__ = type
 
-__all__ = ('ICanAttachRawFileData', 'IRawFileData')
+__all__ = ('RawFileAttachFailed', 'RawFileFetchFailed',
+    'ICanAttachRawFileData', 'IRawFileData')
+
+class RawFileAttachFailed(Exception):
+    pass
+
+class RawFileFetchFailed(Exception):
+    pass
 
 class ICanAttachRawFileData(Interface):
     """Accept .po or .pot attachments."""
 
     def attachRawFileData(contents, importer=None):
-        """Attach a .pot/.po file to be imported later with doRawImport call.
+        """Attach a PO template or PO file to be imported later.
 
-        The content is parsed first with the POParser, if it has any problem
-        the POSyntaxError or POInvalidInputError exeption will be raised.
+        The content is parsed first with the PO parser. If it has any problem
+        a POSyntaxError or POInvalidInputError exeption will be raised.
+
+        If there is any problem storing the attached file, a
+        RawFileAttachFailed exception will be raised.
         """
 
 class IRawFileData(Interface):
@@ -26,12 +36,16 @@ class IRawFileData(Interface):
     daterawimport = Attribute("The date when the rawfile was attached.")
 
     rawimportstatus = Attribute(
-        "The status of the import: 1 ignore import, 2 pending to be imported,"
-        " 3 imported already and 4 failed.")
+        "The status of the import. See RosettaImportStatus for allowable"
+        " values.")
 
     def doRawImport(logger=None):
         """Execute the import of the rawfile field, if it's needed.
 
-        If a logger argument is given, log there any problem found with the
-        import.
+        If a logger argument is given, any problem found with the
+        import will be logged there.
+
+        If there is problem fetching the attached file, a RawFileFetchFailed
+        exception will be raised.
         """
+

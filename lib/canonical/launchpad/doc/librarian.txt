@@ -85,3 +85,18 @@ files in the Librarian.
 >>> re.search('^http://localhost:58000/\d+/\d+/text.txt$', url) is not None
 True
 
+Odds and Sods
+-------------
+
+A ValueError will be raised if you try to create a file with no content
+
+>>> client.addFile('test.txt', 0, StringIO('hello'), 'text/plain')
+Traceback (most recent call last):
+    [...]
+ValueError: No data
+
+>>> client.addFile('test.txt', 42, StringIO(''), 'text/plain')
+Traceback (most recent call last):
+    [...]
+ValueError: No data
+

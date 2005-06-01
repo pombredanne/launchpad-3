@@ -89,7 +89,7 @@ class IPerson(Interface):
     ubuntite = Attribute("Ubuntite Flag")
     gpgkeys = Attribute("List of GPGkeys")
     irc = Attribute("IRC")
-    bugs = Attribute("Bug")
+    reportedbugs = Attribute("All BugTasks reported by this Person.")
     wiki = Attribute("Wiki")
     jabber = Attribute("Jabber")
     archuser = Attribute("Arch user")
@@ -121,13 +121,21 @@ class IPerson(Interface):
                                  "DEACTIVATED status"))
     deactivatedmembers = Attribute("List of members with DEACTIVATED status")
 
-    teamowner = Int(title=_('Team Owner'), required=False, readonly=False)
+    teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
+                       vocabulary='ValidTeamOwner')
     teamdescription = Text(title=_('Team Description'), required=False,
                            readonly=False)
 
-    preferredemail = Int(title=_("The preferred email address for this "
-                                 "person. The one we'll use to communicate "
-                                 "with him."), readonly=False)
+    preferredemail = TextLine(
+            title=_("Preferred Email Address"), description=_(
+                "The preferred email address for this person. The one "
+                "we'll use to communicate with them."), readonly=False)
+
+    preferredemail_sha1 = TextLine(title=_("SHA-1 Hash of Preferred Email"),
+            description=_("The SHA-1 hash of the preferred email address as "
+                "a hexadecimal string. This is used as a key by FOAF RDF spec"
+                ), readonly=True)
+
     defaultmembershipperiod = Int(
             title=_('Number of days a subscription lasts'), required=False,
             description=_("This is the number of days all "
@@ -289,7 +297,8 @@ class IPerson(Interface):
 class ITeam(IPerson):
     """ITeam extends IPerson.
 
-    The teamowner should never be None."""
+    The teamowner should never be None.
+    """
 
 
 class IPersonSet(Interface):

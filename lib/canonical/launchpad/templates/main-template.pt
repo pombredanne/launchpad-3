@@ -1,10 +1,10 @@
 <metal:page define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
 <metal:block define-slot="top_slot" />
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
-      tal:attributes="lang default_language|default;
-                      xml:lang default_language|default;">
-  <head>
-    <metal:block define-slot="title"></metal:block>
+    tal:attributes="lang default_language|default;
+                    xml:lang default_language|default;">
+<head>
+    <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
     <!-- Plone style sheet -->
     <style type="text/css"
         media="screen">@import url(/@@/plone.css);</style>
@@ -14,14 +14,15 @@
     <!-- Launchpad JS code -->
     <script type="text/javascript" src="/@@/launchpad.js"></script>
     <link rel="shortcut icon" href="/@@/defaultFavicon.gif" />
-  </head>
 
-  <body>
+    <metal:block define-slot="head_epilogue"></metal:block>
+</head>
 
+<body>
     <div class="page-header">
-        <div class="page-header-ribbon" tal:define="path_info request/PATH_INFO">
+        <div class="page-header-ribbon"
+            tal:define="path_info request/PATH_INFO">
             <div class="user" tal:condition="not: request/lp:person ">
-              <!-- sabdfl... you're welcome, mpt ;-) -->
               <div tal:condition="python:'+login' not in path_info">
                 <a href="/+login">Log in / Register</a>
               </div>

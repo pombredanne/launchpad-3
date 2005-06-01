@@ -1,4 +1,4 @@
-
+Test that the project edit page loads.
 
   >>> print http(r"""
   ... GET /doap/projects/gnome/+edit HTTP/1.1
@@ -12,6 +12,7 @@
             <h1>Edit Open Source Project Details:</h1>
   ...
 
+Test that the project edit page works when we POST changes.
 
   >>> print http(r"""
   ... POST /doap/projects/gnome/+edit HTTP/1.1

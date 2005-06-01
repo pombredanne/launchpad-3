@@ -1,4 +1,4 @@
-
+Test that the page to add a product release loads.
 
   >>> print http(r"""
   ... GET /doap/projects/mozilla/firefox/+addrelease HTTP/1.1
@@ -12,6 +12,7 @@
       <h1>Register a New Release</h1>
   ...
 
+Test that the page to add a product release works.
 
   >>> print http(r"""
   ... POST /doap/projects/mozilla/firefox/+addrelease HTTP/1.1

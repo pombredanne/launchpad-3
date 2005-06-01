@@ -83,15 +83,38 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
     changes = what_changed(sqlobject_modified_event)
 
     if changes:
+        duplicateof_change = changes.pop("duplicateof", None)
+
         for changed_field in changes.keys():
+            oldvalue, newvalue = changes[changed_field]
             BugActivity(
-                bug=bug_edited.id,
-                datechanged=UTC_NOW,
-                person=int(sqlobject_modified_event.principal.id),
-                whatchanged=changed_field,
-                oldvalue=changes[changed_field][0],
-                newvalue=changes[changed_field][1],
-                message='XXX: not yet implemented')
+                bug = bug_edited.id,
+                datechanged = UTC_NOW,
+                person = int(sqlobject_modified_event.principal.id),
+                whatchanged = changed_field,
+                oldvalue = oldvalue,
+                newvalue = newvalue,
+                message = "")
+
+        if duplicateof_change is not None:
+            olddup, newdup = duplicateof_change
+            # special-case duplicateof because the values are objects,
+            # rather than IDs, so we need to .id the values explicitly
+            oldid = None
+            newid = None
+            if olddup is not None:
+                oldid = olddup.id
+            if newdup is not None:
+                newid = newdup.id
+
+            BugActivity(
+                bug = sqlobject_modified_event.object_before_modification.id,
+                datechanged = UTC_NOW,
+                person = int(sqlobject_modified_event.principal.id),
+                whatchanged = "marked as duplicate",
+                oldvalue = oldid,
+                newvalue = newid,
+                message = "")
 
 def record_bug_task_added(bug_task, object_created_event):
     activity_message = ""
@@ -123,19 +146,18 @@ def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
             else:
                 task_title = obm.sourcepackagename.name
         for changed_field in changes.keys():
-            ov = changes[changed_field][0]
-            if ov is not None:
-                ov = unicode(ov)
-            nv = changes[changed_field][1]
-            if nv is not None:
-                nv = unicode(nv)
+            oldvalue, newvalue = changes[changed_field]
+            if oldvalue is not None:
+                oldvalue = unicode(oldvalue)
+            if newvalue is not None:
+                newvalue = unicode(newvalue)
             BugActivity(
                 bug=bug_task_edited.bug.id,
                 datechanged=UTC_NOW,
                 person=int(sqlobject_modified_event.principal.id),
                 whatchanged="%s: %s" % (task_title, changed_field),
-                oldvalue=ov,
-                newvalue=nv,
+                oldvalue=oldvalue,
+                newvalue=newvalue,
                 message='XXX: not yet implemented')
 
 def record_product_task_added(product_task, object_created_event):
@@ -151,13 +173,14 @@ def record_product_task_edited(product_task_edited, sqlobject_modified_event):
     if changes:
         product_name = sqlobject_modified_event.object_before_modification.product.name
         for changed_field in changes.keys():
+            oldvalue, newvalue = changes[changed_field]
             BugActivity(
                 bug=product_task_edited.bug.id,
                 datechanged=UTC_NOW,
                 person=int(sqlobject_modified_event.principal.id),
                 whatchanged="%s: %s" % (product_name, changed_field),
-                oldvalue=changes[changed_field][0],
-                newvalue=changes[changed_field][1],
+                oldvalue=oldvalue,
+                newvalue=newvalue,
                 message='XXX: not yet implemented')
 
 def record_package_infestation_added(package_infestation, object_created_event):
@@ -178,13 +201,14 @@ def record_package_infestation_edited(package_infestation_edited, sqlobject_modi
             sqlobject_modified_event.object_before_modification.sourcepackagerelease.sourcepackagename.name,
             sqlobject_modified_event.object_before_modification.sourcepackagerelease.version)
         for changed_field in changes.keys():
+            oldvalue, newvalue = changes[changed_field]
             BugActivity(
                 bug=package_infestation_edited.bug.id,
                 datechanged=UTC_NOW,
                 person=int(sqlobject_modified_event.principal.id),
                 whatchanged="%s: %s" % (package_release_name, changed_field),
-                oldvalue=changes[changed_field][0],
-                newvalue=changes[changed_field][1],
+                oldvalue=oldvalue,
+                newvalue=newvalue,
                 message='XXX: not yet implemented')
 
 def record_product_infestation_added(product_infestation, object_created_event):
@@ -205,13 +229,14 @@ def record_product_infestation_edited(product_infestation_edited, sqlobject_modi
             sqlobject_modified_event.object_before_modification.productrelease.product.name,
             sqlobject_modified_event.object_before_modification.productrelease.version)
         for changed_field in changes.keys():
+            oldvalue, newvalue = changes[changed_field]
             BugActivity(
                 bug=product_infestation_edited.bug.id,
                 datechanged=UTC_NOW,
                 person=int(sqlobject_modified_event.principal.id),
                 whatchanged="%s: %s" % (product_release_name, changed_field),
-                oldvalue=changes[changed_field][0],
-                newvalue=changes[changed_field][1],
+                oldvalue=oldvalue,
+                newvalue=newvalue,
                 message='XXX: not yet implemented')
 
 def record_bugwatch_added(bugwatch_added, object_created_event):
@@ -227,6 +252,7 @@ def record_bugwatch_added(bugwatch_added, object_created_event):
 def record_bugwatch_edited(bugwatch_edited, sqlobject_modified_event):
     changes = what_changed(sqlobject_modified_event)
     if changes:
+        oldvalue, newvalue = changes[changed_field]
         for changed_field in changes.keys():
             BugActivity(
                 bug=bugwatch_edited.bug.id,
@@ -234,7 +260,7 @@ def record_bugwatch_edited(bugwatch_edited, sqlobject_modified_event):
                 person=sqlobject_modified_event.principal.id,
                 whatchanged="subscriber %s" % (
                     bugwatch_edited.person.displayname),
-                oldvalue=changes[changed_field][0],
-                newvalue=changes[changed_field][1])
-                
+                oldvalue=oldvalue,
+                newvalue=newvalue)
+
 

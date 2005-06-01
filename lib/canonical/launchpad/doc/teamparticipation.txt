@@ -6,9 +6,6 @@ More information can be found in the TeamParticipationUsage spec.
 
 First of all, create some teams:
 
->>> from canonical.launchpad.ftests import login
->>> login('launchpad.anonymous')
-
 >>> from datetime import datetime
 >>> import pytz
 

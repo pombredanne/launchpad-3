@@ -1,20 +1,28 @@
 <metal:page define-macro="buglisting">
-  <tal:tag condition="view/assign_to_milestones"/>
+  <tal:tag condition="view/assign_to_milestones|nothing"/>
   <form action="" method="GET"
      tal:define="listing_columns view/task_columns;
                  logged_in request/lp:person;
-                 task_batch view/batch;
+                 task_batch_navigator view/search;
+                 task_batch task_batch_navigator/batch;
                  mass_edit python: 'select' in listing_columns and view.is_maintainer">
-
-  <small> 
-      <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=unassigned&product=all&sourcepackagename=all&search=Search">unassigned</a> .
-      <span tal:omit-tag="" tal:condition="logged_in"><a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=${request/lp:person/name}&product=all&sourcepackagename=all&search=Search">my todo list</a> .
-      </span><a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=all&product=all&sourcepackagename=all&severity=50&search=Search">critical</a>
-      <span tal:omit-tag="" tal:condition="logged_in">.
-          <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=all&submitter=${request/lp:person/name}&product=all&sourcepackagename=all&search=Search">submitted by me</a></span>
-      :: bug id or text
-      <input type="text" name="searchtext" tal:attributes="value request/searchtext|nothing;"/>
-      <input type="submit" name="search" value="Search" />
+    <ul class="navigation">
+      <li>
+        <a tal:attributes="href string:${request/URL}?field.status%3Alist=New&field.status%3Alist=Accepted&field.status-empty-marker=1&field.severity-empty-marker=1&field.assignee=&field.unassigned.used=&field.unassigned=on&search=Search">Unassigned</a>
+      </li>
+      <li>
+        <a tal:attributes="href string:${request/URL}?field.status%3Alist=New&field.status%3Alist=Accepted&field.severity%3Alist=Critical&search=Search">Critical</a>
+      </li>
+      <li tal:condition="logged_in">
+        <a tal:attributes="href string:${request/URL}?field.status%3Alist=New&field.status%3Alist=Accepted&field.assignee=${request/lp:person/name}&search=Search">My to-do list</a>
+      </li>
+    </ul>
+    <p>
+      <label tal:content="view/searchtext_widget/label">
+        Bug id or text:
+      </label>
+      <tal:searchtext content="structure view/searchtext_widget" />
+      <input type="submit" name="search" value="Search Again" />
     <input
         tal:condition="not:request/advanced|nothing"
         type="submit" name="advanced" value="Advanced" />
@@ -23,31 +31,125 @@
         type="submit" name="simple_submit" value="Simple" />
     <input type="hidden"
         name="advanced" tal:attributes="value request/advanced|nothing" />
-  </small><br /><br />
-  <small tal:define="startno task_batch/startNumber;
-                     endno task_batch/endNumber;
-                     total task_batch/total"
-         tal:content="string:displaying matching bugs $startno to $endno of $total">
-    displaying matching bugs 1 to 10 of 42
-  </small>
-  <fieldset>
-  <table id="ass_listing"
-         class="listing lpListing rowNavigation">
+    </p>
+    <table class="listing rowNavigation data">
+      <thead>
+        <tr class="results">
+          <td
+            colspan="0"
+            tal:define="startno task_batch/startNumber;
+                        endno task_batch/endNumber;
+                        total task_batch/total">
+            <div
+              class="navigation"
+              tal:define="prev_page_url task_batch_navigator/prevBatchURL;
+                          next_page_url task_batch_navigator/nextBatchURL">
+              <a tal:condition="prev_page_url"
+                 tal:attributes="href prev_page_url"
+                 rel="previous">
+                 &laquo; previous
+              </a>
+              <span tal:omit-tag=""
+                    tal:repeat="page_url task_batch_navigator/batchPageURLs">
+                <a href=""
+                   tal:content="python:page_url.keys()[0]"
+                   tal:attributes="href python:page_url.values()[0]">[1]</a>
+              </span>
+              <a tal:condition="next_page_url"
+                 tal:attributes="href next_page_url"
+                 rel="next">
+                 next &raquo;
+              </a>
+            </div>
+
+            <strong tal:content="startno">1</strong>
+            &rarr;
+            <strong tal:content="endno">10</strong>
+            of
+            <span tal:replace="total">42</span>
+            <span tal:omit-tag=""
+                  tal:condition="python: 1 == total">
+                result
+            </span>
+            <span tal:omit-tag=""
+                  tal:condition="python: 1 != total">
+                results
+            </span>
+          </td>
+        </tr>
+
     <tr>
-      <th tal:condition="mass_edit">Select</th>
-      <th tal:condition="python:'id' in listing_columns">Bug #</th>
+
+      <tal:block condition="nothing">
+        XXX 20050518 BradB/BjornT: Change this template code to
+        Python code that gives the "Report" cell the correct colspan
+        depending on what columns are present. Something like this:
+        colspan = 0
+        if mass_edit:
+            colspan += 1
+        if 'id' in listing_columns:
+            colspan += 1
+        if 'title' in listing_columns:
+            colspan += 1
+        Thanks. -- mpt
+      </tal:block>
+      <tal:block condition="mass_edit">
+        <tal:block condition="python: 'id' in listing_columns">
+          <th
+            tal:condition="python: 'title' in listing_columns"
+            colspan="3"
+          >Report</th>
+          <th
+            tal:condition="python: 'title' not in listing_columns"
+            colspan="2"
+          >Report</th>
+        </tal:block>
+        <tal:block condition="python: 'id' not in listing_columns">
+          <th tal:condition="python: 'title' in listing_columns"
+              colspan="2">
+            Report
+          </th>
+          <th tal:condition="python: 'title' not in listing_columns"
+              colspan="1">
+            Report
+          </th>
+        </tal:block>
+      </tal:block>
+      <tal:block condition="not: mass_edit">
+        <tal:block condition="python: 'id' in listing_columns">
+          <th
+            tal:condition="python: 'title' in listing_columns"
+            colspan="2"
+          >Report</th>
+          <th
+            tal:condition="python: 'title' not in listing_columns"
+            colspan="1"
+          >Report</th>
+        </tal:block>
+        <th
+          tal:condition="python: ('id' not in listing_columns)
+            and ('title' in listing_columns)
+          "
+          colspan="1">
+          Report
+        </th>
+      </tal:block>
+
       <th tal:condition="python:'product' in listing_columns">Product</th>
       <th tal:condition="python:'package' in listing_columns">Package</th>
-      <th tal:condition="python:'title' in listing_columns">Title</th>
       <th tal:condition="python:'milestone' in listing_columns">Target</th>
       <th tal:condition="python:'status' in listing_columns">Status</th>
       <th tal:condition="python:'priority' in listing_columns">Priority</th>
       <th tal:condition="python:'severity' in listing_columns">Severity</th>
-      <th tal:condition="python:'submittedon' in listing_columns">Submitted On</th>
-      <th tal:condition="python:'submittedby' in listing_columns">Submitted By</th>
-      <th tal:condition="python:'assignedto' in listing_columns">Assigned To</th>
+      <th tal:condition="python:'submittedon' in listing_columns">Reported</th>
+      <th tal:condition="python:'submittedby' in listing_columns">Reporter</th>
+      <th tal:condition="python:'assignedto' in listing_columns">Assignee</th>
       <th tal:condition="python:'actions' in listing_columns and logged_in">Take Action</th>
     </tr>
+
+      </thead>
+      <tbody>
+
     <tr tal:repeat="task task_batch" class="rowLinkified">
       <span tal:omit-tag=""
             tal:define="bugid task/bug/id;
@@ -55,8 +157,7 @@
                         product_name task/product/name|nothing;
                         project_name task/product/project/name|nothing;
                         package_name task/sourcepackagename/name|nothing;
-                        collection_name string:tasks;
-                        ass_link string:/malone/$collection_name/$assid/+edit;
+                        bug_link task/bug/@@absolute_url;
                         ass_owner task/owner/name|nothing;
                         potential_assignee logged_in/displayname|nothing;
                         status task/status/title;
@@ -69,161 +170,123 @@
             <input type="checkbox" name="task" value="" tal:attributes="value task/id" />
           </td>
           <td tal:condition="python:'id' in listing_columns">
-              <a tal:attributes="href ass_link"
-                 tal:content="bugid">$Bug.title</a>
+              <a tal:attributes="href bug_link" tal:content="bugid">42</a>
+          </td>
+          <td tal:condition="python:'title' in listing_columns">
+              <a tal:attributes="href bug_link"
+                 tal:content="task/bug/title/fmt:shorten/60">title</a>
           </td>
           <td tal:condition="python:('product' in listing_columns) and product_name">
               <a tal:content="python: (project_name == product_name) and product_name or (project_name + ' ' + product_name)"
-                 tal:attributes="href ass_link">product</a>
+                 tal:attributes="href bug_link">product</a>
           </td>
           <td tal:condition="python:product_name and ('product' in listing_columns)">
-              <a tal:attributes="href ass_link">-</a>
+              <a tal:attributes="href bug_link">-</a>
           </td>
           <td tal:condition="python:'package' in listing_columns">
               <a tal:content="python:package_name and package_name or '-'"
-                 tal:attributes="href ass_link">-</a>
-          </td>
-          <td tal:condition="python:'title' in listing_columns">
-              <a tal:attributes="href ass_link"
-                 tal:content="task/bug/title/fmt:shorten/60">title</a>
+                 tal:attributes="href bug_link">-</a>
           </td>
           <td tal:condition="python:'milestone' in listing_columns">
-              <a tal:attributes="href ass_link"
+              <a tal:attributes="href bug_link"
                  tal:content="task/milestone/name|string:-">milestone</a>
           </td>
           <td tal:condition="python:'status' in listing_columns">
               <a tal:content="status"
-                 tal:attributes="href ass_link;
+                 tal:attributes="href bug_link;
                                  id statusid">New</a>
           </td>
           <td tal:condition="python:'priority' in listing_columns">
               <a tal:content="priority"
-                 tal:attributes="href ass_link">High</a>
+                 tal:attributes="href bug_link">High</a>
           </td>
           <td tal:condition="python:'severity' in listing_columns">
               <a tal:content="severity"
-                 tal:attributes="href ass_link">Medium</a>
+                 tal:attributes="href bug_link">Medium</a>
           </td>
           <td tal:condition="python:'submittedon' in listing_columns">
               <a tal:content="python:task.datecreated.strftime('%d %b %y')"
-                 tal:attributes="href ass_link">date</a>
+                 tal:attributes="href bug_link">date</a>
           </td>
           <td tal:condition="python:'submittedby' in listing_columns">
               <a tal:content="task/owner/displayname|string:-"
-                 tal:attributes="href ass_link">name</a>
+                 tal:attributes="href bug_link">name</a>
           </td>
           <td tal:condition="python:'assignedto' in listing_columns">
               <a tal:content="task/assignee/displayname|string:-"
-                 tal:attributes="href ass_link;
+                 tal:attributes="href bug_link;
                                  id assigneeid;">somebody</a>
           </td>
       </span>
     </tr>
-    <tr class="batchnav">
-      <td class="batchnav" colspan="11" 
-          tal:define="prev_page_url view/batchnav/prevBatchURL;
-                      next_page_url view/batchnav/nextBatchURL">
-          <a tal:condition="prev_page_url"
-             tal:attributes="href prev_page_url">&laquo; previous</a>
-          <span tal:omit-tag=""
-                tal:repeat="page_url view/batchnav/batchPageURLs">
-            <a href=""
-               tal:content="python:page_url.keys()[0]"
-               tal:attributes="href python:page_url.values()[0]">[1]</a>
-          </span>
-          <a tal:condition="next_page_url"
-             tal:attributes="href next_page_url">next &raquo;</a>
-      </td>
-    </tr>
-  </table>
+
+      </tbody>
+    </table>
+
+  <fieldset tal:condition="mass_edit">
+    <legend>Batch Edit</legend>
+    <tal:milestone condition="context/milestones|nothing">
+      <tal:block content="structure view/milestone_widget" />
+      <input type="submit" name="assign_to_milestone" value="Assign to Milestone" />
+    </tal:milestone>
   </fieldset>
 
-  <input tal:condition="mass_edit" type="submit" name="assign_to_milestone" value="Assign to Milestone" />
-  <select tal:condition="mass_edit" name="milestone">
-    <option tal:repeat="milestone context/milestones"
-            tal:attributes="value milestone/id"
-            tal:content="milestone/name">milestone1</option>
-  </select>
-  
   <tal:x condition="not:request/advanced|nothing">
       <input type="hidden" name="status" value="10" />
       <input type="hidden" name="status" value="20" />
       <input type="hidden" name="assignee" value="all" />
   </tal:x>
 
-  <fieldset tal:condition="request/advanced|nothing">
-    <legend>Filter Criteria</legend>
+    <tal:block condition="request/advanced|nothing">
+      <h2>Filter Criteria</h2>
 
-        <div class="field">
-          <table>
-            <tr>
-              <th>Status</th>
-              <th>Assigned To</th>
-              <th>Target</th>
-            </tr>
-            <tr>
-              <td>
-                <select name="status" size="5" multiple>
-                  <option value="all"
-                          tal:attributes="selected request/htmlform:status/selected/all">All</option>
-                  <span tal:omit-tag="" tal:repeat="status view/statuses">
-                    <option tal:condition="python:request.has_key('search')"
-                            tal:define="strvalue python:str(status.value)"
-                            tal:content="status/title"
-                            tal:attributes="value status/value;
-                                            selected request/htmlform:status/selected/?strvalue">New</option>
-                    <option tal:condition="python:not request.has_key('search')"
-                            tal:define="strvalue python:str(status.value)"
-                            tal:content="status/title"
-                            tal:attributes="value status/value;
-                                            selected python:status.title in ('New', 'Accepted')">New</option>
-                  </span>
-                </select>
-              </td>
-              <td>
-                <select name="assignee" size="5" multiple>
-                  <option value="all"
-                          tal:condition="python:request.has_key('search')"
-                          tal:attributes="selected request/htmlform:assignee/selected/all">Anyone</option>
-                  <option value="all"
-                          tal:condition="python:not request.has_key('search')"
-                          selected>Anyone</option>
-                  <option value="unassigned"
-                          tal:attributes="selected request/htmlform:assignee/selected/unassigned">Unassigned</option>
-                  <span tal:omit-tag="" tal:repeat="term view/people">
-                    <option tal:define="value term/token"
-                            tal:content="term/title"
-                            tal:attributes="value value;
-                                            selected request/htmlform:assignee/selected/?value">New</option>
-                  </span>
-                </select>
-              </td>
-              <td>
-                <select name="target" size="5" multiple>
-                  <option value="all"
-                          tal:condition="python:request.has_key('search')"
-                          tal:attributes="selected request/htmlform:target/selected/all">All</option>
-                  <option value="all"
-                          tal:condition="python:not request.has_key('search')"
-                          selected>All</option>
-                  <option value="unassigned"
-                          tal:attributes="selected request/htmlform:target/selected/unassigned">Unassigned</option>
-                  <span tal:omit-tag="" tal:repeat="term view/milestones">
-                    <option tal:define="value term/token"
-                            tal:content="term/title"
-                            tal:attributes="value value;
-                                            selected request/htmlform:target/selected/?value">Soon</option>
-                  </span>
-                </select>
-              </td>
+        <div class="row">
+          <div class="field">
+            <table>
+              <tr>
+                <td tal:condition="view/status_widget">
+                  <label for="status" tal:content="view/status_widget/label">
+                    Status:
+                  </label>
+                </td>
+                <td tal:condition="view/severity_widget">
+                  <label for="severity" tal:content="view/severity_widget/label">
+                    Severity:
+                  </label>
+                </td>
+                <td tal:condition="view/assignee_widget">
+                  <label for="assignee" tal:content="view/assignee_widget/label">
+                    Assignee:
+                  </label>
+                </td>
+                <td tal:condition="view/milestone_widget">
+                  <label for="target" tal:content="view/milestone_widget/label">
+                    Target:
+                  </label>
+                </td>
+
+              </tr>
+              <tr>
+                <td tal:condition="view/status_widget"
+                    tal:content="structure view/status_widget" />
+                <td tal:condition="view/severity_widget"
+                    tal:content="structure view/severity_widget" />
+                <td tal:condition="view/assignee_widget">
+                    <tal:block content="structure view/assignee_widget" /><br />
+                    <tal:block content="structure view/unassigned_widget" />
+                     <tal:block content="structure view/unassigned_widget/label" />
+                </td>
+                <td tal:condition="view/milestone_widget"
+                    tal:content="structure view/milestone_widget" />
               </tr>
             </table>
+          </div>
         </div>
 
-        <div class="formControls">
-            <input type="submit" name="search" value="Search" />
+        <div class="form actions">
+            <input type="submit" name="search" value="Search Again" />
         </div>
 
-    </fieldset>
+    </tal:block>
   </form>
 </metal:page>

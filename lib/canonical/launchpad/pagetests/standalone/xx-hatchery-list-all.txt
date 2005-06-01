@@ -1,0 +1,29 @@
+Check that we can view a page of all projects.
+
+  >>> print http(r"""
+  ... GET /projects/+all HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+            <h2>Open Source Projects in the Launchpad</h2>
+  ...
+      <p>A complete list:</p>
+  ...
+
+Check that we can view a page of all products.
+
+  >>> print http(r"""
+  ... GET /products/+all HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+            <h2>Launchpad Products</h2>
+  ...
+      <p>A complete list:</p>
+  ...

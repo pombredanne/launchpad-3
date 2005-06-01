@@ -3,14 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="rosetta">
 
-<head>
-    <title metal:fill-slot="title">Rosetta</title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -78,7 +70,7 @@
             <img src="/++resource++product_icon.gif"> <b><span
             tal:replace="product/title">product title</span></b>
             [ <a tal:attributes="href
-            string:products/${product/name}">Translate</a> ]
+            string:/products/${product/name}/+translations">Translate</a> ]
             <br />
             <span tal:replace="product/summary">product
             summary</span>

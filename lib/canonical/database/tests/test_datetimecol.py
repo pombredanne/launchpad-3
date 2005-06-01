@@ -1,3 +1,4 @@
+# Copyright 2005 Canonical Ltd.  All rights reserved.
 
 import unittest
 from zope.testing import doctest

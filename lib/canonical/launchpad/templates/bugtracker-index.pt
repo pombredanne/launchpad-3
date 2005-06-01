@@ -3,18 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-
-    <title metal:fill-slot="title">Malone Bugtracker:
-    <span tal:replace="context/title">bugtracker title</span>
-    </title>
-
-</head>
-
 <body>
 
 <div metal:fill-slot="main">

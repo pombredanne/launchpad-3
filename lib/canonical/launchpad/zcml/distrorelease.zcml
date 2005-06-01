@@ -62,8 +62,13 @@
 	        />
 	    <browser:page
             name="+translations"
-            template="../templates/object-pots.pt"
+            template="../templates/distrorelease-translations.pt"
 	        lp:url="/distros/ubuntu/hoary/+translations"
+	        />
+	    <browser:page
+            name="+potlist"
+            template="../templates/object-pots.pt"
+	        lp:url="/distros/ubuntu/hoary/+potlist"
 	        />
     </browser:pages>
 

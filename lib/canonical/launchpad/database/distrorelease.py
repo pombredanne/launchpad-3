@@ -48,7 +48,7 @@ class DistroRelease(SQLBase):
     sections = ForeignKey(
         dbName='sections', foreignKey='Schema', notNull=True)
     releasestatus = EnumCol(notNull=True, schema=DistributionReleaseStatus)
-    datereleased = UtcDateTimeCol(notNull=True)
+    datereleased = UtcDateTimeCol(notNull=False)
     parentrelease =  ForeignKey(
         dbName='parentrelease', foreignKey='DistroRelease', notNull=False)
     owner = ForeignKey(

@@ -33,7 +33,7 @@ class SourcePackage:
     true database object, but rather attempts to represent the concept of a
     source package in a distribution, with links to the relevant dataase
     objects.
-    
+
     Note that the Magic SourcePackage can be initialised with EITHER a
     distrorelease OR a distribution. This means you can specify either
     "package foo in ubuntu" or "package foo in warty", and then methods
@@ -236,13 +236,16 @@ class SourcePackage:
 
     def shouldimport(self):
         """Note that this initial implementation of the method knows that we
-        are only interested in importing hoary and breezy packages
-        initially. Also, it knows that we should only import packages where
-        the upstream revision control is in place and working.
+        are only interested in importing ubuntu packages initially. Also, it
+        knows that we should only import packages where the upstream
+        revision control is in place and working.
         """
-        if self.distrorelease.name <> "hoary":
+        if self.distribution.name <> "ubuntu":
             return False
-        return self.productseries.branch is not None
+        ps = self.productseries
+        if ps is None:
+            return False
+        return ps.branch is not None
     shouldimport = property(shouldimport)
 
     def bugsCounter(self):

@@ -36,18 +36,33 @@
         />
 
     <vocabulary
-        name="ValidPerson"
-        factory="canonical.launchpad.vocabularies.ValidPersonVocabulary"
+        name="ValidPersonOrTeam"
+        factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+        />
+
+    <vocabulary
+        name="ValidAssignee"
+        factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+        />
+
+    <vocabulary
+        name="ValidMaintainer"
+        factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+        />
+
+    <vocabulary
+        name="ValidOwner"
+        factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+        />
+
+    <vocabulary
+        name="ValidTeamOwner"
+        factory="canonical.launchpad.vocabularies.ValidTeamOwnerVocabulary"
         />
 
     <vocabulary
         name="TeamSubscriptionPolicy"
         factory="canonical.launchpad.vocabularies.TeamSubscriptionPolicyVocabulary"
-        />
-
-    <vocabulary
-        name="ValidOwner"
-        factory="canonical.launchpad.vocabularies.ValidOwnerVocabulary"
         />
 
     <vocabulary
@@ -123,6 +138,11 @@
     <vocabulary
         name="ValidGPGKey"
         factory="canonical.launchpad.vocabularies.ValidGPGKeyVocabulary"
+        />
+
+    <vocabulary
+        name="POTemplateName"
+        factory="canonical.launchpad.vocabularies.POTemplateNameVocabulary"
         />
 
     <!-- Define the widget used by Choice fields that use huge vocabularies -->

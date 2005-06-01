@@ -1,0 +1,59 @@
+Product
+=======
+
+Launchpad keeps track of the "upstream" world as well as the "distro" world.
+The anchorpiece of the "upstream" world is the Product, which is a piece of
+software. It can be part of a Project or it can be standalone.
+
+>>> from zope.component import getUtility
+>>> from zope.interface.verify import verifyObject
+>>> from canonical.launchpad.interfaces import IProductSet, IProduct
+>>> from canonical.launchpad.ftests import login
+
+Let's log in as Foo Bar to ensure we have the privileges to do what we're
+going to demonstrate.
+
+>>> login("foo.bar@canonical.com")
+
+Now lets get the utility we use to interact with sets of products.
+
+>>> productset = getUtility(IProductSet)
+
+Verify that p (a Product object) correctly implements IProduct.
+
+>>> p = productset.get(5)
+>>> verifyObject(IProduct, p)
+True
+
+Make sure that a product provides the IProduct interface.
+
+>>> IProduct.providedBy(p)
+True
+
+Let's get a product from the sample data. We happen to know that product
+with id 5 should be evolution:
+
+>>> p.name
+u'evolution'
+
+Let's call that evo from now onwards just so the tests can be clearer.
+
+>>> evo = p
+
+We'll also fetch the a52dec product from the database.
+
+>>> a52dec = productset.get(12)
+
+Since we have some POTemplates for evolution, we should have a primary
+translatable for that product:
+
+>>> evo.primary_translatable.displayname
+u' the evolution source package in hoary'
+
+But for a52dec, where we have no translatable release or Ubuntu package, the
+primary_translatable is nonexistent:
+
+>>> print a52dec.primary_translatable
+None
+
+

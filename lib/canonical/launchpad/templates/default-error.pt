@@ -1,16 +1,53 @@
 <html metal:use-macro="context/@@main_template/master">
-    <head>
-        <title metal:fill-slot="title">System Error</title>
-    </head>
     <body>
         <div metal:fill-slot="main">
-            <span class="exception">A system error occurred.</span>
-            <tal:block condition="view/show_tracebacks">
-                <h3>Error type: <span tal:replace="view/error_type" /></h3>
+          <h1 class="exception">
+            Sorry, a system error occurred
+          </h1>
+          <p>
+            If you were just adding or changing something,
+            Launchpad probably hasn&#8217;t recorded those changes.
+          </p>
+          <h2>What you can do</h2>
+          <ul>
+            <li>
+              <p>
+                If you entered a lot of text
+                that you don&#8217;t want to lose,
+                go Back, copy the text,
+                and paste it into a text file.
+              </p>
+            </li>
+            <li>
+              <p>
+                While you&#8217;re there,
+                copy the URL of the page too.
+              </p>
+            </li>
+            <li>
+              <p>
+                <a href="/malone/products/launchpad">Report the bug</a>,
+                after checking that it isn&#8217;t reported already.
+                (If this error is preventing you <em>from</em> reporting bugs,
+                <a href="mailto:system-error@launchpad.ubuntu.com">e-mail us</a> instead,
+                with &#8220;Bug&#8221; in the Subject line.)
+                In your bug report,
+                include the <abbr>URL</abbr> of the page you were
+                on, and what you tried to do.
+              </p>
+              <tal:block condition="view/show_tracebacks">
+                <p>
+                  Also include this debugging information:
+                </p>
                 <div tal:content="structure view/htmltext | default">
                     HTML rendering of error should go here.
                 </div>
-            </tal:block>
+              </tal:block>
+            </li>
+          </ul>
+          <p>
+            Thanks for helping improve Launchpad, and sorry for the inconvenience.
+          </p>
         </div>
     </body>
 </html>

@@ -19,6 +19,7 @@ from canonical.launchpad.interfaces import \
     IProductSeriesSet
 from canonical.launchpad.database.packaging import Packaging
 from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import \
     EnumCol, ImportStatus, RevisionControlSystems
 
@@ -168,7 +169,7 @@ class ProductSeriesSet:
             clauseTables.add('Project')
             clauseTables.add('Product')
         # now just add filters on import status
-        if forimport:
+        if forimport or importstatus:
             if len(query) > 0:
                 query += ' AND '
             query += 'ProductSeries.importstatus IS NOT NULL'

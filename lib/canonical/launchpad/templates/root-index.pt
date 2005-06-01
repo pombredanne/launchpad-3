@@ -3,32 +3,8 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-
-    <title metal:fill-slot="title">The Launchpad Home Page</title>
-    <style type="text/css" media="screen">
-    @import url(/++resource++plone.css);
-    @import url(/++resource++launchpad.css);
-
-    body {
-        padding: 3em;
-        }
-
-    h1 {
-        font-size: 300%;
-        font-weight: bold;
-        border: none;
-        }
-
-    h2 {
-        border: none;
-        }
-    </style>
-</head>
-
 <body>
 
- 
   <div metal:fill-slot="main">
     <h1>Welcome to The Launchpad!</h1>
 
@@ -66,6 +42,15 @@
     whole projects, and track the relationships between them.
     <a title="DOAP Registry" href="doap">Find or register apps
     now!</a></p>
+
+    <h2><a title="Soyuz" href="/distros/">Soyuz - Distribution
+    Management</a></h2>
+
+    <p>The Launchpad also keeps track of software in the Ubuntu distribution
+    as well as other Linux distributions. Using this aspect of Launchpad,
+    which we call Soyuz, you can see which versions of a package are
+    published in the distribution at any time. <a title="Soyuz Distribution
+    Interface" href="/distros/">Explore Soyuz Now!</a></p>
 
   </div>
 

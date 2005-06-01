@@ -11,12 +11,10 @@ Make sure we can see the productseries edit page.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Edit
-        Mozilla Firefox
-        1.0 Details
-      </title>
+      <title>Edit Mozilla Firefox 1.0 Details</title>
   ...
 
+Test that the page to edit an existing product series works.
 
 Post the form with updated ProductSeries details for displayname, summary
 and fileroot / fileglob.
@@ -34,7 +32,7 @@ and fileroot / fileglob.
   HTTP/1.1 303 See Other
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
-  Location: http://localhost:9000/products/firefox/+series/1.0
+  Location: ../1.0
   <BLANKLINE>
   ...
 

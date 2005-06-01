@@ -1,0 +1,135 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <metal:leftportlets fill-slot="portlets_one">
+      <div tal:replace="structure view/viewsPortlet" />
+  </metal:leftportlets>
+
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/actionsPortlet" />
+  </metal:rightportlets>
+
+  <div metal:fill-slot="main">
+
+    <h1>Bugs Assigned to <span tal:replace="context/browsername" /></h1>
+
+    <p tal:condition="not: view/assignedBugsToShow">No bugs have been 
+    assigned to <span tal:replace="context/browsername" /> or to any 
+    package/product (s)he maintains.</p>
+
+    <tal:block tal:condition="view/assignedBugsToShow" 
+        tal:define="mostRecentBugTasks view/mostRecentBugTasks;
+                    mostImportantBugTasks view/mostImportantBugTasks">
+
+    <p tal:condition="mostRecentBugTasks">The most recent bugs assigned
+    directly to <span tal:replace="context/browsername" /> or to one of the
+    packages/products (s)he maintains</p>
+
+    <table tal:condition="mostRecentBugTasks"
+           class="listing lpListing rowNavigation" width="90%">
+      <tr>
+        <th>#</th>
+        <th>title</th>
+        <th>upstream / package</th>
+        <th>status</th>
+        <th>priority</th>
+        <th>severity</th>
+      </tr>
+
+      <tr tal:repeat="bugtask mostRecentBugTasks" class="rowLinkified">
+        <tal:block tal:define="url string:/malone/bugs/${bugtask/bug/id}">
+        <td><a tal:attributes="href url"><span tal:replace="bugtask/bug/id" /></a></td>
+        <td tal:attributes="title bugtask/bug/summary">
+          <a tal:attributes="href url"><span tal:replace="bugtask/bug/title" /></a></td>
+        <td><a tal:attributes="href url" 
+               tal:content="bugtask/product/displayname|default">-</a></td>
+        <td><a tal:attributes="href url" 
+               tal:content="bugtask/status/title">status</a></td>
+        <td><a tal:attributes="href url"
+               tal:content="bugtask/priority/title|default">-</a></td>
+        <td><a tal:attributes="href url"
+               tal:content="bugtask/severity/title|default">-</a></td>
+        </tal:block>
+      </tr>
+    </table>
+
+    <p tal:condition="mostImportantBugTasks">The bugs with greater priority 
+    assigned directly to <span tal:replace="context/browsername" /> or to one
+    of the packages/products (s)he maintains.</p>
+
+    <table tal:condition="mostImportantBugTasks"
+           class="listing lpListing rowNavigation" width="90%">
+
+      <tr>
+        <th>#</th>
+        <th>title</th>
+        <th>upstream / package</th>
+        <th>status</th>
+        <th>priority</th>
+        <th>severity</th>
+      </tr>
+
+      <tr tal:repeat="bugtask mostImportantBugTasks" class="rowLinkified">
+        <tal:block tal:define="url string:/malone/bugs/${bugtask/bug/id}">
+        <td><a tal:attributes="href url"><span tal:replace="bugtask/bug/id" /></a></td>
+        <td tal:attributes="title bugtask/bug/summary">
+          <a tal:attributes="href url"><span tal:replace="bugtask/bug/title" /></a></td>
+        <td><a tal:attributes="href url" 
+               tal:content="bugtask/product/displayname|default">-</a></td>
+        <td><a tal:attributes="href url" 
+               tal:content="bugtask/status/title">status</a></td>
+        <td><a tal:attributes="href url"
+               tal:content="bugtask/priority/title|default">-</a></td>
+        <td><a tal:attributes="href url"
+               tal:content="bugtask/severity/title|default">-</a></td>
+        </tal:block>
+      </tr>
+
+    </table>
+
+    <tal:block tal:condition="request/lp:person">
+    <tal:block tal:define="bugTasksWithSharedInterest view/bugTasksWithSharedInterest"
+               tal:condition="bugTasksWithSharedInterest">
+
+    <p>These are the most recent bugs that you and 
+    <span tal:replace="context/browsername" /> probably share some interest.</p>
+
+    <table class="listing lpListing rowNavigation" width="90%">
+      <tr>
+        <th>#</th>
+        <th>title</th>
+        <th>upstream / package</th>
+        <th>status</th>
+        <th>priority</th>
+        <th>severity</th>
+      </tr>
+
+      <tr tal:repeat="bugtask bugTasksWithSharedInterest" class="rowLinkified">
+        <tal:block tal:define="url string:/malone/bugs/${bugtask/bug/id}">
+        <td><a tal:attributes="href url"><span tal:replace="bugtask/bug/id" /></a></td>
+        <td tal:attributes="title bugtask/bug/summary">
+          <a tal:attributes="href url"><span tal:replace="bugtask/bug/title" /></a></td>
+        <td><a tal:attributes="href url" 
+               tal:content="bugtask/product/displayname|default">-</a></td>
+        <td><a tal:attributes="href url" 
+               tal:content="bugtask/status/title">status</a></td>
+        <td><a tal:attributes="href url"
+               tal:content="bugtask/priority/title|default">-</a></td>
+        <td><a tal:attributes="href url"
+               tal:content="bugtask/severity/title|default">-</a></td>
+        </tal:block>
+      </tr>
+    </table>
+    </tal:block>
+    </tal:block>
+
+    </tal:block>
+
+  </div>
+
+</body>
+</html>

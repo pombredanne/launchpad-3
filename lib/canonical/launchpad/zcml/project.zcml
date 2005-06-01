@@ -107,12 +107,28 @@
         label="Add a Product to this Project"
         fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
-                downloadurl owner"
+                downloadurl programminglang owner"
         class="canonical.launchpad.browser.ProjectAddProductView"
         permission="launchpad.AnyPerson"
         template="../templates/product-add.pt"
         lp:url="/projects/$Project.name/+newproduct">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget
+           field="homepageurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+        <browser:widget
+           field="screenshotsurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+        <browser:widget
+           field="wikiurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+        <browser:widget
+           field="downloadurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
     </browser:addform>
 
 
@@ -141,13 +157,13 @@
         class="canonical.launchpad.browser.ProjectSetView"
         lp:url="/projects/">
         <browser:page
+            name="+all" 
+            template="../templates/doap-listall.pt"
+            lp:url="/projects/+all" />
+        <browser:page
             name="+index" 
             template="../templates/projects-index.pt"
             lp:url="/projects/+index" />
-        <browser:page
-            name="+search"
-            template="../templates/projects-search.pt"
-            lp:url="/projects/+search" />
     </browser:pages>
 
     <browser:pages

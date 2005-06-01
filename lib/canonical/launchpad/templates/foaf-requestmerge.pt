@@ -3,9 +3,6 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="launchpad">
 
-    <title metal:fill-slot="title">Merge User Accounts
-    </title>
-
   <body>
 
   <div metal:fill-slot="main">
@@ -44,7 +41,7 @@
            tal:content="status" />
 
         <p tal:condition="view/errors" i18n:translate="">
-          There are <strong tal:content="python:len(view.errors)"
+          There are <strong tal:content="view/errors/count:len"
                             i18n:name="num_errors">6</strong> input errors.
         </p>
 

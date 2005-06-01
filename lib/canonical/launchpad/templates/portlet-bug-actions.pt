@@ -3,13 +3,15 @@
     <h4>actions:</h4>
 
     <div class="portletBody"
-         tal:define="bug_url string:/malone/bugs/${context/id}">
+         tal:define="bug_url context/@@absolute_url">
         <div class="portletContent odd">
             <img src="/++resource++edit.gif" alt="Add">
             <a href="#" tal:attributes="href string:$bug_url/+edit">Edit Bug
             Details</a><br />
             <img src="/++resource++add.gif" alt="Add">
             <a href="#" tal:attributes="href string:$bug_url/people/+new">Subscriber</a><br />
+            <img src="/++resource++add.gif" alt="Add">
+            <a href="#" tal:attributes="href string:$bug_url/+duplicate">Mark as Duplicate</a><br />
             <img src="/++resource++add.gif" alt="Add">
             <a href="#" tal:attributes="href string:$bug_url/productinfestations/+new">Product Infestation</a><br />
             <img src="/++resource++add.gif" alt="Add">

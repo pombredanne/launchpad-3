@@ -2,11 +2,6 @@
     lang="en"
     metal:use-macro="context/@@launchpad_template/master"
     i18n:domain="doap">
-
-    <title metal:fill-slot="title">The DOAP Network: Project and Product
-    Registration in Launchpad
-    </title>
-
 <body>
 
 <div metal:fill-slot="main">
@@ -32,13 +27,11 @@
         <li><a href="products/">Find Product</a>: find your open source
         product if it has been registered in The Launchpad.</li>
 
-		<li><a href="products/+search">Advanced Product Search</a>: 
-        Search for products that are not only registered in the Launchpad
-        but which are also available for translating, or have bugs listed,
-        or have their source code available as Bazaar branches.</li>
-
         <li><a href="products/+new">Register Product</a>: register an open
         source product with The Launchpad.</li>
+
+        <li><a href="products/+all">All Products</a>: see a complete list
+        of all open source products registered with The Launchpad.</li>
 
 	</ul>
 
@@ -57,13 +50,11 @@
         <li><a href="projects/">Find Project</a>: find your open source
         project if it has been registered in The Launchpad.</li>
 
-		<li><a href="projects/+search">Advanced Project Search</a>: 
-        Search for projects that are not only registered in the Launchpad
-        but which are also available for translating, or have bugs listed,
-        or have their source code available as Bazaar branches.</li>
-
         <li><a href="projects/+new">Register Project</a>: register an open
         source project with The Launchpad.</li>
+
+        <li><a href="projects/+all">All Projects</a>: see a complete list
+        of all open source projects registered with The Launchpad.</li>
 
     </ul>
 

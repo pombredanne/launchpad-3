@@ -37,6 +37,21 @@
           height="10" />
   </browser:addform>
 
+    <browser:editform
+        name="+review"
+        for="canonical.launchpad.interfaces.IPerson"
+        schema="canonical.launchpad.interfaces.IPerson"
+        label="Person Review"
+        fields="name displayname givenname familyname password"
+        permission="launchpad.Admin"
+        template="../templates/person-review.pt"
+        lp:url="/people/$person.id/+review">
+        <browser:widget
+            field="password"
+            class="canonical.widgets.PasswordChangeWidget"
+            />
+    </browser:editform>
+
   <browser:pages
       for="canonical.launchpad.interfaces.IPerson"
       permission="zope.Public"
@@ -50,9 +65,13 @@
           template="../templates/person-packages.pt"
           lp:url="/people/$Person.name/+packages" />
       <browser:page
-          name="+bugs"
-          template="../templates/person-bugs.pt"
-          lp:url="/people/$Person.name/+bugs" />
+          name="+assignedbugs"
+          template="../templates/person-assignedbugs.pt"
+          lp:url="/people/$Person.name/+assignedbugs" />
+      <browser:page
+          name="+reportedbugs"
+          template="../templates/person-reportedbugs.pt"
+          lp:url="/people/$Person.name/+reportedbugs" />
       <browser:page
           name="+karma"
           template="../templates/person-karma.pt"
@@ -74,6 +93,14 @@
           template="../templates/person-bounties.pt"
           lp:url="/people/$Person.name/+bounties" />
   </browser:pages>
+
+  <browser:page
+      for="canonical.launchpad.interfaces.IPerson"
+      name="+rdf"
+      template="../templates/person-foaf.pt"
+      lp:url="/person/$Person.name/+rdf"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.PersonRdfView" />
 
   <browser:pages
       for="canonical.launchpad.interfaces.IPerson"
@@ -133,6 +160,16 @@
           name="+bounties"
           template="../templates/person-bounties.pt"
           lp:url="/people/$Person.name/+bounties" />
+  </browser:pages>
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.ITeam"
+      permission="launchpad.Edit"
+      class="canonical.launchpad.browser.TeamEmailView">
+        <browser:page
+            name="+editemail"
+            template="../templates/team-editemail.pt"
+            lp:url="/people/$team.id/+editemail" />
   </browser:pages>
 
   <browser:editform
