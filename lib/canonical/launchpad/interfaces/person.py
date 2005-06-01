@@ -280,6 +280,9 @@ class IPerson(Interface):
         "Rosetta Translators", because we are member of both of them.
         """
 
+    def subscriptionPolicyDesc():
+        """Return a long description of this team's subscription policy."""
+
 
 class ITeam(IPerson):
     """ITeam extends IPerson.

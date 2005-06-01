@@ -626,43 +626,38 @@ class TeamMembershipStatus(DBSchema):
     PROPOSED = Item(1, """
         Proposed Member
 
-        The person has been proposed or has proposed themselves as a
-        member of this team. This status conveys no access rights or
-        privileges to the person.
+        You are a proposed member of this team. To become an active member your
+        subscription has to bo approved by one of the team's administrators.
         """)
 
     APPROVED = Item(2, """
         Approved Member
 
-        This person is currently a member of the team. This status means
-        that the person will have full access as a member of the team.
+        You are an active member of this team.
         """)
 
     ADMIN = Item(3, """
         Administrator
 
-        This person is currently an administrator of the team. This status 
-        means that the person will have full access as an administrator of 
-        the team.
+        You are an administrator of this team.
         """)
 
     DEACTIVATED = Item(4, """
         Deactivated Member
 
-        Either the member or any of the team's administrators have canceled
-        this subscription.
+        Your subscription to this team has been deactivated.
         """)
 
     EXPIRED = Item(5, """
         Expired Member
-        
-        The period for which this subscription was valid has expired.
+
+        Your subscription to this team is expired.
         """)
 
     DECLINED = Item(6, """
         Declined Member
 
-        User was proposed as a member but the subscription was not approved.
+        Your proposed subscription to this team has been declined.
         """)
 
 
@@ -684,15 +679,13 @@ class TeamSubscriptionPolicy(DBSchema):
     OPEN = Item(2, """
         Open Team
 
-        This team is 'Free for All', which means that anyone can join and
-        new subscriptions are not subjected to approval.
+        Any user can join and no approval is required.
         """)
 
     RESTRICTED = Item(3, """
         Restricted Team
 
         New members can only be added by one of the team's administrators.
-        Users cannot ask to join the team.
         """)
 
 

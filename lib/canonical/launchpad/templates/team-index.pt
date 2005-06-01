@@ -46,7 +46,7 @@
 
           <tr>
             <td>Subscription Policy:</td>
-            <td tal:content="view/subscriptionPolicyDesc">123</td>
+            <td tal:content="context/subscriptionPolicyDesc">123</td>
           </tr>
 
           <tr tal:condition="context/preferredemail">

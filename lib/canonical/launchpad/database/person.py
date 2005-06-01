@@ -295,6 +295,10 @@ class Person(SQLBase):
     # ITeam methods
     #
 
+    def subscriptionPolicyDesc(self):
+        return '%s. %s' % (self.subscriptionpolicy.title,
+                           self.subscriptionpolicy.description)
+
     def getSuperTeams(self):
         query = ('Person.id = TeamParticipation.team AND '
                  'TeamParticipation.person = %d' % self.id)
