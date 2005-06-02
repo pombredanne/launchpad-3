@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" tal:condition="context/bounties">
 
     <h4>Related Bounties:</h4>
 

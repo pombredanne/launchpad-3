@@ -1,0 +1,110 @@
+
+We should also be able to set a translation group and translation
+permissions on a product. We'll use the Netapplet product for this test.
+First make sure it has no translation group and permissions.
+
+  >>> print http(r"""
+  ... GET /products/netapplet/ HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+            <h2>Network Applet</h2>
+  ...
+          <b>Translation Group:</b><br />
+          <img src="/++resource++languages.gif">
+  <BLANKLINE>
+  <BLANKLINE>
+          <i>Not assigned</i><br />
+  <BLANKLINE>
+          <b>Translation Perms:</b><br />
+          Open
+          <br />
+  ...
+
+Now let's make sure we can see the page to let us change translation group
+and permissions.
+
+  >>> print http(r"""
+  ... GET /products/netapplet/+changetranslators HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+            <h2>Network Applet</h2>
+  ...
+            <h3>Select A New Translation Group</h3>
+  ...
+
+Now let's post to the form. We should see the same form back with a message
+about the update.
+
+  >>> print http(r"""
+  ... POST /products/netapplet/+changetranslators HTTP/1.1
+  ... Content-Length: 738
+  ... Content-Type: multipart/form-data; boundary=---------------------------6923855761766169312285474874
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... 
+  ... -----------------------------6923855761766169312285474874
+  ... Content-Disposition: form-data; name="field.translationgroup"
+  ... 
+  ... polyglot
+  ... -----------------------------6923855761766169312285474874
+  ... Content-Disposition: form-data; name="field.translationgroup-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------6923855761766169312285474874
+  ... Content-Disposition: form-data; name="field.translationpermission"
+  ... 
+  ... Open
+  ... -----------------------------6923855761766169312285474874
+  ... Content-Disposition: form-data; name="field.translationpermission-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------6923855761766169312285474874
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------6923855761766169312285474874--
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+            <h2>Network Applet</h2>
+  ...
+            <h3>Select A New Translation Group</h3>
+  <BLANKLINE>
+            <p class="portalMessage">Updated on ...</p>
+  ...
+
+Now these changes should show up in the product page.
+
+  >>> print http(r"""
+  ... GET /products/netapplet HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+            <h2>Network Applet</h2>
+  ...
+          <b>Translation Group:</b><br />
+          <img src="/++resource++languages.gif">
+  <BLANKLINE>
+          <a href="/rosetta/groups/polyglot/">The PolyGlot Translation Group</a><br />
+  <BLANKLINE>
+  <BLANKLINE>
+          <b>Translation Perms:</b><br />
+          Open
+          <br />
+  ...
+

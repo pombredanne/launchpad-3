@@ -191,6 +191,10 @@ class Person(SQLBase):
             return self.name
     browsername = property(browsername)
 
+    def isTeam(self):
+        """See IPerson."""
+        return self.teamowner is not None
+
     def translatedTemplates(self):
         """
         SELECT * FROM POTemplate WHERE
@@ -674,15 +678,6 @@ class PersonSet:
         if result is None:
             return default
         return result.person
-
-    def getContributorsForPOFile(self, pofile):
-        """See IPersonSet."""
-        return Person.select('''
-            POTranslationSighting.person = Person.id AND
-            POTranslationSighting.pomsgset = POMsgSet.id AND
-            POMsgSet.pofile = %d''' % pofile.id,
-            clauseTables=('POTranslationSighting', 'POMsgSet'),
-            distinct=True)
 
     def getUbuntites(self, orderBy=None):
         """See IPersonSet."""

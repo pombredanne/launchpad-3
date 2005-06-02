@@ -7,42 +7,14 @@
 
 <metal:leftportlets fill-slot="portlets_one">
 
-<div class="portlet">
-
-    <h4>Template Details:</h4>
-
-    <div class="portletBody">
-        <div class="portletContent odd">
-            <img src="/++resource++document_icon.gif" />
-            <span tal:replace="view/num_messages" /><br />
-            <div tal:condition="context/owner" tal:omit-tag>
-                <b>Owner:</b><br />
-                <img src="/++resource++user.gif" />
-                <span tal:replace="context/owner/browsername" /><br />
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="portlet">
-
-    <h4>Actions:</h4>
-
-    <div class="portletBody">
-        <div class="portletContent even">
-            <p><img src="/++resource++edit.gif"><a href="+edit">Edit this
-            template</a>. This will modify the template header information and
-            will let you upload a new PO template version.<br />
-            This is an advanced operation, limited to 
-            <span tal:replace="context/owner/browsername" />, the current owner of
-            this template in Rosetta.</p>
-        </div>
-    </div>
-</div>
+  <div tal:replace="structure view/detailsPortlet" />
 
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
+
+  <div tal:replace="structure view/actionsPortlet" />
+
 </metal:rightportlets>
 
 

@@ -29,6 +29,7 @@ check_merge: build importdcheck
 		PYTHON_VERSION=${PYTHON_VERSION}
 
 importdcheck:
+	cd database/schema; make test PYTHON=${PYTHON}
 	PYTHONPATH=lib:lib/canonical/sourcerer/util lib/importd/test_all.py
 
 check: build

@@ -17,7 +17,6 @@ from canonical.launchpad.database.bugattachment import *
 from canonical.launchpad.database.bugextref import *
 from canonical.launchpad.database.cveref import *
 from canonical.launchpad.database.bugtracker import *
-# from canonical.launchpad.database.sourcesource import *
 from canonical.launchpad.database.potemplatename import *
 from canonical.launchpad.database.pofile import *
 from canonical.launchpad.database.potemplate import *
@@ -48,6 +47,8 @@ from canonical.launchpad.database.person import *
 from canonical.launchpad.database.schema import *
 from canonical.launchpad.database.language import *
 from canonical.launchpad.database.translation_effort import *
+from canonical.launchpad.database.translationgroup import *
+from canonical.launchpad.database.translator import *
 from canonical.launchpad.database.processor import *
 from canonical.launchpad.database.manifest import *
 from canonical.launchpad.database.manifestentry import *

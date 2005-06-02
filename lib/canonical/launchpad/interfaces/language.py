@@ -28,6 +28,9 @@ class ILanguage(Interface):
     visible = Attribute(
         """Whether this language should ususally be visible or not.""")
 
+    displayname = Attribute(
+        "The displayname of the language (a constructed value)")
+
 
 class ILanguageSet(Interface):
     """The collection of languages."""

@@ -24,6 +24,12 @@ class IPOMsgSet(Interface):
 
     potmsgset = Attribute("The msgid set that is translating this set.")
 
+    def getSuggestedTexts(pluralform):
+        """Return an iterator over any suggestions Rosetta might have for
+        this plural form on the messageset. The suggestions would not
+        include the current active and published texts, because those can be
+        represented and accessed differently through this API."""
+
     def pluralforms():
         """Number of translations that have to point to this message set
         for it to be complete."""
@@ -49,14 +55,21 @@ class IEditPOMsgSet(IPOMsgSet):
         """foo"""
 
     def makeTranslationSighting(person, text, pluralForm, update=False,
-                                fromPOFile=False):
+                                fromPOFile=False, active=True):
         """Return a new translation sighting that points back to us.
 
         If one already exists, behaviour depends on 'update'; if update
         is allowed, the existing one is "touched" and returned.  If it
         is not, then a KeyError is raised.
+
         fromPOFile should be true when the sighting is coming from a POFile
         in the upstream source - so that the inLatestRevision field is
         set accordingly.
+
+        The "active" argument tells us whether or not to make this new
+        translation sighting active. In some cases, for example where people
+        have permission to make a new recommendation for a translation but
+        not actually to set it, we want the ability to create a new sighting
+        that is not active.
         """
 

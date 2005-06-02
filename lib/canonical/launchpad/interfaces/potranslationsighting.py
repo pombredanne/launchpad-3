@@ -9,15 +9,15 @@ __all__ = ('IPOTranslationSighting', )
 class IPOTranslationSighting(Interface):
     """A sighting of a translation in a PO file."""
 
-    pomsgset = Attribute("The PO message set for which is this sighting.")
+    pomsgset = Attribute("The PO Message Set of the translation.")
 
-    potranslation = Attribute("The translation that is sighted.")
+    potranslation = Attribute("The translation that was provided.")
 
-    license = Attribute("The license that has this sight.")
+    license = Attribute("The license under which the translation was provided.")
 
     datefirstseen = Attribute("The first time we saw this translation.")
 
-    datelastactive = Attribute("Last time we saw this translation.")
+    datelastactive = Attribute("The last time this translation was active.")
 
     inlastrevision = Attribute("""True if this sighting is currently in last
         imported POFile, otherwise false.""")
@@ -29,3 +29,4 @@ class IPOTranslationSighting(Interface):
     origin = Attribute("Where the sighting originally came from.")
 
     person = Attribute("The owner of this sighting.")
+

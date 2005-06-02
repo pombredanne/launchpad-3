@@ -22,11 +22,14 @@ from canonical.launchpad.database import SourcePackage, \
     SourcePackageRelease, SourcePackageName
 from canonical.launchpad.database import BinaryPackage
 from canonical.launchpad.database import BinaryPackageName
+from canonical.launchpad.database import BugTracker
+from canonical.launchpad.database import Language
 from canonical.launchpad.database import Milestone
 from canonical.launchpad.database import Product
 from canonical.launchpad.database import Project
 from canonical.launchpad.database import ProductRelease
 from canonical.launchpad.database import ProductSeries
+from canonical.launchpad.database import TranslationGroup
 from canonical.launchpad.database import BugTracker
 from canonical.launchpad.database import POTemplateName
 from canonical.launchpad.interfaces import ILaunchBag, ITeam
@@ -238,16 +241,33 @@ class BinaryPackageVocabulary(SQLObjectVocabularyBase):
     def getTermByToken(self, token):
         return self.getTerm(token)
 
+
 class BugTrackerVocabulary(SQLObjectVocabularyBase):
     # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
     # no test data for me to check yet. This'll be fixed by the end
     # of the week (2004/10/08) as we get Malone into usable shape.
     _table = BugTracker
 
+
+class LanguageVocabulary(SQLObjectVocabularyBase):
+    _table = Language
+    _orderBy = 'englishname'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.id, obj.displayname)
+
+
+class TranslationGroupVocabulary(NamedSQLObjectVocabulary):
+    _table = TranslationGroup
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.title)
+
+
 class PersonVocabulary(NamedSQLObjectVocabulary):
     implements(IHugeVocabulary)
     _table = Person
-    _orderBy = ['familyname','givenname','displayname']
+    _orderBy = ['familyname','givenname','displayname', 'name']
 
     def _toTerm(self, obj):
         return SimpleTerm(

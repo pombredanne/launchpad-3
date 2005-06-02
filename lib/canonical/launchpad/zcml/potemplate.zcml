@@ -74,6 +74,7 @@
         permission="launchpad.Edit"
         template="../templates/potemplate-edit.pt"
         fields="name title description owner path filename" >
+        lp:url="Rosetta/products/$Product.name/$POTemplate.name/+edit"
         <browser:widget
             field="title"
             class="zope.app.form.browser.TextWidget"

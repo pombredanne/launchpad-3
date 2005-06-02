@@ -13,6 +13,9 @@ from canonical.launchpad import helpers
 
 class RosettaApplicationView(object):
 
+    translationGroupsPortlet = ViewPageTemplateFile(
+            '../launchpad/templates/portlet-rosetta-groups.pt')
+
     prefLangPortlet = ViewPageTemplateFile(
             '../launchpad/templates/portlet-pref-langs.pt')
 
@@ -21,6 +24,9 @@ class RosettaApplicationView(object):
 
     browserLangPortlet = ViewPageTemplateFile(
         '../launchpad/templates/portlet-browser-langs.pt')
+
+    statsPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-rosetta-stats.pt')
 
     def __init__(self, context, request):
         self.context = context

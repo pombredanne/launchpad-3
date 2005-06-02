@@ -38,7 +38,7 @@
         permission="zope.Public" >
         <browser:page
             name="+index"
-            template="../templates/project-index.pt"
+            template="../templates/project.pt"
             lp:url="/projects/$Project.name/" />
         <browser:page name="+malone-index"
             template="../templates/project-bugs.pt"
@@ -98,6 +98,16 @@
         template="../templates/launchpad-editform.pt"
         lp:url="/projects/$Project.name/+review">
     </browser:editform>
+
+    <browser:editform
+        name="+changetranslators"
+        for="canonical.launchpad.interfaces.IProject"
+        schema="canonical.launchpad.interfaces.IProject"
+        fields="translationgroup translationpermission"
+        permission="launchpad.Edit"
+        label="Select A New Translation Group"
+        template="../templates/launchpad-editform.pt"
+        lp:url="/projects/$Project.name/+changetranslators" />
 
     <browser:addform
         name="+newproduct"

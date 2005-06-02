@@ -14,8 +14,23 @@
         <b>Lead Maintainer:</b><br />
         <img src="/++resource++user.gif">
         <a tal:attributes="href string:/people/${context/owner/name}"
-	   tal:content="context/owner/browsername"
-	   class="link">ownername</a><br />
+           tal:content="context/owner/browsername"
+           class="link">ownername</a><br />
+
+        <b>Translation Group:</b><br />
+        <img src="/++resource++languages.gif">
+        <tal:block condition="context/translationgroup">
+        <a tal:attributes="href
+                 string:/rosetta/groups/${context/translationgroup/name}/"
+           tal:content="context/translationgroup/title"
+        >Group</a><br />
+        </tal:block>
+        <tal:block condition="not: context/translationgroup">
+        <i>Not assigned</i><br />
+        </tal:block>
+        <b>Translation Perms:</b><br />
+        <span tal:replace="context/translationpermission/title">Open</span>
+        <br />
 
         <b>Product Status:</b><br />
         <span tal:condition="context/reviewed"

@@ -11,7 +11,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import IPOTranslationSighting
 from canonical.lp.dbschema import EnumCol
-from canonical.database.constants import DEFAULT
+from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.lp.dbschema import RosettaTranslationOrigin
 
 
@@ -25,7 +25,8 @@ class POTranslationSighting(SQLBase):
     potranslation = ForeignKey(foreignKey='POTranslation',
         dbName='potranslation', notNull=True)
     license = IntCol(dbName='license', notNull=False, default=None)
-    datefirstseen = UtcDateTimeCol(dbName='datefirstseen', notNull=True)
+    datefirstseen = UtcDateTimeCol(dbName='datefirstseen', notNull=True,
+        default=UTC_NOW)
     datelastactive = UtcDateTimeCol(dbName='datelastactive', notNull=True)
     inlastrevision = BoolCol(dbName='inlastrevision', notNull=True)
     pluralform = IntCol(dbName='pluralform', notNull=True)

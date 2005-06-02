@@ -12,8 +12,8 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure view/trackersPortlet" />
     <div tal:replace="structure view/actionsPortlet" />
+    <div tal:replace="structure view/trackersPortlet" />
 </metal:rightportlets>
 
 
@@ -38,9 +38,6 @@
     products from that project. For example, the Apache Project description
     would highlight its work on the Apache Server, and mention other
     products such as APR.
-    </div>
-    <div>
-        [ <a href="+edit">Edit</a> ]
     </div>
 
     <h2>Products</h2>

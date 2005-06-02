@@ -65,6 +65,7 @@ __all__ = (
 'TeamMembershipStatus',
 'TeamSubscriptionPolicy',
 'TranslationPriority',
+'TranslationPermission',
 'DistroReleaseQueueStatus',
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
@@ -1071,6 +1072,31 @@ class TranslationPriority(DBSchema):
 
         A low priority POTemplate should only show up if a comprehensive
         search or complete listing is requested by the user.  """)
+
+class TranslationPermission(DBSchema):
+    """Translation Permission System
+
+    Projects, products and distributions can all have content that needs to
+    be translated. In this case, Rosetta allows them to decide how open they
+    want that translation process to be. At one extreme, anybody can add or
+    edit any translation, without review. At the other, only the designated
+    translator for that group in that language can edit its translation
+    files. This schema enumerates the options.
+    """
+
+    OPEN = Item(1, """
+        Open
+
+        This group allows totally open access to its translations. Any
+        logged-in user can add or edit translations in any language, without
+        any review.""")
+
+    CLOSED = Item(100, """
+        Closed
+
+        This group allows only designated translators to edit the
+        translations of its files. No other contributions will be considered
+        or allowed.""")
 
 class DistroReleaseQueueStatus(DBSchema):
     """Distro Release Queue Status

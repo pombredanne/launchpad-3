@@ -1,0 +1,17 @@
+<div class="portlet">
+
+  <h4>Translation groups in Rosetta:</h4>
+
+  <div class="portletBody">
+
+    <div class="portletContent even">
+
+      <ul>
+        <li tal:repeat="group context/translation_groups">
+          <a tal:attributes="href string:/rosetta/groups/${group/name}/" tal:content="group/title" />
+        </li>
+      </ul>
+
+    </div>
+  </div>
+</div>

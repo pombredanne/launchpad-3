@@ -24,6 +24,12 @@ COMMENT ON COLUMN Project.sourceforgeproject IS 'The SourceForge project name fo
 COMMENT ON COLUMN Project.freshmeatproject IS 'The FreshMeat project name for this project. This is not unique as FreshMeat does not have the same project/product structure as DOAP';
 COMMENT ON COLUMN Project.reviewed IS 'Whether or not someone at Canonical has reviewed this project.';
 COMMENT ON COLUMN Project.active IS 'Whether or not this project should be considered active.';
+COMMENT ON COLUMN Project.translationgroup IS 'The translation group that has permission to edit translations across all products in this project. Note that individual products may have their own translationgroup, in which case those translators will also have permission to edit translations for that product.';
+COMMENT ON COLUMN Project.translationpermission IS 'The level of openness of
+this project\'s translation process. The enum lists different approaches to
+translation, from the very open (anybody can edit any translation in any
+language) to the completely closed (only designated translators can make any
+changes at all).';
 
 
 -- ProjectRelationship
@@ -59,6 +65,9 @@ COMMENT ON COLUMN Product.sourceforgeproject IS 'The SourceForge project name fo
 COMMENT ON COLUMN Product.freshmeatproject IS 'The FreshMeat project name for this product. This is not unique as FreshMeat does not have the same project/product structure as DOAP';
 COMMENT ON COLUMN Product.reviewed IS 'Whether or not someone at Canonical has reviewed this product.';
 COMMENT ON COLUMN Product.active IS 'Whether or not this product should be considered active.';
+COMMENT ON COLUMN Product.translationgroup IS 'The TranslationGroup that is responsible for translations for this product. Note that the Product may be part of a Project which also has a TranslationGroup, in which case the translators from both the product and project translation group have permission to edit the translations of this product.';
+COMMENT ON COLUMN Product.translationpermission IS 'The level of openness of this product\'s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
+
 
 
 -- ProductLabel
@@ -315,6 +324,8 @@ COMMENT ON COLUMN Distribution.lucilleconfig IS 'Configuration
 information which lucille will use when processing uploads and
 generating archives for this distribution';
 COMMENT ON COLUMN Distribution.members IS 'Person or team with upload and commit priviledges relating to this distribution. Other rights may be assigned to this role in the future.';
+COMMENT ON COLUMN Distribution.translationgroup IS 'The translation group that is responsible for all translation work in this distribution.';
+COMMENT ON COLUMN Distribution.translationpermission IS 'The level of openness of this distribution\'s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
 
 /* DistroRelease */
 
@@ -815,6 +826,14 @@ This allows us to say that a given Source Package INCLUDES libneon but is a
 PRIME package of tla, for example. By INCLUDES we mean that the code is
 actually lumped into the package as ancilliary support material, rather
 than simply depending on a separate packaging of that code.';
+
+-- Translator / TranslationGroup
+
+COMMENT ON TABLE TranslationGroup IS 'This represents an organised translation group that spans multiple languages. Effectively it consists of a list of people (pointers to Person), and each Person is associated with a Language. So, for each TranslationGroup we can ask the question "in this TranslationGroup, who is responsible for translating into Arabic?", for example.';
+COMMENT ON TABLE Translator IS 'A translator is a person in a TranslationGroup who is responsible for a particular language. At the moment, there can only be one person in a TranslationGroup who is the Translator for a particular language. If you want multiple people, then create a launchpad team and assign that team to the language.';
+COMMENT ON COLUMN Translator.translationgroup IS 'The TranslationGroup for which this Translator is working.';
+COMMENT ON COLUMN Translator.language IS 'The language for which this Translator is responsible in this TranslationGroup. Note that the same person may be responsible for multiple languages, but any given language can only have one Translator within the TranslationGroup.';
+COMMENT ON COLUMN Translator.translator IS 'The Person who is responsible for this language in this translation group.';
 
 -- PocketChroot
 COMMENT ON TABLE PocketChroot IS 'PocketChroots: Which chroot belongs to which pocket of which distroarchrelease. Any given pocket of any given distroarchrelease needs a specific chroot in order to be built. This table links it all together.';

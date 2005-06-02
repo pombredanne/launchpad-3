@@ -25,13 +25,16 @@
         Distribution Summary
     </p>
 
-    <table width="100%" class="listing rowNavigation">
+    <table width="100%" style="font-size: 80%;" class="listing rowNavigation">
+      <thead>
         <tr>
             <th>Release</th>
             <th>Title</th>
             <th>Version</th>
             <th>Status</th>
         </tr>
+      </thead>
+      <tbody>
         <tr tal:repeat="release context/releases"
             tal:attributes="onclick
                 string:window.location='${release/name}'">
@@ -43,6 +46,7 @@
             <td tal:content="release/version">VERSION</td>
             <td tal:content="release/releasestatus/title">RELEASESTATE</td>
         </tr>
+      </tbody>
     </table>
     
     <!--It is not inside the table because this table rows behave like links-->

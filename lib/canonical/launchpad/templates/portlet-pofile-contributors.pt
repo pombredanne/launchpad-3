@@ -1,0 +1,20 @@
+<div class="portlet" condition="context/contributors">
+
+  <h4>Contributors:</h4>
+
+  <div class="portletBody">
+
+    <div class="portletContent even">
+
+      <tal:block repeat="contributor context/contributors">
+        <img src="/++resource++user.gif" />
+        <a tal:content="contributor/browsername"
+           tal:attributes="href string:/people/${contributor/name}/"
+           >Mark Shuttleworth</a><br />
+      </tal:block>
+
+    </div>
+
+  </div>
+
+</div>
