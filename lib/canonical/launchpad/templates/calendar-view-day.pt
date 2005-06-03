@@ -64,11 +64,11 @@
                      tal:attributes="style python:'top: ' + str(top) + 'em';
                                      class python:oddrow and 'hour odd' or 'hour even'">
                   <a href="../+add"
-                     tal:condition="view/canAddEvents"
+                     tal:condition="context/calendar/required:launchpad.Edit"
                      tal:content="hour/title"
                      tal:attributes="href hour/addURL">08:00</a>
                   <span
-                     tal:condition="not:view/canAddEvents"
+                     tal:condition="not:context/calendar/required:launchpad.Edit"
                      tal:content="hour/title">08:00</span>
                 </div>
               </metal:block>

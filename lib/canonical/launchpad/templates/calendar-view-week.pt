@@ -60,7 +60,7 @@
               <a tal:attributes="href day/dayURL"
                      tal:content="day/dayname">Monday</a>
             </div>
-            <div tal:condition="view/canAddEvents" class="cal-addlink">
+            <div tal:condition="context/calendar/required:launchpad.Edit" class="cal-addlink">
               <a tal:attributes="href day/addURL">(add)</a>
             </div>
             <ul class="cal-event-list">

@@ -13,7 +13,6 @@ _ = MessageIDFactory('launchpad')
 from zope.interface import implements
 from zope.component import getUtility
 from zope.event import notify
-from zope.security import checkPermission
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 from zope.app.pagetemplate.viewpagetemplatefile import \
@@ -179,7 +178,6 @@ class CalendarViewBase(object):
         self.request = request
         self.datestring = datestring
         self.user_timezone = getUtility(ILaunchBag).timezone
-        self.canAddEvents = checkPermission('launchpad.Edit', context.calendar)
         person = IPerson(request.principal, None)
         if person:
             self.subscriptions = CalendarSubscriptionSet(person)
