@@ -81,20 +81,22 @@ class CalendarAdapterTraverser:
 
     def publishTraverse(self, request, name):
         """See IPublishTraverse."""
-        calendar = ICalendar(self.context)
-        adapter = zapi.queryViewProviding(calendar, IPublishTraverse,
-                                          request, self)
-        if adapter is not self:
-            return adapter.publishTraverse(request, name)
+        calendar = ICalendar(self.context, None)
+        if calendar:
+            adapter = zapi.queryViewProviding(calendar, IPublishTraverse,
+                                              request, self)
+            if adapter is not self:
+                return adapter.publishTraverse(request, name)
         raise NotFound(self.context, self.name, request)
 
     def browserDefault(self, request):
         """See IBrowserPublisher."""
-        calendar = ICalendar(self.context)
-        adapter = zapi.queryViewProviding(calendar, IBrowserPublisher,
-                                          request, self)
-        if adapter is not self:
-            return adapter.browserDefault(request)
+        calendar = ICalendar(self.context, None)
+        if calendar:
+            adapter = zapi.queryViewProviding(calendar, IBrowserPublisher,
+                                              request, self)
+            if adapter is not self:
+                return adapter.browserDefault(request)
         raise NotFound(self.context, self.name, request)
 
 

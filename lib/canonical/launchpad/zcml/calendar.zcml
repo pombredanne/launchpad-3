@@ -37,6 +37,14 @@
       class="canonical.launchpad.components.cal.CalendarAdapterTraverser" />
 
   <browser:page
+      for="canonical.launchpad.interfaces.ICalendarOwner"
+      name="+calendar-create"
+      permission="launchpad.Edit"
+      class="canonical.launchpad.browser.ViewCreateCalendar"
+      attribute="__call__"
+      lp:url="/$CalendarOwner/+calendar-create" />
+
+  <browser:page
       for="canonical.publication.RootObject"
       name="calendar"
       permission="launchpad.AnyPerson"

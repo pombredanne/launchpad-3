@@ -25,12 +25,14 @@ CREATE TABLE CalendarEvent (
     title text NOT NULL,
     description text NOT NULL DEFAULT '',
     location text NOT NULL DEFAULT '',
+/*
     recurrence varchar(10) NOT NULL,
-    count integer, /* if count is not positive, use until */
+    count integer, / * if count is not positive, use until * /
     until timestamp without time zone,
     exceptions text,
     interval integer,
     rec_list text,
+*/
 
     CONSTRAINT calendarevent_unique_id_key UNIQUE (unique_id)
 );

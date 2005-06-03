@@ -37,6 +37,9 @@ class ICalendarOwner(Interface):
         schema=ILaunchpadCalendar,
         description=_("""The calendar for this object."""))
 
+    def getOrCreateCalendar():
+        """Get the calendar.  Create it if it doesn't exist."""
+
 class ICalendarSubscriptionSet(Interface):
     """A list of calendars a user is subscribed to."""
     owner = Attribute(_("The owner of the subscriptions"))

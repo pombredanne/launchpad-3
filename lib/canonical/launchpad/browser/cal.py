@@ -13,6 +13,7 @@ _ = MessageIDFactory('launchpad')
 from zope.interface import implements
 from zope.component import getUtility
 from zope.event import notify
+from zope.security import checkPermission
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 from zope.app.pagetemplate.viewpagetemplatefile import \
@@ -568,6 +569,20 @@ class CalendarEventAddView(AddView):
 class CalendarEventEditView(SQLObjectEditView):
     pass
 
+class ViewCreateCalendar(object):
+    __used_for__ = ICalendarOwner
+    def __int__(self, context, request):
+        self.context = context
+        self.request = request
+    def __call__(self):
+        if self.request.method != "POST":
+            raise RuntimeError("This form must be posted!")
+
+        calendar = ICalendarOwner(self.context).getOrCreateCalendar()
+        if not calendar:
+            raise RuntimeError("Could not create calendar")
+        self.request.response.redirect('+calendar')
+
 class ViewCalendarEvent(object):
     __used_for__ = ICalendarEvent
     def __init__(self, context, request):
@@ -650,7 +665,8 @@ class ViewCalendarSubscribe(object):
 class CalendarInfoPortletView(object):
     def __init__(self, view):
         self.request = view.request
-        self.context = ICalendarOwner(view.context).calendar
+        self.context = view.context
+        self.calendar = ICalendarOwner(view.context).calendar
 
         self.user_timezone = getUtility(ILaunchBag).timezone
         now = datetime.now(self.user_timezone)
@@ -675,9 +691,10 @@ class CalendarInfoPortletView(object):
         end = datetime(end.year, end.month, 1,
                          0, 0, 0, 0, self.user_timezone).astimezone(UTC)
 
-        for event in self.context.expand(start, end):
-            dtstart = event.dtstart.astimezone(self.user_timezone)
-            self.days[dtstart.day - 1]['hasEvents'] = True
+        if self.calendar:
+            for event in self.calendar.expand(start, end):
+                dtstart = event.dtstart.astimezone(self.user_timezone)
+                self.days[dtstart.day - 1]['hasEvents'] = True
 
         # lay out the dayinfo objects in a 2D grid
         self.layout = calendar.monthcalendar(now.year, now.month)

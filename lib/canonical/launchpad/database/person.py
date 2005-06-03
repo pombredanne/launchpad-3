@@ -104,14 +104,13 @@ class Person(SQLBase):
                                      intermediateTable='BountySubscription')
     gpgkeys = MultipleJoin('GPGKey', joinColumn='owner')
 
-    _calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
-                           default=None, forceDBName=True)
-    def calendar(self):
-        if not self._calendar:
-            self._calendar = Calendar(title=self.displayname,
-                                      revision=0)
-        return self._calendar
-    calendar = property(calendar)
+    calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
+                          default=None, forceDBName=True)
+    def getOrCreateCalendar(self):
+        if not self.calendar:
+            self.calendar = Calendar(title=self.displayname,
+                                     revision=0)
+        return self.calendar
 
     timezone_name = StringCol(dbName='timezone_name', default=None)
 

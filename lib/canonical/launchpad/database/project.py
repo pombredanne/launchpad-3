@@ -63,14 +63,13 @@ class Project(SQLBase):
                                otherColumn='bugtracker',
                                intermediateTable='ProjectBugTracker')
 
-    _calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
-                           default=None, forceDBName=True)
-    def calendar(self):
-        if not self._calendar:
-            self._calendar = Calendar(title='%s Project Calendar' % self.displayname,
-                                      revision=0)
-        return self._calendar
-    calendar = property(calendar)
+    calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
+                          default=None, forceDBName=True)
+    def getOrCreateCalendar(self):
+        if not self.calendar:
+            self.calendar = Calendar(title='%s Project Calendar' % self.displayname,
+                                     revision=0)
+        return self.calendar
 
     def getProduct(self, name):
         return Product.selectOneBy(projectID=self.id, name=name)

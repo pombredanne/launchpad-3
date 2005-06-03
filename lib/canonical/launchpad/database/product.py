@@ -71,14 +71,13 @@ class Product(SQLBase):
     freshmeatproject = StringCol(notNull=False, default=None)
     sourceforgeproject = StringCol(notNull=False, default=None)
 
-    _calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
-                           default=None, forceDBName=True)
-    def calendar(self):
-        if not self._calendar:
-            self._calendar = Calendar(title='%s Product Calendar' % self.displayname,
-                                      revision=0)
-        return self._calendar
-    calendar = property(calendar)
+    calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
+                          default=None, forceDBName=True)
+    def getOrCreateCalendar(self):
+        if not self.calendar:
+            self.calendar = Calendar(title='%s Product Calendar' % self.displayname,
+                                     revision=0)
+        return self.calendar
 
     bugtasks = MultipleJoin('BugTask', joinColumn='product')
     branches = MultipleJoin('Branch', joinColumn='product')
