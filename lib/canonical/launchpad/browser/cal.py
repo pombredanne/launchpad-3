@@ -11,6 +11,7 @@ from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 from zope.interface import implements
+from zope.component import getUtility
 from zope.event import notify
 from zope.security import checkPermission
 from zope.app.event.objectevent import ObjectCreatedEvent
@@ -22,9 +23,9 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from schoolbell.interfaces import IEditCalendar, ICalendarEvent
 from schoolbell.simple import SimpleCalendarEvent
 from canonical.launchpad.interfaces import \
-     IPerson, IRequestTzInfo, ICalendarDay, ICalendarWeek, ICalendarOwner, \
+     IPerson, ICalendarDay, ICalendarWeek, ICalendarOwner, \
      ILaunchpadCalendar, ICalendarMonth, ICalendarYear, \
-     ICalendarEventCollection
+     ICalendarEventCollection, ILaunchBag
 
 from canonical.launchpad.database import Calendar, CalendarEvent
 from canonical.launchpad.components.cal import CalendarSubscriptionSet
@@ -75,7 +76,7 @@ _month_pat = re.compile(r'^(\d\d\d\d)-(\d\d)$')
 _week_pat  = re.compile(r'^(\d\d\d\d)-W(\d\d)$')
 _day_pat   = re.compile(r'^(\d\d\d\d)-(\d\d)-(\d\d)$')
 def traverseCalendar(calendar, request, name):
-    user_timezone = IRequestTzInfo(request).getTzInfo()
+    user_timezone = getUtility(ILaunchbag).timezone
 
     match = _year_pat.match(name)
     if match:
@@ -177,7 +178,7 @@ class CalendarViewBase(object):
         self.context = context
         self.request = request
         self.datestring = datestring
-        self.user_timezone = IRequestTzInfo(request).getTzInfo()
+        self.user_timezone = getUtility(ILaunchbag).timezone
         self.canAddEvents = checkPermission('launchpad.Edit', context.calendar)
         person = IPerson(request.principal, None)
         if person:
@@ -653,7 +654,7 @@ class CalendarInfoPortletView(object):
         self.request = view.request
         self.context = ICalendarOwner(view.context).calendar
 
-        self.user_timezone = IRequestTzInfo(self.request).getTzInfo()
+        self.user_timezone = getUtility(ILaunchbag).timezone
         now = datetime.now(self.user_timezone)
 
         self.month ='%s %04d' % (monthnames[now.month-1], now.year)

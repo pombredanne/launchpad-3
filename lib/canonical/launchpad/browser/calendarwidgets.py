@@ -6,13 +6,14 @@ _ = MessageIDFactory('launchpad')
 
 from zope.interface import implements
 
+from zope.component import getUtility
 from zope.schema.interfaces import IText
 from zope.app.form import InputWidget
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.form.browser.widget import SimpleInputWidget, renderElement
 from zope.app.form.interfaces import ConversionError, InputErrors
 
-from canonical.launchpad.interfaces import IRequestTzInfo
+from canonical.launchpad.interfaces import ILaunchBag
 
 _date_re = re.compile(r'^(\d\d\d\d)-(\d\d?)-(\d\d?)\ +(\d\d?):(\d\d)(?::(\d\d))?$')
 class LocalDateTimeWidget(TextWidget):
@@ -39,7 +40,7 @@ class LocalDateTimeWidget(TextWidget):
         else:
             second = 0
 
-        user_timezone = IRequestTzInfo(self.request).getTzInfo()
+        user_timezone = getUtility(ILaunchbag).timezone
         try:
             val = datetime(year, month, day, hour, minute, second,
                             tzinfo=user_timezone)
@@ -51,7 +52,7 @@ class LocalDateTimeWidget(TextWidget):
         if value == self.context.missing_value:
             return self._missing
         else:
-            user_timezone = IRequestTzInfo(self.request).getTzInfo()
+            user_timezone = getUtility(ILaunchbag).timezone
             value = value.astimezone(user_timezone)
             return value.strftime('%Y-%m-%d %H:%M:%S')
 

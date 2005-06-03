@@ -200,6 +200,7 @@ class ILaunchBag(Interface):
     user = Attribute('Currently authenticated person, or None')
     login = Attribute('The login used by the authenticated person, or None')
 
+    timezone = Attribute("The user's time zone")
 
 class IOpenLaunchBag(ILaunchBag):
     def add(ob):

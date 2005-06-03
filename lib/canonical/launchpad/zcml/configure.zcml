@@ -94,6 +94,5 @@
     <include file="geoip.zcml" />
     <include file="distrotool.zcml" />
     <include file="gpghandler.zcml" />
-    <include file="tzinfo.zcml" />
 
 </configure>

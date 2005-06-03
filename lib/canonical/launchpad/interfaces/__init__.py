@@ -95,7 +95,6 @@ from canonical.launchpad.interfaces.vsourcepackagereleasepublishing import *
 from canonical.launchpad.interfaces.wikiname import *
 
 from canonical.launchpad.interfaces.cal import *
-from canonical.launchpad.interfaces.tzinfo import *
 
 # XXX sabdfl 29/03/05 given the comments at the top of the file, should
 # these not be elsewhere?

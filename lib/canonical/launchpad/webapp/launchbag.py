@@ -6,6 +6,8 @@ The collection of stuff we have traversed.
 """
 __metaclass__ = type
 
+import pytz
+
 from zope.interface import Interface, implements
 from zope.component import getUtility
 import zope.security.management
@@ -17,6 +19,8 @@ from canonical.launchpad.interfaces import \
         ILaunchpadApplication, IPerson, IProject, IProduct, IDistribution, \
         IDistroRelease, ISourcePackage, IBug, ISourcePackageReleasePublishing
 from canonical.launchpad.webapp.interfaces import ILoggedInEvent
+
+_utc_tz = pytz.timezone('UTC')
 
 class LaunchBag(object):
 
@@ -119,6 +123,16 @@ class LaunchBag(object):
         return self._store.bug
     bug = property(bug)
 
+    def timezone(self):
+        user = self.user
+        if user and user.timezone_name:
+            try:
+                return pytz.timezone(person.timezone_name)
+            except KeyError:
+                pass # unknown timezone name
+        # fall back to UTC
+        return _utc_tz
+    timezone = property(timezone)
 
 class LaunchBagView(object):
     def __init__(self, context, request):
