@@ -32,7 +32,7 @@
 
   <browser:page
       for="canonical.launchpad.interfaces.ICalendarOwner"
-      name="calendar"
+      name="+calendar"
       permission="zope.Public"
       class="canonical.launchpad.components.cal.CalendarAdapterTraverser" />
 

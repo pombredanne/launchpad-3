@@ -665,7 +665,7 @@ class CalendarInfoPortletView(object):
         self.days = []
         for i in range(calendar.monthrange(now.year, now.month)[1]):
             self.days.append({ 'day': i+1,
-                               'dayURL': 'calendar/%04d-%02d-%02d'
+                               'dayURL': '+calendar/%04d-%02d-%02d'
                                          % (now.year, now.month, i+1),
                                'hasEvents': False })
 
