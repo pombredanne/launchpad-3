@@ -11,7 +11,7 @@ import sets
 import os.path
 import warnings
 from zope.interface import Interface, Attribute, implements
-from zope.component import getAdapter
+from zope.component import getAdapter, getUtility
 
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
@@ -20,7 +20,7 @@ import zope.security.management
 import zope.app.security.permission
 from zope.exceptions import NotFoundError
 from canonical.launchpad.interfaces import \
-    IPerson, ILink, IFacetList, ITabList, ISelectionAwareLink
+    IPerson, ILink, IFacetList, ITabList, ISelectionAwareLink, ILaunchBag
 import canonical.lp.dbschema
 from canonical.lp import decorates
 import canonical.launchpad.pagetitles
@@ -301,12 +301,16 @@ class DateTimeFormatterAPI:
 
     def time(self):
         if self._datetime.tzinfo:
-            return self._datetime.strftime('%T %Z')
+            value = self._datetime.astimezone(getUtility(ILaunchBag).timezone)
+            return value.strftime('%T %Z')
         else:
             return self._datetime.strftime('%T')
 
     def date(self):
-        return self._datetime.strftime('%Y-%m-%d')
+        value = self._datetime
+        if value.tzinfo:
+            value = value.astimezone(getUtility(ILaunchBag).timezone)
+        return value.strftime('%Y-%m-%d')
 
     def datetime(self):
         return "%s %s" % (self.date(), self.time())

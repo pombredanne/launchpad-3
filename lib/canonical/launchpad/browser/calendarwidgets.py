@@ -40,7 +40,7 @@ class LocalDateTimeWidget(TextWidget):
         else:
             second = 0
 
-        user_timezone = getUtility(ILaunchbag).timezone
+        user_timezone = getUtility(ILaunchBag).timezone
         try:
             val = datetime(year, month, day, hour, minute, second,
                             tzinfo=user_timezone)
@@ -52,7 +52,7 @@ class LocalDateTimeWidget(TextWidget):
         if value == self.context.missing_value:
             return self._missing
         else:
-            user_timezone = getUtility(ILaunchbag).timezone
+            user_timezone = getUtility(ILaunchBag).timezone
             value = value.astimezone(user_timezone)
             return value.strftime('%Y-%m-%d %H:%M:%S')
 

@@ -72,3 +72,7 @@ ALTER TABLE Product
 GRANT SELECT, INSERT, UPDATE ON Calendar TO GROUP write;
 GRANT SELECT, INSERT, UPDATE, DELETE ON CalendarSubscription TO GROUP write;
 GRANT SELECT, INSERT, UPDATE, DELETE ON CalendarEvent TO GROUP write;
+
+GRANT SELECT, INSERT, UPDATE ON calendar_id_seq TO GROUP write;
+GRANT SELECT, INSERT, UPDATE ON calendarsubscription_id_seq TO GROUP write;
+GRANT SELECT, INSERT, UPDATE ON calendarevent_id_seq TO GROUP write;
