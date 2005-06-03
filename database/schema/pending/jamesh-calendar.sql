@@ -68,3 +68,7 @@ ALTER TABLE Product ADD COLUMN calendar integer;
 ALTER TABLE Product
     ADD CONSTRAINT "product_calendar_fk" FOREIGN KEY (calendar) REFERENCES Calendar(id);
 
+/* security stuff -- should move to security.cfg */
+GRANT SELECT, INSERT, UPDATE ON Calendar TO GROUP write;
+GRANT SELECT, INSERT, UPDATE, DELETE ON CalendarSubscription TO GROUP write;
+GRANT SELECT, INSERT, UPDATE, DELETE ON CalendarEvent TO GROUP write;
