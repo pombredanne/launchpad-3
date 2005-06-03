@@ -8,11 +8,8 @@ All the setup stuff:
 
     >>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
     >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-    >>> from canonical.launchpad.ftests import login, ANONYMOUS
-
     >>> LaunchpadFunctionalTestSetup().setUp()
     >>> LibrarianTestSetup().setUp()
-    >>> login(ANONYMOUS)
 
 This adapter should work automatically, since it's declared in ZCML. However,
 it's not working, so we set it up manually.

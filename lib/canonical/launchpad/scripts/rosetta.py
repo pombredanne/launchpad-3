@@ -17,10 +17,13 @@ import urllib2
 from datetime import datetime
 from StringIO import StringIO
 
+from zope.component import getUtility
+
 from canonical.launchpad import helpers
-from canonical.launchpad.database import DistributionSet, \
-    SourcePackageNameSet, POTemplateSet, POTemplateNameSet, PersonSet, \
-    BinaryPackageNameSet, LanguageNotFound
+from canonical.launchpad.interfaces import IDistributionSet, IPersonSet, \
+    ISourcePackageNameSet, IPOTemplateSet, IPOTemplateNameSet, \
+    IBinaryPackageNameSet
+from canonical.launchpad.database import LanguageNotFound
 from canonical.sourcerer.deb.version import Version
 
 class URLOpenerError(Exception):
@@ -206,14 +209,14 @@ def find_pot_and_po_files(tarball):
 
     return pot_files, po_files
 
-def get_domains_from_tarball(distrorelease_name, sourcepackage_name,
-                             existing_potemplates, tarball):
+def get_domains_from_tarball(distrorelease, sourcepackagename, tarball):
     """Return a list with all .pot and .po files from a tarball.
 
-    The parameters are: the name of the source package the tarball was
-    generated from, an iterable of PO templates belonging to the distribution
-    release and source package that the tarball was generated from, and the
-    tarball itself.
+    The parameters are:
+        * distrorelease: The distrorelease where this tarball belongs.
+        * sourcepackage: the name of the source package the tarball was
+        generated from.
+        * tarball: the tarball itself.
 
     Return a list of TranslationDomain objects.
 
@@ -234,6 +237,7 @@ def get_domains_from_tarball(distrorelease_name, sourcepackage_name,
     """
 
     domains = []
+
 
     # Get a mapping of domain names to binary package names.
 
@@ -257,7 +261,7 @@ def get_domains_from_tarball(distrorelease_name, sourcepackage_name,
     # template (the fallback case).
 
     prefix = 'review-%s-%s-' % (
-        distrorelease_name, sourcepackage_name)
+        distrorelease.name, sourcepackagename.name)
     suffix = 1
 
     # For each PO template, try to find a domain which matches it.
@@ -277,13 +281,13 @@ def get_domains_from_tarball(distrorelease_name, sourcepackage_name,
             raise DomainTarballError(
                 "The source package %s for %s has more than one .pot file"
                 " in source/%s. Ignoring the tarball." %
-                (sourcepackage_name, distrorelease_name, pot_dirname))
+                (sourcepackagename.name, distrorelease.name, pot_dirname))
 
         found_paths.append(pot_dirname)
 
         if pot_dirname == 'debian/po':
             # It's a Debconf PO template.
-            domain_name = 'pkgconf-%s' % sourcepackage_name
+            domain_name = 'pkgconf-%s' % sourcepackagename.name
         elif len(non_pkgconf_templates) == len(domain_binarypackages) == 1:
             # We have only one non-Debconf PO template and one domain,
             # therefore the mapping is direct.
@@ -291,6 +295,11 @@ def get_domains_from_tarball(distrorelease_name, sourcepackage_name,
         else:
             # Check to see if there is already a PO template in the database
             # with the same path and the same filename as pot_filename.
+            potemplateset = getUtility(IPOTemplateSet)
+            existing_potemplates = potemplateset.getSubset(
+                sourcepackagename=sourcepackagename,
+                distrorelease=distrorelease)
+
             for potemplate in existing_potemplates:
                 if (potemplate.path == pot_dirname and
                     potemplate.filename == pot_filename):
@@ -307,22 +316,39 @@ def get_domains_from_tarball(distrorelease_name, sourcepackage_name,
 
             if domain_name is None:
                 # The PO template didn't match any PO templates that already
-                # exist in the database, nor any domains in the tarball, so we
-                # have to fall back to generating a name for the PO template.
-                for potemplate in existing_potemplates:
-                    # Check if we already have a potemplatename with the same
-                    # prefix so we don't mix two different .pot files when we
-                    # don't know their real translation domain.
-                    potemplatename = potemplate.potemplatename
-                    translationdomain = potemplatename.translationdomain
-                    if translationdomain.startswith(prefix):
-                        number = int(translationdomain[len(prefix):])
-                        if number >= suffix:
-                            suffix = number + 1
-                domain_name = '%s%d' % (prefix, suffix)
-                # Update the suffix so that the next pot file in this case
-                # gets the right value.
-                suffix = suffix + 1
+                # exist in the database for this distrorelease, nor any
+                # domains in the tarball, so we look at previous release
+                # for this .pot file inside pot_dirname.
+                previous_distrorelease = distrorelease.parentrelease
+
+                if previous_distrorelease is not None:
+                    previous_potemplates = potemplateset.getSubset(
+                        sourcepackagename=sourcepackagename,
+                        distrorelease=previous_distrorelease)
+                    for potemplate in previous_potemplates:
+                        if (potemplate.path == pot_dirname and
+                            potemplate.filename == pot_filename):
+                            domain_name = \
+                                potemplate.potemplatename.translationdomain
+
+                if domain_name is None:
+                    # The .pot file does not exists either in the previous
+                    # distribution. Use the fall back method that generates a
+                    # name for the PO template to be reviewed later.
+                    for potemplate in existing_potemplates:
+                        # Check if we already have a potemplatename with the same
+                        # prefix so we don't mix two different .pot files when we
+                        # don't know their real translation domain.
+                        potemplatename = potemplate.potemplatename
+                        translationdomain = potemplatename.translationdomain
+                        if translationdomain.startswith(prefix):
+                            number = int(translationdomain[len(prefix):])
+                            if number >= suffix:
+                                suffix = number + 1
+                    domain_name = '%s%d' % (prefix, suffix)
+                    # Update the suffix so that the next pot file in this case
+                    # gets the right value.
+                    suffix = suffix + 1
 
         found_domains.append(domain_name)
 
@@ -363,11 +389,19 @@ class AttachTranslationCatalog:
         self.catalog = catalog
         self.ztm = ztm
         self.logger = logger
+        self.missing_distributions = []
+        self.missing_releases = []
 
     def get_distrorelease(self, distribution_name, release_name):
         """Get the distrorelease object for a distribution and a release."""
 
-        distributionset = DistributionSet()
+        if distribution_name in self.missing_distributions:
+            return None
+
+        if (distribution_name, release_name) in self.missing_releases:
+            return None
+
+        distributionset = getUtility(IDistributionSet)
 
         # Check that we have the needed distribution.
         try:
@@ -377,6 +411,7 @@ class AttachTranslationCatalog:
             # warning so we can add it later and return.
             self.logger.warning("No distribution called %s in the "
                                 "database" % distribution_name)
+            self.missing_distributions.append(distribution_name)
             return None
 
         # Check that we have the needed release for the current distribution
@@ -389,12 +424,14 @@ class AttachTranslationCatalog:
             self.logger.warning("No release called %s for the "
                                 "distribution %s in the database" % (
                                 release_name, distribution_name))
+            self.missing_distributions.append(
+                (distribution_name, release_name))
             return None
 
     def get_sourcepackagename(self, sourcepackagename):
         """Get the SourcePackageName object for a given name."""
 
-        sourcepackagenameset = SourcePackageNameSet()
+        sourcepackagenameset = getUtility(ISourcePackageNameSet)
         try:
             return sourcepackagenameset[sourcepackagename]
         except KeyError:
@@ -425,7 +462,7 @@ class AttachTranslationCatalog:
         # inside this sourcepackagename and distrorelease.
         # We do it before the tarfile.read() so we don't download the file if
         # it's not needed.
-        potemplateset = POTemplateSet()
+        potemplateset = getUtility(IPOTemplateSet)
         potemplatesubset = potemplateset.getSubset(
             sourcepackagename=sourcepackagename, distrorelease=release)
 
@@ -445,18 +482,17 @@ class AttachTranslationCatalog:
 
         try:
             domains = get_domains_from_tarball(
-                release.name, sourcepackagename.name, potemplatesubset,
-                tarball)
+                release, sourcepackagename, tarball)
         except DomainTarballError, e:
             self.logger.warning("Error scanning tarball: %s" % str(e))
             return
 
-        potemplatenameset = POTemplateNameSet()
+        potemplatenameset = getUtility(IPOTemplateNameSet)
 
         # XXX
         # This should be done with a celebrity.
         #  -- Dafydd Harries, 2005/03/16
-        personset = PersonSet()
+        personset = getUtility(IPersonSet)
         admins = personset.getByName('rosetta-admins')
         ubuntu_translators = personset.getByName('ubuntu-translators')
 
@@ -493,7 +529,7 @@ class AttachTranslationCatalog:
             # Choosing the shortest is used as a heuristic for selecting among
             # binary package names and domain paths.
             if domain.binary_packages:
-                binarypackagenameset = BinaryPackageNameSet()
+                binarypackagenameset = getUtility(IBinaryPackageNameSet)
                 best_binarypackage = helpers.getRosettaBestBinaryPackageName(
                     domain.binary_packages)
 

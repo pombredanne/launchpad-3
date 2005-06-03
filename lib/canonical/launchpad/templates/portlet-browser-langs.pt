@@ -6,9 +6,11 @@
 
         <div class="portletContent even">
 
-            <span tal:repeat="lang view/browserLanguages" tal:omit-tag>
-                o <span tal:replace="lang/englishname" /><br />
-            </span>
+          <ul>
+            <li tal:repeat="lang view/browserLanguages">
+              <span tal:replace="lang/englishname" />
+            </li>
+          </ul>
 
         </div>
     </div>

@@ -350,9 +350,9 @@ def quote(x):
     >>> quote("hello")
     "'hello'"
     >>> quote("'hello'")
-    "'''hello'''"
+    "'\\'hello\\''"
     >>> quote(r"\'hello")
-    "'\\\\''hello'"
+    "'\\\\\\'hello'"
 
     Timezone handling is not implemented, since all timestamps should
     be UTC anyway.
@@ -433,7 +433,7 @@ def sqlvalues(*values, **kwvalues):
     >>> sqlvalues(1)
     ('1',)
     >>> sqlvalues(1, "bad ' string")
-    ('1', "'bad '' string'")
+    ('1', "'bad \\\\' string'")
 
     You can also use it when using dict-style substitution.
 

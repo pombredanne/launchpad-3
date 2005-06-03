@@ -1,0 +1,37 @@
+First, check that the PO template upload form loads.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+upload HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Now, do upload a .pot file
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+upload HTTP/1.1
+  ... Accept-Language: en-gb,en;q=0.5
+  ... Content-Length: 386
+  ... Content-Type: multipart/form-data; boundary=---------------------------4415150352141306358753646864
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+upload
+  ... 
+  ... -----------------------------4415150352141306358753646864
+  ... Content-Disposition: form-data; name="file"; filename="test.pot"
+  ... Content-Type: text/x-gettext-translation-template
+  ... 
+  ... Empty, it's only for a test.
+  ... 
+  ... -----------------------------4415150352141306358753646864
+  ... Content-Disposition: form-data; name="UPLOAD"
+  ... 
+  ... Upload
+  ... -----------------------------4415150352141306358753646864--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  <BLANKLINE>
+          <div class="portalMessage">Thank you for your upload. The template content will appear in Rosetta in a few minutes.</div>
+  <BLANKLINE>
+  ...

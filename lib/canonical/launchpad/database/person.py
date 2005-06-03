@@ -13,6 +13,7 @@ __all__ = [
 import itertools
 import sets
 from datetime import datetime, timedelta
+import pytz
 import sha
 
 # Zope interfaces
@@ -20,11 +21,12 @@ from zope.interface import implements, directlyProvides, directlyProvidedBy
 from zope.component import ComponentLookupError, getUtility
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
+from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, SQLObjectNotFound
 from sqlobject.sqlbuilder import AND
 from canonical.database.sqlbase import SQLBase, quote, cursor, sqlvalues
 from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
 
 # canonical imports
@@ -74,7 +76,7 @@ class Person(SQLBase):
     sshkeys = MultipleJoin('SSHKey', joinColumn='person')
 
     karma = IntCol(dbName='karma', default=0)
-    karmatimestamp = DateTimeCol(dbName='karmatimestamp', default=UTC_NOW)
+    karmatimestamp = UtcDateTimeCol(dbName='karmatimestamp', default=UTC_NOW)
 
     subscriptionpolicy = EnumCol(
         dbName='subscriptionpolicy',
@@ -189,6 +191,10 @@ class Person(SQLBase):
             return self.name
     browsername = property(browsername)
 
+    def isTeam(self):
+        """See IPerson."""
+        return self.teamowner is not None
+
     def translatedTemplates(self):
         """
         SELECT * FROM POTemplate WHERE
@@ -293,6 +299,10 @@ class Person(SQLBase):
     # ITeam methods
     #
 
+    def subscriptionPolicyDesc(self):
+        return '%s. %s' % (self.subscriptionpolicy.title,
+                           self.subscriptionpolicy.description)
+
     def getSuperTeams(self):
         query = ('Person.id = TeamParticipation.team AND '
                  'TeamParticipation.person = %d' % self.id)
@@ -347,7 +357,7 @@ class Person(SQLBase):
         elif tm.status in [declined]:
             assert status in [proposed, approved]
 
-        now = datetime.utcnow()
+        now = datetime.now(pytz.timezone('UTC'))
         if expires is not None and expires <= now:
             expires = now
             status = expired
@@ -422,7 +432,7 @@ class Person(SQLBase):
     def defaultexpirationdate(self):
         days = self.defaultmembershipperiod
         if days:
-            return datetime.utcnow() + timedelta(days)
+            return datetime.now(pytz.timezone('UTC')) + timedelta(days)
         else:
             return None
     defaultexpirationdate = property(defaultexpirationdate)
@@ -430,7 +440,7 @@ class Person(SQLBase):
     def defaultrenewedexpirationdate(self):
         days = self.defaultrenewalperiod
         if days:
-            return datetime.utcnow() + timedelta(days)
+            return datetime.now(pytz.timezone('UTC')) + timedelta(days)
         else:
             return None
     defaultrenewedexpirationdate = property(defaultrenewedexpirationdate)
@@ -446,6 +456,10 @@ class Person(SQLBase):
         preferredemail = self.preferredemail
         if preferredemail is not None:
             preferredemail.status = EmailAddressStatus.VALIDATED
+            # We need to flush updates, because we don't know what order
+            # SQLObject will issue the changes and we can't set the new
+            # address to PREFERRED until the old one has been set to VALIDATED
+            preferredemail.syncUpdate()
         email.status = EmailAddressStatus.PREFERRED
 
     def _getPreferredemail(self):
@@ -665,15 +679,6 @@ class PersonSet:
             return default
         return result.person
 
-    def getContributorsForPOFile(self, pofile):
-        """See IPersonSet."""
-        return Person.select('''
-            POTranslationSighting.person = Person.id AND
-            POTranslationSighting.pomsgset = POMsgSet.id AND
-            POMsgSet.pofile = %d''' % pofile.id,
-            clauseTables=('POTranslationSighting', 'POMsgSet'),
-            distinct=True)
-
     def getUbuntites(self, orderBy=None):
         """See IPersonSet."""
         clauseTables = ['SignedCodeOfConduct']
@@ -722,6 +727,7 @@ class PersonSet:
             ('teamparticipation', 'team'),
             ('personlanguage', 'person'),
             ('person', 'merged'),
+            ('emailaddress', 'person'),
             ]
 
         # Sanity check. If we have an indirect reference, it must
@@ -1077,9 +1083,9 @@ class TeamMembership(SQLBase):
     reviewer = ForeignKey(dbName='reviewer', foreignKey='Person', default=None)
     status = EnumCol(
         dbName='status', notNull=True, schema=TeamMembershipStatus)
-    datejoined = DateTimeCol(dbName='datejoined', default=datetime.utcnow(),
-                             notNull=True)
-    dateexpires = DateTimeCol(dbName='dateexpires', default=None)
+    datejoined = UtcDateTimeCol(dbName='datejoined', default=UTC_NOW,
+                                notNull=True)
+    dateexpires = UtcDateTimeCol(dbName='dateexpires', default=None)
     reviewercomment = StringCol(dbName='reviewercomment', default=None)
 
     def statusname(self):
@@ -1207,8 +1213,8 @@ class Karma(SQLBase):
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     points = IntCol(dbName='points', notNull=True, default=0)
     karmatype = EnumCol(dbName='karmatype', notNull=True, schema=KarmaType)
-    datecreated = DateTimeCol(dbName='datecreated', notNull=True,
-                              default='NOW')
+    datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True,
+                                 default=UTC_NOW)
 
     def karmatypename(self):
         return self.karmatype.title

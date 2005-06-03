@@ -122,14 +122,14 @@ bugs_index = 'Malone Master Bug List'
 bugsubscription_edit = 'Modify Your Bug Subscription'
 
 def bugtask_display(context, view):
-    return 'Bug Task on Malone #%s' % context.bug.id
+    return 'Bug #%s in %s: %s' % (
+      context.bug.id, context.contextname, context.bug.title
+    )
 
 def bugtask_editform(context, view):
-    title = 'Malone #%s' % context.bug.id
-    if context.product:
-        title += ' on %s' % context.product.displayname
-    title += ': %s' % context.bug.title
-    return title
+    return 'Editing bug #%s in %s: %s' % (
+      context.bug.id, context.contextname, context.bug.title
+    )
 
 # bugtask_search_listing contains only macros
 # bugtasks_index is a redirect
@@ -325,6 +325,8 @@ notfound = 'Launchpad Page Not Found'
 
 # object_pots is a fragment.
 
+object_potemplatenames = ContextDisplayName('Template names for %s')
+
 def package_bugs(context, view):
     return 'Package Bug Listing for %s' % context.name
 
@@ -377,11 +379,23 @@ def pofile_translate(context, view):
 
 # portlet_* are portlets
 
+potemplage_admin = ContextTitle('%s admin in Rosetta')
+
 # potemplate_chart is a fragment
 
-potemplate_edit = ContextTitle('Rosetta: %s - Edit')
+potemplate_edit = ContextTitle('%s edit in Rosetta')
 
-potemplate_index = ContextTitle('Rosetta %s')
+potemplate_index = ContextTitle('%s in Rosetta')
+
+potemplate_upload = ContextTitle('%s upload in Rosetta')
+
+potemplatename_add = 'Add a new template name to Rosetta'
+
+potemplatename_edit = ContextTitle('%s edit in Rosetta')
+
+potemplatename_index = ContextTitle('%s in Rosetta')
+
+potemplatenames_index = 'Template names in Launchpad'
 
 product_add = 'Register a new Product with the Launchpad'
 
@@ -534,6 +548,8 @@ template_edit = 'EXAMPLE EDIT TITLE'
 template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
+
+translationgroup = ContextTitle('Rosetta Translation Group: %s')
 
 ubuntite_list = 'FOAF: Ubuntite List'
 

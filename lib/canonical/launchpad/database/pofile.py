@@ -11,15 +11,16 @@ from zope.component import getUtility
 from zope.exceptions import NotFoundError
 
 # SQL imports
-from sqlobject import \
-    DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound
-from canonical.database.sqlbase import SQLBase, flush_database_updates, \
-    sqlvalues
+from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
+    SQLObjectNotFound)
+from canonical.database.sqlbase import (SQLBase, flush_database_updates,
+    sqlvalues)
+from canonical.database.datetimecol import UtcDateTimeCol
 
 # canonical imports
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces import \
-    IPOFileSet, IEditPOFile, IPersonSet, IRawFileData, IPOTemplateExporter
+from canonical.launchpad.interfaces import (IPOFileSet, IEditPOFile,
+    IPersonSet, IRawFileData, ITeam, IPOTemplateExporter)
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.pofile_adapters import POFileImporter
 from canonical.launchpad.components.poparser import POParser, POHeader
@@ -27,12 +28,12 @@ from canonical.launchpad import helpers
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgset import POMsgSet
-from canonical.launchpad.database.potranslationsighting import \
-    POTranslationSighting
-from canonical.librarian.interfaces import ILibrarianClient, DownloadFailed, \
-    UploadFailed
-from canonical.lp.dbschema import EnumCol
-from canonical.lp.dbschema import RosettaImportStatus
+from canonical.launchpad.database.potranslationsighting import (
+    POTranslationSighting)
+from canonical.librarian.interfaces import (ILibrarianClient, DownloadFailed,
+    UploadFailed)
+from canonical.lp.dbschema import (EnumCol, RosettaImportStatus,
+    TranslationPermission)
 
 
 class POFile(SQLBase, RosettaStats):
@@ -76,9 +77,9 @@ class POFile(SQLBase, RosettaStats):
     rosettacount = IntCol(dbName='rosettacount',
                           notNull=True,
                           default=0)
-    lastparsed = DateTimeCol(dbName='lastparsed',
-                             notNull=False,
-                             default=None)
+    lastparsed = UtcDateTimeCol(dbName='lastparsed',
+                                notNull=False,
+                                default=None)
     owner = ForeignKey(foreignKey='Person',
                        dbName='owner',
                        notNull=True)
@@ -94,10 +95,72 @@ class POFile(SQLBase, RosettaStats):
                             dbName='exportfile',
                             notNull=False,
                             default=None)
-    exporttime = DateTimeCol(dbName='exporttime',
-                           notNull=False,
-                           default=None)
+    exporttime = UtcDateTimeCol(dbName='exporttime',
+                                notNull=False,
+                                default=None)
 
+    def canEditTranslations(self, person):
+        """See IEditPOFile."""
+
+        tperm = self.translationpermission
+        if tperm == TranslationPermission.OPEN:
+            # if the translation policy is "open", then yes
+            return True
+        elif tperm == TranslationPermission.CLOSED:
+            # if the translation policy is "closed", then check if the person is
+            # in the set of translators
+            # XXX sabdfl 25/05/05 this code could be improved when we have
+            # implemented CrowdControl
+            translators = [t.translator for t in self.translators]
+            for translator in translators:
+                if person.inTeam(translator):
+                    return True
+        else:
+            raise NotImplementedError('Unknown permission %s' % tperm.name)
+
+        # Finally, check for the owner of the PO file
+        return person.inTeam(self.owner)
+
+    @property
+    def latest_sighting(self):
+        """See IPOFile."""
+
+        sightings = POTranslationSighting.select('''
+            POTranslationSighting.pomsgset = POMsgSet.id AND
+            POMsgSet.pofile = %d''' % self.id,
+            orderBy='-datelastactive',
+            clauseTables=['POMsgSet'],
+            limit=1)
+
+        try:
+            return sightings[0]
+        except IndexError:
+            return None
+
+    @property
+    def translators(self):
+        """See IPOFile."""
+        for group in self.potemplate.translationgroups:
+            translator = group.query_translator(self.language)
+            if translator is not None:
+                yield translator
+
+    @property
+    def translationpermission(self):
+        """See IPOFile."""
+        return self.potemplate.translationpermission
+
+    @property
+    def contributors(self):
+        """See IPOFile."""
+        from canonical.launchpad.database.person import Person
+
+        return Person.select("""
+            POTranslationSighting.person = Person.id AND
+            POTranslationSighting.pomsgset = POMsgSet.id AND
+            POMsgSet.pofile = %d""" % self.id,
+            clauseTables=('POTranslationSighting', 'POMsgSet'),
+            distinct=True)
 
     def currentMessageSets(self):
         return POMsgSet.select(
@@ -108,9 +171,11 @@ class POFile(SQLBase, RosettaStats):
     # it makes no sense to have such information or perhaps we should have it
     # as pot's len + the obsolete msgsets from this .po file.
     def __len__(self):
+        """See IPOFile."""
         return self.translatedCount()
 
     def translated(self):
+        """See IPOFile."""
         return iter(POMsgSet.select('''
             POMsgSet.pofile = %d AND
             POMsgSet.iscomplete=TRUE AND
@@ -120,13 +185,15 @@ class POFile(SQLBase, RosettaStats):
             ))
 
     def untranslated(self):
-        '''XXX'''
+        """See IPOFile."""
         raise NotImplementedError
 
     def __iter__(self):
+        """See IPOFile."""
         return iter(self.currentMessageSets())
 
     def messageSet(self, key, onlyCurrent=False):
+        """See IPOFile."""
         query = 'potemplate = %d' % self.potemplate.id
         if onlyCurrent:
             query += ' AND sequence > 0'
@@ -161,9 +228,11 @@ class POFile(SQLBase, RosettaStats):
         return poresult
 
     def __getitem__(self, msgid_text):
+        """See IPOFile."""
         return self.messageSet(msgid_text)
 
     def messageSetsNotInTemplate(self):
+        """See IPOFile."""
         return iter(POMsgSet.select('''
             POMsgSet.pofile = %d AND
             POMsgSet.potmsgset = POTMsgSet.id AND
@@ -247,26 +316,29 @@ class POFile(SQLBase, RosettaStats):
         return results.count() > 0
 
     def messageCount(self):
+        """See IRosettaStats."""
         return self.potemplate.messageCount()
 
     def currentCount(self, language=None):
+        """See IRosettaStats."""
         return self.currentcount
 
     def updatesCount(self, language=None):
+        """See IRosettaStats."""
         return self.updatescount
 
     def rosettaCount(self, language=None):
+        """See IRosettaStats."""
         return self.rosettacount
-
-    def getContributors(self):
-        return getUtility(IPersonSet).getContributorsForPOFile(self)
 
     # IEditPOFile
     def expireAllMessages(self):
+        """See IEditPOFile."""
         for msgset in self.currentMessageSets():
             msgset.sequence = 0
 
     def updateStatistics(self, newImport=False):
+        """See IEditPOFile."""
         if newImport:
             # The current value should change only with a new import, if not,
             # it will be always the same.
@@ -335,10 +407,7 @@ class POFile(SQLBase, RosettaStats):
         return (current, updates, rosetta)
 
     def createMessageSetFromMessageSet(self, potmsgset):
-        """Creates in the database a new message set.
-
-        Returns that message set.
-        """
+        """See IEditPOFile."""
         messageSet = POMsgSet(
             sequence=0,
             pofile=self,
@@ -350,6 +419,7 @@ class POFile(SQLBase, RosettaStats):
         return messageSet
 
     def createMessageSetFromText(self, text):
+        """See IEditPOFile."""
         try:
             potmsgset = self.potemplate[text]
         except KeyError:
@@ -357,22 +427,7 @@ class POFile(SQLBase, RosettaStats):
 
         return self.createMessageSetFromMessageSet(potmsgset)
 
-    def latest_sighting(self):
-        """See IPOFile."""
 
-        sightings = POTranslationSighting.select('''
-            POTranslationSighting.pomsgset = POMsgSet.id AND
-            POMsgSet.pofile = %d''' % self.id,
-            orderBy='-datelastactive',
-            clauseTables=['POMsgSet'],
-            limit=1)
-
-        try:
-            return sightings[0]
-        except IndexError:
-            return None
-
-    latest_sighting = property(latest_sighting)
 
     # ICanAttachRawFileData implementation
 
@@ -394,8 +449,8 @@ class POFile(SQLBase, RosettaStats):
                          notNull=False, default=None)
     rawimporter = ForeignKey(foreignKey='Person', dbName='rawimporter',
                              notNull=False, default=None)
-    daterawimport = DateTimeCol(dbName='daterawimport', notNull=False,
-                                default=None)
+    daterawimport = UtcDateTimeCol(dbName='daterawimport', notNull=False,
+                                   default=None)
     rawimportstatus = EnumCol(dbName='rawimportstatus', notNull=True,
         schema=RosettaImportStatus, default=RosettaImportStatus.IGNORE)
 

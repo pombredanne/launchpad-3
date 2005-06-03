@@ -8,6 +8,7 @@ _ = MessageIDFactory('launchpad')
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces.launchpad import IHasOwner, IHasAssignee
+from canonical.launchpad.validators.name import valid_name
 
 class IProduct(IHasOwner):
     """
@@ -23,14 +24,15 @@ class IProduct(IHasOwner):
     id = Int(title=_('The Product ID'))
 
     project = Choice(title=_('Project'), required=False,
-    vocabulary='Project', description=_("""Optional related Project. Used to
-    group similar products in a coherent way."""))
-
+        vocabulary='Project', description=_("""Optional related Project.
+        Used to group similar products in a coherent way."""))
+    
     owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
-    description=_("""Product owner, it can either a valid Person or Team
-    inside Launchpad context."""))
+        description=_("""Product owner, it can either a valid Person or Team
+        inside Launchpad context."""))
 
-    name = TextLine(title=_('Name'), description=_("""The short name of this
+    name = TextLine(title=_('Name'), constraint=valid_name,
+        description=_("""The short name of this
         product, which must be unique among all the products. It should be
         at least one lowercase letters or number followed by one or more chars,
         numbers, plusses, dots or hyphens and will be part of the url to this
@@ -41,14 +43,14 @@ class IProduct(IHasOwner):
         would appear in a paragraph of text."""))
 
     title = Title(title=_('Title'), description=_("""The product
-    title. Should be just a few words."""))
+        title. Should be just a few words."""))
 
     summary = Summary(title=_('Summary'), description=_("""The summary should
         be a single short paragraph."""))
 
-    description = Description(title=_('Description'), description=_("""The product
-        description, may be several paragraphs of text, giving the product
-        highlights and details."""))
+    description = Description(title=_('Description'), description=_("""The
+        product description, may be several paragraphs of text, giving the
+        product highlights and details."""))
 
     homepageurl = TextLine(title=_('Homepage URL'), required=False)
 
@@ -66,6 +68,28 @@ class IProduct(IHasOwner):
 
     freshmeatproject = TextLine(title=_('Freshmeat Project'),
         required=False)
+
+    translationgroup = Choice(
+        title = _("Translation group"),
+        description = _("The translation group for this product. This group "
+            "is made up of a set of translators for all the languages "
+            "approved by the group manager. These translators then have "
+            "permission to edit the groups translation files, based on the "
+            "permission system selected below."),
+        required=False,
+        vocabulary='TranslationGroup')
+
+    translationpermission = Choice(
+        title=_("Translation Permission System"),
+        description=_("The permissions this group requires for "
+            "translators. If 'Open', then anybody can edit translations "
+            "in any language. If 'Reviewed', then anybody can make "
+            "suggestions but only the designated translators can edit "
+            "or confirm translations. And if 'Closed' then only the "
+            "designated translation group will be able to touch the "
+            "translation files at all."),
+        required=True,
+        vocabulary='TranslationPermission')
 
     autoupdate = Bool(title=_('Automatic update'),
         description=_("""Whether or not this product's attributes are
@@ -118,6 +142,14 @@ class IProduct(IHasOwner):
         " potemplates.")
 
     potemplatecount = Attribute("The number of POTemplates for this Product.")
+
+    translationgroups = Attribute("The list of applicable translation "
+        "groups for a product. There can be several: one from the product, "
+        "and potentially one from the project, too.")
+
+    aggregatetranslationpermission = Attribute("The translation permission "
+        "that applies to translations in this product, based on the "
+        "permissions that apply to the product as well as its project.")
 
     def getPackage(distrorelease):
         """return a package in that distrorelease for this product."""

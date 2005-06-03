@@ -19,6 +19,34 @@
         for="canonical.launchpad.interfaces.IBugTask"
         name="+edit" />
 
+    <!--
+    Brad Bollenbach, 2005-05-16:
+
+    Two views are currently required to be registered for handling the
+    absolute_url of an object: one that plays nicely with
+    zope.app.traversing.browser.absoluteurl.absoluteURL and one that
+    plays nicely with foo/@@absolute_url.
+
+    The former requires an unnamed view; the latter requires, of
+    course, a view named absolute_url.
+    -->
+    <view
+        for="canonical.launchpad.interfaces.IBugTask"
+        factory="canonical.launchpad.browser.bugtask.BugTaskAbsoluteURL"
+        type="zope.publisher.interfaces.http.IHTTPRequest"
+        permission="zope.Public"
+        provides="zope.app.traversing.browser.interfaces.IAbsoluteURL">
+    </view>
+
+    <view
+        name="absolute_url"
+        for="canonical.launchpad.interfaces.IBugTask"
+        factory="canonical.launchpad.browser.bugtask.BugTaskAbsoluteURL"
+        type="zope.publisher.interfaces.http.IHTTPRequest"
+        permission="zope.Public"
+        provides="zope.app.traversing.browser.interfaces.IAbsoluteURL">
+    </view>
+
     <!-- BugTaskSet -->
     <content class="canonical.launchpad.database.BugTaskSet">
         <allow interface="canonical.launchpad.interfaces.IBugTaskSet" />
@@ -74,8 +102,8 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IEditableUpstreamBugTask"
         class="canonical.launchpad.browser.bug.BugTaskEditView"
-        schema="canonical.launchpad.interfaces.IUpstreamBugTask"
-        fields="product maintainer_displayname bugtitle bugdescription milestone
+        schema="canonical.launchpad.interfaces.IBugTask"
+        fields="product maintainer_displayname milestone
                 status priority severity assignee"
         label="Edit Product Bug Task"
         permission="launchpad.Edit"
@@ -86,8 +114,8 @@
     <browser:schemadisplay
         name="+edit"
         for="canonical.launchpad.interfaces.IReadOnlyUpstreamBugTask"
-        schema="canonical.launchpad.interfaces.IUpstreamBugTask"
-        fields="product maintainer_displayname bugtitle bugdescription milestone
+        schema="canonical.launchpad.interfaces.IBugTask"
+        fields="product maintainer_displayname milestone
                 status priority severity assignee"
         label="Product Bug Task"
         permission="launchpad.View"
@@ -115,8 +143,8 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IEditableDistroBugTask"
         class="canonical.launchpad.browser.bug.BugTaskEditView"
-        schema="canonical.launchpad.interfaces.IDistroBugTask"
-        fields="sourcepackagename binarypackagename bugtitle bugdescription
+        schema="canonical.launchpad.interfaces.IBugTask"
+        fields="sourcepackagename binarypackagename 
                 status priority severity assignee"
         label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"
@@ -127,8 +155,8 @@
     <browser:schemadisplay
         name="+edit"
         for="canonical.launchpad.interfaces.IReadOnlyDistroBugTask"
-        schema="canonical.launchpad.interfaces.IDistroBugTask"
-        fields="sourcepackagename binarypackagename bugtitle bugdescription
+        schema="canonical.launchpad.interfaces.IBugTask"
+        fields="sourcepackagename binarypackagename 
                 status priority severity assignee"
         label="Source Package Bug Task"
         permission="zope.Public"
@@ -157,7 +185,7 @@
         for="canonical.launchpad.interfaces.IEditableDistroReleaseBugTask"
         class="canonical.launchpad.browser.bug.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename bugtitle bugdescription
+        fields="sourcepackagename binarypackagename 
                 status priority severity assignee"
         label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"
@@ -169,7 +197,7 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IReadOnlyDistroReleaseBugTask"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename bugtitle bugdescription
+        fields="sourcepackagename binarypackagename 
                 status priority severity assignee"
         label="Source Package Bug Task"
         permission="zope.Public"

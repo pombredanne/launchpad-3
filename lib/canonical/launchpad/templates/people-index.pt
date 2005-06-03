@@ -132,7 +132,7 @@
               </thead>
               <tbody>
                 <tr tal:repeat="person python:list(bn.currentBatch())">      
-                  <td><a tal:content="person/displayname"
+                  <td><a tal:content="person/browsername"
             	    tal:attributes="href person/name"/>
                   </td>
                 </tr>    

@@ -6,10 +6,11 @@
 <body>
 
   <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure view/translationsPortlet" /><br />
+    <div tal:replace="structure view/translationsPortlet" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/actionsPortlet" />
   </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -36,7 +37,7 @@
       <li><b>Branch: </b>
         <a tal:define="productseries context/productseries"
            tal:content="productseries/name"
-           tal:attributes="href string:/products/${productseries/product/name}/${productseries/name}">
+           tal:attributes="href string:/products/${productseries/product/name}/+series/${productseries/name}">
          ProductSeries</a></li>
     </ul>
   <i tal:condition="not:context/productseries">

@@ -16,6 +16,20 @@ TALES features.
     ...
 
 
+Test the 'count:' namespace.
+
+count:len gives you a number which is len(thing).
+
+    >>> test_tales('foo/count:len', foo=[])
+    0
+    >>> test_tales('foo/count:len', foo=[1, 2, 3])
+    3
+    >>> test_tales('foo/count:len', foo=object())
+    Traceback (most recent call last):
+    ...
+    TypeError: len() of unsized object
+
+
 Test the 'fmt:' namespace where the context is a datetime.
 
    >>> from datetime import datetime
@@ -54,12 +68,12 @@ Test the 'fmt:' namespace where the context is a string.
 
 Test the 'fmt:' namespace where the context is a dict.
 
+fmt:pagetitle takes a page template CONTEXTS dict, and gives you a string
+for use in the <title> element of a page.
+
 This case ought to apply only to a page template's CONTEXTS dict.  However, we
 have to make this namespace available for all dicts, as there is no type
 information to distinguish a page template CONTEXTS dict from any other dict.
-
-'fmt:pagetitle' is the only operation available from the 'fmt:' namespace
-as applied to a dict.
 
     >>> class MockPageTemplateFile:
     ...     filename = '/blah/blah/debug-root-index.pt'
@@ -157,7 +171,6 @@ Make a mock-up IBrowserRequest, and use this as the interaction.
 
     >>> participation = MockBrowserRequest('/foo/bar/linkone/baz')
 
-    >>> from canonical.launchpad.ftests import login, ANONYMOUS
     >>> login(ANONYMOUS, participation)
 
     >>> from canonical.launchpad.interfaces import IPersonSet

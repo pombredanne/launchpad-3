@@ -26,7 +26,8 @@ class ILaunchpadCelebrities(Interface):
 
     buttsource = Attribute("The 'buttsource' team.")
     admin = Attribute("The 'admins' team.")
-    ubuntu = Attribute("The ubuntu Distribution")
+    ubuntu = Attribute("The ubuntu Distribution.")
+    rosetta_expert = Attribute("The Rosetta Experts team.")
 
 
 class ICrowd(Interface):
@@ -68,13 +69,35 @@ class IMaloneApplication(ILaunchpadApplication):
 class IRosettaApplication(ILaunchpadApplication):
     """Application root for rosetta."""
 
-    def translatable_products():
-        """Return an iterator over the set of translatable Products which
-        are part of Ubuntu's translation project."""
+    def translatable_products(self, translationProject=None):
+        """Return a list of the translatable products in the given
+        Translation Project.
 
-    def translatable_distroreleases():
-        """Return an iterator over the set of distroreleases which contain
-        translatable apps in Rosetta."""
+        For the moment it just returns every translatable product.
+        """
+
+    def translatable_distroreleases(self):
+        """Return a list of the distroreleases in launchpad for which
+        translations can be done.
+        """
+
+    def translation_groups(self):
+        """Return a list of the translation groups in the system."""
+
+    def potemplate_count(self):
+        """Return the number of potemplates in the system."""
+
+    def pofile_count(self):
+        """Return the number of pofiles in the system."""
+
+    def pomsgid_count(self):
+        """Return the number of msgs in the system."""
+
+    def translator_count(self):
+        """Return the number of people who have given translations."""
+
+    def language_count(self):
+        """Return the number of languages Rosetta can translate into."""
 
 
 class IDOAPApplication(ILaunchpadApplication):

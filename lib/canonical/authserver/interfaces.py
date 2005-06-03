@@ -39,7 +39,8 @@ class IUserDetailsStorage(Interface):
         :returns: user dict if authenticated, otherwise empty dict
         """
 
-    def createUser(loginID, sshaDigestedPassword, displayname, emailAddresses):
+    def createUser(preferredEmail, sshaDigestedPassword, displayname,
+            emailAddresses):
         """Create a user
         
         :param loginID: A login ID, same as for getUser.
@@ -100,7 +101,7 @@ class IUserDetailsStorageV2(Interface):
         :returns: user dict if authenticated, otherwise empty dict
         """
 
-    def createUser(loginID, password, displayname, emailAddresses):
+    def createUser(preferredEmail, password, displayname, emailAddresses):
         """Create a user
         
         :param loginID: A login ID, same as for getUser.

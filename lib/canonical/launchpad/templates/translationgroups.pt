@@ -1,0 +1,63 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<head>
+  <title metal:fill-slot="title">Rosetta Translation Groups</title>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <h1>List of Rosetta Translation Groups:</h1>
+
+  <div class="documentDescription">
+    This is a listing of all of the registered translation groups in
+    Rosetta. Click on a group for further information about it.
+  </div>
+
+    <table class="listing rowNavigation" width="100%">
+        <tr>
+            <th>Date Created</th>
+            <th>Title</th>
+            <th>Translations</th>
+        </tr>
+        <tr tal:repeat="group context"
+            tal:attributes="onclick
+                string:window.location='${group/name}';">
+            <td tal:content="python:group.datecreated.strftime('%d %b %y')">
+              date
+            </td>
+            <td><b><span tal:replace="group/title/fmt:shorten/57">
+               title</span></b>
+            </td>
+            <td>
+              <span tal:condition="group/distributions" tal:omit-tag="">
+                <span tal:repeat="distro group/distributions" tal:omit-tag>
+                  <span tal:replace="distro/name">ubuntu</span>,
+                </span>
+              </span>
+              <span tal:condition="group/projects" tal:omit-tag="">
+                <span tal:repeat="project group/projects" tal:omit-tag>
+                  <span tal:replace="project/name">gnome</span>,
+                </span>
+              </span>
+              <span tal:condition="group/products" tal:omit-tag="">
+                <span tal:repeat="product group/products" tal:omit-tag>
+                  <span tal:replace="product/name">a52dec</span>,
+                </span>
+              </span>
+            </td>
+        </tr>
+    </table>
+
+  </div>
+
+</body>
+</html>
+

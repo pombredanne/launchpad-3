@@ -8,7 +8,7 @@ string.
   ... """)
   HTTP/1.1 200 Ok
   ...2...results...
-              <a href="/malone/tasks/14/+edit">5</a>
+              <a href="...">5</a>
   ...
-              <a href="/malone/tasks/2/+edit">1</a>
+              <a href="...">1</a>
   ...

@@ -1,0 +1,78 @@
+
+See if we can add a new Translation Group. First, load the +new page without
+any login credentials.
+
+  >>> print http(r"""
+  ... GET /rosetta/groups/+new HTTP/1.1
+  ... """)
+  HTTP/1.1 303 See Other
+  Content-Length: 0
+  Content-Type: text/plain;charset=utf-8
+  Location: .../rosetta/groups/+new/+login
+  <BLANKLINE>
+
+OK, best we try again, with a login!
+
+  >>> print http(r"""
+  ... GET /rosetta/groups/+new HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+          <h1>Create A New Translation Group</h1>
+  ...
+
+Cool, we get the page to create a translation group. Let's go ahead and POST
+the form to create a new group, called the "polyglot" translation group.
+
+  >>> print http(r"""
+  ... POST /rosetta/groups/+new HTTP/1.1
+  ... Content-Length: 784
+  ... Content-Type: multipart/form-data; boundary=---------------------------159720819458754421291687237
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... 
+  ... -----------------------------159720819458754421291687237
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... polyglot
+  ... -----------------------------159720819458754421291687237
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... The PolyGlot Translation Group
+  ... -----------------------------159720819458754421291687237
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... The PolyGlots are a well organised translation group that handles the work of translating a number of Ubuntu and upstream projects. It consists of a large number of translation teams, each specialising in their own language.
+  ... -----------------------------159720819458754421291687237
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------159720819458754421291687237--
+  ... """)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: polyglot
+  <BLANKLINE>
+  ...
+
+OK, we created it and got redirected to the page for that group. That's nice
+and clean. Let's view it.
+
+  >>> print http(r"""
+  ... GET /rosetta/groups/polyglot HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+      <title>Rosetta Translation Group: The PolyGlot Translation Group</title>
+  ...
+    <h1>Rosetta Translation Group Overview</h1>
+  ...
+

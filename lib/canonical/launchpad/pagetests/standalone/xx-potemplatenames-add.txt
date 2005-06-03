@@ -1,0 +1,42 @@
+Check to know if the add form loads.
+
+  >>> print http(r"""
+  ... GET /potemplatenames/+add HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Creates a new POTemplateName
+
+  >>> print http(r"""
+  ... POST /potemplatenames/+add HTTP/1.1
+  ... Content-Length: 705
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Type: multipart/form-data; boundary=---------------------------6270170091897547163819758929
+  ... Referer: http://localhost:9000/potemplatenames/+add
+  ... 
+  ... -----------------------------6270170091897547163819758929
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... foo
+  ... -----------------------------6270170091897547163819758929
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... foo title
+  ... -----------------------------6270170091897547163819758929
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... foo description
+  ... -----------------------------6270170091897547163819758929
+  ... Content-Disposition: form-data; name="field.translationdomain"
+  ... 
+  ... footranslationdomain
+  ... -----------------------------6270170091897547163819758929
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------6270170091897547163819758929--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...

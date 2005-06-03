@@ -319,9 +319,10 @@ tr.rowLinkified a {
 }
 
 .boardCommentDetails {
+    font-size: 80%;
     border: 1px solid #364970;
     border-style: none none solid none;
-    background-color: #93bee2;
+    background-color: #f7f9fa;
     padding: 0.5em 1em;
 }
 
@@ -383,6 +384,31 @@ ul.people li {
     background-repeat: no-repeat;
     padding-left: 18px
 }
+
+ul.search>li, li.search {
+    list-style-image: url(/++resource++search_icon.gif);
+}
+
+ul.add>li, li.add {
+    list-style-image: url(/++resource++add.gif);
+}
+
+ul.edit>li, li.edit {
+    list-style-image: url(/++resource++edit.gif);
+}
+
+ul.locked>li, li.locked {
+    list-style-image: url(/++resource++lock_icon.gif);
+}
+
+ul.languages>li, li.languages {
+    list-style-image: url(/++resource++languages.gif);
+}
+
+ul.download>li, li.download {
+    list-style-image: url(/++resource++download.png);
+}
+
 
 /*
 Translation template stuff.
@@ -583,6 +609,13 @@ abbr, address {
 label {
   font: caption;
   font-weight: normal;
+}
+
+caption {
+  text-align: left;
+  color: #666666;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 th {

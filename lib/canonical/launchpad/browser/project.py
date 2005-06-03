@@ -219,7 +219,7 @@ class ProjectSetView(object):
             self.soyuz is not None):
             self.searchrequested = True
         self.results = None
-        self.gotmatches = 0
+        self.matches = 0
 
     def searchresults(self):
         """Use searchtext to find the list of Projects that match
@@ -232,7 +232,7 @@ class ProjectSetView(object):
                                                malone=self.malone,
                                                rosetta=self.rosetta,
                                                soyuz=self.soyuz)
-        self.gotmatches = len(list(self.results))
+        self.matches = self.results.count()
         return self.results
 
     def newproject(self):

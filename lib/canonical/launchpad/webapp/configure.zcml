@@ -64,6 +64,15 @@
         name="lp"
         />
 
+    <!-- TALES count: namespace -->
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.CountAPI"
+        name="count"
+        />
+
+    <!-- TALES htmlform: namespace -->
     <adapter
         for="zope.publisher.interfaces.browser.IBrowserApplicationRequest"
         provides="zope.app.traversing.interfaces.IPathAdapter"
@@ -71,6 +80,7 @@
         name="htmlform"
         />
 
+    <!-- TALES fmt: namespace -->
     <adapter
         for="zope.publisher.interfaces.browser.IBrowserApplicationRequest"
         provides="zope.app.traversing.interfaces.IPathAdapter"

@@ -28,6 +28,7 @@ from canonical.launchpad.browser import BugTaskSearchListingView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 
 class DistributionView(BugTaskSearchListingView):
+
     implements(IBugTaskSearchListingView)
 
     actionsPortlet = ViewPageTemplateFile(

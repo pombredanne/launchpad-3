@@ -48,6 +48,7 @@ are simple little functions.
   >>> from datetime import datetime
   >>> from zope.event import notify
   >>> from zope.interface import directlyProvides
+  >>> from canonical.database.constants import UTC_NOW
   >>> from canonical.launchpad.event.sqlobjectevent import \
   ...     SQLObjectCreatedEvent, SQLObjectModifiedEvent
   >>> from canonical.launchpad.database import Bug, BugActivity, \
@@ -176,7 +177,7 @@ EVENT: upstream product assignment edited
 EVENT: source package infestation gets documented
 
   >>> from canonical.lp.dbschema import BugInfestationStatus
-  >>> right_now = datetime.now()
+  >>> right_now = UTC_NOW
   >>> package_infestation = BugPackageInfestation(
   ...     bug=bug.id, explicit=True, datecreated=right_now,
   ...     creatorID=user.id, dateverified=right_now,
@@ -211,7 +212,7 @@ EVENT: source package infestation edited
 
 EVENT: product infestation gets documented
 
-  >>> right_now = datetime.now()
+  >>> right_now = UTC_NOW
   >>> product_infestation = BugProductInfestation(
   ...     bug=bug.id, explicit=True, datecreated=right_now,
   ...     creatorID=user.id, dateverified=right_now,

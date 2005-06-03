@@ -32,9 +32,6 @@
             launchpad-widget-macros.pt so try to follow that pattern.</div>
         </div>
 
-        <legend metal:fill-slot="addform_legend" tal:replace="nothing">The
-        Form Legend (alter as appropriate)</legend>
-
         <div class="row"
             metal:fill-slot="extra_bottom" tal:replace="nothing">
           <div class="label">Extra bottom</div>

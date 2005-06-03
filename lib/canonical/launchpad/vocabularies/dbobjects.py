@@ -22,12 +22,16 @@ from canonical.launchpad.database import SourcePackage, \
     SourcePackageRelease, SourcePackageName
 from canonical.launchpad.database import BinaryPackage
 from canonical.launchpad.database import BinaryPackageName
+from canonical.launchpad.database import BugTracker
+from canonical.launchpad.database import Language
 from canonical.launchpad.database import Milestone
 from canonical.launchpad.database import Product
 from canonical.launchpad.database import Project
 from canonical.launchpad.database import ProductRelease
 from canonical.launchpad.database import ProductSeries
+from canonical.launchpad.database import TranslationGroup
 from canonical.launchpad.database import BugTracker
+from canonical.launchpad.database import POTemplateName
 from canonical.launchpad.interfaces import ILaunchBag, ITeam
 from canonical.lp.dbschema import EmailAddressStatus
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
@@ -237,16 +241,33 @@ class BinaryPackageVocabulary(SQLObjectVocabularyBase):
     def getTermByToken(self, token):
         return self.getTerm(token)
 
+
 class BugTrackerVocabulary(SQLObjectVocabularyBase):
     # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
     # no test data for me to check yet. This'll be fixed by the end
     # of the week (2004/10/08) as we get Malone into usable shape.
     _table = BugTracker
 
+
+class LanguageVocabulary(SQLObjectVocabularyBase):
+    _table = Language
+    _orderBy = 'englishname'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.id, obj.displayname)
+
+
+class TranslationGroupVocabulary(NamedSQLObjectVocabulary):
+    _table = TranslationGroup
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.title)
+
+
 class PersonVocabulary(NamedSQLObjectVocabulary):
     implements(IHugeVocabulary)
     _table = Person
-    _orderBy = ['familyname','givenname','displayname']
+    _orderBy = ['familyname','givenname','displayname', 'name']
 
     def _toTerm(self, obj):
         return SimpleTerm(
@@ -343,17 +364,76 @@ class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
 
 
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
+    implements(IHugeVocabulary)
+
     _table = ProductRelease
     # XXX carlos Perello Marin 2005-05-16:
     # Sorting by version won't give the expected results, because it's just a
     # text field.  e.g. ["1.0", "2.0", "11.0"] would be sorted as ["1.0",
     # "11.0", "2.0"].
     # See https://launchpad.ubuntu.com/malone/bugs/687
-    _orderBy = 'version'
+    _orderBy = [Product.q.name, ProductSeries.q.name,
+                ProductRelease.q.version]
+    _clauseTables = ['Product', 'ProductSeries']
+
+    def __iter__(self):
+        for obj in self._table.select(
+            ProductRelease.q.productseries == ProductSeries.q.id,
+            ProductSeries.q.productID == Product.q.id,
+            orderBy=self._orderBy,
+            clauseTables=self._clauseTables,
+            ):
+            yield self._toTerm(obj)
 
     def _toTerm(self, obj):
+        productrelease = obj
+        productseries = productrelease.productseries
+        product = productseries.product
+
+        # NB: We use '/' as the seperator because '-' is valid in
+        # a product.name or productseries.name
+        token = '%s/%s/%s' % (
+                    product.name, productseries.name, productrelease.version)
         return SimpleTerm(
-            obj, obj.id, obj.product.name + " " + obj.version)
+            obj.id, token, '%s %s %s' % (
+                product.name, productseries.name, productrelease.version))
+
+    def getTermByToken(self, token):
+        try:
+            productname, productseriesname, productreleaseversion = \
+                token.split('/', 2)
+        except ValueError:
+            raise LookupError, token
+
+        obj = ProductRelease.selectOne(AND(Product.q.name == productname,
+                ProductSeries.q.name == productseriesname,
+                ProductRelease.q.version == productreleaseversion
+                ))
+        try:
+            return self._toTerm(obj)
+        except IndexError:
+            raise LookupError, token
+
+    def search(self, query):
+        """Return terms where query is a substring of the version or name"""
+        if query:
+            query = query.lower()
+            objs = self._table.select(
+                AND(
+                    ProductSeries.q.id == ProductRelease.q.productseriesID,
+                    Product.q.id == ProductSeries.q.productID,
+                    OR(
+                        CONTAINSSTRING(Product.q.name, query),
+                        CONTAINSSTRING(ProductSeries.q.name, query),
+                        CONTAINSSTRING(ProductRelease.q.version, query)
+                        )
+                    ),
+                orderBy=self._orderBy
+                )
+
+            for o in objs:
+                yield self._toTerm(o)
+
 
 class ProductSeriesVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
@@ -577,3 +657,21 @@ class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
             for o in objs:
                 yield self._toTerm(o)
 
+
+class POTemplateNameVocabulary(NamedSQLObjectVocabulary):
+    implements(IHugeVocabulary)
+
+    _table = POTemplateName
+    _orderBy = 'name'
+
+    def search(self, query):
+        """Return terms where query is a substring of the name"""
+        if query:
+            query = query.lower()
+            objs = self._table.select(
+                CONTAINSSTRING(POTemplateName.q.name, query),
+                orderBy=self._orderBy
+                )
+
+            for o in objs:
+                yield self._toTerm(o)

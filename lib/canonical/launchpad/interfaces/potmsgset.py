@@ -28,6 +28,10 @@ class IPOTMsgSet(Interface):
 
     flagscomment = Attribute("The flags this set has.")
 
+    def getSuggestedTexts(language, pluralform):
+        """Return any suggestions Rosetta might have for translating this
+        POTMsgSet plural form into that language."""
+
     def flags():
         """Return a list of flags on this set."""
 

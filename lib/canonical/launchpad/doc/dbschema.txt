@@ -7,13 +7,11 @@ being comparable with non-security proxied objects.
 First, some imports and set up::
 
     >>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
-    >>> from canonical.launchpad.ftests import login, ANONYMOUS
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from canonical.launchpad.database import Person
 
     >>> LaunchpadFunctionalTestSetup().setUp()
-    >>> login(ANONYMOUS)
 
 Get a proxied and unproxied person object for the same person, and demonstrate
 working comparisons::

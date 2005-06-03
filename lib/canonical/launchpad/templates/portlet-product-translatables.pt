@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" tal:condition="context/translatable_packages">
 
   <h4>Translatable Distro Packages:</h4>
 
@@ -8,9 +8,9 @@
 
     <table class="rowNavigation" border="0">
       <tr tal:repeat="pkg context/translatable_packages">
-        <td tal:content="pkg/title"
-            tal:attributes="href string:/distros/${pkg/distribution/name}/${pkg/distrorelease/name}/+sources/${pkg/name}/+translations">
-          package title
+        <td><a tal:content="pkg/title"
+               tal:attributes="href string:/distros/${pkg/distribution/name}/${pkg/distrorelease/name}/+sources/${pkg/name}/+translations">
+          package title</a>
         </td>
       </tr>
     </table>
@@ -21,7 +21,7 @@
 
 </div>
 
-<div class="portlet">
+<div class="portlet" tal:condition="context/translatable_releases">
 
   <h4>Translatable Releases:</h4>
 
@@ -31,9 +31,9 @@
 
     <table class="rowNavigation" border="0">
       <tr tal:repeat="release context/translatable_releases">
-        <td tal:content="release/title"
-            tal:attributes="href string:/products/${release/product/name}/${release/version}/+translations">
-          release title
+        <td><a tal:content="release/title"
+               tal:attributes="href string:/products/${release/product/name}/${release/version}/+translations">
+          release title</a>
         </td>
       </tr>
     </table>

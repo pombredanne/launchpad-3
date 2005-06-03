@@ -25,6 +25,8 @@
         <!-- Not 'existing-directory' because the test runner needs to
             create it -->
         <key name="root" datatype="existing-dirpath" required="yes" />
+        <key name="launch" datatype="boolean" required="no" default="no" />
+        <key name="spew" datatype="boolean" required="no" default="no" />
     </sectiontype>
 
     <sectiontype name="librarian">

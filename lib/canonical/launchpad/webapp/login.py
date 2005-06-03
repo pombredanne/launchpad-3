@@ -147,7 +147,7 @@ class LoginOrRegister:
         if person is not None:
             msg = ('The email address %s is already registered in our system. '
                    'If you are sure this is your email address, please go to '
-                   'the <a href="+forgottenpassword">Forgotten Password</a> '
+                   'the <a href="/+forgottenpassword">Forgotten Password</a> '
                    'page and follow the instructions to retrieve your '
                    'password.') % cgi.escape(self.email)
             self.registration_error = msg

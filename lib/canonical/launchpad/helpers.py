@@ -792,21 +792,45 @@ class DummyPOFile(RosettaStats):
     def __init__(self, potemplate, language):
         self.potemplate = potemplate
         self.language = language
-        self.messageCount = len(potemplate)
         self.header = ''
         self.latest_sighting = None
-        self.currentCount = 0
-        self.rosettaCount = 0
-        self.updatesCount = 0
-        self.nonUpdatesCount = 0
-        self.translatedCount = 0
-        self.untranslatedCount = self.messageCount
-        self.currentPercentage = 0
-        self.rosettaPercentage = 0
-        self.updatesPercentage = 0
-        self.nonUpdatesPercentage = 0
-        self.translatedPercentage = 0
-        self.untranslatedPercentage = 100
+        self.messageCount = len(potemplate)
+
+    def currentCount(self):
+        return 0
+
+    def rosettaCount(self):
+        return 0
+
+    def updatesCount(self):
+        return 0
+
+    def nonUpdatesCount(self):
+        return 0
+
+    def translatedCount(self):
+        return 0
+
+    def untranslatedCount(self):
+        return self.messageCount
+
+    def currentPercentage(self):
+        return 0.0
+
+    def rosettaPercentage(self):
+        return 0.0
+
+    def updatesPercentage(self):
+        return 0.0
+
+    def nonUpdatesPercentage(self):
+        return 0.0
+
+    def translatedPercentage(self):
+        return 0.0
+
+    def untranslatedPercentage(self):
+        return 100.0
 
 
 def test_diff(lines_a, lines_b):

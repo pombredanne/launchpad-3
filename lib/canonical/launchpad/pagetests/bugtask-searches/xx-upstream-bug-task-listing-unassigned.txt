@@ -12,10 +12,10 @@ View the unassigned bug tasks listing as user Sample Person.
   of 2 results
   ...
             <td>
-                <a href="/malone/tasks/15/+edit">6</a>
+                <a href="...">6</a>
             </td>
   ...
             <td>
-                <a href="/malone/tasks/13/+edit">4</a>
+                <a href="...">4</a>
             </td>
   ...

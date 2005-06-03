@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+import sets
 from warnings import warn
 
 import zope.security.interfaces
@@ -36,7 +37,7 @@ from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
-from canonical.launchpad.browser.potemplate import ViewPOTemplate
+from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 
 # Traversal functions that help us look up something
@@ -142,8 +143,8 @@ class ProductView:
 
                 object_translatable = {
                     'title': productrelease.title,
-                    'potemplates': productrelease.title,
-                    'url': '/products/%s/%s' %(
+                    'potemplates': productrelease.potemplates,
+                    'base_url': '/products/%s/%s' %(
                         self.context.name,
                         productrelease.version)
                     }
@@ -161,7 +162,7 @@ class ProductView:
             return None
 
     def templateviews(self):
-        return [ViewPOTemplate(template, self.request)
+        return [POTemplateView(template, self.request)
                 for template in self.context.potemplates()]
 
     def requestCountry(self):
@@ -240,6 +241,18 @@ class ProductView:
         bugtaskset = getUtility(IBugTaskSet)
         tasklist = bugtaskset.search(product = self.context, orderby = "-datecreated")
         return tasklist[:quantity]
+
+    def potemplatenames(self):
+        potemplatenames = []
+
+        for potemplate in self.context.potemplates():
+            potemplatenames.append(potemplate.potemplatename)
+
+        # Remove the duplicates
+        S = sets.Set(potemplatenames)
+        potemplatenames = list(S)
+
+        return sorted(potemplatenames, key=lambda item: item.name)
 
 
 class ProductBugsView(BugTaskSearchListingView):

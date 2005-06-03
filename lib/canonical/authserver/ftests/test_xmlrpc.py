@@ -86,13 +86,11 @@ class XMLRPCv1TestCase(TwistdTestCase):
         emptyDict = self.server.authUser('invalid@email', '')
         self.assertEqual({}, emptyDict)
 
-        # Create a user. Note we have to pass in their email address twice
-        # (for historical reasons - should refactor one day)
+        # Create a user. 
         self.server.createUser(
-                'nobody@example.com', # Used to generate the Person.name
+                'nobody@example.com',
                 SSHADigestEncryptor().encrypt('testpw'),
-                'Display Name',
-                ['nobody@example.com',] # The email addresses stored
+                'Display Name', []
                 )
 
         # Authenticate a user. This requires two queries - one to retrieve
@@ -109,6 +107,37 @@ class XMLRPCv1TestCase(TwistdTestCase):
                 )
         self.failUnlessEqual(r2['displayname'], 'Display Name')
         self.failUnlessEqual(r2['emailaddresses'], ['nobody@example.com'])
+
+    def test_authUser2(self):
+        # Just like test_authUser, but passes extra email addresses into
+        # createUser like Plone currently is (?)
+
+        # Check that the failure case (no such user or bad passwd) returns {}
+        emptyDict = self.server.authUser('invalid@email', '')
+        self.assertEqual({}, emptyDict)
+
+        # Create a user. 
+        self.server.createUser(
+                'nobody@example.com',
+                SSHADigestEncryptor().encrypt('testpw'),
+                'Display Name', ['nobody@example.com',]
+                )
+
+        # Authenticate a user. This requires two queries - one to retrieve
+        # the salt, the other to do the actual auth. This way the auth
+        # server never has to see encrypted passwords (probably a pointless
+        # security optimization, since the easiest way to attach the auth
+        # server would be to have already taken over an application server)
+        r1 = self.server.getUser('nobody@example.com')
+
+        loginId = r1['id']
+        salt = r1['salt'].decode('base64')
+        r2 = self.server.authUser(
+                loginId, SSHADigestEncryptor().encrypt('testpw', salt)
+                )
+        self.failUnlessEqual(r2['displayname'], 'Display Name')
+        self.failUnlessEqual(r2['emailaddresses'], ['nobody@example.com'])
+
 
     def test_getSSHKeys(self):
         # Unknown users have no SSH keys, of course.

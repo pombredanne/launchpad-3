@@ -1,10 +1,6 @@
 
 Get a tarball representation of a release's translations.
 
-This is needed to make utilities work.
-
-  >>> login(ANONYMOUS)
-
 Get hold of our distribution release.
 
   >>> from canonical.launchpad.database import DistroRelease

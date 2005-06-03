@@ -25,10 +25,6 @@
             they are needed.
           </div>
 
-          <legend metal:fill-slot="editform_legend" tal:replace="nothing">
-             Fieldset Legend - Edit or Delete
-          </legend>
-        
           <div class="row"
                metal:fill-slot="extra_top" tal:replace="nothing">
             <div class="label">Extra top</div>

@@ -10,9 +10,8 @@ configured in ZCML with:
     <mail:pop3MailBox host="somehost" user="someuser" password="secret" />
 
 Let's look at the one we use in tests:
-   
+
     >>> from canonical.launchpad.interfaces import IMailBox
-    >>> login(ANONYMOUS)
     >>> mailbox = getUtility(IMailBox)
 
 Now it's empty, so let's add some mails to it by using simple_sendmail:

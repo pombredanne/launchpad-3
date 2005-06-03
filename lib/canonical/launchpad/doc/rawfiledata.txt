@@ -6,7 +6,6 @@ Test attaching of raw file data to a PO template.
     >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
     >>> LaunchpadFunctionalTestSetup().setUp()
     >>> LibrarianTestSetup().setUp()
-    >>> login(ANONYMOUS)
 
 Get hold of a person who will own the new PO template.
 

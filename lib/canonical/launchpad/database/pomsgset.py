@@ -33,7 +33,15 @@ class POMsgSet(SQLBase):
     potmsgset = ForeignKey(foreignKey='POTMsgSet', dbName='potmsgset',
         notNull=True)
 
+    def getSuggestedTexts(self, pluralform):
+        """See IPOMsgSet."""
+        texts = self.potmsgset.getSuggestedTexts(self.pofile.language,
+            pluralform)
+        active = self.activeSelection(pluralform).potranslation.translation
+        return [text for text in texts if text != active]
+
     def pluralforms(self):
+        """See IPOMsgSet."""
         if len(list(self.potmsgset.messageIDs())) > 1:
             # has plurals
             return self.pofile.pluralforms
@@ -42,6 +50,7 @@ class POMsgSet(SQLBase):
             return 1
 
     def translations(self):
+        """See IPOMsgSet."""
         pluralforms = self.pluralforms()
         if pluralforms is None:
             raise RuntimeError(
@@ -64,8 +73,7 @@ class POMsgSet(SQLBase):
     # XXX: Carlos Perello Marin 15/10/04: Review this method, translations
     # could have more than one row and we always return only the firts one!
     def getTranslationSighting(self, pluralForm, allowOld=False):
-        """Return the translation sighting that is committed and has the
-        plural form specified."""
+        """See IPOMsgSet."""
         if allowOld:
             translation = POTranslationSighting.selectOneBy(
                 pomsgsetID=self.id,
@@ -82,6 +90,7 @@ class POMsgSet(SQLBase):
         return translation
 
     def translationSightings(self):
+        """See IPOMsgSet."""
         return POTranslationSighting.selectBy(pomsgsetID=self.id)
 
     # IEditPOMsgSet
@@ -176,7 +185,7 @@ class POMsgSet(SQLBase):
             self.pofile.rosettacount = 0
 
     def makeTranslationSighting(self, person, text, pluralForm,
-        fromPOFile=False):
+        fromPOFile=False, active=True):
         """Create a new translation sighting for this message set."""
 
         # First get hold of a POTranslation for the specified text.
@@ -296,6 +305,19 @@ class POMsgSet(SQLBase):
             self.iscomplete = False
         else:
             self.iscomplete = True
+
+        # sanity check
+        assert POTranslationSighting.selectBy(
+            pomsgsetID=self.id,
+            pluralform=pluralForm,
+            potranslationID=translation.id,
+            active=True).count() <= 1, 'Multiple active translations.'
+
+        assert POTranslationSighting.selectBy(
+            pomsgsetID=self.id,
+            pluralform=pluralForm,
+            potranslationID=translation.id,
+            inlastrevision=True).count() <= 1, 'Multiple SCM translations.'
 
         return sighting
 

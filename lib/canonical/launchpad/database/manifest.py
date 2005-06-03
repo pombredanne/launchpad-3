@@ -8,9 +8,11 @@ import commands
 
 from zope.interface import implements
 
-from sqlobject import MultipleJoin, DateTimeCol, StringCol
+from sqlobject import MultipleJoin, StringCol
 
 from canonical.database.sqlbase import SQLBase
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces import IManifest
 
 def uuidgen():
@@ -24,7 +26,7 @@ class Manifest(SQLBase):
 
     _table = 'Manifest'
 
-    datecreated = DateTimeCol(notNull=True, default=datetime.utcnow())
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
     uuid = StringCol(notNull=True, default=uuidgen(), alternateID=True)
 

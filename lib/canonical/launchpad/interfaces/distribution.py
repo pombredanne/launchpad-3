@@ -33,6 +33,26 @@ class IDistribution(IHasOwner):
     domainname = TextLine(
         title=_("Domain name"),
         description=_("The distro's domain name."), required=True)
+    translationgroup = Choice(
+        title = _("Translation group"),
+        description = _("The translation group for this product. This group "
+            "is made up of a set of translators for all the languages "
+            "approved by the group manager. These translators then have "
+            "permission to edit the groups translation files, based on the "
+            "permission system selected below."),
+        required=False,
+        vocabulary='TranslationGroup')
+    translationpermission = Choice(
+        title=_("Translation Permission System"),
+        description=_("The permissions this group requires for "
+            "translators. If 'Open', then anybody can edit translations "
+            "in any language. If 'Reviewed', then anybody can make "
+            "suggestions but only the designated translators can edit "
+            "or confirm translations. And if 'Closed' then only the "
+            "designated translation group will be able to touch the "
+            "translation files at all."),
+        required=True,
+        vocabulary='TranslationPermission')
     owner = Int(
         title=_("Owner"),
         description=_("The distro's owner."), required=True)

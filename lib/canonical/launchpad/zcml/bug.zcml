@@ -76,6 +76,17 @@
         <defaultPage name="+index" />
     </browser:view>
 
+    <!--
+    Brad Bollenbach, 2005-05-16:
+
+    Two views are currently required to be registered for handling the
+    absolute_url of an object: one that plays nicely with
+    zope.app.traversing.browser.absoluteurl.absoluteURL and one that
+    plays nicely with foo/@@absolute_url.
+
+    The former requires an unnamed view; the latter requires, of
+    course, a view named absolute_url.
+    -->
     <view
         for="canonical.launchpad.interfaces.IBug"
         factory="canonical.launchpad.browser.bug.BugAbsoluteURL"
@@ -85,8 +96,8 @@
     </view>
 
     <view
-        for="canonical.launchpad.interfaces.IBug"
         name="absolute_url"
+        for="canonical.launchpad.interfaces.IBug"
         factory="canonical.launchpad.browser.bug.BugAbsoluteURL"
         type="zope.publisher.interfaces.http.IHTTPRequest"
         permission="zope.Public"

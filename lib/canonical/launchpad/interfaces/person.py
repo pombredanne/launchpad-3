@@ -173,9 +173,12 @@ class IPerson(Interface):
     def browsername():
         """Return a textual name suitable for display in a browser."""
 
+    def isTeam():
+        """True if this Person is actually a Team, otherwise False."""
+
     def assignKarma(karmatype, points=None):
         """Assign <points> worth of karma to this Person.
-        
+
         If <points> is None, then get the default number of points from the
         given karmatype.
         """
@@ -188,7 +191,7 @@ class IPerson(Interface):
 
     def inTeam(team):
         """Return true if this person is in the given team.
-        
+
         This method is meant to be called by objects which implement either
         IPerson or ITeam, and it will return True when you ask if a Person is
         a member of himself (i.e. person1.inTeam(person1)).
@@ -279,6 +282,9 @@ class IPerson(Interface):
         In this case, we will return both "Rosetta pt Translators" and 
         "Rosetta Translators", because we are member of both of them.
         """
+
+    def subscriptionPolicyDesc():
+        """Return a long description of this team's subscription policy."""
 
 
 class ITeam(IPerson):
@@ -405,10 +411,6 @@ class IPersonSet(Interface):
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
         """
-
-    def getContributorsForPOFile(pofile):
-        """Return the list of persons that have an active contribution for a
-        concrete POFile."""
 
     def getUbuntites():
         """Return a set of person with valid Ubuntite flag."""

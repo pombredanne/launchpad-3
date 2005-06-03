@@ -131,10 +131,10 @@ class ProductSeriesView(object):
         self.name = self.context.name
         if self.context.product.project:
             self.default_targetarcharchive = self.context.product.project.name
-            self.default_targetarcharchive += '@projects.ubuntu.com'
+            self.default_targetarcharchive += '@bazaar.ubuntu.com'
         else:
             self.default_targetarcharchive = self.context.product.name
-            self.default_targetarcharchive += '@products.ubuntu.com'
+            self.default_targetarcharchive += '@bazaar.ubuntu.com'
         self.default_targetarchcategory = self.context.product.name
         if self.cvsbranch:
             self.default_targetarchbranch = self.cvsbranch
@@ -183,10 +183,11 @@ class ProductSeriesView(object):
         self.releaseroot = form.get("releaseroot", self.releaseroot) or None
         self.releasefileglob = form.get("releasefileglob",
                 self.releasefileglob) or None
-        if not validate_release_root(self.releaseroot):
-            self.errormsgs.append('Invalid release root URL')
-            return
-        self.context.summary = self.displayname
+        if self.releaseroot:
+            if not validate_release_root(self.releaseroot):
+                self.errormsgs.append('Invalid release root URL')
+                return
+        self.context.summary = self.summary
         self.context.displayname = self.displayname
         self.context.releaseroot = self.releaseroot
         self.context.releasefileglob = self.releasefileglob
@@ -224,7 +225,8 @@ class ProductSeriesView(object):
         # make sure we at least got something for the relevant rcs
         if rcstype == 'cvs':
             if not (self.cvsroot and self.cvsmodule and self.cvsbranch):
-                self.errormsgs.append('Please give valid CVS details')
+                if not fromAdmin:
+                    self.errormsgs.append('Please give valid CVS details')
                 return
             if not validate_cvs_branch(self.cvsbranch):
                 self.errormsgs.append('Your CVS branch name is invalid.')
@@ -258,6 +260,11 @@ class ProductSeriesView(object):
         if form.get("Update RCS Details", None) is None:
             return
         # look for admin changes and retrieve those
+        self.cvsroot = form.get('cvsroot', self.cvsroot) or None
+        self.cvsmodule = form.get('cvsmodule', self.cvsmodule) or None
+        self.cvsbranch = form.get('cvsbranch', self.cvsbranch) or None
+        self.svnrepository = form.get(
+            'svnrepository', self.svnrepository) or None
         self.targetarcharchive = form.get(
             'targetarcharchive', self.targetarcharchive) or None
         self.targetarchcategory = form.get(

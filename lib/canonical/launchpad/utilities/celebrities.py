@@ -25,4 +25,6 @@ class LaunchpadCelebrities:
         return getUtility(IDistributionSet).getByName('ubuntu')
     ubuntu = property(ubuntu)
 
-
+    def rosetta_expert(self):
+        return getUtility(IPersonSet).getByName('rosetta-admins')
+    rosetta_expert = property(rosetta_expert)

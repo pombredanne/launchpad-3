@@ -39,11 +39,20 @@
             name="+translations"
             template="../templates/sourcepackage-translations.pt"
             lp:url="/distros/ubuntu/hoary/+sources/evolution/+translations" />
-	    <browser:page
+        <browser:page
             name="+potlist"
             template="../templates/object-pots.pt"
             lp:url="/distros/ubuntu/hoary/+sources/evolution/+potlist" />
-	        />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.ISourcePackage"
+        permission="launchpad.Admin"
+        class="canonical.launchpad.browser.sourcepackage.SourcePackageView">
+        <browser:page
+            name="+potemplatenames"
+            template="../templates/object-potemplatenames.pt"
+            lp:url="/distros/ubuntu/hoary/+sources/mozilla-firefox/+potemplatenames" />
     </browser:pages>
 
     <browser:pages

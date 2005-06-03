@@ -95,8 +95,8 @@ class IBugTask(IHasDateCreated):
     bugdescription = Text(
         title=_("Bug Description"), required=False, readonly=True)
 
-    # used for the page layout
-    title = Attribute("Title")
+    contextname = Attribute("Description of the task's location.")
+    title = Attribute("The title used for a task's Web page.")
 
 
 class IBugTaskSearch(Interface):
@@ -160,12 +160,15 @@ class IBugTaskSearchListingView(IView):
 
 
 class IBugTaskDelta(Interface):
-    """The change made to a bug task (e.g. in an edit screen.)
+    """The change made to a bug task (e.g. in an edit screen).
 
-    Note that if product is not None, *both* sourcepackagename and
-    binarypackagename must be None. Likewise, if either of
-    sourcepackagename and/or binarypackagename is not None, product
-    must be None.
+    If product is not None, both sourcepackagename and binarypackagename must
+    be None.
+
+    Likewise, if sourcepackagename and/or binarypackagename is not None,
+    product must be None.
+
+    XXX 20050512 Brad/Bjorn: Fix the Attribute descriptions. -- mpt
     """
     bugtask = Attribute("The modified IBugTask.")
     product = Attribute("A dict containing two keys, 'old' and 'new' or None.")

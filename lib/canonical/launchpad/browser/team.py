@@ -4,6 +4,8 @@ __metaclass__ = type
 
 from datetime import datetime, timedelta
 
+import pytz
+
 # zope imports
 from zope.event import notify
 from zope.app.form.browser.add import AddView
@@ -181,44 +183,17 @@ class TeamView:
 
         return user.inTeam(self.context)
 
-    def subscriptionPolicyDesc(self):
-        policy = self.context.subscriptionpolicy
-        if policy == TeamSubscriptionPolicy.RESTRICTED:
-            return "Restricted team. Only administrators can add new members"
-        elif policy == TeamSubscriptionPolicy.MODERATED:
-            return ("Moderated team. New subscriptions are subjected to "
-                    "approval by one of the team's administrators.")
-        elif policy == TeamSubscriptionPolicy.OPEN:
-            return "Open team. Any user can join and no approval is required"
-
     def membershipStatusDesc(self):
         tm = self._getMembershipForUser()
-        if tm is None:
-            return "You are not a member of this team."
+        assert tm is not None, (
+            'This method is not meant to be called for users which are not '
+            'members of this team.')
 
-        if tm.status == TeamMembershipStatus.PROPOSED:
-            desc = ("You are currently a proposed member of this team."
-                    "Your subscription depends on approval by one of the "
-                    "team's administrators.")
-        elif tm.status == TeamMembershipStatus.APPROVED:
-            desc = ("You are currently an approved member of this team.")
-        elif tm.status == TeamMembershipStatus.ADMIN:
-            desc = ("You are currently an administrator of this team.")
-        elif tm.status == TeamMembershipStatus.DEACTIVATED:
-            desc = "Your subscription for this team is currently deactivated."
-            if tm.reviewercomment is not None:
-                desc += "The reason provided for the deactivation is: '%s'" % \
-                        tm.reviewercomment
-        elif tm.status == TeamMembershipStatus.EXPIRED:
-            desc = ("Your subscription for this team is currently expired, "
-                    "waiting for renewal by one of the team's administrators.")
-        elif tm.status == TeamMembershipStatus.DECLINED:
-            desc = ("Your subscription for this team is currently declined. "
-                    "Clicking on the 'Join' button will put you on the "
-                    "proposed members queue, waiting for the approval of one "
-                    "of the team's administrators")
-
-        return desc
+        description = tm.status.description
+        if tm.status == TeamMembershipStatus.DEACTIVATED and tm.reviewercomment:
+            description += ("The reason for the deactivation is: '%s'"
+                            % tm.reviewercomment)
+        return description
 
     def userCanRequestToLeave(self):
         """Return true if the user can request to leave this team.
@@ -492,7 +467,7 @@ class TeamMembershipEditView:
         year = int(self.request.form.get('year'))
         month = int(self.request.form.get('month'))
         day = int(self.request.form.get('day'))
-        return datetime(year, month, day)
+        return datetime(year, month, day, tzinfo=pytz.timezone('UTC'))
 
     def _setMembershipData(self, status):
         """Set all data specified on the form, for this TeamMembership.

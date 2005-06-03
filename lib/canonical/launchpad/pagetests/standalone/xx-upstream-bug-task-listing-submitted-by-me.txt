@@ -13,18 +13,18 @@ Sample Person clicks the "submitted by me" link; sees the bugs they've filed.
   ...4 results...
   ...
             <td>
-                <a href="/malone/tasks/15/+edit">6</a>
+                <a href="...">6</a>
             </td>
   ...
             <td>
-                <a href="/malone/tasks/14/+edit">5</a>
+                <a href="...">5</a>
             </td>
   ...
             <td>
-                <a href="/malone/tasks/13/+edit">4</a>
+                <a href="...">4</a>
             </td>
   ...
             <td>
-                <a href="/malone/tasks/2/+edit">1</a>
+                <a href="...">1</a>
             </td>
   ...

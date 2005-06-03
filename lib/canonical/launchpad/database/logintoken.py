@@ -8,9 +8,10 @@ import random
 
 from zope.interface import implements
 
-from sqlobject import \
-    DateTimeCol, ForeignKey, StringCol, SQLObjectNotFound, AND
+from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, AND
 from canonical.database.sqlbase import SQLBase
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import ILoginToken, ILoginTokenSet
 from canonical.lp.dbschema import LoginTokenType, EnumCol
@@ -26,7 +27,7 @@ class LoginToken(SQLBase):
     token = StringCol(dbName='token', unique=True)
     tokentype = EnumCol(dbName='tokentype', notNull=True,
                         schema=LoginTokenType)
-    created = DateTimeCol(dbName='created', notNull=True)
+    created = UtcDateTimeCol(dbName='created', notNull=True)
 
     title = 'Launchpad Email Verification'
 
@@ -59,7 +60,7 @@ class LoginTokenSet:
         reqid = getattr(requester, 'id', None)
         return LoginToken(requesterID=reqid, requesteremail=requesteremail,
                 email=email, token=token, tokentype=tokentype,
-                created=datetime.utcnow())
+                created=UTC_NOW)
 
     def __getitem__(self, tokentext):
         token = LoginToken.selectOneBy(token=tokentext)

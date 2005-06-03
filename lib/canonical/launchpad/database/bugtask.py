@@ -6,7 +6,7 @@ __all__ = ['BugTask', 'BugTaskSet', 'BugTaskDelta', 'mark_task',
 
 from sets import Set
 
-from sqlobject import DateTimeCol, ForeignKey
+from sqlobject import ForeignKey
 from sqlobject import SQLObjectNotFound
 
 from zope.exceptions import NotFoundError
@@ -19,6 +19,7 @@ from canonical.lp.dbschema import BugTaskStatus
 from canonical.launchpad.interfaces import IBugTask, IBugTaskDelta
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import nowUTC
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.maintainership import Maintainership
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.helpers import shortlist
@@ -69,8 +70,8 @@ class BugTask(SQLBase):
     assignee = ForeignKey(
         dbName='assignee', foreignKey='Person',
         notNull=False, default=None)
-    dateassigned = DateTimeCol(notNull=False, default=nowUTC)
-    datecreated  = DateTimeCol(notNull=False, default=nowUTC)
+    dateassigned = UtcDateTimeCol(notNull=False, default=nowUTC)
+    datecreated  = UtcDateTimeCol(notNull=False, default=nowUTC)
     owner = ForeignKey(
         foreignKey='Person', dbName='owner', notNull=False, default=None)
 
@@ -101,19 +102,51 @@ class BugTask(SQLBase):
         return self.bug.description
     bugdescription = property(bugdescription)
 
-    def title(self):
-        title = 'Malone Bug #' + str(self.bug.id)
-        title += ' (' + self.bug.title + ')' + ' on '
-        if self.distribution:
-            title += self.distribution.name + ' '
-            if self.distrorelease:
-                title += self.distrorelease.name + ' '
+    def contextname(self):
+        """See canonical.launchpad.interfaces.IBugTask.
+
+        Depending on whether the task has a distribution,
+        distrorelease, sourcepackagename, binarypackagename, and/or
+        product, the contextname will have one of these forms:
+        * distribution.displayname
+        * distribution.displayname sourcepackagename.name
+        * distribution.displayname sourcepackagename.name binarypackagename.name
+        * distrorelease.displayname
+        * distrorelease.displayname sourcepackagename.name
+        * distrorelease.displayname sourcepackagename.name binarypackagename.name
+        * product.name
+        """
+        if self.distribution or self.distrorelease:
+            if self.sourcepackagename is None:
+                sourcepackagename_name = None
+            else:
+                sourcepackagename_name = self.sourcepackagename.name
+            if self.binarypackagename is None:
+                binarypackagename_name = None
+            else:
+                binarypackagename_name = self.binarypackagename.name
+            L = []
+            if self.distribution:
+                L.append(self.distribution.displayname)
+            elif self.distrorelease:
+                L.append(self.distrorelease.displayname)
             if self.sourcepackagename:
-                title += self.sourcepackagename.name + ' '
-            if self.binarypackagename:
-                title += self.binarypackagename.name
-        if self.product:
-            title += self.product.displayname
+                L.append(self.sourcepackagename.name)
+            if (binarypackagename_name and
+            binarypackagename_name != sourcepackagename_name):
+                L.append(binarypackagename_name)
+            return ' '.join(L)
+        elif self.product:
+            return self.product.displayname
+        else:
+            raise AssertionError
+    contextname = property(contextname)
+
+    def title(self):
+        """Generate the title for this bugtask based on the id of the bug
+        and the bugtask's contextname.  See IBugTask.
+        """
+        title = 'Bug #%s in %s' % (self.bug.id, self.contextname())
         return title
     title = property(title)
 

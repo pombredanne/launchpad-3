@@ -10,7 +10,6 @@
 <div metal:fill-slot="main">
 
     <h1>Registered Distributions</h1>
-    <p>Please select the distribution in which you want to file a bug.</p>
     <table width="100%" class="listing rowNavigation">
         <tr>
             <th>Name</th>

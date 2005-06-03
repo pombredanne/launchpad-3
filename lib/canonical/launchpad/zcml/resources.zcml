@@ -26,6 +26,7 @@
     <resource name="info.png" file="../images/info.png" />
     <resource name="info_icon.gif" file="../images/info_icon.gif" />
     <resource name="download.png" file="../images/download.png" />
+    <resource name="close_icon.png" file="../images/close_icon.png" />
 
     <resource name="arrowBottom.gif" file="../images/arrowBottom.gif" />
     <resource name="arrowDown.gif" file="../images/arrowDown.gif" />

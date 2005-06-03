@@ -35,7 +35,7 @@
           <p tal:condition="view/errors"
              class="portalMessage"
              i18n:translate="">
-             There are <strong tal:content="python:len(view.errors)"
+             There are <strong tal:content="view/errors/count:len"
                               i18n:name="num_errors">6</strong> input errors.
           </p>
 
@@ -46,12 +46,6 @@
             your actual customised editform, you can fill-slot this with 
             a descriptive paragraph.
           </div>
-
-          <fieldset>
-
-          <legend metal:define-slot="editform_legend" tal:replace="nothing">
-             Fieldset Legend
-          </legend>
 
           <div class="row"
                metal:define-slot="extra_top" tal:replace="nothing">
@@ -69,16 +63,15 @@
             <div class="field"><input type="text" style="width:100%" /></div>
           </div>
 
-          </fieldset>
-
         </div>
 
-        <div class="row">
-          <div class="controls">
-            <input type="submit" name="UPDATE_SUBMIT"
-                   value="Change" style="float: right;"
-                   i18n:attributes="value submit-button"/>
-          </div>
+        <div class="form actions">
+          <input
+            type="submit"
+            name="UPDATE_SUBMIT"
+            value="Change"
+            i18n:attributes="value submit-button"
+          />
         </div>
 
         <div class="row" metal:define-slot="extra_buttons"

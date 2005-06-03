@@ -11,7 +11,7 @@ import sha
 from twisted.internet import protocol
 from twisted.internet import reactor
 from twisted.web import xmlrpc
-from canonical.librarian.client import FileDownloadClient
+from canonical.librarian.client import LibrarianClient
 
 class RunCapture(protocol.ProcessProtocol):
     """Run a command and capture its output to a slave's log"""
@@ -127,11 +127,7 @@ class BuildDSlave(object):
         self._cachepath = self._config.get("slave","filecache")
         self.buildstatus = BuildStatus.OK
         self.waitingfiles = {}
-        librarian_host = environ.get('LB_HOST', 'localhost')
-        librarian_port = int(environ.get('LB_DPORT', '8000'))
-
-
-        self.downloader = FileDownloadClient(librarian_host, librarian_port)
+        self.downloader = LibrarianClient()
         
         if not isdir(self._cachepath):
             raise ValueError, "FileCache path is not a dir"
