@@ -1,12 +1,21 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+'''
+Configuration information pulled from launchpad.conf.
+
+The configuration section used is specified using the LPCONFIG
+environment variable, and defaults to 'default'
+'''
 
 __metaclass__ = type
 
-import sys, os, os.path
+import sys, os, os.path, warnings
 from urlparse import urlparse, urlunparse
 
 import zope.thread
 import ZConfig
+
+ENVIRONMENT_VARIABLE = 'LPCONFIG'
+DEFAULT_SECTION = 'default'
 
 class CanonicalConfig(object):
     """
@@ -40,7 +49,9 @@ class CanonicalConfig(object):
     True
     """
     _cache = zope.thread.local()
-    _default_config_section = os.environ.get('LAUNCHPAD_CONF', 'default')
+    _default_config_section = os.environ.get(
+            ENVIRONMENT_VARIABLE, DEFAULT_SECTION
+            )
 
     def setDefaultSection(self, section):
         """Set the name of the config file section returned by getConfig.
@@ -51,7 +62,7 @@ class CanonicalConfig(object):
         environment variable so subprocesses keep the same default.
         """
         self._default_config_section = section
-        os.environ['LAUNCHPAD_CONF'] = section
+        os.environ[ENVIRONMENT_VARIABLE] = section
 
     def getConfig(self, section=None):
         """Return the ZConfig configuration"""
@@ -164,4 +175,8 @@ def urlbase(value):
     if not value.endswith('/'):
         value = value + '/'
     return value
+
+
+if os.environ.get(ENVIRONMENT_VARIABLE, None) is None:
+    warnings.warn('Using default configuration section in launchpad.conf')
 

@@ -26,7 +26,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IPOFile"
         permission="zope.Public"
-        class="canonical.launchpad.browser.ViewPOFile"
+        class="canonical.launchpad.browser.POFileView"
         lp:url="/products/netapplet/1.0/+pots/$POTemplate.name/$POFile.language">
         <browser:page
             name="+index"
@@ -38,7 +38,7 @@
     <browser:page
         name="+edit"
         permission="launchpad.Edit"
-        class="canonical.launchpad.browser.ViewPOFile"
+        class="canonical.launchpad.browser.POFileView"
         for="canonical.launchpad.interfaces.IPOFile"
         template="../templates/pofile-edit.pt"
         />
@@ -48,11 +48,11 @@
         for="canonical.launchpad.interfaces.IPOFile"
         permission="launchpad.AnyPerson"
         template="../templates/pofile-translate.pt"
-        class="canonical.launchpad.browser.POFileTranslateView"
+        class="canonical.launchpad.browser.POFileView"
         />
 
     <browser:page
-        name="po"
+        name="+po"
         for="canonical.launchpad.interfaces.IPOFile"
         permission="zope.Public"
         class="canonical.launchpad.browser.ViewPOExport"
@@ -60,7 +60,7 @@
         />
 
     <browser:page
-        name="mo"
+        name="+mo"
         for="canonical.launchpad.interfaces.IPOFile"
         permission="zope.Public"
         class="canonical.launchpad.browser.ViewMOExport"

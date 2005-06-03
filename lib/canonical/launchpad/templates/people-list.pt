@@ -16,11 +16,11 @@
   <table>
     <tr tal:repeat="person python:list(bn.currentBatch())">      
       <td>
-        <a tal:condition="person/displayname"
-           tal:content="string: ${person/displayname} (${person/name})"
+        <a tal:condition="person/browsername"
+           tal:content="string: ${person/browsername} (${person/name})"
            tal:attributes="href person/name" />
 
-        <a tal:condition="not: person/displayname"
+        <a tal:condition="not: person/browsername"
            tal:content="person/browsername"
            tal:attributes="href person/name" />
      </td>

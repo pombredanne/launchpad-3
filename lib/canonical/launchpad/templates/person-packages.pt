@@ -18,11 +18,11 @@
       <h1>Package Maintenance Report</h1>
 
       <p tal:condition="context/maintainerships"><span
-      tal:replace="context/displayname">Person DisplayName</span> is the
+      tal:replace="context/browsername">maintainer</span> is the
       maintainer of the following distribution packages:</p>
       
       <p tal:condition="not: context/maintainerships"><span
-      tal:replace="context/displayname">Person DisplayName</span> is not
+      tal:replace="context/browsername">maintainer</span> is not
       currently recorded as the maintainer of any packages in the Launchpad
       system.</p>
 

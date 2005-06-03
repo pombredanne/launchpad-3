@@ -7,7 +7,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1 tal:content="context/displayname">PERSON</h1> 
+    <h1 tal:content="context/browsername">PERSON</h1> 
 
     <div tal:condition="context/gpg"> 
     <fieldset> 
@@ -31,7 +31,7 @@
     </div>
 
     <h3>Back to 
-    <a href="./" tal:content="context/displayname">PERSON</a>
+    <a href="./" tal:content="context/browsername">PERSON</a>
     </h3>
 
 </div>

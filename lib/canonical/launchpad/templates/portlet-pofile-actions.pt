@@ -1,0 +1,32 @@
+<div class="portlet">
+
+  <h4>Actions:</h4>
+
+  <div class="portletBody">
+
+    <div class="portletContent">
+
+      <ul>
+        <li class="languages">
+          <a href="+translate">Translate into
+            <span tal:replace="context/language/displayname" /></a>
+        </li>
+        <li class="languages">
+          <a href="../">Switch Languages</a>
+        </li>
+        <li class="edit" tal:condition="context/required:launchpad.Edit">
+          <a href="+edit">Edit PO Details</a>
+        </li>
+        <li class="download">
+          <a href="+po">Export as PO file</a>
+        </li>
+        <li class="download">
+          <a href="+mo">Export as MO file</a>
+        </li>
+
+    </div>
+
+  </div>
+
+</div>
+

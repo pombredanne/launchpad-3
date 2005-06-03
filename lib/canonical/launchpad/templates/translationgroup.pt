@@ -1,0 +1,86 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/relatedsPortlet" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Rosetta Translation Group Overview</h1>
+
+  <p class="documentDescription" tal:content="context/summary">
+      $TranslationGroup.summary goes here. This should be quite short,
+      just a single paragraph of text really, giving a summary of
+      this TranslationGroup.
+  </p>
+
+
+  <p tal:repeat="notice view/notices"
+       class="portalMessage"
+       tal:content="notice">
+       Notification Message
+  </p>
+
+  <tal:block condition="context/translators">
+
+  <p>The translators in this group are listed below. You can appoint
+  additional translators <a href="+appoint">here</a>, or select the relevant
+  link to change or remove them.</p>
+
+  <table class="listing">
+    <thead>
+      <tr>
+        <th>Language</th>
+        <th>Translator</th>
+        <th></th>
+        <th>Appointed</th>
+        <th tal:condition="context/required:launchpad.Edit"></th>
+      </tr>
+    </thead>
+    <tr tal:repeat="translator view/translator_list">
+      <td tal:content="translator/lang" />
+      <td><a tal:content="translator/person/browsername"
+             tal:attributes="href
+             string:/people/${translator/person/name}/+translations" />
+      </td>
+      <td><a tal:attributes="href translator/code"><img
+             src="/++resource++edit.gif" alt="Change"
+             title="Change Translator"></a>
+      </td>
+      <td tal:content="translator/datecreated/fmt:date" />
+      <td tal:condition="context/required:launchpad.Edit">
+        <form method="POST" action="+rm">
+            <input type="hidden" name="remove"
+                   tal:attributes="value translator/code">
+             <input type="image" style="border: 0;"
+                    src="/++resource++close_icon.png" alt="Remove"
+                    title="Remove Translator" name="rmform" />
+        </form>
+      </td>
+    </tr>
+  </table>
+
+  <p style="float: right;"><img src="/++resource++add.gif">
+    <a href="+appoint">Appoint New Translator</a>
+  </p>
+
+  <!-- end translators block --></tal:block>
+
+  <p tal:condition="not: context/translators">There are no translators yet
+  appointed in this group. You can <a href="+appoint">appoint a
+  translator</a> for any language to this group now.
+  </p>
+
+</div>
+
+</body>
+</html>

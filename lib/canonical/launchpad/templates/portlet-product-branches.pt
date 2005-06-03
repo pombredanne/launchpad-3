@@ -1,24 +1,16 @@
-<div class="portlet">
-    <h4>Bazaar Branches:</h4>
+<div class="portlet" tal:condition="context/branches">
 
-    <div class="portletBody">
-        <div class="portletContent even">
+  <h4>Bazaar Branches:</h4>
 
-        <table class="rowNavigation" border="0">
-            <tr tal:repeat="branch context/branches"
-                tal:attributes="onclick string:window.location='/bazaar/branches/${branch/id}';">
-                <td tal:content="branch/title">branch title</td>
-            </tr>
-        </table>
+  <div class="portletBody">
+    <div class="portletContent even">
 
-        <a tal:attributes="href string:/bazaar/products/${context/name}"
-            style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
-            title="See all branches for this product">
-            <img src="/++resource++add.gif" alt="+" />
-            More...
-        </a><br />
+      <ul>
+        <li tal:repeat="branch context/branches"
+            tal:content="branch/title">branch title</li>
+      </ul>
 
-        </div>
-                
     </div>
+                
+  </div>
 </div>

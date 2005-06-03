@@ -1,0 +1,35 @@
+
+Let's remove the Hoary Gnome Team, they are not really translators. We
+should be redirected to the polyglot page, with a removal message hint being
+passed.
+
+  >>> print http(r"""
+  ... POST /rosetta/groups/polyglot/+rm HTTP/1.1
+  ... Content-Length: 31
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... 
+  ... remove=ab&rmform.x=3&rmform.y=8""")
+  HTTP/1.1 303 See Other
+  Content-Length: 4
+  Content-Type: text/plain;charset=utf-8
+  Location: .?removed=ab-name21
+  <BLANKLINE>
+  ...
+
+And on that page, we should see the removal message.
+
+  >>> print http(r"""
+  ... GET /rosetta/groups/polyglot/?removed=ab-name21 HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+            <h2>The PolyGlot Translation Group</h2>
+  ...
+    <p class="portalMessage">Hoary Gnome Team removed as translator for Abkhazian (ab).</p>
+  ...
+

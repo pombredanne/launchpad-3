@@ -53,6 +53,17 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
         was most recently modified (greatest datelastactive), or None if
         there are no sightings belonging to this PO file.""")
 
+    translators = Attribute("A list of Translators that have been "
+        "designated as having permission to edit these files in this "
+        "language.")
+
+    contributors = Attribute("A list of all the people who have made "
+        "some sort of contribution to this PO file.")
+
+    translationpermission = Attribute("The permission system which "
+        "is used for this pofile. This is inherited from the product, "
+        "project and/or distro in which the pofile is found.")
+
     def __len__():
         """Returns the number of current IPOMessageSets in this PO file."""
 
@@ -129,10 +140,6 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
         """Gives all pofiles that have a rawfile pending of import into
         Rosetta."""
 
-    def getContributors():
-        """Returns the list of persons that have an active contribution inside
-        this POFile."""
-
     def validExportCache():
         """Does this PO file have a cached export that is up to date?"""
 
@@ -145,6 +152,13 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
 
 class IEditPOFile(IPOFile):
     """Edit interface for a PO File."""
+
+    def canEditTranslations(person):
+        """Say if a person is able to edit existing translations.
+
+        Return True or False indicating whether the person is allowed
+        to edit these translations.
+        """
 
     def expireAllMessages():
         """Mark our of our message sets as not current (sequence=0)"""

@@ -7,86 +7,40 @@
 
 <metal:leftportlets fill-slot="portlets_one">
 
-<div class="portlet">
-
-    <h4>Translation Details:</h4>
-
-    <div class="portletBody">
-
-        <div class="portletContent even">
-            <b>Template messages:</b>
-            <span tal:replace="context/potemplate/count:len">N</span>
-            <br/>
-            <b>Todo messages:</b>
-            <span tal:replace="view/untranslated">N</span>
-            <b>Completeness:</b>
-            <span tal:replace="view/completeness">N%</span>
-            <br/>
-            <div tal:condition="context/owner" tal:omit-tag>
-                <b>Owner:</b><br />
-                <img src="/++resource++user.gif" />
-                <span tal:replace="context/owner/browsername" /><br />
-            </div>
-            <div tal:condition="context/lasttranslator" tal:omit-tag>
-                <b>Last contributor:</b><br />
-                <img src="/++resource++user.gif" />
-                <span tal:replace="context/lasttranslator/browsername" /><br />
-            </div>
-
-
-        </div>
-    </div>
-</div>
+  <div tal:replace="structure view/detailsPortlet" />
+  <div tal:replace="structure view/statsPortlet" />
 
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
 
-<div class="portlet">
-
-    <h4>Actions:</h4>
-
-    <div class="portletBody">
-
-        <div class="portletContent even">
-
-            <p><img src="/++resource++edit.gif"><a href="+edit">Edit this
-            pofile details</a>. This will modify the pofile information and
-            upload a newer version of this PO file. This is an advanced
-            operation, limited to Rosetta administrators
-            <span tal:condition="context/owner"> and 
-            <span tal:replace="context/owner/browsername" />, the current owner of
-            this translation in Rosetta</span>.</p>
-
-            <p><a href="+translate">Translate
-            this pofile</a>. This will let you translate this pofile into
-            <span tal:replace="context/language/englishname" />.
-
-            <p><a tal:attributes="href string:po">Export as PO file</a>. This
-            will let you download the po file for this translation.</p>
-            <p><a tal:attributes="href string:mo">Export as MO file</a>. This
-            will let you download a binary file with the translations ready to
-            be used by the applications.</p>
-
-        </div>
-    </div>
-</div>
+  <div tal:replace="structure view/actionsPortlet" />
 
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
     <h1>Translation of <span tal:replace="context/potemplate/potemplatename/name">PO Template</span>
-        into <span tal:replace="context/language/englishname">Language</span></h1>
+        into <span tal:replace="context/language/displayname">Language</span></h1>
 
     <h2>Contributors for this translation:</h2>
 
-    <div tal:condition="context/getContributors" tal:omit-tag>
-        <ul>
-        <li tal:repeat="contributor context/getContributors"
-            tal:content="contributor/displayname" />
-        </ul>
-    </div>
+    <p tal:condition="context/contributors">
+      The following people have made some contribution to this specific
+      translation:
+    </p>
+
+    <ul class="people" tal:condition="context/contributors">
+      <li tal:repeat="contributor context/contributors">
+        <a tal:content="contributor/browsername"
+           tal:attributes="href string:/people/${contributor/name}/+translations">owner</a>
+      </li>
+    </ul>
+
+    <p class="portalMessage" tal:condition="not: context/contributors">
+      No contributors recorded for this PO file.
+    </p>
+
 </div>
 
 </body>

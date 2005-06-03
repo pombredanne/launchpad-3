@@ -116,6 +116,7 @@ class BugTasksReportView:
         return getUtility(IPersonSet).search(password = NULL)
 
 class BugTaskSearchListingView:
+
     implements(IBugTaskSearchListingView)
 
     def __init__(self, context, request):

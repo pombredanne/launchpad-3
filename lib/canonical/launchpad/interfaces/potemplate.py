@@ -14,48 +14,6 @@ __metaclass__ = type
 __all__ = ('IPOTemplateSubset', 'IPOTemplateSet', 'IPOTemplate',
            'IEditPOTemplate', 'IPOTemplateWithContent')
 
-class IPOTemplateSubset(Interface):
-    """A subset of POTemplate."""
-
-    sourcepackagename = Attribute(
-        "The sourcepackagename associated with this subset of POTemplates.")
-
-    distrorelease = Attribute(
-        "The distrorelease associated with this subset of POTemplates.")
-
-    productrelease = Attribute(
-        "The productrelease associated with this subset of POTemplates.")
-
-    title = Attribute("Title - use for launchpad pages")
-
-    def __iter__():
-        """Returns an iterator over all POTemplate for this subset."""
-
-    def __getitem__(name):
-        """Get a POTemplate by its name."""
-
-    def new(potemplatename, title, contents, owner):
-        """Create a new template for the context of this Subset."""
-
-
-class IPOTemplateSet(Interface):
-    """A set of PO templates."""
-
-    def __iter__():
-        """Return an iterator over all PO templates."""
-
-    def __getitem__(name):
-        """Get a PO template by its name."""
-
-    def getSubset(distrorelease=None, sourcepackagename=None,
-                  productrelease=None):
-        """Return a POTemplateSubset object depending on the given arguments.
-        """
-
-    def getTemplatesPendingImport():
-        """Return a list of PO templates that have data to be imported."""
-
-
 class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     """A PO template. For example 'nautilus/po/nautilus.pot'."""
 
@@ -152,6 +110,14 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
 
     datecreated = Attribute("When this template was created.")
 
+    translationgroups = Attribute("The translation groups that have "
+        "been selected to apply to this template. There can be several "
+        "because they can be inherited from project to product, for "
+        "example.")
+
+    translationpermission = Attribute("The permission system which "
+        "is used for this potemplate. This is inherited from the product, "
+        "project and/or distro in which the pofile is found.")
 
     def __len__():
         """Returns the number of Current IPOMessageSets in this template."""
@@ -248,15 +214,6 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
         """Test whether this template has any message sets which are plural
         message sets."""
 
-    def canEditTranslations(person):
-        """Say if a person is able to edit existing translations.
-
-        Return True or False depending if the user is allowed to edit those
-        translations.
-
-        At this moment, only translations from a distro release are locked.
-        """
-
 
 class IEditPOTemplate(IPOTemplate):
     """Edit interface for an IPOTemplate."""
@@ -300,6 +257,48 @@ class IEditPOTemplate(IPOTemplate):
 
         Returns the newly created message set.
         """
+
+
+class IPOTemplateSubset(Interface):
+    """A subset of POTemplate."""
+
+    sourcepackagename = Attribute(
+        "The sourcepackagename associated with this subset of POTemplates.")
+
+    distrorelease = Attribute(
+        "The distrorelease associated with this subset of POTemplates.")
+
+    productrelease = Attribute(
+        "The productrelease associated with this subset of POTemplates.")
+
+    title = Attribute("Title - use for launchpad pages")
+
+    def __iter__():
+        """Returns an iterator over all POTemplate for this subset."""
+
+    def __getitem__(name):
+        """Get a POTemplate by its name."""
+
+    def new(potemplatename, title, contents, owner):
+        """Create a new template for the context of this Subset."""
+
+
+class IPOTemplateSet(Interface):
+    """A set of PO templates."""
+
+    def __iter__():
+        """Return an iterator over all PO templates."""
+
+    def __getitem__(name):
+        """Get a PO template by its name."""
+
+    def getSubset(distrorelease=None, sourcepackagename=None,
+                  productrelease=None):
+        """Return a POTemplateSubset object depending on the given arguments.
+        """
+
+    def getTemplatesPendingImport():
+        """Return a list of PO templates that have data to be imported."""
 
 
 class IPOTemplateWithContent(IEditPOTemplate):

@@ -65,6 +65,7 @@ __all__ = (
 'TeamMembershipStatus',
 'TeamSubscriptionPolicy',
 'TranslationPriority',
+'TranslationPermission',
 'DistroReleaseQueueStatus',
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
@@ -626,43 +627,38 @@ class TeamMembershipStatus(DBSchema):
     PROPOSED = Item(1, """
         Proposed Member
 
-        The person has been proposed or has proposed themselves as a
-        member of this team. This status conveys no access rights or
-        privileges to the person.
+        You are a proposed member of this team. To become an active member your
+        subscription has to bo approved by one of the team's administrators.
         """)
 
     APPROVED = Item(2, """
         Approved Member
 
-        This person is currently a member of the team. This status means
-        that the person will have full access as a member of the team.
+        You are an active member of this team.
         """)
 
     ADMIN = Item(3, """
         Administrator
 
-        This person is currently an administrator of the team. This status 
-        means that the person will have full access as an administrator of 
-        the team.
+        You are an administrator of this team.
         """)
 
     DEACTIVATED = Item(4, """
         Deactivated Member
 
-        Either the member or any of the team's administrators have canceled
-        this subscription.
+        Your subscription to this team has been deactivated.
         """)
 
     EXPIRED = Item(5, """
         Expired Member
-        
-        The period for which this subscription was valid has expired.
+
+        Your subscription to this team is expired.
         """)
 
     DECLINED = Item(6, """
         Declined Member
 
-        User was proposed as a member but the subscription was not approved.
+        Your proposed subscription to this team has been declined.
         """)
 
 
@@ -684,15 +680,13 @@ class TeamSubscriptionPolicy(DBSchema):
     OPEN = Item(2, """
         Open Team
 
-        This team is 'Free for All', which means that anyone can join and
-        new subscriptions are not subjected to approval.
+        Any user can join and no approval is required.
         """)
 
     RESTRICTED = Item(3, """
         Restricted Team
 
         New members can only be added by one of the team's administrators.
-        Users cannot ask to join the team.
         """)
 
 
@@ -1078,6 +1072,31 @@ class TranslationPriority(DBSchema):
 
         A low priority POTemplate should only show up if a comprehensive
         search or complete listing is requested by the user.  """)
+
+class TranslationPermission(DBSchema):
+    """Translation Permission System
+
+    Projects, products and distributions can all have content that needs to
+    be translated. In this case, Rosetta allows them to decide how open they
+    want that translation process to be. At one extreme, anybody can add or
+    edit any translation, without review. At the other, only the designated
+    translator for that group in that language can edit its translation
+    files. This schema enumerates the options.
+    """
+
+    OPEN = Item(1, """
+        Open
+
+        This group allows totally open access to its translations. Any
+        logged-in user can add or edit translations in any language, without
+        any review.""")
+
+    CLOSED = Item(100, """
+        Closed
+
+        This group allows only designated translators to edit the
+        translations of its files. No other contributions will be considered
+        or allowed.""")
 
 class DistroReleaseQueueStatus(DBSchema):
     """Distro Release Queue Status

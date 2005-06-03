@@ -7,10 +7,15 @@ __metaclass__ = type
 import os
 import threading
 import atexit
+
 import zope.app.appsetup
+import zope.app.mail.delivery
 from zope.configuration.config import ConfigurationMachine
 from zope.configuration.config import GroupingContextDecorator
-import zope.app.mail.delivery
+from zope.security.management import setSecurityPolicy
+from zope.security.simplepolicies import PermissiveSecurityPolicy
+
+from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 
 # XXX: This is a total mess.  I need to work out what this all means.
 # -- SteveAlexander, 2005-04-11
@@ -45,8 +50,13 @@ class CustomMachine(ConfigurationMachine):
             f = ConfigurationMachine.factory(self, context, name)
             return f
 
-def execute_zcml_for_scripts():
-    """Execute the zcml rooted at launchpad/script.zcml"""
+def execute_zcml_for_scripts(use_web_security=False):
+    """Execute the zcml rooted at launchpad/script.zcml
+    
+    If use_web_security is True, the same security policy as the web
+    application uses will be used. Otherwise everything protected by a
+    permission is allowed, and everything else denied.
+    """
     scriptzcmlfilename = os.path.normpath(
         os.path.join(os.path.dirname(__file__),
                      os.pardir, os.pardir, os.pardir, os.pardir,
@@ -62,6 +72,12 @@ def execute_zcml_for_scripts():
     context = CustomMachine()
     xmlconfig.registerCommonDirectives(context)
     context = xmlconfig.file(scriptzcmlfilename, execute=True, context=context)
+
+    if use_web_security:
+        setSecurityPolicy(LaunchpadSecurityPolicy)
+    else:
+        setSecurityPolicy(PermissiveSecurityPolicy)
+
 
     # Register atexit handler to kill off mail delivery daemon threads, and
     # thus avoid spew at exit.  See:

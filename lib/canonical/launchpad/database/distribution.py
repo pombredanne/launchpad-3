@@ -6,17 +6,18 @@ __all__ = ['Distribution', 'DistributionSet', 'DistroPackageFinder']
 from zope.interface import implements
 from zope.exceptions import NotFoundError
 
-from sqlobject import \
-    RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey, MultipleJoin
+from sqlobject import (RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey,
+    MultipleJoin)
 
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.launchpad.database.bug import BugTask
 from canonical.launchpad.database.publishedpackage import PublishedPackageSet
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.sourcepackage import SourcePackage
-from canonical.lp.dbschema import BugTaskStatus, DistributionReleaseStatus
-from canonical.launchpad.interfaces import IDistribution, IDistributionSet, \
-    IDistroPackageFinder, ITeamMembershipSubset, ITeam
+from canonical.lp.dbschema import (EnumCol, BugTaskStatus,
+    DistributionReleaseStatus, TranslationPermission)
+from canonical.launchpad.interfaces import (IDistribution, IDistributionSet,
+    IDistroPackageFinder, ITeamMembershipSubset, ITeam)
 
 
 class Distribution(SQLBase):
@@ -33,6 +34,11 @@ class Distribution(SQLBase):
     domainname = StringCol()
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
+    translationgroup = ForeignKey(dbName='translationgroup',
+        foreignKey='TranslationGroup', notNull=False, default=None)
+    translationpermission = EnumCol(dbName='translationpermission',
+        notNull=True, schema=TranslationPermission,
+        default=TranslationPermission.OPEN)
     releases = MultipleJoin('DistroRelease', joinColumn='distribution',
                             orderBy='-id')
     bounties = RelatedJoin(

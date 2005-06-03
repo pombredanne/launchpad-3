@@ -32,10 +32,11 @@ from canonical.launchpad.browser.project import *
 from canonical.launchpad.browser.publishedpackage import *
 from canonical.launchpad.browser.sourcepackage import *
 from canonical.launchpad.browser.sourcepackagename import *
-# from canonical.launchpad.browser.sourcesource import *
 from canonical.launchpad.browser.soyuz import *
 from canonical.launchpad.browser.sshkey import *
 from canonical.launchpad.browser.team import *
+from canonical.launchpad.browser.translationgroup import *
+from canonical.launchpad.browser.translator import *
 from canonical.launchpad.browser.traversers import *
 from canonical.launchpad.browser.widgets import *
 from canonical.launchpad.browser.calendarwidgets import *

@@ -6,19 +6,18 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure view/latestBugPortlet" />
-    <div tal:replace="structure view/relatedBountiesPortlet" />
+    <div tal:replace="structure view/detailsPortlet" />
     <div tal:replace="structure view/translationsPortlet" />
-    <div tal:replace="structure view/branchesPortlet" />
     <div tal:condition="python:request.principal and request.principal.id == context.owner.id"
          tal:replace="structure view/milestonePortlet" />
-    <div tal:replace="structure view/packagesPortlet" />
+    <div tal:replace="structure view/projectPortlet" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure view/detailsPortlet" />
     <div tal:replace="structure view/actionsPortlet" />
-    <div tal:replace="structure view/projectPortlet" />
+    <div tal:replace="structure view/latestBugPortlet" />
+    <div tal:replace="structure view/relatedBountiesPortlet" />
+    <div tal:replace="structure view/packagesPortlet" />
     <div tal:replace="structure view/calendarInfoPortlet" />
 </metal:rightportlets>
 
@@ -41,7 +40,7 @@
     something else, for example).
   </div>
 
-  <div tal:condition="context/serieslist">
+  <tal:block condition="context/serieslist">
 
     <h2>Branches and Releases</h2>
 
@@ -73,7 +72,23 @@
 
     </div>
 
-  </div>
+  </tal:block>
+
+  <tal:block condition="context/branches">
+
+    <h2>Bazaar Branches</h2>
+
+    <p>Bazaar is the distributed revision control system that allows many
+    groups to collaborate more effectively on open source projects. The
+    following branches exist in the Bazaar which are thought to be related
+    to <span tal:replace="context/displayname">Mozilla</span>.</p>
+
+    <ul>
+      <li tal:repeat="branch context/branches"
+          tal:content="branch/title">Branch Title Goes Here</li>
+    </ul>
+
+  </tal:block>
 
 
 </div>

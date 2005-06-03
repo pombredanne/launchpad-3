@@ -131,7 +131,7 @@ IPersonSet.search.
 >>> from canonical.launchpad.searchbuilder import NULL
 >>> valid_people = personset.search(password = NULL)
 >>> valid_people.count()
-23
+22
 
 Passing no args would return all people:
 

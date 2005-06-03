@@ -41,7 +41,7 @@ test: create
 	@ psql -d ${TEST_DBNAME} -f ${BASELINE} | grep : | cat
 	@ echo "* Patching the database schema"
 	@ ls -1 patch-${REV}-*.sql | sort | \
-	    xargs -n 1 psql -d ${TEST_DBNAME} -q -f | cat
+	    xargs -n 1 psql -v ON_ERROR_STOP=1 -d ${TEST_DBNAME} -q -f
 	@ echo "* Setting up full text indexes"
 	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py
 	@ echo "* Adding comments"

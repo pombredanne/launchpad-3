@@ -17,7 +17,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import \
     IProject, IProjectSet, IProjectBugTracker, ICalendarOwner
 
-from canonical.lp.dbschema import ImportStatus
+from canonical.lp.dbschema import EnumCol, TranslationPermission, \
+    ImportStatus
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.cal import Calendar
 
@@ -36,11 +37,16 @@ class Project(SQLBase):
     title = StringCol(dbName='title', notNull=True)
     summary = StringCol(dbName='summary', notNull=True)
     description = StringCol(dbName='description', notNull=True)
-    # XXX: https://bugzilla.warthogs.hbd.com/bugzilla/show_bug.cgi?id=1968
-    datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True)
+    datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True,
+        default=UTC_NOW)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
     wikiurl = StringCol(dbName='wikiurl', notNull=False, default=None)
     lastdoap = StringCol(dbName='lastdoap', notNull=False, default=None)
+    translationgroup = ForeignKey(dbName='translationgroup',
+        foreignKey='TranslationGroup', notNull=False, default=None)
+    translationpermission = EnumCol(dbName='translationpermission',
+        notNull=True, schema=TranslationPermission,
+        default=TranslationPermission.OPEN)
     active = BoolCol(dbName='active', notNull=True, default=True)
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
 

@@ -1,0 +1,32 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <!-- Translator -->
+    <content class="canonical.launchpad.database.Translator">
+        <allow interface="canonical.launchpad.interfaces.ITranslator" />
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.ITranslator" />
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ITranslator"
+        name="+edit" />
+
+    <browser:editform
+        name="+edit"
+        for="canonical.launchpad.interfaces.ITranslator"
+        schema="canonical.launchpad.interfaces.ITranslator"
+        label="Change Translator"
+        fields="translator"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.TranslatorEditView"
+        template="../templates/launchpad-editform.pt"
+        lp:url="/rosetta/groups/$TranslationGroup.name/$Language.name/+edit">
+    </browser:editform>
+
+</configure>
