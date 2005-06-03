@@ -11,13 +11,14 @@ from email.Utils import make_msgid
 from zope.interface import implements
 from zope.exceptions import NotFoundError
 
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
+from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
 
 from canonical.launchpad.interfaces import \
     IBug, IBugAddForm, IBugSet, IBugDelta
 from canonical.database.sqlbase import SQLBase
-from canonical.database.constants import nowUTC, DEFAULT
+from canonical.database.constants import UTC_NOW, DEFAULT
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp import dbschema
 from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.database.message \
@@ -41,22 +42,22 @@ class Bug(SQLBase):
     # db field names
     name = StringCol(unique=True, default=None)
     title = StringCol(notNull=True)
-    shortdesc = StringCol(notNull=False, default=None)
+    summary = StringCol(notNull=False, default=None)
     description = StringCol(notNull=False,
                             default=None)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     duplicateof = ForeignKey(
         dbName='duplicateof', foreignKey='Bug', default=None)
-    datecreated = DateTimeCol(notNull=True, default=nowUTC)
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     communityscore = IntCol(dbName='communityscore', notNull=True, default=0)
-    communitytimestamp = DateTimeCol(dbName='communitytimestamp',
-                                     notNull=True, default=DEFAULT)
+    communitytimestamp = UtcDateTimeCol(dbName='communitytimestamp',
+                                        notNull=True, default=DEFAULT)
     hits = IntCol(dbName='hits', notNull=True, default=0)
-    hitstimestamp = DateTimeCol(dbName='hitstimestamp', notNull=True,
-                                default=DEFAULT)
+    hitstimestamp = UtcDateTimeCol(dbName='hitstimestamp', notNull=True,
+                                   default=DEFAULT)
     activityscore = IntCol(dbName='activityscore', notNull=True, default=0)
-    activitytimestamp = DateTimeCol(dbName='activitytimestamp', notNull=True,
-                                    default=DEFAULT)
+    activitytimestamp = UtcDateTimeCol(dbName='activitytimestamp',
+                                       notNull=True, default=DEFAULT)
     private = BoolCol(notNull=True, default=False)
 
     # useful Joins
@@ -109,30 +110,30 @@ class Bug(SQLBase):
                 # realistically, we've got some corruption in our db
                 # still that prevents us from guaranteeing that all
                 # subscribers will have a preferredemail
-                if preferred_email:
+                if preferred_email is not None:
                     emails.add(preferred_email.email)
 
         if not self.private:
             # Collect implicit subscriptions. This only happens on
             # public bugs.
             for task in self.bugtasks:
-                if task.assignee:
+                if task.assignee is not None:
                     preferred_email = task.assignee.preferredemail
                     # XXX: Brad Bollenbach, 2005-03-14: Subscribed users
                     # should always have a preferred email, but
                     # realistically, we've got some corruption in our db
                     # still that prevents us from guaranteeing that all
                     # subscribers will have a preferredemail
-                    if preferred_email:
+                    if preferred_email is not None:
                         emails.add(preferred_email.email)
 
-                if task.product:
+                if task.product is not None:
                     preferred_email = task.product.owner.preferredemail
-                    if preferred_email:
+                    if preferred_email is not None:
                         emails.add(preferred_email.email)
                 else:
-                    if task.sourcepackagename:
-                        if task.distribution:
+                    if task.sourcepackagename is not None:
+                        if task.distribution is not None:
                             distribution = task.distribution
                         else:
                             distribution = task.distrorelease.distribution
@@ -146,8 +147,9 @@ class Bug(SQLBase):
                                 emails.add(preferred_email.email)
 
         preferred_email = self.owner.preferredemail
-        if preferred_email:
+        if preferred_email is not None:
             emails.add(preferred_email.email)
+
         emails = list(emails)
         emails.sort()
         return emails
@@ -156,18 +158,19 @@ class Bug(SQLBase):
 class BugDelta:
     """See canonical.launchpad.interfaces.IBugDelta."""
     implements(IBugDelta)
-    def __init__(self, bug, bugurl, user, title=None, shortdesc=None,
-                 description=None, name=None, private=None,
+    def __init__(self, bug, bugurl, user, title=None, summary=None,
+                 description=None, name=None, private=None, duplicateof=None,
                  external_reference=None, bugwatch=None, cveref=None,
                  bugtask_deltas=None):
         self.bug = bug
         self.bugurl = bugurl
         self.user = user
         self.title = title
-        self.shortdesc = shortdesc
+        self.summary = summary
         self.description = description
         self.name = name
         self.private = private
+        self.duplicateof = duplicateof
         self.external_reference = external_reference
         self.bugwatch = bugwatch
         self.cveref = cveref
@@ -175,7 +178,7 @@ class BugDelta:
 
 def BugFactory(addview=None, distribution=None, sourcepackagename=None,
                binarypackagename=None, product=None, comment=None,
-               description=None, rfc822msgid=None, shortdesc=None,
+               description=None, rfc822msgid=None, summary=None,
                datecreated=None, title=None, private=False,
                owner=None):
     """Create a bug.
@@ -190,7 +193,7 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
       * if no description is passed, the comment will be used as the
         description
 
-      * if shortdesc is not passed then the shortdesc will be the
+      * if summary is not passed then the summary will be the
         first sentence of the description
 
       * the appropriate bug task (exactly one, from this function) and
@@ -213,16 +216,16 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
 
     # if we have been passed only a description, then we set the summary to
     # be the first paragraph of it, up to 320 characters long
-    if description and not shortdesc:
-        shortdesc = description.split('. ')[0]
-        if len(shortdesc) > 320:
-            shortdesc = shortdesc[:320] + '...'
+    if description and not summary:
+        summary = description.split('. ')[0]
+        if len(summary) > 320:
+            summary = summary[:320] + '...'
 
     if not datecreated:
-        datecreated = datetime.now()
+        datecreated = UTC_NOW
 
     bug = Bug(
-        title=title, shortdesc=shortdesc,
+        title=title, summary=summary,
         description=description, private=private,
         owner=owner.id, datecreated=datecreated)
 
@@ -271,7 +274,7 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
         distribution=distribution, sourcepackagename=sourcepackagename,
         binarypackagename=binarypackagename, product=product,
         comment=comment, description=description, rfc822msgid=rfc822msgid,
-        shortdesc=shortdesc, datecreated=datecreated, title=title,
+        summary=summary, datecreated=datecreated, title=title,
         private=private, owner=owner)
     bug_added.id = bug.id
 
@@ -299,3 +302,6 @@ class BugSet(BugSetBase):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
         return self.table.get(bugid)
 
+    def search(self, duplicateof=None):
+        """See canonical.launchpad.interfaces.bug.IBugSet."""
+        return self.table.selectBy(duplicateofID = duplicateof.id)

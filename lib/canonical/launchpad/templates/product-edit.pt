@@ -3,10 +3,6 @@
       lang="en"
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="launchpad">
-      
-    <title metal:fill-slot="title">Edit Upstream Details: <span
-    tal:replace="context/title">product title</span>
-    </title>
 
   <body>
 
@@ -25,10 +21,6 @@
             tal:replace="context/displayname">product</span>" below. Your
             changes will become immediately visible.
           </div>
-
-          <legend metal:fill-slot="editform_legend" tal:replace="nothing">
-             Upstream Product Details
-          </legend>
         
           <div class="row"
                metal:fill-slot="extra_top" tal:replace="nothing">

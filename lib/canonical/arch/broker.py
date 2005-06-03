@@ -335,7 +335,7 @@ class Archive(NamespaceObject, CategoryIterable):
 
     def _validate_name(archive_name):
         """Raise a NamespaceError if the given archive name is invalid."""
-        from arch import NameParser
+        from pybaz import NameParser
         if not NameParser.is_archive_name(archive_name):
             raise NamespaceError("invalid archive name: %s" % archive_name)
     _validate_name = staticmethod(_validate_name)
@@ -427,7 +427,7 @@ class Category(Setupable, BranchIterable):
     _eq_interface = ICategory
 
     def __init__(self, name, archive):
-        from arch import NameParser
+        from pybaz import NameParser
         self._archive = archive
         self._name = name
 

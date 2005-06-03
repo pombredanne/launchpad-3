@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 from zope.component import getUtility
+from zope.interface import implements
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from sqlobject import LIKE, AND
@@ -12,11 +13,15 @@ from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import BugTaskStatus
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import IBugTaskSet, ILaunchBag
 
-BATCH_SIZE = 20
+from canonical.launchpad.interfaces import IBugTaskSet, ILaunchBag, \
+     IBugTaskSearchListingView
+from canonical.launchpad.browser.potemplate import POTemplateView
+from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 
-class DistroReleaseView(object):
+class DistroReleaseView(BugTaskSearchListingView):
+
+    implements(IBugTaskSearchListingView)
 
     detailsPortlet = ViewPageTemplateFile(
         '../templates/portlet-distrorelease-details.pt')
@@ -43,40 +48,17 @@ class DistroReleaseView(object):
         '../templates/portlet-browser-langs.pt')
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        bugtasks_to_show = getUtility(IBugTaskSet).search(
-            status = any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
-            distrorelease = self.context, orderby = "-id")
-        self.batch = Batch(
-            list(bugtasks_to_show), int(request.get('batch_start', 0)))
-        self.batchnav = BatchNavigator(self.batch, request)
-        self.is_maintainer = helpers.is_maintainer(self.context)
+        BugTaskSearchListingView.__init__(self, context, request)
+        self.milestone_widget = None
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(self.request)
-        # Cache value for the return value of self.templates
-        self._template_languages = None
-        # List of the templates we have in this subset.
-        self._templates = self.context.potemplates
         self.status_message = None
 
     def task_columns(self):
+        """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
         return [
             "id", "package", "title", "status", "submittedby", "assignedto"]
-
-    def assign_to_milestones(self):
-        return []
-
-    def potemplates(self):
-        if self._template_languages is None:
-            self._template_languages = [
-                helpers.TemplateLanguages(template,
-                                  self.languages,
-                                  relativeurl='+sources/'+template.sourcepackagename.name+'/+pots/'+template.name)
-                               for template in self._templates]
-
-        return self._template_languages
 
     def requestCountry(self):
         return helpers.requestCountry(self.request)
@@ -84,8 +66,12 @@ class DistroReleaseView(object):
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
 
+    def templateviews(self):
+        return [POTemplateView(template, self.request)
+                for template in self.context.potemplates]
 
-class ReleasesAddView(object):
+
+class ReleasesAddView:
 
     def __init__(self, context, request):
         self.context = context
@@ -98,7 +84,7 @@ class ReleasesAddView(object):
             return False
 
         title = self.request.get("title", "")
-        shortdesc = self.request.get("shortdesc", "")
+        summary = self.request.get("summary", "")
         description = self.request.get("description", "")
         version = self.request.get("version", "")
         parent = self.request.get("parentrelease", "")
@@ -110,7 +96,7 @@ class ReleasesAddView(object):
 
         dt = getUtility(IDistroTools)
         res = dt.createDistroRelease(person.id, title, distro_id,
-                                     shortdesc, description, version,
+                                     summary, description, version,
                                      parent)
         self.results = res
         return res
@@ -119,7 +105,7 @@ class ReleasesAddView(object):
         d_util = getUtility(IDistroTools)
         return d_util.getDistroReleases()
 
-class ReleaseEditView(object):
+class ReleaseEditView:
 
     def __init__(self, context, request):
         self.context = context
@@ -129,7 +115,7 @@ class ReleaseEditView(object):
 
         name = self.request.get("name", "")
         title = self.request.get("title", "")
-        shortdesc = self.request.get("shortdesc", "")
+        summary = self.request.get("summary", "")
         description = self.request.get("description", "")
         version = self.request.get("version", "")
 
@@ -139,12 +125,12 @@ class ReleaseEditView(object):
         ##XXX: (uniques) cprov 20041003
         self.context.release.name = name
         self.context.release.title = title
-        self.context.release.shortdesc = shortdesc
+        self.context.release.summary = summary
         self.context.release.description = description
         self.context.release.version = version
         return True
 
-class ReleaseSearchView(object):
+class ReleaseSearchView:
     def __init__(self, context, request):
         self.context = context
         self.request = request

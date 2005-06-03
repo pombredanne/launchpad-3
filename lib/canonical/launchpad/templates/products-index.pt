@@ -3,41 +3,39 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">Products in Launchpad</title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
-<metal:leftportlets fill-slot="portlets_two">
-    <div tal:replace="structure view/detailsPortlet" />
+<metal:leftportlets fill-slot="portlets_one">
+  <div class="portlet">
+    <h4>Open Source Products:</h4>
+
+    <div class="portletBody">
+      <div class="portletContent even">
+  
+        <p>Enter a product name or detail, and press search to find all
+        products matching those words in the Launchpad. You can also
+        <a href="/products/+all">see all products</a> registered in the
+        launchpad.</p>
+
+      </div>
+    </div>
+  </div>
 </metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/detailsPortlet" />
+</metal:rightportlets>
 
 
 <div metal:fill-slot="main">
 
-    <h1>Products in Launchpad</h1>
+    <h1>Find Products in The Launchpad</h1>
 
-    <form method="post">
+    <form method="get">
         <table>
           <tr>
-            <th>
-              <label for="text">
-                Search products:
-              </label>
-            </th>
             <td>
               <input name="text" size="30" tal:attributes="value view/text" />
-            </td>
-          </tr>
-          <tr>
-            <td></td>
-            <td>
-              <div class="actions">
                 <input
                   tal:condition="view/searchrequested"
                   type="submit"
@@ -48,8 +46,6 @@
                   type="submit"
                   value="Search"
                 />
-                <a href="+search">Advanced search</a>
-              </div>
             </td>
           </tr>
         </table>
@@ -60,12 +56,9 @@
 
     </form>
 
-
     <div tal:condition="view/searchrequested">
 
-
-      <tal:block tal:define="results view/searchresults">
-        <table class="data">
+        <table class="data" tal:define="results view/searchresults">
           <thead>
             <tr class="results">
               <td colspan="0">
@@ -90,8 +83,8 @@
                         >$Product.name
                       </span>)</a>
                     </dt>
-                    <dd tal:content="product/shortdesc">
-                      $Product.shortdesc
+                    <dd tal:content="product/summary">
+                      $Product.summary
                     </dd>
                   </tal:block>
                 </dl>
@@ -105,7 +98,6 @@
             </tr>
           </tbody>
         </table>
-      </tal:block>
 
 
     </div>

@@ -9,7 +9,7 @@
         <allow interface="canonical.launchpad.interfaces.IDistroRelease"/>
         <require
             permission="launchpad.Admin"
-            set_attributes="displayname title shortdesc description version"
+            set_attributes="displayname title summary description version"
             />
     </content>
 
@@ -46,7 +46,7 @@
         permission="launchpad.Admin"
         name="+edit"
         schema="canonical.launchpad.interfaces.IDistroRelease"
-        fields="displayname title shortdesc description version"
+        fields="displayname title summary description version"
         template="../templates/launchpad-editform.pt"
         lp:url="/distros/$Distribution.name/$DistroRelease.name/+edit"/>
 
@@ -62,8 +62,13 @@
 	        />
 	    <browser:page
             name="+translations"
-            template="../templates/object-pots.pt"
+            template="../templates/distrorelease-translations.pt"
 	        lp:url="/distros/ubuntu/hoary/+translations"
+	        />
+	    <browser:page
+            name="+potlist"
+            template="../templates/object-pots.pt"
+	        lp:url="/distros/ubuntu/hoary/+potlist"
 	        />
     </browser:pages>
 

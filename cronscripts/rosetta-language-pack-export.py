@@ -15,7 +15,7 @@ import tempfile
 from zope.component import getUtility
 
 from canonical.lp import initZopeless
-from canonical.librarian.client import FileUploadClient, UploadFailed
+from canonical.librarian.interfaces import ILibrarianClient, UploadFailed
 from canonical.launchpad.components.poexport import DistroReleasePOExporter
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.scripts import execute_zcml_for_scripts
@@ -46,7 +46,7 @@ def parse_options(args):
 
 def get_distribution(name):
     """Return the distribution with the given name."""
-    return getUtility(IDistributionSet())[name]
+    return getUtility(IDistributionSet)[name]
 
 def get_release(distribution_name, release_name):
     """Return the release with the given name in the distribution with the
@@ -103,8 +103,8 @@ def upload(filename, filehandle, size):
     Returns the file alias of the uploaded file.
     """
 
-    uploader = FileUploadClient()
-    file_id, file_alias = uploader.addFile(
+    uploader = getUtility(ILibrarianClient)
+    file_alias = uploader.addFile(
         name=filename,
         size=size,
         file=filehandle,

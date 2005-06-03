@@ -1,0 +1,113 @@
+
+Now, let's go have a look at where we can use these translation groups. We
+want to check out the distro side first. Let's take a look at the Ubuntu
+page, it should have no TranslationGroup and open permissions.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+            <h2>Ubuntu Linux</h2>
+  ...
+        <b>Translation Group:</b><br />
+        <img src="/++resource++languages.gif">
+  <BLANKLINE>
+  <BLANKLINE>
+        <i>Not assigned</i><br />
+  <BLANKLINE>
+        <b>Translation Perms:</b><br />
+        Open
+        <br />
+  ...
+
+So, let's set it to use the PolyGlot translation group, and close the
+permissions. We use the +changetranslators page. First make sure we can see
+that page.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+changetranslators HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+            <h2>Ubuntu Linux</h2>
+  ...
+            <h3>Select A New Translation Group</h3>
+  ...
+
+Now let's POST to that form. we should see the same page back, with a portal
+message indicating that the form was updated.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+changetranslators HTTP/1.1
+  ... Content-Length: 740
+  ... Content-Type: multipart/form-data; boundary=---------------------------1421369065201436391526227802
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... 
+  ... -----------------------------1421369065201436391526227802
+  ... Content-Disposition: form-data; name="field.translationgroup"
+  ... 
+  ... polyglot
+  ... -----------------------------1421369065201436391526227802
+  ... Content-Disposition: form-data; name="field.translationgroup-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------1421369065201436391526227802
+  ... Content-Disposition: form-data; name="field.translationpermission"
+  ... 
+  ... Closed
+  ... -----------------------------1421369065201436391526227802
+  ... Content-Disposition: form-data; name="field.translationpermission-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------1421369065201436391526227802
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------1421369065201436391526227802--
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+            <h2>Ubuntu Linux</h2>
+  ...
+            <h3>Select A New Translation Group</h3>
+  <BLANKLINE>
+            <p class="portalMessage">Updated on ...</p>
+  ...
+
+Just to be certain let's view the Ubuntu distro page again and check the
+portlet for translation group and permissions.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+            <h2>Ubuntu Linux</h2>
+  ...
+        <b>Translation Group:</b><br />
+        <img src="/++resource++languages.gif">
+  <BLANKLINE>
+        <a href="/rosetta/groups/polyglot/">The PolyGlot Translation Group</a><br />
+  <BLANKLINE>
+  <BLANKLINE>
+        <b>Translation Perms:</b><br />
+        Closed
+        <br />
+  ...
+

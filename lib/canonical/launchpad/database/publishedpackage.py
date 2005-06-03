@@ -5,9 +5,10 @@ __all__ = ['PublishedPackage', 'PublishedPackageSet']
 
 from zope.interface import implements
 
-from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol
+from sqlobject import StringCol, ForeignKey, IntCol
 
 from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces import \
     IPublishedPackage, IPublishedPackageSet
 from canonical.lp.dbschema import EnumCol
@@ -32,11 +33,11 @@ class PublishedPackage(SQLBase):
     section = StringCol(immutable=True)
     binarypackage = IntCol(immutable=True)
     binarypackagename = StringCol(immutable=True)
-    binarypackageshortdesc = StringCol(immutable=True)
+    binarypackagesummary = StringCol(immutable=True)
     binarypackagedescription = StringCol(immutable=True)
     binarypackageversion = StringCol(immutable=True)
     build = ForeignKey(foreignKey='Build', dbName='build')
-    datebuilt = DateTimeCol(immutable=True)
+    datebuilt = UtcDateTimeCol(immutable=True)
     sourcepackagerelease = IntCol(immutable=True)
     sourcepackagereleaseversion = StringCol(immutable=True)
     sourcepackagename = StringCol(immutable=True)

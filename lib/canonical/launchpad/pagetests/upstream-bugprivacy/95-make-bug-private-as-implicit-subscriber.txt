@@ -8,8 +8,7 @@ Sample Person views a bug, which they're about to set private:
   ... """)
   HTTP/1.1 200 Ok
   ...
-      <title>Malone: Edit Bug #4
-      </title>
+      <title>Malone: Edit Bug #4</title>
   ...
       <h4>Related People:</h4>
   <BLANKLINE>
@@ -99,8 +98,7 @@ in the process.
   ... """)
   HTTP/1.1 200 Ok
   ...
-      <title>Malone: Edit Bug #4
-      </title>
+      <title>Malone: Edit Bug #4</title>
   ...
       <h4>Related People:</h4>
   <BLANKLINE>

@@ -70,6 +70,79 @@ class TestOptimization(unittest.TestCase):
         finally:
             PgTestSetup().tearDown()
 
+    def test_sequences(self):
+        # Sequences may be affected by connections even if the connection
+        # is rolled back. So ensure the database is reset fully, in the
+        # cases where we just rollback the changes we also need to reset all
+        # the sequences.
+
+        # Setup a table that uses a sequence
+        PgTestSetup().setUp()
+        try:
+            con = PgTestSetup().connect()
+            cur = con.cursor()
+            cur.execute('CREATE TABLE foo (x serial, y integer)')
+            con.commit()
+            con.close()
+            # Fake it so the harness doesn't know a change has been made
+            ConnectionWrapper.committed = False
+        finally:
+            PgTestSetup().tearDown()
+
+        sequence_values = []
+        # Insert a row into it and roll back the changes. Each time, we
+        # should end up with the same sequence value
+        for i in range(3):
+            PgTestSetup().setUp()
+            try:
+                con = PgTestSetup().connect()
+                cur = con.cursor()
+                cur.execute('INSERT INTO foo (y) VALUES (1)')
+                cur.execute("SELECT currval('foo_x_seq')")
+                sequence_values.append(cur.fetchone()[0])
+                con.rollback()
+                con.close()
+            finally:
+                PgTestSetup().tearDown()
+
+        # Fail if we got a diffent sequence value at some point
+        for v in sequence_values:
+            self.failUnlessEqual(v, sequence_values[0])
+
+        # Repeat the test, but this time with some data already in the
+        # table
+        PgTestSetup().setUp()
+        try:
+            con = PgTestSetup().connect()
+            cur = con.cursor()
+            cur.execute('INSERT INTO foo (y) VALUES (1)')
+            con.commit()
+            con.close()
+            # Fake it so the harness doesn't know a change has been made
+            ConnectionWrapper.committed = False
+        finally:
+            PgTestSetup().tearDown()
+
+        sequence_values = []
+        # Insert a row into it and roll back the changes. Each time, we
+        # should end up with the same sequence value
+        for i in range(1,3):
+            PgTestSetup().setUp()
+            try:
+                con = PgTestSetup().connect()
+                cur = con.cursor()
+                cur.execute('INSERT INTO foo (y) VALUES (1)')
+                cur.execute("SELECT currval('foo_x_seq')")
+                sequence_values.append(cur.fetchone()[0])
+                con.rollback()
+                con.close()
+            finally:
+                PgTestSetup().tearDown()
+
+        # Fail if we got a diffent sequence value at some point
+        for v in sequence_values:
+            self.failUnlessEqual(v, sequence_values[0])
+
 
 def test_suite():
     suite = unittest.TestSuite()

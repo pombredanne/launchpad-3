@@ -28,6 +28,10 @@ class IPOTMsgSet(Interface):
 
     flagscomment = Attribute("The flags this set has.")
 
+    def getSuggestedTexts(language, pluralform):
+        """Return any suggestions Rosetta might have for translating this
+        POTMsgSet plural form into that language."""
+
     def flags():
         """Return a list of flags on this set."""
 
@@ -49,9 +53,12 @@ class IPOTMsgSet(Interface):
         """
 
     def poMsgSet(language, variant=None):
-        """
-        Retrieve the PO message set corresposponding to this template message
-        set for the given language and variant, if it exists.
+        """Retrieve the POMsgSet corresposponding to this POTMsgSet.
+
+        The concrete POMsgSet is choosed by the language and variant
+        arguments, being language a Language object and variant a string.
+        If there is not POMsgSet for that language + variant convination, the
+        NotFoundError exception is raised.
         """
 
 class IEditPOTMsgSet(IPOTMsgSet):

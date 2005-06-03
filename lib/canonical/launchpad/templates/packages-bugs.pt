@@ -3,10 +3,6 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="malone">
 
-<head>
-  <title metal:fill-slot="title">Packages With Bugs</title>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">
@@ -20,7 +16,7 @@
     <table class="listing rowNavigation">
         <tr>
             <th>Source Package</th>
-            <th>Short Description</th>
+            <th>Title</th>
         </tr> 
         <tr tal:repeat="pkg context/withBugs"
             tal:attributes="onclick
@@ -30,8 +26,8 @@
                     tal:attributes="href string:${pkg/name}"
                     tal:content="pkg/name">$SourcePackageName.name</a>
             </td>
-            <td tal:content="pkg/shortdesc">
-                $SourcePackage.shortdesc
+            <td tal:content="pkg/title">
+                $SourcePackage.title
             </td>
         </tr>
     </table>

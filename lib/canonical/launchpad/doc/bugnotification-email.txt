@@ -70,22 +70,23 @@ notification to be sent:
     >>> subject
     u'[Bug 2] the new title'
     >>> body
-    u'Sample Person <test@canonical.com> made changes to:\n\n    http://www.example.com/bugs/2\n\n    - Changed title:\n        the new title\n    - Changed description:\n        a new description that is quite long. but the nice thing is that\n        the edit notification email generator knows how to indent and\n        wrap descriptions, so this will appear quite nice in the actual\n        email that gets sent\n'
+    u'Sample Person <test@canonical.com> made changes to:\n\n    http://www.example.com/bugs/2\n\n    - Changed title to:\n        the new title\n    - Changed description to:\n        a new description that is quite long. but the nice thing is that\n        the edit notification email generator knows how to indent and\n        wrap descriptions, so this will appear quite nice in the actual\n        email that gets sent\n'
 
-Another edit, this time the short description:
+Another edit, this time the summary:
 
-    >>> edited_bug.shortdesc = "this short desc isn't particularly short is it? after all, what kind of shortdesc is so long that it needs to be wrapped?"
+    >>> edited_bug.summary = "this summary isn't particularly short is it? after all, what kind of summary is so long that it needs to be wrapped?"
 
     >>> bug_delta = BugDelta(
     ...     bug = edited_bug,
     ...     bugurl = "http://www.example.com/bugs/2",
     ...     user = sample_person,
-    ...     shortdesc = edited_bug.shortdesc)
+    ...     summary = edited_bug.summary)
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
     >>> body
-    u"Sample Person <test@canonical.com> made changes to:\n\n    http://www.example.com/bugs/2\n\n    - Changed short description:\n        this short desc isn't particularly short is it? after all, what\n        kind of shortdesc is so long that it needs to be wrapped?\n"
+    u"Sample Person <test@canonical.com> made changes to:\n\n
+    http://www.example.com/bugs/2\n\n    - Changed summary to:\n        this summary isn't particularly short is it? after all, what\n        kind of summary is so long that it needs to be wrapped?\n"
 
 Let's set the bug private (for demo purposes, we need to switch logins
 to a user that is explicitly subscribed to this bug):

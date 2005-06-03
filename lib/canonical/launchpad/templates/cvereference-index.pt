@@ -2,12 +2,6 @@
       lang="en"
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="malone">
-
-<head>
-  <title metal:fill-slot="title">Malone Bug #<span
-    tal:replace="context/bug/id">345</span> CVE Reference</title>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">

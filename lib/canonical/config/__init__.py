@@ -1,10 +1,21 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+'''
+Configuration information pulled from launchpad.conf.
+
+The configuration section used is specified using the LPCONFIG
+environment variable, and defaults to 'default'
+'''
 
 __metaclass__ = type
 
-import sys, os, os.path
+import sys, os, os.path, warnings
+from urlparse import urlparse, urlunparse
+
 import zope.thread
 import ZConfig
+
+ENVIRONMENT_VARIABLE = 'LPCONFIG'
+DEFAULT_SECTION = 'default'
 
 class CanonicalConfig(object):
     """
@@ -38,7 +49,9 @@ class CanonicalConfig(object):
     True
     """
     _cache = zope.thread.local()
-    _default_config_section = os.environ.get('LAUNCHPAD_CONF', 'default')
+    _default_config_section = os.environ.get(
+            ENVIRONMENT_VARIABLE, DEFAULT_SECTION
+            )
 
     def setDefaultSection(self, section):
         """Set the name of the config file section returned by getConfig.
@@ -49,7 +62,7 @@ class CanonicalConfig(object):
         environment variable so subprocesses keep the same default.
         """
         self._default_config_section = section
-        os.environ['LAUNCHPAD_CONF'] = section
+        os.environ[ENVIRONMENT_VARIABLE] = section
 
     def getConfig(self, section=None):
         """Return the ZConfig configuration"""
@@ -93,4 +106,77 @@ class CanonicalConfig(object):
     default_section = property(default_section)
 
 config = CanonicalConfig()
+
+
+def url(value):
+    '''ZConfig validator for urls
+
+    We enforce the use of protocol.
+    
+    >>> url('http://localhost:8086')
+    'http://localhost:8086'
+    >>> url('im-a-file-but-not-allowed')
+    Traceback (most recent call last):
+        [...]
+    ValueError: No protocol in URL
+    '''
+    bits = urlparse(value)
+    if not bits[0]:
+        raise ValueError('No protocol in URL')
+    value = urlunparse(bits)
+    return value
+
+def urlbase(value):
+    """ZConfig validator for url bases
+    
+    url bases are valid urls that can be appended to using urlparse.urljoin.
+
+    url bases always end with '/'
+
+    >>> urlbase('http://localhost:8086')
+    'http://localhost:8086/'
+    >>> urlbase('http://localhost:8086/')
+    'http://localhost:8086/'
+
+    URL fragments, queries and parameters are not allowed
+
+    >>> urlbase('http://localhost:8086/#foo')
+    Traceback (most recent call last):
+        [...]
+    ValueError: URL fragments not allowed
+    >>> urlbase('http://localhost:8086/?foo')
+    Traceback (most recent call last):
+        [...]
+    ValueError: URL query not allowed
+    >>> urlbase('http://localhost:8086/;blah=64')
+    Traceback (most recent call last):
+        [...]
+    ValueError: URL parameters not allowed
+
+    We insist on the protocol being specified, to avoid dealing with defaults
+    >>> urlbase('foo')
+    Traceback (most recent call last):
+        [...]
+    ValueError: No protocol in URL
+
+    File URLs specify paths to directories
+
+    >>> urlbase('file://bork/bork/bork')
+    'file://bork/bork/bork/'
+    """
+    value = url(value)
+    scheme, location, path, parameters, query, fragment = urlparse(value)
+    if parameters:
+        raise ValueError, 'URL parameters not allowed'
+    if query:
+        raise ValueError, 'URL query not allowed'
+    if fragment:
+        raise ValueError, 'URL fragments not allowed'
+    if not value.endswith('/'):
+        value = value + '/'
+    return value
+
+
+if os.environ.get(ENVIRONMENT_VARIABLE, None) is None:
+    warnings.warn('Using default configuration section in launchpad.conf')
 

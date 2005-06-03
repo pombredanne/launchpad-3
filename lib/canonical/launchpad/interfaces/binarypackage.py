@@ -13,7 +13,7 @@ class IBinaryPackage(Interface):
     #sourcepackagerelease = Int(required=True)
     binarypackagename = Int(required=True)
     version = TextLine(required=True)
-    shortdesc = Text(required=True)
+    summary = Text(required=True)
     description = Text(required=True)
     build = Int(required=True)
     binpackageformat = Int(required=True)

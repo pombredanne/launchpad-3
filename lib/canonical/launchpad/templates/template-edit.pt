@@ -5,12 +5,6 @@
     metal:use-macro="context/@@main_template/master"
     i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">EXAMPLE EDIT TITLE</title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-</head>
-
 <body>
 
 <!-- This is an EXAMPLE of an EDIT page -->
@@ -77,7 +71,7 @@
 
         <div class="field">
 
-            <label>Short Description</label>
+            <label>Summary</label>
 
                   <div class="formHelp">
                     A single paragraph introduction or overview of this
@@ -87,8 +81,8 @@
                     plugins.</i>
                   </div>
 
-                <textarea cols="40" rows="3" name="shortdesc" 
-                          tal:content="context/shortdesc">
+                <textarea cols="40" rows="3" name="summary" 
+                          tal:content="context/summary">
                 </textarea>
         </div>
         
@@ -98,7 +92,7 @@
 
                   <div class="formHelp">
                     A full description of the EXAMPLE. This should continue
-                    from the short description above, and add more details
+                    from the summary above, and add more details
                     of the EXAMPLE highlights and features.
                   </div>
 

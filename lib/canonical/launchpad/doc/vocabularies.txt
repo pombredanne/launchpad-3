@@ -7,6 +7,10 @@ vocabulary is a list of terms that a widget (normally a selection style widget)
 
 This document is about some of the vocabularies found in Launchpad.
 
+    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> login('foo.bar@canonical.com')
+
 Values, Tokens, and Titles
 ==========================
 
@@ -33,6 +37,7 @@ options from several hundred, or several thousand, or more.
 Vocabularies should not be imported - they can be retrieved from the
 vocabulary registry.
 
+    >>> from zope.component import getUtility
     >>> from zope.schema.vocabulary import getVocabularyRegistry
     >>> vocabulary_registry = getVocabularyRegistry()
     >>> product_vocabulary = vocabulary_registry.get(None, "Product")
@@ -115,29 +120,60 @@ o PersonVocabulary - all people and teams. Results are ordered by familyname,
     >>> [t.token for t in stuff]
     ['name21', 'name18', 'name17', 'name19', 'name20']
 
-o ValidPerson - all 'valid' people. This is currently defined as people
-  with a password.
+o ValidPersonOrTeam - all 'valid' persons or teams. This is currently defined
+  as people with a password, at least one validated email address and not merged
+  (Person.merged is None) or any team.
 
-    >>> vocab = vocabulary_registry.get(None, "ValidPerson")
+    >>> vocab = vocabulary_registry.get(None, "ValidPersonOrTeam")
     >>> stuff = vocab.search('team')
     >>> [t.token for t in stuff]
-    []
+    ['name21', 'name18', 'name17', 'name19', 'name20']
+
+    Stuart hasn't validated his email address; he's not a valid Person.
     >>> stuff = vocab.search('bishop')
     >>> [t.token for t in stuff]
-    ['stub']
+    []
 
-o ValidOwner - all 'valid' person or team in Launchpad context, able to 
-  own an entity (Product, Project, Team, Package, etc) reflecting  
-  "Ubuntu Membership" specification.
+    'name16' is a valid Person.
+    >>> stuff = vocab.search('foo')
+    >>> [t.token for t in stuff]
+    ['name16']
 
-   XXX cprov 20050128
-   Now, ValidOwner simply extends Person, i.e., returns all valid person
-   or team, so we have the same usage as PersonVocabulary
+o ValidOwner - all 'valid' persons or teams in Launchpad.
 
     >>> vocab = vocabulary_registry.get(None, "ValidOwner")
     >>> stuff = vocab.search('team')
     >>> [t.token for t in stuff]
     ['name21', 'name18', 'name17', 'name19', 'name20']
+
+o ValidTeamOwner - With the exception of the team itself and all teams owned
+  by that team, all valid persons and teams are valid owners for the team 
+  in context.
+
+  >>> team = getUtility(IPersonSet).getByName('name17')
+  >>> person = getUtility(IPersonSet).getByName('name16')
+
+  ValidTeamOwner needs a context.
+  >>> vocab = vocabulary_registry.get(None, "ValidTeamOwner")
+  Traceback (most recent call last):
+  ...
+  ValueError: ...
+
+  ValidTeamOwner's context must be a team.
+  >>> vocab = vocabulary_registry.get(person, "ValidTeamOwner")
+  Traceback (most recent call last):
+  ...
+  ValueError: ...
+
+  'name17' is not a valid owner for itself.
+  >>> vocab = vocabulary_registry.get(team, "ValidTeamOwner")
+  >>> team in vocab
+  False
+
+  'name16' is a valid owner for 'name17'.
+  >>> vocab = vocabulary_registry.get(team, "ValidTeamOwner")
+  >>> person in vocab
+  True
 
 o ValidGPGKey - all LP valid GPG key for a given person, it user FTI
   to query on Person table and return the respective rows from GPGKey

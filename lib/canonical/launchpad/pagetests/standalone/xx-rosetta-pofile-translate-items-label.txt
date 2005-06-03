@@ -1,0 +1,77 @@
+Check to see if the items label is correct when all entries are showed in one page.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?count=30 HTTP/1.1
+  ... Accept-Language: en-gb,en;q=0.5
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  <BLANKLINE>
+                        All
+                        <strong>22</strong>
+                        items
+  <BLANKLINE>
+  <BLANKLINE>
+  ...
+
+Check to see if the items label is correct when we are atBeginning of the form.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate HTTP/1.1
+  ... Accept-Language: en-gb,en;q=0.5
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  <BLANKLINE>
+  <BLANKLINE>
+                      Items
+                      <strong>1</strong>
+                      &rarr;
+                      <strong>10</strong>
+                      of
+                      <strong>22</strong>
+  <BLANKLINE>
+  ...
+
+Check to see if the items label is correct when we are atEnd of the form.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=20 HTTP/1.1
+  ... Accept-Language: en-gb,en;q=0.5
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  <BLANKLINE>
+  <BLANKLINE>
+                      Items
+                      <strong>21</strong>
+                      &rarr;
+                      <strong>22</strong>
+                      of
+                      <strong>22</strong>
+  <BLANKLINE>
+  ...
+
+Check to see if the items label is correct when we aren't atBeginning or atEnd
+of the form.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=10 HTTP/1.1
+  ... Accept-Language: en-gb,en;q=0.5
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  <BLANKLINE>
+  <BLANKLINE>
+                      Items
+                      <strong>11</strong>
+                      &rarr;
+                      <strong>20</strong>
+                      of
+                      <strong>22</strong>
+  <BLANKLINE>
+  ...

@@ -293,13 +293,13 @@ def find_bugzillas(text, debian_bug, malone_bug, owner):
         # create the bug tracker if needed
         name='autozilla%d' % debian_bug.id
         title=quote('Bugzilla related to: %s' % ', '.join(debian_bug.packagelist()))
-        shortdesc="""This bugtracker was automatically created. Please
+        summary="""This bugtracker was automatically created. Please
             edit the details to get it correct!"""
         contactdetails='unknown how to contact this bug tracker'
         bugtracker = BugTracker(name=name,
             bugtrackertype=1,
             title=title,
-            shortdesc=shortdesc,
+            summary=summary,
             baseurl=baseurl,
             contactdetails=contactdetails,
             owner=owner)

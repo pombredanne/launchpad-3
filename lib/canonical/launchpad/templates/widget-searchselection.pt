@@ -3,19 +3,10 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="rosetta">
 
-<head>
-    <title xmetal:fill-slot="title">Rosetta: <span
-        xtal:replace="context/title">Project Title</span></title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body metal:fill-slot="main">
 
 <tal:testvalues define="selection python: {'title':'Mozilla Firefox',
-                         'shortdesc':'''Mozilla Firefox is a streamlined 
+                         'summary':'''Mozilla Firefox is a streamlined 
                                edition of the Mozilla browser,
                                featuring pop-up blocking and a 
                                tabbed interface.'''};
@@ -24,12 +15,12 @@
                         
                         searchresults python: [ 
                         {'title':'Mozilla Firefox',
-                         'shortdesc':'''Mozilla Firefox is a streamlined 
+                         'summary':'''Mozilla Firefox is a streamlined 
                                edition of the Mozilla browser,
                                featuring pop-up blocking and a 
                                tabbed interface.'''},
                         {'title':'Mozilla Thunderbird',
-                         'shortdesc':'''Thunderbird is the mail client 
+                         'summary':'''Thunderbird is the mail client 
                                equivalent to Firefox - a
                                standalone mail application based
                                on the Mozilla code base.'''}];
@@ -73,7 +64,7 @@
                 <span tal:replace="selection/title">Mozilla Firefox</span> 
             </dt>
             <dd>
-                <div class="discreet" tal:content="selection/shortdesc">
+                <div class="discreet" tal:content="selection/summary">
                 Mozilla Firefox is a streamlined edition of the Mozilla browser,
                 featuring pop-up blocking and a tabbed interface.
                 </div>
@@ -100,7 +91,7 @@
                 <span tal:replace="result/title">Mozilla Firefox</span> 
                 <input type="submit" class="context" value="Select" />
             </dt>
-            <dd tal:content="result/shortdesc">
+            <dd tal:content="result/summary">
             Mozilla Firefox is a streamlined edition of the Mozilla browser,
             featuring pop-up blocking and a tabbed interface.
             </dd>

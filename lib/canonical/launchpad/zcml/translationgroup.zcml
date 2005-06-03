@@ -1,0 +1,115 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <!-- This view registers 'bounties' as a suburl of Rosetta. -->
+    <browser:suburl
+        for="canonical.rosetta.RosettaApplication"
+        class="canonical.launchpad.database.TranslationGroupSet"
+        name="groups" />
+
+
+    <!-- TranslationGroup -->
+    <content class="canonical.launchpad.database.TranslationGroup">
+        <allow interface="canonical.launchpad.interfaces.ITranslationGroup" />
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.ITranslationGroup" />
+    </content>
+
+    <browser:traverse
+      for="canonical.launchpad.interfaces.ITranslationGroup"
+      getter="__getitem__" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ITranslationGroup"
+        name="+index" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.ITranslationGroup"
+        class="canonical.launchpad.browser.TranslationGroupView"
+        permission="zope.Public">
+        <browser:page
+            template="../templates/translationgroup.pt"
+            name="+index"
+            lp:url="/rosetta/groups/$TranslationGroup.name/+index" />
+    </browser:pages>
+
+    <browser:page
+        name="+rm"
+        for="canonical.launchpad.interfaces.ITranslationGroup"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.TranslationGroupView"
+        attribute="removals"
+        />
+
+    <browser:editform
+        name="+edit"
+        schema="canonical.launchpad.interfaces.ITranslationGroup"
+        label="Modify Translation Group Details:"
+        fields="name title summary"
+        permission="launchpad.Edit"
+        template="../templates/launchpad-editform.pt"
+        lp:url="/rosetta/groups/$TranslationGroup.name/+edit" />
+
+    <browser:addform
+        name="+appoint"
+        for="canonical.launchpad.interfaces.ITranslationGroup"
+        schema="canonical.launchpad.interfaces.ITranslator"
+        fields="translationgroup language translator"
+        keyword_arguments="translationgroup language translator"
+        permission="launchpad.Edit"
+        content_factory="canonical.launchpad.database.Translator"
+        class="canonical.launchpad.browser.TranslationGroupAddTranslatorView"
+        template="../templates/launchpad-addform.pt"
+        lp:url="/rosetta/groups/$TranslationGroup.name/+appoint">
+        <browser:widget
+            field="translationgroup"
+            class="canonical.widgets.ContextWidget" />
+    </browser:addform>
+
+    <!-- TranslationGroupSet -->
+    <content class="canonical.launchpad.database.TranslationGroupSet">
+      <allow interface="canonical.launchpad.interfaces.ITranslationGroupSet" />
+    </content>
+
+    <securedutility
+      class="canonical.launchpad.database.TranslationGroupSet"
+      provides="canonical.launchpad.interfaces.ITranslationGroupSet" >
+      <allow interface="canonical.launchpad.interfaces.ITranslationGroupSet" />
+    </securedutility>
+
+    <browser:traverse
+      for="canonical.launchpad.interfaces.ITranslationGroupSet"
+      getter="__getitem__" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ITranslationGroupSet"
+        name="+index" />
+
+    <browser:addform
+        name="+new"
+        for="canonical.launchpad.interfaces.ITranslationGroupSet"
+        schema="canonical.launchpad.interfaces.ITranslationGroup"
+        label="Create A New Translation Group"
+        fields="name title summary"
+        content_factory="canonical.launchpad.database.TranslationGroup"
+        class="canonical.launchpad.browser.TranslationGroupSetAddView"
+        permission="launchpad.Admin"
+        template="../templates/launchpad-addform.pt"
+        lp:url="/rosetta/groups/+new">
+    </browser:addform>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.ITranslationGroupSet"
+        permission="zope.Public">
+        <browser:page
+            template="../templates/translationgroups.pt"
+            name="+index"
+            lp:url="/rosetta/groups/+index" />
+    </browser:pages>
+
+</configure>

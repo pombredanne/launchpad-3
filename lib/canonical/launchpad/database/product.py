@@ -9,15 +9,18 @@ from warnings import warn
 
 from zope.interface import implements
 from zope.exceptions import NotFoundError
+from zope.component import getUtility
 
 from sqlobject import \
-    DateTimeCol, ForeignKey, StringCol, BoolCol, MultipleJoin, RelatedJoin, \
+    ForeignKey, StringCol, BoolCol, MultipleJoin, RelatedJoin, \
     SQLObjectNotFound, AND
 
 import canonical.sourcerer.deb.version
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
-from canonical.lp.dbschema import \
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.lp.dbschema import EnumCol, TranslationPermission, \
     BugSeverity, BugTaskStatus, RosettaImportStatus
 
 from canonical.launchpad.database.productseries import ProductSeries
@@ -25,7 +28,8 @@ from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.interfaces import IProduct, IProductSet, IDistribution
+from canonical.launchpad.interfaces import IProduct, IProductSet, \
+    IDistribution, ILaunchpadCelebrities
 
 
 class Product(SQLBase):
@@ -37,52 +41,36 @@ class Product(SQLBase):
 
     project = ForeignKey(
         foreignKey="Project", dbName="project", notNull=False, default=None)
-
     owner = ForeignKey(
         foreignKey="Person", dbName="owner", notNull=True)
-
     name = StringCol(
         dbName='name', notNull=True, alternateID=True, unique=True)
-
     displayname = StringCol(dbName='displayname', notNull=True)
-
     title = StringCol(dbName='title', notNull=True)
-
-    shortdesc = StringCol(dbName='shortdesc', notNull=True)
-
+    summary = StringCol(dbName='summary', notNull=True)
     description = StringCol(dbName='description', notNull=True)
-
-    datecreated = DateTimeCol(
-        dbName='datecreated', notNull=True, default=datetime.utcnow())
-
+    datecreated = UtcDateTimeCol(
+        dbName='datecreated', notNull=True, default=UTC_NOW)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
-
     screenshotsurl = StringCol(
         dbName='screenshotsurl', notNull=False, default=None)
-
     wikiurl =  StringCol(dbName='wikiurl', notNull=False, default=None)
-
     programminglang = StringCol(
         dbName='programminglang', notNull=False, default=None)
-
     downloadurl = StringCol(dbName='downloadurl', notNull=False, default=None)
-
     lastdoap = StringCol(dbName='lastdoap', notNull=False, default=None)
-
+    translationgroup = ForeignKey(dbName='translationgroup',
+        foreignKey='TranslationGroup', notNull=False, default=None)
+    translationpermission = EnumCol(dbName='translationpermission',
+        notNull=True, schema=TranslationPermission,
+        default=TranslationPermission.OPEN)
     active = BoolCol(dbName='active', notNull=True, default=True)
-
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
-
     autoupdate = BoolCol(dbName='autoupdate', notNull=True, default=False)
-
     freshmeatproject = StringCol(notNull=False, default=None)
-
     sourceforgeproject = StringCol(notNull=False, default=None)
-
     bugtasks = MultipleJoin('BugTask', joinColumn='product')
-
     branches = MultipleJoin('Branch', joinColumn='product')
-
     serieslist = MultipleJoin('ProductSeries', joinColumn='product')
 
     def releases(self):
@@ -122,27 +110,77 @@ class Product(SQLBase):
         else:
             raise NotFoundError(distrorelease)
 
-    def primary_translatable(self):
-        """Returns the latest release for which we have potemplates.
+    def translatable_packages(self):
+        """See IProduct."""
+        packages = sets.Set([package
+                            for package in self.sourcepackages
+                            if package.potemplatecount > 0])
+        # Sort the list of packages by distrorelease.name and package.name
+        L = [(item.distrorelease.name + item.name, item)
+             for item in packages]
+        L.sort()
+        # Get the final list of sourcepackages.
+        packages = [item for sortkey, item in L]
+        return packages
+    translatable_packages = property(translatable_packages)
 
-        In future it may return the ubuntu sourcepackage which
-        corresponds to this product in the current development release of
-        ubuntu... if it has templates.
-        """
-        # XXX Not in system doc tests.  SteveAlexander, 2005-04-24
-        # XXX Not directly tested by page tests either, that is, this can
-        #     be rather broken, and still work.  SteveAlexander, 2005-04-24
+    def translatable_releases(self):
+        """See IProduct."""
         releases = ProductRelease.select(
                         "POTemplate.productrelease=ProductRelease.id AND "
                         "ProductRelease.productseries=ProductSeries.id AND "
                         "ProductSeries.product=%d" % self.id,
                         clauseTables=['POTemplate', 'ProductRelease',
                                       'ProductSeries'],
-                        orderBy='-datereleased', distinct=True)
-        try:
+                        orderBy='version', distinct=True)
+        return list(releases)
+    translatable_releases = property(translatable_releases)
+
+    def primary_translatable(self):
+        """See IProduct."""
+        packages = self.translatable_packages
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        targetrelease = ubuntu.currentrelease
+        # first look for an ubuntu package in the current distrorelease
+        for package in packages:
+            if package.distrorelease == targetrelease:
+                return package
+        # now go with the latest release for which we have templates
+        releases = self.translatable_releases
+        if releases:
             return releases[0]
-        except IndexError:
-            return None
+        # now let's make do with any ubuntu package
+        for package in packages:
+            if package.distribution == ubuntu:
+                return package
+        # or just any package
+        if len(packages) > 0:
+            return packages[0]
+        # capitulate
+        return None
+    primary_translatable = property(primary_translatable)
+
+    def translationgroups(self):
+        tg = []
+        if self.translationgroup:
+            tg.append(self.translationgroup)
+        if self.project:
+            if self.project.translationgroup:
+                if self.project.translationgroup not in tg:
+                    tg.append(self.project.translationgroup)
+    translationgroups = property(translationgroups)
+
+    def aggregatetranslationpermission(self):
+        perms = [self.translationpermission]
+        if self.project:
+            perms.append(self.project.translationpermission)
+        # XXX reviewer please describe a better way to explicitly order
+        # the enums. The spec describes the order, and the values make
+        # it work, and there is space left for new values so we can
+        # ensure a consistent sort order in future, but there should be
+        # a better way.
+        return max(perms)
+    aggregatetranslationpermission = property(aggregatetranslationpermission)
 
     def newseries(self, form):
         # XXX sabdfl 16/04/05 HIDEOUS even if I was responsible. We should
@@ -158,10 +196,10 @@ class Product(SQLBase):
         # Extract the details from the form
         name = form['name']
         displayname = form['displayname']
-        shortdesc = form['shortdesc']
+        summary = form['summary']
         # Now create a new series in the db
         return ProductSeries(
-            name=name, displayname=displayname, shortdesc=shortdesc,
+            name=name, displayname=displayname, summary=summary,
             product=self.id)
 
     def potemplates(self):
@@ -177,6 +215,11 @@ class Product(SQLBase):
                     templates.append(potemplate)
 
         return templates
+
+    def potemplatecount(self):
+        """See IProduct."""
+        return len(self.potemplates())
+    potemplatecount = property(potemplatecount)
 
     def poTemplatesToImport(self):
         # XXX sabdfl 30/03/05 again, i think we want to be using
@@ -301,7 +344,7 @@ class ProductSet:
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        return iter(Product.select())
+        return iter(Product.selectBy(active=True))
 
     def __getitem__(self, name):
         """See canonical.launchpad.interfaces.product.IProductSet."""
@@ -320,7 +363,7 @@ class ProductSet:
 
         return product
 
-    def createProduct(self, owner, name, displayname, title, shortdesc,
+    def createProduct(self, owner, name, displayname, title, summary,
                       description, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
@@ -328,7 +371,7 @@ class ProductSet:
         """See canonical.launchpad.interfaces.product.IProductSet."""
         return Product(
             owner=owner, name=name, displayname=displayname,
-            title=title, project=project, shortdesc=shortdesc,
+            title=title, project=project, summary=summary,
             description=description, homepageurl=homepageurl,
             screenshotsurl=screenshotsurl, wikiurl=wikiurl,
             downloadurl=downloadurl, freshmeatproject=freshmeatproject,

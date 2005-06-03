@@ -21,7 +21,6 @@ Then, let's get a handle to our mailer. This is the thing we'll examine to show
 what email has been sent, to whom, and what the body of the message contains:
 
     >>> from canonical.launchpad.mail import stub
-    >>> stub.test_emails = []
 
 And with that, here are the things that cause bug notifications to be sent, and
 what those notifications look like.
@@ -81,8 +80,8 @@ Before we do that, note that BugTaskFactory uses the ILaunchBag
 utility to figure out the "current bug" on which to file the task, so
 let's hang a bug onto the ILaunchBag utility.
 
-    >>> from canonical.launchpad.interfaces import ILaunchBag
-    >>> getUtility(ILaunchBag).bug = firefox_crashes
+    >>> from canonical.launchpad.interfaces import IOpenLaunchBag
+    >>> getUtility(IOpenLaunchBag).add(firefox_crashes)
 
   2.1 Distro Task
 
@@ -210,7 +209,7 @@ let's hang a bug onto the ILaunchBag utility.
     '[Bug ...] firefox crashes all the time'
 
     >>> msg.get_payload(decode = True)
-    'Comments and other information can be added to this bug at\nhttp://127.0.0.1/malone/bugs/...'
+    'http://127.0.0.1/malone/bugs/...'
 
     >>> stub.test_emails = []
 
@@ -461,13 +460,14 @@ report private:
     >>> firefox_bug.private = True
     >>> bug_before_modification = MockObject()
     >>> bug_before_modification.title = firefox_bug.title
-    >>> bug_before_modification.shortdesc = firefox_bug.shortdesc
+    >>> bug_before_modification.summary = firefox_bug.summary
     >>> bug_before_modification.description = firefox_bug.description
     >>> bug_before_modification.name = firefox_bug.name
     >>> bug_before_modification.id = firefox_bug.id
     >>> bug_before_modification.private = False
     >>> bug_before_modification.subscriptions = firefox_bug.subscriptions
     >>> bug_before_modification.bugtasks = firefox_bug.bugtasks
+    >>> bug_before_modification.duplicateof = firefox_bug.duplicateof
     >>> bug_modified = SQLObjectModifiedEvent(
     ...     firefox_bug, bug_before_modification,
     ...     ["private"], bug_submitter, request)

@@ -3,25 +3,25 @@
 __metaclass__ = type
 
 import tarfile
-import gettextpo
 from sets import Set
 from StringIO import StringIO
+from datetime import datetime
 
 from zope.component import getUtility
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.app.i18n import ZopeMessageIDFactory as _
 from zope.publisher.browser import FileUpload
+from zope.app.form.browser.add import AddView
 
-from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces import ILanguageSet, ILaunchBag
-from canonical.launchpad.components.poexport import POExport
-from canonical.launchpad.components.poparser import POSyntaxError, \
-    POInvalidInputError
 from canonical.launchpad import helpers
+from canonical.database.constants import UTC_NOW
+from canonical.launchpad.interfaces import ILaunchBag, IPOTemplateSet, \
+    IPOTemplateNameSet, IPersonSet, RawFileAttachFailed
+from canonical.launchpad.components.poexport import POExport
+from canonical.launchpad.browser.pofile import POFileView
+from canonical.launchpad.browser.editview import SQLObjectEditView
 
-_showDefault = 'all'
-
-
-class POTemplateSubsetView(object):
+class POTemplateSubsetView:
 
     def __init__(self, context, request):
         self.context = context
@@ -31,17 +31,15 @@ class POTemplateSubsetView(object):
         # We are not using this context directly, only for traversals.
         return self.request.response.redirect('../+translations')
 
-class TabIndexGenerator:
-    def __init__(self):
-        self.index = 1
 
-    def generate(self):
-        index = self.index
-        self.index += 1
-        return index
+class POTemplateView:
 
+    actionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-potemplate-actions.pt')
 
-class ViewPOTemplate:
+    detailsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-potemplate-details.pt')
+
     statusLegend = ViewPageTemplateFile(
         '../templates/portlet-rosetta-status-legend.pt')
 
@@ -49,6 +47,38 @@ class ViewPOTemplate:
         self.context = context
         self.request = request
         self.request_languages = helpers.request_languages(self.request)
+        self.name = self.context.potemplatename.name
+        self.title = self.context.potemplatename.title
+        self.description = self.context.potemplatename.description
+        # XXX carlos 01/05/05 please fix up when we have the
+        # MagicURLBox
+
+        # We will be constructing a URL path using a list.
+        L = []
+        if self.context.productrelease:
+            L.append('products')
+            L.append(self.context.productrelease.product.name)
+            L.append(self.context.productrelease.version)
+            L.append('+pots')
+            L.append(self.context.potemplatename.name)
+            self.what = self.context.productrelease.product.name
+            self.what += ' ' + self.context.productrelease.version
+        elif self.context.distrorelease and self.context.sourcepackagename:
+            L.append('distros')
+            L.append(self.context.distrorelease.distribution.name)
+            L.append(self.context.distrorelease.name)
+            L.append('+sources')
+            L.append(self.context.sourcepackagename.name)
+            L.append('+pots')
+            L.append(self.context.potemplatename.name)
+            self.what = self.context.sourcepackagename.name + ' in '
+            self.what += self.context.distrorelease.distribution.name + ' '
+            self.what += self.context.distrorelease.name
+        else:
+            raise NotImplementedError('We only understand POTemplates '
+                'linked to source packages and product releases.')
+        # The URL path is to start and end with '/'.
+        self.URL = '/%s/' % '/'.join(L)
         self.status_message = None
 
     def num_messages(self):
@@ -60,13 +90,14 @@ class ViewPOTemplate:
         else:
             return "%s messages" % N
 
-    def languages(self):
-        '''Iterate languages shown when viewing this PO template.
+    def pofiles(self):
+        """Iterate languages shown when viewing this PO template.
 
-        Yields a TemplateLanguage object for each language this template has
+        Yields a POFileView object for each language this template has
         been translated into, and for each of the user's languages.
-        '''
-
+        Where the template has no POFile for that language, we use
+        a DummyPOFile.
+        """
         # Languages the template has been translated into.
         translated_languages = Set(self.context.languages())
 
@@ -78,51 +109,20 @@ class ViewPOTemplate:
         languages.sort(lambda a, b: cmp(a.englishname, b.englishname))
 
         for language in languages:
-            yield helpers.TemplateLanguage(self.context, language)
+            pofile = self.context.queryPOFileByLang(language.code)
+            if not pofile:
+                pofile = helpers.DummyPOFile(self.context, language)
+            yield POFileView(pofile, self.request)
 
     def submitForm(self):
         """Called from the page template to do any processing needed if a form
         was submitted with the request."""
 
         if self.request.method == 'POST':
-            if 'EDIT' in self.request.form:
-                self.edit()
-            elif 'UPLOAD' in self.request.form:
+            if 'UPLOAD' in self.request.form:
                 self.upload()
 
         return ''
-
-    def editAttributes(self):
-        """Use form data to change a PO template's name or title."""
-
-        # Early returns are used to avoid the redirect at the end of the
-        # method, which prevents the status message from being shown.
-
-        # XXX Dafydd Harries 2005/01/28
-        # We should check that there isn't a template with the new name before
-        # doing the rename.
-
-        if 'name' in self.request.form:
-            name = self.request.form['name']
-
-            if name == '':
-                self.status_message = 'The name field cannot be empty.'
-                return
-
-            self.context.name = name
-
-        if 'title' in self.request.form:
-            title = self.request.form['title']
-
-            if title == '':
-                self.status_message = 'The title field cannot be empty.'
-                return
-
-            self.context.title = title
-
-        # Now redirect to view the template. This lets us follow the template
-        # in case the user changed the name.
-        self.request.response.redirect('../' + self.context.name)
 
     def upload(self):
         """Handle a form submission to change the contents of the template."""
@@ -132,9 +132,9 @@ class ViewPOTemplate:
 
         file = self.request.form['file']
 
-        if type(file) is not FileUpload:
+        if not isinstance(file, FileUpload):
             if file == '':
-                self.request.response.redirect('../' + self.context.name)
+                self.status_message = 'Please, select a file to upload.'
             else:
                 # XXX: Carlos Perello Marin 2004/12/30
                 # Epiphany seems to have an aleatory bug with upload forms (or
@@ -145,6 +145,7 @@ class ViewPOTemplate:
                 # info, look at bug #116.
                 self.status_message = (
                     'There was an unknown error in uploading your file.')
+            return
 
         filename = file.filename
 
@@ -153,13 +154,14 @@ class ViewPOTemplate:
 
             try:
                 self.context.attachRawFileData(potfile, owner)
-            except (POSyntaxError, POInvalidInputError):
-                # The file is not correct.
                 self.status_message = (
-                    'There was a problem parsing the file you uploaded.'
-                    ' Please check that it is correct.')
+                    'Thank you for your upload. The template content will'
+                    ' appear in Rosetta in a few minutes.')
+            except RawFileAttachFailed, error:
+                # We had a problem while uploading it.
+                self.status_message = (
+                    'There was a problem uploading the file: %s.' % error)
 
-            self.context.attachRawFileData(potfile, owner)
         elif helpers.is_tar_filename(filename):
             tarball = helpers.string_to_tarfile(file.read())
             pot_paths, po_paths = helpers.examine_tarfile(tarball)
@@ -178,449 +180,68 @@ class ViewPOTemplate:
                 'can be imported.')
 
 
-class TranslatePOTemplate:
-    DEFAULT_COUNT = 10
+class POTemplateEditView(POTemplateView, SQLObjectEditView):
+    """View class that lets you edit a POTemplate object."""
+    def __init__(self, context, request):
+        POTemplateView.__init__(self, context, request)
+        SQLObjectEditView.__init__(self, context, request)
+
+    def changed(self):
+        formatter = self.request.locale.dates.getFormatter(
+            'dateTime', 'medium')
+        status = _("Updated on ${date_time}")
+        status.mapping = {'date_time': formatter.format(
+            datetime.utcnow())}
+        self.update_status = status
+
+class POTemplateAdminView(POTemplateEditView):
+    """View class that lets you admin a POTemplate object."""
+
+
+class POTemplateAddView(AddView):
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.user = getUtility(ILaunchBag).user
+        AddView.__init__(self, context, request)
 
-    def processForm(self):
-        # This sets up the following instance variables:
-        #
-        #  codes:
-        #    A list of codes for the langauges to translate into.
-        #  languages:
-        #    A list of languages to translate into.
-        #  pluralFormCounts:
-        #    A dictionary by language code of plural form counts.
-        #  badLanguages:
-        #    A list of languages for which no plural form information is
-        #    available.
-        #  offset:
-        #    The offset into the template of the first message being
-        #    translated.
-        #  count:
-        #    The number of messages being translated.
-        #  show:
-        #    Which messages to show: 'translated', 'untranslated' or 'all'.
-        #
-        # No initialisation if performed if the request's principal is not
-        # authenticated.
+    def createAndAdd(self, data):
+        # retrieve submitted values from the form
+        potemplatenameid = data.get('potemplatename')
+        title = data.get('title')
+        description = data.get('description')
+        iscurrent = data.get('iscurrent')
+        ownerid = data.get('owner')
+        path = data.get('path')
+        filename = data.get('filename')
+        content = data.get('content')
 
-        form = self.request.form
+        # Get the POTemplateName
+        potemplatenameset = getUtility(IPOTemplateNameSet)
+        potemplatename = potemplatenameset.get(potemplatenameid)
 
-        if self.user is None:
-            return
+        # Get the Owner
+        personset = getUtility(IPersonSet)
+        owner = personset.get(ownerid)
 
-        self.codes = form.get('languages')
+        potemplateset = getUtility(IPOTemplateSet)
+        potemplatesubset = potemplateset.getSubset(
+            productrelease=self.context)
+        # Create the new POTemplate
+        potemplate = potemplatesubset.new(
+            potemplatename=potemplatename, title=title, contents=content,
+            owner=owner)
 
-        # Turn language codes into language objects.
+        # Update the other fields
+        potemplate.description = description
+        potemplate.iscurrent = iscurrent
+        potemplate.path = path
+        potemplate.filename = filename
 
-        if self.codes:
-            self.languages = helpers.codes_to_languages(self.codes.split(','))
-        else:
-            self.languages = helpers.request_languages(self.request)
-
-        # Submit any translations.
-
-        submitted = self.submitTranslations()
-
-        # Get plural form and completeness information.
-        #
-        # For each language:
-        #
-        # - If there exists a PO file for that language, and it has plural
-        #   form information, use the plural form information from that PO
-        #   file.
-        #
-        # - Otherwise, if there is general plural form information for that
-        #   language in the database, use that.
-        #
-        # - Otherwise, we don't have any plural form information for that
-        #   language.
-        #
-        # - If there exists a PO file, work out the completeness of the PO
-        #   file as a percentage.
-        #
-        # - Otherwise, the completeness for that language is 0 (since the PO
-        #   file doesn't exist).
-
-        self.completeness = {}
-        self.pluralFormCounts = {}
-
-        all_languages = getUtility(ILanguageSet)
-
-        for language in self.languages:
-            code = language.code
-
-            try:
-                pofile = self.context.getPOFileByLang(language.code)
-            except KeyError:
-                pofile = None
-
-            # Get plural form information.
-
-            if pofile is not None and pofile.pluralforms is not None:
-                self.pluralFormCounts[code] = pofile.pluralforms
-            elif all_languages[code].pluralforms is not None:
-                self.pluralFormCounts[code] = all_languages[code].pluralforms
-            else:
-                self.pluralFormCounts[code] = None
-
-            # Get completeness information.
-
-            if pofile is not None:
-                template_size = len(pofile.potemplate)
-
-                if template_size > 0:
-                    self.completeness[code] = (float(
-                        pofile.translatedCount()) / template_size * 100)
-                else:
-                    self.completeness[code] = 0
-            else:
-                self.completeness[code] = 0
-
-        if self.context.hasPluralMessage:
-            self.badLanguages = [
-                all_languages[language_code]
-                for language_code in self.pluralFormCounts
-                if self.pluralFormCounts[language_code] is None]
-        else:
-            self.badLanguages = []
-
-        # Get pagination information.
-
-        if 'offset' in form:
-            self.offset = int(form.get('offset'))
-        else:
-            self.offset = 0
-
-        if 'count' in form:
-            self.count = int(form['count'])
-        else:
-            self.count = self.DEFAULT_COUNT
-
-        # Get message display settings.
-
-        self.show = form.get('show')
-
-        if not self.show in ('translated', 'untranslated', 'all'):
-            self.show = _showDefault
-
-        # Now, we check restrictions to implement HoaryTranslations spec.
-        if not self.context.canEditTranslations(self.user):
-            # We *only* show the ones without untranslated strings
-            self.show = 'untranslated'
-
-        # Get a TabIndexGenerator.
-
-        self.tig = TabIndexGenerator()
-
-        # Get the message sets.
-
-        self.submitError = False
-        self.submitted = submitted
-
-        for messageSet in submitted.values():
-            for code in messageSet['errors']:
-                if messageSet['errors'][code]:
-                    self.submitError = True
-
-        if self.submitError:
-            self.messageSets = [
-                self._messageSet(
-                    message_set['pot_set'],
-                    message_set['translations'],
-                    message_set['errors'])
-                for message_set in submitted.values()]
-            # We had an error, so the offset shouldn't change.
-
-            length = len(self.context)
-
-            # Largest offset less than the length of the template x
-            # that is a multiple of self.count.
-            if length % self.count == 0:
-                self.offset = length - self.count
-            else:
-                self.offset = length - (length % self.count)
-        else:
-            if self.show == 'all':
-                translated = None
-            elif self.show == 'translated':
-                translated = True
-            elif self.show == 'untranslated':
-                translated = False
-            else:
-                raise ValueError('show = "%s"' % self.show)
-
-            filtered_message_sets = self.context.filterMessageSets(
-                    current=True,
-                    translated=translated,
-                    languages=self.languages,
-                    slice=slice(self.offset, self.offset+self.count))
-
-            self.messageSets = [
-                self._messageSet(message_set)
-                for message_set in filtered_message_sets]
-
-            if 'SUBMIT' in form:
-                self.request.response.redirect(self.URL(offset=self.offset))
-
-
-    def canEditTranslations(self):
-        return self.context.canEditTranslations(self.user)
-
-    def makeTabIndex(self):
-        return self.tig.generate()
-
-    def atBeginning(self):
-        return self.offset == 0
-
-    def atEnd(self):
-        return self.offset + self.count >= len(self.context)
-
-    def URL(self, **kw):
-        parameters = {}
-
-        # Parameters to copy from kwargs or form.
-        for name in ('languages', 'count', 'show', 'offset'):
-            if name in kw:
-                parameters[name] = kw[name]
-            elif name in self.request.form:
-                parameters[name] = self.request.form.get(name)
-
-        # The 'show' parameter is a special case, because it has a default,
-        # and the parameter should be excluded if it's set to the default.
-        if 'show' in parameters and parameters['show'] == _showDefault:
-            del parameters['show']
-
-        # If offset == 0 we don't show it, it's the default.
-        if 'offset' in parameters and parameters['offset'] == 0:
-            del parameters['offset']
-
-        # Now, we check restrictions to implement HoaryTranslations spec.
-        if not self.canEditTranslations():
-            # We *only* show the ones without untranslated strings
-            parameters['show'] = 'untranslated'
-
-        if parameters:
-            keys = parameters.keys()
-            keys.sort()
-            return str(self.request.URL) + '?' + '&'.join(
-                [ x + '=' + str(parameters[x]) for x in keys ])
-        else:
-            return str(self.request.URL)
-
-    def beginningURL(self):
-        return self.URL(offset=0)
-
-    def endURL(self):
-        # The largest offset less than the length of the template x that is a
-        # multiple of self.count.
-
-        length = len(self.context)
-
-        if length % self.count == 0:
-            offset = length - self.count
-        else:
-            offset = length - (length % self.count)
-
-        return self.URL(offset=offset)
-
-    def previousURL(self):
-        if self.offset - self.count <= 0:
-            return self.URL(offset=0)
-        else:
-            return self.URL(offset=(self.offset - self.count))
+        self._nextURL = "%s" % potemplate.potemplatename.name
 
     def nextURL(self):
-        if self.offset + self.count >= len(self.context):
-            raise ValueError
-        else:
-            return self.URL(offset=(self.offset + self.count))
-
-    def _messageID(self, messageID, flags):
-        lines = helpers.count_lines(messageID.msgid)
-
-        return {
-            'lines' : lines,
-            'isMultiline' : lines > 1,
-            'text' : helpers.escape_msgid(messageID.msgid),
-            'displayText' : helpers.msgid_html(messageID.msgid, flags)
-        }
-
-    def _messageSet(self, messageSet, extra_translations={}, errors={}):
-        messageIDs = list(messageSet.messageIDs())
-        if len(messageIDs) == 0:
-            raise RuntimeError(
-                'Found a POTMsgSet without any POMsgIDSighting')
-        isPlural = len(messageIDs) > 1
-        messageID = self._messageID(messageIDs[0], messageSet.flags())
-        translations = {}
-        comments = {}
-        fuzzy = {}
-
-        for language in self.languages:
-            code = language.code
-
-            if extra_translations.get(code):
-                keys = extra_translations[code].keys()
-                keys.sort()
-                translations[language] = [
-                    extra_translations[code][key]
-                    for key in keys]
-
-            try:
-                poset = messageSet.poMsgSet(code)
-            except KeyError:
-                # The PO file doesn't exist, or it exists but doesn't have
-                # this message ID. The translations are blank, aren't fuzzy,
-                # and have no comment.
-
-                # XXX
-                # The flag from the submitted message messageSet should also be
-                # passed in and used. Otherwise, if a translator sets a fuzzy
-                # flag on a message set and gets an error for that same
-                # message set, the fact that they set the fuzzy flag will be
-                # forgotten, and the translator (assuming that they notice)
-                # will need to set it again.
-                # -- Dafydd Harries, 2005/03/15
-                fuzzy[language] = False
-                if not language in translations:
-                    if self.pluralFormCounts[code] is None:
-                        translations[language] = [None]
-                    else:
-                        translations[language] = ([None] *
-                            self.pluralFormCounts[code])
-                comments[language] = None
-            else:
-                fuzzy[language] = poset.fuzzy
-                if not language in translations:
-                    translations[language] = poset.translations()
-                comments[language] = poset.commenttext
-
-            # Make sure that there is an error entry for each language code.
-            if code not in errors:
-                errors[code] = {}
-
-        if isPlural:
-            messageIDPlural = self._messageID(messageIDs[1], messageSet.flags())
-        else:
-            messageIDPlural = None
-
-        return {
-            'id' : messageSet.id,
-            'isPlural' : isPlural,
-            'messageID' : messageID,
-            'messageIDPlural' : messageIDPlural,
-            'sequence' : messageSet.sequence,
-            'fileReferences': messageSet.filereferences,
-            'sourceComment' : messageSet.sourcecomment,
-            'translations' : translations,
-            'comments' : comments,
-            'fuzzy' : fuzzy,
-            'errors' : errors,
-        }
-
-    def submitTranslations(self):
-        """Handle a form submission for the translation page.
-
-        The form contains translations, some of which will be unchanged, some
-        of which will be modified versions of old translations and some of
-        which will be new. Returns a dictionary mapping sequence numbers to
-        submitted message sets, where each message set will have information
-        on any validation errors it has.
-        """
-        if not "SUBMIT" in self.request.form:
-            return {}
-
-        messageSets = helpers.parse_translation_form(self.request.form)
-        bad_translations = []
-
-        # Get/create a PO file for each language.
-
-        pofiles = {}
-
-        for language in self.languages:
-            pofiles[language.code] = self.context.getOrCreatePOFile(
-                language.code, variant=None, owner=self.user)
-
-        # Put the translations in the database.
-
-        for messageSet in messageSets.values():
-            pot_set = self.context.getPOTMsgSetByID(messageSet['msgid'])
-            if pot_set is None:
-                # This should only happen if someone tries to POST his own
-                # form instead of ours, and he uses a POTMsgSet id that does
-                # not exist for this POTemplate.
-                raise RuntimeError(
-                    "Got translation for POTMsgID %d which is not in the"
-                    " template." % messageSet['msgid'])
-
-            msgid_text = pot_set.primemsgid_.msgid
-
-            messageSet['errors'] = {}
-            messageSet['pot_set'] = pot_set
-
-            for code in messageSet['translations'].keys():
-                messageSet['errors'][code] = None
-                new_translations = messageSet['translations'][code]
-
-                # Skip if there are no non-empty translations.
-
-                if not [key for key in new_translations.keys()
-                              if new_translations[key] != '']:
-                    continue
-
-                bad_translation_found = False
-
-                msgids_text = []
-                for messageid in pot_set.messageIDs():
-                    msgids_text.append(messageid.msgid)
-
-                # Validate the translation got from the translation form to
-                # know if gettext is not happy with the input.
-                try:
-                    helpers.validate_translation(
-                        msgids_text,
-                        new_translations,
-                        pot_set.flags())
-                except gettextpo.error, e:
-                    # There was an error with this translation, we should mark
-                    # it as such so the form shows a message to the user.
-                    bad_translation_found = True
-
-                    if code not in messageSet['errors']:
-                        messageSet['errors'][code] = None
-
-                    # Save the error message gettext gave us.
-                    messageSet['errors'][code] = str(e)
-
-                # If at least one of the submitted translations was bad, don't
-                # put any of them in the database.
-
-                if bad_translation_found:
-                    continue
-
-                # Get hold of an appropriate message set in the PO file,
-                # creating it if necessary.
-
-                try:
-                    po_set = pofiles[code][msgid_text]
-                except KeyError:
-                    po_set = pofiles[code].createMessageSetFromText(msgid_text)
-
-                fuzzy = code in messageSet['fuzzy']
-
-                po_set.updateTranslation(
-                    person=self.user,
-                    new_translations=new_translations,
-                    fuzzy=fuzzy,
-                    fromPOFile=False)
-
-        return messageSets
+        return self._nextURL
 
 
 class POTemplateTarExport:
@@ -693,3 +314,45 @@ class POTemplateTarExport:
 
         return body
 
+
+# This class is only a compatibility one so the old URL to translate with
+# Rosetta redirects the user to the new URL and we don't break external links.
+# For instance:
+# https://launchpad.ubuntu.com/rosetta/products/bazaar/messages.pot/+translate?languages=es
+# becomes:
+# https://launchpad.ubuntu.com/rosetta/products/bazaar/messages.pot/es/+translate
+# The other arguments are preserved.
+class POTemplateTranslateView:
+    """View class to forward users from old translation URL to the new one."""
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def __call__(self):
+        parameters = {}
+        old_url = self.request.getURL()
+        if old_url.endswith('/'):
+            new_url = old_url[:-len('/+translate/')]
+        else:
+            new_url = old_url[:-len('/+translate')]
+
+        # Reuse the count, show and offset arguments.
+        for name in ('count', 'show', 'offset'):
+            if name in self.request.form:
+                parameters[name] = self.request.form.get(name)
+
+        # The languages argument is removed as it's part of the url path.
+        if 'languages' in self.request.form:
+            language = self.request.form.get('languages')
+            if ',' in language:
+                raise ValueError('Language unknown: %s', language)
+            new_url = '%s/%s/+translate' % (new_url, language)
+
+            if parameters:
+                keys = parameters.keys()
+                keys.sort()
+                new_url = new_url + '?' + '&'.join(
+                    [key + '=' + str(parameters[key])
+                     for key in keys])
+        self.request.response.redirect(new_url)

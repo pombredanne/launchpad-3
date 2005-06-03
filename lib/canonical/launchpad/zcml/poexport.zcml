@@ -7,12 +7,12 @@
 
     <adapter
         for="canonical.launchpad.interfaces.IPOTemplate"
-        provides="canonical.launchpad.interfaces.IPOTemplateExport"
+        provides="canonical.launchpad.interfaces.IPOTemplateExporter"
         factory="canonical.launchpad.components.poexport.POTemplateExporter" />
 
     <adapter
         for="canonical.launchpad.interfaces.IDistroRelease"
-        provides="canonical.launchpad.interfaces.IDistroReleasePOExport"
+        provides="canonical.launchpad.interfaces.IDistroReleasePOExporter"
         factory="canonical.launchpad.components.poexport.DistroReleasePOExporter" />
 
 </configure>

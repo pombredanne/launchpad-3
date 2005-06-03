@@ -8,15 +8,19 @@ import sets
 
 from zope.interface import implements
 
-from sqlobject import DateTimeCol, ForeignKey, StringCol, BoolCol
+from sqlobject import ForeignKey, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.interfaces import \
     IProject, IProjectSet, IProjectBugTracker
 
-from canonical.lp.dbschema import ImportStatus
+from canonical.lp.dbschema import EnumCol, TranslationPermission, \
+    ImportStatus
 from canonical.launchpad.database.product import Product
+from canonical.database.constants import UTC_NOW
 
 
 class Project(SQLBase):
@@ -31,13 +35,18 @@ class Project(SQLBase):
     name = StringCol(dbName='name', notNull=True)
     displayname = StringCol(dbName='displayname', notNull=True)
     title = StringCol(dbName='title', notNull=True)
-    shortdesc = StringCol(dbName='shortdesc', notNull=True)
+    summary = StringCol(dbName='summary', notNull=True)
     description = StringCol(dbName='description', notNull=True)
-    # XXX: https://bugzilla.warthogs.hbd.com/bugzilla/show_bug.cgi?id=1968
-    datecreated = DateTimeCol(dbName='datecreated', notNull=True)
+    datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True,
+        default=UTC_NOW)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
     wikiurl = StringCol(dbName='wikiurl', notNull=False, default=None)
     lastdoap = StringCol(dbName='lastdoap', notNull=False, default=None)
+    translationgroup = ForeignKey(dbName='translationgroup',
+        foreignKey='TranslationGroup', notNull=False, default=None)
+    translationpermission = EnumCol(dbName='translationpermission',
+        notNull=True, schema=TranslationPermission,
+        default=TranslationPermission.OPEN)
     active = BoolCol(dbName='active', notNull=True, default=True)
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
 
@@ -47,7 +56,8 @@ class Project(SQLBase):
                             otherColumn='bounty',
                             intermediateTable='ProjectBounty')
 
-    products = MultipleJoin('Product', joinColumn='project')
+    products = MultipleJoin('Product', joinColumn='project',
+                            orderBy='name')
 
     bugtrackers = RelatedJoin('BugTracker', joinColumn='project',
                                otherColumn='bugtracker',
@@ -64,7 +74,7 @@ class ProjectSet:
         self.title = 'Open Source Projects in the Launchpad'
 
     def __iter__(self):
-        return iter(Project.select())
+        return iter(Project.selectBy(active=True))
 
     def __getitem__(self, name):
         project = Project.selectOneBy(name=name)
@@ -72,7 +82,7 @@ class ProjectSet:
             raise KeyError, name
         return project
 
-    def new(self, name, displayname, title, homepageurl, shortdesc,
+    def new(self, name, displayname, title, homepageurl, summary,
             description, owner):
         name = name.encode('ascii')
         displayname = displayname.encode('ascii')
@@ -87,11 +97,11 @@ class ProjectSet:
         return Project(name = name,
                        displayname = displayname,
                        title = title,
-                       shortdesc = shortdesc,
+                       summary = summary,
                        description = description,
                        homepageurl = url,
                        owner = owner,
-                       datecreated = 'now')
+                       datecreated = UTC_NOW)
 
     def forReview(self):
         return Project.select("reviewed IS FALSE")

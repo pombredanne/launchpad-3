@@ -66,7 +66,8 @@ def isZopeless():
     """Returns True if we are running in the Zopeless environment"""
     return ZopelessTransactionManager._installed is not None
 
-def initZopeless(debug=False, dbname=None, dbhost=None, dbuser=None):
+def initZopeless(debug=False, dbname=None, dbhost=None, dbuser=None,
+                 implicitBegin=True):
     registerTypes()
     if dbname is None:
         dbname = globals()['dbname']
@@ -85,7 +86,7 @@ def initZopeless(debug=False, dbname=None, dbhost=None, dbuser=None):
 
     return ZopelessTransactionManager('postgres://%s%s/%s' % (
         dbuser, dbhost, dbname,
-        ), debug=debug)
+        ), debug=debug, implicitBegin=implicitBegin)
 
 def decorates(interface, context='context'):
     """Make an adapter into a decorator.

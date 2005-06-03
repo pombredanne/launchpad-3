@@ -3,12 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-  <title metal:fill-slot="title">Source Package Changes</title>
-  <!-- Plone style sheet -->
-  <style type="text/css" media="screen">@import url(plone.css);</style>
-</head>
-
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -44,13 +38,13 @@
      <div class="portletContent even">
      <ul>
      <li><a tal:attributes="href string:../../">     
-         <span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">TITLE</span></a></li>
+         <span tal:content="context/sourcepackagerelease/sourcepackage/summary">TITLE</span></a></li>
      <li><a tal:attributes="href string:../">     
-         <span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">TITLE</span>
+         <span tal:content="context/sourcepackagerelease/sourcepackage/summary">TITLE</span>
      <span tal:content="context/sourcepackagerelease/version">Version</span>
       </a></li>
       <li><a tal:attributes="href string:./">     
-         <span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">TITLE</span>
+         <span tal:content="context/sourcepackagerelease/sourcepackage/summary">TITLE</span>
      <span tal:content="context/sourcepackagerelease/version">Version</span>
      <span tal:content="context/distroarchrelease/architecturetag">Arch</span>
       </a></li>
@@ -66,7 +60,7 @@
 <div metal:fill-slot="main">
 
     <h1> 
-     <span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">
+     <span tal:content="context/sourcepackagerelease/sourcepackage/summary">
 	TITLE </span>
      <span tal:content="context/sourcepackagerelease/version">
 	Version</span>-

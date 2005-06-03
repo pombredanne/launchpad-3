@@ -1,49 +1,3 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-    i18n:domain="launchpad">
-
-    <tal:block tal:replace="nothing" tal:omit-tag>
-     <!--
-     This is a page that lists a bunch of POTemplates that are associated
-     with something. That context object needs to have two attributes:
-     self.potemplates and self.potemplatecount. It displays either a long
-     list (compact) or short list (detailed).
-
-     It expects the View object to support two attributes:
-
-       .potemplates a set of TemplateLanguages
-       .languages a set of user-preferred languages
-
-    Currently this is used for source package, distrorelease and product
-    release.
-     -->
-    </tal:block>
-
-<head>
-  <title metal:fill-slot="title" i18n:translate="">Rosetta Translation
-    Templates for <span tal:replace="context/title">foopackage in
-    Hoary</span>
-  </title>
-  <!-- Plone style sheet -->
-  <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Launchpad style sheet -->
-  <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
-<body>
-
-<metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure view/prefLangPortlet" />
-    <div tal:replace="structure view/countryPortlet" />
-    <div tal:replace="structure view/browserLangPortlet" />
-</metal:rightportlets>
-
-<div metal:fill-slot="main">
-
-  <h1 i18n:translate="">Translation Templates</h1>
-
   <!-- indicate if no templates are registered for this object and
      redirect to the mailing lists in case that is incorrect
   -->
@@ -61,14 +15,16 @@
     </p>
   </tal:block>
 
-  <tal:block condition="view/potemplates">
+  <tal:block condition="view/templateviews">
 
     <!-- Listing of MANY templates -->
     <tal:block tal:condition="python:context.potemplatecount > 5">
 
-      <p>The templates below can be translated. Click on your chosen
-      template, then choose the language into which you would like to
-      translate.</p>
+      <p>The templates below can all be translated through the Rosetta web
+      interface. Click on your chosen template, then you will have the
+      option to choose the language into which you would like to
+      translate. Note that you can set your preferred languages when you are
+      logged in at <a href="/rosetta/prefs/">this page</a>.</p>
 
       <table class="listing rowNavigation">
         <thead>
@@ -78,12 +34,12 @@
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="pot view/potemplates"
+          <tr tal:repeat="potview view/templateviews"
               tal:attributes="onclick
-                 string:window.location='${pot/relativeurl}'">
-            <td><a tal:attributes="href pot/relativeurl"
-                   tal:content="pot/name"></a></td>
-            <td><span tal:replace="pot/title"></span></td>
+                 string:window.location='${potview/URL}'">
+            <td><a tal:attributes="href potview/URL"
+                   tal:content="potview/context/name"></a></td>
+            <td><span tal:replace="potview/context/title"></span></td>
           </tr>
         </tbody>
       </table>
@@ -93,116 +49,36 @@
     <!-- Listing of FEW templates. -->
     <tal:block tal:condition="python:context.potemplatecount <= 5">
 
-      <p i18n:translate="">
-        Below is a list of translation templates for
-        <span tal:replace="context/displayname">displayname</span>.
-      </p>
-
       <div tal:condition="not: view/languages">
         <ul>
-          <li tal:repeat="template view/potemplates">
-            <a tal:attributes="href template/relativeurl"
-              tal:content="template/title">template</a>
+          <li tal:repeat="potview view/templateviews">
+            <a tal:attributes="href potview/URL"
+              tal:content="potview/context/title">template</a>
           </li>
         </ul>
       </div>
 
-      <p tal:condition="view/languages" i18n:translate="">We have
-      determined a short list of languages that you may be interested in
-      translating, and show the translation template status in each of
-      those languages below:
-      </p>
+      <p tal:condition="view/languages" i18n:translate="">Note: to choose
+      the languages that are displayed by default in the listings below you
+      need to be logged in to The Launchpad, and have chosen a set of
+      preferred languages. <a href="/rosetta/prefs/">Click here</a> to
+      select languages now.</p>
 
       <div tal:condition="view/languages"
-           tal:repeat="template view/potemplates"
-           tal:omit-tag> <!-- PO Template Details -->
+           tal:repeat="potview view/templateviews"
+           tal:omit-tag=""> <!-- PO Template Details -->
 
-        <h2><span tal:replace="template/name">name</span>:
-            <span tal:replace="template/title">Template Title</span></h2>
+        <h2><span tal:replace="potview/name">name</span>:
+            <span tal:replace="potview/title">Template Title</span></h2>
 
-        <p tal:content="template/description">
+        <p tal:content="potview/description">
           Template description
         </p>
 
-        <table class="listing rowNavigation" width="100%">
-          <thead>
-            <th i18n:translate="">Language</th>
-            <th i18n:translate="">Done</th>
-            <th i18n:translate="">Todo</th>
-            <th i18n:translate="">Graph</th>
-            <th i18n:translate="">Latest Contributor</th>
-            <th i18n:translate="">Last Edited</th>
-          </thead>
-
-          <tbody>
-            <tr tal:repeat="language template/languages"
-              tal:attributes="onclick
-              string:window.location='${template/relativeurl}/${language/translateURL}'">
-              <td>
-                <a tal:attributes="href
-                string:${template/relativeurl}/${language/translateURL}"
-                tal:content="language/name">Language
-                Name</a></td>
-              <td tal:content="language/poTranslated">0</td>
-              <td tal:content="language/poUntranslated">0</td>
-              <td>
-                <!-- Show an mdash if there is no graph -->
-                <span tal:condition="not: language/poLen">&mdash;</span>
-
-                <img src="/++resource++green-bar.png"
-                  height="10"
-                  style="margin-top: 2px;"
-                  alt="Translated Messages"
-                  tal:condition="language/poNonUpdatesCount"
-                  tal:attributes="width language/poNonUpdatesPercent;
-                          title string: Translated: ${language/poNonUpdatesPercent}%"
-                /><img src="/++resource++blue-bar.png"
-                  height="10"
-                  style="margin-top: 2px;"
-                  alt="Improved Message Translations"
-                  tal:condition="language/poUpdatesCount"
-                  tal:attributes="width language/poUpdatesPercent;
-                          title string: Improved In Rosetta : ${language/poUpdatesPercent}%"
-                /><img src="/++resource++purple-bar.png"
-                  height="10"
-                  style="margin-top: 2px;"
-                  alt="Newly Translated Messages"
-                  tal:condition="language/poRosettaCount"
-                  tal:attributes="width language/poRosettaPercent;
-                          title string: New In Rosetta: ${language/poRosettaPercent}%"
-                /><img src="/++resource++red-bar.png"
-                  height="10"
-                  style="margin-top: 2px;"
-                  alt="Untranslated Messages"
-                  tal:condition="language/poUntranslated"
-                  tal:attributes="width language/poUntranslatedPercent;
-                          title string: Untranslated: ${language/poUntranslatedPercent}%" />
-              </td>
-              <td>
-                <tal:block condition="language/lastChangedSighting">
-                  <span tal:content="language/lastChangedSighting/person/displayname" />
-                </tal:block>
-                <tal:block condition="not: language/lastChangedSighting">
-                  &mdash;
-                </tal:block>
-              </td>
-              <td>
-                <tal:block condition="language/lastChangedSighting">
-                  <span
-                  tal:content="language/lastChangedSighting/datelastactive/fmt:date"
-                  />
-                </tal:block>
-                <tal:block condition="not: language/lastChangedSighting">
-                  &mdash;
-                </tal:block>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div tal:replace="structure potview/context/@@+chart" />
 
         <div align="right">
-          [ <a tal:attributes="href template/relativeurl"
-             i18n:translate="">More...</a> ]
+          [ <a tal:attributes="href potview/URL">More...</a> ]
         </div>
 
       </div>
@@ -211,9 +87,5 @@
 
     </tal:block> <!-- the detailed template+language listing -->
 
-  </tal:block> <!-- condition="view/potemplates -->
+  </tal:block> <!-- condition="view/templateviews -->
 
-</div>
-
-</body>
-</html>

@@ -1,0 +1,92 @@
+First, visit the +duplicate page on the bug you're looking at:
+
+  >>> print http(r"""
+  ... GET /malone/bugs/2/+duplicate HTTP/1.1
+  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+You'll be presented with a single text field which permits you to
+enter the bug number of which this bug report is a duplicate. Before
+we continue, let's get a handle to our mailer, to demonstrate what
+notifications get sent out after setting a bug is marked as a
+duplicate:
+
+  >>> import email
+  >>> from canonical.launchpad.mail import stub
+  >>> stub.test_emails = []
+
+Now, let's go ahead and mark bug 2 as a duplicate of bug 1.
+
+  >>> print http(r"""
+  ... POST /malone/bugs/2/+duplicate HTTP/1.1
+  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 309
+  ... Content-Type: multipart/form-data; boundary=---------------------------17976867087135254391306687757
+  ... Referer: http://localhost:9000/malone/bugs/2/+duplicate
+  ... 
+  ... -----------------------------17976867087135254391306687757
+  ... Content-Disposition: form-data; name="field.duplicateof"
+  ... 
+  ... 1
+  ... -----------------------------17976867087135254391306687757
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------17976867087135254391306687757--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+            <h3>Mark as Duplicate Bug Report</h3>
+  <BLANKLINE>
+            <p>Updated on ...</p>
+  ...
+
+When the bug is marked as a duplicate, two notifications get sent out:
+
+    >>> len(stub.test_emails)
+    2
+
+Let's sort the emails by subject and talk a bit more about each
+notification:
+
+    >>> def by_subject(a, b):
+    ...     msg1 = email.message_from_string(a[2])
+    ...     msg2 = email.message_from_string(b[2])
+    ...     return cmp(msg1["Subject"], msg2["Subject"])
+
+    >>> sent_emails = list(stub.test_emails)
+    >>> sent_emails.sort(by_subject)
+
+  1. To the subscribers of the duplicate bug.
+
+    >>> from_addr, to_addrs, raw_message = sent_emails.pop()
+
+    >>> print from_addr
+    Malone Bugtracker <noreply@canonical.com>
+    >>> print to_addrs
+    ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["Subject"]
+    '[Bug 2] Blackhole Trash folder'
+
+    >>> msg.get_payload(decode = True)
+    'Foo Bar <foo.bar@canonical.com> made changes to:\n\n    http://localhost:9000/malone/bugs/2\n\n*** This bug has been marked a duplicate of 1 ***\n\n'
+
+  2. To the subscribers of the dup-target bug.
+
+    >>> from_addr, to_addrs, raw_message = sent_emails.pop()
+
+    >>> print from_addr
+    Malone Bugtracker <noreply@canonical.com>
+    >>> print to_addrs
+    ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["Subject"]
+    '[Bug 1] Firefox does not support SVG'
+
+    >>> msg.get_payload(decode = True)
+    'http://localhost:9000/malone/bugs/1\n\n*** Bug 2 has been marked a duplicate of this bug ***'

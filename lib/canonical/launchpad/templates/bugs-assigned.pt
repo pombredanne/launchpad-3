@@ -3,10 +3,6 @@
     metal:use-macro="context/@@malone_template/master"
     i18n:domain="malone">
 
-    <title metal:fill-slot="title">Malone Bugs assigned to
-    <span tal:replace="view/user/browsername"></span>
-    </title>
-
 <body>
 
 <metal:rightportlets fill-slot="portlets_two">
@@ -59,7 +55,7 @@
                 <td><span tal:replace="bugtask/bug/id">$Bug.id</span>
                     <span tal:condition="bugtask/bug/name">(<span
                     tal:replace="bugtask/bug/name">name</span>)</span></td>
-                <td tal:attributes="title bugtask/bug/shortdesc">
+                <td tal:attributes="title bugtask/bug/summary">
                     <b><span tal:replace="bugtask/bug/title">$Bug.title</span></b></td>
                 <td tal:content="bugtask/product/project/displayname|nothing">project</td>
                 <td tal:content="bugtask/product/displayname|nothing">product</td>
@@ -97,7 +93,7 @@
                 <td><span tal:replace="bugtask/bug/id">$Bug.id</span>
                     <span tal:condition="bugtask/bug/name">(<span
                     tal:replace="bugtask/bug/name">name</span>)</span></td>
-                <td tal:attributes="title bugtask/bug/shortdesc">
+                <td tal:attributes="title bugtask/bug/summary">
                     <b><span tal:replace="bugtask/bug/title">$Bug.title</span></b></td>
                 <td tal:content="bugtask/distribution/name|string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
                     distro
@@ -108,7 +104,7 @@
                 <td tal:content="bugtask/status/title">status</td>
                 <td tal:content="bugtask/severity/title">severity</td>
                 <td tal:content="bugtask/priority/title">priority</td>
-                <td tal:content="bugtask/assignee/displayname|default">-</td>
+                <td tal:content="bugtask/assignee/browsername|default">-</td>
             </tr>
 
         </table>
@@ -138,7 +134,7 @@
                 <td><span tal:replace="bugtask/bug/id">$Bug.id</span>
                     <span tal:condition="bugtask/bug/name">(<span
                     tal:replace="bugtask/bug/name">name</span>)</span></td>
-                <td tal:attributes="title bugtask/bug/shortdesc">
+                <td tal:attributes="title bugtask/bug/summary">
                     <b><span tal:replace="bugtask/bug/title">$Bug.title</span></b></td>
                 <td tal:content="bugtask/distribution/name|string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
                     distro
@@ -179,7 +175,7 @@
                 <td><span tal:replace="bugtask/bug/id">$Bug.id</span>
                     <span tal:condition="bugtask/bug/name">(<span
                     tal:replace="bugtask/bug/name">name</span>)</span></td>
-                <td tal:attributes="title bugtask/bug/shortdesc">
+                <td tal:attributes="title bugtask/bug/summary">
                     <b><span tal:replace="bugtask/bug/title">$Bug.title</span></b></td>
                 <td tal:content="bugtask/product/project/displayname|nothing">project</td>
                 <td tal:content="bugtask/product/displayname|nothing">product</td>

@@ -59,6 +59,13 @@
     permission="zope.Public"
     />
 
+  <browser:suburl
+    for="canonical.publication.RootObject"
+    name="potemplatenames"
+    utility="canonical.launchpad.interfaces.IPOTemplateNameSet"
+    permission="launchpad.Edit"
+    />
+
   <!-- legal link -->
   <browser:page
     for="canonical.publication.RootObject"

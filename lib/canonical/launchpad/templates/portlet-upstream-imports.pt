@@ -1,10 +1,10 @@
 <div class="portlet">
-    <h4>Upstream Imports:</h4>
+  <h4>Upstream Imports:</h4>
 
-    <div class="portletBody">
-        <div class="portletContent even">
+  <div class="portletBody">
+    <div class="portletContent even">
 	
-	 <ul>
+	  <ul>
         <li>Testing: <span tal:replace="view/testing_count">3</span></li>
         <li>Autotested: <span tal:replace="view/autotested_count">3</span></li>
         <li>Test Failed: <span tal:replace="view/testfailed_count">3</span></li>
@@ -12,8 +12,9 @@
         <li>Syncing: <span tal:replace="view/syncing_count">3</span></li>
         <li>Stopped: <span tal:replace="view/stopped_count">3</span></li>
         <li>Total: <span tal:replace="view/import_count">23</span></li>
-	 </ul>
+        <li>HCT Enabled: <span tal:replace="view/hct_count">21</span></li>
+	  </ul>
 
-        </div>
     </div>
+  </div>
 </div>

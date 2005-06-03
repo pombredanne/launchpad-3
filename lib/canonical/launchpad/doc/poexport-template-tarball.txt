@@ -1,10 +1,6 @@
 
 Test export of a PO template's PO files in a tarball.
 
-This is needed to make utilities work.
-
-  >>> login(ANONYMOUS)
-
 Get a tarball representation of a template's translations.
 
   >>> from canonical.launchpad.components.poexport import POTemplateExporter

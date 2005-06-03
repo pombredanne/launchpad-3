@@ -3,13 +3,13 @@
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
-# launchpad interfaces
+# launchpad
 from canonical.launchpad.interfaces import IPOTemplateSet
+from canonical.launchpad.interfaces import IProductReleaseSet
 
 from canonical.launchpad import helpers
 
-# launchpad db objects
-from canonical.launchpad.database import ProductRelease
+from canonical.launchpad.browser.potemplate import POTemplateView
 
 
 def traverseProductRelease(productrelease, request, name):
@@ -30,22 +30,22 @@ def newProductRelease(form, product, owner, series=None):
     # Extract the ProductRelease details, which are in self.form
     version = form['version']
     title = form['title']
-    shortdesc = form['shortdesc']
+    summary = form['summary']
     description = form['description']
+    # XXX cprov 20050509
+    # releaseurl is currently ignored because there's no place for it in the
+    # database.
     releaseurl = form['releaseurl']
     # series may be passed in arguments, or in the form
     if not series:
         if form.has_key('series'):
             series = int(form['series'])
     # Create the new ProductRelease
-    productrelease = ProductRelease(
-                          #product=product.id,
-                          version=version,
-                          title=title,
-                          shortdesc=shortdesc,
-                          description=description,
-                          productseries=series,
-                          owner=owner)
+    prset = getUtility(IProductReleaseSet)
+    productrelease = prset.new(version, series, owner,
+                               title=title,
+                               summary=summary,
+                               description=description)
     return productrelease
 
 
@@ -59,7 +59,7 @@ class ProductReleaseView:
         '../templates/portlet-productrelease-details.pt')
 
     actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-actions.pt')
+        '../templates/portlet-productrelease-actions.pt')
 
     statusLegend = ViewPageTemplateFile(
         '../templates/portlet-rosetta-status-legend.pt')
@@ -80,13 +80,9 @@ class ProductReleaseView:
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(self.request)
-        # Cache value for the return value of self.templates
-        self._template_languages = None
-        # List of the templates we have in this subset.
-        self._templates = self.context.potemplates
         self.status_message = None
         # Whether there is more than one PO template.
-        self.has_multiple_templates = len(self._templates) > 1
+        self.has_multiple_templates = len(self.context.potemplates) > 1
 
     def edit(self):
         # check that we are processing the correct form, and that
@@ -97,21 +93,15 @@ class ProductReleaseView:
             return
         # Extract details from the form and update the Product
         self.context.title = self.form['title']
-        self.context.shortdesc = self.form['shortdesc']
+        self.context.summary = self.form['summary']
         self.context.description = self.form['description']
         self.context.changelog = self.form['changelog']
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
 
-    def potemplates(self):
-        if self._template_languages is None:
-            self._template_languages = [
-                    helpers.TemplateLanguages(template,
-                                      self.languages,
-                                      relativeurl='+pots/'+template.name)
-                               for template in self._templates]
-
-        return self._template_languages
+    def templateviews(self):
+        return [POTemplateView(template, self.request)
+                for template in self.context.potemplates]
 
     def requestCountry(self):
         return helpers.requestCountry(self.request)

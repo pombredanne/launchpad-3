@@ -48,6 +48,8 @@ from canonical.launchpad.interfaces.language import *
 from canonical.launchpad.interfaces.launchpad import *
 from canonical.launchpad.interfaces.librarian import *
 from canonical.launchpad.interfaces.logintoken import *
+from canonical.launchpad.interfaces.mail import *
+from canonical.launchpad.interfaces.mailbox import *
 from canonical.launchpad.interfaces.maintainership import *
 from canonical.launchpad.interfaces.manifestentry import *
 from canonical.launchpad.interfaces.manifest import *
@@ -84,10 +86,11 @@ from canonical.launchpad.interfaces.sourcepackage import *
 from canonical.launchpad.interfaces.sourcepackageindistro import *
 from canonical.launchpad.interfaces.sourcepackagename import *
 from canonical.launchpad.interfaces.sourcepackagerelease import *
-#from canonical.launchpad.interfaces.sourcesource import *
 from canonical.launchpad.interfaces.spokenin import *
 from canonical.launchpad.interfaces.ssh import *
 from canonical.launchpad.interfaces.translationeffort import *
+from canonical.launchpad.interfaces.translationgroup import *
+from canonical.launchpad.interfaces.translator import *
 from canonical.launchpad.interfaces.vpoexport import *
 from canonical.launchpad.interfaces.vsourcepackagereleasepublishing import *
 from canonical.launchpad.interfaces.wikiname import *

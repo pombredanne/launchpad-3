@@ -7,6 +7,7 @@ from datetime import datetime
 
 from zope.interface import implements
 
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import IDistroTools
 from canonical.launchpad.database.distribution import Distribution
 
@@ -31,7 +32,7 @@ class DistroTools:
                               owner=owner)
         return distro
 
-    def createDistroRelease(self, owner, title, distribution, shortdesc,
+    def createDistroRelease(self, owner, title, distribution, summary,
                             description, version, parent):
         ##XXX: cprov 20041207
         ## Verify the name constraint as the postgresql does.
@@ -43,12 +44,12 @@ class DistroTools:
         release = DistroRelease(name=name,
                                 distribution=distribution,
                                 title=title,
-                                shortdesc=shortdesc,
+                                summary=summary,
                                 description=description,
                                 version=version,
                                 owner=owner,
                                 parentrelease=int(parent),
-                                datereleased=datetime.utcnow(),
+                                datereleased=UTC_NOW,
                                 components=1,
                                 releasestatus=1,
                                 sections=1,

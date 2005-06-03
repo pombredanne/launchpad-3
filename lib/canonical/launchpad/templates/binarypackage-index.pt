@@ -3,14 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-  <title metal:fill-slot="title">Binary Package Details</title>
-  <!-- Plone style sheet -->
-  <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Launchpad style sheet -->
-  <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
   <metal:leftportlets fill-slot="portlets_one">
@@ -24,7 +16,7 @@
 
     <h1>Package Overview</h1>
 
-    <p class="documentDescription" tal:content="context/shortdesc">
+    <p class="documentDescription" tal:content="context/summary">
     Package Summary</p>
 
     <p tal:content="context/description" />

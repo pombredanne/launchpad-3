@@ -3,13 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-  <title metal:fill-slot="title">Bazaar Branch:
-     <span tal:replace="context/title">$Branch.title</span></title>
-  <!-- Plone style sheet -->
-  <style type="text/css" media="screen">@import url(plone.css);</style>
-</head>
-
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -22,8 +15,8 @@
 
     <h1><span tal:replace="context/title">$Branch.title</span></h1>
 
-    <div class="documentDescription" tal:content="context/shortdesc">
-        $Branch.shortdesc goes here. This should be quite short,
+    <div class="documentDescription" tal:content="context/summary">
+        $Branch.summary goes here. This should be quite short,
         just a single paragraph of text really, giving the product
         highlights.
     </div>

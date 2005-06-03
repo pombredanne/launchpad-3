@@ -1,0 +1,13 @@
+<div class="portlet">
+
+  <h4>Actions:</h4>
+
+  <div class="portletBody">
+    <div class="portletContent even">
+
+      <img src="/++resource++edit.gif">
+      <a href="+edit">Edit Details</a>
+
+    </div>
+  </div>
+</div>

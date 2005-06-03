@@ -3,16 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-  <title metal:fill-slot="title">
-    <span tal:replace="context/displayname">Name</span>
-    GPG Keys</title>
-  <!-- Plone style sheet -->
-  <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Soyuz style sheet -->
-  <style type="text/css" media="screen">@import url(soyuz.css);</style>
-</head>
-
 <body>
 
   <metal:leftportlets fill-slot="portlets_one">

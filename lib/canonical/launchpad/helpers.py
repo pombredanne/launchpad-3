@@ -2,31 +2,51 @@
 
 __metaclass__ = type
 
+import base64
+import gettextpo
 import os
+import popen2
 import random
 import re
 import tarfile
+import time
 import warnings
-import base64
-import popen2
-import gettextpo
+import email
 from StringIO import StringIO
 from select import select
 from math import ceil
 from xml.sax.saxutils import escape as xml_escape
+from difflib import unified_diff
 
 from zope.component import getUtility
+from zope.interface import implements
+from zope.security.interfaces import IParticipation
+from zope.security.management import newInteraction, endInteraction
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
 from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import RosettaImportStatus
-from canonical.launchpad.interfaces import ILaunchBag, IHasOwner, IGeoIP, \
-    IRequestPreferredLanguages, ILanguageSet, IRequestLocalLanguages
+from canonical.librarian.interfaces import ILibrarianClient, UploadFailed, \
+    DownloadFailed
+from canonical.launchpad.interfaces import ILaunchBag, IOpenLaunchBag, \
+    IHasOwner, IGeoIP, IRequestPreferredLanguages, ILanguageSet, \
+    IRequestLocalLanguages, \
+    RawFileAttachFailed, RawFileFetchFailed
 from canonical.launchpad.components.poparser import POSyntaxError, \
     POInvalidInputError, POParser
+from canonical.launchpad.components.rosettastats import RosettaStats
+from canonical.launchpad.mail import SignedMessage
+from canonical.launchpad.mail.ftests import testmails_path
 
-charactersPerLine = 50
-SPACE_CHAR = u'<span class="po-message-special">\u2022</span>'
-NEWLINE_CHAR = u'<span class="po-message-special">\u21b5</span><br/>\n'
+CHARACTERS_PER_LINE = 50
+
+class TranslationConstants:
+    """Set of constants used inside the context of translations."""
+
+    SINGULAR_FORM = 0
+    PLURAL_FORM = 1
+    SPACE_CHAR = u'<span class="po-message-special">\u2022</span>'
+    NEWLINE_CHAR = u'<span class="po-message-special">\u21b5</span><br/>\n'
 
 
 def is_maintainer(hasowner):
@@ -47,51 +67,61 @@ def is_maintainer(hasowner):
     else:
         return False
 
+def tar_add_file(tf, path, contents):
+    """Convenience function for adding a file to a tar file."""
 
-def tar_add_file(tf, name, contents):
-    """
-    Convenience method for adding a file to a tar file.
-    """
+    now = int(time.time())
+    bits = path.split(os.path.sep)
 
-    tarinfo = tarfile.TarInfo(name)
-    tarinfo.size = len(contents)
+    # Ensure that all the directories in the path are present in the
+    # archive.
 
-    tf.addfile(tarinfo, StringIO(contents))
+    for i in range(1, len(bits)):
+        joined_path = os.path.join(*bits[:i])
 
-def tar_add_files(tf, prefix, files):
-    """Add a tree of files, represented by a dictionary, to a tar file."""
-
-    # Keys are sorted in order to make test cases easier to write.
-
-    names = files.keys()
-    names.sort()
-
-    for name in names:
-        if isinstance(files[name], basestring):
-            # Looks like a file.
-
-            tar_add_file(tf, prefix + name, files[name])
-        else:
-            # Should be a directory.
-
-            tarinfo = tarfile.TarInfo(prefix + name)
+        try:
+            tf.getmember(joined_path + '/')
+        except KeyError:
+            tarinfo = tarfile.TarInfo(joined_path)
             tarinfo.type = tarfile.DIRTYPE
+            tarinfo.mtime = now
             tf.addfile(tarinfo)
 
-            tar_add_files(tf, prefix + name + '/', files[name])
+    tarinfo = tarfile.TarInfo(path)
+    tarinfo.time = now
+    tarinfo.size = len(contents)
+    tf.addfile(tarinfo, StringIO(contents))
 
-def make_tarfile(files):
-    """Return a tar file as string from a dictionary."""
+def make_tarball_filehandle(files):
+    """Return a file handle to a tar file contaning a given set of files.
+
+    @param files: a dictionary mapping paths to file contents
+    """
 
     sio = StringIO()
+    tarball = tarfile.open('', 'w', sio)
 
-    tf = tarfile.open('', 'w', sio)
+    sorted_files = files.keys()
+    sorted_files.sort()
 
-    tar_add_files(tf, '', files)
+    for filename in sorted_files:
+        tar_add_file(tarball, filename, files[filename])
 
-    tf.close()
+    tarball.close()
+    sio.seek(0)
+    return sio
 
-    return sio.getvalue()
+def make_tarball_string(files):
+    """Similar to make_tarball_filehandle, but return the contents of the
+    tarball as a string.
+    """
+
+    return make_tarball_filehandle(files).read()
+
+def make_tarball(files):
+    """Similar to make_tarball_filehandle, but return a tarinfo object."""
+
+    return tarfile.open('', 'r', make_tarball_filehandle(files))
 
 def join_lines(*lines):
     """Concatenate a list of strings, adding a newline at the end of each."""
@@ -416,12 +446,39 @@ def shortlist(sequence, longest_expected=15):
               longest_expected)
     return L
 
-def attachRawFileData(raw_file_data, contents, importer):
-    """Attach the contents of a file to a raw_file_data object."""
-    raw_file_data.rawfile = base64.encodestring(contents)
+def uploadRosettaFile(filename, contents):
+    client = getUtility(ILibrarianClient)
+
+    try:
+        size = len(contents)
+        file = StringIO(contents)
+
+        alias = client.addFile(
+            name=filename,
+            size=size,
+            file=file,
+            contentType='application/x-po')
+    except UploadFailed, e:
+        raise RawFileAttachFailed(str(e))
+
+    return alias
+
+def attachRawFileData(raw_file_data, filename, contents, importer):
+    """Attach the contents of a file to a raw file data object."""
+    raw_file_data.rawfile = uploadRosettaFile(filename, contents)
     raw_file_data.daterawimport = UTC_NOW
     raw_file_data.rawimporter = importer
     raw_file_data.rawimportstatus = RosettaImportStatus.PENDING
+
+def getRawFileData(raw_file_data):
+    client = getUtility(ILibrarianClient)
+
+    try:
+        file = client.getFileByAlias(raw_file_data.rawfile)
+    except DownloadFailed, e:
+        raise RawFileFetchFailed(str(e))
+
+    return file.read()
 
 def count_lines(text):
     '''Count the number of physical lines in a string. This is always at least
@@ -434,7 +491,7 @@ def count_lines(text):
         if len(line) == 0:
             count += 1
         else:
-            count += int(ceil(float(len(line)) / charactersPerLine))
+            count += int(ceil(float(len(line)) / CHARACTERS_PER_LINE))
 
     return count
 
@@ -525,21 +582,14 @@ def parse_translation_form(form):
 
         {
             'msgid': '...',
-            'translations': {
-                'es': ['...', '...'],
-                'cy': ['...', '...', '...', '...'],
-            },
-            'fuzzy': {
-                 'es': False,
-                 'cy': True,
-            },
+            'translations': ['...', '...'],
+            'fuzzy': False,
         }
     """
 
     messageSets = {}
 
     # Extract message IDs.
-
     for key in form:
         match = re.match('set_(\d+)_msgid$', key)
 
@@ -548,24 +598,9 @@ def parse_translation_form(form):
             messageSets[id] = {}
             messageSets[id]['msgid'] = id
             messageSets[id]['translations'] = {}
-            messageSets[id]['fuzzy'] = {}
+            messageSets[id]['fuzzy'] = False
 
-    # Extract non-plural translations.
-
-    for key in form:
-        match = re.match(r'set_(\d+)_translation_([a-z]+(?:_[A-Z]+)?)$', key)
-
-        if match:
-            id = int(match.group(1))
-            code = match.group(2)
-
-            if not id in messageSets:
-                raise AssertionError("Orphaned translation in form.")
-
-            messageSets[id]['translations'][code] = {}
-            messageSets[id]['translations'][code][0] = form[key].replace('\r', '')
-
-    # Extract plural translations.
+    # Extract translations.
 
     for key in form:
         match = re.match(r'set_(\d+)_translation_([a-z]+(?:_[A-Z]+)?)_(\d+)$',
@@ -573,16 +608,12 @@ def parse_translation_form(form):
 
         if match:
             id = int(match.group(1))
-            code = match.group(2)
             pluralform = int(match.group(3))
 
             if not id in messageSets:
                 raise AssertionError("Orphaned translation in form.")
 
-            if not code in messageSets[id]['translations']:
-                messageSets[id]['translations'][code] = {}
-
-            messageSets[id]['translations'][code][pluralform] = form[key]
+            messageSets[id]['translations'][pluralform] = form[key]
 
     # Extract fuzzy statuses.
 
@@ -591,15 +622,12 @@ def parse_translation_form(form):
 
         if match:
             id = int(match.group(1))
-            code = match.group(2)
-            messageSets[id]['fuzzy'][code] = True
+            messageSets[id]['fuzzy'] = True
 
     return messageSets
 
-def escape_msgid(s):
-    return s.replace('\\', r'\\').replace('\n', '\\n').replace('\t', '\\t')
-
-def msgid_html(text, flags, space=SPACE_CHAR, newline=NEWLINE_CHAR):
+def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
+               newline=TranslationConstants.NEWLINE_CHAR):
     '''Convert a message ID to a HTML representation.'''
 
     lines = []
@@ -755,76 +783,106 @@ def import_tar(potemplate, importer, tarfile, pot_paths, po_paths):
 
     return message
 
-# XXX: Carlos Perello Marin 2005-04-15: TemplateLanguages and TemplateLanguage
-# should be fixed as explained at https://launchpad.ubuntu.com/malone/bugs/397
 
-class TemplateLanguages:
-    """Support class for ProductView."""
+class DummyPOFile(RosettaStats):
+    """
+    Represents a POFile where we do not yet actually HAVE a POFile for that
+    language for this template.
+    """
+    def __init__(self, potemplate, language):
+        self.potemplate = potemplate
+        self.language = language
+        self.header = ''
+        self.latest_sighting = None
+        self.messageCount = len(potemplate)
 
-    def __init__(self, template, languages, relativeurl=''):
-        self.template = template
-        self.name = template.potemplatename.name
-        self.title = template.title
-        self.description = template.description
-        self._languages = languages
-        self.relativeurl = relativeurl
+    def currentCount(self):
+        return 0
 
-    def languages(self):
-        for language in self._languages:
-            yield TemplateLanguage(self.template, language, self.relativeurl)
+    def rosettaCount(self):
+        return 0
+
+    def updatesCount(self):
+        return 0
+
+    def nonUpdatesCount(self):
+        return 0
+
+    def translatedCount(self):
+        return 0
+
+    def untranslatedCount(self):
+        return self.messageCount
+
+    def currentPercentage(self):
+        return 0.0
+
+    def rosettaPercentage(self):
+        return 0.0
+
+    def updatesPercentage(self):
+        return 0.0
+
+    def nonUpdatesPercentage(self):
+        return 0.0
+
+    def translatedPercentage(self):
+        return 0.0
+
+    def untranslatedPercentage(self):
+        return 100.0
 
 
-class TemplateLanguage:
-    """Support class for ProductView."""
+def test_diff(lines_a, lines_b):
+    """Generate a string indicating the difference between expected and actual
+    values in a test.
+    """
 
-    def __init__(self, template, language, relativeurl=''):
-        self.name = language.englishname
-        self.code = language.code
-        self.translateURL = '+translate?languages=' + self.code
-        self.relativeurl = relativeurl
+    return '\n'.join(list(unified_diff(
+        a=lines_a,
+        b=lines_b,
+        fromfile='expected',
+        tofile='actual',
+        lineterm='',
+        )))
 
-        poFile = template.queryPOFileByLang(language.code)
 
-        if poFile is not None:
-            # NOTE: To get a 100% value:
-            # 1.- currentPercent + rosettaPercent + untranslatedPercent
-            # 2.- translatedPercent + untranslatedPercent
-            # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
-            #   untranslatedPercent
+class Participation:
+    implements(IParticipation) 
 
-            self.hasPOFile = True
-            self.poLen = poFile.messageCount()
-            self.lastChangedSighting = poFile.lastChangedSighting()
+    interaction = None
+    principal = None
 
-            self.poCurrentCount = poFile.currentCount()
-            self.poRosettaCount = poFile.rosettaCount()
-            self.poUpdatesCount = poFile.updatesCount()
-            self.poNonUpdatesCount = poFile.nonUpdatesCount()
-            self.poTranslated = poFile.translatedCount()
-            self.poUntranslated = poFile.untranslatedCount()
 
-            self.poCurrentPercent = poFile.currentPercentage()
-            self.poRosettaPercent = poFile.rosettaPercentage()
-            self.poUpdatesPercent = poFile.updatesPercentage()
-            self.poNonUpdatesPercent = poFile.nonUpdatesPercentage()
-            self.poTranslatedPercent = poFile.translatedPercentage()
-            self.poUntranslatedPercent = poFile.untranslatedPercentage()
-        else:
-            self.hasPOFile = False
-            self.poLen = len(template)
-            self.lastChangedSighting = None
+def setupInteraction(principal, login=None, participation=None):
+    """Sets up a new interaction with the given principal.
 
-            self.poCurrentCount = 0
-            self.poRosettaCount = 0
-            self.poUpdatesCount = 0
-            self.poNonUpdatesCount = 0
-            self.poTranslated = 0
-            self.poUntranslated = template.messageCount()
+    The login gets added to the launch bag.
+    
+    You can optionally pass in a participation to be used.  If no
+    participation is given, a Participation is used.
+    """
+    if participation is None:
+        participation = Participation()
 
-            self.poCurrentPercent = 0
-            self.poRosettaPercent = 0
-            self.poUpdatesPercent = 0
-            self.poNonUpdatesPercent = 0
-            self.poTranslatedPercent = 0
-            self.poUntranslatedPercent = 100
+    # First end any running interaction, and start a new one
+    endInteraction()
+    newInteraction(participation)
+
+    launchbag = getUtility(IOpenLaunchBag)
+    if IUnauthenticatedPrincipal.providedBy(principal):
+        launchbag.setLogin(None)
+    else:
+        launchbag.setLogin(login)
+
+    participation.principal = principal
+
+
+def read_test_message(filename):
+    """Reads a test message and returns it as ISignedMessage.
+
+    The test messages are located in canonical/launchpad/mail/ftests/emails
+    """
+    return email.message_from_file(
+        open(testmails_path + filename), _class=SignedMessage)
 

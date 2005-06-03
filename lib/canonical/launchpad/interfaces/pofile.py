@@ -48,6 +48,21 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
 
     filename = Attribute("The name of the file that was imported")
 
+    latest_sighting = Attribute("""Of all the translation sightings belonging
+        to PO messages sets belonging to this PO file, return the one which
+        was most recently modified (greatest datelastactive), or None if
+        there are no sightings belonging to this PO file.""")
+
+    translators = Attribute("A list of Translators that have been "
+        "designated as having permission to edit these files in this "
+        "language.")
+
+    contributors = Attribute("A list of all the people who have made "
+        "some sort of contribution to this PO file.")
+
+    translationpermission = Attribute("The permission system which "
+        "is used for this pofile. This is inherited from the product, "
+        "project and/or distro in which the pofile is found.")
 
     def __len__():
         """Returns the number of current IPOMessageSets in this PO file."""
@@ -104,27 +119,46 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
         message set has sequence=0.
         """
 
+    def getPOTMsgSetTranslated(slice=None):
+        """Get pot message sets that are translated in this PO file.
+
+        'slice' is a slice object that selects a subset of POTMsgSets.
+        Return the message sets using 'slice' or all of them if slice is None.
+        """
+
+    def getPOTMsgSetUnTranslated(slice=None):
+        """Get pot message sets that are untranslated in this PO file.
+
+        'slice' is a slice object that selects a subset of POTMsgSets.
+        Return the message sets using 'slice' or all of them if slice is None.
+        """
+
     def hasMessageID(msgid):
-        """Check whether a message set with the given message ID exists within
-        this PO file."""
+        """Return whether a given message ID exists within this PO file."""
 
     def pendingImport():
         """Gives all pofiles that have a rawfile pending of import into
         Rosetta."""
 
-    def lastChangedSighting():
-        """Of all the translation sightings belonging to PO messages sets
-        belonging to this PO file, return the one which was most recently
-        modified (greatest datelastactive), or None if there are no sightings
-        belonging to this PO file."""
+    def validExportCache():
+        """Does this PO file have a cached export that is up to date?"""
 
-    def getContributors():
-        """Returns the list of persons that have an active contribution inside
-        this POFile."""
+    def updateExportCache(contents):
+        """Update this PO file's export cache with a string."""
+
+    def export():
+        """Export this PO file as a string."""
 
 
 class IEditPOFile(IPOFile):
     """Edit interface for a PO File."""
+
+    def canEditTranslations(person):
+        """Say if a person is able to edit existing translations.
+
+        Return True or False indicating whether the person is allowed
+        to edit these translations.
+        """
 
     def expireAllMessages():
         """Mark our of our message sets as not current (sequence=0)"""

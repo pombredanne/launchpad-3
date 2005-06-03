@@ -1,0 +1,85 @@
+
+Caching of Exported PO Files
+============================
+
+This test demonstrates how the PO file export caching mechanism works.
+
+All the setup stuff:
+
+    >>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
+    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+    >>> LaunchpadFunctionalTestSetup().setUp()
+    >>> LibrarianTestSetup().setUp()
+
+This adapter should work automatically, since it's declared in ZCML. However,
+it's not working, so we set it up manually.
+
+    >>> from zope.app.tests.ztapi import provideAdapter
+    >>> from canonical.launchpad.components.poexport import POTemplateExporter
+    >>> from canonical.launchpad.interfaces import IPOTemplateExporter
+    >>> from canonical.launchpad.interfaces import IPOTemplate
+    >>> provideAdapter(IPOTemplate, IPOTemplateExporter, POTemplateExporter)
+
+Get hold of a PO file which has never been exported.
+
+    >>> from canonical.launchpad.database import POFile
+    >>> pofile = POFile.get(1)
+
+Because it has never been exported, it doesn't have a Librarian file
+containing a cached export.
+
+    >>> pofile.exportfile is None
+    True
+
+And if we ask it, it will tell us that it doesn't have a valid cache.
+
+    >>> pofile.validExportCache()
+    False
+
+Now ask it to export itself.
+
+    >>> export = pofile.export()
+    >>> export.split('\n')[0]
+    '# traducci\xc3\xb3n de es.po al Spanish'
+
+Now, because of a SQLObject quirk, we need to call .sync() on the PO file.
+This is because calling .export() has set pofile.exporttime to the magic
+constant UTC_NOW. This would normally be fine, as the attribute would not
+normally be accessed again in the same SQLObject session, and it would appear
+as a datetime value the next time around. However, in this case, we need to
+access it immediately, so we need to write it to the database and read it back
+again.
+
+    >>> pofile.sync()
+
+Because we exported a PO file, it will have updated the cache.
+
+    >>> pofile.validExportCache()
+    True
+
+Now let's add a translation to the PO file.
+
+    >>> from canonical.launchpad.database import Person
+    >>> person = Person.get(1)
+
+    >>> msgid = u"Failed to authenticate with LDAP server."
+    >>> msgset = pofile.messageSet(msgid)
+    >>> len(msgset.translationSightings())
+    0
+    >>> msgset.updateTranslation(person, {0: 'Blah.'}, False, False)
+    >>> len(msgset.translationSightings())
+    1
+
+We need to sync the changed objects for the same reason as before.
+
+    >>> sighting = msgset.translationSightings()[0]
+    >>> sighting.sync()
+
+Because we modified the PO file, the cache should now no longer be valid.
+
+    >>> pofile.validExportCache()
+    False
+
+>>> LibrarianTestSetup().tearDown()
+>>> LaunchpadFunctionalTestSetup().tearDown()
+

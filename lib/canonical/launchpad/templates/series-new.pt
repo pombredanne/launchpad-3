@@ -3,14 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">Register a new Release Series for
-      <span tal:replace="context/displayname">Product displayname</span>
-    </title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">
@@ -72,7 +64,7 @@
 
         <div class="field">
 
-            <label>Short Description</label>
+            <label>Summary</label>
 
                   <div class="formHelp">
                     A single paragraph introduction or overview of this
@@ -82,7 +74,7 @@
                     server deployments.</i>
                   </div>
 
-                <textarea cols="40" rows="4" name="shortdesc"></textarea>
+                <textarea cols="40" rows="4" name="summary"></textarea>
         </div>
         
         <div class="formControls">

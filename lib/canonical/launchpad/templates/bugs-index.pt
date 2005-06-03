@@ -3,10 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="malone">
 
-<head>
-  <title metal:fill-slot="title">Malone Master Bug List</title>
-</head>
-
 <body>
 
 <div metal:fill-slot="column_one">
@@ -85,7 +81,7 @@
                         collection_name string:tasks;
                         ass_link string:/malone/$collection_name/$assid/+edit;
                         ass_owner task/owner/name|nothing;
-                        potential_assignee request/lp:person/displayname|nothing;
+                        potential_assignee request/lp:person/browsername|nothing;
                         status task/status/title;
                         assignee task/assignee/name|python:'';
                         priority task/priority/title;
@@ -115,9 +111,9 @@
               tal:attributes="onclick string:window.location='${ass_link}';">Medium</td>
           <td tal:content="python:task.datecreated.strftime('%d %b %y')"
               tal:attributes="onclick string:window.location='${ass_link}';">date</td>
-          <td tal:content="task/owner/displayname|string:-"
+          <td tal:content="task/owner/browsername|string:-"
               tal:attributes="onclick string:window.location='${ass_link}';">name</td>
-          <td tal:content="task/assignee/displayname|string:-"
+          <td tal:content="task/assignee/browsername|string:-"
               tal:attributes="onclick string:window.location='${ass_link}';
                               id assigneeid;">somebody</td>
           <td tal:condition="request/lp:person">

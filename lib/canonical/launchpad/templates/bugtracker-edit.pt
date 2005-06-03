@@ -3,12 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-    <title metal:fill-slot="title">Edit
-    <span tal:replace="context/title">bugtracker title</span>
-    Details
-    </title>
-
-
 <head>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
@@ -55,7 +49,7 @@
 
         <div class="field">
 
-            <label>Short Description</label>
+            <label>Summary</label>
 
                   <div class="formHelp">
                     A single paragraph introduction or overview of this
@@ -66,8 +60,8 @@
                     application set</i>.
                   </div>
 
-                <textarea cols="40" rows="4" name="shortdesc"
-                          tal:content="context/shortdesc"></textarea>
+                <textarea cols="40" rows="4" name="summary"
+                          tal:content="context/summary"></textarea>
         </div>
         
         <div class="field">

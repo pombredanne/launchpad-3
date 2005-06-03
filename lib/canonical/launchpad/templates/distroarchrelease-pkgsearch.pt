@@ -3,12 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-  <title metal:fill-slot="title">Binary Package Search</title>
-  <!-- Plone style sheet -->
-  <style type="text/css" media="screen">@import url(plone.css);</style>
-</head>
-
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -55,7 +49,7 @@
       <td><a tal:content="package/name"
              tal:attributes="href package/name">PACKAGENAME
           </a>:
-	  <span tal:replace="package/shortdesc">SHORTDESC</span>
+	  <span tal:replace="package/summary">SHORTDESC</span>
       </td>
       </tal:dummy>
     </tr>    

@@ -7,9 +7,6 @@ See https://wiki.launchpad.canonical.com/LaunchpadCelebrities
 There are a number of special objects, some of which exist in the database,
 which we want to give easy access to in the code.
 
-  >>> from canonical.launchpad.ftests import login
-  >>> login('launchpad.anonymous')
-
   >>> from zope.component import getUtility
   >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
   >>> from canonical.launchpad.interfaces import IPersonSet

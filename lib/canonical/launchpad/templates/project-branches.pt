@@ -3,11 +3,6 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="rosetta">
 
-<head>
-  <title metal:fill-slot="title">Bazaar Summary for
-    <span tal:replace="context/title">The Project</span>
-  </title>
-</head>
 <body>
 
 <div metal:fill-slot="main">
@@ -15,7 +10,7 @@
     <h1>Revision Control Summary for
         <span tal:replace="context/title">Project Title</span></h1>
 
-    <div tal:content="context/shortdesc">Project Summary</div>
+    <div tal:content="context/summary">Project Summary</div>
     
     <div tal:repeat="prod context/products">
         
@@ -32,25 +27,25 @@
                 class="rowNavigation">
                 <td tal:content="branch/title">x
                 </td>
-           </tr>
-           <tr tal:condition="not: prod/branches">
+            </tr>
+            <tr tal:condition="not: prod/branches">
                 <td>No Bazaar branches for this product.</td>
             </tr>
             <tr>
-              <th>Other Revision Control Sources</th>
+              <th>Primary Release Branches</th>
             </tr>
-            <tr tal:repeat="source prod/sourcesources"
+            <tr tal:repeat="series prod/serieslist"
                 class="rowNavigation">
-                <td tal:content="source/title">x
+                <td tal:content="series/title">x
                 </td>
-           </tr>
-           <tr tal:condition="not: prod/sourcesources">
-                <td>No revision control system for this product.</td>
+            </tr>
+            <tr tal:condition="not: prod/serieslist">
+                <td>No release branches for this product.</td>
             </tr>
         </table>
 
 
-        <p tal:content="prod/shortdesc">Product Summary</p>
+        <p tal:content="prod/summary">Product Summary</p>
 
         <p><img src="/++resource++add.gif">
            <a href="#" tal:attributes="href prod/name">See all

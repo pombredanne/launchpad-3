@@ -1,19 +1,25 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['ProductSeries', 'ProductSeriesSet']
 
 import datetime
 import sets
+from warnings import warn
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol, DateTimeCol, MultipleJoin
+from sqlobject import ForeignKey, StringCol, MultipleJoin, DateTimeCol
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 
 # canonical imports
 from canonical.launchpad.interfaces import \
-    IProductSeries, ISeriesSource, ISeriesSourceAdmin, IProductSeriesSet
+    IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin, \
+    IProductSeriesSet
 from canonical.launchpad.database.packaging import Packaging
 from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import \
     EnumCol, ImportStatus, RevisionControlSystems
 
@@ -21,17 +27,17 @@ from canonical.lp.dbschema import \
 
 class ProductSeries(SQLBase):
     """A series of product releases."""
-    implements(IProductSeries, ISeriesSource, ISeriesSourceAdmin)
+    implements(IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin)
     _table = 'ProductSeries'
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
     name = StringCol(notNull=True)
     displayname = StringCol(notNull=True)
-    shortdesc = StringCol(notNull=True)
+    summary = StringCol(notNull=True)
     branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
                            schema=ImportStatus, default=None)
-    datelastsynced = DateTimeCol(default=None)
+    datelastsynced = UtcDateTimeCol(default=None)
     syncinterval = DateTimeCol(default=None)
     rcstype = EnumCol(dbName='rcstype',
                       schema=RevisionControlSystems,
@@ -51,11 +57,11 @@ class ProductSeries(SQLBase):
     targetarchbranch = StringCol(default=None)
     targetarchversion = StringCol(default=None)
     # key dates on the road to import happiness
-    dateautotested = DateTimeCol(default=None)
-    datestarted = DateTimeCol(default=None)
-    datefinished = DateTimeCol(default=None)
-    dateprocessapproved = DateTimeCol(default=None)
-    datesyncapproved = DateTimeCol(default=None)
+    dateautotested = UtcDateTimeCol(default=None)
+    datestarted = UtcDateTimeCol(default=None)
+    datefinished = UtcDateTimeCol(default=None)
+    dateprocessapproved = UtcDateTimeCol(default=None)
+    datesyncapproved = UtcDateTimeCol(default=None)
 
     releases = MultipleJoin('ProductRelease', joinColumn='productseries',
                              orderBy=['version'])
@@ -63,6 +69,12 @@ class ProductSeries(SQLBase):
     def title(self):
         return self.product.displayname + ' Series: ' + self.displayname
     title = property(title)
+
+    def shortdesc(self):
+        warn('ProductSeries.shortdesc should be ProductSeries.summary',
+             DeprecationWarning)
+        return self.summary
+    shortdesc = property(shortdesc)
 
     def sourcepackages(self):
         from canonical.launchpad.database.sourcepackage import SourcePackage
@@ -86,22 +98,22 @@ class ProductSeries(SQLBase):
             raise NotFoundError(distrorelease)
 
     def certifyForSync(self):
-        """enable the sync for processing"""
-        self.dateprocessapproved = 'NOW'
+        """Enable the sync for processing."""
+        self.dateprocessapproved = UTC_NOW
         self.syncinterval = datetime.timedelta(1)
         self.importstatus = ImportStatus.PROCESSING
 
     def syncCertified(self):
-        """return true or false indicating if the sync is enabled"""
+        """Return true or false indicating if the sync is enabled"""
         return self.dateprocessapproved is not None
 
     def autoSyncEnabled(self):
-        """is the sync automatically scheduling"""
+        """Is the sync automatically scheduling?"""
         return self.importstatus == ImportStatus.SYNCING
 
     def enableAutoSync(self):
-        """enable autosyncing?"""
-        self.datesyncapproved = 'NOW'
+        """Enable autosyncing?"""
+        self.datesyncapproved = UTC_NOW
         self.importstatus = ImportStatus.SYNCING
 
 
@@ -157,7 +169,7 @@ class ProductSeriesSet:
             clauseTables.add('Project')
             clauseTables.add('Product')
         # now just add filters on import status
-        if forimport:
+        if forimport or importstatus:
             if len(query) > 0:
                 query += ' AND '
             query += 'ProductSeries.importstatus IS NOT NULL'

@@ -5,7 +5,8 @@ __all__ = ['VSourcePackageReleasePublishing', 'XXXcreateSourcePackage']
 
 from zope.interface import implements
 
-from sqlobject import StringCol, ForeignKey, DateTimeCol
+from sqlobject import StringCol, ForeignKey
+from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import ISourcePackageReleasePublishing
 
@@ -39,7 +40,7 @@ class VSourcePackageReleasePublishing(SourcePackageRelease):
     maintainer = ForeignKey(foreignKey='Person', dbName='maintainer')
     publishingstatus = EnumCol(dbName='publishingstatus',
                                schema=PackagePublishingStatus)
-    datepublished = DateTimeCol(dbName='datepublished')
+    datepublished = UtcDateTimeCol(dbName='datepublished')
     distrorelease = ForeignKey(foreignKey='DistroRelease',
                                dbName='distrorelease')
     componentname = StringCol(dbName='componentname')

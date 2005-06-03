@@ -33,7 +33,15 @@ class POMsgSet(SQLBase):
     potmsgset = ForeignKey(foreignKey='POTMsgSet', dbName='potmsgset',
         notNull=True)
 
+    def getSuggestedTexts(self, pluralform):
+        """See IPOMsgSet."""
+        texts = self.potmsgset.getSuggestedTexts(self.pofile.language,
+            pluralform)
+        active = self.activeSelection(pluralform).potranslation.translation
+        return [text for text in texts if text != active]
+
     def pluralforms(self):
+        """See IPOMsgSet."""
         if len(list(self.potmsgset.messageIDs())) > 1:
             # has plurals
             return self.pofile.pluralforms
@@ -42,6 +50,7 @@ class POMsgSet(SQLBase):
             return 1
 
     def translations(self):
+        """See IPOMsgSet."""
         pluralforms = self.pluralforms()
         if pluralforms is None:
             raise RuntimeError(
@@ -64,8 +73,7 @@ class POMsgSet(SQLBase):
     # XXX: Carlos Perello Marin 15/10/04: Review this method, translations
     # could have more than one row and we always return only the firts one!
     def getTranslationSighting(self, pluralForm, allowOld=False):
-        """Return the translation sighting that is committed and has the
-        plural form specified."""
+        """See IPOMsgSet."""
         if allowOld:
             translation = POTranslationSighting.selectOneBy(
                 pomsgsetID=self.id,
@@ -82,6 +90,7 @@ class POMsgSet(SQLBase):
         return translation
 
     def translationSightings(self):
+        """See IPOMsgSet."""
         return POTranslationSighting.selectBy(pomsgsetID=self.id)
 
     # IEditPOMsgSet
@@ -106,7 +115,7 @@ class POMsgSet(SQLBase):
                     new_translations[index] is None):
                     # Make all sightings inactive.
                     sightings = POTranslationSighting.select(
-                        'pomsgset=%d AND pluralform = %d' % 
+                        'pomsgset=%s AND pluralform = %s' % 
                         sqlvalues(self.id, index))
                     for sighting in sightings:
                         sighting.active = False
@@ -176,7 +185,7 @@ class POMsgSet(SQLBase):
             self.pofile.rosettacount = 0
 
     def makeTranslationSighting(self, person, text, pluralForm,
-        fromPOFile=False):
+        fromPOFile=False, active=True):
         """Create a new translation sighting for this message set."""
 
         # First get hold of a POTranslation for the specified text.
@@ -253,7 +262,7 @@ class POMsgSet(SQLBase):
                     # .po import.
                     sighting.inlastrevision = True
                     previous_active_results = POTranslationSighting.select(
-                        'pomsgset=%d AND pluralform=%d AND active=FALSE'
+                        'pomsgset=%s AND pluralform=%s AND active=FALSE'
                             % sqlvalues(self.id, pluralForm),
                         orderBy='-datelastactive')
                     if (previous_active_results.count() > 1 and
@@ -296,6 +305,19 @@ class POMsgSet(SQLBase):
             self.iscomplete = False
         else:
             self.iscomplete = True
+
+        # sanity check
+        assert POTranslationSighting.selectBy(
+            pomsgsetID=self.id,
+            pluralform=pluralForm,
+            potranslationID=translation.id,
+            active=True).count() <= 1, 'Multiple active translations.'
+
+        assert POTranslationSighting.selectBy(
+            pomsgsetID=self.id,
+            pluralform=pluralForm,
+            potranslationID=translation.id,
+            inlastrevision=True).count() <= 1, 'Multiple SCM translations.'
 
         return sighting
 

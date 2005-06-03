@@ -27,7 +27,7 @@ class BinaryPackage(SQLBase):
     binarypackagename = ForeignKey(dbName='binarypackagename', 
                                  foreignKey='BinaryPackageName', notNull=True)
     version = StringCol(dbName='version', notNull=True)
-    shortdesc = StringCol(dbName='shortdesc', notNull=True, default="")
+    summary = StringCol(dbName='summary', notNull=True, default="")
     description = StringCol(dbName='description', notNull=True)
     build = ForeignKey(dbName='build', foreignKey='Build', notNull=True)
     binpackageformat = EnumCol(dbName='binpackageformat', notNull=True,
@@ -193,8 +193,8 @@ class BinaryPackageSet:
                                     orderBy='BinaryPackageName.name')
 
     def getByNameInDistroRelease(self, distroreleaseID, name=None,
-                                 version=None, archtag=None):
-        """Get an BinaryPackage in a DistroRelease by its name."""
+                                 version=None, archtag=None, orderBy=None):
+        """Get a BinaryPackage in a DistroRelease by its name."""
 
         clauseTables = ['PackagePublishing', 'DistroArchRelease',
                         'BinaryPackage', 'BinaryPackageName']
@@ -224,7 +224,8 @@ class BinaryPackageSet:
                       % sqlvalues(archtag))
 
         return BinaryPackage.select(query, distinct=True,
-                                    clauseTables=clauseTables)
+                                    clauseTables=clauseTables,
+                                    orderBy=orderBy)
 
     # Used outside
 

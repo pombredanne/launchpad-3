@@ -4,15 +4,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-  <title metal:fill-slot="title">Leave 
-    <span tal:replace="context/browsername">Name</span></title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">
@@ -21,21 +12,20 @@
       <h3>Are you sure you want to leave 
         <span tal:replace="context/browsername" />?</h3>
 
-      <p class="portalMessage" tal:condition="view/membershipStatusDesc" 
-         tal:content="view/membershipStatusDesc" />
-       <form name="leave" action="" method="POST">
-      <table width="100%">
-        <tr><td>
-          <input type="submit" name="goback" value="Back to team" />
-        </td><td align="right">
-          <input type="submit" name="leave" value="Leave" />
-        </td></tr>
-      </table>
+      <form name="leave" action="" method="POST">
+        <table width="100%">
+          <tr><td>
+            <input type="submit" name="goback" value="Back to team" />
+          </td><td align="right">
+            <input type="submit" name="leave" value="Leave" />
+          </td></tr>
+        </table>
       </form>
     </tal:block>
 
     <tal:block tal:condition="not: view/userCanRequestToLeave">
-      <p class="portalMessage" tal:content="view/membershipStatusDesc" />
+      <p class="portalMessage">You are not an active member of this team.
+      You don't need to leave it.</p>
       <p><a href="./">Back to <span tal:replace="context/browsername" /></a></p>
     </tal:block>
 

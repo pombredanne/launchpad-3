@@ -10,7 +10,7 @@ chance to comment if it affects their work in any way.
 The rest of these instructions are for the acting DBA or for 'we have 
 to do this now' work.
 
-1. `cd launchpad/database/schema; dropdb launchpad_test; make`
+1. `cd launchpad/database/schema; make`
 
     This is the simplest way of making sure your database is clean.
     Failing to drop your database risks a bad sampledata export.

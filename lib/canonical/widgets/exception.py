@@ -4,12 +4,12 @@ from zope.app.form.interfaces import WidgetInputError as _WidgetInputError
 from zope.app.form.browser.interfaces import IWidgetInputErrorView
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
-# TODO: Sort Z3 out and use the default implementation when it gets back
-# to launchpad.
-
 class WidgetInputError(_WidgetInputError):
     """A customized WidgetInputError to work around a bug in Z3
     (The snippet method fails if errors is a list of ValidationError objects)
+
+    TODO: Pull this out after next sync with upstream Zope3 - this is now
+    fixed upstream -- StuartBishop 20050520
 
     """
     implements(IWidgetInputError)

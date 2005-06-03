@@ -3,44 +3,38 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="rosetta">
 
-<head>
-    <title metal:fill-slot="title">About Rosetta</title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">
 
-    <h1>About Rosetta</h1>
+  <h1>About Rosetta</h1>
 
-        <p>Rosetta is a web tool for translating any open source software into any
-        language. The ultimate goal of the Rosetta Project is to ensure that every
-        piece of open source software is usable in every language. We invite you to
-        find the open source software you use the most, and help to translate it into
-        your own native language, if it is not already completely translated. All you
-        need is a web browser, a good knowledge of the application you are translating,
-        and a knowledge of English.</p>
+    <p>Rosetta is a web tool for translating any open source software into
+    any language. The ultimate goal of the Rosetta Project is to ensure that
+    every piece of open source software is usable in every language. We
+    invite you to find the open source software you use the most, and help
+    to translate it into your own native language, if it is not already
+    completely translated. All you need is a web browser, a good knowledge
+    of the application you are translating, and a knowledge of English.</p>
 
     <h2>Join the Rosetta Translators Community</h2>
 
-        <p>To participate in the development and testing of Rosetta please join the <a
-        href="http://lists.ubuntulinux.org/mailman/listinfo/rosetta-users">Rosetta
-        users mailing list</a>, where we discuss new features, bugs and
-        other issues related to the Rosetta Project.</p>
+    <p>To participate in the development and testing of Rosetta please join
+    the <a
+    href="http://lists.ubuntulinux.org/mailman/listinfo/rosetta-users">Rosetta
+    users mailing list</a>, where we discuss new features, bugs and other
+    issues related to the Rosetta Project.</p>
 
     <h2>Adding projects to Rosetta</h2>
 
-        <p>It's easy to add a new project to be translated in Rosetta. First
-        you need to add the product to the Launchpad registry. You can seach
-        for existing registered open source products <a href="products">here</a>,
-        and then add yours if it's not already listed.</p>
-
-        <p>Once you have the product in the registry, click on "Add
-        Translation" to import a PO Template and PO Files.</p>.
+    <p>It's easy to add a new project to be translated in Rosetta. First you
+    need to add the product to the Launchpad registry. You can seach for
+    existing registered open source products <a href="/products/">here</a>,
+    and then add yours if it's not already listed. Once the product is
+    registered in the Launchpad, you can email the Rosetta mailing list (see
+    address above) and ask the Rosetta admins to import the usptream
+    translation templates and resource files - then you are ready to
+    translate.</p>
 
 </div>
 

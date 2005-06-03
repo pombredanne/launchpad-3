@@ -5,7 +5,9 @@ __all__ = ['Changeset', 'ChangesetFileName', 'ChangesetFileHash',
            'ChangesetFile', 'RevisionMapper']
 
 from canonical.database.sqlbase import quote, SQLBase
-from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol
+from canonical.database.constants import UTC_NOW
+from sqlobject import StringCol, ForeignKey, IntCol
+from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import RevisionNotRegistered
 from canonical.launchpad.interfaces import RevisionAlreadyRegistered
@@ -22,7 +24,7 @@ class Changeset(SQLBase):
     _columns = [
         ForeignKey(name='branch', foreignKey='Branch', dbName='branch',
                    notNull=True),
-        DateTimeCol('datecreated', dbName='datecreated', notNull=True),
+        UtcDateTimeCol('datecreated', dbName='datecreated', notNull=True),
         StringCol('name', dbName='name', notNull=True),
         StringCol('logmessage', dbName='logmessage', notNull=True),
         ForeignKey(name='archID', foreignKey='ArchUserID', dbName='archID',
@@ -69,7 +71,7 @@ class ChangesetFileHash(SQLBase):
 class RevisionMapper:
     """Map revisions in and out of the db."""
     def findByName(self, name):
-        from arch import NameParser
+        from pybaz import NameParser
         from canonical.arch import broker
         if self.exists(name):
             parser = NameParser(name)
@@ -86,7 +88,7 @@ class RevisionMapper:
         #FIXME: ask Mark if we should include correct date?
         revision.set_changeset(Changeset(
             branch=VersionMapper()._getDBBranchId(revision.version),
-            datecreated='now',
+            datecreated=UTC_NOW,
             name=revision.name,
             logmessage='',
             ))

@@ -8,7 +8,7 @@ import datetime
 
 from zope.interface import implements
 
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
+from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, IntervalCol
 from sqlobject import CurrencyCol
 from sqlobject import MultipleJoin, RelatedJoin
 
@@ -17,6 +17,7 @@ from canonical.launchpad.interfaces import \
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.bountysubscription import BountySubscription
 
 
@@ -30,14 +31,14 @@ class Bounty(SQLBase):
 
     # db field names
     name = StringCol(unique=True, notNull=True)
-    title = StringCol( notNull=True)
+    title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
     description = StringCol( notNull=True)
     usdvalue = CurrencyCol(notNull=True)
     difficulty = IntCol(notNull=True, default=50)
-    duration = DateTimeCol(notNull=True, default=datetime.timedelta(7))
+    duration = IntervalCol(notNull=True, default=datetime.timedelta(7))
     reviewer = ForeignKey(dbName='reviewer', notNull=True, foreignKey='Person')
-    datecreated = DateTimeCol(notNull=True, default=DEFAULT)
+    datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
     # useful joins

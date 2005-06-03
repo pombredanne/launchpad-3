@@ -1,10 +1,6 @@
 
 Test exporting a single PO template.
 
-This is needed to make utilities work.
-
-  >>> login(ANONYMOUS)
-
 Get hold of a template, and a language to export a PO file for.
 
   >>> from canonical.launchpad.database import POTemplate, LanguageSet

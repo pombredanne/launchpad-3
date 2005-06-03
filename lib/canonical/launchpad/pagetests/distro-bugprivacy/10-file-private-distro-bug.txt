@@ -64,6 +64,6 @@ Foo Bar see the private bug he filed.
     <h1>Bugs in Ubuntu Linux</h1>
   ...
             <td>
-                <a href="/malone/tasks/16/+edit">7</a>
+                <a href="...">7</a>
             </td>
   ...

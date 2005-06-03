@@ -76,7 +76,7 @@ class IPerson(Interface):
     ubuntite = Attribute("Ubuntite Flag")
     gpgkeys = Attribute("List of GPGkeys")
     irc = Attribute("IRC")
-    bugs = Attribute("Bug")
+    reportedbugs = Attribute("All BugTasks reported by this Person.")
     wiki = Attribute("Wiki")
     jabber = Attribute("Jabber")
     archuser = Attribute("Arch user")
@@ -108,13 +108,21 @@ class IPerson(Interface):
                                  "DEACTIVATED status"))
     deactivatedmembers = Attribute("List of members with DEACTIVATED status")
 
-    teamowner = Int(title=_('Team Owner'), required=False, readonly=False)
+    teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
+                       vocabulary='ValidTeamOwner')
     teamdescription = Text(title=_('Team Description'), required=False,
                            readonly=False)
 
-    preferredemail = Int(title=_("The preferred email address for this "
-                                 "person. The one we'll use to communicate "
-                                 "with him."), readonly=False)
+    preferredemail = TextLine(
+            title=_("Preferred Email Address"), description=_(
+                "The preferred email address for this person. The one "
+                "we'll use to communicate with them."), readonly=False)
+
+    preferredemail_sha1 = TextLine(title=_("SHA-1 Hash of Preferred Email"),
+            description=_("The SHA-1 hash of the preferred email address as "
+                "a hexadecimal string. This is used as a key by FOAF RDF spec"
+                ), readonly=True)
+
     defaultmembershipperiod = Int(
             title=_('Number of days a subscription lasts'), required=False,
             description=_("This is the number of days all "
@@ -165,9 +173,12 @@ class IPerson(Interface):
     def browsername():
         """Return a textual name suitable for display in a browser."""
 
+    def isTeam():
+        """True if this Person is actually a Team, otherwise False."""
+
     def assignKarma(karmatype, points=None):
         """Assign <points> worth of karma to this Person.
-        
+
         If <points> is None, then get the default number of points from the
         given karmatype.
         """
@@ -180,7 +191,7 @@ class IPerson(Interface):
 
     def inTeam(team):
         """Return true if this person is in the given team.
-        
+
         This method is meant to be called by objects which implement either
         IPerson or ITeam, and it will return True when you ask if a Person is
         a member of himself (i.e. person1.inTeam(person1)).
@@ -272,11 +283,15 @@ class IPerson(Interface):
         "Rosetta Translators", because we are member of both of them.
         """
 
+    def subscriptionPolicyDesc():
+        """Return a long description of this team's subscription policy."""
+
 
 class ITeam(IPerson):
     """ITeam extends IPerson.
 
-    The teamowner should never be None."""
+    The teamowner should never be None.
+    """
 
 
 class IPersonSet(Interface):
@@ -396,10 +411,6 @@ class IPersonSet(Interface):
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
         """
-
-    def getContributorsForPOFile(pofile):
-        """Return the list of persons that have an active contribution for a
-        concrete POFile."""
 
     def getUbuntites():
         """Return a set of person with valid Ubuntite flag."""

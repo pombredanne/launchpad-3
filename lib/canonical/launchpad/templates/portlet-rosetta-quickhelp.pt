@@ -1,0 +1,20 @@
+<div class="portlet">
+  <h4>Special characters</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li><span class="po-message-special"
+                style="padding: 0.2em">&#x2022;</span> &ndash; a space
+                character</li>
+      <li><span class="po-message-special"
+                style="padding: 0.2em">&#x21b5;</span> &ndash; a new line</li>
+    </ul>
+
+    <p>In your translation, include spaces and new lines matching those
+    indicated. (Don&#8217;t use these symbols).</p>
+
+  </div>
+
+</div>
+

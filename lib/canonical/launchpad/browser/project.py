@@ -36,7 +36,7 @@ def traverseProject(project, request, name):
 
 
 #
-# This is a View on a Project object, which is used in the DOAP
+# This is a View on a Project object, which is used in the Hatchery
 # system.
 #
 class ProjectView(object):
@@ -78,7 +78,7 @@ class ProjectView(object):
         # Extract details from the form and update the Product
         self.context.displayname = self.form['displayname']
         self.context.title = self.form['title']
-        self.context.shortdesc = self.form['shortdesc']
+        self.context.summary = self.form['summary']
         self.context.description = self.form['description']
         self.context.homepageurl = self.form['homepageurl']
         # now redirect to view the product
@@ -164,7 +164,7 @@ class ProjectView(object):
             yield retdict
 
     def languages(self):
-        return [language for language in helpers.request_languages(self.request)]
+        return helpers.request_languages(self.request)
 
 
 class ProjectAddProductView(AddView):
@@ -219,7 +219,7 @@ class ProjectSetView(object):
             self.soyuz is not None):
             self.searchrequested = True
         self.results = None
-        self.gotmatches = 0
+        self.matches = 0
 
     def searchresults(self):
         """Use searchtext to find the list of Projects that match
@@ -232,7 +232,7 @@ class ProjectSetView(object):
                                                malone=self.malone,
                                                rosetta=self.rosetta,
                                                soyuz=self.soyuz)
-        self.gotmatches = len(list(self.results))
+        self.matches = self.results.count()
         return self.results
 
     def newproject(self):
@@ -249,11 +249,13 @@ class ProjectSetView(object):
             return
         if not self.request.method == "POST":
             return
+        # Enforce lowercase project name
+        self.form['name'] = self.form['name'].lower()
         # Extract the details from the form
         name = self.form['name']
         displayname = self.form['displayname']
         title = self.form['title']
-        shortdesc = self.form['shortdesc']
+        summary = self.form['summary']
         description = self.form['description']
         homepageurl = self.form['homepageurl']
         # get the launchpad person who is creating this product
@@ -262,7 +264,7 @@ class ProjectSetView(object):
         project = Project(name=name,
                           displayname=displayname,
                           title=title,
-                          shortdesc=shortdesc,
+                          summary=summary,
                           description=description,
                           owner=owner,
                           homepageurl=homepageurl,

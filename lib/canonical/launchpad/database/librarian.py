@@ -11,7 +11,8 @@ from canonical.launchpad.interfaces import \
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
-from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol, RelatedJoin
+from canonical.database.datetimecol import UtcDateTimeCol
+from sqlobject import StringCol, ForeignKey, IntCol, RelatedJoin
 
 
 class LibraryFileContent(SQLBase):
@@ -19,8 +20,8 @@ class LibraryFileContent(SQLBase):
 
     _table = 'LibraryFileContent'
 
-    datecreated = DateTimeCol(notNull=True, default=UTC_NOW)
-    datemirrored = DateTimeCol(default=None)
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    datemirrored = UtcDateTimeCol(default=None)
     filesize = IntCol(notNull=True)
     sha1 = StringCol(notNull=True)
 
@@ -64,7 +65,7 @@ class LibraryFileAlias(SQLBase):
             return rv
         else:
             return self._datafile.read(chunksize)
-        
+
     def close(self):
         self._datafile.close()
         self._datafile = None

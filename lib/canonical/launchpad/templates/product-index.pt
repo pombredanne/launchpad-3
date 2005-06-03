@@ -3,40 +3,29 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">
-      Product: <span tal:replace="context/title">Product Title</span>
-      </title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure view/latestBugPortlet" />
-    <div tal:replace="structure view/relatedBountiesPortlet" />
+    <div tal:replace="structure view/detailsPortlet" />
     <div tal:replace="structure view/translationsPortlet" />
-    <div tal:replace="structure view/branchesPortlet" />
     <div tal:condition="python:request.principal and request.principal.id == context.owner.id"
          tal:replace="structure view/milestonePortlet" />
-    <div tal:replace="structure view/packagesPortlet" />
+    <div tal:replace="structure view/projectPortlet" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure view/detailsPortlet" />
     <div tal:replace="structure view/actionsPortlet" />
-    <div tal:replace="structure view/projectPortlet" />
+    <div tal:replace="structure view/latestBugPortlet" />
+    <div tal:replace="structure view/relatedBountiesPortlet" />
+    <div tal:replace="structure view/packagesPortlet" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main" class="documentContent">
 
   <h1><span tal:replace="context/title">$Product.title</span></h1>
 
-  <div class="documentDescription" tal:content="context/shortdesc">
-    $Product.shortdesc goes here. This should be quite short,
+  <div class="documentDescription" tal:content="context/summary">
+    $Product.summary goes here. This should be quite short,
     just a single paragraph of text really, giving the product
     highlights.
   </div>
@@ -50,7 +39,7 @@
     something else, for example).
   </div>
 
-  <div tal:condition="context/serieslist">
+  <tal:block condition="context/serieslist">
 
     <h2>Branches and Releases</h2>
 
@@ -60,8 +49,9 @@
 
     <div tal:repeat="series context/serieslist">
 
-      <p>Branch: <strong tal:content="series/name">seriesname</strong>:
-      <span tal:replace="series/shortdesc">A summary of the series
+      <p><strong>Branch:
+      <span tal:replace="series/name">seriesname</span></strong><br />
+      <span tal:replace="series/summary">A summary of the series
       details and status.</span>
       [&nbsp;<a tal:attributes="href
       string:+series/${series/name}">Branch&nbsp;Details...</a>&nbsp;]
@@ -73,13 +63,31 @@
           <b><span tal:content="release/version">version</span></b>: 
           "<span tal:content="release/title">title</span>"
           [&nbsp;<a tal:attributes="href release/version">View</a>&nbsp;]<br />
-          <span tal:replace="release/shortdesc">feature summary</span></li>
+          <span tal:replace="release/summary">feature summary</span></li>
+        <li tal:condition="not: series/releases">No releases on this branch
+        registered yet.</li>
 
       </ul>
 
     </div>
 
-  </div>
+  </tal:block>
+
+  <tal:block condition="context/branches">
+
+    <h2>Bazaar Branches</h2>
+
+    <p>Bazaar is the distributed revision control system that allows many
+    groups to collaborate more effectively on open source projects. The
+    following branches exist in the Bazaar which are thought to be related
+    to <span tal:replace="context/displayname">Mozilla</span>.</p>
+
+    <ul>
+      <li tal:repeat="branch context/branches"
+          tal:content="branch/title">Branch Title Goes Here</li>
+    </ul>
+
+  </tal:block>
 
 
 </div>

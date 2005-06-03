@@ -3,9 +3,11 @@ This tests the ability to generate a tarball of PO files for a distribution
 release that only includes PO files which have been changed since a certain
 date.
 
-This is needed to make utilities work.
-
-  >>> login(ANONYMOUS)
+  >>> from canonical.launchpad.ftests.harness import \
+  ...     LaunchpadFunctionalTestSetup
+  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+  >>> LaunchpadFunctionalTestSetup().setUp()
+  >>> LibrarianTestSetup().setUp()
 
 First we need to set up some data to test with, and for this we need some DB
 classes.
@@ -30,12 +32,23 @@ Get a source package name to go with our distro release.
 
   >>> spn = SourcePackageName.byName('evolution')
 
+Put a dummy file in the Librarian.
+
+  >>> from canonical.librarian.interfaces import ILibrarianClient
+  >>> from StringIO import StringIO
+  >>> contents = '# Test PO template.'
+  >>> file_alias = getUtility(ILibrarianClient).addFile(
+  ...     name = 'test.po',
+  ...     size = len(contents),
+  ...     file = StringIO(contents),
+  ...     contentType = 'application/x-po')
+
 Create a PO template and put a single message set in it.
 
   >>> ptn = POTemplateName(name='test', translationdomain='test', title='test')
   >>> template = POTemplate(
   ...     potemplatename=ptn, distrorelease=release, sourcepackagename=spn,
-  ...     rawfile='', owner=person, title='test', rawimporter=person,
+  ...     rawfile=file_alias, owner=person, title='test', rawimporter=person,
   ...     languagepack=True)
   >>> potmsgset = template.createMessageSetFromText(u'blah')
   >>> potmsgset.sequence = 1
@@ -43,9 +56,11 @@ Create a PO template and put a single message set in it.
 Get some dates.
 
   >>> import datetime
-  >>> d2000_01_01 = datetime.datetime(year=2000, month=1, day=1)
-  >>> d2000_01_02 = datetime.datetime(year=2000, month=1, day=2)
-  >>> d2000_01_03 = datetime.datetime(year=2000, month=1, day=3)
+  >>> import pytz
+  >>> UTC = pytz.timezone('UTC')
+  >>> d2000_01_01 = datetime.datetime(year=2000, month=1, day=1, tzinfo=UTC)
+  >>> d2000_01_02 = datetime.datetime(year=2000, month=1, day=2, tzinfo=UTC)
+  >>> d2000_01_03 = datetime.datetime(year=2000, month=1, day=3, tzinfo=UTC)
 
 Create a Spanish PO file, with a translation sighting last made active on
 2000/01/01.
@@ -85,11 +100,10 @@ First, export without a date limit: should get both PO files.
   |     0 | rosetta-grumpy/
   |     0 | rosetta-grumpy/es/
   |     0 | rosetta-grumpy/es/LC_MESSAGES/
-  |   721 | rosetta-grumpy/es/LC_MESSAGES/test.po
-  |     0 | rosetta-grumpy/
+  |   720 | rosetta-grumpy/es/LC_MESSAGES/test.po
   |     0 | rosetta-grumpy/cy/
   |     0 | rosetta-grumpy/cy/LC_MESSAGES/
-  |   763 | rosetta-grumpy/cy/LC_MESSAGES/test.po
+  |   762 | rosetta-grumpy/cy/LC_MESSAGES/test.po
   |     9 | rosetta-grumpy/timestamp.txt
 
 Check the files look OK.
@@ -152,6 +166,9 @@ Then, export with a date limit: we should only get the second PO file.
   |     0 | rosetta-grumpy/
   |     0 | rosetta-grumpy/cy/
   |     0 | rosetta-grumpy/cy/LC_MESSAGES/
-  |   763 | rosetta-grumpy/cy/LC_MESSAGES/test.po
+  |   762 | rosetta-grumpy/cy/LC_MESSAGES/test.po
   |     9 | rosetta-grumpy/timestamp.txt
+
+  >>> LibrarianTestSetup().tearDown()
+  >>> LaunchpadFunctionalTestSetup().tearDown()
 

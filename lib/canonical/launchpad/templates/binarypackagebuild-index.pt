@@ -3,17 +3,11 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-  <title metal:fill-slot="title">Binary Package Build Details</title>
-  <!-- Plone style sheet -->
-  <style type="text/css" media="screen">@import url(plone.css);</style>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">
 
-<h1><span tal:content="context/binarypackagerelease/shortdesc">
+<h1><span tal:content="context/binarypackagerelease/summary">
      TITLE </span>
     <span tal:content="context/version">Version</span>-
     <span tal:content="context/arch">Arch</span>

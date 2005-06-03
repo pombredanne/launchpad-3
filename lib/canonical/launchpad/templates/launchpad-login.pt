@@ -4,10 +4,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-  <title metal:fill-slot="title">Log in or register with Launchpad</title>
-</head>
-
   <body>
     <!--
       This page handles cases in this order:
@@ -30,14 +26,14 @@
         <!-- 2. just logged in successfully: -->
         <p tal:condition="view/login_success">
           You are now logged in as <strong
-          tal:content="request/lp:person/displayname">Person Name</strong>.
+          tal:content="request/lp:person/browsername">Person Name</strong>.
         </p>
 
         <div tal:condition="not: view/login_success" tal:omit-tag>        
           <h1>You&#8217;re Already Logged In</h1>
           <p>
             You are already logged in as
-            <strong tal:content="request/lp:person/displayname">person
+            <strong tal:content="request/lp:person/browsername">person
             name</strong>.  If this is not you, please
             <a href="/+logout">log out now</a>.
           </p>
@@ -111,7 +107,7 @@
                         type="submit"
                         name="loginpage_submit_login"
                         value="Log In" />
-                      [<a href="+forgottenpassword">Forgotten your password?</a>]
+                      [<a href="/+forgottenpassword">Forgotten your password?</a>]
                     </div>
                   </td>
                 </tr>

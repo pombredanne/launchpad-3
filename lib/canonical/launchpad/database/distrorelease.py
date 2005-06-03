@@ -7,9 +7,10 @@ __metaclass__ = type
 from zope.interface import implements
 from zope.component import getUtility
 
-from sqlobject import StringCol, ForeignKey, MultipleJoin, DateTimeCol
+from sqlobject import StringCol, ForeignKey, MultipleJoin
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import \
     PackagePublishingStatus, BugTaskStatus, EnumCol, DistributionReleaseStatus
 
@@ -39,7 +40,7 @@ class DistroRelease(SQLBase):
     name = StringCol(notNull=True)
     displayname = StringCol(notNull=True)
     title = StringCol(notNull=True)
-    shortdesc = StringCol(notNull=True)
+    summary = StringCol(notNull=True)
     description = StringCol(notNull=True)
     version = StringCol(notNull=True)
     components = ForeignKey(
@@ -47,7 +48,7 @@ class DistroRelease(SQLBase):
     sections = ForeignKey(
         dbName='sections', foreignKey='Schema', notNull=True)
     releasestatus = EnumCol(notNull=True, schema=DistributionReleaseStatus)
-    datereleased = DateTimeCol(notNull=True)
+    datereleased = UtcDateTimeCol(notNull=False)
     parentrelease =  ForeignKey(
         dbName='parentrelease', foreignKey='DistroRelease', notNull=False)
     owner = ForeignKey(

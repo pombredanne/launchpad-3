@@ -1,0 +1,55 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <metal:leftportlets fill-slot="portlets_one">
+      <div tal:replace="structure view/viewsPortlet" />
+  </metal:leftportlets>
+
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/actionsPortlet" />
+  </metal:rightportlets>
+
+  <div metal:fill-slot="main">
+
+   <h1>Bugs Reported</h1>
+
+    <p tal:condition="not: context/reportedbugs">No bugs have been reported by <span
+    tal:replace="context/browsername" />. You can use the Launchpad to
+    report a bug on any product or distribution package.</p>
+
+    <table tal:condition="context/reportedbugs"
+           class="listing lpListing rowNavigation" width="90%">
+      <tr>
+        <th>#</th>
+        <th>title</th>
+        <th>upstream / package</th>
+        <th>status</th>
+        <th>priority</th>
+        <th>severity</th>
+      </tr>
+
+      <tr tal:repeat="bugtask context/reportedbugs" class="rowLinkified">
+        <tal:block tal:define="url string:/malone/bugs/${bugtask/bug/id}">
+        <td><a tal:attributes="href url"><span tal:replace="bugtask/bug/id" /></a></td>
+        <td tal:attributes="title bugtask/bug/summary">
+          <a tal:attributes="href url"><span tal:replace="bugtask/bug/title" /></a></td>
+        <td><a tal:attributes="href url" 
+               tal:content="bugtask/product/displayname|default">-</a></td>
+        <td><a tal:attributes="href url" 
+               tal:content="bugtask/status/title">status</a></td>
+        <td><a tal:attributes="href url"
+               tal:content="bugtask/priority/title|default">-</a></td>
+        <td><a tal:attributes="href url"
+               tal:content="bugtask/severity/title|default">-</a></td>
+        </tal:block>
+      </tr>
+    </table>
+
+  </div>
+
+</body>
+</html>

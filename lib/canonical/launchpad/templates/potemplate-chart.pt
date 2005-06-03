@@ -1,0 +1,73 @@
+<table class="listing rowNavigation" width="100%">
+  <thead>
+    <th>Language</th>
+    <th>Todo</th>
+    <th>Status</th>
+    <th>Latest Contributor</th>
+    <th>Last Edited</th>
+  </thead>
+
+  <tbody>
+    <tr tal:repeat="pfview view/pofiles"
+        tal:attributes="onclick string:window.location='${view/URL}${pfview/URL}'"
+        >
+      <tal:block define="pf pfview/context">
+      <a tal:attributes="href string:${view/URL}${pfview/URL}">
+        <td>
+          <a tal:attributes="href string:${view/URL}${pfview/URL}"
+             tal:content="pfview/language_name">Language Name</a>
+        </td>
+        <td tal:content="pf/untranslatedCount">0</td>
+        <td>
+          <!-- Show an mdash if there is no graph -->
+          <span tal:condition="not: pf/messageCount">&mdash;</span>
+          <img src="/++resource++green-bar.png"
+               height="10"
+               style="margin-top: 2px;"
+               alt="Translated Messages"
+               tal:condition="pf/nonUpdatesCount"
+               tal:attributes="width pf/nonUpdatesPercentage;
+                    title string: Translated: ${pf/nonUpdatesPercentage}%"
+           /><img src="/++resource++blue-bar.png"
+               height="10"
+               style="margin-top: 2px;"
+               alt="Improved Message Translations"
+               tal:condition="pf/updatesCount"
+               tal:attributes="width pf/updatesPercentage;
+                   title string: Improved In Rosetta : ${pf/updatesPercentage}%"
+            /><img src="/++resource++purple-bar.png"
+               height="10"
+               style="margin-top: 2px;"
+               alt="Newly Translated Messages"
+               tal:condition="pf/rosettaCount"
+               tal:attributes="width pf/rosettaPercentage;
+                   title string: New In Rosetta: ${pf/rosettaPercentage}%"
+            /><img src="/++resource++red-bar.png"
+               height="10"
+               style="margin-top: 2px;"
+               alt="Untranslated Messages"
+               tal:condition="pf/untranslatedCount"
+               tal:attributes="width pf/untranslatedPercentage;
+                   title string: Untranslated: ${pf/untranslatedPercentage}%" />
+          </td>
+          <td>
+            <span
+               tal:condition="pf/latest_sighting"
+               tal:replace="pf/latest_sighting/person/browsername/fmt:shorten/25" />
+              <tal:block condition="not: pf/latest_sighting">
+                  &mdash;
+              </tal:block>
+          </td>
+          <td>
+            <span tal:condition="pf/latest_sighting"
+                  tal:replace="pf/latest_sighting/datelastactive/fmt:date" />
+            <tal:block condition="not: pf/latest_sighting">
+                &mdash;
+            </tal:block>
+          </td>
+          </a>
+        </tal:block>
+      </tr>
+    </tbody>
+</table>
+

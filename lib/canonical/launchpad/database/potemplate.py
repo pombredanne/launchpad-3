@@ -5,7 +5,6 @@ __all__ = ['POTemplateSubset', 'POTemplateSet', 'LanguageNotFound',
            'POTemplate']
 
 import StringIO
-import base64
 import datetime
 
 # Zope interfaces
@@ -13,10 +12,11 @@ from zope.interface import implements
 from zope.exceptions import NotFoundError
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
+from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, SQLObjectNotFound
 from canonical.database.sqlbase import \
     SQLBase, quote, flush_database_updates, sqlvalues
+from canonical.database.datetimecol import UtcDateTimeCol
 
 # canonical imports
 from canonical.launchpad.interfaces import \
@@ -56,180 +56,6 @@ standardPOFileHeader = (
 "Plural-Forms: nplurals=%(nplurals)d; plural=%(pluralexpr)s\n"
 )
 
-class POTemplateSubset:
-    implements(IPOTemplateSubset)
-
-    def __init__(self, sourcepackagename=None,
-                 distrorelease=None, productrelease=None):
-        """Create a new POTemplateSubset object.
-
-        The set of POTemplate depends on the arguments you pass to this
-        constructor. The sourcepackagename, distrorelease and productrelease
-        are just filters for that set.
-        """
-        self.sourcepackagename = sourcepackagename
-        self.distrorelease = distrorelease
-        self.productrelease = productrelease
-
-        if (productrelease is not None and (distrorelease is not None or
-            sourcepackagename is not None)):
-            raise ValueError(
-                'A product release must not be used with a source package name'
-                ' or a distro release.')
-        elif productrelease is not None:
-            self.query = ('POTemplate.productrelease = %d' % productrelease.id)
-            self.orderby = None
-            self.clausetables = None
-        elif distrorelease is not None and sourcepackagename is not None:
-            self.query = ('POTemplate.sourcepackagename = %d AND'
-                          ' POTemplate.distrorelease = %d ' %
-                          (sourcepackagename.id, distrorelease.id))
-            self.orderby = None
-            self.clausetables = None
-        elif distrorelease is not None:
-            self.query = (
-                'POTemplate.distrorelease = DistroRelease.id AND'
-                ' DistroRelease.id = %d' % distrorelease.id)
-            self.orderby = 'DistroRelease.name'
-            self.clausetables = ['DistroRelease']
-        else:
-            raise ValueError(
-                'You need to specify the kind of subset you want.')
-
-    def __iter__(self):
-        """See IPOTemplateSubset."""
-        res = POTemplate.select(self.query, clauseTables=self.clausetables,
-                                orderBy=self.orderby)
-
-        for potemplate in res:
-            yield potemplate
-
-    def __getitem__(self, name):
-        """See IPOTemplateSubset."""
-        try:
-            ptn = POTemplateName.byName(name)
-        except SQLObjectNotFound:
-            raise NotFoundError, name
-
-        if self.query is None:
-            query = 'POTemplate.potemplatename = %d' % ptn.id
-        else:
-            query = '%s AND POTemplate.potemplatename = %d' % (
-                    self.query, ptn.id)
-
-        result = POTemplate.selectOne(query, clauseTables=self.clausetables)
-        if result is None:
-            raise NotFoundError, name
-        return result
-
-    def title(self):
-        titlestr = ''
-        if self.distrorelease:
-            titlestr += ' ' + self.distrorelease.displayname
-        if self.sourcepackagename:
-            titlestr += ' ' + self.sourcepackagename.name
-        if self.productrelease:
-            titlestr += ' '
-            titlestr += self.productrelease.productseries.product.displayname
-            titlestr += ' ' + self.productrelease.version
-        return titlestr
-    title = property(title)
-
-    def new(self, potemplatename, title, contents, owner):
-        if self.sourcepackagename is not None:
-            sourcepackagename_id = self.sourcepackagename.id
-        else:
-            sourcepackagename_id = None
-        if self.distrorelease is not None:
-            distrorelease_id = self.distrorelease.id
-        else:
-            distrorelease_id = None
-        if self.productrelease is not None:
-            productrelease_id = self.productrelease.id
-        else:
-            productrelease_id = None
-
-        encoded_file = base64.encodestring(contents)
-
-        return POTemplate(potemplatenameID=potemplatename.id,
-                          title=title,
-                          sourcepackagenameID=sourcepackagename_id,
-                          distroreleaseID=distrorelease_id,
-                          productreleaseID=productrelease_id,
-                          ownerID=owner.id,
-                          daterawimport=UTC_NOW,
-                          rawfile=encoded_file,
-                          rawimporterID=owner.id,
-                          rawimportstatus=RosettaImportStatus.PENDING)
-
-
-class POTemplateSet:
-    implements(IPOTemplateSet)
-
-    def __iter__(self):
-        """See IPOTemplateSet."""
-        res = POTemplate.select()
-        for potemplate in res:
-            yield potemplate
-
-    def __getitem__(self, name):
-        """See IPOTemplateSet."""
-        try:
-            ptn = POTemplateName.byName(name)
-        except SQLObjectNotFound:
-            raise NotFoundError, name
-
-        result = POTemplate.selectOne('POTemplate.potemplatename = %d' % ptn.id)
-        if result is None:
-            raise NotFoundError, name
-        return result
-
-    def getSubset(self, **kw):
-        """See IPOTemplateSet."""
-        if kw.get('distrorelease'):
-            # XXX: Should this really be an assert?
-            #      -- SteveAlexander 2005-04-23
-            assert 'productrelease' not in kw
-
-            distrorelease = kw['distrorelease']
-
-            if kw.get('sourcepackagename'):
-                sourcepackagename = kw['sourcepackagename']
-                return POTemplateSubset(
-                    distrorelease=distrorelease,
-                    sourcepackagename=sourcepackagename)
-            else:
-                return POTemplateSubset(distrorelease=distrorelease)
-
-        # XXX: Should this really be an assert?
-        #      -- SteveAlexander 2005-04-23
-        assert kw.get('productrelease')
-        return POTemplateSubset(productrelease=kw['productrelease'])
-
-    def getTemplatesPendingImport(self):
-        """See IPOTemplateSet."""
-        results = POTemplate.selectBy(
-            rawimportstatus=RosettaImportStatus.PENDING)
-
-        # XXX: Carlos Perello Marin 2005-03-24
-        # Really ugly hack needed to do the initial import of the whole hoary
-        # archive. It will disappear as soon as the whole
-        # LaunchpadPackagePoAttach and LaunchpadPoImport are implemented so
-        # rawfile is not used anymore and we start using Librarian.
-        # The problem comes with the memory requirements to get more than 7500
-        # rows into memory with about 200KB - 300KB of data each one.
-        total = results.count()
-        done = 0
-        while done < total:
-            for potemplate in results[done:done+100]:
-                yield potemplate
-            done = done + 100
-
-
-class LanguageNotFound(ValueError):
-    """Raised when a a language does not exists in the database."""
-
-
 class POTemplate(SQLBase, RosettaStats):
     implements(IEditPOTemplate, IRawFileData)
 
@@ -247,7 +73,7 @@ class POTemplate(SQLBase, RosettaStats):
     #       SteveAlexander 2005-04-23
     #license = ForeignKey(foreignKey='License', dbName='license', notNull=True)
     license = IntCol(dbName='license', notNull=False, default=None)
-    datecreated = DateTimeCol(dbName='datecreated', default=DEFAULT)
+    datecreated = UtcDateTimeCol(dbName='datecreated', default=DEFAULT)
     path = StringCol(dbName='path', notNull=False, default=None)
     iscurrent = BoolCol(dbName='iscurrent', notNull=True, default=True)
     messagecount = IntCol(dbName='messagecount', notNull=True, default=0)
@@ -272,15 +98,50 @@ class POTemplate(SQLBase, RosettaStats):
         return self.messageCount()
 
     def __iter__(self):
-        return iter(self.currentMessageSets())
+        """See IPOTemplate."""
+        return self.getPOTMsgSets()
 
     def __getitem__(self, key):
+        """See IPOTemplate."""
         return self.messageSet(key, onlyCurrent=True)
 
     # properties
+    @property
     def name(self):
+        """See IPOTemplate."""
         return self.potemplatename.name
-    name = property(name)
+
+    @property
+    def translationgroups(self):
+        """See IPOTemplate."""
+        ret = []
+        if self.distrorelease:
+            tg = self.distrorelease.distribution.translationgroup
+            if tg is not None:
+                ret.append(tg)
+        elif self.productrelease:
+            product_tg = self.productrelease.product.translationgroup
+            if product_tg is not None:
+                ret.append(product_tg)
+            project = self.productrelease.product.project
+            if project is not None:
+                if project.translationgroup is not None:
+                    ret.append(project.translationgroup)
+        else:
+            raise NotImplementedError, 'Cannot find translation groups.'
+        return ret
+
+    @property
+    def translationpermission(self):
+        """See IPOTemplate."""
+        # in the case of a distro template, use the distro translation
+        # permission settings
+        if self.distrorelease:
+            return self.distrorelease.distribution.translationpermission
+        # for products, use the "most restrictive permission" between
+        # project and product.
+        elif self.productrelease:
+            return self.productrelease.product.aggregatetranslationpermission
 
     def messageSet(self, key, onlyCurrent=False):
         query = 'potemplate = %d' % self.id
@@ -310,10 +171,40 @@ class POTemplate(SQLBase, RosettaStats):
             raise KeyError, key
         return result
 
-    def currentMessageSets(self):
-        return POTMsgSet.select(
-            'POTMsgSet.potemplate = %d AND POTMsgSet.sequence > 0' % self.id,
-            orderBy='sequence')
+    def getPOTMsgSets(self, current=True, slice=None):
+        """See IPOTemplate."""
+        if current:
+            # Only count the number of POTMsgSet that are current.
+            results = POTMsgSet.select(
+                'POTMsgSet.potemplate = %s AND POTMsgSet.sequence > 0' %
+                    sqlvalues(self.id),
+                orderBy='sequence')
+        else:
+            results = POTMsgSet.select(
+                'POTMsgSet.potemplate = %s' % sqlvalues(self.id),
+                orderBy='sequence')
+
+        if slice is None:
+            # Want all the output.
+            for potmsgset in results:
+                yield potmsgset
+        else:
+            # Want only a subset specified by slice.
+            for potmsgset in results[slice]:
+                yield potmsgset
+
+    def getPOTMsgSetsCount(self, current=True):
+        """See IPOTemplate."""
+        if current:
+            # Only count the number of POTMsgSet that are current
+            results = POTMsgSet.select(
+                'POTMsgSet.potemplate = %s AND POTMsgSet.sequence > 0' %
+                    sqlvalues(self.id))
+        else:
+            results = POTMsgSet.select(
+                'POTMsgSet.potemplate = %s' % sqlvalues(self.id))
+
+        return results.count()
 
     def getPOTMsgSetByID(self, id):
         """See IPOTemplate."""
@@ -482,8 +373,8 @@ class POTemplate(SQLBase, RosettaStats):
             return 0
 
     def hasMessageID(self, messageID):
-        results = POTMsgSet.select(
-            potemplateID=self.id, primemsgid=messageID.id)
+        results = POTMsgSet.selectBy(
+            potemplateID=self.id, primemsgid_ID=messageID.id)
         return results.count() > 0
 
     def hasPluralMessage(self):
@@ -493,35 +384,11 @@ class POTemplate(SQLBase, RosettaStats):
             ''' % self.id)
         return results.count() > 0
 
-    def canEditTranslations(self, person):
-        """See IPOTemplate."""
-        # XXX: should this be in the authorization code?
-        #      -- SteveAlexander, 2005-04-23
-        if self.distrorelease is None:
-            return True
-
-        owner = self.owner
-
-        if ITeam.providedBy(owner) and person.inTeam(owner):
-            return True
-        elif owner.id == person.id:
-            return True
-
-        # Now we check for the owners of the PO files.
-        for pofile in self.poFiles:
-            owner = pofile.owner
-            if ITeam.providedBy(owner) and person.inTeam(owner):
-                return True
-            elif owner.id == person.id:
-                return True
-
-        return False
-
     # Methods defined in IEditPOTemplate
-
     def expireAllMessages(self):
-        for msgset in self.currentMessageSets():
-            msgset.sequence = 0
+        """See IPOTemplate."""
+        for potmsgset in self:
+            potmsgset.sequence = 0
 
     def getOrCreatePOFile(self, language_code, variant=None, owner=None):
         """See IPOFile."""
@@ -634,16 +501,18 @@ class POTemplate(SQLBase, RosettaStats):
 
     def attachRawFileData(self, contents, importer=None):
         """See ICanAttachRawFileData."""
-        helpers.attachRawFileData(self, contents, importer)
+        filename = '%s.pot' % self.potemplatename.translationdomain
+        helpers.attachRawFileData(self, filename, contents, importer)
 
     # IRawFileData implementation
 
     # Any use of this interface should adapt this object as an IRawFileData.
 
-    rawfile = StringCol(dbName='rawfile', notNull=True)
+    rawfile = ForeignKey(foreignKey='LibraryFileAlias', dbName='rawfile',
+                         notNull=True)
     rawimporter = ForeignKey(foreignKey='Person', dbName='rawimporter',
         notNull=True)
-    daterawimport = DateTimeCol(dbName='daterawimport', notNull=True,
+    daterawimport = UtcDateTimeCol(dbName='daterawimport', notNull=True,
         default=UTC_NOW)
     rawimportstatus = EnumCol(dbName='rawimportstatus', notNull=True,
         schema=RosettaImportStatus, default=RosettaImportStatus.IGNORE)
@@ -655,7 +524,7 @@ class POTemplate(SQLBase, RosettaStats):
 
         importer = TemplateImporter(self, self.rawimporter)
 
-        file = StringIO.StringIO(base64.decodestring(self.rawfile))
+        file = helpers.getRawFileData(self)
 
         try:
             importer.doImport(file)
@@ -669,7 +538,7 @@ class POTemplate(SQLBase, RosettaStats):
 
             # We update the cached value that tells us the number of msgsets
             # this .pot file has
-            self.messagecount = self.currentMessageSets().count()
+            self.messagecount = self.getPOTMsgSetsCount()
 
             # And now, we should update the statistics for all po files this
             # .pot file has because a number of msgsets could have change.
@@ -684,4 +553,179 @@ class POTemplate(SQLBase, RosettaStats):
             if logger:
                 logger.warning('We got an error importing %s',
                     self.potemplatename.name, exc_info=1)
+
+
+class POTemplateSubset:
+    implements(IPOTemplateSubset)
+
+    def __init__(self, sourcepackagename=None,
+                 distrorelease=None, productrelease=None):
+        """Create a new POTemplateSubset object.
+
+        The set of POTemplate depends on the arguments you pass to this
+        constructor. The sourcepackagename, distrorelease and productrelease
+        are just filters for that set.
+        """
+        self.sourcepackagename = sourcepackagename
+        self.distrorelease = distrorelease
+        self.productrelease = productrelease
+
+        if (productrelease is not None and (distrorelease is not None or
+            sourcepackagename is not None)):
+            raise ValueError(
+                'A product release must not be used with a source package name'
+                ' or a distro release.')
+        elif productrelease is not None:
+            self.query = ('POTemplate.productrelease = %d' % productrelease.id)
+            self.orderby = None
+            self.clausetables = None
+        elif distrorelease is not None and sourcepackagename is not None:
+            self.query = ('POTemplate.sourcepackagename = %d AND'
+                          ' POTemplate.distrorelease = %d ' %
+                          (sourcepackagename.id, distrorelease.id))
+            self.orderby = None
+            self.clausetables = None
+        elif distrorelease is not None:
+            self.query = (
+                'POTemplate.distrorelease = DistroRelease.id AND'
+                ' DistroRelease.id = %d' % distrorelease.id)
+            self.orderby = 'DistroRelease.name'
+            self.clausetables = ['DistroRelease']
+        else:
+            raise ValueError(
+                'You need to specify the kind of subset you want.')
+
+    def __iter__(self):
+        """See IPOTemplateSubset."""
+        res = POTemplate.select(self.query, clauseTables=self.clausetables,
+                                orderBy=self.orderby)
+
+        for potemplate in res:
+            yield potemplate
+
+    def __getitem__(self, name):
+        """See IPOTemplateSubset."""
+        try:
+            ptn = POTemplateName.byName(name)
+        except SQLObjectNotFound:
+            raise NotFoundError, name
+
+        if self.query is None:
+            query = 'POTemplate.potemplatename = %d' % ptn.id
+        else:
+            query = '%s AND POTemplate.potemplatename = %d' % (
+                    self.query, ptn.id)
+
+        result = POTemplate.selectOne(query, clauseTables=self.clausetables)
+        if result is None:
+            raise NotFoundError, name
+        return result
+
+    @property
+    def title(self):
+        titlestr = ''
+        if self.distrorelease:
+            titlestr += ' ' + self.distrorelease.displayname
+        if self.sourcepackagename:
+            titlestr += ' ' + self.sourcepackagename.name
+        if self.productrelease:
+            titlestr += ' '
+            titlestr += self.productrelease.productseries.product.displayname
+            titlestr += ' ' + self.productrelease.version
+        return titlestr
+
+    def new(self, potemplatename, title, contents, owner):
+        if self.sourcepackagename is not None:
+            sourcepackagename_id = self.sourcepackagename.id
+        else:
+            sourcepackagename_id = None
+        if self.distrorelease is not None:
+            distrorelease_id = self.distrorelease.id
+        else:
+            distrorelease_id = None
+        if self.productrelease is not None:
+            productrelease_id = self.productrelease.id
+        else:
+            productrelease_id = None
+
+        filename = '%s.pot' % potemplatename.translationdomain
+        alias = helpers.uploadRosettaFile(filename, contents)
+        return POTemplate(potemplatenameID=potemplatename.id,
+                          title=title,
+                          sourcepackagenameID=sourcepackagename_id,
+                          distroreleaseID=distrorelease_id,
+                          productreleaseID=productrelease_id,
+                          ownerID=owner.id,
+                          daterawimport=UTC_NOW,
+                          rawfile=alias,
+                          rawimporterID=owner.id,
+                          rawimportstatus=RosettaImportStatus.PENDING)
+
+
+class POTemplateSet:
+    implements(IPOTemplateSet)
+
+    def __iter__(self):
+        """See IPOTemplateSet."""
+        res = POTemplate.select()
+        for potemplate in res:
+            yield potemplate
+
+    def __getitem__(self, name):
+        """See IPOTemplateSet."""
+        try:
+            ptn = POTemplateName.byName(name)
+        except SQLObjectNotFound:
+            raise NotFoundError, name
+
+        result = POTemplate.selectOne('POTemplate.potemplatename = %d' % ptn.id)
+        if result is None:
+            raise NotFoundError, name
+        return result
+
+    def getSubset(self, **kw):
+        """See IPOTemplateSet."""
+        if kw.get('distrorelease'):
+            # XXX: Should this really be an assert?
+            #      -- SteveAlexander 2005-04-23
+            assert 'productrelease' not in kw
+
+            distrorelease = kw['distrorelease']
+
+            if kw.get('sourcepackagename'):
+                sourcepackagename = kw['sourcepackagename']
+                return POTemplateSubset(
+                    distrorelease=distrorelease,
+                    sourcepackagename=sourcepackagename)
+            else:
+                return POTemplateSubset(distrorelease=distrorelease)
+
+        # XXX: Should this really be an assert?
+        #      -- SteveAlexander 2005-04-23
+        assert kw.get('productrelease')
+        return POTemplateSubset(productrelease=kw['productrelease'])
+
+    def getTemplatesPendingImport(self):
+        """See IPOTemplateSet."""
+        results = POTemplate.selectBy(
+            rawimportstatus=RosettaImportStatus.PENDING)
+
+        # XXX: Carlos Perello Marin 2005-03-24
+        # Really ugly hack needed to do the initial import of the whole hoary
+        # archive. It will disappear as soon as the whole
+        # LaunchpadPackagePoAttach and LaunchpadPoImport are implemented so
+        # rawfile is not used anymore and we start using Librarian.
+        # The problem comes with the memory requirements to get more than 7500
+        # rows into memory with about 200KB - 300KB of data each one.
+        total = results.count()
+        done = 0
+        while done < total:
+            for potemplate in results[done:done+100]:
+                yield potemplate
+            done = done + 100
+
+
+class LanguageNotFound(ValueError):
+    """Raised when a a language does not exists in the database."""
+
 

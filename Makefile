@@ -1,7 +1,8 @@
 # This file modified from Zope3/Makefile
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
-PYTHON=python2.3
+PYTHON_VERSION=2.4
+PYTHON=python${PYTHON_VERSION}
 PYTHONPATH:=$(shell pwd)/lib:${PYTHONPATH}
 CONFFILE=launchpad.conf
 STARTSCRIPT=runlaunchpad.py
@@ -14,7 +15,7 @@ HERE:=$(shell pwd)
 # DO NOT ALTER : this should just build by default
 default: inplace
 
-check_merge: build
+check_merge: build importdcheck
 	# Work around the current idiom of 'make check' getting too long
 	# because of hct and related tests. note that this is a short
 	# term solution, the long term solution will need to be 
@@ -22,9 +23,14 @@ check_merge: build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
 	env PYTHONPATH=$(PYTHONPATH) \
-	${PYTHON} -t ./test_on_merge.py -vv \
-	    --dir hct --dir sourcerer --dir banzai
-	$(MAKE) -C sourcecode check
+	    ${PYTHON} -t ./test_on_merge.py -vv \
+		--dir hct --dir sourcerer --dir banzai
+	    $(MAKE) -C sourcecode check PYTHON=${PYTHON} \
+		PYTHON_VERSION=${PYTHON_VERSION}
+
+importdcheck:
+	cd database/schema; make test PYTHON=${PYTHON}
+	PYTHONPATH=lib:lib/canonical/sourcerer/util lib/importd/test_all.py
 
 check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
@@ -32,10 +38,8 @@ check: build
 	env PYTHONPATH=$(PYTHONPATH) \
 	${PYTHON} -t ./test_on_merge.py
 
-pagetests:
-	$(MAKE) -C sourcecode build
-	env PYTHONPATH=$(PYTHONPATH) \
-	python test.py test_pages
+pagetests: build
+	env PYTHONPATH=$(PYTHONPATH) ${PYTHON} test.py test_pages
 	
 .PHONY: check
 
@@ -51,7 +55,8 @@ all: inplace runners
 inplace: build
 
 build:
-	$(MAKE) -C sourcecode build
+	$(MAKE) -C sourcecode build \
+	    PYTHON=${PYTHON} PYTHON_VERSION=${PYTHON_VERSION}
 
 runners:
 	echo "#!/bin/sh" > bin/runzope;
@@ -71,11 +76,11 @@ test_inplace: inplace
 
 ftest_build: build
 	env PYTHONPATH=$(PYTHONPATH) \
-	$(PYTHON) test.py -f $(TESTFLAGS) $(TESTOPTS)
+	    $(PYTHON) test.py -f $(TESTFLAGS) $(TESTOPTS)
 
 ftest_inplace: inplace
 	env PYTHONPATH=$(PYTHONPATH) \
-	$(PYTHON) test.py -f $(TESTFLAGS) $(TESTOPTS)
+	    $(PYTHON) test.py -f $(TESTFLAGS) $(TESTOPTS)
 
 ### SteveA says these should be ripped
 #test: 
@@ -84,8 +89,8 @@ ftest_inplace: inplace
 #ftest: ftest_inplace
 
 run: inplace
-	PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) $(PYTHON) -t \
-            $(STARTSCRIPT) -C $(CONFFILE)
+	LPCONFIG=default PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
+		 $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE)
 
 debug:
 	PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) $(PYTHON) -i -c \
@@ -93,7 +98,8 @@ debug:
              app = Application('Data.fs', 'site.zcml')()"
 
 clean:
-	find . \( -name '*.o' -o -name '*.so' -o -name '*.py[co]' -o -name '*.dll' \) -exec rm -f {} \;
+	find . \( -name '*.o' -o -name '*.so' -o -name '*.py[co]' -o -name \
+	    '*.dll' \) -exec rm -f {} \;
 	rm -rf build
 
 realclean: clean
@@ -102,8 +108,8 @@ realclean: clean
 
 zcmldocs:
 	PYTHONPATH=`pwd`/src:$(PYTHONPATH) $(PYTHON) \
-	./src/zope/configuration/stxdocs.py \
-	-f ./src/zope/app/meta.zcml -o ./doc/zcml/namespaces.zope.org
+	    ./src/zope/configuration/stxdocs.py \
+	    -f ./src/zope/app/meta.zcml -o ./doc/zcml/namespaces.zope.org
 
 
 #

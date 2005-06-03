@@ -4,8 +4,9 @@ __metaclass__ = type
 __all__ = ['Language', 'LanguageSet']
 
 from zope.interface import implements
+from zope.exceptions import NotFoundError
 
-from sqlobject import StringCol, IntCol
+from sqlobject import StringCol, IntCol, BoolCol
 from sqlobject import RelatedJoin, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase
 
@@ -23,12 +24,18 @@ class Language(SQLBase):
     englishname = StringCol(dbName='englishname')
     pluralforms = IntCol(dbName='pluralforms')
     pluralexpression = StringCol(dbName='pluralexpression')
+    visible = BoolCol(dbName='visible')
 
     translators = RelatedJoin('Person', joinColumn='language',
         otherColumn='person', intermediateTable='PersonLanguage')
 
     countries = RelatedJoin('Country', joinColumn='language',
         otherColumn='country', intermediateTable='SpokenIn')
+
+    @property
+    def displayname(self):
+        """See ILanguage."""
+        return '%s (%s)' % (self.englishname, self.code)
 
 
 class LanguageSet:
@@ -41,7 +48,7 @@ class LanguageSet:
         try:
             return Language.byCode(code)
         except SQLObjectNotFound:
-            raise KeyError, code
+            raise NotFoundError, code
 
     def keys(self):
         return [language.code for language in Language.select()]

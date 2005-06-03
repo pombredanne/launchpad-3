@@ -3,143 +3,35 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="rosetta">
 
-<head>
-    <title metal:fill-slot="title">Rosetta
-        <span tal:replace="context/title">template title</span></title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
-
 
 <metal:leftportlets fill-slot="portlets_one">
 
-<div class="portlet">
-
-    <h4>Template Details:</h4>
-
-    <div class="portletBody">
-        <div class="portletContent odd">
-            <img src="/++resource++document_icon.gif" />
-            <span tal:replace="view/num_messages" /><br />
-            <div tal:condition="context/owner" tal:omit-tag>
-                <b>Owner:</b><br />
-                <img src="/++resource++user.gif" />
-                <span tal:replace="context/owner/browsername" /><br />
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="portlet">
-
-    <h4>Actions:</h4>
-
-    <div class="portletBody">
-        <div class="portletContent even">
-            <p><img src="/++resource++edit.gif"><a href="+edit">Edit this
-            template</a>. This will modify the template header information and
-            will let you upload a new PO template version.<br />
-            This is an advanced operation, limited to 
-            <span tal:replace="context/owner/browsername" />, the current owner of
-            this template in Rosetta.</p>
-        </div>
-    </div>
-</div>
+  <div tal:replace="structure view/detailsPortlet" />
 
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
+
+  <div tal:replace="structure view/actionsPortlet" />
+
 </metal:rightportlets>
 
 
 <div metal:fill-slot="main">
 
-    <h1>Translation Template: <span tal:replace="context/title">Potemplate Title</span>
-    </h1>
+    <h1>Translation Template</h1>
 
-    <h2>Translations</h2>
+    <p tal:content="context/description">A brief paragraph describing the
+    potemplate would go here.</p>
 
-    <table class="listing rowNavigation" width="100%">
-        <thead>
-            <th>Language</th>
-            <th>Done</th>
-            <th>Todo</th>
-            <th>Graph</th>
-            <th>Latest Contributor</th>
-            <th>Last Edited</th>
-        </thead>
+    <div tal:replace="structure context/@@+chart" />
 
-        <tbody>
-            <tr tal:repeat="language view/languages"
-                tal:attributes="onclick
-                string:window.location='${language/translateURL}'">
-                <a tal:attributes="href language/translateURL">
-                    <td>
-                        <a tal:attributes="href language/translateURL"
-                        tal:content="language/name">Language
-                        Name</a></td>
-                    <td tal:content="language/poTranslated">0</td>
-                    <td tal:content="language/poUntranslated">0</td>
-                    <td>
-                        <!-- Show an mdash if there is no graph -->
-                        <span tal:condition="not: language/poLen">&mdash;</span>
+    <div align="right">
+      [ <a href="/rosetta/prefs">Choose Languages</a> ]
+    </div>
 
-                        <img src="/++resource++green-bar.png"
-                             height="10"
-                             style="margin-top: 2px;"
-                             alt="Translated Messages"
-                             tal:condition="language/poNonUpdatesCount"
-                             tal:attributes="width language/poNonUpdatesPercent;
-                                             title string: Translated: ${language/poNonUpdatesPercent}%"
-                        /><img src="/++resource++blue-bar.png"
-                               height="10"
-                               style="margin-top: 2px;"
-                               alt="Improved Message Translations"
-                               tal:condition="language/poUpdatesCount"
-                               tal:attributes="width language/poUpdatesPercent;
-                                               title string: Improved In Rosetta : ${language/poUpdatesPercent}%"
-                        /><img src="/++resource++purple-bar.png"
-                               height="10"
-                               style="margin-top: 2px;"
-                               alt="Newly Translated Messages"
-                               tal:condition="language/poRosettaCount"
-                               tal:attributes="width language/poRosettaPercent;
-                                               title string: New In Rosetta: ${language/poRosettaPercent}%"
-                        /><img src="/++resource++red-bar.png"
-                               height="10"
-                               style="margin-top: 2px;"
-                               alt="Untranslated Messages"
-                               tal:condition="language/poUntranslated"
-                               tal:attributes="width language/poUntranslatedPercent;
-                                               title string: Untranslated: ${language/poUntranslatedPercent}%" />
-                    </td>
-                    <td>
-                        <tal:block condition="language/lastChangedSighting">
-                            <span tal:content="language/lastChangedSighting/person/displayname" />
-                        </tal:block>
-                        <tal:block condition="not: language/lastChangedSighting">
-                            &mdash;
-                        </tal:block>
-                    </td>
-                    <td>
-                        <tal:block condition="language/lastChangedSighting">
-                            <span
-                                tal:content="language/lastChangedSighting/datelastactive/fmt:date" /> GMT
-                        </tal:block>
-                        <tal:block condition="not: language/lastChangedSighting">
-                            &mdash;
-                        </tal:block>
-                    </td>
-                </a>
-            </tr>
-        </tbody>
-    </table>
-
-    <div tal:replace="structure view/statusLegend" tal:omit-tag />
+    <div tal:replace="structure view/statusLegend" />
 
 </div>
 

@@ -11,6 +11,7 @@ import warnings
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
+from canonical.librarian.interfaces import UploadFailed, DownloadFailed
 
 # TODO: Nuke all deprecated methods and refactor sometime after May 2005
 # assuming nobody comes up with use cases for keeping them. I didn't
@@ -19,15 +20,7 @@ from canonical.database.sqlbase import cursor
 
 import warnings
 
-__all__ = ['UploadFailed', 'FileUploadClient', 'FileDownloadClient']
-
-class UploadFailed(Exception):
-    pass
-
-
-class DownloadFailed(Exception):
-    pass
-
+__all__ = ['FileUploadClient', 'FileDownloadClient']
 
 class FileUploadClient(object):
     """Simple blocking client for uploading to the librarian."""
@@ -85,7 +78,8 @@ class FileUploadClient(object):
 
         :returns: 2-tuple of (contentID, aliasID) as ints.
         
-        :raises UploadFailed: If the server rejects the upload for some reason
+        :raises UploadFailed: If the server rejects the upload for some reason,
+            or the size is 0.
         """
         # Detect if this method was not called from the LibrarianClient
         #
@@ -96,7 +90,10 @@ class FileUploadClient(object):
                     'Utility.',
                     DeprecationWarning, stacklevel=2
                     )
-
+        if file is None:
+            raise TypeError('No data')
+        if size <= 0:
+            raise UploadFailed('No data')
         self._connect()
         try:
             # Import in this method to avoid a circular import
@@ -121,11 +118,22 @@ class FileUploadClient(object):
             # Send blank line
             self._sendLine('')
             
-            # Send file
+            # Prepare to the upload the file
             digester = sha.sha()
+            bytesWritten = 0
+
+            # Read in and upload the file 64kb at a time, by using the two-arg
+            # form of iter (see
+            # /usr/share/doc/python2.4/html/lib/built-in-funcs.html#l2h-42).
             for chunk in iter(lambda: file.read(1024*64), ''):
                 self.f.write(chunk)
+                bytesWritten += len(chunk)
                 digester.update(chunk)
+            
+            assert bytesWritten == size, (
+                'size is %d, but %d were read from the file' 
+                % (size, bytesWritten))
+            self.f.flush()
 
             # Read response
             response = self.f.readline().strip()

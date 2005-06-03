@@ -16,7 +16,7 @@ def newBugTracker(form, owner):
     #
     name = form['name']
     title = form['title']
-    shortdesc = form['shortdesc']
+    summary = form['summary']
     baseurl = form['baseurl']
     contactdetails = form['contactdetails']
     #
@@ -29,7 +29,7 @@ def newBugTracker(form, owner):
     bugtracker = BugTracker(name=name,
                           bugtrackertype=bugtrackertype,
                           title=title,
-                          shortdesc=shortdesc,
+                          summary=summary,
                           baseurl=baseurl,
                           contactdetails=contactdetails,
                           owner=owner)
@@ -88,7 +88,7 @@ class BugTrackerView(object):
         # Update the BugTracker, which is in self.context
         #
         self.context.title = self.form['title']
-        self.context.shortdesc = self.form['shortdesc']
+        self.context.summary = self.form['summary']
         self.context.baseurl = self.form['baseurl']
         self.context.contactdetails = self.form['contactdetails']
         #

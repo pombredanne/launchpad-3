@@ -8,6 +8,7 @@ _ = MessageIDFactory('launchpad')
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces.launchpad import IHasOwner, IHasAssignee
+from canonical.launchpad.validators.name import valid_name
 
 class IProduct(IHasOwner):
     """
@@ -16,21 +17,22 @@ class IProduct(IHasOwner):
     Products.  For example, the Mozilla Project has Firefox, Thunderbird and
     The Mozilla App Suite as Products, among others.
     """
-    
+
     # XXX Mark Shuttleworth comments: lets get rid of ID's in interfaces
     # unless we really need them. BradB says he can remove the need for them
     # in SQLObject soon. 12/10/04
     id = Int(title=_('The Product ID'))
-    
+
     project = Choice(title=_('Project'), required=False,
-    vocabulary='Project', description=_("""Optional related Project. Used to
-    group similar products in a coherent way."""))
+        vocabulary='Project', description=_("""Optional related Project.
+        Used to group similar products in a coherent way."""))
     
     owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
-    description=_("""Product owner, it can either a valid Person or Team
-    inside Launchpad context."""))
+        description=_("""Product owner, it can either a valid Person or Team
+        inside Launchpad context."""))
 
-    name = TextLine(title=_('Name'), description=_("""The short name of this
+    name = TextLine(title=_('Name'), constraint=valid_name,
+        description=_("""The short name of this
         product, which must be unique among all the products. It should be
         at least one lowercase letters or number followed by one or more chars,
         numbers, plusses, dots or hyphens and will be part of the url to this
@@ -41,19 +43,19 @@ class IProduct(IHasOwner):
         would appear in a paragraph of text."""))
 
     title = Title(title=_('Title'), description=_("""The product
-    title. Should be just a few words."""))
+        title. Should be just a few words."""))
 
-    shortdesc = Summary(title=_('Summary'), description=_("""The summary should
+    summary = Summary(title=_('Summary'), description=_("""The summary should
         be a single short paragraph."""))
 
-    description = Description(title=_('Description'), description=_("""The product
-        description, may be several paragraphs of text, giving the product
-        highlights and details."""))
+    description = Description(title=_('Description'), description=_("""The
+        product description, may be several paragraphs of text, giving the
+        product highlights and details."""))
 
     homepageurl = TextLine(title=_('Homepage URL'), required=False)
 
     wikiurl = TextLine(title=_('Wiki URL'), required=False)
-    
+
     screenshotsurl = TextLine(title=_('Screenshots URL'), required=False)
 
     downloadurl = TextLine(title=_('Download URL'), required=False)
@@ -67,18 +69,38 @@ class IProduct(IHasOwner):
     freshmeatproject = TextLine(title=_('Freshmeat Project'),
         required=False)
 
+    translationgroup = Choice(
+        title = _("Translation group"),
+        description = _("The translation group for this product. This group "
+            "is made up of a set of translators for all the languages "
+            "approved by the group manager. These translators then have "
+            "permission to edit the groups translation files, based on the "
+            "permission system selected below."),
+        required=False,
+        vocabulary='TranslationGroup')
+
+    translationpermission = Choice(
+        title=_("Translation Permission System"),
+        description=_("The permissions this group requires for "
+            "translators. If 'Open', then anybody can edit translations "
+            "in any language. If 'Reviewed', then anybody can make "
+            "suggestions but only the designated translators can edit "
+            "or confirm translations. And if 'Closed' then only the "
+            "designated translation group will be able to touch the "
+            "translation files at all."),
+        required=True,
+        vocabulary='TranslationPermission')
+
     autoupdate = Bool(title=_('Automatic update'),
         description=_("""Whether or not this product's attributes are
         updated automatically."""))
 
-    manifest = Attribute(_('Manifest'))
-
     active = Bool(title=_('Active'), description=_("""Whether or not
         this product is considered active."""))
-    
+
     reviewed = Bool(title=_('Reviewed'), description=_("""Whether or not
         this product has been reviewed."""))
-    
+
     sourcepackages = Attribute(_("List of distribution packages for this \
         product"))
 
@@ -105,11 +127,29 @@ class IProduct(IHasOwner):
 
     bounties = Attribute(_("The bounties that are related to this product."))
 
+    translatable_packages = Attribute(
+        "A list of the source packages for this product that can be"
+        " translated sorted by distrorelease.name and sourcepackage.name.")
+
+    translatable_releases = Attribute(
+        "A list of the releases of this product for which we have translation"
+        " templates.")
+
     primary_translatable = Attribute(
-        """The SourcePackage or ProductRelease which is the main
-        translatable item for this product. Currently this should be the
-        latest productrelease for this product which includes
-        translations.""")
+        "The best guess we have for what new translators will want to"
+        " translate for a given product. First, tries the current development"
+        " Ubuntu package. Then tries the latest release for which we have"
+        " potemplates.")
+
+    potemplatecount = Attribute("The number of POTemplates for this Product.")
+
+    translationgroups = Attribute("The list of applicable translation "
+        "groups for a product. There can be several: one from the product, "
+        "and potentially one from the project, too.")
+
+    aggregatetranslationpermission = Attribute("The translation permission "
+        "that applies to translations in this product, based on the "
+        "permissions that apply to the product as well as its project.")
 
     def getPackage(distrorelease):
         """return a package in that distrorelease for this product."""
@@ -123,11 +163,6 @@ class IProduct(IHasOwner):
 
     def poTemplate(name):
         """Returns the PO template with the given name."""
-
-    def fullname():
-        """Returns a name that uniquely identifies this product, by combining
-            product name and project name
-        """
 
     def newseries(form):
         """Creates a new ProductSeries for this series."""
@@ -161,22 +196,6 @@ class IProduct(IHasOwner):
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
 
-    def attachTranslations(tarfile, prefix=None, sourcepackagename=None,
-                           distrorelease=None, version=None, logger=None):
-        """Attach all .pot and .po files inside tarfile into a product.
-
-        The .pot and .po files are attached to the POTemplate and POFile
-        objects of this product creating them first if needed.
-
-        Associates the POTemplates with the sourcepackagename and the
-        distrorelease (if not None) and its name will have the prefix
-        specified in case it's not None.
-
-        In case all files are imported correctly, set the potemplate's
-        sourcepackageversion field to version.
-
-        Log any error/warning into the logger object, if it's not None.
-        """
 
 class IProductSet(Interface):
     """The collection of products."""
@@ -196,7 +215,7 @@ class IProductSet(Interface):
         raised.
         """
 
-    def createProduct(owner, name, displayname, title, shortdesc,
+    def createProduct(owner, name, displayname, title, summary,
                       description, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,

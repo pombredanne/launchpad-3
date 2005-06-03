@@ -15,7 +15,7 @@ def setUp(test):
     cur = con.cursor()
     cur.execute("""
         CREATE TABLE A (
-            aid     integer PRIMARY KEY,
+            aid     serial PRIMARY KEY,
             selfref integer CONSTRAINT a_selfref_fk REFERENCES A(aid)
             )
         """)
@@ -42,6 +42,7 @@ def setUp(test):
             CONSTRAINT d_aid_bid_key UNIQUE (aid, bid)
             )
         """)
+    cur.execute("CREATE SEQUENCE standalone")
     con.commit()
 
     # Store the connection and a cursor for the tests to use

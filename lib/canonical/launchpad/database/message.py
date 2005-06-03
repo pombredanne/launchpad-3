@@ -16,7 +16,7 @@ from zope.component import getUtility
 from zope.security.proxy import isinstance
 from zope.exceptions import NotFoundError
 
-from sqlobject import DateTimeCol, ForeignKey, StringCol, IntCol
+from sqlobject import ForeignKey, StringCol, IntCol
 from sqlobject import MultipleJoin, RelatedJoin
 
 from canonical.launchpad.interfaces import \
@@ -26,8 +26,8 @@ from canonical.launchpad.interfaces import \
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC
+from canonical.database.datetimecol import UtcDateTimeCol
 import canonical.base
-
 
 class Message(SQLBase):
     """A message. This is an RFC822-style message, typically it would be
@@ -38,7 +38,7 @@ class Message(SQLBase):
 
     _table = 'Message'
     _defaultOrder = '-id'
-    datecreated = DateTimeCol(notNull=True, default=nowUTC)
+    datecreated = UtcDateTimeCol(notNull=True, default=nowUTC)
     title = StringCol(notNull=True)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
     parent = ForeignKey(foreignKey='Message', dbName='parent',
@@ -150,7 +150,7 @@ class MessageSet:
         title = self._decode_header(parsed_message.get('subject', '')).strip()
         if not title:
             raise MissingSubject(rfc822msgid)
-        
+
         if owner is None:
             # Try and determine the owner. We raise a NotFoundError
             # if the sender does not exist.

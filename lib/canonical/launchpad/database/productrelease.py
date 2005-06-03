@@ -1,16 +1,34 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['ProductRelease', 'ProductReleaseFile']
+__all__ = ['ProductRelease', 'ProductReleaseSet', 'ProductReleaseFile']
 
 from zope.interface import implements
 
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, MultipleJoin
+from sqlobject import ForeignKey, IntCol, StringCol, MultipleJoin
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC
+from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import IProductRelease
+from canonical.launchpad.interfaces import IProductReleaseSet
+
+
+class ProductReleaseSet(object):
+    """See IProductReleaseSet""" 
+    implements(IProductReleaseSet)
+
+    def new(self, version, productseries, owner, title=None, summary=None,
+            description=None, changelog=None):
+        """See IProductReleaseSet"""
+        return ProductRelease(version=version,
+                              productseries=productseries,
+                              owner=owner,
+                              title=title,
+                              summary=summary,
+                              description=description,
+                              changelog=changelog)
 
 
 class ProductRelease(SQLBase):
@@ -18,10 +36,17 @@ class ProductRelease(SQLBase):
     implements(IProductRelease)
     _table = 'ProductRelease'
 
-    datereleased = DateTimeCol(notNull=True, default=nowUTC)
+    datereleased = UtcDateTimeCol(notNull=True, default=nowUTC)
     version = StringCol(notNull=True)
-    title = StringCol(notNull=False, default=None)
-    shortdesc = StringCol(notNull=False, default=None)
+    # XXX: Carlos Perello Marin 2005-05-22:
+    # The DB field should be renamed to something better than title.
+    # A ProductRelease has a kind of title that is not really the final title,
+    # we use a method to create the title that we display based on
+    # ProductRelease.displayname and the title in the DB.
+    # See: https://launchpad.ubuntu.com/malone/bugs/736/
+    _title = StringCol(dbName='title', forceDBName=True, notNull=False,
+        default=None)
+    summary = StringCol(notNull=False, default=None)
     description = StringCol(notNull=False, default=None)
     changelog = StringCol(notNull=False, default=None)
     owner = ForeignKey(dbName="owner", foreignKey="Person", notNull=True)
@@ -42,6 +67,17 @@ class ProductRelease(SQLBase):
     def displayname(self):
         return self.productseries.product.displayname + ' ' + self.version
     displayname = property(displayname)
+
+    def title(self):
+        """See IProductRelease."""
+        thetitle = self.displayname
+        if self._title:
+            thetitle += ' "' + self._title + '"'
+        return thetitle
+
+    def set_title(self, title):
+        self._title = title
+    title = property(title, set_title)
 
     def potemplatecount(self):
         return len(self.potemplates)

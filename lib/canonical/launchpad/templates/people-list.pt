@@ -3,14 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">People registered with Launchpad</title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">
@@ -24,11 +16,11 @@
   <table>
     <tr tal:repeat="person python:list(bn.currentBatch())">      
       <td>
-        <a tal:condition="person/displayname"
-           tal:content="string: ${person/displayname} (${person/name})"
+        <a tal:condition="person/browsername"
+           tal:content="string: ${person/browsername} (${person/name})"
            tal:attributes="href person/name" />
 
-        <a tal:condition="not: person/displayname"
+        <a tal:condition="not: person/browsername"
            tal:content="person/browsername"
            tal:attributes="href person/name" />
      </td>

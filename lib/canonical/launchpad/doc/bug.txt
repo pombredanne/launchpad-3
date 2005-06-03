@@ -6,7 +6,7 @@ rather incomplete) info on how to poke at bugs through the Component
 Architecture.
 
 Working with Bugs
-=================
+-----------------
 
 Bugs are created and retrieved via IBugSet.
 
@@ -14,21 +14,40 @@ Bugs are created and retrieved via IBugSet.
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> bugset = getUtility(IBugSet)
 
-To demonstrate how to retrieve a specific bug, let's simulate that we're
-interacting with the system as an anonymous user:
-
-    >>> import zope.security.management
-    >>> from canonical.launchpad.ftests import login
-    >>> login("launchpad.anonymous")
-
 To retrieve a specific Bug, use IBugSet.get:
 
     >>> firefox_crashes = bugset.get(6)
     >>> print firefox_crashes.title
     Firefox crashes when Save As dialog for a nonexistent window is closed
 
+Searching for Bugs
+------------------
+
+To search for bugs matching specific criteria, use IBugSet.search:
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> firefox_test_bug = bugset.get(3)
+    >>> firefox_test_bug.duplicateof = firefox_crashes.id
+    >>> flush_database_updates()
+    >>> dups_of_bug_six = bugset.search(duplicateof = firefox_crashes)
+    >>> print dups_of_bug_six.count()
+    1
+    >>> dups_of_bug_six[0].id
+    3
+
+    >>> firefox_test_bug.duplicateof = None
+    >>> flush_database_updates()
+    >>> dups_of_bug_six = bugset.search(duplicateof = firefox_crashes)
+    >>> print dups_of_bug_six.count()
+    0
+
+    >>> login(ANONYMOUS)
+
 Absolute URLs
-=============
+-------------
 
 For things like bug notification emails, it's handy to be able to
 include a URL to the bug inside the email. In Launchpad, the absolute
@@ -91,8 +110,8 @@ marked private. So, when we mark bug #15 private:
     ...         setattr(state, field, getattr(obj, field))
     ...     return state
     >>> old_state = capture_state(
-    ...     firefox_crashes, "id", "title", "shortdesc", "description", "name",
-    ...     "private")
+    ...     firefox_crashes, "id", "title", "summary", "description", "name",
+    ...     "private", "duplicateof")
     >>> firefox_crashes.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     firefox_crashes, old_state,
@@ -152,8 +171,8 @@ And again, let's fake setting the bug private:
     >>> notify(bug_will_be_set_private)
 
     >>> old_state = capture_state(
-    ...     blackhole_trash_folder, "id", "title", "shortdesc",
-    ...     "description", "name", "private")
+    ...     blackhole_trash_folder, "id", "title", "summary",
+    ...     "description", "name", "private", "duplicateof")
     >>> blackhole_trash_folder.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     blackhole_trash_folder, old_state,

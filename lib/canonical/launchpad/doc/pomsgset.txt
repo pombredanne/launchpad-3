@@ -1,0 +1,48 @@
+
+Get the PO msgid we will be working with.
+
+>>> from canonical.launchpad.database import POMsgSet, POMsgID, Language
+>>> from canonical.launchpad.database import POTemplate
+>>> pomsgid = POMsgID.byMsgid('evolution addressbook')
+
+Now find the two po templates, one for evolution 2.1.6 upstream and one for
+evolution in hoary. They should both have a message with the msgid we have
+chosen. We will be working with the Afrikaans (af) language.
+
+>>> upstream_evo = POTemplate.get(1)
+>>> upstream_evo.productrelease is not None
+True
+
+>>> upstream_evo.productrelease.product.name
+u'evolution'
+
+>>> hoary_evo = POTemplate.get(4)
+>>> hoary_evo.distrorelease is not None
+True
+
+>>> hoary_evo.distrorelease.name
+u'hoary'
+
+>>> hoary_evo.sourcepackagename.name
+u'evolution'
+
+We will be working in (Af)rikaans.
+
+>>> lang = Language.byCode('af')
+
+Now find the relevant PO msgset's.
+
+>>> upstream_potmsgset = upstream_evo.messageSet(u'evolution addressbook')
+>>> hoary_potmsgset = hoary_evo.messageSet(u'evolution addressbook')
+
+Show that there are no active translations and no suggestions for either
+upstream or the hoary translation.
+
+>>> upstream_potmsgset.getSuggestedTexts(lang, 0)
+[]
+
+>>> hoary_potmsgset.getSuggestedTexts(lang, 0)
+[]
+
+Now, get the relevant pomsgsets.
+

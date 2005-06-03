@@ -4,13 +4,10 @@
       i18n:domain="launchpad">
 
 <head>
-  <title metal:fill-slot="title">
-    <span tal:replace="context/displayname">Name</span>
-    Personal Information</title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
+    <tal:block metal:fill-slot="head_epilogue">
+        <link rel="meta" type="application/rdf+xml" title="FOAF" href="+rdf"
+            tal:condition="context/preferredemail" />
+    </tal:block>
 </head>
 
 <body>
@@ -25,7 +22,7 @@
 
 <div metal:fill-slot="main">
 
-      <h1><span tal:content="context/displayname">DISPAYNAME</span>
+      <h1><span tal:content="context/browsername">browsername</span>
       <i tal:condition="context/ubuntite">(Ubuntite)</i></h1>
 
       <br/>
@@ -33,14 +30,14 @@
         <table>
           <tr>
             <td>Name:</td>
-            <td tal:content="string:${context/displayname} 
+            <td tal:content="string:${context/browsername} 
                             (${context/name})">NAME(NICK)</td>
           </tr>
 
           <tr tal:condition="context/teamowner">
             <td>Owner:</td>
             <td><a tal:attributes="href string:../${context/teamowner/name}"
-                   tal:content="context/teamowner/displayname"></a></td>
+                   tal:content="context/teamowner/browsername"></a></td>
           </tr>
 
           <tr tal:condition="context/teamdescription">
@@ -68,7 +65,7 @@
             <tal:dummy tal:condition="context/validatedemails">
             <tr>
               <td>Email:</td>
-              <td><span tal:content="python: len(context.validatedemails)" />
+              <td><span tal:content="context/validatedemails/count:len" />
                   validated email addresses. [<a href="+emails">Add emails or
                     set one of yours as preferred</a>]
               </td>
@@ -134,14 +131,14 @@
         <!-- Teams which I'm a member of -->
         <div tal:condition="context/memberships">
           <fieldset>
-            <legend><span tal:replace="context/displayname"></span> is
+            <legend><span tal:replace="context/browsername"></span> is
             </legend>
             <table>
               <tr tal:repeat="membership context/memberships">
                 <td>
                   <span tal:replace="membership/statusname"></span> of 
                   <a tal:attributes="href string:../${membership/team/name}"
-                     tal:content="membership/team/displayname">foo</a>
+                     tal:content="membership/team/browsername">foo</a>
                 </td>
             </tr>
             </table>

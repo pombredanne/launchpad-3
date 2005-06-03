@@ -3,14 +3,6 @@
   metal:use-macro="context/@@main_template/master"
   i18n:domain="rosetta">
 
-<head>
-  <title metal:fill-slot="title">Add Source Import</title>
-  <!-- Plone style sheet -->
-  <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Launchpad style sheet -->
-  <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">
@@ -182,9 +174,12 @@
       Title</span></b></p>
       <p tal:condition="python: not (context.product.project.reviewed and
          context.product.project.active)"
-         class="portalMessage">This project is not yet approved.</p>
+         class="portalMessage">This project is not yet 
+         <a tal:attributes="href
+             string:/projects/${context/product/project/name}/+review">
+         approved</a>.</p>
 
-      <p tal:content="context/product/project/shortdesc">product
+      <p tal:content="context/product/project/summary">product
       summary</p>
     </div>
 
@@ -192,8 +187,11 @@
     Title</span></b></p>
     <div tal:condition="python: not (context.product.reviewed and
       context.product.active)" class="portalMessage">This product is
-      not yet approved.</div>
-      <p><span tal:replace="context/product/shortdesc">product
+      not yet 
+      <a tal:attributes="href
+        string:/products/${context/product/name}/+review">
+        approved</a>.</div>
+      <p><span tal:replace="context/product/summary">product
       summary</span></p>
 
       <div tal:condition="view/namesReviewed">

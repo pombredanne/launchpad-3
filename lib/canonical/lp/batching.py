@@ -1,10 +1,14 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
 import re
 
 from zope.interface import implements
 from canonical.lp.z3batching import Batch
 from canonical.lp.interfaces import IBatchNavigator
 
-class BatchNavigator(object):
+class BatchNavigator:
 
     implements(IBatchNavigator)
 

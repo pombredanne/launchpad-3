@@ -3,18 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">
-        <span
-            tal:replace="context/distribution/title">Distro</span>:
-        <span tal:replace="context/title">iDistroRelease</span>
-    </title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
 
@@ -32,7 +20,7 @@
     <h1>Distribution Release Overview</h1> 
 
         <div class="documentDescription"
-             tal:content="context/shortdesc">
+             tal:content="context/summary">
              Release summary
         </div>
             

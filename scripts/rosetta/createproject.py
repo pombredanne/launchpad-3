@@ -23,7 +23,7 @@ if __name__ == '__main__':
     parser.add_option("-t", "--title", dest="title",
                       help="Project title")
     parser.add_option("-s", "--short-description", dest="short",
-                      help="Project's short description")
+                      help="Project's summary")
     parser.add_option("-e", "--description", dest="description",
                       help="Project's description")
     parser.add_option("-u", "--url", dest="url",
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     # XXX: https://bugzilla.warthogs.hbd.com/bugzilla/show_bug.cgi?id=1968
     project = Project(owner=int(options.owner), name=options.name,
                         displayname=options.display, title=options.title,
-                        shortdesc=options.short,
+                        summary=options.short,
                         description=options.description,
                         datecreated=datetime.utcnow(),
                         homepageurl=options.url,

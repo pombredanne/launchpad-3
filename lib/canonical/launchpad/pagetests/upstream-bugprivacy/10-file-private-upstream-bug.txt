@@ -58,29 +58,31 @@ able to see the private bug we've just filed.
   ...
   Content-Type: text/html;charset=utf-8
   ...
-      <h1>Upstream Bugs for:
+      <h1>Bug reports on upstream
           Mozilla Firefox
       </h1>
   ...
-    <small>displaying matching bugs 1 to 5 of 5</small>
+  ...1...
+  ...5...
+  of 5 results
   ...
             <td>
-                <a href="/malone/tasks/16/+edit">7</a>
+                <a href="...">7</a>
             </td>
   ...
             <td>
-                <a href="/malone/tasks/15/+edit">6</a>
+                <a href="...">6</a>
             </td>
   ...
             <td>
-                <a href="/malone/tasks/14/+edit">5</a>
+                <a href="...">5</a>
             </td>
   ...
             <td>
-                <a href="/malone/tasks/13/+edit">4</a>
+                <a href="...">4</a>
             </td>
   ...
             <td>
-                <a href="/malone/tasks/2/+edit">1</a>
+                <a href="...">1</a>
             </td>
   ...

@@ -2,15 +2,6 @@
       lang="en"
       metal:use-macro="context/@@main_template/master"
       i18n:domain="rosetta">
-
-<head>
-    <title metal:fill-slot="title">Code of Conduct Release</title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
 <metal:rightportlets fill-slot="portlets_two">

@@ -5,15 +5,6 @@
     metal:use-macro="context/@@main_template/master"
     i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">Register a new release of
-      <span tal:replace="view/product/displayname">$Product
-      displayname</span>
-    </title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">
@@ -96,7 +87,7 @@
 
         <div class="field">
 
-            <label>Short Description</label>
+            <label>Summary</label>
 
                   <div class="formHelp">
                     A single paragraph introduction or overview of this
@@ -105,7 +96,7 @@
                     several new kinds of terminal mode.</i>
                   </div>
 
-                <textarea cols="40" rows="4" name="shortdesc"></textarea>
+                <textarea cols="40" rows="4" name="summary"></textarea>
         </div>
         
         <div class="field">
@@ -114,7 +105,7 @@
 
                   <div class="formHelp">
                     A full description of the release. This should continue
-                    from the short description above, and add more details
+                    from the summary above, and add more details
                     of the release highlights and features. This is sort of
                     "release notes" space.
                   </div>

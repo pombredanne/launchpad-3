@@ -22,6 +22,7 @@ initZopeless(
     dbuser=config.librarian.dbuser,
     dbhost=config.dbhost,
     dbname=config.dbname,
+    implicitBegin=False
     )
 
 application = service.Application('Librarian')

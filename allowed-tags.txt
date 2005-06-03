@@ -1,4 +1,3 @@
-doc/changelog.txt automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 lib/canonical/arch/__init__.py 968155c0-f32b-4ca1-a579-1722c98bb117
 lib/canonical/arch/broker.py 27f07153-69b6-4ddb-b704-eaabcca57e3e
 lib/canonical/arch/infoUpdater.py 5ce06dae-6ab3-4397-8ff2-e7fec441857f
@@ -41,6 +40,8 @@ lib/canonical/sourcerer/util/patch.py 981b6e8a-fd95-4862-b9b8-1fc7a82f2db0
 lib/canonical/sourcerer/util/path.py 3e9ad404-ac5f-4e34-a0ef-91ac84ca0d5a
 lib/canonical/sourcerer/util/tarball.py bdaad292-b07c-4e93-b549-35660b067402
 lib/canonical/soyuz/Makefile 4d44b2e9-d976-44a5-8160-2dc9ccc73d2b
+lib/importd/taxi.py 9ecc92f8-94d9-4639-a3c8-a29385d9fe71
+lib/importd/tests/eintr_hack.py 9493de28-0c03-485f-a77c-85e674c852dc
 scripts/rosetta/createproduct.py 6ff81610-1bc0-4c22-960c-4e0c2f33c0c9
 scripts/rosetta/createproject.py b9019fba-02b5-4d42-87e4-39b4754da09b
 scripts/rosetta/createtemplate.py 34a8f99d-a803-4392-994f-c85ebb8b6fcc

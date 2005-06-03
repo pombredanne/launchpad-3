@@ -5,6 +5,7 @@ __all__ = ['POTMsgSet']
 
 from zope.interface import implements
 from zope.component import getUtility
+from zope.exceptions import NotFoundError
 
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote
@@ -14,7 +15,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.pomsgset import POMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
-
+from canonical.launchpad.database.potranslation import POTranslation
 
 class POTMsgSet(SQLBase):
     implements(IPOTMsgSet)
@@ -30,6 +31,24 @@ class POTMsgSet(SQLBase):
     filereferences = StringCol(dbName='filereferences', notNull=False)
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
     flagscomment = StringCol(dbName='flagscomment', notNull=False)
+
+    def getSuggestedTexts(self, language, pluralform):
+        """See IPOTMegSet.getSuggestions()"""
+        ret = POTranslation.select("""
+            POTranslationSighting.potranslation = POTranslation.id AND
+           (POTranslationSighting.active = TRUE OR
+            POTranslationSighting.inlastrevision = TRUE) AND
+            POMsgSet.id = POTranslationSighting.pomsgset AND
+            POMsgSet.pofile = POFile.id AND
+            POFile.language = %d AND
+            POMsgSet.potmsgset = POTMsgSet.id AND
+            POTMsgSet.primemsgid = %d""" % (language.id, self.primemsgid_ID),
+            clauseTables=['POTranslationSighting',
+                          'POMsgSet',
+                          'POFile',
+                          'POTMsgSet'],
+            orderBy='-id')
+        return [tran.translation for tran in ret]
 
     def flags(self):
         if self.flagscomment is None:
@@ -72,6 +91,7 @@ class POTMsgSet(SQLBase):
             return sighting
 
     def poMsgSet(self, language_code, variant=None):
+        """See IPOTMsgSet."""
         if variant is None:
             variantspec = 'IS NULL'
         elif isinstance(variant, unicode):
@@ -79,7 +99,7 @@ class POTMsgSet(SQLBase):
         else:
             raise TypeError('Variant must be None or unicode.')
 
-        messagesets = POMsgSet.selectOne('''
+        pomsgsets = POMsgSet.selectOne('''
             POMsgSet.potmsgset = %d AND
             POMsgSet.pofile = POFile.id AND
             POFile.language = Language.id AND
@@ -90,9 +110,9 @@ class POTMsgSet(SQLBase):
                    quote(language_code)),
             clauseTables=['POFile', 'Language'])
 
-        if messagesets is None:
-            raise KeyError(language_code, variant)
-        return messagesets
+        if pomsgsets is None:
+            raise NotFoundError(language_code, variant)
+        return pomsgsets
 
     def translationsForLanguage(self, language):
         # Find the number of plural forms.
