@@ -574,6 +574,115 @@ def parse_cformat_string(s):
 
     raise ValueError(s)
 
+def normalize_newlines(s):
+    r"""Convert newlines to Unix form.
+
+    >>> normalize_newlines('foo')
+    'foo'
+    >>> normalize_newlines('foo\n')
+    'foo\n'
+    >>> normalize_newlines('foo\r')
+    'foo\n'
+    >>> normalize_newlines('foo\r\n')
+    'foo\n'
+    >>> normalize_newlines('foo\r\nbar\r\n\r\nbaz')
+    'foo\nbar\n\nbaz'
+    """
+
+    return s.replace('\r\n', '\n').replace('\r', '\n')
+
+def decode_rosetta_tabs(s):
+    r"""Decode Rosetta representation of tab characters.
+
+    Normal strings get passed through unmolested.
+
+    >>> decode_rosetta_tabs('foo')
+    'foo'
+    >>> decode_rosetta_tabs('foo\\nbar')
+    'foo\\nbar'
+
+    The string '[tab]' gets gonveted to a tab character.
+
+    >>> decode_rosetta_tabs('foo[tab]bar')
+    'foo\tbar'
+
+    The string '\[tab]' gets converted to a literal '[tab]'.
+
+    >>> decode_rosetta_tabs('foo\\[tab]bar')
+    'foo[tab]bar'
+
+    The string '\\[tab]' gets converted to a literal '\[tab]'.
+
+    >>> decode_rosetta_tabs('foo\\\\[tab]bar')
+    'foo\\[tab]bar'
+
+    And so on...
+
+    >>> decode_rosetta_tabs('foo\\\\\\[tab]bar')
+    'foo\\\\[tab]bar'
+    """
+
+    decoded = ''
+
+    while s:
+        if s.startswith('\\[tab]'):
+            decoded += '[tab]'
+            s = s[6:]
+        elif s.startswith('[tab]'):
+            decoded += '\t'
+            s = s[5:]
+        else:
+            decoded += s[0]
+            s = s[1:]
+
+    return decoded
+
+def encode_rosetta_tabs(s):
+    r"""Replace tabs with their Rosetta representation.
+
+    Normal strings get passed through unmolested.
+
+    >>> encode_rosetta_tabs('foo')
+    'foo'
+    >>> encode_rosetta_tabs('foo\\nbar')
+    'foo\\nbar'
+
+    Tabs get converted to '[tab]'.
+
+    >>> encode_rosetta_tabs('foo\tbar')
+    'foo[tab]bar'
+
+    Literal ocurrences of '[tab]' get escaped.
+
+    >>> encode_rosetta_tabs('foo[tab]bar')
+    'foo\\[tab]bar'
+
+    Escaped ocurrences themselves get escaped.
+
+    >>> encode_rosetta_tabs('foo\\[tab]bar')
+    'foo\\\\[tab]bar'
+
+    And so on...
+
+    >>> encode_rosetta_tabs('foo\\\\[tab]bar')
+    'foo\\\\\\[tab]bar'
+    """
+
+    encoded = ''
+
+    while s:
+        if s.startswith('\t'):
+            encoded += '[tab]'
+            s = s[1:]
+        elif s.startswith('[tab]'):
+            encoded += '\\[tab]'
+            s = s[5:]
+        else:
+            encoded += s[0]
+            s = s[1:]
+
+    return encoded
+
 def parse_translation_form(form):
     """Parse a form submitted to the translation widget.
 
@@ -590,6 +699,7 @@ def parse_translation_form(form):
     messageSets = {}
 
     # Extract message IDs.
+
     for key in form:
         match = re.match('set_(\d+)_msgid$', key)
 
@@ -613,7 +723,8 @@ def parse_translation_form(form):
             if not id in messageSets:
                 raise AssertionError("Orphaned translation in form.")
 
-            messageSets[id]['translations'][pluralform] = form[key]
+            messageSets[id]['translations'][pluralform] = (
+                decode_rosetta_tabs(normalize_newlines(form[key])))
 
     # Extract fuzzy statuses.
 
@@ -666,7 +777,7 @@ def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
 
     # Replace newlines and tabs with their respective representations.
 
-    return '\n'.join(lines).replace('\n', newline).replace('\t', '\\t')
+    return encode_rosetta_tabs(newline.join(lines))
 
 def check_po_syntax(s):
     parser = POParser()
