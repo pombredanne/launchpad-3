@@ -1,3 +1,6 @@
+import datetime
+import pytz
+
 from zope.interface import implements
 
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, EnumCol
@@ -9,20 +12,69 @@ from schoolbell.interfaces import ICalendarEvent
 from schoolbell.mixins import CalendarMixin, EditableCalendarMixin
 from schoolbell.mixins import CalendarEventMixin
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces import ILaunchpadCalendar, IHasOwner
-
-import datetime
-import pytz
 
 _utc_tz = pytz.timezone('UTC')
 
 class Calendar(SQLBase, CalendarMixin, EditableCalendarMixin):
     implements(ILaunchpadCalendar)
-    owner = ForeignKey(dbName='owner', notNull=True, foreignKey='Person')
     title = StringCol(dbName='title', notNull=True)
     revision = IntCol(dbName='revision', notNull=True, default=0)
+
+    _parent = None
+    def parent(self):
+        if not self._parent:
+            from canonical.launchpad.database import Person, Project, Product
+            # This statement will need updating if calendars can be
+            # added to other LP object types.
+            # The complicated query is required because calendars can
+            # have more than one type of owner.
+            result = self._connection.queryAll('''
+                SELECT
+                  calendar.id AS calendar_id,
+                  person.id   AS person_id,
+                  project.id  AS project_id,
+                  product.id  AS product_id
+                FROM ((calendar
+                  LEFT JOIN person  ON calendar.id = person.calendar)
+                  LEFT JOIN project ON calendar.id = project.calendar)
+                  LEFT JOIN product ON calendar.id = product.calendar
+                WHERE
+                  calendar.id = %s
+                ''' % sqlvalues(self.id))
+            # make sure we got back one row, and it corresponds to our calendar
+            assert len(result) == 1
+            result = result[0]
+            assert result[0] == self.id
+
+            if result[1] is not None: # person
+                self._parent = Person.get(result[1])
+            elif result[2] is not None:
+                self._parent = Project.get(result[2])
+            elif result[3] is not None:
+                self._parent = Product.get(result[3])
+            else:
+                # should not be reached
+                assert False, "Calendar is not attached to anything"
+        return self._parent
+    parent = property(parent)
+
+    def owner(self):
+        from canonical.launchpad.database import Person, Project, Product
+        parent = self.parent
+        if isinstance(parent, Person):
+            if parent.isTeam():
+                return parent.teamowner
+            else:
+                return parent
+        elif isinstance(parent, (Project, Product)):
+            return parent.owner
+        else:
+            # should not be reached
+            assert False, "Calendar attached to unknown object"
+    owner = property(owner)
 
     _eventsJoin = MultipleJoin('CalendarEvent', joinColumn='calendar')
 
@@ -96,16 +148,16 @@ class CalendarEvent(SQLBase, CalendarEventMixin):
 
     recurrence = None # TODO: implement this as a property
 
-    # The following attributes are all used for recurring events
-    recurrence_type = EnumCol(dbName='recurrence', notNull=True,
-                              enumValues=['', 'SECONDLY', 'MINUTELY', 'HOURLY',
-                                          'DAILY', 'WEEKLY', 'MONTHLY',
-                                          'YEARLY'],
-                              default='')
-    count = IntCol(dbName='count', default=None)
-    until = UtcDateTimeCol(dbName='until', default=None)
+##     # The following attributes are all used for recurring events
+##     recurrence_type = EnumCol(dbName='recurrence', notNull=True,
+##                               enumValues=['', 'SECONDLY', 'MINUTELY', 'HOURLY',
+##                                           'DAILY', 'WEEKLY', 'MONTHLY',
+##                                           'YEARLY'],
+##                               default='')
+##     count = IntCol(dbName='count', default=None)
+##     until = UtcDateTimeCol(dbName='until', default=None)
 
-    exceptions = StringCol(dbName='exceptions', default=None)
-    interval = IntCol(dbName='interval', default=None)
-    rec_list = StringCol(dbName='rec_list', default=None)
+##     exceptions = StringCol(dbName='exceptions', default=None)
+##     interval = IntCol(dbName='interval', default=None)
+##     rec_list = StringCol(dbName='rec_list', default=None)
 

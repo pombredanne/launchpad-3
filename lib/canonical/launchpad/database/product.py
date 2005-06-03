@@ -75,8 +75,7 @@ class Product(SQLBase):
                            default=None, forceDBName=True)
     def calendar(self):
         if not self._calendar:
-            self._calendar = Calendar(ownerID=self.owner.id,
-                                      title='%s Product Calendar' % self.displayname,
+            self._calendar = Calendar(title='%s Product Calendar' % self.displayname,
                                       revision=0)
         return self._calendar
     calendar = property(calendar)

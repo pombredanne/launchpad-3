@@ -3,7 +3,6 @@ SET client_min_messages TO error;
 
 CREATE TABLE Calendar (
     id serial NOT NULL PRIMARY KEY,
-    owner integer NOT NULL,
     title text NOT NULL,
     revision integer NOT NULL
 );
@@ -36,9 +35,6 @@ CREATE TABLE CalendarEvent (
     CONSTRAINT calendarevent_unique_id_key UNIQUE (unique_id)
 );
 
-ALTER TABLE Calendar
-    ADD CONSTRAINT "calendar_owner_fk" FOREIGN KEY (owner) REFERENCES Person(id);
-
 ALTER TABLE CalendarSubscription
     ADD CONSTRAINT "calendarsubscription_person_fk" FOREIGN KEY (person) REFERENCES Person(id);
 ALTER TABLE CalendarSubscription
@@ -54,6 +50,7 @@ ALTER TABLE CalendarEvent
 ALTER TABLE Person ADD COLUMN calendar integer;
 ALTER TABLE Person
     ADD CONSTRAINT "person_calendar_fk" FOREIGN KEY (calendar) REFERENCES Calendar(id);
+CREATE INDEX person_calendar_idx ON Person (calendar);
 ALTER TABLE Person ADD COLUMN timezone_name text;
 
 /* Add calendar column to Projects table */
@@ -61,12 +58,14 @@ ALTER TABLE Person ADD COLUMN timezone_name text;
 ALTER TABLE Project ADD COLUMN calendar integer;
 ALTER TABLE Project
     ADD CONSTRAINT "project_calendar_fk" FOREIGN KEY (calendar) REFERENCES Calendar(id);
+CREATE INDEX project_calendar_idx ON Project (calendar);
 
 /* Add calendar column to Products table */
 
 ALTER TABLE Product ADD COLUMN calendar integer;
 ALTER TABLE Product
     ADD CONSTRAINT "product_calendar_fk" FOREIGN KEY (calendar) REFERENCES Calendar(id);
+CREATE INDEX product_calendar_idx ON Product (calendar);
 
 /* security stuff -- should move to security.cfg */
 GRANT SELECT, INSERT, UPDATE ON Calendar TO GROUP write;
