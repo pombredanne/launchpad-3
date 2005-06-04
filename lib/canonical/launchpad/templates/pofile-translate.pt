@@ -1,4 +1,4 @@
-<tal:block replace="view/processForm" />
+<tal:block replace="view/processTranslations" />
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
@@ -6,55 +6,18 @@
 
   <body>
 
-    <div metal:fill-slot="portlets_one">
-      <div class="portlet">
-        <h4>What&#8217;s going on here?</h4>
-        <div class="portletBody">
-          <ul>
-            <li><a href="/rosetta/+about">About Rosetta</a></li>
-          </ul>
-        </div>
-      </div>
+<metal:leftportlets fill-slot="portlets_one">
+      <div tal:replace="structure view/aboutPortlet" />
+      <div tal:replace="structure view/quickHelpPortlet" />
+      <div tal:replace="structure view/statsPortlet" />
+      <div tal:replace="structure view/contributorsPortlet" />
+</metal:leftportlets>
 
-      <div class="portlet">
-        <h4>Special characters</h4>
-
-        <div class="portletBody">
-            <ul>
-            <li><span class="po-message-special"
-                style="padding: 0.2em">&#x2022;</span> &ndash; a space
-                character</li>
-            <li><span class="po-message-special"
-                style="padding: 0.2em">&#x21b5;</span> &ndash; a new line</li>
-            </ul>
-            <p>
-              In your translation, include spaces and new lines matching those indicated. (Don&#8217;t use these symbols).
-            </p>
-        </div>
-      </div>
-
-      <div class="portlet">
-        <h4>PO File Details</h4>
-
-        <div class="portletBody">
-          <a href="." tal:content="context/language/englishname">Language</a>
-        </div>
-      </div>
-
-      <div class="portlet">
-        <h4>template description</h4>
-
-        <div class="portletBody">
-          <tal:block tal:condition="context/description"
-                     tal:content="context/description">
-            template description
-          </tal:block>
-          <tal:block tal:condition="not:context/description">
-            This template has no description.
-          </tal:block>
-        </div>
-      </div>
-    </div>
+<metal:rightportlets fill-slot="portlets_two">
+      <div tal:replace="structure view/actionsPortlet" />
+      <div tal:replace="structure view/detailsPortlet" />
+      <div tal:replace="structure view/translatorsPortlet" />
+</metal:rightportlets>
 
     <div metal:fill-slot="main">
 
@@ -287,6 +250,13 @@
                         <tal:comment tal:replace="nothing">
                           XXX: Carlos Perello Marin 2005-05-05
                           This 'python:' expression should be fixed by SteveA.
+
+                          Note that we use a separate tag inside the textarea
+                          rather than using tal:content on the textarea
+                          directly so that leading spaces are preserved. This
+                          is a workarou ndfor browser weirdness. Note also
+                          that the lack of indentation is deliberate: the
+                          content must begin directly after the newline.
                         </tal:comment>
                         <textarea
                           tal:condition="messageSet/isMultiline"
@@ -295,9 +265,18 @@
                             rows messageSet/getMaxLinesCount;
                             tabindex view/makeTabIndex;
                             "
-                          tal:content="structure python:messageSet.getTranslation(index)"
                           >
-                        </textarea>
+<tal:thing replace="structure python:messageSet.getTranslation(index)" /></textarea>
+                        <tal:block define="suggestions python:messageSet.getSuggestedTexts(index)">
+                        <tal:block condition="suggestions">
+                          <span style="color: #dd0000;">
+                          Suggestions:
+                          <tal:block repeat="suggestion suggestions">
+                            <span tal:replace="suggestion">suggestion</span><br />
+                          </tal:block>
+                          <span>
+                        </tal:block>
+                        </tal:block>
                         </tal:block>
                         <div>
                           <label class="fuzzy-checkbox">

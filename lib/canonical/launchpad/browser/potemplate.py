@@ -18,9 +18,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import ILaunchBag, IPOTemplateSet, \
     IPOTemplateNameSet, IPersonSet, RawFileAttachFailed
 from canonical.launchpad.components.poexport import POExport
+from canonical.launchpad.browser.pofile import POFileView
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.pofile import ViewPOFile
-
 
 class POTemplateSubsetView:
 
@@ -34,6 +33,12 @@ class POTemplateSubsetView:
 
 
 class POTemplateView:
+
+    actionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-potemplate-actions.pt')
+
+    detailsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-potemplate-details.pt')
 
     statusLegend = ViewPageTemplateFile(
         '../templates/portlet-rosetta-status-legend.pt')
@@ -88,7 +93,7 @@ class POTemplateView:
     def pofiles(self):
         """Iterate languages shown when viewing this PO template.
 
-        Yields a ViewPOFile object for each language this template has
+        Yields a POFileView object for each language this template has
         been translated into, and for each of the user's languages.
         Where the template has no POFile for that language, we use
         a DummyPOFile.
@@ -107,7 +112,7 @@ class POTemplateView:
             pofile = self.context.queryPOFileByLang(language.code)
             if not pofile:
                 pofile = helpers.DummyPOFile(self.context, language)
-            yield ViewPOFile(pofile, self.request)
+            yield POFileView(pofile, self.request)
 
     def submitForm(self):
         """Called from the page template to do any processing needed if a form
@@ -127,7 +132,7 @@ class POTemplateView:
 
         file = self.request.form['file']
 
-        if type(file) is not FileUpload:
+        if not isinstance(file, FileUpload):
             if file == '':
                 self.status_message = 'Please, select a file to upload.'
             else:

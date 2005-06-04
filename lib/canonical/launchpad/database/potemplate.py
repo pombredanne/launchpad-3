@@ -102,12 +102,46 @@ class POTemplate(SQLBase, RosettaStats):
         return self.getPOTMsgSets()
 
     def __getitem__(self, key):
+        """See IPOTemplate."""
         return self.messageSet(key, onlyCurrent=True)
 
     # properties
+    @property
     def name(self):
+        """See IPOTemplate."""
         return self.potemplatename.name
-    name = property(name)
+
+    @property
+    def translationgroups(self):
+        """See IPOTemplate."""
+        ret = []
+        if self.distrorelease:
+            tg = self.distrorelease.distribution.translationgroup
+            if tg is not None:
+                ret.append(tg)
+        elif self.productrelease:
+            product_tg = self.productrelease.product.translationgroup
+            if product_tg is not None:
+                ret.append(product_tg)
+            project = self.productrelease.product.project
+            if project is not None:
+                if project.translationgroup is not None:
+                    ret.append(project.translationgroup)
+        else:
+            raise NotImplementedError, 'Cannot find translation groups.'
+        return ret
+
+    @property
+    def translationpermission(self):
+        """See IPOTemplate."""
+        # in the case of a distro template, use the distro translation
+        # permission settings
+        if self.distrorelease:
+            return self.distrorelease.distribution.translationpermission
+        # for products, use the "most restrictive permission" between
+        # project and product.
+        elif self.productrelease:
+            return self.productrelease.product.aggregatetranslationpermission
 
     def messageSet(self, key, onlyCurrent=False):
         query = 'potemplate = %d' % self.id
@@ -350,30 +384,6 @@ class POTemplate(SQLBase, RosettaStats):
             ''' % self.id)
         return results.count() > 0
 
-    def canEditTranslations(self, person):
-        """See IPOTemplate."""
-        # XXX: should this be in the authorization code?
-        #      -- SteveAlexander, 2005-04-23
-        if self.distrorelease is None:
-            return True
-
-        owner = self.owner
-
-        if ITeam.providedBy(owner) and person.inTeam(owner):
-            return True
-        elif owner.id == person.id:
-            return True
-
-        # Now we check for the owners of the PO files.
-        for pofile in self.poFiles:
-            owner = pofile.owner
-            if ITeam.providedBy(owner) and person.inTeam(owner):
-                return True
-            elif owner.id == person.id:
-                return True
-
-        return False
-
     # Methods defined in IEditPOTemplate
     def expireAllMessages(self):
         """See IPOTemplate."""
@@ -611,6 +621,7 @@ class POTemplateSubset:
             raise NotFoundError, name
         return result
 
+    @property
     def title(self):
         titlestr = ''
         if self.distrorelease:
@@ -622,7 +633,6 @@ class POTemplateSubset:
             titlestr += self.productrelease.productseries.product.displayname
             titlestr += ' ' + self.productrelease.version
         return titlestr
-    title = property(title)
 
     def new(self, potemplatename, title, contents, owner):
         if self.sourcepackagename is not None:

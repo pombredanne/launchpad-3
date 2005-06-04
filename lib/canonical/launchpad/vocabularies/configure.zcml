@@ -1,5 +1,5 @@
 <configure xmlns="http://namespaces.zope.org/zope">
-    
+
     <vocabulary
         name="BugTracker"
         factory="canonical.launchpad.vocabularies.BugTrackerVocabulary"
@@ -138,6 +138,21 @@
     <vocabulary
         name="ValidGPGKey"
         factory="canonical.launchpad.vocabularies.ValidGPGKeyVocabulary"
+        />
+
+    <vocabulary
+        name="Language"
+        factory="canonical.launchpad.vocabularies.LanguageVocabulary"
+        />
+
+    <vocabulary
+        name="TranslationGroup"
+        factory="canonical.launchpad.vocabularies.TranslationGroupVocabulary"
+        />
+
+    <vocabulary
+        name="TranslationPermission"
+        factory="canonical.launchpad.vocabularies.TranslationPermissionVocabulary"
         />
 
     <vocabulary

@@ -4,7 +4,7 @@
     i18n:domain="doap">
 <body>
 
-<div metal:fill-slot="main">
+  <div metal:fill-slot="main">
 
     <h1>Welcome to Launchpad's DOAP Registry!</h1>
 
@@ -24,14 +24,14 @@
 
 	<ul>
 
-        <li><a href="products/">Find Product</a>: find your open source
-        product if it has been registered in The Launchpad.</li>
+      <li><a href="/products/">Find Product</a>: find your open source
+      product if it has been registered in The Launchpad.</li>
 
-        <li><a href="products/+new">Register Product</a>: register an open
-        source product with The Launchpad.</li>
+      <li><a href="/products/+new">Register Product</a>: register an open
+      source product with The Launchpad.</li>
 
-        <li><a href="products/+all">All Products</a>: see a complete list
-        of all open source products registered with The Launchpad.</li>
+      <li><a href="/products/+all">All Products</a>: see a complete list
+      of all open source products registered with The Launchpad.</li>
 
 	</ul>
 
@@ -46,19 +46,19 @@
     using the links below:</p>
 
     <ul>
-    
-        <li><a href="projects/">Find Project</a>: find your open source
-        project if it has been registered in The Launchpad.</li>
+   
+      <li><a href="/projects/">Find Project</a>: find your open source
+      project if it has been registered in The Launchpad.</li>
 
-        <li><a href="projects/+new">Register Project</a>: register an open
-        source project with The Launchpad.</li>
+      <li><a href="/projects/+new">Register Project</a>: register an open
+      source project with The Launchpad.</li>
 
-        <li><a href="projects/+all">All Projects</a>: see a complete list
-        of all open source projects registered with The Launchpad.</li>
+      <li><a href="/projects/+all">All Projects</a>: see a complete list
+      of all open source projects registered with The Launchpad.</li>
 
     </ul>
 
-</div>
+  </div>
 </body>
 </html>
 

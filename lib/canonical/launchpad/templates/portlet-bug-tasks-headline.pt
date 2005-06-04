@@ -1,93 +1,115 @@
-<!--
-    This is the main bug page tasks portal. It should show only
-    the tasks that are critical to see in the current context.
-    Other tasks, in all their glory, can be displayed on a
-    specialised tasks page.
--->
 
 <div tal:omit-tag
      tal:define="bug_url string:/malone/bugs/${context/id}">
-<table class="data rowNavigation" style="width: 100%;">
-    <thead>
-        <tr>
-            <th>Upstream / Package</th>
-            <th>Status</th>
-            <th>Severity</th>
-            <th>Priority</th>
-            <th>Assigned to</th>
-        </tr>
-    </thead>
 
+<table class="listing"
+       style="width: 100%; font-size: 75%; margin-top: 2px;">
 
-    <tbody>
-        <!-- Upstream Tasks -->
-        <tr tal:repeat="bugtask context/bugtasks">
-            <td>
-                <a href=""
-                   tal:condition="bugtask/product"
-                   tal:attributes="href bugtask/@@absolute_url">
-                    upstream <span tal:replace="bugtask/product/name">$Product.name</span>
-                </a>
+  <caption>Needs fixing in...</caption>
 
-                <a href=""
-                   tal:condition="python: bugtask.distribution and bugtask.sourcepackagename"
-                   tal:attributes="href bugtask/@@absolute_url">
-                    <span tal:replace="bugtask/distribution/name">distro</span>
-                    <span tal:replace="bugtask/sourcepackagename/name">
-                        sourcepackagename
-                    </span>
-                </a>
+  <thead>
 
-                <a href=""
-                   tal:condition="python: bugtask.distribution and not bugtask.sourcepackagename"
-                   tal:attributes="href bugtask/@@absolute_url">
-                    <span tal:replace="bugtask/distribution/name">distro</span>
-                </a>
+    <tr>
+      <th>Upstream / Distro</th>
+      <th>Status</th>
+      <th>Severity</th>
+      <th>Priority</th>
+      <th>Assigned to</th>
+    </tr>
 
-                <a href=""
-                    tal:condition="python: bugtask.distrorelease and bugtask.sourcepackagename"
-                    tal:attributes="href bugtask/@@absolute_url">
-                        <span tal:replace="string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
-                            distro
-                        </span>
-                        <span tal:replace="bugtask/sourcepackagename/name">
-                            sourcepackagename
-                        </span>
-                </a>
+  </thead>
 
-                <a href=""
-                    tal:condition="python: bugtask.distrorelease and not bugtask.sourcepackagename"
-                    tal:attributes="href bugtask/@@absolute_url">
-                        <span tal:replace="string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
-                            distro
-                        </span>
-                </a>
-             </td>
+  <tbody>
+    <!-- Upstream Tasks -->
+    <tr tal:repeat="bugtask context/bugtasks">
+      <td>
+        <a href="#"
+           tal:condition="bugtask/product"
+           tal:attributes="href bugtask/@@absolute_url">
+          upstream <span tal:replace="bugtask/product/name">$Product.name</span>
+        </a>
+        <a href="#"
+           tal:condition="python: bugtask.distribution and bugtask.sourcepackagename"
+           tal:attributes="href bugtask/@@absolute_url">
+          <span tal:replace="bugtask/distribution/name">distro</span>
+          <span tal:replace="bugtask/sourcepackagename/name">
+            sourcepackagename
+          </span>
+        </a>
+        <a href="#"
+           tal:condition="python: bugtask.distribution and not bugtask.sourcepackagename"
+           tal:attributes="href bugtask/@@absolute_url">
+          <span tal:replace="bugtask/distribution/name">distro</span>
+        </a>
+        <a href="#"
+           tal:condition="python: bugtask.distrorelease and bugtask.sourcepackagename"
+           tal:attributes="href bugtask/@@absolute_url">
+          <span tal:replace="string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
+            distro distrorelease
+          </span>
+          <span tal:replace="bugtask/sourcepackagename/name">
+            sourcepackagename
+          </span>
+        </a>
+        <a href="#"
+           tal:condition="python: bugtask.distrorelease and not bugtask.sourcepackagename"
+           tal:attributes="href bugtask/@@absolute_url">
+          <span tal:replace="string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
+            distro distrorelease
+          </span>
+        </a>
+      </td>
 
-            <td tal:content="bugtask/status/title">
-                $BugTask.status
-            </td>
+      <td tal:content="bugtask/status/title">
+        $BugTask.status
+      </td>
 
-            <td tal:content="bugtask/severity/title"
-                tal:attributes="class string:severity${bugtask/severity/title}">
-                Critical
-            </td>
+      <td tal:content="bugtask/severity/title"
+          tal:attributes="class string:severity${bugtask/severity/title}">
+        Critical
+      </td>
 
-            <td tal:content="bugtask/priority/title"
-                tal:attributes="class string:priority${bugtask/priority/title}">
-                Medium
-            </td>
+      <td tal:content="bugtask/priority/title"
+          tal:attributes="class string:priority${bugtask/priority/title}">
+        Medium
+      </td>
 
-            <td>
-              <img src="/++resource++user.gif" alt=""
-                   tal:condition="bugtask/assignee" />
-              <tal:assignee content="bugtask/assignee/browsername|nothing">
-                assignee.browsername
-              </tal:assignee>
-            </td>
+      <td>
+        <span tal:condition="bugtask/assignee" tal:omit-tag="">
+          <img src="/++resource++user.gif" alt="" />
+          <span tal:replace="bugtask/assignee/browsername">
+            assignee.browsername
+          </span>
+        </span>
+      </td>
 
-        </tr>
+    </tr>
 
-    </tbody>
+  </tbody>
+
 </table>
+
 </div>
+
+<div style="font-size: 75%; text-align: right; clear: both; text-decoration: none;">
+  Indicate bug also exists: 
+  <img src="/++resource++add.gif" alt="+" />
+  <a href="+upstreamtask"
+     title="Mark this bug as occurring upstream">
+    Upstream...
+  </a>
+
+  <img src="/++resource++add.gif" alt="+" />
+  <a href="+distrotask"
+     title="Mark this bug as occurring in a distro package">
+    In Distro...
+  </a>
+
+  <img src="/++resource++add.gif" alt="+" />
+  <a href="+distroreleasetask"
+     title="Target the fixing of this bug to a specific distro release">
+    In Distro Release...
+  </a>
+
+</div>
+

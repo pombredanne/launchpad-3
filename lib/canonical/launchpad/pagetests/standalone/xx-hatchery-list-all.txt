@@ -1,7 +1,8 @@
-Check that we can view a page of all projects.
+
 
   >>> print http(r"""
   ... GET /projects/+all HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.7,af;q=0.3
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -13,10 +14,10 @@ Check that we can view a page of all projects.
       <p>A complete list:</p>
   ...
 
-Check that we can view a page of all products.
 
   >>> print http(r"""
   ... GET /products/+all HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.7,af;q=0.3
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...

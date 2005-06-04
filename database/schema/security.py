@@ -139,7 +139,16 @@ def main(options):
     schema = DbSchema(con)
 
     # Add our two automatically maintained groups
-    schema.groups.extend(['read', 'admin'])
+    for group in ['read', 'admin']:
+        if group in schema.principals:
+            for user in schema.users:
+                cur.execute("ALTER GROUP %s DROP USER %s" % (
+                    quote_identifier(group), quote_identifier(user)
+                    ))
+        else:
+            cur.execute("CREATE GROUP %s" % quote_identifier(group))
+            schema.groups.append(group)
+            schema.principals.append(group)
 
     # Create all required groups and users.
     for section_name in config.sections():
@@ -316,8 +325,7 @@ if __name__ == '__main__':
             help="Owner of PostgreSQL objects"
             )
     parser.add_option(
-            "-d", "--database", dest="dbname",
-            default=os.environ.get("LP_DBNAME", "launchpad_dev"),
+            "-d", "--database", dest="dbname", default=lp.dbname,
             help="PostgreSQL database."
             )
 #     parser.add_option(

@@ -86,10 +86,11 @@ from canonical.launchpad.interfaces.sourcepackage import *
 from canonical.launchpad.interfaces.sourcepackageindistro import *
 from canonical.launchpad.interfaces.sourcepackagename import *
 from canonical.launchpad.interfaces.sourcepackagerelease import *
-#from canonical.launchpad.interfaces.sourcesource import *
 from canonical.launchpad.interfaces.spokenin import *
 from canonical.launchpad.interfaces.ssh import *
 from canonical.launchpad.interfaces.translationeffort import *
+from canonical.launchpad.interfaces.translationgroup import *
+from canonical.launchpad.interfaces.translator import *
 from canonical.launchpad.interfaces.vpoexport import *
 from canonical.launchpad.interfaces.vsourcepackagereleasepublishing import *
 from canonical.launchpad.interfaces.wikiname import *

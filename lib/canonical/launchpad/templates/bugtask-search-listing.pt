@@ -159,7 +159,7 @@
                         package_name task/sourcepackagename/name|nothing;
                         bug_link task/bug/@@absolute_url;
                         ass_owner task/owner/name|nothing;
-                        potential_assignee logged_in/displayname|nothing;
+                        potential_assignee logged_in/browsername|nothing;
                         status task/status/title;
                         assignee task/assignee/name|python:'';
                         priority task/priority/title;
@@ -209,11 +209,11 @@
                  tal:attributes="href bug_link">date</a>
           </td>
           <td tal:condition="python:'submittedby' in listing_columns">
-              <a tal:content="task/owner/displayname|string:-"
+              <a tal:content="task/owner/browsername|string:-"
                  tal:attributes="href bug_link">name</a>
           </td>
           <td tal:condition="python:'assignedto' in listing_columns">
-              <a tal:content="task/assignee/displayname|string:-"
+              <a tal:content="task/assignee/browsername|string:-"
                  tal:attributes="href bug_link;
                                  id assigneeid;">somebody</a>
           </td>

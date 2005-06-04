@@ -8,37 +8,38 @@
 
 <div metal:fill-slot="main">
 
-    <tal:block tal:condition="view/joinAllowed">
-      <tal:block tal:condition="view/userCanRequestToJoin">
-        <h3>Are you sure you want to join 
-          <span tal:replace="context/browsername" />?</h3>
+  <tal:block tal:condition="view/userCanRequestToJoin">
+    <h3>Are you sure you want to join 
+      <span tal:replace="context/browsername" />?</h3>
 
-        <p>This is a <span tal:replace="view/subscriptionPolicyDesc" /></p>
+    <p>This is a <span tal:replace="context/subscriptionPolicyDesc" /></p>
 
-        <p class="portalMessage" tal:condition="view/userHaveMembershipEntry" 
-           tal:content="view/membershipStatusDesc" />
-        <form name="join" action="" method="POST">
-        <table width="100%">
-          <tr><td>
-            <input type="submit" name="goback" value="Back to team" />
-          </td><td align="right">
-            <input type="submit" name="join" value="Join" />
-          </td></tr>
-        </table>
-        </form>
-      </tal:block>
+    <p class="portalMessage" tal:condition="view/userHaveMembershipEntry" 
+       tal:content="view/membershipStatusDesc" />
+    <form name="join" action="" method="POST">
+    <table width="100%">
+      <tr><td>
+        <input type="submit" name="goback" value="Back to team" />
+      </td><td align="right">
+        <input type="submit" name="join" value="Join" />
+      </td></tr>
+    </table>
+    </form>
+  </tal:block>
 
-      <tal:block tal:condition="not: view/userCanRequestToJoin">
-        <p class="portalMessage" tal:content="view/membershipStatusDesc" />
-        <p><a href="./">Back to <span tal:replace="context/browsername" /></a></p>
-      </tal:block>
-    </tal:block>
+  <tal:block tal:condition="not: view/userCanRequestToJoin">
+    <p tal:condition="view/joinAllowed" class="portalMessage">
+      <span tal:replace="view/membershipStatusDesc" />
+      You can't join this team.
+    </p>
 
-    <tal:block tal:condition="not: view/joinAllowed">
-      <h3><span tal:replace="context/browsername" /> is a restricted team.
-          Only a team administrator can add new members.</h3>
-      <p><a href="./">Back to <span tal:replace="context/browsername" /></a></p>
-    </tal:block>
+    <p tal:condition="not: view/joinAllowed" class="portalMessage">
+      <span tal:replace="context/browsername" /> is a restricted team.
+      Only a team administrator can add new members.
+    </p>
+
+    <p><a href="./">Back to <span tal:replace="context/browsername" /></a></p>
+  </tal:block>
 
 </div> 
 

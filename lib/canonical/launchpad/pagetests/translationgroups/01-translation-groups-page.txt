@@ -1,0 +1,14 @@
+
+Make sure we can actually display the Translation Groups page.
+
+  >>> print http(r"""
+  ... GET /rosetta/groups/ HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+            <h2>Rosetta Translation Groups</h2>
+  ...
+

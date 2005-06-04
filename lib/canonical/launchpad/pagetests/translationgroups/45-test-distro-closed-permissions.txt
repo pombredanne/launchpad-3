@@ -1,0 +1,54 @@
+
+So now Foo Bar is the Afrikaans translator for the PolyGlot translation
+group, and they are the translation group for Ubuntu, which has Closed
+translations. This means that Foo Bar should be able to translate any
+strings in Ubuntu to Afrikaans. In other languages, Foo Bar should be
+restricted only to seeing and contributing translations for strings which
+are not already translated at all.
+
+Let's see if Foo Bar can see the translated strings in Souther Sotho. We
+expect that they will not have the widget to allow them to show the
+translated strings:
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/st/+translate HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+      <!-- Display settings. -->
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+          <!-- The translation form. -->
+  ...
+
+However, in Afrikaans, Foo Bar DOES have the ability to see the widget to
+switch to editing previously-translated strings.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+translate HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+            <select name="show">
+              <option value="all">
+                all items
+              </option>
+              <option value="untranslated">
+                untranslated items
+              </option>
+              <option value="translated">
+                translated items
+              </option>
+            </select>
+  ...
+

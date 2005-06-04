@@ -10,7 +10,7 @@
     <content class="canonical.launchpad.database.Product">
         <allow interface="canonical.launchpad.interfaces.IProduct" />
         <require
-            permission="zope.Public"
+            permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IProduct"
         />
     </content>
@@ -140,6 +140,16 @@
         template="../templates/launchpad-editform.pt"
         lp:url="/products/$Product.name/+review">
     </browser:editform>
+
+    <browser:editform
+        name="+changetranslators"
+        for="canonical.launchpad.interfaces.IProduct"
+        schema="canonical.launchpad.interfaces.IProduct"
+        fields="translationgroup translationpermission"
+        permission="launchpad.Edit"
+        label="Select A New Translation Group"
+        template="../templates/launchpad-editform.pt"
+        lp:url="/products/$Product.name/+changetranslators" />
 
     <browser:addform
         name="+filebug"

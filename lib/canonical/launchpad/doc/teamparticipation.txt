@@ -106,6 +106,14 @@ True
 [u't2', u't3']
 
 
+It's important to note that even if p is not a member of t3, he still retain
+his rights over the team because he's the team's owner:
+
+>>> flush_database_updates()
+>>> p.inTeam(t3)
+True
+
+
 t2 can't leave() t5 because it's a team and teams take no actions. We have to
 call setMembershipStatus() for t2 in t5, to make it a DEACTIVATED member.
 

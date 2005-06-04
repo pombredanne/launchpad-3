@@ -110,6 +110,8 @@ class IPerson(Interface):
 
     teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
                        vocabulary='ValidTeamOwner')
+    teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
+                      readonly=True)
     teamdescription = Text(title=_('Team Description'), required=False,
                            readonly=False)
 
@@ -173,9 +175,12 @@ class IPerson(Interface):
     def browsername():
         """Return a textual name suitable for display in a browser."""
 
+    def isTeam():
+        """True if this Person is actually a Team, otherwise False."""
+
     def assignKarma(karmatype, points=None):
         """Assign <points> worth of karma to this Person.
-        
+
         If <points> is None, then get the default number of points from the
         given karmatype.
         """
@@ -187,7 +192,7 @@ class IPerson(Interface):
         """Removed the language from the list of know languages."""
 
     def inTeam(team):
-        """Return true if this person is in the given team.
+        """Return True if this person is a member or the owner of <team>.
         
         This method is meant to be called by objects which implement either
         IPerson or ITeam, and it will return True when you ask if a Person is
@@ -196,6 +201,9 @@ class IPerson(Interface):
 
     def hasMembershipEntryFor(team):
         """Tell if this person is a direct member of the given team."""
+
+    def hasParticipationEntryFor(team):
+        """Tell if this person is a direct/indirect member of the given team."""
 
     def join(team):
         """Join the given team if its subscriptionpolicy is not RESTRICTED.
@@ -279,6 +287,9 @@ class IPerson(Interface):
         In this case, we will return both "Rosetta pt Translators" and 
         "Rosetta Translators", because we are member of both of them.
         """
+
+    def subscriptionPolicyDesc():
+        """Return a long description of this team's subscription policy."""
 
 
 class ITeam(IPerson):
@@ -405,10 +416,6 @@ class IPersonSet(Interface):
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
         """
-
-    def getContributorsForPOFile(pofile):
-        """Return the list of persons that have an active contribution for a
-        concrete POFile."""
 
     def getUbuntites():
         """Return a set of person with valid Ubuntite flag."""

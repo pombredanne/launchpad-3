@@ -31,7 +31,7 @@
                 Welcome,
                 <a
                   tal:attributes="href string:/people/${request/lp:person/name}"
-                  tal:content="request/lp:person/displayname"
+                  tal:content="request/lp:person/browsername"
                 >
                   [An error has occurred in Launchpad. Please report the address of this page to a Launchpad admin.]
                 </a>

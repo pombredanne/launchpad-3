@@ -549,6 +549,8 @@ template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
 
+translationgroup = ContextTitle('Rosetta Translation Group: %s')
+
 ubuntite_list = 'FOAF: Ubuntite List'
 
 # ul_main_template is probably obselete

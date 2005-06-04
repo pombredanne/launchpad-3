@@ -31,7 +31,7 @@ class Bounty(SQLBase):
 
     # db field names
     name = StringCol(unique=True, notNull=True)
-    title = StringCol( notNull=True)
+    title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
     description = StringCol( notNull=True)
     usdvalue = CurrencyCol(notNull=True)

@@ -120,7 +120,7 @@ class IProductSeriesSourceAdmin(Interface):
         """enable this to sync"""
 
     def enableAutoSync():
-        """enable this sourcesource for automatic syncronisation"""
+        """enable this series RCS for automatic baz syncronisation"""
     
 
 class IProductSeriesSet(Interface):

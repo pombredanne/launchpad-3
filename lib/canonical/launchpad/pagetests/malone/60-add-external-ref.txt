@@ -71,5 +71,5 @@ how to add a URL external reference.
   ... """)
   HTTP/1.1 200 Ok
   ...
-      <h1>Bug Description and Discussion</h1>
+           <h2>Blackhole Trash folder</h2>
   ...

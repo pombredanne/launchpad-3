@@ -20,7 +20,7 @@ import canonical.sourcerer.deb.version
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.lp.dbschema import \
+from canonical.lp.dbschema import EnumCol, TranslationPermission, \
     BugSeverity, BugTaskStatus, RosettaImportStatus
 
 from canonical.launchpad.database.productseries import ProductSeries
@@ -41,52 +41,36 @@ class Product(SQLBase):
 
     project = ForeignKey(
         foreignKey="Project", dbName="project", notNull=False, default=None)
-
     owner = ForeignKey(
         foreignKey="Person", dbName="owner", notNull=True)
-
     name = StringCol(
         dbName='name', notNull=True, alternateID=True, unique=True)
-
     displayname = StringCol(dbName='displayname', notNull=True)
-
     title = StringCol(dbName='title', notNull=True)
-
     summary = StringCol(dbName='summary', notNull=True)
-
     description = StringCol(dbName='description', notNull=True)
-
     datecreated = UtcDateTimeCol(
         dbName='datecreated', notNull=True, default=UTC_NOW)
-
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
-
     screenshotsurl = StringCol(
         dbName='screenshotsurl', notNull=False, default=None)
-
     wikiurl =  StringCol(dbName='wikiurl', notNull=False, default=None)
-
     programminglang = StringCol(
         dbName='programminglang', notNull=False, default=None)
-
     downloadurl = StringCol(dbName='downloadurl', notNull=False, default=None)
-
     lastdoap = StringCol(dbName='lastdoap', notNull=False, default=None)
-
+    translationgroup = ForeignKey(dbName='translationgroup',
+        foreignKey='TranslationGroup', notNull=False, default=None)
+    translationpermission = EnumCol(dbName='translationpermission',
+        notNull=True, schema=TranslationPermission,
+        default=TranslationPermission.OPEN)
     active = BoolCol(dbName='active', notNull=True, default=True)
-
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
-
     autoupdate = BoolCol(dbName='autoupdate', notNull=True, default=False)
-
     freshmeatproject = StringCol(notNull=False, default=None)
-
     sourceforgeproject = StringCol(notNull=False, default=None)
-
     bugtasks = MultipleJoin('BugTask', joinColumn='product')
-
     branches = MultipleJoin('Branch', joinColumn='product')
-
     serieslist = MultipleJoin('ProductSeries', joinColumn='product')
 
     def releases(self):
@@ -175,6 +159,28 @@ class Product(SQLBase):
         # capitulate
         return None
     primary_translatable = property(primary_translatable)
+
+    def translationgroups(self):
+        tg = []
+        if self.translationgroup:
+            tg.append(self.translationgroup)
+        if self.project:
+            if self.project.translationgroup:
+                if self.project.translationgroup not in tg:
+                    tg.append(self.project.translationgroup)
+    translationgroups = property(translationgroups)
+
+    def aggregatetranslationpermission(self):
+        perms = [self.translationpermission]
+        if self.project:
+            perms.append(self.project.translationpermission)
+        # XXX reviewer please describe a better way to explicitly order
+        # the enums. The spec describes the order, and the values make
+        # it work, and there is space left for new values so we can
+        # ensure a consistent sort order in future, but there should be
+        # a better way.
+        return max(perms)
+    aggregatetranslationpermission = property(aggregatetranslationpermission)
 
     def newseries(self, form):
         # XXX sabdfl 16/04/05 HIDEOUS even if I was responsible. We should

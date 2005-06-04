@@ -1,0 +1,35 @@
+<div class="portlet">
+  <h4><span tal:replace="context/language/englishname">Spanish</span>
+  Translators:</h4>
+
+  <div class="portletBody">
+    <div class="portletContent even">
+
+      <tal:block repeat="translator context/translators">
+
+        <b tal:content="translator/translationgroup/title">Ubuntu
+        Translation Group</b>:<br />
+        <img src="/++resource++user.gif" />
+        <a tal:content="translator/translator/browsername"
+           tal:attributes="href
+             string:/people/${translator/translator/name}/">Ubuntu
+        Afrikaans Team</a><br />
+        <tal:block condition="translator/translator/isTeam">
+          Members:<br />
+          <tal:block repeat="person translator/translator/allmembers">
+            <img src="/++resource++user.gif" />
+            <a tal:content="person/browsername"
+               tal:attributes="href
+                 string:/people/${person/name}/" >Mark Shuttleworth</a>
+          </tal:block>
+        </tal:block>
+
+      </tal:block>
+
+      <div tal:condition="not: context/translators" tal:omit-tag="">
+        No translators currently designated for this PO file.
+      </div>  
+
+    </div>
+  </div>
+</div>

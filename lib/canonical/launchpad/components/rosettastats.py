@@ -25,7 +25,7 @@ class RosettaStats(object):
             percent *= 100
             percent = round(percent, 2)
         else:
-            percent = 0
+            percent = 0.0
         # We use float(str()) to prevent problems with some floating point
         # representations that could give us:
         # >>> x = 3.141592
@@ -45,7 +45,7 @@ class RosettaStats(object):
             percent *= 100
             percent = round(percent, 2)
         else:
-            percent = 0
+            percent = 0.0
         return float(str(percent))
 
     def rosettaCount(self, language=None):
@@ -59,7 +59,7 @@ class RosettaStats(object):
             percent *= 100
             percent = round(percent, 2)
         else:
-            percent = 0
+            percent = 0.0
         return float(str(percent))
 
     def translatedCount(self, language=None):
@@ -71,7 +71,7 @@ class RosettaStats(object):
             percent *= 100
             percent = round(percent, 2)
         else:
-            percent = 0
+            percent = 0.0
         return float(str(percent))
 
     def untranslatedCount(self, language=None):
@@ -104,6 +104,6 @@ class RosettaStats(object):
             percent *= 100
             percent = round(percent, 2)
         else:
-            percent = 0
+            percent = 0.0
         return float(str(percent))
 

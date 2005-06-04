@@ -16,7 +16,7 @@
             <b>Porting Lead:</b><br />
             <img src="/++resource++user.gif">
             <a tal:attributes="href string:/people/${context/owner/name}"
-               tal:content="context/owner/displayname">owner name</a><br /> 
+               tal:content="context/owner/browsername">owner name</a><br /> 
 
         </div>
     </div>

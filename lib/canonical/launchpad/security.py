@@ -17,6 +17,7 @@ from canonical.launchpad.interfaces import IMilestone, IBug, IBugTask
 from canonical.launchpad.interfaces import IUpstreamBugTask, IDistroBugTask, \
      IDistroReleaseBugTask
 from canonical.launchpad.interfaces import IReadOnlyUpstreamBugTask
+from canonical.launchpad.interfaces import ITranslator
 from canonical.launchpad.interfaces import IProduct, IProductRelease
 from canonical.launchpad.interfaces import IPOTemplate, IPOFile, \
     IPOTemplateName, IPOTemplateNameSet, ISourcePackage
@@ -58,10 +59,6 @@ class EditByOwnersOrAdmins(AuthorizationBase):
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.obj.owner) or user.inTeam(admins)
-
-
-class EditByOwnerOfProduct(EditByOwnersOrAdmins):
-    usedfor = IProduct
 
 
 class AdminSeriesSourceByButtSource(AuthorizationBase):
@@ -334,18 +331,29 @@ class AddPOTemplate(OnlyRosettaExpertsAndAdmins):
     usedfor = IProductRelease
 
 
-class EditPOFileDetails(AuthorizationBase):
-    permission = 'launchpad.Edit'
+class EditPOFileDetails(EditByOwnersOrAdmins):
     usedfor = IPOFile
 
     def checkAuthenticated(self, user):
         """Allow the owner of the POFile if it's not in a product release.
         """
-        if self.obj.potemplate.productrelease is not None:
+        if self.obj.potemplate.productrelease is None:
+            return EditByOwnersOrAdmins.checkAuthenticated(self, user)
+        else:
             # It's a PO file from a product, it has no restrictions.
             return True
-        else:
-            return user.inTeam(self.obj.owner)
+
+
+class ChangeTranslatorInGroup(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = ITranslator
+
+    def checkAuthenticated(self, user):
+        """Allow the owner of a translation group to edit the translator
+        of any language in the group."""
+        return (user.inTeam(self.obj.translationgroup.owner) or
+                OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user))
+
 
 # XXX: Carlos Perello Marin 2005-05-24: This should be using
 # SuperSpecialPermissions when implemented.
