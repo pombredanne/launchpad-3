@@ -162,7 +162,7 @@ class SignedCodeOfConduct(SQLBase):
         """Build a Fancy Title for CoC."""
         # XXX: cprov 20040224
         # We need the proposed field 'version'
-        displayname = '%s' % self.owner.displayname
+        displayname = '%s' % self.owner.browsername
 
         if self.signingkey:
             displayname += '(%s)' % self.signingkey.keyid
@@ -304,7 +304,7 @@ class SignedCodeOfConductSet:
         content = ('State: %s\n'
                    'Comment: %s\n'
                    'Modified by %s'
-                    % (state, admincomment, recipient.displayname))
+                    % (state, admincomment, recipient.browsername))
 
         # Send Advertisement Email if preferredemail is set.
         if sign.owner.preferredemail:
@@ -317,7 +317,7 @@ class SignedCodeOfConductSet:
         active = True
 
         subject = 'Launchpad: Code Of Conduct Signature Acknowledge'
-        content = 'Paper Submitted acknowledge by %s' % recipient.displayname
+        content = 'Paper Submitted acknowledge by %s' % recipient.browsername
 
         # Send Advertisement Email if preferredemail is set
         if user.preferredemail:
@@ -332,7 +332,7 @@ def sendAdvertisementEmail(user, subject, content):
 
     fromaddress = "Launchpad Code Of Conduct System <noreply@ubuntu.com>"
 
-    replacements = {'user': user.displayname,
+    replacements = {'user': user.browsername,
                     'content': content}
 
     message = template % replacements
