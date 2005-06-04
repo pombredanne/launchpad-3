@@ -8,4 +8,5 @@ def test_suite():
     return doctest.DocTestSuite(canonical.database.datetimecol)
 
 if __name__ == '__main__':
-    unittest.main()
+    runner = unittest.TextTestRunner()
+    runner.run(test_suite())
