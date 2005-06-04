@@ -91,7 +91,11 @@ This is handy for examining the tar files that are generated.
   >>> from canonical.launchpad.helpers import string_to_tarfile
   >>> def examine_tarfile(tarfile):
   ...     for member in tarfile.getmembers():
-  ...         print "| %5d | %s" % (member.size, member.name)
+  ...         if member.isreg():
+  ...             lines = len(tarfile.extractfile(member).readlines())
+  ...         else:
+  ...             lines = 0
+  ...         print "| %5d | %s" % (lines, member.name)
 
 First, export without a date limit: should get both PO files.
 
@@ -100,11 +104,11 @@ First, export without a date limit: should get both PO files.
   |     0 | rosetta-grumpy/
   |     0 | rosetta-grumpy/es/
   |     0 | rosetta-grumpy/es/LC_MESSAGES/
-  |   720 | rosetta-grumpy/es/LC_MESSAGES/test.po
+  |    22 | rosetta-grumpy/es/LC_MESSAGES/test.po
   |     0 | rosetta-grumpy/cy/
   |     0 | rosetta-grumpy/cy/LC_MESSAGES/
-  |   762 | rosetta-grumpy/cy/LC_MESSAGES/test.po
-  |     9 | rosetta-grumpy/timestamp.txt
+  |    23 | rosetta-grumpy/cy/LC_MESSAGES/test.po
+  |     1 | rosetta-grumpy/timestamp.txt
 
 Check the files look OK.
 
@@ -166,8 +170,8 @@ Then, export with a date limit: we should only get the second PO file.
   |     0 | rosetta-grumpy/
   |     0 | rosetta-grumpy/cy/
   |     0 | rosetta-grumpy/cy/LC_MESSAGES/
-  |   762 | rosetta-grumpy/cy/LC_MESSAGES/test.po
-  |     9 | rosetta-grumpy/timestamp.txt
+  |    23 | rosetta-grumpy/cy/LC_MESSAGES/test.po
+  |     1 | rosetta-grumpy/timestamp.txt
 
   >>> LibrarianTestSetup().tearDown()
   >>> LaunchpadFunctionalTestSetup().tearDown()
