@@ -442,6 +442,7 @@ class POFileView:
                     break
 
             if has_translations:
+
                 msgids_text = [messageid.msgid
                                for messageid in list(pot_set.messageIDs())]
 
@@ -567,12 +568,6 @@ class POMsgSetView:
         if len(self.msgids) == 0:
             raise AssertionError(
                 'Found a POTMsgSet without any POMsgIDSighting')
-
-        self.msgidHasTab = False
-
-        for msgid in self.msgids:
-            if '\t' in msgid.msgid:
-                self.msgidHasTab = True
 
     def getMsgID(self):
         """Return a msgid string prepared to render as a web page."""

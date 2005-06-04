@@ -378,21 +378,11 @@ def test_parse_translation_form():
     test.
 
     >>> x = parse_translation_form({
-    ...     'set_1_msgid' : 1,
-    ...     'set_1_translation_pt_BR_0' : 'bar',
-    ...     })
+    ... 'set_1_msgid' : 1,
+    ... 'set_1_translation_pt_BR_0' : 'bar',
+    ... })
     >>> x[1]['translations'][0]
     'bar'
-
-    Newlines in translations should be normalised to Unix style (line feeds
-    only).
-
-    >>> x = parse_translation_form({
-    ...     'set_1_msgid': 1,
-    ...     'set_1_translation_cy_0': 'foo\r\nbar',
-    ...     })
-    >>> x[1]['translations'][0]
-    'foo\nbar'
     '''
 
 def test_msgid_html():
@@ -428,15 +418,12 @@ def test_msgid_html():
     Test treatment of tabs.
 
     >>> msgid_html(u'foo\tbar', [])
-    u'foo[tab]bar'
+    u'foo\\tbar'
     '''
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(DocTestSuite())
-    suite.addTest(DocTestSuite(helpers))
-    return suite
+    return DocTestSuite()
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(test_suite())
