@@ -178,6 +178,7 @@ class ProductSeriesView(object):
             return
         # Extract details from the form and update the Product
         # we don't let people edit the name because it's part of the url
+        self.name = form.get('name', self.name)
         self.displayname = form.get('displayname', self.displayname)
         self.summary = form.get('summary', self.summary)
         self.releaseroot = form.get("releaseroot", self.releaseroot) or None
@@ -187,6 +188,7 @@ class ProductSeriesView(object):
             if not validate_release_root(self.releaseroot):
                 self.errormsgs.append('Invalid release root URL')
                 return
+        self.context.name = self.name
         self.context.summary = self.summary
         self.context.displayname = self.displayname
         self.context.releaseroot = self.releaseroot
