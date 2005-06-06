@@ -71,9 +71,15 @@ def applied_patches(con):
 def apply_patch(con, major, minor, patch, patch_file):
     log.info("Applying %s" % patch_file)
     cur = con.cursor()
-    sql = open(patch_file).read()
+    full_sql = open(patch_file).read()
 
-    cur.execute(sql) # Will die on a bad patch.
+    # Strip comments
+    full_sql = re.sub('(?xms) \/\* .*? \*\/', '', full_sql)
+    full_sql = re.sub('(?xm) ^\s*-- .*? $', '', full_sql)
+
+    for sql in re.split('(?xm); \s* $', full_sql):
+        if sql.strip():
+            cur.execute(sql) # Will die on a bad patch.
 
     # Ensure the patch updated LaunchpadDatabaseRevision. We could do this
     # automatically and avoid the boilerplate, but then we would lose the
