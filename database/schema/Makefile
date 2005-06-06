@@ -36,26 +36,25 @@ default: all
 # it is currently needed to get the fti columns populated correctly.
 test: create 
 	@ echo "* Installing tsearch2 into ts2 schema"
-	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py --setup-only
+	@ ${PYTHON} fti.py --setup-only -d ${TEST_DBNAME}
 	@ echo "* Loading base database schema"
 	@ psql -d ${TEST_DBNAME} -f ${BASELINE} | grep : | cat
 	@ echo "* Patching the database schema"
-	@ ls -1 patch-${REV}-*.sql | sort | \
-	    xargs -n 1 psql -v ON_ERROR_STOP=1 -d ${TEST_DBNAME} -q -f
+	@ ${PYTHON} upgrade.py -d ${TEST_DBNAME}
 	@ echo "* Setting up full text indexes"
-	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py
+	@ ${PYTHON} fti.py -d ${TEST_DBNAME}
 	@ echo "* Adding comments"
 	@ psql -d ${TEST_DBNAME} -f comments.sql | grep : | cat
 	@ echo "* Security setup"
-	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} security.py
+	@ ${PYTHON} security.py -d ${TEST_DBNAME}
 	@ echo "* Creating database \"$(EMPTY_DBNAME)\" with no sample data."
 	@ createdb -E UNICODE --template ${TEST_DBNAME} ${EMPTY_DBNAME} \
 	    | grep : | cat
 	@ echo "* Loading sample data"
 	@ psql -v ON_ERROR_STOP=1 -d ${TEST_DBNAME} -f $(SAMPLEDATA) > /dev/null
 	@ echo "* Setting up full text indexes"
-	@ env LP_DBNAME=${EMPTY_DBNAME} ${PYTHON} fti.py
-	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py
+	@ ${PYTHON} fti.py -d ${EMPTY_DBNAME}
+	@ ${PYTHON} fti.py -d ${TEST_DBNAME}
 	@ echo "* Resetting sequences"
 	@ ${PYTHON} reset_sequences.py -d ${TEST_DBNAME}
 	@ echo "* Vacuuming"

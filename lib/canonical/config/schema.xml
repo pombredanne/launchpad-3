@@ -23,8 +23,9 @@
 
     <sectiontype name="librarian_server">
         <!-- Not 'existing-directory' because the test runner needs to
-            create it -->
-        <key name="root" datatype="existing-dirpath" required="yes" />
+        create it. Not 'existing-dirpath' because ZConfig will enforce it
+        for all sections, not just the one we are using -->
+        <key name="root" datatype="string" required="yes" />
         <key name="launch" datatype="boolean" required="no" default="no" />
         <key name="spew" datatype="boolean" required="no" default="no" />
     </sectiontype>
