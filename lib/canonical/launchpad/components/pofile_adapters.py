@@ -458,7 +458,7 @@ class POFileImporter(object):
         self.pofile.set(
             topcomment=header.commentText.encode('utf-8'),
             header=header.msgstr.encode('utf-8'),
-            headerfuzzy='fuzzy' in header.flags,
+            fuzzyheader='fuzzy' in header.flags,
             pluralforms=header.nplurals)
         # state that we've done so, or someone might give us a card
         self.header_stored = True
