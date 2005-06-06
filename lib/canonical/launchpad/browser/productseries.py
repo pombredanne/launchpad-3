@@ -219,11 +219,11 @@ class ProductSeriesView(object):
             self.rcstype = RevisionControlSystems.SVN
         else:
             raise NotImplementedError, 'Unknown RCS %s' % rcstype
-        self.cvsroot = form.get("cvsroot", self.cvsroot) or None
-        self.cvsmodule = form.get("cvsmodule", self.cvsmodule) or None
-        self.cvsbranch = form.get("cvsbranch", self.cvsbranch) or None
+        self.cvsroot = form.get("cvsroot", self.cvsroot).strip() or None
+        self.cvsmodule = form.get("cvsmodule", self.cvsmodule).strip() or None
+        self.cvsbranch = form.get("cvsbranch", self.cvsbranch).strip() or None
         self.svnrepository = form.get("svnrepository",
-                self.svnrepository) or None
+                self.svnrepository).strip() or None
         # make sure we at least got something for the relevant rcs
         if rcstype == 'cvs':
             if not (self.cvsroot and self.cvsmodule and self.cvsbranch):
@@ -268,13 +268,13 @@ class ProductSeriesView(object):
         self.svnrepository = form.get(
             'svnrepository', self.svnrepository) or None
         self.targetarcharchive = form.get(
-            'targetarcharchive', self.targetarcharchive) or None
+            'targetarcharchive', self.targetarcharchive).strip() or None
         self.targetarchcategory = form.get(
-            'targetarchcategory', self.targetarchcategory) or None
+            'targetarchcategory', self.targetarchcategory).strip() or None
         self.targetarchbranch = form.get(
-            'targetarchbranch', self.targetarchbranch) or None
+            'targetarchbranch', self.targetarchbranch).strip() or None
         self.targetarchversion = form.get(
-            'targetarchversion', self.targetarchversion) or None
+            'targetarchversion', self.targetarchversion).strip() or None
         # validate arch target details
         if not pybaz.NameParser.is_archive_name(self.targetarcharchive):
             self.errormsgs.append('Invalid target Arch archive name.')
