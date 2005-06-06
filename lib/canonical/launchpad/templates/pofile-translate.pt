@@ -250,6 +250,13 @@
                         <tal:comment tal:replace="nothing">
                           XXX: Carlos Perello Marin 2005-05-05
                           This 'python:' expression should be fixed by SteveA.
+
+                          Note that we use a separate tag inside the textarea
+                          rather than using tal:content on the textarea
+                          directly so that leading spaces are preserved. This
+                          is a workarou ndfor browser weirdness. Note also
+                          that the lack of indentation is deliberate: the
+                          content must begin directly after the newline.
                         </tal:comment>
                         <textarea
                           tal:condition="messageSet/isMultiline"
@@ -258,9 +265,8 @@
                             rows messageSet/getMaxLinesCount;
                             tabindex view/makeTabIndex;
                             "
-                          tal:content="structure python:messageSet.getTranslation(index)"
                           >
-                        </textarea>
+<tal:thing replace="structure python:messageSet.getTranslation(index)" /></textarea>
                         <tal:block define="suggestions python:messageSet.getSuggestedTexts(index)">
                         <tal:block condition="suggestions">
                           <span style="color: #dd0000;">

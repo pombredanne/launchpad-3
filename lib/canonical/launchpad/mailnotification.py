@@ -384,7 +384,7 @@ def notify_bug_added(bug_add_form, event):
         spname = "(none)"
         pname = "(none)"
         if bug.owner:
-            owner = bug.owner.displayname
+            owner = bug.owner.browsername
         if bug.bugtasks[0].sourcepackagename:
             spname = bug.bugtasks[0].sourcepackagename.name
         if bug.bugtasks[0].product:
@@ -646,7 +646,7 @@ def notify_bug_comment_added(bugmessage, event):
 %(submitter)s <%(email)s> said:
 
 %(contents)s""" % {
-            'submitter' : message.owner.displayname,
+            'submitter' : message.owner.browsername,
             'email' : message.owner.preferredemail.email,
             'contents' : message.contents}
 
