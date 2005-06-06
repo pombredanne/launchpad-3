@@ -161,7 +161,7 @@ class MergedCalendar(CalendarMixin, EditableCalendarMixin):
         self.person = person
         self.subscriptions = CalendarSubscriptionSet(self.person)
         self.revision = 0
-        self.title = _('Merged Calendar for %s') % self.person.displayname
+        self.title = _('Merged Calendar for %s') % self.person.browsername
 
     def __iter__(self):
         for calendar in self.subscriptions:

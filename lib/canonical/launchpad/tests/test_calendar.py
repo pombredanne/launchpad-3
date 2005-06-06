@@ -13,13 +13,14 @@ from zope.app.tests import placelesssetup, ztapi
 __metaclass__ = type
 
 
-def doctest_UsersCalendarTraverser():
-    """Unit test for canonical.calendar.UsersCalendarTraverser
+def doctest_MergedCalendarTraverser():
+    """Unit test for canonical.calendar.MergedCalendarTraverser
 
     For the purposes of this test we will need a principal that can be
     adapted to IPerson, and a person that can be adapted to ICalendar.
 
         >>> from canonical.launchpad.interfaces.person import IPerson
+        >>> from canonical.launchpad.components.cal import MergedCalendar
         >>> class FakePrincipal:
         ...     def __conform__(self, protocol):
         ...         if protocol is IPerson:
@@ -27,52 +28,45 @@ def doctest_UsersCalendarTraverser():
 
         >>> from schoolbell.interfaces import ICalendar
         >>> class FakePerson:
-        ...     def __conform__(self, protocol):
-        ...         if protocol is ICalendar:
-        ...             return FakeCalendar()
+        ...     displayname = browsername = 'Fake Person'
 
-        >>> class FakeCalendar:
-        ...     implements(ICalendar)
-        ...     def __repr__(self):
-        ...         return '<FakeCalendar>'
-
-    UsersCalendarTraverser ignores its context, instead, it gets the currently
+    MergedCalendarTraverser ignores its context, instead, it gets the currently
     logged on person from the request and looks up the person's calendar.
 
-        >>> from canonical.calendar import UsersCalendarTraverser
+        >>> from canonical.launchpad.components.cal import MergedCalendarTraverser
         >>> class AnyContext:
         ...     def __repr__(self):
         ...         return '<AnyContext>'
         >>> context = AnyContext()
         >>> request = TestRequest()
-        >>> uct = UsersCalendarTraverser(context, request)
+        >>> mct = MergedCalendarTraverser(context, request)
 
     To do so it implements IBrowserPublisher
 
-        >>> verifyObject(IBrowserPublisher, uct)
+        >>> verifyObject(IBrowserPublisher, mct)
         True
 
     It has a helper method for extracting the calendar from the principal:
 
-        >>> uct._calendar(FakePrincipal())
-        <FakeCalendar>
+        >>> mct._calendar(FakePrincipal())
+        <canonical.launchpad.components.cal.MergedCalendar object at ...
 
     If there is no user, or if the user cannot be adapted to a calendar, this
     helper returns None
 
-        >>> uct._calendar(None)
+        >>> mct._calendar(None)
 
         >>> class NonadaptablePrincipal:
         ...     pass
-        >>> uct._calendar(NonadaptablePrincipal())
+        >>> mct._calendar(NonadaptablePrincipal())
 
         >>> class NonadaptablePerson:
-        ...     pass
+        ...     browsername = displayname = 'Nonadaptable Person'
         >>> class AdaptablePrincipal:
         ...     def __conform__(self, protocol):
         ...         if protocol is IPerson:
         ...             return NonadaptablePerson()
-        >>> uct._calendar(AdaptablePrincipal())
+        >>> mct._calendar(AdaptablePrincipal())
 
     publishTraverse and browserDefault just delegate to the publishTraverse
     and browserDefault of the views that are registered for the calendar.
@@ -82,14 +76,14 @@ def doctest_UsersCalendarTraverser():
     No calendar:
 
         >>> request.setPrincipal(NonadaptablePrincipal())
-        >>> uct._calendar(request.principal)
+        >>> mct._calendar(request.principal)
 
-        >>> uct.publishTraverse(request, '2004')
+        >>> mct.publishTraverse(request, '2004')
         Traceback (most recent call last):
           ...
         NotFound: Object: <AnyContext>, name: 'calendar'
 
-        >>> uct.browserDefault(request)
+        >>> mct.browserDefault(request)
         Traceback (most recent call last):
           ...
         NotFound: Object: <AnyContext>, name: 'calendar'
@@ -97,15 +91,15 @@ def doctest_UsersCalendarTraverser():
     Calendar exists, but there are no views for it.
 
         >>> request.setPrincipal(FakePrincipal())
-        >>> uct._calendar(request.principal)
-        <FakeCalendar>
+        >>> mct._calendar(request.principal)
+        <canonical.launchpad.components.cal.MergedCalendar object at ...
 
-        >>> uct.publishTraverse(request, '2004')
+        >>> mct.publishTraverse(request, '2004')
         Traceback (most recent call last):
           ...
         NotFound: Object: <AnyContext>, name: 'calendar'
 
-        >>> uct.browserDefault(request)
+        >>> mct.browserDefault(request)
         Traceback (most recent call last):
           ...
         NotFound: Object: <AnyContext>, name: 'calendar'
@@ -120,11 +114,11 @@ def doctest_UsersCalendarTraverser():
         ...     def publishTraverse(self, request, name):
         ...         print 'publishTraverse called for %s' % name
 
-        >>> ztapi.browserViewProviding(FakeCalendar,
+        >>> ztapi.browserViewProviding(MergedCalendar,
         ...                            FakeCalendarPublishTraverse,
         ...                            IPublishTraverse)
 
-        >>> uct.publishTraverse(request, '2004')
+        >>> mct.publishTraverse(request, '2004')
         publishTraverse called for 2004
 
         >>> from zope.publisher.interfaces.browser import IBrowserPublisher
@@ -133,27 +127,27 @@ def doctest_UsersCalendarTraverser():
         ...     def browserDefault(self, request):
         ...         print 'browserDefault called'
 
-        >>> ztapi.browserViewProviding(FakeCalendar,
+        >>> ztapi.browserViewProviding(MergedCalendar,
         ...                            FakeCalendarBrowserPublisher,
         ...                            IBrowserPublisher)
 
-        >>> uct.browserDefault(request)
+        >>> mct.browserDefault(request)
         browserDefault called
 
     No calendar, and there are views for everything (regression test):
 
         >>> request.setPrincipal(NonadaptablePrincipal())
-        >>> uct._calendar(request.principal)
+        >>> mct._calendar(request.principal)
         >>> ztapi.browserViewProviding(None,
         ...                            FakeCalendarBrowserPublisher,
         ...                            IBrowserPublisher)
 
-        >>> uct.publishTraverse(request, '2004')
+        >>> mct.publishTraverse(request, '2004')
         Traceback (most recent call last):
           ...
         NotFound: Object: <AnyContext>, name: 'calendar'
 
-        >>> uct.browserDefault(request)
+        >>> mct.browserDefault(request)
         Traceback (most recent call last):
           ...
         NotFound: Object: <AnyContext>, name: 'calendar'
@@ -184,7 +178,7 @@ def doctest_CalendarAdapterTraverser():
     CalendarAdapterTraverser adapts its context to ICalendar and then looks
     up the appropriate calendar view.
 
-        >>> from canonical.calendar import CalendarAdapterTraverser
+        >>> from canonical.launchpad.components.cal import CalendarAdapterTraverser
         >>> context = SomethingWithCalendar()
         >>> request = TestRequest()
         >>> cat = CalendarAdapterTraverser(context, request)
@@ -202,12 +196,12 @@ def doctest_CalendarAdapterTraverser():
         >>> cat.publishTraverse(request, '2004')
         Traceback (most recent call last):
           ...
-        NotFound: Object: <SomethingWithCalendar>, name: 'calendar'
+        NotFound: Object: <SomethingWithCalendar>, name: '+calendar'
 
         >>> cat.browserDefault(request)
         Traceback (most recent call last):
           ...
-        NotFound: Object: <SomethingWithCalendar>, name: 'calendar'
+        NotFound: Object: <SomethingWithCalendar>, name: '+calendar'
 
         >>> from zope.publisher.interfaces import IPublishTraverse
         >>> class FakeCalendarPublishTraverse:

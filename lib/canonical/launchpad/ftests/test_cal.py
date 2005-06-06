@@ -46,25 +46,25 @@ def doctest_views():
         >>> request = TestRequest()
         >>> root = rootObject
         >>> view = zapi.getView(root, 'calendar', request)
-        >>> from canonical.calendar import UsersCalendarTraverser
-        >>> isinstance(view, UsersCalendarTraverser)
+        >>> from canonical.launchpad.components.cal import MergedCalendarTraverser
+        >>> isinstance(view, MergedCalendarTraverser)
         True
 
-    There should be a view for ICalendarOwner, named 'calendar'.
+    There should be a view for ICalendarOwner, named '+calendar'.
 
         >>> from zope.interface import implements
         >>> from canonical.launchpad.interfaces.cal import ICalendarOwner
         >>> class FakeCalendarOwner:
         ...     implements(ICalendarOwner)
         >>> context = FakeCalendarOwner()
-        >>> view = zapi.getView(context, 'calendar', request)
-        >>> from canonical.calendar import CalendarAdapterTraverser
+        >>> view = zapi.getView(context, '+calendar', request)
+        >>> from canonical.launchpad.components.cal import CalendarAdapterTraverser
         >>> isinstance(view, CalendarAdapterTraverser)
         True
 
     The default view for ICalendar should be '+index'.
 
-        >>> from canonical.calendar import ICalendar
+        >>> from schoolbell.interfaces import ICalendar
         >>> class FakeCalendar:
         ...     implements(ICalendar)
         >>> context = FakeCalendar()
