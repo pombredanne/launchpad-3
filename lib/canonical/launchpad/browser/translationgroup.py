@@ -62,7 +62,7 @@ class TranslationGroupView:
                 # our system, so we should show the message:
                 self.notices.append(
                     '%s removed as translator for %s.' % (
-                        translator.displayname, language.displayname))
+                        translator.browsername, language.displayname))
 
     def removals(self):
         """Remove a translator/team for a concrete language."""

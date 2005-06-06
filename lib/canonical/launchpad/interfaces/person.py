@@ -123,6 +123,8 @@ class IPerson(Interface):
 
     teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
                        vocabulary='ValidTeamOwner')
+    teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
+                      readonly=True)
     teamdescription = Text(title=_('Team Description'), required=False,
                            readonly=False)
 
@@ -203,8 +205,8 @@ class IPerson(Interface):
         """Removed the language from the list of know languages."""
 
     def inTeam(team):
-        """Return true if this person is in the given team.
-
+        """Return True if this person is a member or the owner of <team>.
+        
         This method is meant to be called by objects which implement either
         IPerson or ITeam, and it will return True when you ask if a Person is
         a member of himself (i.e. person1.inTeam(person1)).
@@ -212,6 +214,9 @@ class IPerson(Interface):
 
     def hasMembershipEntryFor(team):
         """Tell if this person is a direct member of the given team."""
+
+    def hasParticipationEntryFor(team):
+        """Tell if this person is a direct/indirect member of the given team."""
 
     def join(team):
         """Join the given team if its subscriptionpolicy is not RESTRICTED.

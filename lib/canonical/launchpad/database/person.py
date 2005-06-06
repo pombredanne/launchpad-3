@@ -244,14 +244,23 @@ class Person(SQLBase):
         self.karma += points
 
     def inTeam(self, team):
-        tp = TeamParticipation.selectBy(teamID=team.id, personID=self.id)
-        if tp.count() > 0:
+        tp = TeamParticipation.selectOneBy(teamID=team.id, personID=self.id)
+        if tp is not None or self.id == team.teamownerID:
             return True
+        elif team.teamowner is not None and not team.teamowner.inTeam(team):
+            # The owner is not a member but must retain his rights over
+            # this team. This person may be a member of the owner, and in this
+            # case it'll also have rights over this team.
+            return self.inTeam(team.teamowner)
         else:
             return False
 
     def hasMembershipEntryFor(self, team):
         results = TeamMembership.selectBy(personID=self.id, teamID=team.id)
+        return bool(results.count())
+
+    def hasParticipationEntryFor(self, team):
+        results = TeamParticipation.selectBy(personID=self.id, teamID=team.id)
         return bool(results.count())
 
     def leave(self, team):
@@ -1170,51 +1179,52 @@ def _getAllMembers(team, orderBy=None):
                          orderBy=orderBy)
 
 
-def _cleanTeamParticipation(person, team):
-    """Remove relevant entries in TeamParticipation for given person and team.
+def _cleanTeamParticipation(member, team):
+    """Remove relevant entries in TeamParticipation for given member and team.
 
-    Remove all tuples "person, team" from TeamParticipation for the given
-    person and team (together with all its superteams), unless this person is
-    an indirect member of the given team. More information on how to use the 
-    TeamParticipation table can be found in the TeamParticipationUsage spec.
+    Remove all tuples "member, team" from TeamParticipation for the given
+    member and team (together with all its superteams), unless this member is
+    an indirect member of the given team or the team owner. More information 
+    on how to use the TeamParticipation table can be found in the 
+    TeamParticipationUsage spec.
     """
-    members = [person]
-    if person.teamowner is not None:
-        # The given person is, in fact, a team, and in this case we must 
+    members = [member]
+    if member.teamowner is not None:
+        # The given member is, in fact, a team, and in this case we must 
         # remove all of its members from the given team and from its 
         # superteams.
-        members.extend(_getAllMembers(person))
+        members.extend(_getAllMembers(member))
 
-    for member in members:
+    for m in members:
         for subteam in team.getSubTeams():
-            # This person is an indirect member of this team. We cannot remove
-            # its TeamParticipation entry.
-            if member.inTeam(subteam):
+            if m.hasParticipationEntryFor(subteam):
+                # This member is an indirect member of this team. We cannot
+                # remove its TeamParticipation entry.
                 break
         else:
             for t in itertools.chain(team.getSuperTeams(), [team]):
                 result = TeamParticipation.selectOneBy(
-                    personID=member.id, teamID=t.id)
+                    personID=m.id, teamID=t.id)
                 if result is not None:
                     result.destroySelf()
 
-def _fillTeamParticipation(person, team):
-    """Add relevant entries in TeamParticipation for given person and team.
+def _fillTeamParticipation(member, team):
+    """Add relevant entries in TeamParticipation for given member and team.
 
-    Add a tuple "person, team" in TeamParticipation for the given team and all
+    Add a tuple "member, team" in TeamParticipation for the given team and all
     of its superteams. More information on how to use the TeamParticipation 
     table can be found in the TeamParticipationUsage spec.
     """
-    members = [person]
-    if person.teamowner is not None:
-        # The given person is, in fact, a team, and in this case we must 
+    members = [member]
+    if member.teamowner is not None:
+        # The given member is, in fact, a team, and in this case we must 
         # add all of its members to the given team and to its superteams.
-        members.extend(_getAllMembers(person))
+        members.extend(_getAllMembers(member))
 
-    for member in members:
+    for m in members:
         for t in itertools.chain(team.getSuperTeams(), [team]):
-            if not member.inTeam(t):
-                TeamParticipation(personID=member.id, teamID=t.id)
+            if not m.hasParticipationEntryFor(t):
+                TeamParticipation(personID=m.id, teamID=t.id)
 
 
 class Karma(SQLBase):

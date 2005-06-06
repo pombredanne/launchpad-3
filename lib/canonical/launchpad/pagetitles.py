@@ -44,6 +44,9 @@ class SubstitutionHelper:
 
 
 class ContextDisplayName(SubstitutionHelper):
+    # XXX: salgado, 2005-06-02: This should not be used for persons because
+    # they can have a NULL displayname. Maybe the right solution is to create
+    # a ContextBrowserName and use it for persons.
     def __call__(self, context, view):
         return self.text % context.displayname
 
