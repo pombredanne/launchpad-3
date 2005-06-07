@@ -179,7 +179,8 @@ class PersonView(BasePersonView):
         """
         bts = getUtility(IBugTaskSet)
         orderBy = ('-dateassigned', '-priority', '-severity')
-        results = bts.assignedBugTasks(self.context, orderBy=orderBy)
+        results = bts.assignedBugTasks(
+                        self.context, orderBy=orderBy, user=self.user)
         return results[:10]
 
     def mostImportantBugTasks(self):
@@ -191,7 +192,8 @@ class PersonView(BasePersonView):
         """
         bts = getUtility(IBugTaskSet)
         orderBy = ('-priority', '-severity', '-dateassigned')
-        results = bts.assignedBugTasks(self.context, orderBy=orderBy)
+        results = bts.assignedBugTasks(
+                        self.context, orderBy=orderBy, user=self.user)
         return results[:10]
 
     def bugTasksWithSharedInterest(self):
