@@ -68,7 +68,7 @@ notification:
     >>> print from_addr
     Malone Bugtracker <noreply@canonical.com>
     >>> print to_addrs
-    ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
+    ['dilys@muse.19inch.net', 'mark@hbd.com', 'support@ubuntu.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug 2] Blackhole Trash folder'
@@ -83,7 +83,7 @@ notification:
     >>> print from_addr
     Malone Bugtracker <noreply@canonical.com>
     >>> print to_addrs
-    ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
+    ['dilys@muse.19inch.net', 'mark@hbd.com', 'support@ubuntu.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
