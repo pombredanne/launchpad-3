@@ -76,6 +76,7 @@ class Bug(SQLBase):
     cverefs = MultipleJoin('CVERef', joinColumn='bug', orderBy='cveref')
     subscriptions = MultipleJoin(
             'BugSubscription', joinColumn='bug', orderBy='id')
+    duplicates = MultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
 
     def followup_title(self):
         return 'Re: '+ self.title

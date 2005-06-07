@@ -10,7 +10,7 @@
         <require
             permission="zope.Public"
             interface="canonical.launchpad.interfaces.IEditPOTemplate"
-            set_attributes="name title description iscurrent owner path
+            set_attributes="name description iscurrent owner path
                             filename distrorelease sourcepackagename"
             />
         <require
@@ -55,15 +55,10 @@
         label="Change PO template Information"
         permission="launchpad.Admin"
         template="../templates/potemplate-admin.pt"
-        fields="potemplatename title description header iscurrent owner
+        fields="potemplatename description header iscurrent owner
                 productrelease distrorelease sourcepackagename
                 sourcepackageversion binarypackagename languagepack path
                 filename" >
-        <browser:widget
-            field="title"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="55"
-            />
     </browser:editform>
 
     <browser:editform
@@ -73,13 +68,8 @@
         label="Change PO template Information"
         permission="launchpad.Edit"
         template="../templates/potemplate-edit.pt"
-        fields="name title description owner path filename" >
+        fields="name description owner path filename" >
         lp:url="Rosetta/products/$Product.name/$POTemplate.name/+edit"
-        <browser:widget
-            field="title"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="55"
-            />
     </browser:editform>
 
     <browser:page
@@ -106,6 +96,25 @@
         attribute="__call__"
         />
 
+    <!-- needed for @@absolute_url to work -->
+    <view
+        for="canonical.launchpad.interfaces.IPOTemplate"
+        factory="canonical.launchpad.browser.potemplate.POTemplateAbsoluteURL"
+        type="zope.publisher.interfaces.http.IHTTPRequest"
+        permission="zope.Public"
+        provides="zope.app.traversing.browser.interfaces.IAbsoluteURL">
+    </view>
+
+    <view
+        name="absolute_url"
+        for="canonical.launchpad.interfaces.IPOTemplate"
+        factory="canonical.launchpad.browser.potemplate.POTemplateAbsoluteURL"
+        type="zope.publisher.interfaces.http.IHTTPRequest"
+        permission="zope.Public"
+        provides="zope.app.traversing.browser.interfaces.IAbsoluteURL">
+    </view>
+
+    <!-- POTemplateSet -->
     <content class="canonical.launchpad.database.POTemplateSet">
         <require
             permission="zope.Public"

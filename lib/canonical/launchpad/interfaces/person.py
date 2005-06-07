@@ -60,11 +60,17 @@ class IPerson(Interface):
             )
     languages = Attribute(_('List of know languages by this person'))
 
+    # this is not a date of birth, it is the date the person record was
+    # created in this db
+    datecreated = Datetime(
+        title=_('Date Created'), required=True, readonly=True)
+
     # bounty relations
     ownedBounties = Attribute('Bounties issued by this person.')
     reviewerBounties = Attribute('Bounties reviewed by this person.')
     claimedBounties = Attribute('Bounties claimed by this person.')
     subscribedBounties = Attribute('Bounties to which this person subscribes.')
+
     sshkeys = Attribute(_('List of SSH keys'))
 
     # XXX: This field is used only to generate the form to create a new person.

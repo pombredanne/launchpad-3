@@ -100,6 +100,8 @@ class BugView:
         '../templates/portlet-bug-sourcepackageinfestation.pt')
     referencePortlet = BugPortlet(
         '../templates/portlet-bug-reference.pt')
+    duplicatesPortlet = BugPortlet(
+        '../templates/bug-portlet-duplicates.pt')
     cvePortlet = BugPortlet(
         '../templates/portlet-bug-cve.pt')
     peoplePortlet = BugPortlet(

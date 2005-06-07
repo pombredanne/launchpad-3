@@ -32,7 +32,9 @@
             name="+index"
             template="../templates/pofile-index.pt"
             lp:url="/products/$Product.name/$POTemplate.name/$POFile.language"/>
-
+        <browser:page
+            name="+barchart"
+            template="../templates/pofile-barchart.pt" />
     </browser:pages>
 
     <browser:page
@@ -55,7 +57,7 @@
         name="+po"
         for="canonical.launchpad.interfaces.IPOFile"
         permission="zope.Public"
-        class="canonical.launchpad.browser.ViewPOExport"
+        class="canonical.launchpad.browser.POFilePOExportView"
         attribute="__call__"
         />
 
@@ -63,8 +65,27 @@
         name="+mo"
         for="canonical.launchpad.interfaces.IPOFile"
         permission="zope.Public"
-        class="canonical.launchpad.browser.ViewMOExport"
+        class="canonical.launchpad.browser.POFileMOExportView"
         attribute="__call__"
         />
+
+    <!-- Dummy PO File -->
+    <content class="canonical.launchpad.helpers.DummyPOFile">
+        <require
+            permission="zope.Public"
+            interface="canonical.launchpad.interfaces.IEditPOFile"
+            set_attributes="header pluralforms"
+            />
+    </content>
+
+    <browser:pages
+        for="canonical.launchpad.helpers.DummyPOFile"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.POFileView"
+        lp:url="/products/netapplet/1.0/+pots/$POTemplate.name/$POFile.language">
+        <browser:page
+            name="+barchart"
+            template="../templates/pofile-barchart.pt" />
+    </browser:pages>
 
 </configure>

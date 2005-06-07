@@ -1,0 +1,31 @@
+<!-- The PO file stats bar -->
+<!-- Show an mdash if there is no graph -->
+<span tal:condition="not: context/messageCount">&mdash;</span>
+<img src="/++resource++green-bar.png"
+     height="10"
+     style="margin-top: 2px;"
+     alt="Translated Messages"
+     tal:condition="context/nonUpdatesCount"
+     tal:attributes="width context/nonUpdatesPercentage;
+          title string: Published: ${context/nonUpdatesPercentage}%"
+ /><img src="/++resource++blue-bar.png"
+     height="10"
+     style="margin-top: 2px;"
+     alt="Improved Message Translations"
+     tal:condition="context/updatesCount"
+     tal:attributes="width context/updatesPercentage;
+         title string: Improved: ${context/updatesPercentage}%"
+  /><img src="/++resource++purple-bar.png"
+     height="10"
+     style="margin-top: 2px;"
+     alt="Newly Translated Messages"
+     tal:condition="context/rosettaCount"
+     tal:attributes="width context/rosettaPercentage;
+         title string: New: ${context/rosettaPercentage}%"
+  /><img src="/++resource++red-bar.png"
+     height="10"
+     style="margin-top: 2px;"
+     alt="Untranslated Messages"
+     tal:condition="context/untranslatedCount"
+     tal:attributes="width context/untranslatedPercentage;
+         title string: Untranslated: ${context/untranslatedPercentage}%" />

@@ -99,6 +99,25 @@ class IRosettaApplication(ILaunchpadApplication):
     def language_count(self):
         """Return the number of languages Rosetta can translate into."""
 
+    def translation_groups():
+        """Return an iterator over the set of translation groups in
+        Rosetta."""
+
+    def potemplate_count():
+        """Return the number of potemplates in the system."""
+
+    def pofile_count():
+        """Return the number of pofiles in the system."""
+
+    def pomsgid_count():
+        """Return the number of PO MsgID's in the system."""
+
+    def translator_count():
+        """Return the number of translators in the system."""
+
+    def language_count():
+        """Return the number of languages in the system."""
+
 
 class IDOAPApplication(ILaunchpadApplication):
     """DOAP application root."""

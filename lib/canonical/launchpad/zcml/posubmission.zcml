@@ -5,8 +5,8 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
-    <content class="canonical.launchpad.database.POTranslationSighting">
-      <allow interface="canonical.launchpad.interfaces.IPOTranslationSighting"/>
+    <content class="canonical.launchpad.database.POSubmission">
+      <allow interface="canonical.launchpad.interfaces.IPOSubmission"/>
     </content>
   
 </configure>

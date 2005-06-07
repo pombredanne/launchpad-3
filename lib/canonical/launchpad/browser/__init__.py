@@ -22,6 +22,7 @@ from canonical.launchpad.browser.packages import *
 from canonical.launchpad.browser.packaging import *
 from canonical.launchpad.browser.person import *
 from canonical.launchpad.browser.pofile import *
+from canonical.launchpad.browser.pomsgset import *
 from canonical.launchpad.browser.potemplate import *
 from canonical.launchpad.browser.potemplatename import *
 from canonical.launchpad.browser.product import *

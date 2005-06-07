@@ -6,8 +6,7 @@
     <div class="portletContent even">
 
       <img src="/++resource++info_icon.gif">
-      <span tal:replace="context/potemplate_count">5</span> Translation
-      Templates<br />
+      <span tal:replace="context/potemplate_count">5</span> Templates<br />
       <img src="/++resource++info_icon.gif">
       <span tal:replace="context/pomsgid_count">5</span> Strings<br />
       <img src="/++resource++info_icon.gif">

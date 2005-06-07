@@ -10,11 +10,8 @@ Test to check the POFile index page list all contributors as it should.
               <b>Messages:</b>
               22
               <br />
-              <b>Progress:</b>
-              31.82%
-              <br />
               <b>Todo:</b>
-              15
+              14
   ...
       <h2>Contributors for this translation:</h2>
   ...

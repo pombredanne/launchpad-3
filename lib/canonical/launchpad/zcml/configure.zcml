@@ -55,7 +55,8 @@
     <include file="potemplate.zcml" />
     <include file="potemplatename.zcml" />
     <include file="potmsgset.zcml" />
-    <include file="potranslationsighting.zcml" />
+    <include file="poselection.zcml" />
+    <include file="posubmission.zcml" />
     <include file="potranslation.zcml" />
     <include file="processor.zcml" />
     <include file="productrelease.zcml" />

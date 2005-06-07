@@ -88,6 +88,8 @@ class Person(SQLBase):
 
     merged = ForeignKey(dbName='merged', foreignKey='Person', default=None)
 
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+
     # RelatedJoin gives us also an addLanguage and removeLanguage for free
     languages = RelatedJoin('Language', joinColumn='person',
                             otherColumn='language',
@@ -194,25 +196,6 @@ class Person(SQLBase):
     def isTeam(self):
         """See IPerson."""
         return self.teamowner is not None
-
-    def translatedTemplates(self):
-        """
-        SELECT * FROM POTemplate WHERE
-            id IN (SELECT potemplate FROM pomsgset WHERE
-                id IN (SELECT pomsgset FROM POTranslationSighting WHERE
-                    origin = 2
-                ORDER BY datefirstseen DESC))
-        """
-        # XXX: This needs a proper descriptive English docstring.
-        #      Also, what is it doing here?  It doesn't use 'self' at all.
-        #      -- SteveAlexander, 2005-04-23
-        return POTemplate.select('''
-            id IN (
-              SELECT potemplate FROM potmsgset WHERE id IN (
-                SELECT potmsgset FROM pomsgset WHERE id IN (
-                  SELECT pomsgset FROM POTranslationSighting WHERE origin = 2
-                    ORDER BY datefirstseen DESC)))
-            ''')
 
     def assignKarma(self, karmatype, points=None):
         if karmatype.schema is not KarmaType:
@@ -708,6 +691,9 @@ class PersonSet:
 
         XXX: Are we game to delete from_person yet?
             -- StuartBishop 20050315
+        XXX: let's let it roll for a while and see what cruft develops. If
+             it's clean, let's start deleting
+            -- MarkShuttleworth 20050528
         """
         # Sanity checks
         if ITeam.providedBy(from_person):
@@ -798,23 +784,27 @@ class PersonSet:
             ''' % vars())
         skip.append(('posubscription', 'person'))
 
-        # Update only the POTranslationSightngs that will not conflict
-        # XXX: Add sampledata and test to confirm this case
-        # -- StuartBishop 20050331
+        # Update the POSubmissions. They should not conflict since each of
+        # them is independent
         cur.execute('''
-            UPDATE POTranslationSighting
+            UPDATE POSubmission
             SET person=%(to_id)d
-            WHERE person=%(from_id)d AND id NOT IN (
-                SELECT a.id
-                FROM POTranslationSighting AS a, POTranslationSighting AS b
-                WHERE a.person = %(from_id)d AND b.person = %(to_id)d
-                    AND a.pomsgset = b.pomsgset
-                    AND a.potranslation = b.potranslation
-                    AND a.license = b.license
-                AND a.pluralform = b.pluralform
-                )
+            WHERE person=%(from_id)d
             ''' % vars())
-        skip.append(('potranslationsighting', 'person'))
+        skip.append(('posubmission', 'person'))
+    
+        # We should still have the POTranslationSightingBackup. These might
+        # conflict since there is a complicated constraint to ensure there
+        # is only ever one sighting from one person. We'll just ignore that,
+        # try and slam it and see if it fails. Unlikely, since there are not
+        # likely to be many/any people translating files yet under two
+        # different accounts which they later decide to merge.
+        cur.execute('''
+            UPDATE POTranslationSightingBackup
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d
+            ''' % vars())
+        skip.append(('potranslationsightingbackup', 'person'))
     
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.

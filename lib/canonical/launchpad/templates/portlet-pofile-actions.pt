@@ -17,6 +17,9 @@
         <li class="edit" tal:condition="context/required:launchpad.Edit">
           <a href="+edit">Edit PO Details</a>
         </li>
+        <li class="languages">
+          <a href="../">View Template</a>
+        </li>
         <li class="download">
           <a href="+po">Export as PO file</a>
         </li>

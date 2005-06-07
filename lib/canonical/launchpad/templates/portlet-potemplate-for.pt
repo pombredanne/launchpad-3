@@ -1,0 +1,41 @@
+
+<div class="portlet">
+
+  <h4>Translation Of:</h4>
+
+  <div class="portletBody">
+    <div class="portletContent">
+    <tal:block condition="context/distrorelease">
+      <b>Distribution:</b>
+      <span tal:replace="context/distrorelease/distribution/displayname">
+        Ubuntu
+      </span><br />
+      <b>Release:</b>
+      <span tal:replace="context/distrorelease/name">
+        Hoary
+      </span><br />
+      <b>Source:</b>
+      <span tal:replace="context/sourcepackagename/name">
+        Apache
+      </span><br />
+    </tal:block>
+    <tal:block condition="context/productrelease">
+      <tal:block condition="context/productrelease/product/project">
+      <b>Project:</b>
+      <span tal:replace="context/productrelease/product/project/displayname">
+        Apache
+      </span><br />
+      </tal:block>
+      <b>Product:</b>
+      <span tal:replace="context/productrelease/product/displayname">
+        Apache Web Server
+      </span><br />
+      <b>Release:</b>
+      <span tal:replace="context/productrelease/version">
+        2.1.3
+      </span><br />
+    </tal:block>
+    </div>
+  </div>
+</div>
+
