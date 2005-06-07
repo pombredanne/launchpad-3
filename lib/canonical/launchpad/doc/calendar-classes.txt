@@ -136,7 +136,7 @@ The Calendar database objects also support adding events via the
 ICalendar interface:
 
   >>> from schoolbell.simple import SimpleCalendarEvent
-  >>> e = SimpleCalendarEvent(datetime(2004, 12, 15, 19, 48),
+  >>> e = SimpleCalendarEvent(datetime(2004, 12, 15, 19, 48, tzinfo=UTC),
   ...         timedelta(hours=1), "Dinner, please!",
   ...         unique_id="new1")
   >>> e2 = cal.addEvent(e)

@@ -17,7 +17,7 @@ def doctest_MergedCalendarTraverser():
     """Unit test for canonical.calendar.MergedCalendarTraverser
 
     For the purposes of this test we will need a principal that can be
-    adapted to IPerson, and a person that can be adapted to ICalendar.
+    adapted to IPerson.
 
         >>> from canonical.launchpad.interfaces.person import IPerson
         >>> from canonical.launchpad.components.cal import MergedCalendar
@@ -30,8 +30,9 @@ def doctest_MergedCalendarTraverser():
         >>> class FakePerson:
         ...     displayname = browsername = 'Fake Person'
 
-    MergedCalendarTraverser ignores its context, instead, it gets the currently
-    logged on person from the request and looks up the person's calendar.
+    MergedCalendarTraverser ignores its context, instead, it gets the
+    currently logged on person from the request and creates a
+    MergedCalendar object for the user.
 
         >>> from canonical.launchpad.components.cal import MergedCalendarTraverser
         >>> class AnyContext:
@@ -51,22 +52,13 @@ def doctest_MergedCalendarTraverser():
         >>> isinstance(mct._calendar(FakePrincipal()), MergedCalendar)
         True
 
-    If there is no user, or if the user cannot be adapted to a calendar, this
-    helper returns None
+    If there is no user, this helper returns None
 
         >>> mct._calendar(None)
 
         >>> class NonadaptablePrincipal:
         ...     pass
         >>> mct._calendar(NonadaptablePrincipal())
-
-        >>> class NonadaptablePerson:
-        ...     browsername = displayname = 'Nonadaptable Person'
-        >>> class AdaptablePrincipal:
-        ...     def __conform__(self, protocol):
-        ...         if protocol is IPerson:
-        ...             return NonadaptablePerson()
-        >>> mct._calendar(AdaptablePrincipal())
 
     publishTraverse and browserDefault just delegate to the publishTraverse
     and browserDefault of the views that are registered for the calendar.

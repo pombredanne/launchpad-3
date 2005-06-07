@@ -23,7 +23,7 @@ CREATE TABLE CalendarEvent (
     dtstart timestamp without time zone NOT NULL,
     duration interval NOT NULL,
     title text NOT NULL,
-    description text NOT NULL DEFAULT '',
+    description text DEFAULT '',
     location text DEFAULT '',
 /*
     recurrence varchar(10) NOT NULL,
