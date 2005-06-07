@@ -377,7 +377,7 @@ class ProductSet:
                       description, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
-                      sourceforgeproject=None):
+                      sourceforgeproject=None, programminglang=None):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         return Product(
             owner=owner, name=name, displayname=displayname,
@@ -385,7 +385,8 @@ class ProductSet:
             description=description, homepageurl=homepageurl,
             screenshotsurl=screenshotsurl, wikiurl=wikiurl,
             downloadurl=downloadurl, freshmeatproject=freshmeatproject,
-            sourceforgeproject=sourceforgeproject)
+            sourceforgeproject=sourceforgeproject,
+            programminglang=programminglang)
 
     def forReview(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""

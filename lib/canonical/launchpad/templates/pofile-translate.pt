@@ -198,7 +198,22 @@
                         plural source
                       </td>
                     </tr>
-                    <tr>
+                    <tr class="discreet"
+                        tal:condition="messageSet/msgidHasTab"
+                    >
+                        <td/>
+                        <td/>
+                        <td>
+                            <img
+                              alt="Note:"
+                              src="/@@/info_icon.gif"
+                              title="This is a note to translators"
+                            />
+                            <code>[tab]</code> represents a tab character.
+                            Please enter it as <code>[tab]</code> in your
+                            translation too.
+                        </td>
+                    </tr>
                     <tr
                       class="discreet"
                       tal:condition="messageSet/getSourceComment"

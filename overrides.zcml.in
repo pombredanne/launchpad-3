@@ -1,8 +1,0 @@
-<configure xmlns="http://namespaces.zope.org/zope"
-           xmlns:browser="http://namespaces.zope.org/browser">
-
-  <!-- Provide local overrides of standard configurations -->
-
-  <!-- For example, define a different default skin -->
-  <!-- <browser:skin name="" layers="default" /> -->
-</configure>

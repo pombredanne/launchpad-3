@@ -4,19 +4,18 @@ __metaclass__ = type
 
 from zope.app.publisher.browser import BrowserView
 from zope.component import getUtility
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile, \
-    BoundPageTemplate
+from zope.app.pagetemplate.viewpagetemplatefile import (
+    ViewPageTemplateFile, BoundPageTemplate)
 from zope.app.form.browser.add import AddView
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import IPerson, ILaunchBag, \
-     IBugSet, IBugTaskSet
+from canonical.launchpad.interfaces import (
+    IPerson, ILaunchBag, IBugSet, IBugTaskSet, IDistributionSet)
 from canonical.lp import dbschema
-from canonical.launchpad.database import BugAttachmentSet, \
-        BugExternalRefSet, BugSubscriptionSet, \
-        BugWatchSet, BugProductInfestationSet, \
-        BugPackageInfestationSet, Person, Bug, \
-        BugTasksReport, CVERefSet
+from canonical.launchpad.database import (
+    BugAttachmentSet, BugExternalRefSet, BugSubscriptionSet, BugWatchSet,
+    BugProductInfestationSet, BugPackageInfestationSet, Person, Bug,
+    BugTasksReport, CVERefSet)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
@@ -150,7 +149,8 @@ class BugAddView(AddView):
         return retval
 
     def nextURL(self):
-        return ".?bugadded=" + str(self.bugadded.id)
+        distribution = getUtility(IDistributionSet).get(self.bugadded.distribution)
+        return "/malone/distros/%s" % distribution.name
 
 
 class BugAddingView(SQLObjectAddView):
