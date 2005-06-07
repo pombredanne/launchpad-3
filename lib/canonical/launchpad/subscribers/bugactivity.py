@@ -247,7 +247,7 @@ def record_bugwatch_added(bugwatch_added, object_created_event):
         datechanged=UTC_NOW,
         person=bugwatch_added.personID,
         whatchanged='add subscriber %s (%s)' % (
-            bugwatch_added.person.displayname, term.token))
+            bugwatch_added.person.browsername, term.token))
 
 def record_bugwatch_edited(bugwatch_edited, sqlobject_modified_event):
     changes = what_changed(sqlobject_modified_event)
@@ -259,7 +259,7 @@ def record_bugwatch_edited(bugwatch_edited, sqlobject_modified_event):
                 datechanged=UTC_NOW,
                 person=sqlobject_modified_event.principal.id,
                 whatchanged="subscriber %s" % (
-                    bugwatch_edited.person.displayname),
+                    bugwatch_edited.person.browsername),
                 oldvalue=oldvalue,
                 newvalue=newvalue)
 

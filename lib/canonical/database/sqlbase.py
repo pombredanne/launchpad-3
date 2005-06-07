@@ -365,11 +365,13 @@ def quote(x):
     >>> quote(time(13, 45, 50))
     "'13:45:50'"
 
-    Note that we have to special case datetime handling, as
-    SQLObject's quote function is quite broken ( http://tinyurl.com/4bk8p )
+    This function special cases datetime objects, due to a bug that has
+    since been fixed in SQLOS (it installed an SQLObject converter that
+    stripped the time component from the value).  By itself, the sqlrepr
+    function has the following output:
 
     >>> sqlrepr(datetime(2003, 12, 4, 13, 45, 50), 'postgres')
-    "'2003-12-04'"
+    "'2003-12-04T13:45:50'"
 
     """
     if isinstance(x, datetime):

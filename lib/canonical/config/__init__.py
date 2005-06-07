@@ -8,14 +8,21 @@ environment variable, and defaults to 'default'
 
 __metaclass__ = type
 
-import sys, os, os.path, warnings
+import sys, os, os.path
 from urlparse import urlparse, urlunparse
 
 import zope.thread
 import ZConfig
 
-ENVIRONMENT_VARIABLE = 'LPCONFIG'
+# LPCONFIG specifies the config to use, which corresponds to a subdirectory
+# of configs. LPCONFIG_SECTION specifies the <canonical> section inside that
+# config's launchpad.conf to use. LPCONFIG_SECTION is really only used by
+# the test suite to select the testrunner specific section.
+CONFIG_ENVIRONMENT_VARIABLE = 'LPCONFIG'
+SECTION_ENVIRONMENT_VARIABLE = 'LPCONFIG_SECTION'
+
 DEFAULT_SECTION = 'default'
+DEFAULT_CONFIG = 'default'
 
 class CanonicalConfig(object):
     """
@@ -50,7 +57,7 @@ class CanonicalConfig(object):
     """
     _cache = zope.thread.local()
     _default_config_section = os.environ.get(
-            ENVIRONMENT_VARIABLE, DEFAULT_SECTION
+            SECTION_ENVIRONMENT_VARIABLE, DEFAULT_SECTION
             )
 
     def setDefaultSection(self, section):
@@ -58,11 +65,11 @@ class CanonicalConfig(object):
         
         This method is used by the test runner to switch on the test
         configuration. It may be used in the future to store the production
-        configs in the one common file. It also sets the LAUNCHPAD_CONF
+        configs in the one common file. It also sets the LPCONFIG_SECTION
         environment variable so subprocesses keep the same default.
         """
         self._default_config_section = section
-        os.environ[ENVIRONMENT_VARIABLE] = section
+        os.environ[SECTION_ENVIRONMENT_VARIABLE] = section
 
     def getConfig(self, section=None):
         """Return the ZConfig configuration"""
@@ -78,6 +85,7 @@ class CanonicalConfig(object):
         schemafile = os.path.join(os.path.dirname(__file__), 'schema.xml')
         configfile = os.path.join(
                 os.path.dirname(__file__), os.pardir, os.pardir, os.pardir,
+                'configs', os.environ.get('LPCONFIG', DEFAULT_CONFIG),
                 'launchpad.conf'
                 )
         schema = ZConfig.loadSchema(schemafile)
@@ -176,7 +184,4 @@ def urlbase(value):
         value = value + '/'
     return value
 
-
-if os.environ.get(ENVIRONMENT_VARIABLE, None) is None:
-    warnings.warn('Using default configuration section in launchpad.conf')
 

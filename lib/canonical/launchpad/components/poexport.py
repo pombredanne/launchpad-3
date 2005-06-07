@@ -593,12 +593,7 @@ class POExport:
                 raise RuntimeError(
                     'All Person rows should have at least one email address!')
 
-            # Now, it's time to get a name for our translator
-            if last_changed.person.displayname is not None:
-                name = last_changed.person.displayname
-            else:
-                name = last_changed.person.name
-
+            name = last_changed.person.browsername
             # Finally the pofile header is updated.
             header['Last-Translator'] = '%s <%s>' % (name, email)
 

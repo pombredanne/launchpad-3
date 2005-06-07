@@ -524,7 +524,9 @@ class POTemplate(SQLBase, RosettaStats):
 
         importer = TemplateImporter(self, self.rawimporter)
 
-        file = helpers.getRawFileData(self)
+        rawdata = helpers.getRawFileData(self)
+
+        file = StringIO.StringIO(rawdata)
 
         try:
             importer.doImport(file)

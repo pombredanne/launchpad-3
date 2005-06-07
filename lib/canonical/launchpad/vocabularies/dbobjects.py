@@ -270,9 +270,7 @@ class PersonVocabulary(NamedSQLObjectVocabulary):
     _orderBy = ['familyname','givenname','displayname', 'name']
 
     def _toTerm(self, obj):
-        return SimpleTerm(
-                obj, obj.name, obj.displayname or '%s %s' % (
-                    obj.givenname, obj.familyname))
+        return SimpleTerm(obj, obj.name, obj.browsername)
 
     def search(self, query):
         """Return terms where query is a subtring of the name"""
@@ -586,7 +584,7 @@ class ValidGPGKeyVocabulary(SQLObjectVocabularyBase):
 
     def _toTerm(self, obj):
         return SimpleTerm(
-            obj, obj.id, obj.owner.displayname + " " + obj.keyid)
+            obj, obj.id, obj.owner.browsername + " " + obj.keyid)
 
 
     def search(self, query):

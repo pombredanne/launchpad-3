@@ -574,6 +574,119 @@ def parse_cformat_string(s):
 
     raise ValueError(s)
 
+def normalize_newlines(s):
+    r"""Convert newlines to Unix form.
+
+    >>> normalize_newlines('foo')
+    'foo'
+    >>> normalize_newlines('foo\n')
+    'foo\n'
+    >>> normalize_newlines('foo\r')
+    'foo\n'
+    >>> normalize_newlines('foo\r\n')
+    'foo\n'
+    >>> normalize_newlines('foo\r\nbar\r\n\r\nbaz')
+    'foo\nbar\n\nbaz'
+    """
+
+    return s.replace('\r\n', '\n').replace('\r', '\n')
+
+def regex_escape(*substitutions):
+    """Helper for string substitution when making regular expressions."""
+    return tuple([re.escape(string) for string in substitutions])
+
+def _tab_contraction_replacer(matchobj):
+    """Function called by contract_rosetta_tabs when substituting in
+    _tab_contraction_re."""
+    tab_in_brackets, escaped_tab_in_brackets = matchobj.groups()
+    if tab_in_brackets:
+        return '\t'
+    else:
+        assert escaped_tab_in_brackets
+        return '[tab]'
+
+_tab_contraction_re = re.compile(
+    '(%s)|(%s)' % regex_escape('[tab]', r'\[tab]'))
+
+def contract_rosetta_tabs(text):
+    r"""Replace Rosetta representation of tab characters with their native form.
+
+    Normal strings get passed through unmolested.
+
+    >>> contract_rosetta_tabs('foo')
+    'foo'
+    >>> contract_rosetta_tabs('foo\\nbar')
+    'foo\\nbar'
+
+    The string '[tab]' gets gonveted to a tab character.
+
+    >>> contract_rosetta_tabs('foo[tab]bar')
+    'foo\tbar'
+
+    The string '\[tab]' gets converted to a literal '[tab]'.
+
+    >>> contract_rosetta_tabs('foo\\[tab]bar')
+    'foo[tab]bar'
+
+    The string '\\[tab]' gets converted to a literal '\[tab]'.
+
+    >>> contract_rosetta_tabs('foo\\\\[tab]bar')
+    'foo\\[tab]bar'
+
+    And so on...
+
+    >>> contract_rosetta_tabs('foo\\\\\\[tab]bar')
+    'foo\\\\[tab]bar'
+    """
+
+    return _tab_contraction_re.sub(_tab_contraction_replacer, text)
+
+def _tab_expansion_replacer(matchobj):
+    """Function called by expand_rosetta_tabs when substituting in
+    _tab_expansion_re."""
+    tab_literal, tab_in_brackets = matchobj.groups()
+    if tab_literal:
+        return '[tab]'
+    else:
+        assert tab_in_brackets
+        return '\[tab]'
+
+_tab_expansion_re = re.compile(
+    '(%s)|(%s)' % regex_escape('\t', '[tab]'))
+
+def expand_rosetta_tabs(text):
+    r"""Replace tabs with their Rosetta representation.
+
+    Normal strings get passed through unmolested.
+
+    >>> expand_rosetta_tabs('foo')
+    'foo'
+    >>> expand_rosetta_tabs('foo\\nbar')
+    'foo\\nbar'
+
+    Tabs get converted to '[tab]'.
+
+    >>> expand_rosetta_tabs('foo\tbar')
+    'foo[tab]bar'
+
+    Literal ocurrences of '[tab]' get escaped.
+
+    >>> expand_rosetta_tabs('foo[tab]bar')
+    'foo\\[tab]bar'
+
+    Escaped ocurrences themselves get escaped.
+
+    >>> expand_rosetta_tabs('foo\\[tab]bar')
+    'foo\\\\[tab]bar'
+
+    And so on...
+
+    >>> expand_rosetta_tabs('foo\\\\[tab]bar')
+    'foo\\\\\\[tab]bar'
+    """
+
+    return _tab_expansion_re.sub(_tab_expansion_replacer, text)
+
 def parse_translation_form(form):
     """Parse a form submitted to the translation widget.
 
@@ -590,6 +703,7 @@ def parse_translation_form(form):
     messageSets = {}
 
     # Extract message IDs.
+
     for key in form:
         match = re.match('set_(\d+)_msgid$', key)
 
@@ -613,7 +727,8 @@ def parse_translation_form(form):
             if not id in messageSets:
                 raise AssertionError("Orphaned translation in form.")
 
-            messageSets[id]['translations'][pluralform] = form[key]
+            messageSets[id]['translations'][pluralform] = (
+                contract_rosetta_tabs(normalize_newlines(form[key])))
 
     # Extract fuzzy statuses.
 
@@ -666,7 +781,7 @@ def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
 
     # Replace newlines and tabs with their respective representations.
 
-    return '\n'.join(lines).replace('\n', newline).replace('\t', '\\t')
+    return expand_rosetta_tabs(newline.join(lines))
 
 def check_po_syntax(s):
     parser = POParser()

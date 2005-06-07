@@ -31,6 +31,7 @@ import signal
 import subprocess
 import time
 from zope.app.server.main import main
+from configs import generate_overrides
 
 basepath = filter(None, sys.path)
 
@@ -94,8 +95,27 @@ def start_librarian():
                     )
     atexit.register(stop_librarian)
 
+
+def make_pidfile():
+    """Create a pidfile so we can be killed easily.
+
+    Registers an atexit callback to remove the file on termination.
+    """
+    pidfile = os.path.join(os.path.dirname(__file__), 'launchpad.pid')
+    def nukepidfile():
+        if os.path.exists(pidfile):
+            os.unlink(pidfile)
+    atexit.register(nukepidfile)
+    f = open(pidfile, 'w')
+    print >> f, str(os.getpid())
+    f.close()
+
+
  
 def run(argv=list(sys.argv)):
+
+    # Sort ZCML overrides for our current config
+    generate_overrides()
 
     # setting python paths
     program = argv[0]
@@ -108,6 +128,10 @@ def run(argv=list(sys.argv)):
     # We really want to replace this with a generic startup harness.
     # However, this should last us until this is developed
     start_librarian()
+
+    # Store our process id somewhere
+    make_pidfile()
+
     main(argv[1:])
         
 
