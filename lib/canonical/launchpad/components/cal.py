@@ -115,31 +115,48 @@ class CalendarSubscriptionSet(object):
     def __init__(self, person):
         self.owner = person
     def __contains__(self, calendar):
+        # if calendar has no ID, then it is not a database calendar
         if calendar.id is None:
             return False
-        return bool(CalendarSubscription.selectBy(personID=self.owner.id,
-                                                  calendarID=calendar.id))
+        # if the person has no calendar, then they have no calendar
+        # subscriptions
+        owner_calendar = self.owner.calendar
+        if not owner_calendar:
+            return False
+
+        return bool(CalendarSubscription.selectBy(subjectID=owner_calendar.id,
+                                                  objectID=calendar.id))
     def __iter__(self):
-        for sub in CalendarSubscription.selectBy(personID=self.owner.id):
-            yield sub.calendar
+        calendar = self.owner.calendar
+        if calendar:
+            for sub in CalendarSubscription.selectBy(subjectID=calendar.id):
+                yield sub.object
     def subscribe(self, calendar):
         if calendar.id is None:
             raise ValueError('calendar has no identifier')
+        owner_calendar = self.owner.getOrCreateCalendar()
         if calendar not in self:
-            CalendarSubscription(personID=self.owner.id,
-                                 calendarID=calendar.id)
+            CalendarSubscription(subjectID=owner_calendar.id,
+                                 objectID=calendar.id)
     def unsubscribe(self, calendar):
         if calendar.id is None:
             raise ValueError('calendar has no identifier')
-        for sub in CalendarSubscription.selectBy(personID=self.owner.id,
-                                                 calendarID=calendar.id):
+        owner_calendar = self.owner.calendar
+        if not owner_calendar:
+            # no calendar for person => no subscription
+            return
+        for sub in CalendarSubscription.selectBy(subjectID=owner_calendar.id,
+                                                 objectID=calendar.id):
             sub.destroySelf()
 
     def getColour(self, calendar):
         if calendar.id is None:
             return self.defaultColour
-        for sub in CalendarSubscription.selectBy(personID=self.owner.id,
-                                                 calendarID=calendar.id):
+        owner_calendar = self.owner.calendar
+        if not owner_calendar:
+            return self.defaultColour
+        for sub in CalendarSubscription.selectBy(subjectID=owner_calendar.id,
+                                                 objectID=calendar.id):
             return sub.colour
         else:
             return self.defaultColour
@@ -148,8 +165,11 @@ class CalendarSubscriptionSet(object):
             raise ValueError('invalid colour value "%s"' % colour)
         if calendar.id is None:
             return
-        for sub in CalendarSubscription.selectBy(personID=self.owner.id,
-                                                 calendarID=calendar.id):
+        owner_calendar = self.owner.calendar
+        if not owner_calendar:
+            return
+        for sub in CalendarSubscription.selectBy(subjectID=owner_calendar.id,
+                                                 objectID=calendar.id):
             sub.colour = colour
 
 class MergedCalendar(CalendarMixin, EditableCalendarMixin):

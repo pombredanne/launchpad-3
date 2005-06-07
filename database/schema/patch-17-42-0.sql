@@ -9,11 +9,11 @@ CREATE TABLE Calendar (
 
 CREATE TABLE CalendarSubscription (
     id serial NOT NULL PRIMARY KEY,
-    person integer NOT NULL,
-    calendar integer NOT NULL,
+    subject integer NOT NULL,
+    object integer NOT NULL,
     colour text NOT NULL DEFAULT '#9db8d2',
 
-    CONSTRAINT calendarsubscription_sub_key UNIQUE (person, calendar)
+    CONSTRAINT calendarsubscription_sub_key UNIQUE (subject, object)
 );
 
 CREATE TABLE CalendarEvent (
@@ -24,7 +24,7 @@ CREATE TABLE CalendarEvent (
     duration interval NOT NULL,
     title text NOT NULL,
     description text NOT NULL DEFAULT '',
-    location text NOT NULL DEFAULT '',
+    location text DEFAULT '',
 /*
     recurrence varchar(10) NOT NULL,
     count integer, / * if count is not positive, use until * /
@@ -38,9 +38,9 @@ CREATE TABLE CalendarEvent (
 );
 
 ALTER TABLE CalendarSubscription
-    ADD CONSTRAINT "calendarsubscription_person_fk" FOREIGN KEY (person) REFERENCES Person(id);
+    ADD CONSTRAINT "calendarsubscription_subject_fk" FOREIGN KEY (subject) REFERENCES Calendar(id);
 ALTER TABLE CalendarSubscription
-    ADD CONSTRAINT "calendarsubscription_calendar_fk" FOREIGN KEY (calendar) REFERENCES Calendar(id);
+    ADD CONSTRAINT "calendarsubscription_object_fk" FOREIGN KEY (object) REFERENCES Calendar(id);
 
 ALTER TABLE CalendarEvent
     ADD CONSTRAINT "calendarevent_calendar_fk" FOREIGN KEY (calendar) REFERENCES Calendar(id);
@@ -53,6 +53,8 @@ ALTER TABLE Person ADD COLUMN calendar integer;
 ALTER TABLE Person
     ADD CONSTRAINT "person_calendar_fk" FOREIGN KEY (calendar) REFERENCES Calendar(id);
 CREATE INDEX person_calendar_idx ON Person (calendar);
+
+/* a field to store the user's selected timezone */
 ALTER TABLE Person ADD COLUMN timezone_name text;
 
 /* Add calendar column to Projects table */
@@ -68,12 +70,3 @@ ALTER TABLE Product ADD COLUMN calendar integer;
 ALTER TABLE Product
     ADD CONSTRAINT "product_calendar_fk" FOREIGN KEY (calendar) REFERENCES Calendar(id);
 CREATE INDEX product_calendar_idx ON Product (calendar);
-
-/* security stuff -- should move to security.cfg */
-GRANT SELECT, INSERT, UPDATE ON Calendar TO GROUP write;
-GRANT SELECT, INSERT, UPDATE, DELETE ON CalendarSubscription TO GROUP write;
-GRANT SELECT, INSERT, UPDATE, DELETE ON CalendarEvent TO GROUP write;
-
-GRANT SELECT, INSERT, UPDATE ON calendar_id_seq TO GROUP write;
-GRANT SELECT, INSERT, UPDATE ON calendarsubscription_id_seq TO GROUP write;
-GRANT SELECT, INSERT, UPDATE ON calendarevent_id_seq TO GROUP write;

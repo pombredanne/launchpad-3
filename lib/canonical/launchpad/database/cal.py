@@ -3,7 +3,7 @@ import pytz
 
 from zope.interface import implements
 
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, EnumCol
+from sqlobject import IntervalCol, ForeignKey, IntCol, StringCol, EnumCol
 from sqlobject import MultipleJoin
 from sqlobject import SQLObjectNotFound
 from sqlobject import AND
@@ -122,8 +122,8 @@ class Calendar(SQLBase, CalendarMixin, EditableCalendarMixin):
 
 
 class CalendarSubscription(SQLBase):
-    person = ForeignKey(dbName='person', notNull=True, foreignKey='Person')
-    calendar = ForeignKey(dbName='calendar', notNull=True,
+    subject = ForeignKey(dbName='subject', notNull=True, foreignKey='Calendar')
+    object = ForeignKey(dbName='object', notNull=True,
                           foreignKey='Calendar')
     colour = StringCol(dbName='colour', notNull=True, default='#9db8d2')
 
@@ -141,10 +141,10 @@ class CalendarEvent(SQLBase, CalendarEventMixin):
     dtstart = UtcDateTimeCol(dbName='dtstart', notNull=True)
         
     # actually an interval ...
-    duration = DateTimeCol(dbName='duration', notNull=True)
+    duration = IntervalCol(dbName='duration', notNull=True)
     title = StringCol(dbName='title', notNull=True)
     description = StringCol(dbName='description', notNull=True, default='')
-    location = StringCol(dbName='location', notNull=True, default='')
+    location = StringCol(dbName='location', default='')
 
     recurrence = None # TODO: implement this as a property
 
