@@ -1,0 +1,15 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:sqlos="http://namespaces.sqlobject.org/sqlos"
+    xmlns:rdb="http://namespaces.zope.org/rdb">
+
+  <rdb:provideConnection
+      name="launchpad"
+      component="psycopgda.adapter.PsycopgAdapter"
+      dsn="dbi://launchpad:@emperor:5432/launchpad_prod" />
+
+  <sqlos:connectionName name="launchpad" />
+
+  <include file="sql.zcml" package="canonical.lp" />
+
+</configure>
