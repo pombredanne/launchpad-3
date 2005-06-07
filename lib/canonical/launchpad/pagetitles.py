@@ -145,6 +145,25 @@ bugtracker_new = 'Create Malone Bugtracker'
 
 bugtrackers_index = 'Malone-Registered Bug Trackers'
 
+calendar = ContextTitle('%s')
+
+calendar_event_addform = ContextTitle('Add Event to Calendar "%s"')
+
+calendar_event_display = ContextTitle('Event "%s"')
+
+calendar_event_editform = ContextTitle('Edit Event "%s"')
+
+calendar_subscribe = ContextTitle('Subscribe to "%s"')
+
+calendar_subscriptions = 'Calendar Subscriptions'
+
+def calendar_view(context, view):
+    return '%s - %s' % (context.calendar.title, view.datestring)
+calendar_view_day = calendar_view
+calendar_view_week = calendar_view
+calendar_view_month = calendar_view
+calendar_view_year = calendar_view
+
 codeofconduct_admin = 'Code of Conduct Admin Console'
 
 codeofconduct_index = 'Code of Conduct Release'

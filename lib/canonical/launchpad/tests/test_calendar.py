@@ -48,8 +48,8 @@ def doctest_MergedCalendarTraverser():
 
     It has a helper method for extracting the calendar from the principal:
 
-        >>> mct._calendar(FakePrincipal())
-        <canonical.launchpad.components.cal.MergedCalendar object at ...
+        >>> isinstance(mct._calendar(FakePrincipal()), MergedCalendar)
+        True
 
     If there is no user, or if the user cannot be adapted to a calendar, this
     helper returns None
@@ -91,8 +91,8 @@ def doctest_MergedCalendarTraverser():
     Calendar exists, but there are no views for it.
 
         >>> request.setPrincipal(FakePrincipal())
-        >>> mct._calendar(request.principal)
-        <canonical.launchpad.components.cal.MergedCalendar object at ...
+        >>> isinstance(mct._calendar(request.principal), MergedCalendar)
+        True
 
         >>> mct.publishTraverse(request, '2004')
         Traceback (most recent call last):
