@@ -106,6 +106,11 @@ class POFile(SQLBase, RosettaStats):
     def canEditTranslations(self, person):
         """See IEditPOFile."""
 
+        # If the person is None, then they cannot edit
+        if person is None:
+            return False
+
+        # have a look at the aplicable permission policy
         tperm = self.translationpermission
         if tperm == TranslationPermission.OPEN:
             # if the translation policy is "open", then yes
