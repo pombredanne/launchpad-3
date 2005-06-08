@@ -23,19 +23,16 @@ class IBug(Interface):
         title=_('Date Created'), required=True, readonly=True)
     name = TextLine(
         title=_('Nickname'), required=False,
-        description=_("""A short and unique name for this bug. Very few
-        bugs have a nickname, they are just bugs that are so
-        significant that people will actually remember the
-        name. Please don't set a nickname for the bug unless you
-        are certain that this is the sort of bug that the entire
-        community, upstream and all distro's, will phear."""),
+        description=_("""A short and unique name for this bug.
+        Add a nickname only if you often need to retype the URL
+        but have trouble remembering the bug number."""),
         constraint=valid_name)
     title = Title(
         title=_('Title'), required=True,
-        description=_("""A one-line summary of the problem"""))
+        description=_("""A one-line summary of the problem."""))
     summary = Summary(
         title=_('Summary'), required=False,
-        description=_("""The bug summary is a single paragraph
+        description=_("""A single paragraph
         description that should capture the essence of the bug, where it
         has been observed, and what triggers it."""))
     description = Text(
