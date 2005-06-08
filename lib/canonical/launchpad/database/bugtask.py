@@ -312,7 +312,7 @@ class BugTaskSet:
         return BugTask(**bugtask_args)
 
     def assignedBugTasks(self, person, minseverity=None, minpriority=None,
-                         showclosed=False, orderBy=None):
+                         showclosed=False, orderBy=None, user=None):
         if showclosed:
             showclosed = ""
         else:
@@ -327,6 +327,25 @@ class BugTaskSet:
             prioAndSevFilter += (
                 ' AND BugTask.severity >= %s' % sqlvalues(minseverity))
 
+        privatenessFilter = ' AND '
+        if user is not None:
+            privatenessFilter += ('''
+                ((BugTask.bug = Bug.id AND Bug.private = FALSE)
+                OR ((BugTask.bug = Bug.id AND Bug.private = TRUE) AND
+                    (Bug.id in (
+                        SELECT Bug.id FROM Bug, BugSubscription WHERE
+                           (Bug.id = BugSubscription.bug) AND
+                           (BugSubscription.person = %(personid)s) AND
+                           (BugSubscription.subscription IN
+                               (%(cc)s, %(watch)s))))))'''
+                % sqlvalues(personid=user.id,
+                            cc=dbschema.BugSubscription.CC,
+                            watch=dbschema.BugSubscription.WATCH))
+        else:
+            privatenessFilter += 'BugTask.bug = Bug.id AND Bug.private = FALSE'
+
+        filters = prioAndSevFilter + showclosed + privatenessFilter
+
         maintainedPackageBugTasksQuery = ('''
             BugTask.sourcepackagename = Maintainership.sourcepackagename AND
             BugTask.distribution = Maintainership.distribution AND
@@ -334,8 +353,8 @@ class BugTaskSet:
             TeamParticipation.person = %s''' % person.id)
 
         maintainedPackageBugTasks = BugTask.select(
-            maintainedPackageBugTasksQuery + prioAndSevFilter + showclosed, 
-            clauseTables=['Maintainership', 'TeamParticipation'])
+            maintainedPackageBugTasksQuery + filters,
+            clauseTables=['Maintainership', 'TeamParticipation', 'BugTask'])
 
         maintainedProductBugTasksQuery = ('''
             BugTask.product = Product.id AND
@@ -343,23 +362,24 @@ class BugTaskSet:
             TeamParticipation.person = %s''' % person.id)
 
         maintainedProductBugTasks = BugTask.select(
-            maintainedProductBugTasksQuery + prioAndSevFilter + showclosed,
-            clauseTables=['Product', 'TeamParticipation'])
+            maintainedProductBugTasksQuery + filters,
+            clauseTables=['Product', 'TeamParticipation', 'BugTask'])
 
         assignedBugTasksQuery = ('''
             BugTask.assignee = TeamParticipation.team AND
             TeamParticipation.person = %s''' % person.id)
 
         assignedBugTasks = BugTask.select(
-            assignedBugTasksQuery + prioAndSevFilter + showclosed,
-            clauseTables=['TeamParticipation'])
+            assignedBugTasksQuery + filters,
+            clauseTables=['TeamParticipation', 'BugTask'])
 
         results = assignedBugTasks.union(maintainedProductBugTasks)
         return results.union(maintainedPackageBugTasks, orderBy=orderBy)
 
-    def bugTasksWithSharedInterest(self, person1, person2, orderBy=None):
-        person1Tasks = self.assignedBugTasks(person1)
-        person2Tasks = self.assignedBugTasks(person2)
+    def bugTasksWithSharedInterest(self, person1, person2, orderBy=None,
+                                   user=None):
+        person1Tasks = self.assignedBugTasks(person1, user=user)
+        person2Tasks = self.assignedBugTasks(person2, user=user)
         return person1Tasks.intersect(person2Tasks, orderBy=orderBy)
 
 

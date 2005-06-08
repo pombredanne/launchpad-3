@@ -210,6 +210,60 @@ COMMENT ON COLUMN POFile.rawimportstatus IS 'The status of the import. See the R
 COMMENT ON COLUMN POFile.exportfile IS 'The Library file alias of an export of this PO file.';
 COMMENT ON COLUMN POFile.exporttime IS 'The time at which the file referenced by exportfile was generated.';
 
+-- POSelection
+COMMENT ON TABLE POSelection IS 'This table captures the full set
+of all the translations ever submitted for a given pomsgset and pluralform.
+It also indicates which of those is currently active.';
+COMMENT ON COLUMN POSelection.pomsgset IS 'The messageset for
+which we are recording a selection.';
+COMMENT ON COLUMN POSelection.pluralform IS 'The pluralform of
+this selected translation.';
+COMMENT ON COLUMN POSelection.activesubmission IS 'The submission which made
+this the active translation in rosetta for this pomsgset and pluralform.';
+COMMENT ON COLUMN POSelection.publishedsubmission IS 'The submission in which
+we noted this as the current translation published in revision control (or
+in the public po files for this translation template, in the package or
+tarball or branch which is considered the source of it).';
+
+-- POSubmission
+COMMENT ON TABLE POSubmission IS 'This table records the fact
+that we saw, or someone submitted, a particular translation for a particular
+msgset under a particular licence, at a specific time.';
+COMMENT ON COLUMN POSubmission.pomsgset IS 'The message set for which the
+submission or sighting was made.';
+COMMENT ON COLUMN POSubmission.pluralform IS 'The plural form of the
+submission which was made.';
+COMMENT ON COLUMN POSubmission.potranslation IS 'The translation that was
+submitted or sighted.';
+COMMENT ON COLUMN POSubmission.person IS 'The person that made
+the submission through the web to rosetta, or the last-translator on the
+pofile that we are processing, or the person who uploaded that pofile to
+rosetta. In short, our best guess as to the person who is contributing that
+translation.';
+COMMENT ON COLUMN POSubmission.origin IS 'The source of this
+translation. This indicates whether the translation was in a pofile that we
+parsed (probably one published in a package or branch or tarball), or was
+submitted through the web.';
+
+-- POMsgSet
+COMMENT ON COLUMN POMsgSet.publishedfuzzy IS 'This indicates that this
+POMsgSet was fuzzy when it was last imported from a published PO file. By
+comparing the current fuzzy state (in the "fuzzy" field) to that, we know if
+we have changed the fuzzy condition of the messageset in Rosetta.';
+COMMENT ON COLUMN POMsgSet.publishedcomplete IS 'This indicates that this
+POMsgSet was complete when it was last imported from a published PO file. By
+"complete" we mean "has a translation for every expected plural form". We
+can compare the current completeness state (in the "iscomplete" field) to
+this, to know if we have changed the completeness of the messageset in
+Rosetta since it was imported.';
+COMMENT ON COLUMN POMsgSet.isfuzzy IS 'This indicates if the msgset is
+currently fuzzy in Rosetta. The other indicator, publishedfuzzy, shows the
+same status for the last published pofile we pulled in.';
+COMMENT ON COLUMN POMsgSet.iscomplete IS 'This indicates if we believe that
+Rosetta has an active translation for every expected plural form of this
+message set.';
+
+
 /*
   Bazaar
 */

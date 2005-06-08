@@ -57,24 +57,25 @@ class DistroRelease(SQLBase):
     architectures = MultipleJoin(
         'DistroArchRelease', joinColumn='distrorelease')
 
+    @property
     def parent(self):
         """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
         if self.parentrelease:
             return self.parentrelease.title
         return ''
-    parent = property(parent)
 
+    @property
     def status(self):
         return self.releasestatus.title
-    status = property(status)
 
+    @property
     def sourcecount(self):
         query = ('SourcePackagePublishing.status = %s '
                  'AND SourcePackagePublishing.distrorelease = %s'
                  % sqlvalues(PackagePublishingStatus.PUBLISHED, self.id))
         return SourcePackagePublishing.select(query).count()
-    sourcecount = property(sourcecount)
 
+    @property
     def binarycount(self):
         """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
         clauseTables = ['DistroArchRelease']
@@ -85,19 +86,22 @@ class DistroRelease(SQLBase):
                  % sqlvalues(PackagePublishingStatus.PUBLISHED, self.id))
         return PackagePublishing.select(
             query, clauseTables=clauseTables).count()
-    binarycount = property(binarycount)
 
+    @property
     def architecturecount(self):
         """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
         return len(list(self.architectures))
 
+    @property
     def potemplates(self):
-        return POTemplate.selectBy(distroreleaseID=self.id)
-    potemplates = property(potemplates)
+        result = POTemplate.selectBy(distroreleaseID=self.id)
+        result = list(result)
+        result.sort(key=lambda x: x.potemplatename.name)
+        return result
 
+    @property
     def potemplatecount(self):
-        return self.potemplates.count()
-    potemplatecount = property(potemplatecount)
+        return len(self.potemplates)
 
     def getBugSourcePackages(self):
         """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""

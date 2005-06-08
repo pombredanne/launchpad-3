@@ -25,7 +25,7 @@ from zope.security.management import newInteraction, endInteraction
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
 from canonical.database.constants import UTC_NOW
-from canonical.lp.dbschema import RosettaImportStatus
+from canonical.lp.dbschema import RosettaImportStatus, TranslationPermission
 from canonical.librarian.interfaces import ILibrarianClient, UploadFailed, \
     DownloadFailed
 from canonical.launchpad.interfaces import ILaunchBag, IOpenLaunchBag, \
@@ -588,7 +588,6 @@ def normalize_newlines(s):
     >>> normalize_newlines('foo\r\nbar\r\n\r\nbaz')
     'foo\nbar\n\nbaz'
     """
-
     return s.replace('\r\n', '\n').replace('\r', '\n')
 
 def regex_escape(*substitutions):
@@ -715,7 +714,6 @@ def parse_translation_form(form):
             messageSets[id]['fuzzy'] = False
 
     # Extract translations.
-
     for key in form:
         match = re.match(r'set_(\d+)_translation_([a-z]+(?:_[A-Z]+)?)_(\d+)$',
             key)
@@ -731,7 +729,6 @@ def parse_translation_form(form):
                 contract_rosetta_tabs(normalize_newlines(form[key])))
 
     # Extract fuzzy statuses.
-
     for key in form:
         match = re.match(r'set_(\d+)_fuzzy_([a-z]+)$', key)
 
@@ -852,6 +849,7 @@ def import_tar(potemplate, importer, tarfile, pot_paths, po_paths):
     # function we did already the needed tests to be sure that pot_paths
     # follows our requirements.
     potemplate.attachRawFileData(tarfile.extractfile(pot_paths[0]).read(),
+                                 True, # the "published" flag
                                  importer)
     pot_base_dir = os.path.dirname(pot_paths[0])
 
@@ -883,7 +881,9 @@ def import_tar(potemplate, importer, tarfile, pot_paths, po_paths):
         pofile = potemplate.getOrCreatePOFile(code, variant, importer)
 
         try:
-            pofile.attachRawFileData(contents, importer)
+            # we are assming that a tarball import is ALWAYS of a
+            # "published" potemplate and "published" pofiles
+            pofile.attachRawFileData(contents, True, importer)
         except (POSyntaxError, POInvalidInputError):
             errors.append(path)
             continue
@@ -908,8 +908,39 @@ class DummyPOFile(RosettaStats):
         self.potemplate = potemplate
         self.language = language
         self.header = ''
-        self.latest_sighting = None
+        self.latest_submission = None
         self.messageCount = len(potemplate)
+
+    @property
+    def translators(self):
+        tgroups = self.potemplate.translationgroups
+        ret = []
+        for group in tgroups:
+            translator = group.query_translator(self.language)
+            if translator is not None:
+                ret.append(translator)
+        return ret
+
+    def canEditTranslations(self, person):
+
+        tperm = self.potemplate.translationpermission
+        if tperm == TranslationPermission.OPEN:
+            # if the translation policy is "open", then yes
+            return True
+        elif tperm == TranslationPermission.CLOSED:
+            # if the translation policy is "closed", then check if the
+            # person is in the set of translators XXX sabdfl 25/05/05 this
+            # code could be improved when we have implemented CrowdControl
+            translators = [t.translator for t in self.translators]
+            for translator in translators:
+                if person.inTeam(translator):
+                    return True
+        else:
+            raise NotImplementedError, 'Unknown permission %s', tperm.name
+
+        # At this point you either got an OPEN (true) or you are not in the
+        # designated translation group, so you can't edit them
+        return False
 
     def currentCount(self):
         return 0

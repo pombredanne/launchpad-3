@@ -29,29 +29,29 @@
     <h2>Translations in Ubuntu</h2>
 
     <p>Rosetta is the primary translation system for the Ubuntu Project. You
-    can help translation any application in Ubuntu, or any of the Ubuntu
+    can help to translate any application in Ubuntu, or any of the Ubuntu
     derivative distributions, using this web interface. Select a release
     from the list below:</p>
     
     <div style="margin-left: 50px;">
 
-        <p tal:repeat="distrorelease context/translatable_distroreleases">
-            <img src="/++resource++product_icon.gif">
-            <b><span tal:replace="distrorelease/version" />: "<span
-            tal:replace="distrorelease/title">distrorelease
-            title</span>"</b>&nbsp;[&nbsp;<a tal:attributes="href
-            string:/distros/${distrorelease/distribution/name}/${distrorelease/name}/+translations">Translate</a>&nbsp;]
-            <br />
-            <span tal:replace="distrorelease/summary">product
-            summary</span>
-        </p>
+      <p tal:repeat="distrorelease context/translatable_distroreleases">
+        <img src="/++resource++product_icon.gif">
+        <b><span tal:replace="distrorelease/version" />: "<span
+        tal:replace="distrorelease/title">distrorelease
+        title</span>"</b>&nbsp;[&nbsp;<a tal:attributes="href
+        string:/distros/${distrorelease/distribution/name}/${distrorelease/name}/+translations">Translate</a>&nbsp;]
+        <br />
+        <span tal:replace="distrorelease/summary">product
+        summary</span>
+      </p>
 
     </div> <!-- indent -->
 
-    <h2>Upstream Translations</h2>
+    <h2>Translatable Applications</h2>
 
-    <p>Rosetta is also being used for the translation of the following
-    applications "upstream". Select an application to translate it into your
+    <p>Rosetta is being used to translate the following open source
+    applications. Select an application to translate it into your
     own language, using only your web browser. If your favourite open
     source application is not listed here, you can see
     if it is <a href="/products/">registered with the Launchpad</a> and then
@@ -63,7 +63,7 @@
     <table class="listing">
       <thead>
         <tr>
-          <th>Product</th>
+          <th>Application</th>
           <th>Title</th>
         </tr>
       </thead>

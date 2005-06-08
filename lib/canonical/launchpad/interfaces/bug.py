@@ -77,6 +77,8 @@ class IBug(Interface):
     externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
     cverefs = Attribute('CVE references for this bug')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
+    duplicates = Attribute('MultiJoin of the bugs which are dups of this '
+        'one')
 
     def followup_title():
         """Return a candidate title for a followup message."""

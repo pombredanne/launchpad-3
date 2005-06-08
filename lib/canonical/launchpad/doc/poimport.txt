@@ -63,9 +63,9 @@ And this is the file that'll get imported.
     ... '''
 
 Importing happens in two steps. First, we attach the file data to the
-template.
+template. The potemplate is always "published"
 
-    >>> potemplate.attachRawFileData(potemplate_contents, person)
+    >>> potemplate.attachRawFileData(potemplate_contents, True, person)
 
 The file data is stored in the Librarian, so we have to commit the transaction
 to make sure it's stored properly.
@@ -111,20 +111,21 @@ Here are the contents of the file we'll be importing.
     ... '''
 
 The process of importing a PO file is much like that of importing a PO
-template.
+template. Remember, we need to tell the system that this po file is a
+"published" one.
 
-    >>> pofile.attachRawFileData(pofile_contents, person)
+    >>> pofile.attachRawFileData(pofile_contents, True, person)
     >>> transaction.commit()
     >>> pofile.doRawImport(FakeLogger())
     log> There is a problem with the dates importing cy language for template Template for evolution in hoary. New: 2005-06-03 19:41+0100, old YEAR-MO-DA HO:MI+ZONE
 
-Here's a current message set: i.e. it has a corresponding currnet message set
-in the PO template. It should not be fuzzy.
+Here's a current message set: i.e. it has a corresponding current message set
+in the PO template. It should not be publishedfuzzy.
 
     >>> messageSets = list(pofile.currentMessageSets())
     >>> messageSets[0].potmsgset.primemsgid_.msgid
     u'foo'
-    >>> messageSets[0].fuzzy
+    >>> messageSets[0].publishedfuzzy
     False
 
 And here's a non-current message set. It shouldn't be fuzzy either.
@@ -132,13 +133,13 @@ And here's a non-current message set. It shouldn't be fuzzy either.
     >>> messageSets = list(pofile.messageSetsNotInTemplate())
     >>> messageSets[0].potmsgset.primemsgid_.msgid
     u'balloon'
-    >>> messageSets[0].fuzzy
+    >>> messageSets[0].publishedfuzzy
     False
 
 This message set should be fuzzy, however.
 
     >>> messageSet = pofile.messageSet(u'bar')
-    >>> messageSet.fuzzy
+    >>> messageSet.publishedfuzzy
     True
 
     >>> LibrarianTestSetup().tearDown()

@@ -48,10 +48,23 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
 
     filename = Attribute("The name of the file that was imported")
 
-    latest_sighting = Attribute("""Of all the translation sightings belonging
-        to PO messages sets belonging to this PO file, return the one which
-        was most recently modified (greatest datelastactive), or None if
-        there are no sightings belonging to this PO file.""")
+    datecreated = Attribute("The fate this file was created.")
+
+    latest_submission = Attribute("""Of all the translation submissions
+        belonging to PO messages sets belonging to this PO file, return the
+        one which was most recently modified (greatest datelastactive), or
+        None if there are no submissions belonging to this PO file.""")
+
+    translators = Attribute("A list of Translators that have been "
+        "designated as having permission to edit these files in this "
+        "language.")
+
+    contributors = Attribute("A list of all the people who have made "
+        "some sort of contribution to this PO file.")
+
+    translationpermission = Attribute("The permission system which "
+        "is used for this pofile. This is inherited from the product, "
+        "project and/or distro in which the pofile is found.")
 
     translators = Attribute("A list of Translators that have been "
         "designated as having permission to edit these files in this "

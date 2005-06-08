@@ -279,7 +279,7 @@ class IBugTaskSet(Interface):
         """
 
     def assignedBugTasks(person, minseverity=None, minpriority=None,
-                         showclosed=None, orderby=None):
+                         showclosed=None, orderby=None, user=None):
         """Return all bug tasks assigned to the given person or to a
         package/product this person maintains.
 
@@ -293,9 +293,13 @@ class IBugTaskSet(Interface):
         <orderBy>. Otherwise the order used is not predictable.
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
+
+        The <user> parameter is necessary to make sure we don't return any
+        bugtask of a private bug for which the user is not subscribed. If
+        <user> is None, no private bugtasks will be returned.
         """
 
-    def bugTasksWithSharedInterest(person1, person2, orderBy=None):
+    def bugTasksWithSharedInterest(person1, person2, orderBy=None, user=None):
         """Return all bug tasks which person1 and person2 share some interest.
 
         We assume they share some interest if they're both members of the
@@ -306,6 +310,10 @@ class IBugTaskSet(Interface):
         <orderBy>. Otherwise the order used is not predictable.
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
+
+        The <user> parameter is necessary to make sure we don't return any
+        bugtask of a private bug for which the user is not subscribed. If
+        <user> is None, no private bugtasks will be returned.
         """
 
 class IBugTasksReport(Interface):
