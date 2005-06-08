@@ -48,6 +48,13 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
 
     filename = Attribute("The name of the file that was imported")
 
+    exportfile = Attribute("The Librarian alias of the last cached export.")
+
+    latest_sighting = Attribute("""Of all the translation sightings belonging
+        to PO messages sets belonging to this PO file, return the one which
+        was most recently modified (greatest datelastactive), or None if
+        there are no sightings belonging to this PO file.""")
+
     datecreated = Attribute("The fate this file was created.")
 
     latest_submission = Attribute("""Of all the translation submissions

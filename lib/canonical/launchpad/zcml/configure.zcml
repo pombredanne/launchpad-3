@@ -48,6 +48,7 @@
     <include file="packaging.zcml" />
     <include file="person.zcml" />
     <include file="poexport.zcml" />
+    <include file="poexportrequest.zcml" />
     <include file="pofile.zcml" />
     <include file="pomsgid.zcml" />
     <include file="pomsgset.zcml" />

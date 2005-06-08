@@ -69,4 +69,5 @@ from canonical.launchpad.database.distrotool import *
 from canonical.launchpad.database.component import *
 from canonical.launchpad.database.section import *
 from canonical.launchpad.database.vpoexport import *
+from canonical.launchpad.database.poexportrequest import *
 
