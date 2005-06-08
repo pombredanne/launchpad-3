@@ -354,7 +354,8 @@ class BugTaskSet:
 
         maintainedPackageBugTasks = BugTask.select(
             maintainedPackageBugTasksQuery + filters,
-            clauseTables=['Maintainership', 'TeamParticipation', 'BugTask'])
+            clauseTables=['Maintainership', 'TeamParticipation', 'BugTask',
+                          'Bug'])
 
         maintainedProductBugTasksQuery = ('''
             BugTask.product = Product.id AND
@@ -363,7 +364,7 @@ class BugTaskSet:
 
         maintainedProductBugTasks = BugTask.select(
             maintainedProductBugTasksQuery + filters,
-            clauseTables=['Product', 'TeamParticipation', 'BugTask'])
+            clauseTables=['Product', 'TeamParticipation', 'BugTask', 'Bug'])
 
         assignedBugTasksQuery = ('''
             BugTask.assignee = TeamParticipation.team AND
@@ -371,7 +372,7 @@ class BugTaskSet:
 
         assignedBugTasks = BugTask.select(
             assignedBugTasksQuery + filters,
-            clauseTables=['TeamParticipation', 'BugTask'])
+            clauseTables=['TeamParticipation', 'BugTask', 'Bug'])
 
         results = assignedBugTasks.union(maintainedProductBugTasks)
         return results.union(maintainedPackageBugTasks, orderBy=orderBy)
