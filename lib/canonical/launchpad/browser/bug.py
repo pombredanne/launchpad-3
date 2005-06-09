@@ -37,12 +37,16 @@ def traverseBug(bug, request, name):
     elif name == 'packageinfestations':
         return BugPackageInfestationSet(bug=bug.id)
 
+    return None
+
 
 def traverseBugs(bugcontainer, request, name):
     if name == 'assigned':
         return BugTasksReport()
     else:
         return getUtility(IBugSet).get(int(name))
+
+    return None
 
 
 # TODO: Steve will be hacking on a more general portlet mechanism today
