@@ -12,7 +12,7 @@ Foo Bar views the bugs listing for Ubuntu Linux.
       <a href="+filebug">File a bug on Ubuntu Linux</a><br />
   ...
 
-Foo Bar files a *private* bug on Ubuntu Linux.
+Foo Bar files a *private* bug on Ubuntu Linux. He gets redirected to it.
 
   >>> print http(r"""
   ... POST /malone/distros/ubuntu/+filebug HTTP/1.1
@@ -49,6 +49,8 @@ Foo Bar files a *private* bug on Ubuntu Linux.
   ... -----------------------------1512617038523064916835258629--
   ... """)
   HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/malone/bugs/7
   ...
 
 Foo Bar see the private bug he filed.

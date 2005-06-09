@@ -4,6 +4,7 @@ __metaclass__ = type
 
 from zope.interface import implements
 from zope.component import getUtility
+from zope.app.traversing.browser.absoluteurl import absoluteURL
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form.browser.add import AddView
 from zope.app.form.browser import SequenceWidget, ObjectWidget
@@ -78,10 +79,11 @@ class DistributionFileBugView(SQLObjectAddView):
 
         notify(SQLObjectCreatedEvent(bug, self.request))
 
+        self.addedBug = bug 
         return bug
 
     def nextURL(self):
-        return '.'
+        return absoluteURL(self.addedBug, self.request)
 
 
 class DistributionSetView:

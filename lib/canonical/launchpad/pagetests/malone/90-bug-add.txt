@@ -16,7 +16,8 @@ At the moment, Malone still has a bug filing page on which you can
 specify the distro in addition to the source package in which the bug
 occurs.
 
-You must be logged-in to file a bug.
+You must be logged-in to file a bug. After you filed the bug you get
+redirected to the bug page.
 
   >>> print http(r"""
   ... POST /malone/bugs/+package HTTP/1.1
@@ -49,5 +50,5 @@ You must be logged-in to file a bug.
   ... """)
   HTTP/1.1 303 See Other
   ...
-      <title>Malone: Add a New Bug</title>
+  Location: http://localhost:9000/malone/bugs/7
   ...

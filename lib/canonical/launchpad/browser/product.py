@@ -16,6 +16,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
+from zope.app.traversing.browser.absoluteurl import absoluteURL
 
 from sqlobject.sqlbuilder import AND, IN, ISNULL
 
@@ -296,7 +297,6 @@ class ProductFileBugView(SQLObjectAddView):
     def __init__(self, context, request):
         self.request = request
         self.context = context
-        self._nextURL = '.'
         SQLObjectAddView.__init__(self, context, request)
 
     def createAndAdd(self, data):
@@ -315,10 +315,11 @@ class ProductFileBugView(SQLObjectAddView):
         # Pass the keyword explicitly ...
         bug = BugFactory(**kw)
         notify(SQLObjectCreatedEvent(bug, self.request))
+        self.addedBug = bug
         return bug
 
     def nextURL(self):
-        return self._nextURL
+        return absoluteURL(self.addedBug, self.request)
 
 
 class ProductSetView:

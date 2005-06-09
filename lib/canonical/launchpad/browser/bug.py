@@ -2,11 +2,12 @@
 
 __metaclass__ = type
 
+from zope.app.form.browser.add import AddView
 from zope.app.publisher.browser import BrowserView
 from zope.component import getUtility
+from zope.app.traversing.browser.absoluteurl import absoluteURL
 from zope.app.pagetemplate.viewpagetemplatefile import (
     ViewPageTemplateFile, BoundPageTemplate)
-from zope.app.form.browser.add import AddView
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
@@ -155,8 +156,7 @@ class BugAddView(AddView):
         return retval
 
     def nextURL(self):
-        distribution = getUtility(IDistributionSet).get(self.bugadded.distribution)
-        return "/malone/distros/%s" % distribution.name
+        return absoluteURL(self.bugadded, self.request)
 
 
 class BugAddingView(SQLObjectAddView):
