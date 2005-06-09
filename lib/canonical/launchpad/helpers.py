@@ -928,13 +928,14 @@ class DummyPOFile(RosettaStats):
             # if the translation policy is "open", then yes
             return True
         elif tperm == TranslationPermission.CLOSED:
-            # if the translation policy is "closed", then check if the
-            # person is in the set of translators XXX sabdfl 25/05/05 this
-            # code could be improved when we have implemented CrowdControl
-            translators = [t.translator for t in self.translators]
-            for translator in translators:
-                if person.inTeam(translator):
-                    return True
+            if person is not None:
+                # if the translation policy is "closed", then check if the
+                # person is in the set of translators XXX sabdfl 25/05/05 this
+                # code could be improved when we have implemented CrowdControl
+                translators = [t.translator for t in self.translators]
+                for translator in translators:
+                    if person.inTeam(translator):
+                        return True
         else:
             raise NotImplementedError, 'Unknown permission %s', tperm.name
 
