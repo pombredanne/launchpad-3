@@ -474,7 +474,7 @@ def getRawFileData(raw_file_data):
     client = getUtility(ILibrarianClient)
 
     try:
-        file = client.getFileByAlias(raw_file_data.rawfile)
+        file = client.getFileByAlias(raw_file_data.rawfile.id)
     except DownloadFailed, e:
         raise RawFileFetchFailed(str(e))
 

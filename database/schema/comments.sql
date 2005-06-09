@@ -894,3 +894,15 @@ COMMENT ON TABLE PocketChroot IS 'PocketChroots: Which chroot belongs to which p
 COMMENT ON COLUMN PocketChroot.distroarchrelease IS 'Which distroarchrelease this chroot applies to.';
 COMMENT ON COLUMN PocketChroot.pocket IS 'Which pocket of the distroarchrelease this chroot applies to. Valid values are specified in dbschema.PackagePublishingPocket';
 COMMENT ON COLUMN PocketChroot.chroot IS 'The chroot used by the pocket of the distroarchrelease.';
+
+-- POExportRequest
+COMMENT ON TABLE POExportRequest IS
+'A request from a user that a PO template or a PO file be exported
+asynchronously.';
+COMMENT ON COLUMN POExportRequest.person IS
+'The person who made the request.';
+COMMENT ON COLUMN POExportRequest.potemplate IS
+'The PO template being requested.';
+COMMENT ON COLUMN POExportRequest.pofile IS
+'The PO file being requested, or NULL.';
+
