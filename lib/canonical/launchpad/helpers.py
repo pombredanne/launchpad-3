@@ -568,9 +568,13 @@ def request_languages(request):
             languages.append(lang)
     return languages
 
-def parse_cformat_string(s):
-    '''Parse a printf()-style format string into a sequence of interpolations
-    and non-interpolations.'''
+class UnrecognisedCFormatString(ValueError):
+    """Exception raised when a string containing C format sequences can't be
+    parsed."""
+
+def parse_cformat_string(string):
+    """Parse a printf()-style format string into a sequence of interpolations
+    and non-interpolations."""
 
     # The sequence '%%' is not counted as an interpolation. Perhaps splitting
     # into 'special' and 'non-special' sequences would be better.
@@ -579,30 +583,37 @@ def parse_cformat_string(s):
     # empty string, a string beginning with a sequence containing no
     # interpolations, or a string beginning with an interpolation.
 
-    # Check for an empty string.
+    segments = []
+    end = string
+    plain_re = re.compile('(%%|[^%])+')
+    interpolation_re = re.compile('%[^diouxXeEfFgGcspmn]*[diouxXeEfFgGcspmn]')
 
-    if s == '':
-        return ()
+    while end:
+        # Check for a interpolation-less prefix.
 
-    # Check for a interpolation-less prefix.
+        match = plain_re.match(end)
 
-    match = re.match('(%%|[^%])+', s)
+        if match:
+            segment = match.group(0)
+            segments.append(('string', segment))
+            end = end[len(segment):]
+            continue
 
-    if match:
-        t = match.group(0)
-        return (('string', t),) + parse_cformat_string(s[len(t):])
+        # Check for an interpolation sequence at the beginning.
 
-    # Check for an interpolation sequence at the beginning.
+        match = interpolation_re.match(end)
 
-    match = re.match('%[^diouxXeEfFgGcspn]*[diouxXeEfFgGcspn]', s)
+        if match:
+            segment = match.group(0)
+            segments.append(('interpolation', segment))
+            end = end[len(segment):]
+            continue
 
-    if match:
-        t = match.group(0)
-        return (('interpolation', t),) + parse_cformat_string(s[len(t):])
+        # Give up.
 
-    # Give up.
+        raise UnrecognisedCFormatString(string)
 
-    raise ValueError(s)
+    return segments
 
 def normalize_newlines(s):
     r"""Convert newlines to Unix form.
@@ -770,9 +781,11 @@ def parse_translation_form(form):
 
 def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
                newline=TranslationConstants.NEWLINE_CHAR):
-    '''Convert a message ID to a HTML representation.'''
+    """Convert a message ID to a HTML representation."""
 
     lines = []
+
+    # Replace leading and trailing spaces on each line with special markup.
 
     for line in xml_escape(text).split('\n'):
         # Pattern:
@@ -792,19 +805,29 @@ def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
             raise AssertionError(
                 "A regular expression that should always match didn't.")
 
-    for i in range(len(lines)):
-        if 'c-format' in flags:
-            line = ''
+    if 'c-format' in flags:
+        # Replace c-format sequences with marked-up versions. If there is a
+        # problem parsing the c-format sequences on a particular line, that
+        # line is left unformatted.
 
-            for segment in parse_cformat_string(lines[i]):
+        for i in range(len(lines)):
+            formatted_line = ''
+
+            try:
+                segments = parse_cformat_string(lines[i])
+            except UnrecognisedCFormatString:
+                continue
+
+            for segment in segments:
                 type, content = segment
 
                 if type == 'interpolation':
-                    line += '<span class="interpolation">%s</span>' % content
+                    formatted_line += ('<span class="interpolation">%s</span>'
+                        % content)
                 elif type == 'string':
-                    line += content
+                    formatted_line += content
 
-            lines[i] = line
+            lines[i] = formatted_line
 
     # Replace newlines and tabs with their respective representations.
 

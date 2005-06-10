@@ -319,17 +319,17 @@ def test_parse_cformat_string():
     '''
     >>> from canonical.launchpad.helpers import parse_cformat_string
     >>> parse_cformat_string('')
-    ()
+    []
     >>> parse_cformat_string('foo')
-    (('string', 'foo'),)
+    [('string', 'foo')]
     >>> parse_cformat_string('blah %d blah')
-    (('string', 'blah '), ('interpolation', '%d'), ('string', ' blah'))
+    [('string', 'blah '), ('interpolation', '%d'), ('string', ' blah')]
     >>> parse_cformat_string('%sfoo%%bar%s')
-    (('interpolation', '%s'), ('string', 'foo%%bar'), ('interpolation', '%s'))
+    [('interpolation', '%s'), ('string', 'foo%%bar'), ('interpolation', '%s')]
     >>> parse_cformat_string('%')
     Traceback (most recent call last):
     ...
-    ValueError: %
+    UnrecognisedCFormatString: %
     '''
 
 def test_parse_translation_form():
@@ -429,6 +429,23 @@ def test_msgid_html():
 
     >>> msgid_html(u'foo\tbar', [])
     u'foo[tab]bar'
+
+    Test valid C format strings are formatted.
+
+    >>> msgid_html(u'foo %d bar', ['c-format'])
+    u'foo <span class="interpolation">%d</span> bar'
+
+    Test bad format strings are caught and passed through.
+
+    >>> text = u'foo %z bar'
+    >>> from canonical.launchpad.helpers import parse_cformat_string
+    >>> parse_cformat_string(text)
+    Traceback (most recent call last):
+    ...
+    UnrecognisedCFormatString: foo %z bar
+
+    >>> msgid_html(text, ['c-format']) == text
+    True
     '''
 
 
