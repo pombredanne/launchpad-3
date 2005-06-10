@@ -527,9 +527,7 @@ class POExport:
                 fuzzy = False
             messages.append(
                 MessageProxy(
-                    potmsgset=potmsgset,
-                    pomsgset=pomsgset,
-                    fuzzy=fuzzy))
+                    potmsgset, False, True, pomsgset=pomsgset, fuzzy=fuzzy))
 
         # Get all obsolete messages from the POFile, that's all messagesets
         # that were in the POFile last time we imported it but are not anymore
@@ -541,9 +539,7 @@ class POExport:
             # incomplete as fuzzy.
             obsolete_messages.append(
                 MessageProxy(
-                    potmsgset=potmsgset,
-                    pomsgset=pomsgset,
-                    fuzzy=True))
+                    potmsgset, False, True, pomsgset=pomsgset, fuzzy=True))
 
         # We parse the header of the POFile before exporting it to be able to
         # know the POFile encoding
