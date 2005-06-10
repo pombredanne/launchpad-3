@@ -397,7 +397,6 @@ the logged in person from the maintainer team, so that he can't edit the
 task anymore:
 
     >>> sample_person.leave(foo_team)
-    True
     >>> upstream_task.status = STATUS_FIXED
     Traceback (most recent call last):
       ...

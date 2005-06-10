@@ -752,26 +752,3 @@ def sendMergeRequestEmail(token, dupename, appurl):
     subject = "Launchpad: Merge of Accounts Requested"
     simple_sendmail(fromaddress, token.email, subject, message)
 
-
-class TeamAddView(AddView, BasePersonView):
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        AddView.__init__(self, context, request)
-        self._nextURL = '.'
-
-    def nextURL(self):
-        return self._nextURL
-
-    def createAndAdd(self, data):
-        kw = {}
-        for key, value in data.items():
-            kw[str(key)] = value
-
-        kw['teamownerID'] = self.context.id
-        team = getUtility(IPersonSet).newTeam(**kw)
-        notify(ObjectCreatedEvent(team))
-        self._nextURL = '/people/%s' % team.name
-        return team
-

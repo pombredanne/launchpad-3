@@ -14,6 +14,7 @@ from zope.exceptions import NotFoundError
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
 
+from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.launchpad.interfaces import \
     IBug, IBugAddForm, IBugSet, IBugDelta
 from canonical.database.sqlbase import SQLBase
@@ -105,52 +106,34 @@ class Bug(SQLBase):
         emails = Set()
         for subscription in self.subscriptions:
             if subscription.subscription == dbschema.BugSubscription.CC:
-                preferred_email = subscription.person.preferredemail
-                # XXX: Brad Bollenbach, 2005-03-14: Subscribed users
-                # should always have a preferred email, but
-                # realistically, we've got some corruption in our db
-                # still that prevents us from guaranteeing that all
-                # subscribers will have a preferredemail
-                if preferred_email is not None:
-                    emails.add(preferred_email.email)
+                emails.update(contactEmailAddresses(subscription.person))
 
         if not self.private:
             # Collect implicit subscriptions. This only happens on
             # public bugs.
             for task in self.bugtasks:
                 if task.assignee is not None:
-                    preferred_email = task.assignee.preferredemail
-                    # XXX: Brad Bollenbach, 2005-03-14: Subscribed users
-                    # should always have a preferred email, but
-                    # realistically, we've got some corruption in our db
-                    # still that prevents us from guaranteeing that all
-                    # subscribers will have a preferredemail
-                    if preferred_email is not None:
-                        emails.add(preferred_email.email)
+                    emails.update(contactEmailAddresses(task.assignee))
 
                 if task.product is not None:
-                    preferred_email = task.product.owner.preferredemail
-                    if preferred_email is not None:
-                        emails.add(preferred_email.email)
+                    owner = task.product.owner
+                    emails.update(contactEmailAddresses(owner))
                 else:
                     if task.sourcepackagename is not None:
                         if task.distribution is not None:
                             distribution = task.distribution
                         else:
                             distribution = task.distrorelease.distribution
+
                         maintainership = Maintainership.selectOneBy(
                             sourcepackagenameID = task.sourcepackagename.id,
                             distributionID = distribution.id)
+
                         if maintainership is not None:
                             maintainer = maintainership.maintainer
-                            preferred_email = maintainer.preferredemail
-                            if preferred_email:
-                                emails.add(preferred_email.email)
+                            emails.update(contactEmailAddresses(maintainer))
 
-        preferred_email = self.owner.preferredemail
-        if preferred_email is not None:
-            emails.add(preferred_email.email)
-
+        emails.update(contactEmailAddresses(self.owner))
         emails = list(emails)
         emails.sort()
         return emails

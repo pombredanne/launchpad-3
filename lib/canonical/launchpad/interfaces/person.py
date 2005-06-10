@@ -222,6 +222,9 @@ class IPerson(Interface):
           a PROPOSED member and one of the team's administrators have to
           approve the membership.
 
+        This method returns True if this person was added as a member of
+        <team> or False if that wasn't possible.
+
         Teams cannot call this method because they're not allowed to
         login and thus can't "join" another team. Instead, they're added
         as a member (using the addMember() method) by a team administrator.
@@ -250,7 +253,7 @@ class IPerson(Interface):
         the TeamParticipation table in case the status is APPROVED.
         """
 
-    def setMembershipStatus(person, status, expires, reviewer=None,
+    def setMembershipStatus(person, status, expires=None, reviewer=None,
                             comment=None):
         """Set the status of the person's membership on this team.
 

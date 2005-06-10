@@ -235,25 +235,20 @@ class Person(SQLBase):
         return bool(results.count())
 
     def leave(self, team):
-        # XXX: Should these really be asserts?
-        #      -- SteveAlexander, 2005-04-23
+        """See IPerson."""
         assert not ITeam.providedBy(self)
 
+        active = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
         tm = TeamMembership.selectOneBy(personID=self.id, teamID=team.id)
-        assert tm is not None
-        assert tm.status in [TeamMembershipStatus.ADMIN,
-                             TeamMembershipStatus.APPROVED]
+        if tm is None or tm.status not in active:
+            # Ok, we're done. You are not an active member and still not being.
+            return
 
         team.setMembershipStatus(self, TeamMembershipStatus.DEACTIVATED,
                                  tm.dateexpires)
-        # XXX: Why is this returing anything?  What's the contract?
-        #      Where's the docstring?
-        #      -- SteveAlexander, 2005-04-23
-        return True
 
     def join(self, team):
-        # XXX: Don't use an assert.
-        #      SteveAlexander, 2005-04-23
+        """See IPerson."""
         assert not ITeam.providedBy(self)
 
         expired = TeamMembershipStatus.EXPIRED
@@ -309,7 +304,10 @@ class Person(SQLBase):
     def addMember(self, person, status=TeamMembershipStatus.APPROVED,
                   reviewer=None, comment=None):
         assert self.teamowner is not None
-        assert not person.hasMembershipEntryFor(self)
+        if person.hasMembershipEntryFor(self):
+            # <person> is already a member.
+            return 
+
         assert status in [TeamMembershipStatus.APPROVED,
                           TeamMembershipStatus.PROPOSED]
 
@@ -321,7 +319,7 @@ class Person(SQLBase):
         if status == TeamMembershipStatus.APPROVED:
             _fillTeamParticipation(person, self)
 
-    def setMembershipStatus(self, person, status, expires, reviewer=None,
+    def setMembershipStatus(self, person, status, expires=None, reviewer=None,
                             comment=None):
         tm = TeamMembership.selectOneBy(personID=person.id, teamID=self.id)
 
@@ -584,7 +582,8 @@ class PersonSet:
         assert ownerID
         owner = Person.get(ownerID)
         team = Person(**kw)
-        _fillTeamParticipation(owner, team)
+        team.addMember(owner)
+        team.setMembershipStatus(owner, TeamMembershipStatus.ADMIN)
         return team
 
     def newPerson(self, **kw):

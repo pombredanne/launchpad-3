@@ -6,6 +6,7 @@ import gettextpo
 import os
 import random
 import re
+import sets
 import tarfile
 import time
 import warnings
@@ -29,7 +30,7 @@ from canonical.librarian.interfaces import (
     )
 from canonical.launchpad.interfaces import (
     ILaunchBag, IOpenLaunchBag, IHasOwner, IGeoIP, IRequestPreferredLanguages,
-    ILanguageSet, IRequestLocalLanguages, RawFileAttachFailed,
+    ILanguageSet, IRequestLocalLanguages, RawFileAttachFailed, ITeam,
     RawFileFetchFailed
     )
 from canonical.launchpad.components.poparser import (
@@ -346,6 +347,31 @@ def simple_popen2(command, input, in_bufsize=1024, out_bufsize=128):
                 child_stdin.close()
 
     return output
+
+def contactEmailAddresses(person):
+    """Return a Set of email addresses to contact this Person.
+
+    If <person> has a preferred email, the Set will contain only that
+    preferred email. 
+
+    If <person> doesn't have a preferred email but implements ITeam, the 
+    Set will contain the preferred email address of each member of <person>.
+
+    Finally, if <person> doesn't have a preferred email neither implement
+    ITeam, the Set will be empty.
+    """
+    emails = sets.Set()
+    if person.preferredemail is not None:
+        emails.add(person.preferredemail.email)
+        return emails
+
+    if ITeam.providedBy(person):
+        for member in person.activemembers:
+            contactAddresses = contactEmailAddresses(member)
+            if contactAddresses:
+                emails = emails.union(contactAddresses)
+
+    return emails
 
 # Note that this appears as "valid email" in the UI, because that term is
 # more familiar to users, even if it is less correct.

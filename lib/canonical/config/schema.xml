@@ -83,6 +83,8 @@
             required="no" default="false" />
         <key name="bounce_address" datatype="string" required="no"
             default="bounces@canonical.com" />
+        <key name="admin_address" datatype="string" required="no"
+            default="system-error@launchpad.ubuntu.com" />
         <section name="*" type="launchpad" attribute="launchpad" />
         <section name="*" type="librarian" attribute="librarian" />
         <section name="*" type="zopeless" attribute="zopeless" />
