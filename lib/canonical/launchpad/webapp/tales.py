@@ -19,16 +19,37 @@ from zope.app.traversing.interfaces import ITraversable
 import zope.security.management
 import zope.app.security.permission
 from zope.exceptions import NotFoundError
-from canonical.launchpad.interfaces import \
+from canonical.launchpad.interfaces import (
     IPerson, ILink, IFacetList, ITabList, ISelectionAwareLink
+    )
 import canonical.lp.dbschema
 from canonical.lp import decorates
 import canonical.launchpad.pagetitles
+from canonical.launchpad.helpers import canonical_url
 
 
 class TraversalError(NotFoundError):
     """XXX Remove this when we upgrade to a more recent Zope x3"""
     # Steve Alexander, Tue Dec 14 13:07:38 UTC 2004
+
+
+def _get_request():
+    """Return the request, looked up from the interaction.
+
+    If there is no request, then return None.
+    """
+    interaction = zope.security.management.queryInteraction()
+    requests = [
+        participation
+        for participation in interaction.participations
+        if IBrowserApplicationRequest.providedBy(participation)
+        ]
+    if not requests:
+        return None
+    assert len(requests) == 1, (
+        "We expect only one IBrowserApplicationRequest in the interaction."
+        " Got %s." % len(requests))
+    return requests[0]
 
 
 class LinkDecorator:
@@ -37,20 +58,9 @@ class LinkDecorator:
 
     def __init__(self, context):
         self.context = context
-        self.selected = self._is_selected_link(self._get_request())
-
-    def _get_request(self):
-        """Returns the request."""
-        interaction = zope.security.management.queryInteraction()
-        requests = [
-            participation
-            for participation in interaction.participations
-            if IBrowserApplicationRequest.providedBy(participation)
-            ]
-        assert len(requests) == 1, (
-            "We expect only one IBrowserApplicationRequest in the interaction."
-            " Got %s." % len(requests))
-        return requests[0]
+        request = _get_request()
+        assert request is not None
+        self.selected = self._is_selected_link(request)
 
     def _is_selected_link(self, request):
         """Returns True if the link is selected."""
@@ -264,7 +274,8 @@ class NoneFormatter:
         'date',
         'time',
         'datetime',
-        'pagetitle'
+        'pagetitle',
+        'url'
         ])
 
     def __init__(self, context):
@@ -283,18 +294,19 @@ class NoneFormatter:
             raise TraversalError, name
 
 
+class ObjectFormatterAPI:
+    """Adapter from any object to a formatted string.  Used for fmt:url."""
+
+    def __init__(self, context):
+        self._context = context
+
+    def url(self):
+        request = _get_request()
+        return canonical_url(self._context, request)
+
+
 class DateTimeFormatterAPI:
-    """Adapter from datetime objects to a formatted string.
-
-    If the datetime object is None, for example from a NULL column in
-    the database, then the methods that would return a formatted
-    string instead return None.
-
-    This allows you to say::
-
-      <span tal:content="some_datetime/fmt:date | default">Not known</span>
-
-    """
+    """Adapter from datetime objects to a formatted string."""
 
     def __init__(self, datetimeobject):
         self._datetime = datetimeobject

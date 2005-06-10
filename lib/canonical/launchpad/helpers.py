@@ -2,10 +2,8 @@
 
 __metaclass__ = type
 
-import base64
 import gettextpo
 import os
-import popen2
 import random
 import re
 import tarfile
@@ -26,17 +24,23 @@ from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
 from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import RosettaImportStatus, TranslationPermission
-from canonical.librarian.interfaces import ILibrarianClient, UploadFailed, \
-    DownloadFailed
-from canonical.launchpad.interfaces import ILaunchBag, IOpenLaunchBag, \
-    IHasOwner, IGeoIP, IRequestPreferredLanguages, ILanguageSet, \
-    IRequestLocalLanguages, \
-    RawFileAttachFailed, RawFileFetchFailed
-from canonical.launchpad.components.poparser import POSyntaxError, \
-    POInvalidInputError, POParser
+from canonical.librarian.interfaces import (
+    ILibrarianClient, UploadFailed, DownloadFailed
+    )
+from canonical.launchpad.interfaces import (
+    ILaunchBag, IOpenLaunchBag, IHasOwner, IGeoIP, IRequestPreferredLanguages,
+    ILanguageSet, IRequestLocalLanguages, RawFileAttachFailed,
+    RawFileFetchFailed
+    )
+from canonical.launchpad.components.poparser import (
+    POSyntaxError, POInvalidInputError, POParser
+    )
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.mail import SignedMessage
 from canonical.launchpad.mail.ftests import testmails_path
+
+# This import forms part of this module's API.
+from canonical.launchpad.webapp.publisher import canonical_url
 
 CHARACTERS_PER_LINE = 50
 
