@@ -1,7 +1,7 @@
 View the file bug screen as user Sample Person.
 
   >>> print http(r"""
-  ... GET /malone/products/firefox/+filebug HTTP/1.1
+  ... GET /products/firefox/+filebug HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
@@ -13,12 +13,12 @@ View the file bug screen as user Sample Person.
 File a private bug as user Sample Person. He gets redirected to it.
 
   >>> print http(r"""
-  ... POST /malone/products/firefox/+filebug HTTP/1.1
+  ... POST /products/firefox/+filebug HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 696
   ... Content-Type: multipart/form-data; boundary=---------------------------7564071467832000371737554862
-  ... Referer: http://localhost:9000/malone/products/firefox/+filebug
+  ... Referer: http://localhost:9000/products/firefox/+filebug
   ... 
   ... -----------------------------7564071467832000371737554862
   ... Content-Disposition: form-data; name="field.title"
@@ -51,22 +51,17 @@ Of course, we're able to see the private bug we've just filed in the
 bug listing.
 
   >>> print http(r"""
-  ... GET /malone/products/firefox/ HTTP/1.1
+  ... GET /products/firefox/+bugs HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Referer: http://localhost:9000/malone/products/firefox/+filebug
+  ... Referer: http://localhost:9000/products/firefox/+filebug
   ... """)
   HTTP/1.1 200 Ok
   ...
   Content-Type: text/html;charset=utf-8
   ...
-      <h1>Bug reports on upstream
-          Mozilla Firefox
-      </h1>
-  ...
-  ...1...
-  ...5...
-  of 5 results
+      <h1>...Mozilla Firefox</h1>
+  ...of 5 results...
   ...
             <td>
                 <a href="...">7</a>

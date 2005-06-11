@@ -118,33 +118,33 @@ o PersonVocabulary - all people and teams. Results are ordered by familyname,
     >>> vocab = vocabulary_registry.get(None, "Person")
     >>> stuff = vocab.search('team')
     >>> [t.token for t in stuff]
-    ['name21', 'name18', 'name17', 'name19', 'name20']
+    ['support@ubuntu.com']
 
 o ValidPersonOrTeam - all 'valid' persons or teams. This is currently defined
-  as people with a password, at least one validated email address and not merged
+  as people with a password, a preferred email address and not merged
   (Person.merged is None) or any team.
 
     >>> vocab = vocabulary_registry.get(None, "ValidPersonOrTeam")
     >>> stuff = vocab.search('team')
     >>> [t.token for t in stuff]
-    ['name21', 'name18', 'name17', 'name19', 'name20']
+    ['support@ubuntu.com']
 
     Stuart hasn't validated his email address; he's not a valid Person.
     >>> stuff = vocab.search('bishop')
     >>> [t.token for t in stuff]
     []
 
-    'name16' is a valid Person.
+    'foo.bar@canonical.com' is a valid Person.
     >>> stuff = vocab.search('foo')
     >>> [t.token for t in stuff]
-    ['name16']
+    ['foo.bar@canonical.com']
 
 o ValidOwner - all 'valid' persons or teams in Launchpad.
 
     >>> vocab = vocabulary_registry.get(None, "ValidOwner")
     >>> stuff = vocab.search('team')
     >>> [t.token for t in stuff]
-    ['name21', 'name18', 'name17', 'name19', 'name20']
+    ['support@ubuntu.com']
 
 o ValidTeamOwner - With the exception of the team itself and all teams owned
   by that team, all valid persons and teams are valid owners for the team 

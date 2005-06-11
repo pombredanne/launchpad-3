@@ -2,10 +2,10 @@
     <h4>Related People:</h4>
 
     <div class="portletBody"
-         tal:define="bug_url context/@@absolute_url">
+         tal:define="bug_url string:{context/bug/@@absolute_url}">
         <div class="portletContent even"
-             tal:define="subscriptions context/subscriptions;
-                         bugtasks context/bugtasks">
+             tal:define="subscriptions context/bug/subscriptions;
+                         bugtasks context/bug/bugtasks">
 
             <b>First reported by:</b><br />
             <ul class="people">
@@ -41,7 +41,7 @@
                     <a href="#"
                        tal:content="sub/person/browsername"
                        style="text-decoration: underline"
-                       tal:attributes="href string:$bug_url/people/${sub/id}/+edit">Dafydd</a>
+                       tal:attributes="href python:bug_url + '/people/'+str(sub.id)+'/+edit'">Dafydd</a>
                   </li>
               </ul>
               <br />
@@ -54,7 +54,7 @@
                     <a href="#"
                        tal:content="sub/person/browsername"
                        style="text-decoration: underline"
-                       tal:attributes="href string:$bug_url/people/${sub/id}/+edit">Vincenzo</a>
+                       tal:attributes="href python:bug_url + '/people/'+str(sub.id)+'/+edit'">Vincenzo</a>
                   </li>
               </ul>
               <br />
@@ -67,19 +67,13 @@
                     <a href="#"
                        tal:content="sub/person/browsername"
                        style="text-decoration: underline"
-                       tal:attributes="href string:$bug_url/people/${sub/id}/+edit">Jake</a>
+                       tal:attributes="href
+                       python:bug_url + '/people/'+str(sub.id)+'/+edit'">Jake</a>
                   </li>
               </ul>
             </tal:ignore>
 
           </tal:subscriptions>
-        <a  href="#"
-            style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
-            title="Add a subscriber to this bug."
-            tal:attributes="href string:$bug_url/people/+new">
-            <img src="/++resource++add.gif" alt="+" />
-            Subscribe
-        </a><br />
         </div>
 
     </div>

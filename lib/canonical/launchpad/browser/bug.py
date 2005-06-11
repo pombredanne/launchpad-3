@@ -143,12 +143,6 @@ class BugEditView(BugView, SQLObjectEditView):
         SQLObjectEditView.__init__(self, context, request)
 
 
-class BugTaskEditView(BugView, SQLObjectEditView):
-    def __init__(self, context, request):
-        BugView.__init__(self, context, request)
-        SQLObjectEditView.__init__(self, context, request)
-
-
 class BugAddView(AddView):
     def add(self, content):
         retval = super(BugAddView, self).add(content)

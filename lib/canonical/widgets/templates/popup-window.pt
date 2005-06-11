@@ -22,11 +22,11 @@
                 }
         </script>
     </head>
-    <body>
+    <body onLoad="document.searchform.search.focus()">
         <div tal:define="batch view/batch">
             <h1 tal:content="view/title">Title</h1>
 
-            <form method="GET">
+            <form method="GET" name="searchform">
                 <input type="text" name="search"
                     tal:attributes="value request/search|nothing" />
                 <input type="submit" value="Search" />

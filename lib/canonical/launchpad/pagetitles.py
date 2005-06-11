@@ -120,6 +120,9 @@ def bugs_assigned(context, view):
 
 bugs_createdby_index = 'Malone Bug Report by Creator'
 
+def bugs_for_context(context, view):
+    return "Bugs in %s" % context.context_title
+
 bugs_index = 'Malone Master Bug List'
 
 bugsubscription_edit = 'Modify Your Bug Subscription'

@@ -54,21 +54,16 @@ class TranslationConstants:
     NEWLINE_CHAR = u'<span class="po-message-special">\u21b5</span><br/>\n'
 
 
-def is_maintainer(hasowner):
-    """Return True if the logged in user is an owner of hasowner.
+def is_maintainer(owned_object):
+    """Is the logged in user the maintainer of this thing?
 
-    Return False if he's not an owner.
-
-    The user is an owner if it either matches hasowner.owner directly or is a
-    member of the hasowner.owner team.
-
-    Raise TypeError is hasowner does not provide IHasOwner.
+    owned_object provides IHasOwner.
     """
-    if not IHasOwner.providedBy(hasowner):
-        raise TypeError, "hasowner doesn't provide IHasOwner"
+    if not IHasOwner.providedBy(owned_object):
+        raise TypeError, "Object %s doesn't provide IHasOwner" % repr(owned_object)
     launchbag = getUtility(ILaunchBag)
     if launchbag.user is not None:
-        return launchbag.user.inTeam(hasowner.owner)
+        return launchbag.user.inTeam(owned_object.owner)
     else:
         return False
 

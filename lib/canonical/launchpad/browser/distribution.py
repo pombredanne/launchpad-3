@@ -28,9 +28,7 @@ from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser import BugTaskSearchListingView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 
-class DistributionView(BugTaskSearchListingView):
-
-    implements(IBugTaskSearchListingView)
+class DistributionView:
 
     actionsPortlet = ViewPageTemplateFile(
         '../templates/portlet-distro-actions.pt')
@@ -40,6 +38,11 @@ class DistributionView(BugTaskSearchListingView):
 
     relatedBountiesPortlet = ViewPageTemplateFile(
         '../templates/portlet-related-bounties.pt')
+
+
+class DistributionBugsView(BugTaskSearchListingView):
+
+    implements(IBugTaskSearchListingView)
 
     def __init__(self, context, request):
         BugTaskSearchListingView.__init__(self, context, request)

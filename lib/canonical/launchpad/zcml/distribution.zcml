@@ -16,6 +16,12 @@
             />
     </content>
 
+    <adapter
+        for="canonical.launchpad.interfaces.IDistribution"
+        provides="canonical.launchpad.interfaces.IBugTaskSubset"
+        factory="canonical.launchpad.components.distribution.DistributionToBugTaskSubsetAdapter"
+        permission="zope.Public" />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
         name="+index" />
@@ -27,7 +33,7 @@
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IDistribution"
-        getter="traverse" />
+        function="canonical.launchpad.browser.traversers.traverse_distribution" />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"
@@ -36,10 +42,6 @@
         <browser:page
             name="+index"
             template="../templates/distribution.pt"
-            lp:url="/distros/$Distribution.name/" />
-        <browser:page
-            name="+bugs"
-            template="../templates/distribution-bugs.pt"
             lp:url="/distros/$Distribution.name/" />
         <browser:page
             name="+bounties"

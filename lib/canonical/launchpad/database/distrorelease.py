@@ -121,17 +121,6 @@ class DistroRelease(SQLBase):
         srcset = getUtility(ISourcePackageSet)
         return srcset.findByNameInDistroRelease(self.id, pattern)
 
-    def traverse(self, name):
-        """Get SourcePackages in a DistroRelease with BugTask"""
-        if name == '+sources':
-            from canonical.launchpad.database.sourcepackage import \
-                SourcePackageSet
-            return SourcePackageSet(distrorelease=self)
-        elif name  == '+packages':
-            return PublishedPackageSet()
-        else:
-            return self.__getitem__(name)
-
     def __getitem__(self, arch):
         """Get SourcePackages in a DistroRelease with BugTask"""
         item = DistroArchRelease.selectOneBy(

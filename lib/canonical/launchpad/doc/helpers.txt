@@ -61,7 +61,7 @@ If hasowner wouldn't provide IHasOwner a TypeError is raised:
     >>> is_maintainer(noIHasOwner)
     Traceback (most recent call last):
     ...
-    TypeError: hasowner doesn't provide IHasOwner
+    TypeError: ... doesn't provide IHasOwner
 
 
 Getting a valid name as our database asks for from a string

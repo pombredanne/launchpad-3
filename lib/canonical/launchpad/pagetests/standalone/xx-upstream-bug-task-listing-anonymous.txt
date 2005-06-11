@@ -1,13 +1,11 @@
 An anonymous user views the bug tasks in upstream Ubuntu.
 
   >>> print http(r"""
-  ... GET /malone/products/ubuntu HTTP/1.1
+  ... GET /products/ubuntu/+bugs HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
-      <h1>Bug reports on upstream
-          Ubuntu
-      </h1>
+      <h1>... Ubuntu</h1>
   ...
   ...1...
   ...2...

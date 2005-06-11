@@ -225,8 +225,8 @@
 
   <fieldset tal:condition="mass_edit">
     <legend>Batch Edit</legend>
-    <tal:milestone condition="context/milestones|nothing">
-      <tal:block content="structure view/milestone_widget" />
+    <tal:milestone condition="context/context/milestones|nothing">
+      <tal:block content="structure view/milestone_assignment_widget" />
       <input type="submit" name="assign_to_milestone" value="Assign to Milestone" />
     </tal:milestone>
   </fieldset>

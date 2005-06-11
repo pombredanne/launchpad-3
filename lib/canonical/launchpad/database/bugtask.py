@@ -13,7 +13,7 @@ from zope.exceptions import NotFoundError
 from zope.component import getUtility, getAdapter
 from zope.interface import implements, directlyProvides, directlyProvidedBy
 
-from canonical.lp import dbschema
+from canonical.lp import dbschema, Passthrough
 from canonical.lp.dbschema import EnumCol, BugPriority
 from canonical.lp.dbschema import BugTaskStatus
 from canonical.launchpad.interfaces import IBugTask, IBugTaskDelta
@@ -75,10 +75,6 @@ class BugTask(SQLBase):
     owner = ForeignKey(
         foreignKey='Person', dbName='owner', notNull=False, default=None)
 
-    def bugtitle(self):
-        return self.bug.title
-    bugtitle = property(bugtitle)
-
     def maintainer(self):
         if self.product:
             return self.product.owner
@@ -97,10 +93,6 @@ class BugTask(SQLBase):
         else:
             return None
     maintainer_displayname = property(maintainer_displayname)
-
-    def bugdescription(self):
-        return self.bug.description
-    bugdescription = property(bugdescription)
 
     def contextname(self):
         """See canonical.launchpad.interfaces.IBugTask.
@@ -146,7 +138,7 @@ class BugTask(SQLBase):
         """Generate the title for this bugtask based on the id of the bug
         and the bugtask's contextname.  See IBugTask.
         """
-        title = 'Bug #%s in %s' % (self.bug.id, self.contextname())
+        title = 'Bug #%s in %s' % (self.bug.id, self.contextname)
         return title
     title = property(title)
 

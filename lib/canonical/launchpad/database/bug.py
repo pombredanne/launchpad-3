@@ -10,20 +10,22 @@ from email.Utils import make_msgid
 
 from zope.interface import implements
 from zope.exceptions import NotFoundError
+from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
+from sqlobject import SQLObjectNotFound
 
+from canonical.launchpad.interfaces import (
+    IBug, IBugAddForm, IBugSet, IBugDelta)
 from canonical.launchpad.helpers import contactEmailAddresses
-from canonical.launchpad.interfaces import \
-    IBug, IBugAddForm, IBugSet, IBugDelta
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp import dbschema
 from canonical.launchpad.database.bugset import BugSetBase
-from canonical.launchpad.database.message \
-        import Message, MessageSet, MessageChunk
+from canonical.launchpad.database.message import (
+    Message, MessageSet, MessageChunk)
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.bugsubscription import BugSubscription
@@ -266,26 +268,17 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
 
 
 class BugSet(BugSetBase):
-    """A set for bugs."""
-
     implements(IBugSet)
-    table = Bug
-
-    def __getitem__(self, id):
-        """See canonical.launchpad.interfaces.bug.IBugSet."""
-        item = self.table.selectOne(self.table.q.id==id)
-        if item is None:
-            raise KeyError, id
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
-        for row in self.table.select():
+        for row in Bug.select():
             yield row
 
     def get(self, bugid):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
-        return self.table.get(bugid)
+        return Bug.get(bugid)
 
     def search(self, duplicateof=None):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
-        return self.table.selectBy(duplicateofID = duplicateof.id)
+        return Bug.selectBy(duplicateofID=duplicateof.id)
