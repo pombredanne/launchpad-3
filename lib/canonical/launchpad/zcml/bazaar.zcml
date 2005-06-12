@@ -16,16 +16,23 @@
         utility="canonical.launchpad.interfaces.IBazaarApplication"
         newlayer="canonical.launchpad.layers.BazaarLayer"
         name="bazaar" />
+    <browser:url
+        for="canonical.launchpad.interfaces.IBazaarApplication"
+        path_expression="string:bazaar"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBazaarApplication"
         name="+index" />
 
+    <!-- deprecated productset under bazaar -->
     <browser:suburl
         for="canonical.launchpad.interfaces.IBazaarApplication"
         utility="canonical.launchpad.interfaces.IProductSet"
         name="products" />
 
+    <!-- deprecated productseriesset under bazaar -->
     <browser:suburl
         for="canonical.launchpad.interfaces.IBazaarApplication"
         utility="canonical.launchpad.interfaces.IProductSeriesSet"

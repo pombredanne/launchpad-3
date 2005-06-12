@@ -17,18 +17,25 @@
       utility="canonical.launchpad.interfaces.IFOAFApplication"
       newlayer="canonical.launchpad.layers.FOAFLayer"
       name="foaf" />
+  <browser:url
+      for="canonical.launchpad.interfaces.IFOAFApplication"
+      path_expression="string:foaf"
+      parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+      />
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.IFOAFApplication"
       name="+index" />
 
+  <!-- deprecated suburl of projectset under foaf -->
   <browser:suburl
       for="canonical.launchpad.interfaces.IFOAFApplication"
       utility="canonical.launchpad.interfaces.IProjectSet"
       permission="zope.Public"
       name="projects" />
 
-  <!-- This view registers 'people' as a suburl of RootObject/foaf/. -->
+  <!-- This view registers 'people' as a suburl of RootObject/foaf/,
+       and as such is deprecated. -->
   <browser:suburl
       for="canonical.launchpad.interfaces.IFOAFApplication"
       utility="canonical.launchpad.interfaces.IPersonSet"

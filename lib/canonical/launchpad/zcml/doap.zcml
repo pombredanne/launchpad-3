@@ -16,6 +16,11 @@
         for="canonical.publication.RootObject"
         utility="canonical.launchpad.interfaces.IDOAPApplication"
         name="doap" />
+    <browser:url
+        for="canonical.launchpad.interfaces.IDOAPApplication"
+        path_expression="string:doap"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDOAPApplication"

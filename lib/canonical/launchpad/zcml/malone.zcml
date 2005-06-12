@@ -10,6 +10,11 @@
         utility="canonical.launchpad.interfaces.IMaloneApplication"
         newlayer="canonical.launchpad.layers.MaloneLayer"
         name="malone" />
+    <browser:url
+        for="canonical.launchpad.interfaces.IMaloneApplication"
+        path_expression="string:malone"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        />
 
     <securedutility
         class="canonical.launchpad.systemhomes.MaloneApplication"
