@@ -10,7 +10,7 @@ from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 __all__ = ['ILaunchpadRoot', 'ILaunchpadApplication', 'IMaloneApplication',
-           'IRosettaApplication', 'IDOAPApplication',
+           'IRosettaApplication', 'IDOAPApplication', 'IBazaarApplication',
            'IFOAFApplication', 'IPasswordEncryptor',
            'IReadZODBAnnotation', 'IWriteZODBAnnotation',
            'IZODBAnnotation', 'IAuthorization',
@@ -128,6 +128,10 @@ class IDOAPApplication(ILaunchpadApplication):
 
 class IFOAFApplication(ILaunchpadApplication):
     """FOAF application root."""
+
+
+class IBazaarApplication(ILaunchpadApplication):
+    """Bazaar Application"""
 
 
 class IPasswordEncryptor(Interface):

@@ -1,33 +1,21 @@
+"""View support classes for the bazaar application.
+"""
+__metaclass__ = type
 
-#
-# The Bazaar application. Interface, view and context have all been put
-# into this one file because they are trivial, they should be moved to
-# distinct files.
-#
+__all__ = ['BazaarApplicationView']
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.interface import implements
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import \
-    ILaunchpadApplication, IProductSeriesSet
+from canonical.launchpad.interfaces import IProductSeriesSet
 
 from canonical.lp.dbschema import ImportStatus
 
-class IBazaarApplication(ILaunchpadApplication):
-    """A Bazaar Application"""
 
-
-class BazaarApplication:
-    implements(IBazaarApplication)
-
-    def __init__(self):
-        self.title = 'The Open Source Bazaar'
-
-class BazaarApplicationView(object):
+class BazaarApplicationView:
 
     importsPortlet = ViewPageTemplateFile(
-        '../launchpad/templates/portlet-upstream-imports.pt')
+        '../templates/portlet-upstream-imports.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -65,5 +53,3 @@ class BazaarApplicationView(object):
                     count += 1
                     continue
         return count
-
-

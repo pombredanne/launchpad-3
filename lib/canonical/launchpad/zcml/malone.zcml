@@ -5,28 +5,28 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <!-- This view registers 'malone' as a suburl of RootObject. -->
     <browser:suburl
         for="canonical.publication.RootObject"
-        class="canonical.malone.MaloneApplication"
+        utility="canonical.launchpad.interfaces.IMaloneApplication"
         newlayer="canonical.launchpad.layers.MaloneLayer"
         name="malone" />
 
-    <content class="canonical.malone.MaloneApplication">
+    <securedutility
+        class="canonical.launchpad.systemhomes.MaloneApplication"
+        provides="canonical.launchpad.interfaces.IMaloneApplication">
         <allow interface="canonical.launchpad.interfaces.IMaloneApplication" />
-        <require
-            permission="zope.Public"
-            set_schema="canonical.launchpad.interfaces.IMaloneApplication"
-        />
-    </content>
+    </securedutility>
 
     <!-- general template for everything in malone -->
     <browser:pages for="*" permission="zope.Public">
-        <browser:page name="malone_template"
-            template="../launchpad/templates/main-template.pt" />
+        <browser:page
+            name="malone_template"
+            template="../templates/main-template.pt" />
     </browser:pages>
 
-    <browser:menu id="malone_actions" title="Menu for Malone-related actions." />
+    <browser:menu
+        id="malone_actions"
+        title="Menu for Malone-related actions." />
     <browser:menuItems menu="malone_actions" for="*">
         <browser:menuItem title="Bugs" action="+malone-index" />
         <browser:menuItem title="Report a Bug" action="+filebug" />
@@ -39,7 +39,7 @@
         name="+index" />
 
     <browser:traverse
-        for="canonical.malone.IMaloneApplication"
+        for="canonical.launchpad.interfaces.IMaloneApplication"
         function="canonical.launchpad.browser.traverse_malone_application" />
 
     <!-- pages for the malone application -->
@@ -50,21 +50,20 @@
         lp:url="malone">
         <browser:page
             name="+index"
-            template="../launchpad/templates/malone-index.pt"
+            template="../templates/malone-index.pt"
             lp:url="malone/+index" />
         <browser:page
             name="+about"
-            template="../launchpad/templates/malone-about.pt"
+            template="../templates/malone-about.pt"
             lp:url="malone/+about" />
         <browser:page
             name="+dashboard"
-            template="../launchpad/templates/malone-dashboard.pt"
+            template="../templates/malone-dashboard.pt"
             lp:url="malone/+dashboard" />
         <browser:page
             name="+todo"
-            template="../launchpad/templates/malone-to-do.pt"
+            template="../templates/malone-to-do.pt"
             lp:url="malone/+todo" />
     </browser:pages>
-
 
 </configure>

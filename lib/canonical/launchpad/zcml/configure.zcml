@@ -31,10 +31,8 @@
     <include file="distribution.zcml" />
     <include file="distrorelease.zcml" />
     <include file="distroarchrelease.zcml" />
-    <include file="doap.zcml" />
     <include file="emailaddress.zcml" />
     <include file="files.zcml" />
-    <include file="foaf.zcml" />
     <include file="gpgkey.zcml" />
     <include file="ircid.zcml" />
     <include file="jabberid.zcml" />
@@ -68,7 +66,6 @@
     <include file="product.zcml" />
     <include file="project.zcml" />
     <include file="publishedpackage.zcml" />
-    <include file="skins.zcml" />
     <include file="sourcepackage.zcml" />
     <include file="sourcepackagename.zcml" />
     <include file="sourcepackagerelease.zcml" />
@@ -88,6 +85,13 @@
     <include file="fields.zcml" />
     <include file="resources.zcml" />
     <include file="widgets.zcml" />
+
+    <!-- System homepages -->
+    <include file="rosetta.zcml" />
+    <include file="malone.zcml" />
+    <include file="doap.zcml" />
+    <include file="foaf.zcml" />
+    <include file="bazaar.zcml" />
 
     <!-- Event configuration -->
     <include file="bug-events.zcml" />

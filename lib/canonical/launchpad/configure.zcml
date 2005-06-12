@@ -7,7 +7,6 @@
   <include file="links.zcml" />
   <include package="canonical.launchpad.zcml" />
   <authorizations module="canonical.launchpad.security" />
-  <include file="robots.zcml" />
 
   <browser:suburl
     for="canonical.publication.RootObject"
