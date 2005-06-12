@@ -46,9 +46,9 @@
             <a href="/">
                 <img src="/@@/launchpad.png" alt="Launchpad Home" />
             </a>
-
-          <h2 tal:content="context/title | default">The Launchpad</h2>
-
+          <h2><metal:block define-slot="titleheader"
+                           tal:content="context/title | default"
+               >The Launchpad</metal:block></h2>
         </div>
 
     </div><!-- class="page-header"-->

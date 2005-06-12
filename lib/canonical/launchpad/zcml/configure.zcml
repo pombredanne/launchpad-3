@@ -31,8 +31,10 @@
     <include file="distribution.zcml" />
     <include file="distrorelease.zcml" />
     <include file="distroarchrelease.zcml" />
+    <include file="doap.zcml" />
     <include file="emailaddress.zcml" />
     <include file="files.zcml" />
+    <include file="foaf.zcml" />
     <include file="gpgkey.zcml" />
     <include file="ircid.zcml" />
     <include file="jabberid.zcml" />

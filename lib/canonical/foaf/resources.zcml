@@ -1,5 +1,0 @@
-<configure xmlns="http://namespaces.zope.org/browser">
-
-    <resource name="foaf.png" file="images/foaf.png" />
-
-</configure>

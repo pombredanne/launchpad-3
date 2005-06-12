@@ -5,28 +5,30 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <browser:resource name="doap.png" file="images/doap.png" />
-    
-    <content class="canonical.doap.DOAPApplication">
+    <securedutility
+        class="canonical.launchpad.systemhomes.DOAPApplication"
+        provides="canonical.launchpad.interfaces.IDOAPApplication">
         <allow interface="canonical.launchpad.interfaces.IDOAPApplication" />
-    </content>
+    </securedutility>
 
     <!-- This view registers 'doap' as a suburl of RootObject. -->
     <browser:suburl
         for="canonical.publication.RootObject"
-        class="canonical.doap.DOAPApplication"
+        utility="canonical.launchpad.interfaces.IDOAPApplication"
         name="doap" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDOAPApplication"
         name="+index" />
 
+    <!-- The following two browser:suburl declarations are deprecated,
+         as they refer to the /doap/projects and /doap/products url spaces.
+      -->
     <browser:suburl
         for="canonical.launchpad.interfaces.IDOAPApplication"
         utility="canonical.launchpad.interfaces.IProjectSet"
         permission="zope.Public"
         name="projects" />
-
     <browser:suburl
         for="canonical.launchpad.interfaces.IDOAPApplication"
         utility="canonical.launchpad.interfaces.IProductSet"
@@ -36,26 +38,25 @@
     <!-- general template for everything in doap -->
     <browser:pages for="*" permission="zope.Public">
         <browser:page name="launchpad_template"
-            template="../launchpad/templates/main-template.pt" />
+            template="../templates/main-template.pt" />
     </browser:pages>
 
     <!-- browser:pages for the doap application -->
     <browser:pages 
         for="canonical.launchpad.interfaces.IDOAPApplication"
         permission="zope.Public"
-        class="canonical.doap.browser.DOAPApplicationView"
         lp:url="doap">
         <browser:page name="+index"
-            template="../launchpad/templates/doap-index.pt"
+            template="../templates/doap-index.pt"
             lp:url="doap/+index" />
         <browser:page name="+about"
-            template="../launchpad/templates/doap-about.pt"
+            template="../templates/doap-about.pt"
             lp:url="doap/+about" />
         <browser:page name="+dashboard"
-            template="../launchpad/templates/doap-dashboard.pt"
+            template="../templates/doap-dashboard.pt"
             lp:url="doap/+dashboard" />
         <browser:page name="+to-do"
-            template="../launchpad/templates/doap-to-do.pt"
+            template="../templates/doap-to-do.pt"
             lp:url="doap/+to-do" />
     </browser:pages>
 

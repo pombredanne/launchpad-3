@@ -4,15 +4,18 @@
     i18n:domain="launchpad">
 
 <body>
-<div metal:fill-slot="main">
+  <metal:block fill-slot="titleheader">
+  The FOAF System in Launchpad
+  </metal:block>
+  <div metal:fill-slot="main">
 
-    <h1>Welcome to FOAF!</h1>
+      <h1>Welcome to FOAF!</h1>
 
-    <ul>
-      <li><a href="people">People</a></li> 
-    </ul>
+      <ul>
+        <li><a href="people">People</a></li> 
+      </ul>
 
-</div>
+  </div>
 </body>
 </html>
 
