@@ -203,6 +203,11 @@
   <browser:traverse
       for="canonical.launchpad.interfaces.IPersonSet"
       getter="getByName" />
+  <browser:url
+      for="canonical.launchpad.interfaces.IPerson"
+      path_expression="name"
+      parent_utility="canonical.launchpad.interfaces.IPersonSet"
+      />
 
   <browser:addform
       name="+newteam"

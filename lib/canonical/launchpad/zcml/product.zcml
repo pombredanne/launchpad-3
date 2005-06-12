@@ -210,6 +210,11 @@
     <browser:traverse
         for="canonical.launchpad.interfaces.IProductSet"
         getter="__getitem__" />
+    <browser:url
+        for="canonical.launchpad.interfaces.IProduct"
+        path_expression="name"
+        parent_utility="canonical.launchpad.interfaces.IProductSet"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSet"

@@ -1,0 +1,132 @@
+= Canonical URL examples =
+
+Here we have a bunch of examples of canonical urls of database and other
+objects.
+
+Ideally, we'd check that the URLs we have here can be accessed through the
+publisher.  We'll do that later.  For now, we'll just check that the URLs
+are what we expect them to be for various example objects.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.helpers import canonical_url
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> celebs = getUtility(ILaunchpadCelebrities)
+
+The examples are divided into sections by theme.  Each section starts with
+the imports necessary for that section, where further imports are needed.
+The proceeds with an example of the IFooSet url, then its contents, and
+so on.
+
+
+== Application homepages ==
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IMaloneApplication, IFOAFApplication, IBazaarApplication,
+    ...     IRosettaApplication, ILaunchpadRoot, IDOAPApplication,
+    ...     )
+
+The Launchpad homepage.
+
+    >>> canonical_url(getUtility(ILaunchpadRoot))
+    'http://localhost:8086/'
+
+The Malone homepage.
+
+    >>> canonical_url(getUtility(IMaloneApplication))
+    u'http://localhost:8086/malone'
+
+The Rosetta homepage.
+
+    >>> canonical_url(getUtility(IRosettaApplication))
+    u'http://localhost:8086/rosetta'
+
+The DOAP homepage.
+
+    >>> canonical_url(getUtility(IDOAPApplication))
+    u'http://localhost:8086/doap'
+
+The FOAF homepage.
+
+    >>> canonical_url(getUtility(IFOAFApplication))
+    u'http://localhost:8086/foaf'
+
+The Bazaar homepage.
+
+    >>> canonical_url(getUtility(IBazaarApplication))
+    u'http://localhost:8086/bazaar'
+
+
+== Persons and Teams ==
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+
+The IPersonSet.
+
+    >>> canonical_url(getUtility(IPersonSet))
+    u'http://localhost:8086/people'
+
+An IPerson.
+
+    >>> canonical_url(getUtility(IPersonSet).getByName('sabdfl'))
+    u'http://localhost:8086/people/sabdfl'
+
+An ITeam.
+
+    >>> canonical_url(celebs.rosetta_expert)
+    u'http://localhost:8086/people/rosetta-admins'
+
+
+== Distributions, distroreleases and so on ==
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+
+The IDistributionSet.
+
+    >>> canonical_url(getUtility(IDistributionSet))
+    u'http://localhost:8086/distros'
+
+A IDistribution.
+
+    >>> canonical_url(celebs.ubuntu)
+    u'http://localhost:8086/distros/ubuntu'
+
+A IDistroRelease.
+
+    >>> canonical_url(celebs.ubuntu.getRelease('hoary'))
+    u'http://localhost:8086/distros/ubuntu/hoary'
+
+
+== Projects and products ==
+
+    >>> from canonical.launchpad.interfaces import IProjectSet, IProductSet
+
+The IProjectSet.
+
+    >>> canonical_url(getUtility(IProjectSet))
+    u'http://localhost:8086/projects'
+
+An IProject.
+
+    >>> canonical_url(getUtility(IProjectSet)['ubuntu'])
+    u'http://localhost:8086/projects/ubuntu'
+
+The IProductSet.
+
+    >>> canonical_url(getUtility(IProductSet))
+    u'http://localhost:8086/products'
+
+An IProduct.
+
+    >>> canonical_url(getUtility(IProductSet)['firefox'])
+    u'http://localhost:8086/products/firefox'
+
+
+== Bugs and bugtasks ==
+
+To be done.
+
+
+== POTemplates and so on ==
+
+To be done.
+

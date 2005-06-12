@@ -33,7 +33,13 @@
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IDistribution"
-        function="canonical.launchpad.browser.traversers.traverse_distribution" />
+        function="canonical.launchpad.browser.traversers.traverse_distribution"
+        />
+    <browser:url
+        for="canonical.launchpad.interfaces.IDistroRelease"
+        path_expression="name"
+        attribute_to_parent="distribution"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"
@@ -128,6 +134,11 @@
     <browser:traverse
         for="canonical.launchpad.interfaces.IDistributionSet"
         getter="__getitem__" />
+    <browser:url
+        for="canonical.launchpad.interfaces.IDistribution"
+        path_expression="name"
+        parent_utility="canonical.launchpad.interfaces.IDistributionSet"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IDistributionSet"
