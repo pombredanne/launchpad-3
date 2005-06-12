@@ -11,7 +11,7 @@
   
     <!-- App-specific Images -->
     <resource name="rosetta.png" file="../images/rosetta.png" />
-    <resource name="soyuz.png" file="../../soyuz/images/soyuz.png" />
+    <resource name="soyuz.png" file="../images/soyuz.png" />
     <resource name="launchpad.png" file="../images/launchpad.png" />
 
     <!-- General Images -->
