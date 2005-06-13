@@ -344,7 +344,7 @@ people_index = 'Launchpad People'
 
 people_list = 'People registered with Launchpad'
 
-person_assignedbugs = ContextDisplayName('Bugs Reported By %s')
+person_assignedbugs = ContextDisplayName('Bugs Assigned To %s')
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
