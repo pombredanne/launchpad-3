@@ -1,31 +1,36 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
->
-  <body>
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div class="portlet">
+    <h4>Open Source Projects:</h4>
+
+    <div class="portletBody">
+      <div class="portletContent even">
+
+        <p>Enter a project name or detail, and press search to find all
+        projects matching those words in the Launchpad. You can also
+        <a href="/projects/+all">see all projects</a> registered in the
+        launchpad.</p>
+
+      </div>
+    </div>
+  </div>
+</metal:leftportlets>
 
     <div metal:fill-slot="main">
 
-      <h1>Projects in Launchpad</h1>
+      <h1>Find Projects in Launchpad</h1>
 
       <form method="get">
-
         <table>
           <tr>
-            <th>
-              <label for="text">
-                Search projects:
-              </label>
-            </th>
             <td>
               <input name="text" size="30" tal:attributes="value view/text" />
-            </td>
-          </tr>
-          <tr>
-            <td></td>
-            <td>
-              <div class="actions">
                 <input
                   tal:condition="view/searchrequested"
                   type="submit"
@@ -36,8 +41,6 @@
                   type="submit"
                   value="Search"
                 />
-                <a href="+search">Advanced search</a>
-              </div>
             </td>
           </tr>
         </table>
