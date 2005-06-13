@@ -113,24 +113,6 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (45, 'support@ubuntu
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'emailaddress'::pg_catalog.regclass;
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'gpgkey'::pg_catalog.regclass;
-
-INSERT INTO gpgkey (id, "owner", keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (1, 1, '09F89725', 'XVHJOU77IYTD0982FTG6OQFC0GF809POQW45MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
-INSERT INTO gpgkey (id, "owner", keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (2, 11, '09F89890', 'XVHJOU77IYTD0981FTG6OQFC0GF809POQW45MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
-INSERT INTO gpgkey (id, "owner", keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (3, 10, '09F89321', 'XVHJOU77IYTD0983FTG6OQFC0GF809POQW45MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
-INSERT INTO gpgkey (id, "owner", keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (4, 8, '09F89098', 'XVHJOU77IYTD0984FTG6OQFC0GF809POQW45MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
-INSERT INTO gpgkey (id, "owner", keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (5, 9, '09F89123', 'XVHJOU77IYTD0985FTG6OQFC0GF809POQW45MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
-INSERT INTO gpgkey (id, "owner", keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (6, 4, '09F89124', 'XVHJOU77IYTA0985FTG6OQFC0GF809POQW45MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
-INSERT INTO gpgkey (id, "owner", keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (7, 5, '09F89125', 'XVHJOU77IYTQ0985FTG6OQFC0GF809POQW45MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
-INSERT INTO gpgkey (id, "owner", keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (8, 7, '09F89126', 'XVHJOU77IYTX0985FTG6OQFC0GF809POQW45MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
-INSERT INTO gpgkey (id, "owner", keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (9, 3, '09F89127', 'XVHJOU77IYTZ0985FTG6OQFC0GF809POQW45MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
-INSERT INTO gpgkey (id, "owner", keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (10, 6, '09F89120', 'XVHJOU77IYTP0985FTG6OQFC0GF809POQW45MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
-INSERT INTO gpgkey (id, "owner", keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (11, 28, '681B6469', 'C85826521A6EF6A6037BB3F79FF2583E681B6469', '<-- sample pubkey ??? -->', false, 17, 1024);
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'gpgkey'::pg_catalog.regclass;
-
-
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'archuserid'::pg_catalog.regclass;
 
 INSERT INTO archuserid (id, person, archuserid) VALUES (1, 1, 'mark.shuttleworth');
@@ -4087,6 +4069,8 @@ Language-Team: debian-l10n-danish <debian-l10n-danish@lists.debian.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8bit
+X-Poedit-Language: Italian
+X-Poedit-Country: ITALY
 plural-forms: nplurals=2; plural=n != 1
 ', true, NULL, NULL, 9, 0, 0, NULL, 31, 2, NULL, NULL, 30, '2005-05-06 21:10:39.821363', 3, 25, NULL, NULL, '2005-06-06 08:59:54.24466');
 INSERT INTO pofile (id, potemplate, "language", title, description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, datecreated) VALUES (18, 5, 193, 'Rosetta Italian translation of mozilla', NULL, ' Italian translation of debconf for mozilla.

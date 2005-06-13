@@ -42,6 +42,14 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
+        name="+validateuid"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ValidateEmailView"
+        template="../templates/foaf-validateuid.pt"
+        lp:url="token/$token/+validateuid" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ILoginToken"
         name="+resetpassword"
         permission="zope.Public"
         class="canonical.launchpad.browser.ResetPasswordView"

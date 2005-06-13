@@ -51,7 +51,7 @@ from canonical.launchpad.searchbuilder import NULL
 
 from canonical.lp.dbschema import \
     EnumCol, SSHKeyType, KarmaType, EmailAddressStatus, \
-    TeamSubscriptionPolicy, TeamMembershipStatus, GPGKeyAlgorithms
+    TeamSubscriptionPolicy, TeamMembershipStatus, GPGKeyAlgorithm
 
 from canonical.foaf import nickname
 
@@ -933,13 +933,12 @@ class GPGKey(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
     keyid = StringCol(dbName='keyid', notNull=True)
-    pubkey = StringCol(dbName='pubkey', notNull=True)
     fingerprint = StringCol(dbName='fingerprint', notNull=True)
 
     keysize = IntCol(dbName='keysize', notNull=True)
 
     algorithm = EnumCol(dbName='algorithm', notNull=True,
-                        schema=GPGKeyAlgorithms)
+                        schema=GPGKeyAlgorithm)
 
     revoked = BoolCol(dbName='revoked', notNull=True)
 
@@ -951,9 +950,10 @@ class GPGKey(SQLBase):
 class GPGKeySet:
     implements(IGPGKeySet)
 
-    def new(self, ownerID, keyid, pubkey, fingerprint, keysize,
+    def new(self, ownerID, keyid, fingerprint, keysize,
             algorithm, revoked):
-        return GPGKey(owner=ownerID, keyid=keyid, pubkey=pubkey,
+        # add new key in DB
+        return GPGKey(owner=ownerID, keyid=keyid,
                       fingerprint=fingerprint, keysize=keysize,
                       algorithm=algorithm, revoked=revoked)
 
@@ -962,6 +962,12 @@ class GPGKeySet:
             return GPGKey.get(id)
         except SQLObjectNotFound:
             return default
+
+    def getByFingerprint(self, fingerprint, default=None):
+        result = GPGKey.selectOneBy(fingerprint=fingerprint)
+        if result is None:
+            return default
+        return result
 
 
 class SSHKey(SQLBase):

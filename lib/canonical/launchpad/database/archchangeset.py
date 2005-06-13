@@ -14,7 +14,7 @@ from canonical.launchpad.interfaces import RevisionAlreadyRegistered
 
 from canonical.launchpad.database.archbranch import VersionMapper
 from canonical.lp.dbschema import EnumCol
-from canonical.lp.dbschema import HashAlgorithms
+from canonical.lp.dbschema import HashAlgorithm
 
 
 class Changeset(SQLBase):
@@ -61,10 +61,10 @@ class ChangesetFile(SQLBase):
 class ChangesetFileHash(SQLBase):
     _table = 'ChangesetFileHash'
     _columns = [
-        ForeignKey(name='changesetfile', foreignKey='ChangesetFile', 
+        ForeignKey(name='changesetfile', foreignKey='ChangesetFile',
                    dbName='changesetfile', notNull=True),
         EnumCol('hashalg', dbName='hashalg', notNull=True,
-                schema=HashAlgorithms),
+                schema=HashAlgorithm),
         StringCol('hash', dbName='hash', notNull=True),
         ]
 
@@ -139,8 +139,8 @@ class RevisionMapper:
                           filecontents="",
                           filesize=size)
         for hashalg, hashval in checksums.items():
-            hash_mapping = {"md5": HashAlgorithms.MD5,
-                            "sha1": HashAlgorithms.SHA1}
+            hash_mapping = {"md5": HashAlgorithm.MD5,
+                            "sha1": HashAlgorithm.SHA1}
             hashid = hash_mapping[hashalg]
             hasha = ChangesetFileHash(changesetfile=f.id,
                                       hashalg=hashid,

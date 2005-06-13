@@ -30,11 +30,11 @@ def authenticateEmail(mail):
 
     person = IPerson(principal)
     gpghandler = getUtility(IGpgHandler)
-    fingerprint, plain = gpghandler.verifySignature(signed_content, signature)
-    if fingerprint is not None:
+    sig = gpghandler.verifySignature(signed_content, signature)
+    if sig.fingerprint is not None:
         # Log in the user if the key used to sign belongs to him.
         for gpgkey in person.gpgkeys:
-            if gpgkey.fingerprint == fingerprint:
+            if gpgkey.fingerprint == sig.fingerprint:
                 setupInteraction(principal, email_addr)
                 return principal
 

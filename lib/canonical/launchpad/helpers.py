@@ -1041,6 +1041,28 @@ def test_diff(lines_a, lines_b):
         lineterm='',
         )))
 
+fingerprint_re = re.compile(r"^[\dABCDEF]{40}$")
+
+def sanitiseFingerprint(fpr):
+    """Returns sanitised fingerprint if fpr is well-formed,
+    otherwise returns False.
+
+    >>> sanitiseFingerprint('C858 2652 1A6E F6A6 037B  B3F7 9FF2 583E 681B 6469')
+    'C85826521A6EF6A6037BB3F79FF2583E681B6469'
+    >>> sanitiseFingerprint('681B 6469')
+    False
+    
+    >>> sanitiseFingerprint('abnckjdiue')
+    False
+    
+    """ 
+    # replace the white spaces
+    fpr = fpr.replace(' ', '')
+
+    if not fingerprint_re.match(fpr):
+        return False
+    
+    return fpr
 
 class Participation:
     implements(IParticipation) 
@@ -1080,4 +1102,3 @@ def read_test_message(filename):
     """
     return email.message_from_file(
         open(testmails_path + filename), _class=SignedMessage)
-

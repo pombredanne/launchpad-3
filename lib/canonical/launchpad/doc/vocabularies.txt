@@ -175,17 +175,4 @@ o ValidTeamOwner - With the exception of the team itself and all teams owned
   >>> person in vocab
   True
 
-o ValidGPGKey - all LP valid GPG key for a given person, it user FTI
-  to query on Person table and return the respective rows from GPGKey
-  table.
-
-   XXX cprov 20050227
-   The concept of 'Valid GPGKey' is not well defined yet.
-
-    >>> vocab = vocabulary_registry.get(None, "ValidGPGKey")
-    >>> stuff = vocab.search('mark')
-    >>> [t.token for t in stuff]
-    ['1']
-
-
 XXX: document more vocabularies here, particularly when they break!

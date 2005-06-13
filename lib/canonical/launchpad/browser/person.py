@@ -17,7 +17,7 @@ from zope.component import getUtility
 
 # lp imports
 from canonical.lp.dbschema import LoginTokenType, SSHKeyType
-from canonical.lp.dbschema import EmailAddressStatus, GPGKeyAlgorithms
+from canonical.lp.dbschema import EmailAddressStatus
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
@@ -27,13 +27,14 @@ from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
 from canonical.launchpad.interfaces import IWikiNameSet, IJabberIDSet
 from canonical.launchpad.interfaces import IIrcIDSet, IArchUserIDSet
 from canonical.launchpad.interfaces import ILaunchBag, ILoginTokenSet
-from canonical.launchpad.interfaces import IPasswordEncryptor, \
-                                           ISignedCodeOfConduct,\
-                                           ISignedCodeOfConductSet
-from canonical.launchpad.interfaces import IGPGKeySet, IGpgHandler
+from canonical.launchpad.interfaces import IPasswordEncryptor
+from canonical.launchpad.interfaces import ISignedCodeOfConduct
+from canonical.launchpad.interfaces import ISignedCodeOfConductSet
+from canonical.launchpad.interfaces import IGPGKeySet, IGpgHandler, IPymeKey
 
 from canonical.launchpad.helpers import well_formed_email, obfuscateEmail
 from canonical.launchpad.helpers import convertToHtmlCode, shortlist
+from canonical.launchpad.helpers import sanitiseFingerprint
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
 ##XXX: (batch_size+global) cprov 20041003
@@ -156,7 +157,7 @@ class PersonView(BasePersonView):
     """A simple View class to be used in all Person's pages."""
 
     # restricted set of methods to be proxied by form_action()
-    permitted_actions = ['import_gpg', 'claim_gpg', 'remove_gpg',
+    permitted_actions = ['claim_gpg', 'remove_gpg',
                          'add_ssh', 'remove_ssh']
 
     def __init__(self, context, request):
@@ -235,10 +236,6 @@ class PersonView(BasePersonView):
     def sshkeysCount(self):
         return len(self.context.sshkeys)
 
-    def showGPGKeys(self):
-        self.request.response.setHeader('Content-Type', 'text/plain')
-        return "\n".join([key.pubkey for key in self.context.gpgkeys])
-
     def gpgkeysCount(self):
         return len(self.context.gpgkeys)
 
@@ -291,34 +288,58 @@ class PersonView(BasePersonView):
     def claim_gpg(self):
         fingerprint = self.request.form.get('fingerprint')
 
-        #XXX cprov 20050401
-        # Add fingerprint checks before claim.
-        
-        return 'DEMO: GPG key "%s" claimed.' % fingerprint
+        sanityfpr = sanitiseFingerprint(fingerprint)
 
-    def import_gpg(self):
-        pubkey = self.request.form.get('pubkey')
+        if not sanityfpr:
+            return 'Malformed fingerprint: %s' % fingerprint
 
+        fingerprint = sanityfpr
+
+        gpgkeyset = getUtility(IGPGKeySet)
+                
+        if gpgkeyset.getByFingerprint(fingerprint):
+            return 'GPG key "%s" already imported' % fingerprint
+
+        # Automatically retrieve key Information from KeyServer
+        # as specified in the GPG configuration file.
         gpghandler = getUtility(IGpgHandler)
+        keyinfo, uids = gpghandler.getKeyIndex(fingerprint)
 
-        fingerprint = gpghandler.importPubKey(pubkey)        
-
-        if fingerprint == None:
-            return 'DEMO: GPG pubkey not recognized'
-
-        keysize, algorithm, revoked = gpghandler.getKeyInfo(fingerprint)
+        if not keyinfo:
+            return 'Error in Key %s : %s' % (fingerprint, uids)
         
-        # XXX cprov 20050407
-        # Keyid is totally obsolete        
-        keyid = fingerprint[-8:]
-        # EnumCol doesn't help in this case, at least
-        algorithm_value = GPGKeyAlgorithms.items[algorithm]
+        if len(keyinfo) < 1:
+            return 'Key Not Found: %s' % fingerprint
 
-        # See IGPGKeySet for further information
-        getUtility(IGPGKeySet).new(self.user.id, keyid, pubkey, fingerprint,
-                                   keysize, algorithm_value, revoked)
-        
-        return 'DEMO: %s imported' % fingerprint
+        keyinfo = keyinfo[0]
+            
+        info = ('Key %s%s/%s was claimed, sending email to :'
+                % (keyinfo[0], keyinfo[1], keyinfo[2]))
+
+        logintokenset = getUtility(ILoginTokenSet)
+
+        bag = getUtility(ILaunchBag)
+        # build a list of already validated and preferred emailaddress
+        emails = []
+        for email in bag.user.validatedemails:
+            emails.append(email.email)
+        emails.append(bag.user.preferredemail.email)
+
+        # iter through UIDs
+        for uid in uids:
+            # if UID isn't validated/preferred, send token email
+            if uid not in emails:                
+                info += ' %s' % uid
+                token = logintokenset.new(self.context, bag.login, uid,
+                                          LoginTokenType.VALIDATEGPGUID,
+                                          fingerprint=fingerprint)
+                sendEmailValidationRequest(token,
+                                           self.request.getApplicationURL())
+
+        info += ('. At least one UID should be validated to get the key '
+                 'imported as your.')
+
+        return info
 
     # XXX cprov 20050401
     # is it possible to remove permanently a key from our keyring
@@ -327,11 +348,14 @@ class PersonView(BasePersonView):
         keyid = self.request.form.get('keyid')
         # retrieve key info
         gpgkey = getUtility(IGPGKeySet).get(keyid)
-        
-        comment = 'DEMO: GPG key removed ("%s")' % gpgkey.fingerprint
 
-        #gpgkey.destroySelf()
+        if gpgkey is None:
+            return "Can't remove key that doesn't exist"
 
+        if gpgkey.owner != self.user:
+            return "Cannot remove someone else's key"
+                
+        comment = 'GPG key cannot be removed yet'
         return comment
 
     def add_ssh(self):

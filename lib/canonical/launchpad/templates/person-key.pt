@@ -25,11 +25,6 @@
     </div>
     </fieldset>
 
-    <pre>
-      <span tal:content="context/gpg/pubkey" />
-    </pre>
-    </div>
-
     <h3>Back to 
     <a href="./" tal:content="context/browsername">PERSON</a>
     </h3>

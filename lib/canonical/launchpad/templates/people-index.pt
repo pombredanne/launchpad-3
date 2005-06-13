@@ -145,6 +145,7 @@
         <li><a href="+peoplelist">List all people</a></li>
         <li><a href="+teamlist">List all teams</a> 
             [<a href="+newteam">Create a new team</a>]</li>
+        <li><a href="+ubuntitelist">List all ubuntites</a></li>
       </ul>
     </div>
   </body>

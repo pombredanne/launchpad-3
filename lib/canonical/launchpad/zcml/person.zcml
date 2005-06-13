@@ -65,10 +65,6 @@
           attribute="showSSHKeys"
           lp:url="/people/$Person.name/+sshkey" />
       <browser:page
-          name="+gpgkey"
-          attribute="showGPGKeys"
-          lp:url="/people/$Person.name/+gpgkey" />
-      <browser:page
           name="+bounties"
           template="../templates/person-bounties.pt"
           lp:url="/people/$Person.name/+bounties" />

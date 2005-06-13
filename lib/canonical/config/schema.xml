@@ -74,6 +74,29 @@
             default="25" />
     </sectiontype>
 
+    <sectiontype name="gpghandler">
+        <key name="home" datatype="existing-dirpath" required="yes" />
+
+        <key name="host" datatype="ipaddr-or-hostname" required="yes">
+            <description>
+                Host running the key server
+            </description>
+        </key>
+
+        <key name="port" datatype="port-number" required="yes">
+            <description>
+                Port number on Host to access the key server
+            </description>
+        </key>
+    </sectiontype>
+
+    <sectiontype name="zeca">
+        <!-- Not 'existing-directory' because the test runner needs to
+            create it  as librarian one-->
+        <key name="root" datatype="existing-dirpath" required="yes" />
+    </sectiontype>
+
+
     <sectiontype name="canonical" type=".BaseConfig">
         <key name="dbhost" datatype="ipaddr-or-hostname" required="no" />
         <key name="dbname" datatype="string" required="yes" />
@@ -88,6 +111,8 @@
         <section name="*" type="launchpad" attribute="launchpad" />
         <section name="*" type="librarian" attribute="librarian" />
         <section name="*" type="zopeless" attribute="zopeless" />
+        <section name="*" type="gpghandler" attribute="gpghandler" />
+        <section name="*" type="zeca" attribute="zeca" />
     </sectiontype>
 
     <!-- Now specify where the section types may be rooted in the config file

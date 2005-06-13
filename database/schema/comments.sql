@@ -785,7 +785,7 @@ COMMENT ON COLUMN LoginToken.email IS 'The email address that this request was s
 COMMENT ON COLUMN LoginToken.created IS 'The timestamp that this request was made.';
 COMMENT ON COLUMN LoginToken.tokentype IS 'The type of request, as per dbschema.TokenType.';
 COMMENT ON COLUMN LoginToken.token IS 'The token (not the URL) emailed used to uniquely identify this request. This token will be used to generate a URL that when clicked on will continue a workflow.';
-
+COMMENT ON COLUMN LoginToken.fingerprint IS 'The GPG key fingerprint to be validated on this transaction, it means that a new register will be created relating this given key with the requester in question. The requesteremail still passing for the same usual checks.';
 
 COMMENT ON TABLE Milestone IS 'An identifier that helps a maintainer group together things in some way, e.g. "1.2" could be a Milestone that bazaar developers could use to mark a task as needing fixing in bazaar 1.2.';
 COMMENT ON COLUMN Milestone.product IS 'The product for which this is a milestone.';
@@ -905,4 +905,12 @@ COMMENT ON COLUMN POExportRequest.potemplate IS
 'The PO template being requested.';
 COMMENT ON COLUMN POExportRequest.pofile IS
 'The PO file being requested, or NULL.';
+
+-- GPGKey
+COMMENT ON TABLE GPGKey IS 'A GPG key belonging to a Person';
+COMMENT ON COLUMN GPGKey.keyid IS 'The 8 character GPG key id, uppercase and no whitespace';
+COMMENT ON COLUMN GPGKey.fingerprint IS 'The 40 character GPG fingerprint, uppercase and no whitespace';
+COMMENT ON COLUMN GPGKey.revoked IS 'True if this key has been revoked';
+COMMENT ON COLUMN GPGKey.algorithm IS 'The algorithm used to generate this key. Valid values defined in dbschema.GPGKeyAlgorithms';
+COMMENT ON COLUMN GPGKey.keysize IS 'Size of the key in bits, as reported by GPG. We may refuse to deal with keysizes < 768 bits in the future.';
 
