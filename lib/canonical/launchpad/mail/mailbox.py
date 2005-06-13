@@ -48,7 +48,7 @@ class TestMailBox:
         """See IMailBox."""
         # Clean up test_emails
         stub.test_emails = [item for item in stub.test_emails
-                            if stub.test_emails is not None]
+                            if item is not None]
         self._lock.release()
 
 

@@ -13,7 +13,7 @@
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IBug" />
     </content>
-
+    
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBug"
         name="+index" />
@@ -21,6 +21,11 @@
     <browser:traverse
         for="canonical.launchpad.interfaces.IBug"
         function="canonical.launchpad.browser.traverseBug" />
+    <browser:url
+        for="canonical.launchpad.interfaces.IBug"
+        path_expression="string:${id}"
+        parent_utility="canonical.launchpad.interfaces.IBugSet"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBug"
@@ -118,6 +123,11 @@
     <browser:traverse
         for="canonical.launchpad.interfaces.IBugSet"
         function="canonical.launchpad.browser.traverseBugs" />
+    <browser:url
+        for="canonical.launchpad.interfaces.IBugSet"
+        path_expression="string:bugs"
+        parent_utility="canonical.launchpad.interfaces.IMaloneApplication"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugSet"
@@ -170,6 +180,12 @@
            class="zope.app.form.browser.TextAreaWidget"
            height="10" />
     </browser:addform>
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBug"
+        factory="canonical.launchpad.browser.bug.BugAddForm"
+        provides="canonical.launchpad.interfaces.IBugAddForm"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBugSet"

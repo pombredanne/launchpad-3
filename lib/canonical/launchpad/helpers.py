@@ -2,15 +2,16 @@
 
 __metaclass__ = type
 
+import base64
+import email
 import gettextpo
 import os
 import random
 import re
-import sets
+import sha
 import tarfile
 import time
 import warnings
-import email
 from StringIO import StringIO
 from select import select
 from math import ceil
@@ -18,11 +19,13 @@ from xml.sax.saxutils import escape as xml_escape
 from difflib import unified_diff
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implements, providedBy, directlyProvides
+from zope.interface.interfaces import IInterface
 from zope.security.interfaces import IParticipation
 from zope.security.management import newInteraction, endInteraction
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
+import canonical.base
 from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import RosettaImportStatus, TranslationPermission
 from canonical.librarian.interfaces import (
@@ -31,7 +34,7 @@ from canonical.librarian.interfaces import (
 from canonical.launchpad.interfaces import (
     ILaunchBag, IOpenLaunchBag, IHasOwner, IGeoIP, IRequestPreferredLanguages,
     ILanguageSet, IRequestLocalLanguages, RawFileAttachFailed, ITeam,
-    RawFileFetchFailed
+    RawFileFetchFailed,
     )
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POInvalidInputError, POParser
@@ -52,6 +55,63 @@ class TranslationConstants:
     PLURAL_FORM = 1
     SPACE_CHAR = u'<span class="po-message-special">\u2022</span>'
     NEWLINE_CHAR = u'<span class="po-message-special">\u21b5</span><br/>\n'
+
+
+class SnapshotCreationError(Exception):
+    """Something went wrong while creating a snapshot."""
+
+class Snapshot:
+    """Provides a simple snapshot of the given object.
+
+    The snapshot will have the attributes given in attributenames. It
+    will also provide the same interfaces as the original object. 
+    """
+    def __init__(self, ob, names=None, providing=None):
+        if names is None and providing is None:
+            raise SnapshotCreationError(
+                "You have to specify either 'names' or 'providing'.")
+        if IInterface.providedBy(providing):
+            providing = [providing]
+        if names is None:
+            names = set()
+            for iface in providing:
+                names.update(iface.names(all=True))
+
+        for name in names:
+            #XXX: Need to check if the attribute exists, since
+            #     Person doesn't provides all attributes in
+            #     IPerson. -- Bjorn Tillenius, 2005-04-20
+            if hasattr(ob, name):
+                setattr(self, name, getattr(ob, name))
+        if providing is not None:
+            directlyProvides(self, providing)
+
+
+def get_attribute_names(ob):
+    """Gets all the attribute names ob provides.
+
+    It loops through all the interfaces that ob provides, and returns all the
+    attribute names specified in the interfaces.
+
+        >>> from zope.interface import Interface, implements, Attribute
+        >>> class IFoo(Interface):
+        ...     foo = Attribute('Foo') 
+        ...     baz = Attribute('Baz')
+        >>> class IBar(Interface):
+        ...     bar = Attribute('Bar')
+        ...     baz = Attribute('Baz')
+        >>> class FooBar:
+        ...     implements(IFoo, IBar)
+        >>> attribute_names = get_attribute_names(FooBar())
+        >>> attribute_names.sort()
+        >>> attribute_names
+        ['bar', 'baz', 'foo']
+    """
+    ifaces = providedBy(ob)
+    names = set()
+    for iface in ifaces:
+        names.update(iface.names(all=True))
+    return list(names)
 
 
 def is_maintainer(owned_object):
@@ -355,7 +415,7 @@ def contactEmailAddresses(person):
     Finally, if <person> doesn't have a preferred email neither implement
     ITeam, the Set will be empty.
     """
-    emails = sets.Set()
+    emails = set()
     if person.preferredemail is not None:
         emails.add(person.preferredemail.email)
         return emails
@@ -1102,3 +1162,12 @@ def read_test_message(filename):
     """
     return email.message_from_file(
         open(testmails_path + filename), _class=SignedMessage)
+
+
+def get_filename_from_message_id(message_id):
+    """Returns a librarian filename based on the email message_id.
+    
+    It generates a file name that's not easily guessable.  
+    """
+    return '%s.msg' % (
+            canonical.base.base(long(sha.new(message_id).hexdigest(), 16), 62))

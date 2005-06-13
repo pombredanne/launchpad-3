@@ -57,6 +57,7 @@ from canonical.launchpad.interfaces.message import *
 from canonical.launchpad.interfaces.milestone import *
 from canonical.launchpad.interfaces.package import *
 from canonical.launchpad.interfaces.packaging import *
+from canonical.launchpad.interfaces.pathlookup import *
 from canonical.launchpad.interfaces.person import *
 from canonical.launchpad.interfaces.poexport import *
 from canonical.launchpad.interfaces.pofile import *

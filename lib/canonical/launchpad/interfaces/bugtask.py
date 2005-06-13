@@ -273,7 +273,7 @@ class IBugTaskSet(Interface):
                    sourcepackagename=None, binarypackagename=None, status=None,
                    priority=None, severity=None, assignee=None, owner=None,
                    milestone=None):
-        """Create a bug task on a bug.
+        """Create a bug task on a bug and return it.
 
         Exactly one of product, distribution or distrorelease must be provided.
         """

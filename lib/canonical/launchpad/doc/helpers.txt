@@ -1,9 +1,9 @@
-Helper Functions
-================
+Helper Functions and Classes
+============================
 
-There are some helper functions located in canonical.launchpad.helpers
-which can be used in order to avoid duplicating code in different parts
-of Launchpad.
+There are some helper functions and classes located in
+canonical.launchpad.helpers which can be used in order to avoid
+duplicating code in different parts of Launchpad.
 
 Checking If the Logged In User is a Maintainer
 ----------------------------------------------
@@ -114,3 +114,80 @@ the country is unknown.
     >>> country is None
     True
 
+Get a Snapshot of an Object
+---------------------------
+
+You can create a simple snapshot of an object with Snapshot:
+
+    >>> from zope.interface import Interface, implements, Attribute
+    >>> from canonical.launchpad.helpers import Snapshot
+    >>> class IFoo(Interface):
+    ...     title = Attribute('title')
+    ...     description = Attribute('description')
+    >>> class Foo:
+    ...     implements(IFoo) 
+    ...     title = 'Some Title'
+    ...     description = 'bla bla bla' 
+    >>> foo = Foo() 
+    >>> snapshot = Snapshot(foo, names=['title'])
+
+Only the given attributes will be assigned to the snapshot:
+    
+    >>> snapshot.title == foo.title
+    True
+    >>> hasattr(snapshot, 'description')
+    False
+
+The snapshot won't provided the same interface as foo, though:
+   
+    >>> IFoo.providedBy(snapshot)
+    False
+
+If we want the snapshot to provide some interface, we have to specify
+that explicitly:
+
+    >>> snapshot = Snapshot(foo, names=['title'], providing=IFoo)
+    >>> snapshot.title == foo.title
+    True
+    >>> hasattr(snapshot, 'description')
+    False
+    >>> IFoo.providedBy(snapshot)
+    True
+
+We can also give more than one interface to provide as an iterable. If
+we don't specify any names, all the names in the given interfaces will
+be copied:
+    
+    >>> from zope.interface import providedBy
+    >>> snapshot = Snapshot(foo, providing=providedBy(foo))
+    >>> snapshot.title == foo.title
+    True
+    >>> snapshot.description == foo.description
+    True
+    >>> IFoo.providedBy(snapshot)
+    True
+    
+    >>> class IBar(Interface):
+    ...     pass
+    >>> snapshot = Snapshot(foo, providing=[IFoo, IBar])
+    >>> IFoo.providedBy(snapshot)
+    True
+    >>> IBar.providedBy(snapshot)
+    True
+
+    >>> snapshot = Snapshot(foo, providing=IFoo)
+    >>> snapshot.title == foo.title
+    True
+    >>> snapshot.description == foo.description
+    True
+    >>> IFoo.providedBy(snapshot)
+    True
+
+
+We have to specify either 'names' or 'providing':
+
+    >>> snapshot = Snapshot(foo)
+    Traceback (most recent call last):
+    ...
+    SnapshotCreationError: ...
+     

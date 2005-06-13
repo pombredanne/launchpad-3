@@ -19,6 +19,8 @@
         <key name="dbuser" datatype="string" default="launchpad" />
         <key name="root_url" datatype="canonical.config.urlbase"
             required="yes" />
+        <key name="errors_address" datatype="string" required="yes" />
+        <key name="bugs_domain" datatype="string" required="yes" />
     </sectiontype>
 
     <sectiontype name="librarian_server">

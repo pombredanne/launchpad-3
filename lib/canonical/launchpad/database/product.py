@@ -350,7 +350,7 @@ class ProductSet:
         """See canonical.launchpad.interfaces.product.IProductSet."""
         item = Product.selectOneBy(name=name)
         if item is None:
-            raise KeyError(name)
+            raise NotFoundError(name)
         return item
 
     def get(self, productid):
