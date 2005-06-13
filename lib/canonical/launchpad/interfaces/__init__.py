@@ -68,7 +68,8 @@ from canonical.launchpad.interfaces.potemplate import *
 from canonical.launchpad.interfaces.potemplatename import *
 from canonical.launchpad.interfaces.potmsgset import *
 from canonical.launchpad.interfaces.potranslation import *
-from canonical.launchpad.interfaces.potranslationsighting import *
+from canonical.launchpad.interfaces.poselection import *
+from canonical.launchpad.interfaces.posubmission import *
 from canonical.launchpad.interfaces.processor import *
 from canonical.launchpad.interfaces.product import *
 from canonical.launchpad.interfaces.productrelease import *
@@ -94,6 +95,7 @@ from canonical.launchpad.interfaces.translator import *
 from canonical.launchpad.interfaces.vpoexport import *
 from canonical.launchpad.interfaces.vsourcepackagereleasepublishing import *
 from canonical.launchpad.interfaces.wikiname import *
+from canonical.launchpad.interfaces.poexportrequest import *
 
 from canonical.launchpad.interfaces.cal import *
 

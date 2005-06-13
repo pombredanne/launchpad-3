@@ -9,18 +9,17 @@ import sets
 from textwrap import wrap
 
 from zope.app.traversing.browser.absoluteurl import absoluteURL
-from zope.app.mail.interfaces import IMailDelivery
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IBug, IBugSet, ITeam, IPerson, \
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask
 from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad.database import Bug, BugTracker, EmailAddress, \
-     BugDelta, BugTaskDelta
+from canonical.launchpad.database import BugDelta, BugTaskDelta
 from canonical.lp.dbschema import BugTaskStatus, BugPriority, \
      BugSeverity, BugInfestationStatus, BugExternalReferenceType, \
      BugSubscription
 from canonical.launchpad.vocabularies import BugTrackerVocabulary
+from canonical.launchpad.helpers import contactEmailAddresses
 
 FROM_ADDR = "Malone Bugtracker <noreply@canonical.com>"
 GLOBAL_NOTIFICATION_EMAIL_ADDRS = ("dilys@muse.19inch.net",)
@@ -794,16 +793,9 @@ def notify_join_request(event):
 
     user = event.user
     team = event.team
-    to_addrs = []
+    to_addrs = sets.Set()
     for person in itertools.chain(team.administrators, [team.teamowner]):
-        for member in person.allmembers:
-            if ITeam.providedBy(member):
-                # Don't worry, this is a team and person.allmembers already
-                # gave us all members of this team too.
-                pass
-            elif (member.preferredemail is not None and
-                  member.preferredemail.email not in to_addrs):
-                to_addrs.append(member.preferredemail.email)
+        to_addrs.update(contactEmailAddresses(person))
 
     if to_addrs:
         url = "%s/people/%s/+members/%s" % (event.appurl, team.name, user.name)

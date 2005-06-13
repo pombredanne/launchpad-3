@@ -9,8 +9,8 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-__all__ = ['ILaunchpadApplication', 'IMaloneApplication',
-           'IRosettaApplication', 'IDOAPApplication',
+__all__ = ['ILaunchpadRoot', 'ILaunchpadApplication', 'IMaloneApplication',
+           'IRosettaApplication', 'IDOAPApplication', 'IBazaarApplication',
            'IFOAFApplication', 'IPasswordEncryptor',
            'IReadZODBAnnotation', 'IWriteZODBAnnotation',
            'IZODBAnnotation', 'IAuthorization',
@@ -19,7 +19,8 @@ __all__ = ['ILaunchpadApplication', 'IMaloneApplication',
            'IAging', 'IHasDateCreated',
            'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities',
            'IBasicLink', 'ILink', 'ISelectionAwareLink',
-           'ITabList', 'IFacetList']
+           'ITabList', 'IFacetList', 'ICanonicalUrlData',
+           'NoCanonicalUrl']
 
 
 class ILaunchpadCelebrities(Interface):
@@ -60,10 +61,12 @@ class ILaunchpadApplication(Interface):
     title = Attribute('Title')
 
 
+class ILaunchpadRoot(Interface):
+    """Marker interface for the root object of Launchpad."""
+
+
 class IMaloneApplication(ILaunchpadApplication):
     """Application root for malone."""
-
-    title = Attribute('Title')
 
 
 class IRosettaApplication(ILaunchpadApplication):
@@ -99,17 +102,36 @@ class IRosettaApplication(ILaunchpadApplication):
     def language_count(self):
         """Return the number of languages Rosetta can translate into."""
 
+    def translation_groups():
+        """Return an iterator over the set of translation groups in
+        Rosetta."""
+
+    def potemplate_count():
+        """Return the number of potemplates in the system."""
+
+    def pofile_count():
+        """Return the number of pofiles in the system."""
+
+    def pomsgid_count():
+        """Return the number of PO MsgID's in the system."""
+
+    def translator_count():
+        """Return the number of translators in the system."""
+
+    def language_count():
+        """Return the number of languages in the system."""
+
 
 class IDOAPApplication(ILaunchpadApplication):
     """DOAP application root."""
-
-    title = Attribute('Title')
 
 
 class IFOAFApplication(ILaunchpadApplication):
     """FOAF application root."""
 
-    title = Attribute('Title')
+
+class IBazaarApplication(ILaunchpadApplication):
+    """Bazaar Application"""
 
 
 class IPasswordEncryptor(Interface):
@@ -265,3 +287,23 @@ class ITabList(Interface):
     links = Attribute("List of ILinks that are main links.")
     overflow = Attribute("List of ILinks that overflow.")
 
+
+class ICanonicalUrlData(Interface):
+    """Tells you how to work out a canonical url for an object."""
+
+    inside = Attribute('The object this path is relative to.  None for root.')
+
+    path = Attribute('The path relative to "inside", not starting with a /.')
+
+
+class NoCanonicalUrl(TypeError):
+    """There was no canonical URL registered for an object.
+
+    Arguments are:
+      - The object for which a URL was sought
+      - The object that did not have ICanonicalUrlData
+    """
+    def __init__(self, object_url_requested_for, broken_link_in_chain):
+        TypeError.__init__(self, 'No url for %r because %r broke the chain.' %
+            (object_url_requested_for, broken_link_in_chain)
+            )

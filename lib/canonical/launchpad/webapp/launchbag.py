@@ -33,7 +33,7 @@ class LaunchBag(object):
         IProject: 'project',
         IProduct: 'product',
         IDistribution: 'distribution',
-        IDistroRelease: 'distrorelease', 
+        IDistroRelease: 'distrorelease',
         ISourcePackage: 'sourcepackage',
         ISourcePackageReleasePublishing: 'sourcepackagereleasepublishing',
         IBug: 'bug',

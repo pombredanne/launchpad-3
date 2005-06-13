@@ -41,9 +41,15 @@ class IPOP3MailBoxDirective(Interface):
             required=True,
             )
 
-def pop3MailBoxHandler(_context, host, user, password):
-    utility(_context, IMailBox, component=POP3MailBox(host,
-                                                      user, password))
+    ssl = Bool(
+            title=u"SSL",
+            description=u"Use SSL.",
+            required=False,
+            default=False)
+
+def pop3MailBoxHandler(_context, host, user, password, ssl=False):
+    utility(
+        _context, IMailBox, component=POP3MailBox( host, user, password, ssl))
 
 
 class IStubMailerDirective(IMailerDirective):

@@ -243,10 +243,10 @@ u'blah blah blah'
 
 The bug description can also be accessed through the task:
 
->>> public_bug.bugtasks[0].bugdescription
+>>> public_bug.bugtasks[0].bug.description
 u'blah blah blah'
 >>> public_bug.description = 'a new description'
->>> public_bug.bugtasks[0].bugdescription
+>>> public_bug.bugtasks[0].bug.description
 u'a new description'
 
 When a private bug is filed:

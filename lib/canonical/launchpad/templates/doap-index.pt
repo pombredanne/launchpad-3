@@ -3,7 +3,9 @@
     metal:use-macro="context/@@launchpad_template/master"
     i18n:domain="doap">
 <body>
-
+  <metal:block fill-slot="titleheader">
+  The DOAP System in Launchpad
+  </metal:block>
   <div metal:fill-slot="main">
 
     <h1>Welcome to Launchpad's DOAP Registry!</h1>

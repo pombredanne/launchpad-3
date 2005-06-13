@@ -1,0 +1,21 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <h1>Bugs in <span tal:replace="context/context_title">Title</span></h1>
+
+  <div metal:use-macro="context/@@bugtask_search_listing/buglisting" />
+    <p><img src="/++resource++add.gif" alt="+">
+    <a href="+filebug" tal:content="string:File a bug on ${context/context_title}"></a><br />
+    </p>
+  <div>
+ </div>
+</div>
+
+</body>
+</html>

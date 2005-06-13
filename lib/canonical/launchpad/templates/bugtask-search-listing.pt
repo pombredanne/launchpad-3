@@ -174,7 +174,7 @@
           </td>
           <td tal:condition="python:'title' in listing_columns">
               <a tal:attributes="href bug_link"
-                 tal:content="task/bug/title/fmt:shorten/60">title</a>
+                 tal:content="task/bug/title">title</a>
           </td>
           <td tal:condition="python:('product' in listing_columns) and product_name">
               <a tal:content="python: (project_name == product_name) and product_name or (project_name + ' ' + product_name)"
@@ -225,8 +225,8 @@
 
   <fieldset tal:condition="mass_edit">
     <legend>Batch Edit</legend>
-    <tal:milestone condition="context/milestones|nothing">
-      <tal:block content="structure view/milestone_widget" />
+    <tal:milestone condition="context/context/milestones|nothing">
+      <tal:block content="structure view/milestone_assignment_widget" />
       <input type="submit" name="assign_to_milestone" value="Assign to Milestone" />
     </tal:milestone>
   </fieldset>

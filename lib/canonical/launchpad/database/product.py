@@ -424,25 +424,37 @@ class ProductSet:
         return Product.select(query, distinct=True, clauseTables=clauseTables)
 
     def translatables(self, translationProject=None):
-        """See canonical.launchpad.interfaces.product.IProductSet.
+        """See IProductSet"""
 
-        This will give a list of the translatables in the given Translation
-        Project. For the moment it just returns every translatable product.
-        """
-        return Product.select('''
-            Product.id = ProductSeries.product
-            AND ProductSeries.id = ProductRelease.productseries
-            AND POTemplate.productrelease = ProductRelease.id
+        translatable_set = sets.Set()
+        upstream = Product.select('''
+            Product.id = ProductSeries.product AND
+            ProductSeries.id = ProductRelease.productseries AND
+            POTemplate.productrelease = ProductRelease.id
             ''',
             clauseTables=['ProductRelease', 'ProductSeries', 'POTemplate'],
-            distinct=True
-            )
+            distinct=True)
+        for product in upstream:
+            translatable_set.add(product)
+
+        distro = Product.select('''
+            Product.id = ProductSeries.product AND
+            Packaging.productseries = ProductSeries.id AND
+            Packaging.sourcepackagename = POTemplate.sourcepackagename
+            ''',
+            clauseTables=['ProductSeries', 'Packaging', 'POTemplate'],
+            distinct=True)
+        for product in distro:
+            translatable_set.add(product)
+        result = list(translatable_set)
+        result.sort(key=lambda x: x.name)
+        return result
 
     def count_all(self):
         return Product.select().count()
 
     def count_translatable(self):
-        return self.translatables().count()
+        return len(self.translatables())
 
     def count_reviewed(self):
         return Product.selectBy(reviewed=True, active=True).count()

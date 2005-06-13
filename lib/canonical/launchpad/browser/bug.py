@@ -2,11 +2,12 @@
 
 __metaclass__ = type
 
+from zope.app.form.browser.add import AddView
 from zope.app.publisher.browser import BrowserView
 from zope.component import getUtility
+from zope.app.traversing.browser.absoluteurl import absoluteURL
 from zope.app.pagetemplate.viewpagetemplatefile import (
     ViewPageTemplateFile, BoundPageTemplate)
-from zope.app.form.browser.add import AddView
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
@@ -37,12 +38,16 @@ def traverseBug(bug, request, name):
     elif name == 'packageinfestations':
         return BugPackageInfestationSet(bug=bug.id)
 
+    return None
+
 
 def traverseBugs(bugcontainer, request, name):
     if name == 'assigned':
         return BugTasksReport()
     else:
         return getUtility(IBugSet).get(int(name))
+
+    return None
 
 
 # TODO: Steve will be hacking on a more general portlet mechanism today
@@ -100,6 +105,8 @@ class BugView:
         '../templates/portlet-bug-sourcepackageinfestation.pt')
     referencePortlet = BugPortlet(
         '../templates/portlet-bug-reference.pt')
+    duplicatesPortlet = BugPortlet(
+        '../templates/bug-portlet-duplicates.pt')
     cvePortlet = BugPortlet(
         '../templates/portlet-bug-cve.pt')
     peoplePortlet = BugPortlet(
@@ -136,12 +143,6 @@ class BugEditView(BugView, SQLObjectEditView):
         SQLObjectEditView.__init__(self, context, request)
 
 
-class BugTaskEditView(BugView, SQLObjectEditView):
-    def __init__(self, context, request):
-        BugView.__init__(self, context, request)
-        SQLObjectEditView.__init__(self, context, request)
-
-
 class BugAddView(AddView):
     def add(self, content):
         retval = super(BugAddView, self).add(content)
@@ -149,8 +150,7 @@ class BugAddView(AddView):
         return retval
 
     def nextURL(self):
-        distribution = getUtility(IDistributionSet).get(self.bugadded.distribution)
-        return "/malone/distros/%s" % distribution.name
+        return absoluteURL(self.bugadded, self.request)
 
 
 class BugAddingView(SQLObjectAddView):

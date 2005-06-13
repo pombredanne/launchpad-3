@@ -31,6 +31,11 @@
         />
 
     <vocabulary
+        name="GPGKeyAlgorithm"
+        factory="canonical.launchpad.vocabularies.GPGKeyAlgorithmVocabulary"
+        />
+
+    <vocabulary
         name="Person"
         factory="canonical.launchpad.vocabularies.PersonVocabulary"
         />
@@ -133,11 +138,6 @@
     <vocabulary
         name="PackagingType"
         factory="canonical.launchpad.vocabularies.PackagingTypeVocabulary"
-        />
-
-    <vocabulary
-        name="ValidGPGKey"
-        factory="canonical.launchpad.vocabularies.ValidGPGKeyVocabulary"
         />
 
     <vocabulary

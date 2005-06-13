@@ -16,6 +16,12 @@
         />
     </content>
 
+    <adapter
+        for="canonical.launchpad.interfaces.IProduct"
+        provides="canonical.launchpad.interfaces.IBugTaskSubset"
+        factory="canonical.launchpad.components.product.ProductToBugTaskSubsetAdapter" 
+        permission="zope.Public" />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
         name="+index" />
@@ -33,7 +39,7 @@
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IProduct"
-        function="canonical.launchpad.browser.traverseProduct" />
+        function="canonical.launchpad.browser.traversers.traverse_product" />
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IProduct"
@@ -205,6 +211,11 @@
     <browser:traverse
         for="canonical.launchpad.interfaces.IProductSet"
         getter="__getitem__" />
+    <browser:url
+        for="canonical.launchpad.interfaces.IProduct"
+        path_expression="name"
+        parent_utility="canonical.launchpad.interfaces.IProductSet"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSet"

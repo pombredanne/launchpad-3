@@ -6,7 +6,6 @@
     <div class="portletContent even">
 
       <tal:block repeat="translator context/translators">
-
         <b tal:content="translator/translationgroup/title">Ubuntu
         Translation Group</b>:<br />
         <img src="/++resource++user.gif" />
@@ -23,12 +22,11 @@
                  string:/people/${person/name}/" >Mark Shuttleworth</a>
           </tal:block>
         </tal:block>
-
       </tal:block>
 
-      <div tal:condition="not: context/translators" tal:omit-tag="">
+      <tal:block condition="not: view/has_translators">
         No translators currently designated for this PO file.
-      </div>  
+      </tal:block>  
 
     </div>
   </div>

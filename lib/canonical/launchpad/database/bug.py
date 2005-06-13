@@ -10,19 +10,22 @@ from email.Utils import make_msgid
 
 from zope.interface import implements
 from zope.exceptions import NotFoundError
+from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
+from sqlobject import SQLObjectNotFound
 
-from canonical.launchpad.interfaces import \
-    IBug, IBugAddForm, IBugSet, IBugDelta
+from canonical.launchpad.interfaces import (
+    IBug, IBugAddForm, IBugSet, IBugDelta)
+from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp import dbschema
 from canonical.launchpad.database.bugset import BugSetBase
-from canonical.launchpad.database.message \
-        import Message, MessageSet, MessageChunk
+from canonical.launchpad.database.message import (
+    Message, MessageSet, MessageChunk)
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.bugsubscription import BugSubscription
@@ -76,6 +79,7 @@ class Bug(SQLBase):
     cverefs = MultipleJoin('CVERef', joinColumn='bug', orderBy='cveref')
     subscriptions = MultipleJoin(
             'BugSubscription', joinColumn='bug', orderBy='id')
+    duplicates = MultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
 
     def followup_title(self):
         return 'Re: '+ self.title
@@ -104,52 +108,34 @@ class Bug(SQLBase):
         emails = Set()
         for subscription in self.subscriptions:
             if subscription.subscription == dbschema.BugSubscription.CC:
-                preferred_email = subscription.person.preferredemail
-                # XXX: Brad Bollenbach, 2005-03-14: Subscribed users
-                # should always have a preferred email, but
-                # realistically, we've got some corruption in our db
-                # still that prevents us from guaranteeing that all
-                # subscribers will have a preferredemail
-                if preferred_email is not None:
-                    emails.add(preferred_email.email)
+                emails.update(contactEmailAddresses(subscription.person))
 
         if not self.private:
             # Collect implicit subscriptions. This only happens on
             # public bugs.
             for task in self.bugtasks:
                 if task.assignee is not None:
-                    preferred_email = task.assignee.preferredemail
-                    # XXX: Brad Bollenbach, 2005-03-14: Subscribed users
-                    # should always have a preferred email, but
-                    # realistically, we've got some corruption in our db
-                    # still that prevents us from guaranteeing that all
-                    # subscribers will have a preferredemail
-                    if preferred_email is not None:
-                        emails.add(preferred_email.email)
+                    emails.update(contactEmailAddresses(task.assignee))
 
                 if task.product is not None:
-                    preferred_email = task.product.owner.preferredemail
-                    if preferred_email is not None:
-                        emails.add(preferred_email.email)
+                    owner = task.product.owner
+                    emails.update(contactEmailAddresses(owner))
                 else:
                     if task.sourcepackagename is not None:
                         if task.distribution is not None:
                             distribution = task.distribution
                         else:
                             distribution = task.distrorelease.distribution
+
                         maintainership = Maintainership.selectOneBy(
                             sourcepackagenameID = task.sourcepackagename.id,
                             distributionID = distribution.id)
+
                         if maintainership is not None:
                             maintainer = maintainership.maintainer
-                            preferred_email = maintainer.preferredemail
-                            if preferred_email:
-                                emails.add(preferred_email.email)
+                            emails.update(contactEmailAddresses(maintainer))
 
-        preferred_email = self.owner.preferredemail
-        if preferred_email is not None:
-            emails.add(preferred_email.email)
-
+        emails.update(contactEmailAddresses(self.owner))
         emails = list(emails)
         emails.sort()
         return emails
@@ -282,26 +268,17 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
 
 
 class BugSet(BugSetBase):
-    """A set for bugs."""
-
     implements(IBugSet)
-    table = Bug
-
-    def __getitem__(self, id):
-        """See canonical.launchpad.interfaces.bug.IBugSet."""
-        item = self.table.selectOne(self.table.q.id==id)
-        if item is None:
-            raise KeyError, id
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
-        for row in self.table.select():
+        for row in Bug.select():
             yield row
 
     def get(self, bugid):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
-        return self.table.get(bugid)
+        return Bug.get(bugid)
 
     def search(self, duplicateof=None):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
-        return self.table.selectBy(duplicateofID = duplicateof.id)
+        return Bug.selectBy(duplicateofID=duplicateof.id)

@@ -13,7 +13,7 @@ from zope.exceptions import NotFoundError
 from zope.component import getUtility, getAdapter
 from zope.interface import implements, directlyProvides, directlyProvidedBy
 
-from canonical.lp import dbschema
+from canonical.lp import dbschema, Passthrough
 from canonical.lp.dbschema import EnumCol, BugPriority
 from canonical.lp.dbschema import BugTaskStatus
 from canonical.launchpad.interfaces import IBugTask, IBugTaskDelta
@@ -75,10 +75,6 @@ class BugTask(SQLBase):
     owner = ForeignKey(
         foreignKey='Person', dbName='owner', notNull=False, default=None)
 
-    def bugtitle(self):
-        return self.bug.title
-    bugtitle = property(bugtitle)
-
     def maintainer(self):
         if self.product:
             return self.product.owner
@@ -97,10 +93,6 @@ class BugTask(SQLBase):
         else:
             return None
     maintainer_displayname = property(maintainer_displayname)
-
-    def bugdescription(self):
-        return self.bug.description
-    bugdescription = property(bugdescription)
 
     def contextname(self):
         """See canonical.launchpad.interfaces.IBugTask.
@@ -146,7 +138,7 @@ class BugTask(SQLBase):
         """Generate the title for this bugtask based on the id of the bug
         and the bugtask's contextname.  See IBugTask.
         """
-        title = 'Bug #%s in %s' % (self.bug.id, self.contextname())
+        title = 'Bug #%s in %s' % (self.bug.id, self.contextname)
         return title
     title = property(title)
 
@@ -312,7 +304,7 @@ class BugTaskSet:
         return BugTask(**bugtask_args)
 
     def assignedBugTasks(self, person, minseverity=None, minpriority=None,
-                         showclosed=False, orderBy=None):
+                         showclosed=False, orderBy=None, user=None):
         if showclosed:
             showclosed = ""
         else:
@@ -327,6 +319,25 @@ class BugTaskSet:
             prioAndSevFilter += (
                 ' AND BugTask.severity >= %s' % sqlvalues(minseverity))
 
+        privatenessFilter = ' AND '
+        if user is not None:
+            privatenessFilter += ('''
+                ((BugTask.bug = Bug.id AND Bug.private = FALSE)
+                OR ((BugTask.bug = Bug.id AND Bug.private = TRUE) AND
+                    (Bug.id in (
+                        SELECT Bug.id FROM Bug, BugSubscription WHERE
+                           (Bug.id = BugSubscription.bug) AND
+                           (BugSubscription.person = %(personid)s) AND
+                           (BugSubscription.subscription IN
+                               (%(cc)s, %(watch)s))))))'''
+                % sqlvalues(personid=user.id,
+                            cc=dbschema.BugSubscription.CC,
+                            watch=dbschema.BugSubscription.WATCH))
+        else:
+            privatenessFilter += 'BugTask.bug = Bug.id AND Bug.private = FALSE'
+
+        filters = prioAndSevFilter + showclosed + privatenessFilter
+
         maintainedPackageBugTasksQuery = ('''
             BugTask.sourcepackagename = Maintainership.sourcepackagename AND
             BugTask.distribution = Maintainership.distribution AND
@@ -334,8 +345,9 @@ class BugTaskSet:
             TeamParticipation.person = %s''' % person.id)
 
         maintainedPackageBugTasks = BugTask.select(
-            maintainedPackageBugTasksQuery + prioAndSevFilter + showclosed, 
-            clauseTables=['Maintainership', 'TeamParticipation'])
+            maintainedPackageBugTasksQuery + filters,
+            clauseTables=['Maintainership', 'TeamParticipation', 'BugTask',
+                          'Bug'])
 
         maintainedProductBugTasksQuery = ('''
             BugTask.product = Product.id AND
@@ -343,23 +355,24 @@ class BugTaskSet:
             TeamParticipation.person = %s''' % person.id)
 
         maintainedProductBugTasks = BugTask.select(
-            maintainedProductBugTasksQuery + prioAndSevFilter + showclosed,
-            clauseTables=['Product', 'TeamParticipation'])
+            maintainedProductBugTasksQuery + filters,
+            clauseTables=['Product', 'TeamParticipation', 'BugTask', 'Bug'])
 
         assignedBugTasksQuery = ('''
             BugTask.assignee = TeamParticipation.team AND
             TeamParticipation.person = %s''' % person.id)
 
         assignedBugTasks = BugTask.select(
-            assignedBugTasksQuery + prioAndSevFilter + showclosed,
-            clauseTables=['TeamParticipation'])
+            assignedBugTasksQuery + filters,
+            clauseTables=['TeamParticipation', 'BugTask', 'Bug'])
 
         results = assignedBugTasks.union(maintainedProductBugTasks)
         return results.union(maintainedPackageBugTasks, orderBy=orderBy)
 
-    def bugTasksWithSharedInterest(self, person1, person2, orderBy=None):
-        person1Tasks = self.assignedBugTasks(person1)
-        person2Tasks = self.assignedBugTasks(person2)
+    def bugTasksWithSharedInterest(self, person1, person2, orderBy=None,
+                                   user=None):
+        person1Tasks = self.assignedBugTasks(person1, user=user)
+        person2Tasks = self.assignedBugTasks(person2, user=user)
         return person1Tasks.intersect(person2Tasks, orderBy=orderBy)
 
 

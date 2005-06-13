@@ -30,7 +30,7 @@ from canonical.lp.dbschema import PackagePublishingStatus,  \
                                   BinaryPackageFileType, \
                                   BinaryPackageFormat, \
                                   BuildStatus, \
-                                  GPGKeyAlgorithms
+                                  GPGKeyAlgorithm
 
 from canonical.database.constants import nowUTC
 
@@ -720,7 +720,7 @@ class Launchpad(SQLThingBase):
         # revoked     | boolean | not null
         # algorith    | integer | not null
         # keysize     | integer | not null
-        algorithm = GPGKeyAlgorithms.items[algorithm]
+        algorithm = GPGKeyAlgorithm.items[algorithm]
         data = {
             "owner":       person,
             "keyid":        id,

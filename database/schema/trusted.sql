@@ -85,6 +85,28 @@ CREATE OR REPLACE FUNCTION valid_absolute_url(text) RETURNS boolean AS '
 COMMENT ON FUNCTION valid_absolute_url(text) IS 'Ensure the given test is a valid absolute URL, containing both protocol and network location';
 
 
+CREATE OR REPLACE FUNCTION valid_fingerprint(text) RETURNS boolean AS '
+    import re
+    if re.match(r"[\\dA-F]{40}", args[0]) is not None:
+        return True
+    else:
+        return False
+' LANGUAGE plpythonu IMMUTABLE;
+
+COMMENT ON FUNCTION valid_fingerprint(text) IS 'Returns true if passed a valid GPG fingerprint. Valid GPG fingerprints are a 40 character long hexadecimal number in uppercase.';
+
+
+CREATE OR REPLACE FUNCTION valid_keyid(text) RETURNS boolean AS '
+    import re
+    if re.match(r"[\\dA-F]{8}", args[0]) is not None:
+        return True
+    else:
+        return False
+' LANGUAGE plpythonu IMMUTABLE;
+
+COMMENT ON FUNCTION valid_keyid(text) IS 'Returns true if passed a valid GPG keyid. Valid GPG keyids are an 8 character long hexadecimal number in uppercase (in reality, they are 16 characters long but we are using the \'common\' definition.';
+
+
 CREATE OR REPLACE FUNCTION sha1(text) RETURNS char(40) AS '
     import sha
     return sha.new(args[0]).hexdigest()

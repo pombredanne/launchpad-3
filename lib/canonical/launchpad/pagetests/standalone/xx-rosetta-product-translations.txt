@@ -11,9 +11,9 @@ is working.
   ...
       <tr onclick="window.location='/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+translate'">
   <BLANKLINE>
-        <a href="/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+translate">
           <td>
             <a href="/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+translate">Afrikaans</a>
           </td>
+  <BLANKLINE>
           <td>22</td>
   ...

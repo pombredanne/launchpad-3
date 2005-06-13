@@ -51,4 +51,13 @@
       name="+logout"
       />
 
+  <!-- Declare robots.txt file for the root -->
+
+  <browser:page
+      for="canonical.publication.RootObject"
+      name="robots.txt"
+      template="../templates/robotstxt.pt"
+      permission="zope.Public"
+      />
+
 </configure>

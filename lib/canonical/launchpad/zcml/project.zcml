@@ -160,6 +160,11 @@
     <browser:traverse
         for="canonical.launchpad.interfaces.IProjectSet"
         getter="__getitem__" />
+    <browser:url
+        for="canonical.launchpad.interfaces.IProject"
+        path_expression="name"
+        parent_utility="canonical.launchpad.interfaces.IProjectSet"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProjectSet"

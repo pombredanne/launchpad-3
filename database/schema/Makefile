@@ -156,6 +156,7 @@ newsample-soyuz:
 newsampledata:
 	pg_dump --schema=public --disable-triggers -a -D -O -d ${DBNAME} \
 	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|^--\)" \
+	| $(PYTHON) sort_sql.py \
 	> $(NEWSAMPLEDATA)
 
 .PHONY: default base all

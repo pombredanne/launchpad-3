@@ -1,5 +1,4 @@
-<tal:block replace="view/processTranslations" />
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+<tal:block replace="view/processTranslations" /><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
       i18n:domain="rosetta">
@@ -31,6 +30,12 @@
         is being used.
       </p>
 
+      <p class="portalMessage" tal:condition="not: view/is_editor">
+        You are not an official translator for this file. You can make
+        suggestions, but your translations will be stored and reviewed for
+        acceptance later by the designated translators.
+      </p>
+
     <!-- Plural form error message. -->
 
     <div tal:condition="view/lacksPluralFormInformation" class="portalMessage">
@@ -60,7 +65,7 @@
 
         <form method="post"
           style="text-align: right;"
-          tal:condition="view/canEditTranslations"
+          tal:condition="view/is_editor"
           tal:attributes="action view/createURL"
         >
           <label>Show:</label>
@@ -280,17 +285,36 @@
                             rows messageSet/getMaxLinesCount;
                             tabindex view/makeTabIndex;
                             "
-                          >
-<tal:thing replace="structure python:messageSet.getTranslation(index)" /></textarea>
-                        <tal:block define="suggestions python:messageSet.getSuggestedTexts(index)">
-                        <tal:block condition="suggestions">
-                          <span style="color: #dd0000;">
-                          Suggestions:
-                          <tal:block repeat="suggestion suggestions">
-                            <span tal:replace="suggestion">suggestion</span><br />
+                          ><div tal:replace="structure python:messageSet.getTranslation(index)" />
+                        </textarea>
+                        <tal:block condition="not:messageSet/isMultiline">
+                          <tal:block define="submissions python:messageSet.getSuggestedSubmissions(index)">
+                            <tal:block condition="submissions">
+                              <pre><b>Suggestions:</b><br />
+<tal:block repeat="submission submissions"><span
+tal:replace="submission/potranslation/translation">submission</span> (<span
+tal:replace="submission/person/browsername">person name</span>)
+</tal:block></pre>
+                            </tal:block>
                           </tal:block>
-                          <span>
-                        </tal:block>
+                          <tal:block define="submissions python:messageSet.getCurrentSubmissions(index)">
+                            <tal:block condition="submissions">
+                              <pre><b>Currently Published Elsewhere:</b><br />
+<tal:block repeat="submission submissions"><span
+tal:replace="submission/potranslation/translation">suggestion</span> (<span
+tal:replace="submission/person/browsername">person name</span>)
+</tal:block></pre>
+                            </tal:block>
+                          </tal:block>
+                          <tal:block define="submissions python:messageSet.getWikiSubmissions(index)">
+                            <tal:block condition="submissions">
+                              <pre><b>From the Global Translation Wiki:</b><br />
+<tal:block repeat="submission submissions"><span
+tal:replace="submission/potranslation/translation">suggestion</span> (<span
+tal:replace="submission/person/browsername">person name</span>)
+</tal:block></pre>
+                            </tal:block>
+                          </tal:block>
                         </tal:block>
                         </tal:block>
                         <div>

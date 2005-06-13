@@ -110,7 +110,7 @@ with the system as an anonymous (i.e. unauthenticated) user:
 let's fetch the BugTask with ID 1:
 
     >>> bugtask = bugtaskset.get(1)
-    >>> bugtask.bugtitle
+    >>> bugtask.bug.title
     u'Firefox does not support SVG'
 
 If you pass an ID for which no object exists, you'll get a
@@ -397,7 +397,6 @@ the logged in person from the maintainer team, so that he can't edit the
 task anymore:
 
     >>> sample_person.leave(foo_team)
-    True
     >>> upstream_task.status = STATUS_FIXED
     Traceback (most recent call last):
       ...

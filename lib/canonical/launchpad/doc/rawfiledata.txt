@@ -33,7 +33,6 @@ Create a new PO template.
 
     >>> potemplate = subset.new(
     ...     potemplatename=potemplatename,
-    ...     title='test',
     ...     contents='# This is a test PO template.',
     ...     owner=person,
     ...     )
@@ -52,7 +51,7 @@ Check that the getRawFileData can retrieve the flie.
 Attach another file to the PO template.
 
     >>> potemplate.attachRawFileData(
-    ...     '# This is another test PO template.')
+    ...     '# This is another test PO template.', True)
 
     >>> transaction.commit()
 

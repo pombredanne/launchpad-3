@@ -2,12 +2,11 @@
 
 __metaclass__ = type
 
-import base64
 import gettextpo
 import os
-import popen2
 import random
 import re
+import sets
 import tarfile
 import time
 import warnings
@@ -25,18 +24,24 @@ from zope.security.management import newInteraction, endInteraction
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
 from canonical.database.constants import UTC_NOW
-from canonical.lp.dbschema import RosettaImportStatus
-from canonical.librarian.interfaces import ILibrarianClient, UploadFailed, \
-    DownloadFailed
-from canonical.launchpad.interfaces import ILaunchBag, IOpenLaunchBag, \
-    IHasOwner, IGeoIP, IRequestPreferredLanguages, ILanguageSet, \
-    IRequestLocalLanguages, \
-    RawFileAttachFailed, RawFileFetchFailed
-from canonical.launchpad.components.poparser import POSyntaxError, \
-    POInvalidInputError, POParser
+from canonical.lp.dbschema import RosettaImportStatus, TranslationPermission
+from canonical.librarian.interfaces import (
+    ILibrarianClient, UploadFailed, DownloadFailed
+    )
+from canonical.launchpad.interfaces import (
+    ILaunchBag, IOpenLaunchBag, IHasOwner, IGeoIP, IRequestPreferredLanguages,
+    ILanguageSet, IRequestLocalLanguages, RawFileAttachFailed, ITeam,
+    RawFileFetchFailed
+    )
+from canonical.launchpad.components.poparser import (
+    POSyntaxError, POInvalidInputError, POParser
+    )
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.mail import SignedMessage
 from canonical.launchpad.mail.ftests import testmails_path
+
+# This import forms part of this module's API.
+from canonical.launchpad.webapp.publisher import canonical_url
 
 CHARACTERS_PER_LINE = 50
 
@@ -49,21 +54,16 @@ class TranslationConstants:
     NEWLINE_CHAR = u'<span class="po-message-special">\u21b5</span><br/>\n'
 
 
-def is_maintainer(hasowner):
-    """Return True if the logged in user is an owner of hasowner.
+def is_maintainer(owned_object):
+    """Is the logged in user the maintainer of this thing?
 
-    Return False if he's not an owner.
-
-    The user is an owner if it either matches hasowner.owner directly or is a
-    member of the hasowner.owner team.
-
-    Raise TypeError is hasowner does not provide IHasOwner.
+    owned_object provides IHasOwner.
     """
-    if not IHasOwner.providedBy(hasowner):
-        raise TypeError, "hasowner doesn't provide IHasOwner"
+    if not IHasOwner.providedBy(owned_object):
+        raise TypeError, "Object %s doesn't provide IHasOwner" % repr(owned_object)
     launchbag = getUtility(ILaunchBag)
     if launchbag.user is not None:
-        return launchbag.user.inTeam(hasowner.owner)
+        return launchbag.user.inTeam(owned_object.owner)
     else:
         return False
 
@@ -343,6 +343,31 @@ def simple_popen2(command, input, in_bufsize=1024, out_bufsize=128):
 
     return output
 
+def contactEmailAddresses(person):
+    """Return a Set of email addresses to contact this Person.
+
+    If <person> has a preferred email, the Set will contain only that
+    preferred email. 
+
+    If <person> doesn't have a preferred email but implements ITeam, the 
+    Set will contain the preferred email address of each member of <person>.
+
+    Finally, if <person> doesn't have a preferred email neither implement
+    ITeam, the Set will be empty.
+    """
+    emails = sets.Set()
+    if person.preferredemail is not None:
+        emails.add(person.preferredemail.email)
+        return emails
+
+    if ITeam.providedBy(person):
+        for member in person.activemembers:
+            contactAddresses = contactEmailAddresses(member)
+            if contactAddresses:
+                emails = emails.union(contactAddresses)
+
+    return emails
+
 # Note that this appears as "valid email" in the UI, because that term is
 # more familiar to users, even if it is less correct.
 well_formed_email_re = re.compile(
@@ -474,7 +499,7 @@ def getRawFileData(raw_file_data):
     client = getUtility(ILibrarianClient)
 
     try:
-        file = client.getFileByAlias(raw_file_data.rawfile)
+        file = client.getFileByAlias(raw_file_data.rawfile.id)
     except DownloadFailed, e:
         raise RawFileFetchFailed(str(e))
 
@@ -538,9 +563,13 @@ def request_languages(request):
             languages.append(lang)
     return languages
 
-def parse_cformat_string(s):
-    '''Parse a printf()-style format string into a sequence of interpolations
-    and non-interpolations.'''
+class UnrecognisedCFormatString(ValueError):
+    """Exception raised when a string containing C format sequences can't be
+    parsed."""
+
+def parse_cformat_string(string):
+    """Parse a printf()-style format string into a sequence of interpolations
+    and non-interpolations."""
 
     # The sequence '%%' is not counted as an interpolation. Perhaps splitting
     # into 'special' and 'non-special' sequences would be better.
@@ -549,30 +578,37 @@ def parse_cformat_string(s):
     # empty string, a string beginning with a sequence containing no
     # interpolations, or a string beginning with an interpolation.
 
-    # Check for an empty string.
+    segments = []
+    end = string
+    plain_re = re.compile('(%%|[^%])+')
+    interpolation_re = re.compile('%[^diouxXeEfFgGcspmn]*[diouxXeEfFgGcspmn]')
 
-    if s == '':
-        return ()
+    while end:
+        # Check for a interpolation-less prefix.
 
-    # Check for a interpolation-less prefix.
+        match = plain_re.match(end)
 
-    match = re.match('(%%|[^%])+', s)
+        if match:
+            segment = match.group(0)
+            segments.append(('string', segment))
+            end = end[len(segment):]
+            continue
 
-    if match:
-        t = match.group(0)
-        return (('string', t),) + parse_cformat_string(s[len(t):])
+        # Check for an interpolation sequence at the beginning.
 
-    # Check for an interpolation sequence at the beginning.
+        match = interpolation_re.match(end)
 
-    match = re.match('%[^diouxXeEfFgGcspn]*[diouxXeEfFgGcspn]', s)
+        if match:
+            segment = match.group(0)
+            segments.append(('interpolation', segment))
+            end = end[len(segment):]
+            continue
 
-    if match:
-        t = match.group(0)
-        return (('interpolation', t),) + parse_cformat_string(s[len(t):])
+        # Give up.
 
-    # Give up.
+        raise UnrecognisedCFormatString(string)
 
-    raise ValueError(s)
+    return segments
 
 def normalize_newlines(s):
     r"""Convert newlines to Unix form.
@@ -588,7 +624,6 @@ def normalize_newlines(s):
     >>> normalize_newlines('foo\r\nbar\r\n\r\nbaz')
     'foo\nbar\n\nbaz'
     """
-
     return s.replace('\r\n', '\n').replace('\r', '\n')
 
 def regex_escape(*substitutions):
@@ -715,7 +750,6 @@ def parse_translation_form(form):
             messageSets[id]['fuzzy'] = False
 
     # Extract translations.
-
     for key in form:
         match = re.match(r'set_(\d+)_translation_([a-z]+(?:_[A-Z]+)?)_(\d+)$',
             key)
@@ -731,7 +765,6 @@ def parse_translation_form(form):
                 contract_rosetta_tabs(normalize_newlines(form[key])))
 
     # Extract fuzzy statuses.
-
     for key in form:
         match = re.match(r'set_(\d+)_fuzzy_([a-z]+)$', key)
 
@@ -743,9 +776,11 @@ def parse_translation_form(form):
 
 def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
                newline=TranslationConstants.NEWLINE_CHAR):
-    '''Convert a message ID to a HTML representation.'''
+    """Convert a message ID to a HTML representation."""
 
     lines = []
+
+    # Replace leading and trailing spaces on each line with special markup.
 
     for line in xml_escape(text).split('\n'):
         # Pattern:
@@ -765,19 +800,29 @@ def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
             raise AssertionError(
                 "A regular expression that should always match didn't.")
 
-    for i in range(len(lines)):
-        if 'c-format' in flags:
-            line = ''
+    if 'c-format' in flags:
+        # Replace c-format sequences with marked-up versions. If there is a
+        # problem parsing the c-format sequences on a particular line, that
+        # line is left unformatted.
 
-            for segment in parse_cformat_string(lines[i]):
+        for i in range(len(lines)):
+            formatted_line = ''
+
+            try:
+                segments = parse_cformat_string(lines[i])
+            except UnrecognisedCFormatString:
+                continue
+
+            for segment in segments:
                 type, content = segment
 
                 if type == 'interpolation':
-                    line += '<span class="interpolation">%s</span>' % content
+                    formatted_line += ('<span class="interpolation">%s</span>'
+                        % content)
                 elif type == 'string':
-                    line += content
+                    formatted_line += content
 
-            lines[i] = line
+            lines[i] = formatted_line
 
     # Replace newlines and tabs with their respective representations.
 
@@ -852,6 +897,7 @@ def import_tar(potemplate, importer, tarfile, pot_paths, po_paths):
     # function we did already the needed tests to be sure that pot_paths
     # follows our requirements.
     potemplate.attachRawFileData(tarfile.extractfile(pot_paths[0]).read(),
+                                 True, # the "published" flag
                                  importer)
     pot_base_dir = os.path.dirname(pot_paths[0])
 
@@ -883,7 +929,9 @@ def import_tar(potemplate, importer, tarfile, pot_paths, po_paths):
         pofile = potemplate.getOrCreatePOFile(code, variant, importer)
 
         try:
-            pofile.attachRawFileData(contents, importer)
+            # we are assming that a tarball import is ALWAYS of a
+            # "published" potemplate and "published" pofiles
+            pofile.attachRawFileData(contents, True, importer)
         except (POSyntaxError, POInvalidInputError):
             errors.append(path)
             continue
@@ -908,8 +956,40 @@ class DummyPOFile(RosettaStats):
         self.potemplate = potemplate
         self.language = language
         self.header = ''
-        self.latest_sighting = None
+        self.latest_submission = None
         self.messageCount = len(potemplate)
+
+    @property
+    def translators(self):
+        tgroups = self.potemplate.translationgroups
+        ret = []
+        for group in tgroups:
+            translator = group.query_translator(self.language)
+            if translator is not None:
+                ret.append(translator)
+        return ret
+
+    def canEditTranslations(self, person):
+
+        tperm = self.potemplate.translationpermission
+        if tperm == TranslationPermission.OPEN:
+            # if the translation policy is "open", then yes
+            return True
+        elif tperm == TranslationPermission.CLOSED:
+            if person is not None:
+                # if the translation policy is "closed", then check if the
+                # person is in the set of translators XXX sabdfl 25/05/05 this
+                # code could be improved when we have implemented CrowdControl
+                translators = [t.translator for t in self.translators]
+                for translator in translators:
+                    if person.inTeam(translator):
+                        return True
+        else:
+            raise NotImplementedError, 'Unknown permission %s', tperm.name
+
+        # At this point you either got an OPEN (true) or you are not in the
+        # designated translation group, so you can't edit them
+        return False
 
     def currentCount(self):
         return 0
@@ -961,6 +1041,28 @@ def test_diff(lines_a, lines_b):
         lineterm='',
         )))
 
+fingerprint_re = re.compile(r"^[\dABCDEF]{40}$")
+
+def sanitiseFingerprint(fpr):
+    """Returns sanitised fingerprint if fpr is well-formed,
+    otherwise returns False.
+
+    >>> sanitiseFingerprint('C858 2652 1A6E F6A6 037B  B3F7 9FF2 583E 681B 6469')
+    'C85826521A6EF6A6037BB3F79FF2583E681B6469'
+    >>> sanitiseFingerprint('681B 6469')
+    False
+    
+    >>> sanitiseFingerprint('abnckjdiue')
+    False
+    
+    """ 
+    # replace the white spaces
+    fpr = fpr.replace(' ', '')
+
+    if not fingerprint_re.match(fpr):
+        return False
+    
+    return fpr
 
 class Participation:
     implements(IParticipation) 
@@ -1000,4 +1102,3 @@ def read_test_message(filename):
     """
     return email.message_from_file(
         open(testmails_path + filename), _class=SignedMessage)
-

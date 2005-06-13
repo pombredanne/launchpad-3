@@ -7,7 +7,7 @@ Get the PO msgid we will be working with.
 
 Now find the two po templates, one for evolution 2.1.6 upstream and one for
 evolution in hoary. They should both have a message with the msgid we have
-chosen. We will be working with the Afrikaans (af) language.
+chosen. We will be working with the Spanish (ef) language.
 
 >>> upstream_evo = POTemplate.get(1)
 >>> upstream_evo.productrelease is not None
@@ -26,23 +26,27 @@ u'hoary'
 >>> hoary_evo.sourcepackagename.name
 u'evolution'
 
-We will be working in (Af)rikaans.
+We will be working in (es)panol.
 
->>> lang = Language.byCode('af')
+We need the right POMsgSet's. We'll get the PO Files, then find the po
+msgset from there.
 
-Now find the relevant PO msgset's.
-
->>> upstream_potmsgset = upstream_evo.messageSet(u'evolution addressbook')
->>> hoary_potmsgset = hoary_evo.messageSet(u'evolution addressbook')
+>>> upstream_pofile = upstream_evo.getPOFileByLang('es')
+>>> upstream_pomsgset = upstream_pofile.messageSet(u'evolution addressbook')
+>>> hoary_pofile = hoary_evo.getPOFileByLang('es')
+>>> hoary_pomsgset = hoary_pofile.messageSet(u'evolution addressbook')
 
 Show that there are no active translations and no suggestions for either
 upstream or the hoary translation.
 
->>> upstream_potmsgset.getSuggestedTexts(lang, 0)
+>>> list(upstream_pomsgset.getSuggestedSubmissions(0))
 []
 
->>> hoary_potmsgset.getSuggestedTexts(lang, 0)
+>>> list(hoary_pomsgset.getSuggestedSubmissions(0))
 []
 
-Now, get the relevant pomsgsets.
+TESTING NonEditorTranslations
+
+Let's make a submission, when we are not an editor. It should not
+become the active submission, and it
 

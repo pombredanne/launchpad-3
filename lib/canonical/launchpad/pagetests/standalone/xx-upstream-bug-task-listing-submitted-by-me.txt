@@ -1,7 +1,7 @@
 Sample Person clicks the "submitted by me" link; sees the bugs they've filed.
 
   >>> print http(r"""
-  ... GET /malone/products/firefox/+malone-index?status=10&status=20&assignee=all&submitter=name12&product=all&sourcepackagename=all&search=Search HTTP/1.1
+  ... GET /products/firefox/+bugs?status=10&status=20&assignee=all&submitter=name12&product=all&sourcepackagename=all&search=Search HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Referer: http://localhost:9000/malone/products/firefox
   ... """)

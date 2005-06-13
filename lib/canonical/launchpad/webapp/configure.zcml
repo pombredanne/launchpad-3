@@ -3,6 +3,18 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     i18n_domain="canonical.launchpad">
 
+    <!-- urls -->
+    <utility
+        provides="canonical.launchpad.interfaces.ILaunchpadRoot"
+        component="canonical.publication.rootObject"
+        />
+
+    <adapter
+        provides="canonical.launchpad.interfaces.ICanonicalUrlData"
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        factory="canonical.launchpad.webapp.publisher.LaunchpadRootUrlData"
+        />
+
     <!-- Annotations -->
 
     <content class="canonical.launchpad.webapp.annotation.SQLObjectAnnotation">
@@ -128,6 +140,13 @@
         for="types.NoneType"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.NoneFormatter"
+        name="fmt"
+        />
+
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.ObjectFormatterAPI"
         name="fmt"
         />
 
