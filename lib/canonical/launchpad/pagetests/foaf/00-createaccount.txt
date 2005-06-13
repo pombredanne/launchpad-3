@@ -122,7 +122,7 @@
   ... 
   ... f
   ... -----------------------------17483551342125833225531652773
-  ... Content-Disposition: form-data; name="field.password2"
+  ... Content-Disposition: form-data; name="field.password_dupe"
   ... 
   ... f
   ... -----------------------------17483551342125833225531652773

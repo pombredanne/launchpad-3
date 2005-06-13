@@ -68,12 +68,16 @@
         name="+newaccount"
         for="canonical.launchpad.interfaces.ILoginToken"
         schema="canonical.launchpad.interfaces.IPerson"
-        fields="givenname familyname displayname password password2"
+        fields="givenname familyname displayname password"
         content_factory="canonical.launchpad.database.Person"
         class="canonical.launchpad.browser.NewAccountView"
         permission="zope.Public"
         template="../templates/foaf-newaccount.pt"
-        lp:url="token/$token/+newaccount" />
+        lp:url="token/$token/+newaccount">
+        <browser:widget
+            field="password"
+            class="canonical.widgets.PasswordChangeWidget" />
+    </browser:addform>
 
     <!-- LoginTokenSet -->
     <content class="canonical.launchpad.database.LoginTokenSet">
