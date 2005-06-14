@@ -8,6 +8,11 @@
       <img src="/++resource++edit.gif">
       <a href="+edit">Edit Details</a>
 
+      <br/>
+
+      <img src="/++resource++download.png">
+      <a href="+export">Export Translations</a>
+
     </div>
   </div>
 </div>

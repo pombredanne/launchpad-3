@@ -17,6 +17,8 @@ __all__ = ('IPOTemplateSubset', 'IPOTemplateSet', 'IPOTemplate',
 class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     """A PO template. For example 'nautilus/po/nautilus.pot'."""
 
+    id = Attribute("A unique ID number")
+
     potemplatename = Choice(
         title=_("Template name"),
         required=True,

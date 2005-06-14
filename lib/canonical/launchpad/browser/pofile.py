@@ -14,7 +14,7 @@ from zope.security.interfaces import Unauthorized
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.launchpad.interfaces import (ILaunchBag, ILanguageSet,
-    RawFileAttachFailed)
+    RawFileAttachFailed, IPOExportRequestSet)
 from canonical.launchpad.components.poexport import POExport
 from canonical.launchpad.components.poparser import POHeader
 from canonical.launchpad import helpers
@@ -478,18 +478,20 @@ class POFileView:
         return messageSets
 
 
-class POFilePOExportView:
-    def __call__(self):
-        pofile = self.context
-        poExport = POExport(pofile.potemplate)
-        languageCode = pofile.language.code
-        exportedFile = poExport.export(languageCode)
+class ViewPOExport:
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.user = getUtility(ILaunchBag).user
+        self.formProcessed = False
 
-        self.request.response.setHeader('Content-Type', 'application/x-po')
-        self.request.response.setHeader('Content-Length', len(exportedFile))
-        self.request.response.setHeader('Content-Disposition',
-                'attachment; filename="%s.po"' % languageCode)
-        return exportedFile
+    def processForm(self):
+        if self.request.method != 'POST':
+            return
+
+        request_set = getUtility(IPOExportRequestSet)
+        request_set.addRequest(self.user, pofiles=[self.context])
+        self.formProcessed = True
 
 
 class POFileMOExportView:

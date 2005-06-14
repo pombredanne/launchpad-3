@@ -17,7 +17,7 @@ from zope.app.publisher.browser import BrowserView
 from canonical.launchpad import helpers
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import ILaunchBag, IPOTemplateSet, \
-    IPOTemplateNameSet, IPersonSet, RawFileAttachFailed
+    IPOTemplateNameSet, IPersonSet, RawFileAttachFailed, IPOExportRequestSet
 from canonical.launchpad.components.poexport import POExport
 from canonical.launchpad.browser.pofile import POFileView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -248,6 +248,74 @@ class POTemplateAddView(AddView):
     def nextURL(self):
         return self._nextURL
 
+
+class POTemplateExport:
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.user = getUtility(ILaunchBag).user
+        self.formProcessed = False
+        self.errorMessage = None
+
+    def processForm(self):
+        if self.request.method != 'POST':
+            return
+
+        pofiles = []
+        what = self.request.form.get('what')
+
+        if what == 'all':
+            export_potemplate = True
+
+            pofiles =  self.context.pofiles
+        elif what == 'some':
+            export_potemplate = 'potemplate' in self.request.form
+
+            for key in self.request.form:
+                if '@' in key:
+                    code, variant = key.split('@', 1)
+                else:
+                    code = key
+                    variant = None
+
+                try:
+                    pofile = self.context.getPOFileByLang(code, variant)
+                except KeyError:
+                    pass
+                else:
+                    pofiles.append(pofile)
+        else:
+            self.errorMessage = (
+                'Please choose whether you would like all files or only some '
+                'of them.')
+            return
+
+        request_set = getUtility(IPOExportRequestSet)
+
+        if export_potemplate:
+            request_set.addRequest(self.user, self.context, pofiles)
+        else:
+            request_set.addRequest(self.user, None, pofiles)
+
+        self.formProcessed = True
+
+    def pofiles(self):
+        class BrowserPOFile:
+            def __init__(self, value, browsername):
+                self.value = value
+                self.browsername = browsername
+
+        for pofile in self.context.pofiles:
+            if pofile.variant:
+                variant = pofile.variant.encode('UTF-8')
+                value = '%s@%s' % (pofile.language.code, variant)
+                browsername = '%s ("%s" variant)' % (
+                    pofile.language.englishname, variant)
+            else:
+                value = pofile.language.code
+                browsername = pofile.language.englishname
+
+            yield BrowserPOFile(value, browsername)
 
 class POTemplateTarExport:
     '''View class for exporting a tarball of translations.'''

@@ -89,6 +89,14 @@
         />
 
     <browser:page
+        name="+export"
+        for="canonical.launchpad.interfaces.IPOTemplate"
+        permission="launchpad.AnyPerson"
+        template="../templates/potemplate-export.pt"
+        class="canonical.launchpad.browser.POTemplateExport"
+        />
+
+    <browser:page
         name="+tar-export"
         for="canonical.launchpad.interfaces.IPOTemplate"
         permission="zope.Public"
