@@ -78,8 +78,8 @@ CREATE OR REPLACE FUNCTION valid_absolute_url(text) RETURNS boolean AS '
     from urlparse import urlparse
     (scheme, netloc, path, params, query, fragment) = urlparse(args[0])
     if not (scheme and netloc):
-        return False
-    return True
+        return 0
+    return 1
 ' LANGUAGE plpythonu IMMUTABLE;
 
 COMMENT ON FUNCTION valid_absolute_url(text) IS 'Ensure the given test is a valid absolute URL, containing both protocol and network location';
@@ -88,9 +88,9 @@ COMMENT ON FUNCTION valid_absolute_url(text) IS 'Ensure the given test is a vali
 CREATE OR REPLACE FUNCTION valid_fingerprint(text) RETURNS boolean AS '
     import re
     if re.match(r"[\\dA-F]{40}", args[0]) is not None:
-        return True
+        return 1
     else:
-        return False
+        return 0
 ' LANGUAGE plpythonu IMMUTABLE;
 
 COMMENT ON FUNCTION valid_fingerprint(text) IS 'Returns true if passed a valid GPG fingerprint. Valid GPG fingerprints are a 40 character long hexadecimal number in uppercase.';
@@ -99,9 +99,9 @@ COMMENT ON FUNCTION valid_fingerprint(text) IS 'Returns true if passed a valid G
 CREATE OR REPLACE FUNCTION valid_keyid(text) RETURNS boolean AS '
     import re
     if re.match(r"[\\dA-F]{8}", args[0]) is not None:
-        return True
+        return 1
     else:
-        return False
+        return 0
 ' LANGUAGE plpythonu IMMUTABLE;
 
 COMMENT ON FUNCTION valid_keyid(text) IS 'Returns true if passed a valid GPG keyid. Valid GPG keyids are an 8 character long hexadecimal number in uppercase (in reality, they are 16 characters long but we are using the \'common\' definition.';
