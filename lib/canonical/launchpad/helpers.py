@@ -1163,6 +1163,35 @@ def read_test_message(filename):
     return email.message_from_file(
         open(testmails_path + filename), _class=SignedMessage)
 
+def filenameToContentType(fname):
+    """ Return the a ContentType-like entry for arbitrary filenames 
+
+    deb files
+
+    >>> filenameToContentType('test.deb')
+    'application/x-debian-package'
+
+    text files
+
+    >>> filenameToContentType('test.txt')
+    'text/plain'
+
+    Not recognized format
+    
+    >>> filenameToContentType('test.tgz')
+    'application/octet-stream'
+    """
+    ftmap = {".dsc":      "text/plain",
+             ".changes":  "text/plain",
+             ".deb":      "application/x-debian-package",
+             ".udeb":     "application/x-debian-package",
+             ".txt":      "text/plain",
+             }
+    for ending in ftmap:
+        if fname.endswith(ending):
+            return ftmap[ending]
+    return "application/octet-stream"
+
 
 def get_filename_from_message_id(message_id):
     """Returns a librarian filename based on the email message_id.
@@ -1171,3 +1200,4 @@ def get_filename_from_message_id(message_id):
     """
     return '%s.msg' % (
             canonical.base.base(long(sha.new(message_id).hexdigest(), 16), 62))
+
