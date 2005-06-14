@@ -385,6 +385,8 @@ def pofile_translate(context, view):
         context.potemplate.displayname,
         context.language.englishname)
 
+pofile_upload = ContextTitle('%s upload in Rosetta')
+
 # portlet_* are portlets
 
 potemplage_admin = ContextTitle('%s admin in Rosetta')

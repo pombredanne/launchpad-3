@@ -18,12 +18,21 @@
         <form action="+upload" method="POST" enctype="multipart/form-data">
 
         <fieldset>
-            <label>Select a template file to import:
-              <input name="file" type="file" />
-            </label>
+            <label>Select a translation file to import:
+	      <input name="file" type="file" />
+	    </label>
+            <br />
+            <label>Published: <input name="published" type="checkbox" /></label>
+            <div class="discreet">
+              (Check this ONLY if this PO file is EXACTLY the same as the
+              current published PO file, with none of your own edits, this
+              will reset the statistics in Rosetta)
+            </div>
             <br />
             <input name="UPLOAD" type="submit" value="Upload"/>
         </fieldset>
+
+        </form>
 
 </div>
 

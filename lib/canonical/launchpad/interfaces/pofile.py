@@ -24,7 +24,7 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
 
     language = Attribute("Language of this PO file.")
 
-    title = Attribute("The PO file's title.")
+    title = Attribute("A title for this PO file.")
 
     description = Attribute("PO file description.")
 

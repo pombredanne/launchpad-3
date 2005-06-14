@@ -55,6 +55,7 @@ class POTemplateView:
         self.request = request
         self.request_languages = helpers.request_languages(self.request)
         self.description = self.context.potemplatename.description
+        self.user = getUtility(ILaunchBag).user
         # XXX carlos 01/05/05 please fix up when we have the
         # MagicURLBox
 
@@ -127,13 +128,8 @@ class POTemplateView:
             if 'UPLOAD' in self.request.form:
                 self.upload()
 
-        return ''
-
     def upload(self):
         """Handle a form submission to change the contents of the template."""
-
-        # Get the launchpad Person who is doing the upload.
-        owner = getUtility(ILaunchBag).user
 
         file = self.request.form['file']
 
@@ -159,7 +155,7 @@ class POTemplateView:
 
             try:
                 # a potemplate is always "published" so published=True
-                self.context.attachRawFileData(potfile, True, owner)
+                self.context.attachRawFileData(potfile, True, self.user)
                 self.status_message = (
                     'Thank you for your upload. The template content will'
                     ' appear in Rosetta in a few minutes.')

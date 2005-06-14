@@ -1,48 +1,21 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="rosetta">
+      i18n:domain="launchpad">
 
 <body>
 
 <div metal:fill-slot="main">
 
-     <tal:dummy condition="view/editSubmit" />
+     <tal:dummy condition="view/submitForm" />
 
-        <h1>Upload a new PO file for <span tal:replace="context/language/englishname" /></h1>
+        <h1>Edit the plural forms for this pofile</h1>
 
         <div class="portalMessage"
              tal:condition="view/status_message"
              tal:content="structure view/status_message">Successful</div>
-        
+
         <form action="+edit" method="POST" enctype="multipart/form-data">
-
-        <p class="documentDescription">
-        Here you can select a pofile to be imported into Rosetta. Just note
-        that it will have a delay of some minutes since you upload it and when
-        it appears in Rosetta.
-        </p>
-        
-        <fieldset>
-            <label>File: <input name="file" type="file" /></label>
-            <br />
-            <label>Published: <input name="published" type="checkbox" /></label>
-            <div class="discreet">
-              (Check this ONLY if this PO file is EXACTLY the same as the
-              current published PO file, with none of your own edits, this
-              will reset the statistics in Rosetta)
-            </div>
-            <br />
-            <input name="UPLOAD" type="submit" value="Upload"/>
-        </fieldset>
-            
-        <h1>Edit the plural forms for this pofile</h1>
-
-        <p class="documentDescription">
-        This block lets you modify the plural form information for this PO
-        file.<br />
-        Please, don't change it if you don't know how it works.
-        </p>
 
         <fieldset>
             Number of Pluralforms:
@@ -53,7 +26,7 @@
             <input type="text" name="expression"
                    tal:attributes="value view/pluralFormExpression"/>
             <br/>
-            <input type="submit" name="SUBMIT" value="Submit" />
+            <input type="submit" name="EDIT" value="Change" />
         </fieldset>
         </form>
 

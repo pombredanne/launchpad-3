@@ -3,15 +3,18 @@
   <h4>Actions:</h4>
 
   <div class="portletBody">
-    <div class="portletContent even">
-
-      <img src="/++resource++edit.gif">
-      <a href="+edit">Edit Details</a>
-
-      <br/>
-
-      <img src="/++resource++download.png">
-      <a href="+export">Export Translations</a>
+    <div class="portletContent">
+      <ul>
+        <li class="edit" tal:condition="context/required:launchpad.Edit">
+          <a href="+edit">Edit Details</a>
+        </li>
+        <li class="edit" tal:condition="context/required:launchpad.Admin">
+          <a href="+admin">Admin Details</a>
+        </li>
+        <li class="download">
+          <a href="+export">Export Translations</a>
+        </li>
+      </ul>
 
     </div>
   </div>
