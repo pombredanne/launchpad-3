@@ -366,9 +366,10 @@ class POMsgSet(SQLBase):
         """See IPOMsgSet."""
         # XXX sabdfl 02/06/05 this is Malone bug #906
         fudgefactor = datetime.timedelta(0,1,0)
-        active = self.selection(pluralform)
-        if active and active.activesubmission:
-            active = active.activesubmission
+        selection = self.selection(pluralform)
+        active = None
+        if selection is not None and selection.activesubmission:
+            active = selection.activesubmission
         query = '''pomsgset = %s AND
                    pluralform = %s''' % sqlvalues(self.id, pluralform)
         if active:
