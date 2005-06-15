@@ -1,50 +1,50 @@
 /* Column definitions */
 
 #portal-columns {
-    width: 100% !important;
+  width: 100% !important;
 }
 
 #portal-column-one {
-    padding: 0 0 0 1em;
-    vertical-align: top;
-    width: 16em;
+  padding: 0 0 0 1em;
+  vertical-align: top;
+  width: 16em;
 }
 
 #portal-column-content {
-    vertical-align: top;
-    padding: 0 1em;
+  vertical-align: top;
+  padding: 0 1em;
 }
 
 #portal-column-two {
-    padding: 0 1em 0 0;
-    vertical-align: top;
-    width: 16em;
+  padding: 0 1em 0 0;
+  vertical-align: top;
+  width: 16em;
 }
 
 /* Launchpad classes */
 
 .rosettaTile {
-    display: block;
-    width: 40%;
-    padding: 1em;
-    margin: 1em;
-    background-color: #93bee2;
-    border: 1px solid #364970;
-    text-decoration: none;
+  display: block;
+  width: 40%;
+  padding: 1em;
+  margin: 1em;
+  background-color: #93bee2;
+  border: 1px solid #364970;
+  text-decoration: none;
 }
 
 .rosettaDashboardElement {
-    width: 30%;
-    float: left;
-    margin: 1em;
+  width: 30%;
+  float: left;
+  margin: 1em;
 }
 
 .interpolation {
-    background-color: #7090a0;
+  background-color: #7090a0;
 }
 
 .collapsed {
-    border-style: dashed none none none;
+  border-style: dashed none none none;
 }
 
 fieldset.message-strings {
@@ -52,16 +52,16 @@ fieldset.message-strings {
 }
 
 table.data input[type='text'] {
-    width: 100%;
+  width: 100%;
 }
 
 fieldset.message-strings input[type=checkbox] { width: auto !important; }
 
 fieldset.two-column {
-    width: 45%;
-    float: left;
-    display: block;
-    margin-right: 1em;
+  width: 45%;
+  float: left;
+  display: block;
+  margin-right: 1em;
 }
 
 
@@ -69,23 +69,15 @@ fieldset.two-column {
 /* Plone elements that should be changed */
 
 h1, h2, h3, h4, h5, h6 {
-    border-bottom: none;
+  border-bottom: none;
 }
 
 h3 {
-    list-style-image: url(/++resource++bullet.gif);
-}
-
-.listing td {
-    padding-bottom: 0.3em;
-}
-
-.listing th {
-    white-space: nowrap;
+  list-style-image: url(/++resource++bullet.gif);
 }
 
 label {
-    font-weight: bold;    
+  font-weight: bold;    
 }
 
 
@@ -93,94 +85,94 @@ label {
 #portal-personaltools a,
 #portal-breadcrumbs a,
 #portal-footer a {
-    text-decoration: none;
-    text-transform: lowercase;
-    font-size: 80%;
+  text-decoration: none;
+  text-transform: lowercase;
+  font-size: 80%;
 }
 
 #portal-logo {
-    background: url(/++resource++rosetta.png) no-repeat;
+  background: url(/++resource++rosetta.png) no-repeat;
 }
 
 #portal-personaltools {
-    clear: both;
+  clear: both;
 }
 
 #portal-personaltools .portalUser {
-    background: transparent url(/++resource++user.gif) center left no-repeat;
+  background: transparent url(/++resource++user.gif) center left no-repeat;
 }
 
 #portal-personaltools li {
-    background: transparent url(/++resource++linkOpaque.gif) center left no-repeat;
+  background: transparent url(/++resource++linkOpaque.gif) center left no-repeat;
 }
 
 .contentActions {
-    background-image: url(/++resource++arrowDownAlternative.gif);
+  background-image: url(/++resource++arrowDownAlternative.gif);
 }
 
 .portalMessage,
 .system-message,  /* These two last ones are reST error indicators */
 #error-handling {
-    background-image: url(/++resource++info_icon.gif);
+  background-image: url(/++resource++info_icon.gif);
 }
 
 .standalone,
 .documentEditable * .standalone {
-    background: #8fb3d9 url(/++resource++linkOpaque.gif) 9px 1px no-repeat;
+  background: #8fb3d9 url(/++resource++linkOpaque.gif) 9px 1px no-repeat;
 }
 
 .context,
 .documentEditable * .context {
-    background: transparent url(/++resource++linkTransparent.gif) 9px 1px no-repeat;
+  background: transparent url(/++resource++linkTransparent.gif) 9px 1px no-repeat;
 }
 
 .destructive,
 .documentEditable * .context {
-    background: #ffce7b url(/++resource++linkTransparent.gif) 9px 1px no-repeat;
+  background: #ffce7b url(/++resource++linkTransparent.gif) 9px 1px no-repeat;
 }
 
 input.searchButton {
-    background: White url(/++resource++search_icon.gif) 2px 1px no-repeat;
+  background: White url(/++resource++search_icon.gif) 2px 1px no-repeat;
 }
 
 .fieldRequired {
-    background: url(/++resource++required.gif) center left no-repeat;
+  background: url(/++resource++required.gif) center left no-repeat;
 }
 
 .link-parent {
-    background: transparent url(/++resource++arrowUp.gif) 4px 5px no-repeat;
+  background: transparent url(/++resource++arrowUp.gif) 4px 5px no-repeat;
 }
 
 .link-user {
-    background: transparent url(/++resource++user.gif) 0px 1px no-repeat;
+  background: transparent url(/++resource++user.gif) 0px 1px no-repeat;
 }
 
 .link-https {
-    background: transparent url(/++resource++lock_icon.gif) 0px 1px no-repeat;
+  background: transparent url(/++resource++lock_icon.gif) 0px 1px no-repeat;
 }
 
 .link-mailto {
-    background: transparent url(/++resource++mail_icon.gif) 0px 1px no-repeat;
+  background: transparent url(/++resource++mail_icon.gif) 0px 1px no-repeat;
 }
 
 .link-news {
-    background: transparent url(/++resource++topic_icon.gif) 0px 1px no-repeat;
+  background: transparent url(/++resource++topic_icon.gif) 0px 1px no-repeat;
 }
 
 .link-ftp {
-    background: transparent url(/++resource++file_icon.gif) 0px 1px no-repeat;
+  background: transparent url(/++resource++file_icon.gif) 0px 1px no-repeat;
 }
 
 .link-irc {
-    background: transparent url(/++resource++discussionitem_icon.gif) 0px 1px no-repeat;
+  background: transparent url(/++resource++discussionitem_icon.gif) 0px 1px no-repeat;
 }
 
 .link-callto {
-    background: transparent url(/++resource++phone_icon.gif) 0px 1px no-repeat;
+  background: transparent url(/++resource++phone_icon.gif) 0px 1px no-repeat;
 }
 
 .link-comment {
-    background: transparent url(/++resource++discussionitem_icon.gif) 0px 1px no-repeat;
+  background: transparent url(/++resource++discussionitem_icon.gif) 0px 1px no-repeat;
 }
 
 
@@ -188,89 +180,89 @@ input.searchButton {
 /* XXX Just setting a fixed width until the rest of the layout is in place */
 
 #portal-column-content {
-    width: 600px;
+  width: 600px;
 }
 
 #portal-columns {
-    margin: auto;
+  margin: auto;
 }
 
 /* Explanatory elements, just until the correct mechanisms are in place */
 
 .authenticated {
-    border: 2px dashed green;
-    padding: 2px;
-    margin: 2px;
+  border: 2px dashed green;
+  padding: 2px;
+  margin: 2px;
 }
 
 .anonymous {
-    border: 2px dashed red;
-    padding: 2px;
-    margin: 2px;
+  border: 2px dashed red;
+  padding: 2px;
+  margin: 2px;
 }
 
 /* highlight on hover in table */
 
 table.rowNavigation tr:hover {
-    background-color: #93bee2 !important;
-    cursor:pointer;
+  background-color: #93bee2 !important;
+  cursor:pointer;
 }
 table.rowNavigation>thead>tr:hover {
-    background-color: #dee7ec !important;
-    cursor: default;
+  background-color: #dee7ec !important;
+  cursor: default;
 }
 
 /* Display links as blocks, so we can make the whole row clickable */
 
 tr.rowLinkified a {
-    text-decoration: none;
-    display: block;
+  text-decoration: none;
+  display: block;
 }
 
 /* Overwride values from 'listing' class */
 .lpListing td {
-    padding: 0em 0em;
+  padding: 0em 0em;
 }
 
 .lpListing td a {
-    padding: 0em 1em;
+  padding: 0em 1em;
 }
 
 .lpListing a:hover {
-    text-decoration: none;
+  text-decoration: none;
 }
 
 
 /* batch navigation links */
 
 .batchnav tr:hover {
-    background-color: white;
+  background-color: white;
 }
 
 .batchnav td:hover {
-    background-color: white;
+  background-color: white;
 }
 
 .batchnav td {
-    text-align: center;
-    border-top: 1px solid #364970;
-    vertical-align: bottom;>
+  text-align: center;
+  border-top: 1px solid #364970;
+  vertical-align: bottom;>
 }
 
 /* Bug status markers */
 
 .bug-confirmed {
-    color: white;
-    background-color: red;
-    border: 1px solid #990000;
-    padding: 0 0.25em;
+  color: white;
+  background-color: red;
+  border: 1px solid #990000;
+  padding: 0 0.25em;
 }
 
 .bug-pending {
-    color: black;
-    background-color: yellow;
-    border: 1px dashed #999900;
-    padding: 0 0.25em;
+  color: black;
+  background-color: yellow;
+  border: 1px dashed #999900;
+  padding: 0 0.25em;
 }
 
 /* Bug Severity markers */
@@ -295,76 +287,75 @@ tr.rowLinkified a {
 /* Board-like comment CSS */
 
 .boardComment {
-    border: 1px solid #364970;
-    margin-bottom: 1.5em;
-    position: relative;
+  border: 1px solid #364970;
+  margin-bottom: 1.5em;
+  position: relative;
 }
 
 /* Fix for IE float bug */
 * html .boardComment {
-    float: left;
-    clear: both;
-    width: 99%;
+  float: left;
+  clear: both;
+  width: 99%;
 }
 
 .boardCommentDetails {
-    font-size: 80%;
-    border: 1px solid #364970;
-    border-style: none none solid none;
-    background-color: #f7f9fa;
-    padding: 0.5em 1em;
+  font-size: 80%;
+  border: 1px solid #364970;
+  border-style: none none solid none;
+  background-color: #f7f9fa;
+  padding: 0.5em 1em;
 }
 
 .boardCommentBody {
-    padding: 0.5em 1em;
+  padding: 0.5em 1em;
 }
 
 .boardCommentContent {
-    line-height: 1.5em;
+  line-height: 1.5em;
 }
 
 .boardCommentContent pre {
-    background-color: white;
-    border: none;
-    padding: 0;
-    margin: 0;
+  background-color: white;
+  border: none;
+  padding: 0;
+  margin: 0;
 }
 
 .boardCommentActions {
-    border: 1px solid #364970;
-    border-style: solid none none none;
-    background-color: #93bee2;
-    padding: 0.5em 1em 0 1em;
-    text-align: right;
+  border: 1px solid #364970;
+  border-style: solid none none none;
+  background-color: #93bee2;
+  padding: 0.5em 1em 0 1em;
+  text-align: right;
 }
 
 .boardCommentActions {
-    right: 1em:
+  right: 1em:
 }
 
 .boardCommentPortrait {
-    float: right; 
-    margin-bottom: 1em;
+  float: right; 
+  margin-bottom: 1em;
 }
 
 .portrait {
-    float: right;
-    clear: both;
+  float: right;
+  clear: both;
 }
 
 /* used to mark dummy data with div entity */
 .dummy {
-   background-color: #cccccc;
+  background-color: #cccccc;
 }
 
 /* Various custom list formats: */
 
-ul.search>li, li.search {
-    list-style-image: url(/++resource++search_icon.gif);
-}
-
 ul.add>li, li.add {
   list-style-image: url(/++resource++add.gif);
+}
+ul.download>li, li.download {
+  list-style-image: url(/++resource++download.png);
 }
 ul.edit>li, li.edit {
   list-style-image: url(/++resource++edit.gif);
@@ -372,48 +363,49 @@ ul.edit>li, li.edit {
 ul.info>li, li.info {
   list-style-image: url(/++resource++info_icon.gif);
 }
+ul.languages>li, li.languages {
+  list-style-image: url(/++resource++languages.gif);
+}
 ul.locked>li, li.locked {
   list-style-image: url(/++resource++lock_icon.gif);
 }
 ul.people>li, li.people {
   list-style-image: url(/++resource++user.gif);
 }
-
-ul.languages>li, li.languages {
-    list-style-image: url(/++resource++languages.gif);
+ul.products>li {
+  list-style-image: url(/++resource++product_icon.gif);
+}
+dl.products>dt:before {
+  content: url(/++resource++product_icon.gif);
+}
+ul.search>li, li.search {
+  list-style-image: url(/++resource++search_icon.gif);
 }
 
-ul.download>li, li.download {
-    list-style-image: url(/++resource++download.png);
-}
-
-
-/*
-Translation template stuff.
-*/
+/* Translation template stuff: */
 
 .messageSourceString {
-    padding: 0.5em 1em;
-    background-color: #93bee2;
-    border: 1px solid #364970;
+  padding: 0.5em 1em;
+  background-color: #93bee2;
+  border: 1px solid #364970;
 }
 
 .language-label {
-    float: left;
+  float: left;
 }
 
 /* Used for source and translator comments on the translation page. */
 
 .po-comment {
-    background-color: #efe;
-    border: thin solid #8a8;
-    margin: 0.5em 0;
-    padding: 0.5em;
+  background-color: #efe;
+  border: thin solid #8a8;
+  margin: 0.5em 0;
+  padding: 0.5em;
 }
 
 .po-message-special {
-    color: white;
-    background-color: #93bee2;
+  color: white;
+  background-color: #93bee2;
 }
 
 /* Used in default-error.pt so people actually notice exceptions */
@@ -518,23 +510,36 @@ pre {
   padding-left: 30px;
 } /* need a px value because the image has a pixel size */
 
-/* -- Make headings lay out properly: -- */
+/* -- Make headings lay out properly -- */
 
 h1 {
   margin-bottom: 0.5em;
   padding-right: 0;
 }
-h1, h2, h3, h4, h5, h6 {
-  padding-top: 0;
+
+/* Fix listing tables: */
+
+table.listing {
+  border: none;
 }
-
-/* -- Fix missing borders in tables: -- */
-
+table.listing, table.listing tbody {
+  border-bottom: 1px solid #8cacbb;
+}
+table.listing th, table.listing td {
+  padding: 0.125em 0.25em;
+}
+table.listing th {
+  white-space: nowrap;
+}
 table.listing>tr>td, table.listing>tbody>tr>td {
-  border: 1px dotted #8cacbb;
+  border: dotted #8cacbb;
+  border-width: 1px 0;
 }
 table.listing>thead>tr>th, table.listing>thead>tr>td {
   border: 1px solid #8cacbb;
+}
+table.listing>thead>tr>td {
+  border: none;
 }
 
 /* Not all of a <dt> should be bold: -- */
@@ -550,10 +555,6 @@ dt dfn {
 
 /* -- Other bugs: -- */
 
-.listing td {
-  padding: 0.125em 0.25em;
-}
-
 .formHelp, .formHelp:hover {
   color: #666666;
   cursor: inherit;
@@ -564,15 +565,15 @@ dt dfn {
 }
 
 li {
-    margin-bottom: 0 !important;
+  margin-bottom: 0 !important;
 }
 
 #portal-personaltools .portalUser {
-    background: transparent url(/++resource++user.gif)
+  background: transparent url(/++resource++user.gif)
 }
 
 .portlet li a {
-    text-decoration: none
+  text-decoration: none
 }
 
 /* === New design === */
@@ -623,17 +624,17 @@ thead {
   width: 48%;
 }
 .sidebar {
+  background-color: #f7f9fa;
+  border: 1px solid #8cacbb;
   clear: right;
   float: right;
   font-size: smaller;
+  margin-left: 1em;
   width: 25%;
   min-width: 8em;
   max-width: 50%;
-  border: 1px solid #8cacbb;
-  background-color: #f7f9fa;
   padding: 0.25em 0.5em;
 }
-
 .debug {
   background-color: #ffddee;
 }
@@ -676,10 +677,14 @@ h3, h4, h5, h6 {
 .page-header h2 {
   clear: none;
   margin: 0;
+  text-transform: none;
   font-size: 1.5em;
 }
 h3, h4, h5, h6 {
 	margin-bottom: 0;
+}
+ul {
+  margin-left: 24px;
 }
 table {
 	border-collapse: collapse;
@@ -769,27 +774,27 @@ address.app {
 }
 
 .page-header-ribbon {
-    /* Bar with personalized menu (user preferences, favorites etc) */
-    background-color: #dee7ec;
-    border-top-color: #8cacbb;
-    border-top-style: solid;
-    border-top-width: 1px;
-    border-bottom-color: #8cacbb;
-    border-bottom-style: solid;
-    border-bottom-width: 1px;
-    line-height: 1.3em;
-    color: Black;
-    padding: 0em 1em 0em 0em;
-    margin: 0;
-    list-style: none;
+  /* Bar with personalized menu (user preferences, favorites etc) */
+  background-color: #dee7ec;
+  border-top-color: #8cacbb;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-bottom-color: #8cacbb;
+  border-bottom-style: solid;
+  border-bottom-width: 1px;
+  line-height: 1.3em;
+  color: Black;
+  padding: 0em 1em 0em 0em;
+  margin: 0;
+  list-style: none;
 }
 
 .page-header-ribbon address {
-    width: 75%;
+  width: 75%;
 }
 
 .launchpad-apps {
-    float: right;
+  float: right;
 }
 .launchpad-apps td {
 }
@@ -808,45 +813,36 @@ address.app {
 }
 
 td.plain {
-    border: 1px dotted #8cacbb;
+  border: 1px dotted #8cacbb;
 }
 td.plain:hover {
-    background-color: #dee7ec;
-    color: #436976;
-    border: 1px solid #8cacbb;
+  background-color: #dee7ec;
+  color: #436976;
+  border: 1px solid #8cacbb;
 }
 td.selected {
-    background-color: #dee7ec;
-    color: #436976;
-    border: 1px solid #8cacbb;
-}
-
-/* -- Products: -- */
-
-ul.products>li {
-  list-style-image: url(/++resource++product_icon.gif);
-}
-dl.products>dt:before {
-  content: url(/++resource++product_icon.gif);
+  background-color: #dee7ec;
+  color: #436976;
+  border: 1px solid #8cacbb;
 }
 
 /* from richard braine for the series source forms */
 /* otherwise inputs don't disappear along with surrounding layer */
 input {
-    visibility:inherit
+  visibility:inherit
 }
 /* this lines up text inputs so they don't look a mess */
 .textinput {
-    position: absolute; 
-    left: 250px;
+  position: absolute; 
+  left: 250px;
 } 
 /* radios had 1px left and right borders - don't know if intended
-   but looked shit imo */
+  but looked shit imo */
 .radios {
-    border:none;
+  border:none;
 }
 /* this style was making the text '(Required)' invisible:
    same colour as background */
 .fieldRequired {
-    color: #999999
+  color: #999999
 }

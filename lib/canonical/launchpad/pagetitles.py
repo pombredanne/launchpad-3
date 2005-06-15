@@ -538,14 +538,14 @@ team_editemail = ContextDisplayName('Edit %s Contact Email Address')
 def team_editproposed(context, view):
     return '%s Proposed Members' % context.team.browsername
 
-team_index = ContextBrowsername('Team %s Information')
+team_index = ContextBrowsername('"%s" team in Launchpad')
 
 team_join = ContextBrowsername('Join %s')
 
 team_leave = ContextBrowsername('Leave %s')
 
 def team_members(context, view):
-    return 'Members of %s' % context.team.browsername
+    return '"%s" members' % context.team.browsername
 
 def teammembership_index(context, view):
     return '%s: Member of %s' % (
