@@ -117,6 +117,9 @@ class ProductSeries(SQLBase):
         self.datesyncapproved = UTC_NOW
         self.importstatus = ImportStatus.SYNCING
 
+    def autoTestFailed(self):
+        """Has the series source failed automatic testing by roomba?"""
+        return self.importstatus == ImportStatus.TESTFAILED
 
 class ProductSeriesSet:
 
