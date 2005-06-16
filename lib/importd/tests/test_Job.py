@@ -976,7 +976,6 @@ class TestImpordDBuild(ZopelessTestCase):
         self.series().datestarted = None
         self.txnManager().commit()
         self.implementor().startBuild()
-        self.txnManager().abort() # discard uncommitted changes
         # spiv who is reviewing this suggested this XXX abstraction
         # violation. RBC 20050608
         from canonical.database.sqlbase import SQLBase
