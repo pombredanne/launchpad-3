@@ -167,14 +167,11 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
                description=None, rfc822msgid=None, summary=None,
                datecreated=None, title=None, private=False,
                owner=None):
-    """Create a bug.
+    """Create a bug and return it.
 
     Things to note when using this factory:
 
       * addview is not used for anything in this factory
-
-      * one of either distribution or product must be provided. If neither
-        are provided, a ValueError will be raised
 
       * if no description is passed, the comment will be used as the
         description
@@ -182,23 +179,35 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
       * if summary is not passed then the summary will be the
         first sentence of the description
 
-      * the appropriate bug task (exactly one, from this function) and
-        subscriptions will be added
+      * the submitter will be subscribed to the bug
 
-      * the return value is an IBugAddForm to play nicely with the Z3
-        addform machinery
+      * if either product or distribution is specified, an appropiate
+        bug task will be created
     """
-
     # make sure that the factory has been passed enough information
-    if not (distribution or product):
-        raise ValueError('Must pass BugFactory a distribution or a product')
     if not (comment or description or rfc822msgid):
         raise ValueError(
             'BugFactory requires a comment, rfc822msgid or description')
 
+    # create the bug comment if one was given
+    if comment:
+        if not rfc822msgid:
+            rfc822msgid = make_msgid('malonedeb')
+
+    # retrieve or create the message in the db
+    msg_set = MessageSet()
+    try:
+        msg = msg_set.get(rfc822msgid=rfc822msgid)
+    except NotFoundError:
+        msg = Message(
+            title=title, distribution=distribution,
+            rfc822msgid=rfc822msgid, owner=owner)
+        chunk = MessageChunk(
+                messageID=msg.id, sequence=1, content=comment, blobID=None)
+
     # extract the details needed to create the bug and optional msg
     if not description:
-        description = comment
+        description = msg.contents
 
     # if we have been passed only a description, then we set the summary to
     # be the first paragraph of it, up to 320 characters long
@@ -218,28 +227,12 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
     BugSubscription(
         person=owner.id, bug=bug.id, subscription=dbschema.BugSubscription.CC)
 
-    # create the bug comment if one was given
-    if comment:
-        if not rfc822msgid:
-            rfc822msgid = make_msgid('malonedeb')
-
-    # retrieve or create the message in the db
-    msg_set = MessageSet()
-    try:
-        msg = msg_set.get(rfc822msgid=rfc822msgid)
-    except NotFoundError:
-        msg = Message(
-            title=title, distribution=distribution,
-            rfc822msgid=rfc822msgid, owner=owner)
-        chunk = MessageChunk(
-                messageID=msg.id, sequence=1, content=comment, blobID=None)
-
     # link the bug to the message
     bugmsg = BugMessage(bugID=bug.id, messageID=msg.id)
 
     # create the task on a product if one was passed
     if product:
-        BugTask(bug=bug, product=product.id, owner=owner.id)
+        BugTask(bug=bug, product=product, owner=owner)
 
     # create the task on a source package name if one was passed
     if distribution:
@@ -248,23 +241,9 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
             distribution=distribution,
             sourcepackagename=sourcepackagename,
             binarypackagename=binarypackagename,
-            owner=owner.id)
+            owner=owner)
 
-    class BugAdded:
-        implements(IBugAddForm)
-        def __init__(self, **kw):
-            for attr, val in kw.items():
-                setattr(self, attr, val)
-
-    bug_added = BugAdded(
-        distribution=distribution, sourcepackagename=sourcepackagename,
-        binarypackagename=binarypackagename, product=product,
-        comment=comment, description=description, rfc822msgid=rfc822msgid,
-        summary=summary, datecreated=datecreated, title=title,
-        private=private, owner=owner)
-    bug_added.id = bug.id
-
-    return bug_added
+    return bug
 
 
 class BugSet(BugSetBase):

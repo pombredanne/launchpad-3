@@ -1,4 +1,10 @@
 __metaclass__ = object
+__all__ = ['BugCreationConstraintsError',
+           'IBug',
+           'IBugSet',
+           'IBugDelta',
+           'IBugAddForm']
+
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -12,6 +18,14 @@ from canonical.lp import dbschema
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.bug import non_duplicate_bug
 from canonical.launchpad.fields import Title, Summary
+
+
+class BugCreationConstraintsError(Exception):
+    """Raised when a bug is created with not all constraints satisfied.
+
+    Currently the only constraint is that it should have at least one
+    bug task.
+    """
 
 
 class IBug(Interface):

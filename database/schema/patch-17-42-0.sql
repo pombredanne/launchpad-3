@@ -70,3 +70,5 @@ ALTER TABLE Product ADD COLUMN calendar integer;
 ALTER TABLE Product
     ADD CONSTRAINT "product_calendar_fk" FOREIGN KEY (calendar) REFERENCES Calendar(id);
 CREATE INDEX product_calendar_idx ON Product (calendar);
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (17, 42, 0);

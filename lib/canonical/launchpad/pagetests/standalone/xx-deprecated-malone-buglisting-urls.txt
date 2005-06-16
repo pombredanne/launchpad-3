@@ -1,0 +1,38 @@
+We've recently changed the URL paths in Malone for viewing bugs on
+things.
+
+The new URL path for bugs on a distro is:
+
+    /distros/$distro.name/+bugs
+
+The old URL path for distro bugs still works, for now:
+
+  >>> print http(r"""
+  ... GET /malone/distros/debian HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+The URL path for bugs on a distro release is:
+
+    /distros/$distro.name/$distrorelease.name/+bugs
+
+The old URL path for distro release bugs still works, for now:
+
+  >>> print http(r"""
+  ... GET /malone/distros/debian/sid HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+The URL path for bugs on an upstream product is:
+
+    /products/$product.name/+bugs
+
+The old URL path for upstream still works though, for now:
+
+  >>> print http(r"""
+  ... GET /malone/products/firefox HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...

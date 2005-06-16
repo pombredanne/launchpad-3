@@ -19,6 +19,8 @@
         <key name="dbuser" datatype="string" default="launchpad" />
         <key name="root_url" datatype="canonical.config.urlbase"
             required="yes" />
+        <key name="errors_address" datatype="string" required="yes" />
+        <key name="bugs_domain" datatype="string" required="yes" />
     </sectiontype>
 
     <sectiontype name="librarian_server">
@@ -74,26 +76,46 @@
             default="25" />
     </sectiontype>
 
-    <sectiontype name="gpghandler">
-        <key name="home" datatype="existing-dirpath" required="yes" />
 
-        <key name="host" datatype="ipaddr-or-hostname" required="yes">
+    <sectiontype name="gpghandler">
+        <description>
+            This utility is resposible for GPG operations like:
+        sign/verify and encrypt/decrypt. it needs a "home" to allocate
+        the runtime build configuration file and keyring and an
+        addresss, "host:port",  pointing a reliable keyserver.
+        </description>    
+        <key name="home" datatype="existing-dirpath" required="yes">
             <description>
-                Host running the key server
+                Current GNUPGHOME directory,  a configuration file will be
+                allocated there according our aims and the current keyring
+                will be stored there. 	      
             </description>
         </key>
-
+        <key name="host" datatype="ipaddr-or-hostname" required="yes">
+            <description>
+                Host running PKS-like (SKS) keyserver Application.
+            </description>
+        </key>
         <key name="port" datatype="port-number" required="yes">
             <description>
-                Port number on Host to access the key server
+                Port number on Host to access the keyserver
             </description>
         </key>
     </sectiontype>
 
     <sectiontype name="zeca">
+        <description>
+            Stubed Key server for test proposes, it's able to server
+        in SKS fortmat, a restricted set of keys. (fixed address at
+        localhost:11371) 
+        </description>
         <!-- Not 'existing-directory' because the test runner needs to
             create it  as librarian one-->
-        <key name="root" datatype="existing-dirpath" required="yes" />
+        <key name="root" datatype="string" required="no">
+            <description>
+                Directory to be created to store the pre-installed key-files
+            </description>
+	</key>
     </sectiontype>
 
 

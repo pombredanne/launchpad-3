@@ -61,7 +61,7 @@ def getTxnManager():
     # -- David Allouche 2005-02-16
     from canonical.database.sqlbase import ZopelessTransactionManager
     if ZopelessTransactionManager._installed is None:
-        return initZopeless()
+        return initZopeless(implicitBegin=False)
     else:
         return ZopelessTransactionManager._installed
 
@@ -76,16 +76,11 @@ def jobsFromDB(slave_home, archive_mirror_dir, importstatus):
                 "Tried to get import jobs with status %r" % importstatus)
 
     # get a new transaction
-    getTxnManager().abort()
-
-    # XXX: Awful hack -- launchpad updated the database, so we need to
-    #      reset our connection so that we can see it.
-    #        - Andrew Bennetts, 2005-01-27
-    #      Copied that from buildbot to fix reloading.
-    #        - David Alouche, 2005-01-27
+    # spiv who is reviewing this suggested this XXX abstraction
+    # violation. RBC 20050608
     from canonical.database.sqlbase import SQLBase
-    SQLBase._connection.rollback()
-    SQLBase._connection.begin()
+    if SQLBase._connection is not None:
+        getTxnManager().abort()
     getTxnManager().begin()
 
     jobs = []
@@ -100,6 +95,7 @@ def jobsFromDB(slave_home, archive_mirror_dir, importstatus):
         job.slave_home = slave_home
         job.archive_mirror_dir = archive_mirror_dir
         jobs.append(job)
+    getTxnManager().abort()
     return jobs
 
 def jobsBuilders(jobs, slavenames, runner_path=None, autotest=False):
@@ -239,18 +235,18 @@ class ImportDBImplementor(object):
 
     def getSeries(self):
         """return the sourcesource our job is for"""
-        getTxnManager() # init zopeless if needed
         return ProductSeries.get(self.seriesID)
 
     def startBuild(self):
+        getTxnManager().begin()
         self.setDateStarted()
         getTxnManager().commit()
 
     def setDateStarted(self):
-        #datetime.utcnow() truncates to the day
         self.getSeries().datestarted = UTC_NOW
-
+        
     def buildFinished(self, successful):
+        getTxnManager().begin()
         self.setDateFinished()
         if self.getSeries().importstatus == ImportStatus.TESTING:
             self.setAutotested(successful)
@@ -259,7 +255,6 @@ class ImportDBImplementor(object):
         getTxnManager().commit()
 
     def setDateFinished(self):
-        #datetime.utcnow() truncates to the day
         self.getSeries().datefinished = UTC_NOW
 
     def setAutotested(self, successful):

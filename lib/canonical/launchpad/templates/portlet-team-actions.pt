@@ -1,28 +1,20 @@
-<div class="portlet">
-
-    <h4>Actions:</h4>
-
-    <div class="portletBody">
-
-        <div class="portletContent even">
-
-        <tal:block tal:define="team_url string:/people/${view/team/name}">
-
-        <img src="/++resource++edit.gif">
-        <a tal:attributes="href string:${team_url}/+edit">Edit Team Details</a><br />
-        <img src="/++resource++info_icon.gif">
-        <a tal:attributes="href string:${team_url}/+editemail">Edit Contact
-          Email</a><br />
-        <img src="/++resource++info_icon.gif">
-        <a tal:attributes="href string:${team_url}/+members">Members</a><br />
-        <img src="/++resource++info_icon.gif">
-        <a tal:attributes="href string:${team_url}/+translations">Translations</a><br />
-        <img src="/++resource++info_icon.gif">
-        <a tal:attributes="href string:${team_url}/+packages">Packages</a><br />
-        <img src="/++resource++info_icon.gif">
-        <a tal:attributes="href string:${team_url}/+bounties">Bounties</a><br />
-
-        </tal:block>
-        </div>
-    </div>
-</div>
+<ul tal:define="team_url string:/people/${view/team/name}">
+  <li class="edit">
+    <a tal:attributes="href string:${team_url}/+edit">Edit Team Details</a>
+  </li>
+  <li class="info">
+    <a tal:attributes="href string:${team_url}/+editemail">Edit Contact Address</a>
+  </li>
+  <li class="info">
+    <a tal:attributes="href string:${team_url}/+members">Members</a>
+  </li>
+  <li class="info">
+    <a tal:attributes="href string:${team_url}/+translations">Translations</a>
+  </li>
+  <li class="info">
+    <a tal:attributes="href string:${team_url}/+packages">Packages</a>
+  </li>
+  <li class="info">
+    <a tal:attributes="href string:${team_url}/+bounties">Bounties</a>
+  </li>
+</ul>

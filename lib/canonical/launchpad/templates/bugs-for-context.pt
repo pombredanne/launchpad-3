@@ -11,7 +11,9 @@
 
   <div metal:use-macro="context/@@bugtask_search_listing/buglisting" />
     <p><img src="/++resource++add.gif" alt="+">
-    <a href="+filebug" tal:content="string:File a bug on ${context/context_title}"></a><br />
+    <a href="#"
+       tal:content="string:File a bug on ${context/context_title}"
+       tal:attributes="href string:${context/context/fmt:url}/+filebug"></a><br />
     </p>
   <div>
  </div>

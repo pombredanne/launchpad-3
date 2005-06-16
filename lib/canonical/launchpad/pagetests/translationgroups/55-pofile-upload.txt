@@ -2,7 +2,7 @@
 First make sure we can see the page.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+edit HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
@@ -10,13 +10,13 @@ First make sure we can see the page.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-          <h1>Upload a new PO file for Afrikaans</h1>
+          <h2>Afrikaans (af) translation of evolution-2.2 in ubuntu hoary package "evolution"</h2>
   ...
 
 Now let's upload one that is published.
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+edit HTTP/1.1
+  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
   ... Accept-Language: en-us,en;q=0.7,af;q=0.3
   ... Content-Length: 1452
   ... Content-Type: multipart/form-data; boundary=---------------------------107090301610607307082078743785
@@ -74,14 +74,14 @@ Now let's upload one that is published.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-          <div class="portalMessage">Thank you for your upload. The PO file content will appear in Rosetta in a few minutes.</div>
+          <div class="portalMessage">Thank you for your upload. The translation content will appear in Rosetta in a few minutes.</div>
   <BLANKLINE>
   ...
 
 And one that is not published.
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+edit HTTP/1.1
+  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
   ... Accept-Language: en-us,en;q=0.7,af;q=0.3
   ... Content-Length: 1352
   ... Content-Type: multipart/form-data; boundary=---------------------------14904033691485035791236536155
@@ -135,8 +135,8 @@ And one that is not published.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-          <h1>Upload a new PO file for Afrikaans</h1>
+          <h1>Upload a new version of Afrikaans (af) translation of evolution-2.2 in ubuntu hoary package "evolution"</h1>
   <BLANKLINE>
-          <div class="portalMessage">Thank you for your upload. The PO file content will appear in Rosetta in a few minutes.</div>
+          <div class="portalMessage">Thank you for your upload. The translation content will appear in Rosetta in a few minutes.</div>
   <BLANKLINE>
   ...

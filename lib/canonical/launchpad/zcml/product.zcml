@@ -29,7 +29,7 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
         layer="canonical.launchpad.layers.MaloneLayer"
-        name="+malone-index" />
+        name="+bugs" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
@@ -77,16 +77,6 @@
             name="+bounties"
             template="../templates/related-bounties.pt"
             lp:url="/products/$Product.name/+bounties/" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProduct"
-        class="canonical.launchpad.browser.ProductBugsView"
-        permission="zope.Public" >
-        <browser:page
-            name="+malone-index"
-            template="../templates/product-bugs.pt"
-            lp:url="/malone/products/$Product.name/" />
     </browser:pages>
 
     <browser:pages

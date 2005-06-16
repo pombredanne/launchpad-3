@@ -24,7 +24,7 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
 
     language = Attribute("Language of this PO file.")
 
-    title = Attribute("The PO file's title.")
+    title = Attribute("A title for this PO file.")
 
     description = Attribute("PO file description.")
 
@@ -146,7 +146,7 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
         Return the message sets using 'slice' or all of them if slice is None.
         """
 
-    def getPOTMsgSetUnTranslated(slice=None):
+    def getPOTMsgSetUntranslated(slice=None):
         """Get pot message sets that are untranslated in this PO file.
 
         'slice' is a slice object that selects a subset of POTMsgSets.

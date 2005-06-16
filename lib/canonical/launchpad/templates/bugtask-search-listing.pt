@@ -22,7 +22,7 @@
         Bug id or text:
       </label>
       <tal:searchtext content="structure view/searchtext_widget" />
-      <input type="submit" name="search" value="Search Again" />
+      <input type="submit" name="search" value="Search" />
     <input
         tal:condition="not:request/advanced|nothing"
         type="submit" name="advanced" value="Advanced" />
@@ -36,7 +36,7 @@
       <thead>
         <tr class="results">
           <td
-            colspan="0"
+            tal:attributes="colspan python: len(listing_columns) + int(mass_edit)"
             tal:define="startno task_batch/startNumber;
                         endno task_batch/endNumber;
                         total task_batch/total">
@@ -284,7 +284,7 @@
         </div>
 
         <div class="form actions">
-            <input type="submit" name="search" value="Search Again" />
+            <input type="submit" name="search" value="Search" />
         </div>
 
     </tal:block>

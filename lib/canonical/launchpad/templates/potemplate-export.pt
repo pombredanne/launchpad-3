@@ -1,0 +1,105 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>Export Translations</h1>
+
+    <tal:thing content="view/processForm" />
+
+    <tal:block condition="view/errorMessage">
+        <p class="portalMessage" tal:content="view/errorMessage">
+        Blah blah.
+        </p>
+    </tal:block>
+
+    <tal:block condition="view/formProcessed">
+        <p>
+        Your export request has been received. The results should arrive by
+        email shortly.
+        </p>
+    </tal:block>
+
+    <tal:block condition="not: view/formProcessed">
+
+        <tal:comment replace="nothing">
+            This condition will become unneccessary once we can guarantee that
+            all logged in users have a preferred email address.
+        </tal:comment>
+
+        <tal:block condition="not: view/user/preferredemail">
+            <p>
+            In order to be able to export a PO file, you must first choose a
+            preferred email address. This is so that we can send you a
+            notification when the export is complete.
+            </p>
+
+            <p>
+            <a tal:attributes="href
+            string:/people/${view/user/name}/+emails">Configure email
+            addresses</a>
+            </p>
+        </tal:block>
+
+        <tal:block condition="view/user/preferredemail">
+            <p>
+            The files you request will be exported shortly, and a notification
+            will be sent to your email address <strong
+            tal:content="view/user/preferredemail/email">user@domain</strong>.
+            </p>
+
+            <h2>Select Files for Exporting</h2>
+
+            <form action="" method="POST" enctype="multipart/form-data">
+
+                <div class="field">
+                    <label>
+                        <input name="what" type="radio" value="all"
+                            checked="checked">
+                        Everything
+                    </label>
+                </div>
+
+                <div class="field">
+                    <label>
+                        <input name="what" type="radio" value="some" />
+                        Selected files
+                    </label>
+
+                    <div style="margin-left: 2em">
+                        <div class="field">
+                            <label>
+                                <input type="checkbox" name="potemplate" />
+                                The PO template
+                            </label>
+                        </div>
+                        <tal:thing repeat="pofile view/pofiles">
+                            <div class="field">
+                                <label>
+                                    <input type="checkbox"
+                                        tal:attributes="name pofile/value" />
+                                    <span tal:content="pofile/browsername">Spanish</span>
+                                </label>
+                            </div>
+                        </tal:thing>
+                    </div>
+                </div>
+
+                <div class="formControls">
+                    <input type="submit" value="Request Export" />
+                </div>
+
+            </form>
+
+        </tal:block>
+
+    </tal:block>
+
+</div>
+
+</body>
+</html>

@@ -83,6 +83,7 @@ class Taxi(object):
         :type description: str
         """
         self._runOnlyOnce()
+        self.txnManager.begin()
 
         archives = broker.Archives()
         archive = archives[version.archive.name]
@@ -112,11 +113,11 @@ class Taxi(object):
             db_version._sqlobject_branch.description = description
         if not db_version._sqlobject_branch.title:
             db_version._sqlobject_branch.title = title
-        # XXX should we really commit here? -- David Allouche 2005-02-08
         self.txnManager.commit()
 
         # iterate over the new ones (start on the lowest one missing
         # from the destination archive).
+        self.txnManager.begin()
         mirror_archive = self.findArchiveByLocation(mirror.url)
         mirror_ver = self.mirrorVersion(mirror_archive, version)
         if mirror_ver.exists():
@@ -138,6 +139,7 @@ class Taxi(object):
             self.logger.warning("Copying new revision %s", revision)
             self.doRevision(revision, db_version, db_archive)
             self.txnManager.commit()
+            self.txnManager.begin()
         self.logger.warning("Refreshing %d revisions." % len(old_revisions))
         for revision in old_revisions:
             self.logger.warning("Refreshing revision %s", revision)

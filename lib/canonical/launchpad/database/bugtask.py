@@ -281,27 +281,27 @@ class BugTaskSet:
 
         return bugtasks
 
-    def createTask(self, bug, product=None, distribution=None,
+    def createTask(self, bug, owner, product=None, distribution=None,
                    distrorelease=None, sourcepackagename=None,
-                   binarypackagename=None, status=None, priority=None,
-                   severity=None, assignee=None, owner=None, milestone=None):
+                   binarypackagename=None,
+                   status=IBugTask['status'].default,
+                   priority=IBugTask['priority'].default,
+                   severity=IBugTask['severity'].default,
+                   assignee=None, milestone=None):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
-        bugtask_args = {
-            'bug' : getattr(bug, 'id', None),
-            'product' : getattr(product, 'id', None),
-            'distribution' : getattr(distribution, 'id', None),
-            'distrorelease' : getattr(distrorelease, 'id', None),
-            'sourcepackagename' : getattr(sourcepackagename, 'id', None),
-            'binarypackagename' : getattr(binarypackagename, 'id', None),
-            'status' : status,
-            'priority' : priority,
-            'severity' : severity,
-            'assignee' : getattr(assignee, 'id', None),
-            'owner' : getattr(owner, 'id', None),
-            'milestone' : getattr(milestone, 'id', None)
-            }
-
-        return BugTask(**bugtask_args)
+        return BugTask(
+            bug=bug,
+            product=product,
+            distribution=distribution,
+            distrorelease=distrorelease,
+            sourcepackagename=sourcepackagename,
+            binarypackagename=binarypackagename,
+            status=status,
+            priority=priority,
+            severity=severity,
+            assignee=assignee,
+            owner=owner,
+            milestone=milestone)
 
     def assignedBugTasks(self, person, minseverity=None, minpriority=None,
                          showclosed=False, orderBy=None, user=None):

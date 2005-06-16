@@ -289,7 +289,6 @@ class NewAccountView(AddView):
         self.request = request
         AddView.__init__(self, context, request)
         self._nextURL = '.'
-        self.passwordMismatch = False
 
     def nextURL(self):
         return self._nextURL
@@ -302,18 +301,6 @@ class NewAccountView(AddView):
         kw = {}
         for key, value in data.items():
             kw[str(key)] = value
-
-        errors = []
-
-        password = kw['password']
-        # We don't want to pass password2 to PersonSet.new().
-        password2 = kw.pop('password2')
-        if password2 != password:
-            self.passwordMismatch = True
-            errors.append('Password mismatch')
-
-        if errors:
-            raise WidgetsError(errors)
 
         kw['name'] = generate_nick(self.context.email)
         person = getUtility(IPersonSet).newPerson(**kw)
@@ -329,7 +316,7 @@ class NewAccountView(AddView):
 
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email.email)
-        if principal is not None and principal.validate(password):
+        if principal is not None and principal.validate(kw['password']):
             logInPerson(self.request, principal, email.email)
         return True
 

@@ -8,6 +8,7 @@ import sets
 from warnings import warn
 
 from zope.interface import implements
+from zope.exceptions import NotFoundError
 
 from sqlobject import ForeignKey, StringCol, MultipleJoin, DateTimeCol
 from canonical.database.constants import UTC_NOW
@@ -88,7 +89,7 @@ class ProductSeries(SQLBase):
         for release in self.releases:
             if release.version==version:
                 return release
-        raise KeyError, version
+        raise NotFoundError(version)
 
     def getPackage(self, distrorelease):
         for pkg in self.sourcepackages:

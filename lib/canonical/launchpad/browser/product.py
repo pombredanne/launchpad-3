@@ -282,7 +282,7 @@ class ProductFileBugView(SQLObjectAddView):
         # Try to avoid passing **kw, it is unreadable
         # Pass the keyword explicitly ...
         bug = BugFactory(**kw)
-        notify(SQLObjectCreatedEvent(bug, self.request))
+        notify(SQLObjectCreatedEvent(bug))
         self.addedBug = bug
         return bug
 

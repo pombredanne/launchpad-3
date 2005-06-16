@@ -21,11 +21,6 @@
 
         </div>
 
-        <div metal:fill-slot="extra_top" tal:condition="view/passwordMismatch">
-          <p class="portalMessage" class="portalMessage">Your password and 
-          confirmation did not match. Please try again.</p>
-        </div>
-
   </div>
 
   </div>

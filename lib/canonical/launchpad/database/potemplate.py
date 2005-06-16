@@ -445,8 +445,6 @@ class POTemplate(SQLBase, RosettaStats):
 
         return POFile(potemplate=self,
                       language=language,
-                      title='Rosetta %(languagename)s translation of %(origin)s'
-                            % data,
                       topcomment=standardPOFileTopComment % data,
                       header=standardPOFileHeader % data,
                       fuzzyheader=True,

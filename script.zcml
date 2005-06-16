@@ -16,5 +16,5 @@
     <includeOverrides file="override-configure-normal.zcml" />
 
     <!-- Provide local overrides of standard configurations-->
-    <includeOverrides file="overrides.zcml" />
+    <includeOverrides file="override-configure-normal.zcml" />
 </configure>

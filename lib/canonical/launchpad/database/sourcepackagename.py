@@ -42,7 +42,7 @@ class SourcePackageNameSet:
         try:
             return SourcePackageName.byName(name)
         except SQLObjectNotFound:
-            raise KeyError, name
+            raise NotFoundError(name)
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.ISourcePackageNameSet."""

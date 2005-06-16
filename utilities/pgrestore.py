@@ -4,18 +4,61 @@ Restore a full database dump. This script should become unnecessary
 when we are running PostgreSQL 8 as it will correctly order its dumps.
 """
 
-import sys, os, tempfile, subprocess
+import sys, os, tempfile
 from optparse import OptionParser
+from subprocess import Popen, PIPE
+from signal import SIGTERM
+
+class DumpFile(object):
+    """File-like object wrapping a normal or compressed file on disk"""
+    process = None
+
+    def __init__(self, dumpname):
+
+        if dumpname.endswith('.bz2'):
+            self.process = Popen(
+                    ["bunzip2", "-c", dumpname], stdin=PIPE, stdout=PIPE
+                    )
+        elif dumpname.endswith('.gz'):
+            self.process = Popen(
+                    ["gunzip", "-c", dumpname], stdin=PIPE, stdout=PIPE
+                    )
+        else:
+            self.out = open(dumpname, 'r')
+
+        if self.process is not None:
+            self.process.stdin.close()
+            self.out = self.process.stdout
+
+    def read(self, bytes=None):
+        return self.out.read(bytes)
+
+    def close(self):
+        if self.process is None:
+            return self.out.close()
+
+        if self.process.poll() is not None:
+            if self.process.returncode != 0:
+                print >> sys.stderr, "ERROR: Uncompressor returned %d" % (
+                        self.process.returncode
+                        )
+            return
+
+        os.kill(self.process.pid, SIGTERM)
+
+    def fileno(self):
+        return self.out.fileno()
+
 
 def generate_order(dumpname):
     """Generate a correctly order dump listing"""
    
-    cmd = subprocess.Popen(
-            'pg_restore -l %s' % dumpname, shell=True, stdout=subprocess.PIPE
-            )
+    dump_input = DumpFile(dumpname)
+    cmd = Popen('pg_restore -l', shell=True, stdout=PIPE, stdin=dump_input)
     (stdout, stderr) = cmd.communicate()
     if cmd.returncode != 0:
         raise RuntimeError('pg_restore returned %d' % rv)
+    dump_input.close()
 
     full_listing = [l for l in stdout.split('\n') if l.strip()]
 
@@ -23,8 +66,8 @@ def generate_order(dumpname):
 
     return '\n'.join(full_listing)
 
-def listing_cmp(a, b):
 
+def listing_cmp(a, b):
     if a.startswith(';'):
         atype = ';'
     else:
@@ -59,6 +102,7 @@ def listing_cmp(a, b):
     # at the moment. Might want a default value though instead?
     return cmp(scores[atype], scores[btype])
 
+
 def createdb(options):
     args = ['createdb', '--encoding=UNICODE']
 
@@ -73,11 +117,9 @@ def createdb(options):
     if options.verbose:
         cmd = ' '.join(args)
         print >> sys.stderr, 'Running %s' % cmd
-        createdb = subprocess.Popen(args)
+        createdb = Popen(args)
     else:
-        createdb = subprocess.Popen(
-                args, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-                )
+        createdb = Popen(args, stdout=PIPE, stderr=PIPE)
 
     (out, err) = createdb.communicate()
 
@@ -120,7 +162,7 @@ if __name__ == "__main__":
         parser.error("Too many arguments")
 
     if len(args) == 0:
-        parser.error("Must specify dump file name. Use '-' to specify STDOUT")
+        parser.error("Must specify dump file name.")
 
     dumpname = args[0]
 
@@ -153,15 +195,14 @@ if __name__ == "__main__":
         if options.verbose:
             pg_restore_args.append("--verbose")
 
-        if dumpname != '-':
-            pg_restore_args.append(dumpname)
+        dump_input = DumpFile(dumpname)
 
         if options.verbose:
             cmd = ' '.join(pg_restore_args)
             print >> sys.stderr, "Running %s" % cmd
-            rest = subprocess.Popen(pg_restore_args)
+            rest = Popen(pg_restore_args, stdin=dump_input)
         else:
-            rest = subprocess.Popen(pg_restore_args, stderr=subprocess.PIPE)
+            rest = Popen(pg_restore_args, stderr=PIPE, stdin=dump_input)
 
         (out,err) = rest.communicate()
         if rest.returncode != 0:

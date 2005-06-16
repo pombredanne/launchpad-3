@@ -143,14 +143,13 @@
                 tal:attributes="href string:${context/bug/@@absolute_url}/+edit">Edit</a>]
           </div>
 
-          <div class="actions">
+          <div class="actions" tal:condition="context/required:launchpad.Edit">
             <input
               type="submit"
               name="UPDATE_SUBMIT"
               value="Save Changes"
               i18n:attributes="value submit-button" />
           </div>
-          <br />
         </form>
       </div>
     </div>

@@ -17,7 +17,7 @@ from zope.app.publisher.browser import BrowserView
 from canonical.launchpad import helpers
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import ILaunchBag, IPOTemplateSet, \
-    IPOTemplateNameSet, IPersonSet, RawFileAttachFailed
+    IPOTemplateNameSet, IPersonSet, RawFileAttachFailed, IPOExportRequestSet
 from canonical.launchpad.components.poexport import POExport
 from canonical.launchpad.browser.pofile import POFileView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -55,6 +55,7 @@ class POTemplateView:
         self.request = request
         self.request_languages = helpers.request_languages(self.request)
         self.description = self.context.potemplatename.description
+        self.user = getUtility(ILaunchBag).user
         # XXX carlos 01/05/05 please fix up when we have the
         # MagicURLBox
 
@@ -127,13 +128,8 @@ class POTemplateView:
             if 'UPLOAD' in self.request.form:
                 self.upload()
 
-        return ''
-
     def upload(self):
         """Handle a form submission to change the contents of the template."""
-
-        # Get the launchpad Person who is doing the upload.
-        owner = getUtility(ILaunchBag).user
 
         file = self.request.form['file']
 
@@ -159,7 +155,7 @@ class POTemplateView:
 
             try:
                 # a potemplate is always "published" so published=True
-                self.context.attachRawFileData(potfile, True, owner)
+                self.context.attachRawFileData(potfile, True, self.user)
                 self.status_message = (
                     'Thank you for your upload. The template content will'
                     ' appear in Rosetta in a few minutes.')
@@ -248,6 +244,74 @@ class POTemplateAddView(AddView):
     def nextURL(self):
         return self._nextURL
 
+
+class POTemplateExport:
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.user = getUtility(ILaunchBag).user
+        self.formProcessed = False
+        self.errorMessage = None
+
+    def processForm(self):
+        if self.request.method != 'POST':
+            return
+
+        pofiles = []
+        what = self.request.form.get('what')
+
+        if what == 'all':
+            export_potemplate = True
+
+            pofiles =  self.context.pofiles
+        elif what == 'some':
+            export_potemplate = 'potemplate' in self.request.form
+
+            for key in self.request.form:
+                if '@' in key:
+                    code, variant = key.split('@', 1)
+                else:
+                    code = key
+                    variant = None
+
+                try:
+                    pofile = self.context.getPOFileByLang(code, variant)
+                except KeyError:
+                    pass
+                else:
+                    pofiles.append(pofile)
+        else:
+            self.errorMessage = (
+                'Please choose whether you would like all files or only some '
+                'of them.')
+            return
+
+        request_set = getUtility(IPOExportRequestSet)
+
+        if export_potemplate:
+            request_set.addRequest(self.user, self.context, pofiles)
+        else:
+            request_set.addRequest(self.user, None, pofiles)
+
+        self.formProcessed = True
+
+    def pofiles(self):
+        class BrowserPOFile:
+            def __init__(self, value, browsername):
+                self.value = value
+                self.browsername = browsername
+
+        for pofile in self.context.pofiles:
+            if pofile.variant:
+                variant = pofile.variant.encode('UTF-8')
+                value = '%s@%s' % (pofile.language.code, variant)
+                browsername = '%s ("%s" variant)' % (
+                    pofile.language.englishname, variant)
+            else:
+                value = pofile.language.code
+                browsername = pofile.language.englishname
+
+            yield BrowserPOFile(value, browsername)
 
 class POTemplateTarExport:
     '''View class for exporting a tarball of translations.'''

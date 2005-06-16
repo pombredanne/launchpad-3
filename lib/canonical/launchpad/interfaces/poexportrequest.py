@@ -7,14 +7,14 @@ __all__ = ('IPOExportRequestSet', 'IPOExportRequest')
 from zope.interface import Interface, Attribute
 
 class IPOExportRequestSet(Interface):
-    def addRequest(self, person, potemplate, pofiles):
+    def addRequest(person, potemplate=None, pofiles=[]):
         """Add a request to export a set of files.
 
         :potemplate: The PO template to export, or None.
         :pofiles: A list of PO files to export.
         """
 
-    def popRequest(self):
+    def popRequest():
         """Take the next request out of the queue.
 
         Returns a 3-tuple containing the person who made the request, the PO

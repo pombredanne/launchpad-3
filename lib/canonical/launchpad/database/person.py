@@ -601,14 +601,6 @@ class PersonSet:
     def newPerson(self, **kw):
         """See IPersonSet."""
         assert not kw.get('teamownerID')
-        if kw.has_key('password'):
-            # encryptor = getUtility(IPasswordEncryptor)
-            # XXX: Carlos Perello Marin 22/12/2004 We cannot use getUtility
-            # from initZopeless scripts and Rosetta's import_daemon.py
-            # calls indirectly to this function :-(
-            encryptor = SSHADigestEncryptor()
-            kw['password'] = encryptor.encrypt(kw['password'])
-
         return Person(**kw)
 
     def getByName(self, name, default=None):
@@ -862,7 +854,13 @@ def createPerson(email, displayname=None, givenname=None, familyname=None,
     kw['displayname'] = displayname
     kw['givenname'] = givenname
     kw['familyname'] = familyname
-    kw['password'] = password
+    # XXX: Carlos Perello Marin 22/12/2004 We cannot use getUtility
+    # from initZopeless scripts and Rosetta's import_daemon.py
+    # calls indirectly to this function :-(
+    # encryptor = getUtility(IPasswordEncryptor)
+    encryptor = SSHADigestEncryptor()
+    kw['password'] = encryptor.encrypt(password)
+
     person = PersonSet().newPerson(**kw)
 
     new = EmailAddressStatus.NEW

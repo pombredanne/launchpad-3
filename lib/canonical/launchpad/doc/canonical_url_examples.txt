@@ -123,6 +123,18 @@ An IProduct.
 
 == Bugs and bugtasks ==
 
+    >>> from canonical.launchpad.interfaces import IBug, IBugSet
+
+The IBugSet.
+   
+    >>> canonical_url(getUtility(IBugSet)) 
+    u'http://localhost:8086/malone/bugs'
+
+An IBug.
+
+    >>> canonical_url(getUtility(IBugSet).get(1)) 
+    u'http://localhost:8086/malone/bugs/1'
+
 To be done.
 
 

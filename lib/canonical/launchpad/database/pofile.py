@@ -49,9 +49,6 @@ class POFile(SQLBase, RosettaStats):
     language = ForeignKey(foreignKey='Language',
                           dbName='language',
                           notNull=True)
-    title = StringCol(dbName='title',
-                      notNull=False,
-                      default=None)
     description = StringCol(dbName='description',
                             notNull=False,
                             default=None)
@@ -103,33 +100,12 @@ class POFile(SQLBase, RosettaStats):
     datecreated = UtcDateTimeCol(notNull=True,
         default=UTC_NOW)
 
-    def canEditTranslations(self, person):
-        """See IEditPOFile."""
-
-        # If the person is None, then they cannot edit
-        if person is None:
-            return False
-
-        # have a look at the aplicable permission policy
-        tperm = self.translationpermission
-        if tperm == TranslationPermission.OPEN:
-            # if the translation policy is "open", then yes
-            return True
-        elif tperm == TranslationPermission.CLOSED:
-            # if the translation policy is "closed", then check if the person is
-            # in the set of translators
-            # XXX sabdfl 25/05/05 this code could be improved when we have
-            # implemented CrowdControl
-            translators = [t.translator for t in self.translators]
-            for translator in translators:
-                if person.inTeam(translator):
-                    return True
-        else:
-            raise NotImplementedError('Unknown permission %s' % tperm.name)
-
-        # Finally, check for the owner of the PO file
-        return person.inTeam(self.owner)
-
+    @property
+    def title(self):
+        """See IPOFile."""
+        title = '%s translation of %s' % (
+            self.language.displayname, self.potemplate.displayname)
+        return title
 
     @property
     def translators(self):
@@ -158,6 +134,33 @@ class POFile(SQLBase, RosettaStats):
             POMsgSet.pofile = %d""" % self.id,
             clauseTables=('POSubmission', 'POMsgSet'),
             distinct=True)
+
+    def canEditTranslations(self, person):
+        """See IEditPOFile."""
+
+        # If the person is None, then they cannot edit
+        if person is None:
+            return False
+
+        # have a look at the aplicable permission policy
+        tperm = self.translationpermission
+        if tperm == TranslationPermission.OPEN:
+            # if the translation policy is "open", then yes
+            return True
+        elif tperm == TranslationPermission.CLOSED:
+            # if the translation policy is "closed", then check if the person is
+            # in the set of translators
+            # XXX sabdfl 25/05/05 this code could be improved when we have
+            # implemented CrowdControl
+            translators = [t.translator for t in self.translators]
+            for translator in translators:
+                if person.inTeam(translator):
+                    return True
+        else:
+            raise NotImplementedError('Unknown permission %s' % tperm.name)
+
+        # Finally, check for the owner of the PO file
+        return person.inTeam(self.owner)
 
     def currentMessageSets(self):
         return POMsgSet.select(
@@ -260,7 +263,7 @@ class POFile(SQLBase, RosettaStats):
             for potmsgset in results[slice]:
                 yield potmsgset
 
-    def getPOTMsgSetUnTranslated(self, slice=None):
+    def getPOTMsgSetUntranslated(self, slice=None):
         """See IPOFile."""
         # A POT set is not translated if the PO message set have
         # POMsgSet.iscomplete = FALSE or we don't have such POMsgSet or
@@ -270,20 +273,17 @@ class POFile(SQLBase, RosettaStats):
         potmsgids = self._connection.queryAll('''
             SELECT POTMsgSet.id, POTMsgSet.sequence
             FROM POTMsgSet
-            JOIN POTemplate ON POTemplate.id = POTMsgSet.potemplate
-            JOIN POFile ON POTemplate.id = POFile.potemplate
-            LEFT OUTER JOIN POMsgSet ON POTMsgSet.id = POMsgSet.potmsgset
+            LEFT OUTER JOIN POMsgSet ON
+                POTMsgSet.id = POMsgSet.potmsgset AND
+                POMsgSet.pofile = %s
             WHERE
-                (POMsgSet.id IS NULL OR
-                 POMsgSet.pofile=POFile.id) AND
                 (POMsgSet.isfuzzy = TRUE OR
                  POMsgSet.iscomplete = FALSE OR
                  POMsgSet.id IS NULL) AND
                  POTMsgSet.sequence > 0 AND
-                 POTemplate.id = %s AND
-                 POFile.id = %s
+                 POTMsgSet.potemplate = %s
             ORDER BY POTMsgSet.sequence
-            ''' % sqlvalues(self.potemplate.id, self.id))
+            ''' % sqlvalues(self.id, self.potemplate.id))
 
         if slice is not None:
             # Want only a subset specified by slice.

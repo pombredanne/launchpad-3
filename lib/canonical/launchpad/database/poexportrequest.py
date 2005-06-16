@@ -15,7 +15,7 @@ from canonical.launchpad.interfaces import IPOExportRequestSet, \
 class POExportRequestSet:
     implements(IPOExportRequestSet)
 
-    def addRequest(self, person, potemplate, pofiles):
+    def addRequest(self, person, potemplate=None, pofiles=[]):
         """See IPOExportRequestSet."""
 
         if not (potemplate or pofiles):

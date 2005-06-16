@@ -80,7 +80,7 @@ class DistributionFileBugView(SQLObjectAddView):
             title = kw['title'], comment = kw['comment'],
             private = kw['private'], owner = kw['owner'])
 
-        notify(SQLObjectCreatedEvent(bug, self.request))
+        notify(SQLObjectCreatedEvent(bug))
 
         self.addedBug = bug 
         return bug

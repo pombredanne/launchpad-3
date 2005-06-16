@@ -107,7 +107,7 @@ class Distribution(SQLBase):
             distrorelease = DistroRelease.selectOneBy(
                 distributionID=self.id, version=name_or_version)
             if distrorelease is None:
-                raise NotFoundError, name_or_version
+                raise NotFoundError(name_or_version)
         return distrorelease
 
     def getDevelopmentReleases(self):
@@ -136,7 +136,7 @@ class DistributionSet:
         try:
             return Distribution.byName(name)
         except SQLObjectNotFound:
-            raise KeyError, name
+            raise NotFoundError(name)
 
     def get(self, distributionid):
         """See canonical.launchpad.interfaces.IDistributionSet."""

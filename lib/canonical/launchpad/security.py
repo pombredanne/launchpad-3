@@ -303,24 +303,21 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
     usedfor = IPOTemplate
 
 
-class EditPOTemplateDetails(AuthorizationBase):
-    permission = 'launchpad.Edit'
+class EditPOTemplateDetails(EditByOwnersOrAdmins):
     usedfor = IPOTemplate
 
     def checkAuthenticated(self, user):
-        """Allow the owner of the POTemplate if it's not in a product release.
-
-        Also, Admins and Rosetta experts are allowed.
+        """Allow product/sourcepackage/potemplate owner, experts and admis.
         """
-        if self.obj.productrelease is not None:
-            # It's a PO file from a product, it has no restrictions.
+        if (self.obj.productrelease is not None and
+            user.inTeam(self.obj.productrelease.productseries.product.owner)):
+            # The user is the owner of the product.
             return True
-        else:
-            admins = getUtility(ILaunchpadCelebrities).admin
-            rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
-            return (user.inTeam(self.obj.owner) or
-                    user.inTeam(admins) or
-                    user.inTeam(rosetta_experts))
+
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+
+        return (EditByOwnersOrAdmins.checkAuthenticated(self, user) or
+                user.inTeam(rosetta_experts))
 
 
 # XXX: Carlos Perello Marin 2005-05-24: This should be using
@@ -335,13 +332,13 @@ class EditPOFileDetails(EditByOwnersOrAdmins):
     usedfor = IPOFile
 
     def checkAuthenticated(self, user):
-        """Allow the owner of the POFile if it's not in a product release.
+        """Allow anyone that can edit translations, owner, experts and admis.
         """
-        if self.obj.potemplate.productrelease is None:
-            return EditByOwnersOrAdmins.checkAuthenticated(self, user)
-        else:
-            # It's a PO file from a product, it has no restrictions.
-            return True
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+
+        return (EditByOwnersOrAdmins.checkAuthenticated(self, user) or
+                self.obj.canEditTranslations(user) or
+                user.inTeam(rosetta_experts))
 
 
 class ChangeTranslatorInGroup(OnlyRosettaExpertsAndAdmins):

@@ -58,7 +58,7 @@ If a team don't have a contact email address, all notifications we send to the
 team will go to the preferred email of each member.
 
 >>> contactEmailAddresses(buttsource)
-Set([u'david.allouche@canonical.com', u'robertc@robertcollins.net', u'foo.bar@canonical.com'])
+set([u'david.allouche@canonical.com', u'robertc@robertcollins.net', u'foo.bar@canonical.com'])
 
 We don't support changing a Person into a Team or a Team into a Person.
 

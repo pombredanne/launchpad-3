@@ -6,6 +6,7 @@ import popen2
 import os
 import gettextpo
 import urllib
+from datetime import datetime
 
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
@@ -14,7 +15,7 @@ from zope.security.interfaces import Unauthorized
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.launchpad.interfaces import (ILaunchBag, ILanguageSet,
-    RawFileAttachFailed)
+    RawFileAttachFailed, IPOExportRequestSet)
 from canonical.launchpad.components.poexport import POExport
 from canonical.launchpad.components.poparser import POHeader
 from canonical.launchpad import helpers
@@ -102,64 +103,67 @@ class POFileView:
             return True
         return False
 
-    def editSubmit(self):
-        if "SUBMIT" in self.request.form:
-            if self.request.method != "POST":
-                self.status_message = 'This form must be posted!'
-                return
+    def submitForm(self):
+        """Called from the page template to do any processing needed if a form
+        was submitted with the request."""
 
-            self.header['Plural-Forms'] = 'nplurals=%s; plural=%s;' % (
-                self.request.form['pluralforms'],
-                self.request.form['expression'])
-            self.context.header = self.header.msgstr.encode('utf-8')
-            self.context.pluralforms = int(self.request.form['pluralforms'])
-            self.submitted = True
-            self.request.response.redirect('./')
-        elif "UPLOAD" in self.request.form:
-            if self.request.method != "POST":
-                self.status_message = 'This form must be posted!'
-                return
-            file = self.form['file']
+        if self.request.method == 'POST':
+            if 'UPLOAD' in self.request.form:
+                self.upload()
+            elif "EDIT" in self.request.form:
+                self.edit()
 
-            if not isinstance(file, FileUpload):
-                if file == '':
-                    self.status_message = 'You forgot the file!'
-                else:
-                    # XXX: Carlos Perello Marin 03/12/2004: Epiphany seems
-                    # to have an aleatory bug with upload forms (or perhaps
-                    # it's launchpad because I never had problems with
-                    # bugzilla). The fact is that some uploads don't work
-                    # and we get a unicode object instead of a file-like
-                    # object in "file". We show an error if we see that
-                    # behaviour.  For more info, look at bug #116
-                    self.status_message = 'Unknown error extracting the file.'
-                return
+    def upload(self):
+        """Handle a form submission to change the contents of the pofile."""
 
-            filename = file.filename
+        file = self.form['file']
 
-            if not filename.endswith('.po'):
-                self.status_message =  'Dunno what this file is.'
-                return
-
-            pofile = file.read()
-
-            # make sure we have an idea if it was published
-            published = self.form.get('published', None)
-            if published is None:
-                published = False
+        if not isinstance(file, FileUpload):
+            if file == '':
+                self.status_message = 'Please, select a file to upload.'
             else:
-                published = True
+                # XXX: Carlos Perello Marin 2004/12/30
+                # Epiphany seems to have an aleatory bug with upload forms (or
+                # perhaps it's launchpad because I never had problems with
+                # bugzilla). The fact is that some uploads don't work and we
+                # get a unicode object instead of a file-like object in
+                # "file". We show an error if we see that behaviour. For more
+                # info, look at bug #116.
+                self.status_message = (
+                    'There was an unknown error in uploading your file.')
+            return
 
-            try:
-                self.context.attachRawFileData(pofile, published, self.user)
-                self.status_message = (
-                    'Thank you for your upload. The PO file content will'
-                    ' appear in Rosetta in a few minutes.')
-            except RawFileAttachFailed, error:
-                # We had a problem while uploading it.
-                self.status_message = (
-                    'There was a problem uploading the file: %s.' % error)
-            self.submitted = True
+        filename = file.filename
+
+        if not filename.endswith('.po'):
+            self.status_message = (
+                'The file you uploaded was not recognised as a file that '
+                'can be imported.')
+            return
+
+        # make sure we have an idea if it was published
+        published_value = self.form.get('published', None)
+        published = published_value is None
+
+        pofile = file.read()
+        try:
+            self.context.attachRawFileData(pofile, published, self.user)
+            self.status_message = (
+                'Thank you for your upload. The translation content will'
+                ' appear in Rosetta in a few minutes.')
+        except RawFileAttachFailed, error:
+            # We had a problem while uploading it.
+            self.status_message = (
+                'There was a problem uploading the file: %s.' % error)
+
+    def edit(self):
+        self.header['Plural-Forms'] = 'nplurals=%s; plural=%s;' % (
+            self.request.form['pluralforms'],
+            self.request.form['expression'])
+        self.context.header = self.header.msgstr.encode('utf-8')
+        self.context.pluralforms = int(self.request.form['pluralforms'])
+
+        self.status_message = "Updated on %s" % datetime.utcnow()
 
     def completeness(self):
         return '%.0f%%' % self.context.translatedPercentage()
@@ -289,7 +293,7 @@ class POFileView:
                     pofile.getPOTMsgSetTranslated(slice=slice_arg)
             elif self.show == 'untranslated':
                 filtered_potmsgsets = \
-                    pofile.getPOTMsgSetUnTranslated(slice=slice_arg)
+                    pofile.getPOTMsgSetUntranslated(slice=slice_arg)
             else:
                 raise AssertionError('show = "%s"' % self.show)
 
@@ -478,18 +482,20 @@ class POFileView:
         return messageSets
 
 
-class POFilePOExportView:
-    def __call__(self):
-        pofile = self.context
-        poExport = POExport(pofile.potemplate)
-        languageCode = pofile.language.code
-        exportedFile = poExport.export(languageCode)
+class ViewPOExport:
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.user = getUtility(ILaunchBag).user
+        self.formProcessed = False
 
-        self.request.response.setHeader('Content-Type', 'application/x-po')
-        self.request.response.setHeader('Content-Length', len(exportedFile))
-        self.request.response.setHeader('Content-Disposition',
-                'attachment; filename="%s.po"' % languageCode)
-        return exportedFile
+    def processForm(self):
+        if self.request.method != 'POST':
+            return
+
+        request_set = getUtility(IPOExportRequestSet)
+        request_set.addRequest(self.user, pofiles=[self.context])
+        self.formProcessed = True
 
 
 class POFileMOExportView:
