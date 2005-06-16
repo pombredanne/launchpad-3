@@ -22,7 +22,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 # canonical imports
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (IPOFileSet, IEditPOFile,
-    IPersonSet, IRawFileData, ITeam, IPOTemplateExporter)
+    IPersonSet, IRawFileData, ITeam, IPOTemplateExporter,
+    ZeroLengthPOExportError)
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.pofile_adapters import POFileImporter
 from canonical.launchpad.components.poparser import POParser, POHeader
@@ -665,6 +666,10 @@ class POFile(SQLBase, RosettaStats):
             return self.fetchExportCache()
         else:
             contents = self.uncachedExport()
+
+            if len(contents) == 0:
+                raise ZeroLengthPOExportError
+
             self.updateExportCache(contents)
             return contents
 
