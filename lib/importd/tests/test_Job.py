@@ -972,20 +972,30 @@ class TestImpordDBuild(ZopelessTestCase):
 
     def testStartBuild(self):
         """ImportDBImplementor.startBuild sets series and commits."""
+        self.txnManager().begin()
         self.series().datestarted = None
         self.txnManager().commit()
         self.implementor().startBuild()
-        self.txnManager().abort() # discard uncommitted changes
+        # spiv who is reviewing this suggested this XXX abstraction
+        # violation. RBC 20050608
+        from canonical.database.sqlbase import SQLBase
+        if SQLBase._connection is not None:
+            self.txnManager().abort() # discard uncommitted changes
         self.assert_(self.series().datestarted is not None)
 
     def testBuildFinished(self):
         """ImportDBImplementor.buildFinished sets series and commits."""
         from canonical.lp.dbschema import ImportStatus
+        self.txnManager().begin()
         self.series().datefinished = None
         self.series().importstatus = ImportStatus.TESTING
         self.txnManager().commit()
         self.implementor().buildFinished(True)
-        self.txnManager().abort() # discard uncommitted changes
+        # spiv who is reviewing this suggested this XXX abstraction
+        # violation. RBC 20050608
+        from canonical.database.sqlbase import SQLBase
+        if SQLBase._connection is not None:
+            self.txnManager().abort() # discard uncommitted changes
         self.assert_(self.series().datefinished is not None)
         self.assertEqual(self.series().importstatus, ImportStatus.AUTOTESTED)
 

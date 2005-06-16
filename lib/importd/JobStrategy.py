@@ -7,6 +7,8 @@ import shutil
 import pybaz as arch
 import CVS
 import SCM
+from pybaz import Version
+import cscvs.arch 
 
 from canonical.librarian.client import FileDownloadClient
 
@@ -374,11 +376,36 @@ class CSCVSStrategy(JobStrategy):
         os.rename(os.path.join(bazpath, '{arch}/=tagging-method.new'), os.path.join(bazpath, '{arch}/=tagging-method'))
         arch.Version(aJob.bazFullPackageVersion()).setup()
         self.runtobaz("-Si", "%s.1" % aJob.sourceBranch(), bazpath, logger)
-        self.runtobaz("-SCc", "%s.1::" % aJob.sourceBranch(), bazpath, logger)
+        # for svn, the next revision is not 1::, rather lastCommit::
+        aVersion=Version(aJob.bazFullPackageVersion())
+        lastCommit = cscvs.arch.findLastCSCVSCommit(aVersion)
+        self.runtobaz("-SCc", "%s::" % lastCommit, bazpath, logger)
         shutil.rmtree(bazpath)
         
     def sync(self, aJob, dir, logger):
         """sync from a concrete type to baz"""
+        assert aJob is not None
+        assert dir is not None
+        self.job=aJob
+        self.aJob=aJob
+        self.logger=logger
+        self.dir=dir
+        aVersion=Version(self.job.bazFullPackageVersion())
+        if self.job.mirrorNotEmpty(aVersion):
+            self.job.RollbackToMirror(aVersion)
+        lastCommit = cscvs.arch.findLastCSCVSCommit(aVersion)
+        if lastCommit is None:
+            raise RuntimeError ("No Commits have occured, cannot perform incremental tobaz")
+        bazpath=self.getTLADirPath(self.aJob, dir)
+        if os.access(bazpath, os.F_OK):
+            shutil.rmtree(bazpath)
+        try:
+            arch.Version(self.job.bazFullPackageVersion()).get(bazpath)
+        except (arch.util.ExecProblem, RuntimeError), e:
+            logger.critical("Failed to get arch tree '%s'", e)
+            raise
+        self.runtobaz("-SCc", "%s::" % lastCommit, bazpath, logger)
+        shutil.rmtree(bazpath)
         
     def sourceTree(self):
         """Return the CSCVS tree object we are importing from"""
@@ -511,32 +538,6 @@ class CVSStrategy(CSCVSStrategy):
         assert self._tree is not None, "getCVSDir should have been run first"
         return self._tree
 
-    def sync(self, aJob, dir, logger):
-        """I syncronise from CVS to TLA according to the job description"""
-        assert aJob is not None
-        assert dir is not None
-        self.job=aJob
-        self.aJob=aJob
-        self.logger=logger
-        self.dir=dir
-        from pybaz import Version
-        aVersion=Version(self.job.bazFullPackageVersion())
-        if self.job.mirrorNotEmpty(aVersion):
-            self.job.RollbackToMirror(aVersion)
-        import cscvs.arch 
-        lastCommit = cscvs.arch.findLastCSCVSCommit(aVersion)
-        if lastCommit is None:
-            raise RuntimeError ("No CVS Commits have occured, cannot perform incremental tobaz")
-        bazpath=self.getTLADirPath(self.aJob, dir)
-        if os.access(bazpath, os.F_OK):
-            shutil.rmtree(bazpath)
-        try:
-            arch.Version(self.job.bazFullPackageVersion()).get(bazpath)
-        except (arch.util.ExecProblem, RuntimeError), e:
-            logger.critical("Failed to get arch tree '%s'", e)
-            raise
-        self.runtobaz("-SCc", "%s::" % lastCommit, bazpath, logger)
-        shutil.rmtree(bazpath)
 
     def repo(self):
         '''return a CVS Repository instance'''
