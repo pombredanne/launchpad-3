@@ -119,14 +119,25 @@ class IBugTaskSearch(Interface):
     assignee = Choice(
         title=_('Assignee'), vocabulary='ValidAssignee', required=False)
     unassigned = Bool(title=_('show only unassigned bugs'), required=False)
+
+
+class IUpstreamBugTaskSearch(IBugTaskSearch):
+    """The schema used by the bug task search form of a product."""
     milestone_assignment = Choice(
         title=_('Target'), vocabulary="Milestone", required=False)
     milestone = List(
         title=_('Target'), value_type=IBugTask['milestone'], required=False)
 
 
+class IDistroBugTaskSearch(IBugTaskSearch):
+    """The schema used by the bug task search form of a distribution or
+    distribution release."""
+
+
 class IBugTaskSearchListingView(IView):
     """A view that can be used with a bugtask search listing."""
+
+    search_form_schema = Attribute("""The schema used for the search form.""")
 
     searchtext_widget = Attribute("""The widget for entering a free-form text
                                      query on bug task details.""")

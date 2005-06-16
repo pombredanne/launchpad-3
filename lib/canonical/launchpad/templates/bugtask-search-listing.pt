@@ -24,10 +24,10 @@
       <tal:searchtext content="structure view/searchtext_widget" />
       <input type="submit" name="search" value="Search" />
     <input
-        tal:condition="not:request/advanced|nothing"
+        tal:condition="not:view/advanced"
         type="submit" name="advanced" value="Advanced" />
     <input
-        tal:condition="request/advanced|nothing"
+        tal:condition="view/advanced"
         type="submit" name="simple_submit" value="Simple" />
     <input type="hidden"
         name="advanced" tal:attributes="value request/advanced|nothing" />
@@ -231,35 +231,35 @@
     </tal:milestone>
   </fieldset>
 
-  <tal:x condition="not:request/advanced|nothing">
+  <tal:x condition="not:view/advanced">
       <input type="hidden" name="status" value="10" />
       <input type="hidden" name="status" value="20" />
       <input type="hidden" name="assignee" value="all" />
   </tal:x>
 
-    <tal:block condition="request/advanced|nothing">
+    <tal:block condition="view/advanced">
       <h2>Filter Criteria</h2>
 
         <div class="row">
           <div class="field">
             <table>
               <tr>
-                <td tal:condition="view/status_widget">
+                <td tal:condition="view/status_widget|nothing">
                   <label for="status" tal:content="view/status_widget/label">
                     Status:
                   </label>
                 </td>
-                <td tal:condition="view/severity_widget">
+                <td tal:condition="view/severity_widget|nothing">
                   <label for="severity" tal:content="view/severity_widget/label">
                     Severity:
                   </label>
                 </td>
-                <td tal:condition="view/assignee_widget">
+                <td tal:condition="view/assignee_widget|nothing">
                   <label for="assignee" tal:content="view/assignee_widget/label">
                     Assignee:
                   </label>
                 </td>
-                <td tal:condition="view/milestone_widget">
+                <td tal:condition="view/milestone_widget|nothing">
                   <label for="target" tal:content="view/milestone_widget/label">
                     Target:
                   </label>
@@ -276,7 +276,7 @@
                     <tal:block content="structure view/unassigned_widget" />
                      <tal:block content="structure view/unassigned_widget/label" />
                 </td>
-                <td tal:condition="view/milestone_widget"
+                <td tal:condition="view/milestone_widget|nothing"
                     tal:content="structure view/milestone_widget" />
               </tr>
             </table>
