@@ -286,6 +286,9 @@ COMMENT ON COLUMN Bug.name IS 'A lowercase name uniquely identifying the bug';
 COMMENT ON COLUMN Bug.private IS 'Is this bug private? If so, only explicit subscribers will be able to see it';
 COMMENT ON COLUMN Bug.summary IS 'A brief summary of the bug. This will be displayed at the very top of the page in bold. It will also receive a higher ranking in FTI queries than the description and comments of the bug. The bug summary is not created necessarily when the bug is filed, instead we just use the first comment as a description and allow people to fill in the summary later as they converge on a clear description of the bug itself.';
 COMMENT ON COLUMN Bug.description IS 'A detailed description of the bug. Initially this will be set to the contents of the initial email or bug filing comment, but later it can be edited to give a more accurate description of the bug itself rather than the symptoms observed by the reporter.';
+
+/* BugTask */
+
 COMMENT ON TABLE BugTask IS 'Links a given Bug to a particular (sourcepackagename, distro) or product.';
 COMMENT ON COLUMN BugTask.bug IS 'The bug that is assigned to this (sourcepackagename, distro) or product.';
 COMMENT ON COLUMN BugTask.product IS 'The product in which this bug shows up.';
@@ -299,6 +302,12 @@ COMMENT ON COLUMN BugTask.assignee IS 'The person who has been assigned to fix t
 COMMENT ON COLUMN BugTask.dateassigned IS 'The date on which the bug in this (sourcepackagename, distro) or product was assigned to someone to fix';
 COMMENT ON COLUMN BugTask.datecreated IS 'A timestamp for the creation of this bug assignment. Note that this is not the date the bug was created (though it might be), it''s the date the bug was assigned to this product, which could have come later.';
 COMMENT ON COLUMN BugTask.milestone IS 'A way to mark a bug for grouping purposes, e.g. to say it needs to be fixed by version 1.2';
+COMMENT ON COLUMN BugTask.bugwatch IS 'This column allows us to link a bug
+task to a bug watch. In other words, we are connecting the state of the task
+to the state of the bug in a different bug tracking system. To the best of
+our ability we\'ll try and keep the bug task syncronised with the state of
+the remote bug watch.';
+
 
 -- CVERef
 COMMENT ON TABLE CVERef IS 'This table stores CVE references for bugs. CVE is a way of tracking security problems across multiple vendor products.';

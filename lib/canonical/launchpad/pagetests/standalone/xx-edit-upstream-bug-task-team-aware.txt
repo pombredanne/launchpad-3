@@ -10,7 +10,7 @@
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-            <h2>...in Mozilla Firefox</h2>
+            <h2>...in Mozilla Firefox...</h2>
   ...
 
   Sample Person may edit the bug task:
@@ -24,7 +24,7 @@
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-            <h2>...in Mozilla Firefox</h2>
+            <h2>...in Mozilla Firefox...</h2>
   ...
 
 Edit the target:
@@ -161,7 +161,7 @@ Edit the target:
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
-            <h2>...in Mozilla Firefox</h2>
+            <h2>...in Mozilla Firefox...</h2>
   ...
 
 
@@ -221,7 +221,7 @@ Edit the target:
   ... """)
   HTTP/1.1 200 Ok
   ...
-            <h2>...in Mozilla Firefox</h2>
+            <h2>...in Mozilla Firefox...</h2>
   ...
 
 
@@ -285,3 +285,4 @@ Edit the target:
   ...
             <p class="portalMessage">Updated on ...</p>
   ...
+

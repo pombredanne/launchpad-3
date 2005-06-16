@@ -131,6 +131,7 @@ def ensure_message(message):
         print 'ERROR: unable to store msg %s in database.' % msgid
     return msg
 
+
 def sync():
 
     global newbugs

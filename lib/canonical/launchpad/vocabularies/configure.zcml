@@ -6,6 +6,11 @@
         />
 
     <vocabulary
+        name="BugWatch"
+        factory="canonical.launchpad.vocabularies.BugWatchVocabulary"
+        />
+
+    <vocabulary
         name="SourcePackageName"
         factory="canonical.launchpad.vocabularies.SourcePackageNameVocabulary"
         />

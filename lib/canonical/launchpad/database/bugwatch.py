@@ -9,7 +9,7 @@ from zope.interface import implements
 from zope.exceptions import NotFoundError
 
 # SQL imports
-from sqlobject import ForeignKey, StringCol, SQLObjectNotFound
+from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, MultipleJoin
 
 from canonical.launchpad.interfaces import IBugWatch, IBugWatchSet
 from canonical.launchpad.database.bug import BugSetBase
@@ -31,12 +31,15 @@ class BugWatch(SQLBase):
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
+    # useful joins
+    bugtasks = MultipleJoin('BugTask', joinColumn='bugwatch',
+        orderBy=['-datecreated'])
+
+    @property
     def title(self):
-        title = 'Malone Bug #' + str(self.bug.id)
-        title += ' maps to bug #' + str(self.remotebug)
-        title += ' in ' + self.bugtracker.title
+        title = self.bugtracker.title
+        title += ' #' + str(self.remotebug)
         return title
-    title = property(title)
 
 
 class BugWatchSet(BugSetBase):

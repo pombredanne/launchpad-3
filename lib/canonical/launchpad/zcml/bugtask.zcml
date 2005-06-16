@@ -104,7 +104,7 @@
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="product maintainer_displayname milestone
-                status priority severity assignee whiteboard"
+                status priority severity assignee bugwatch whiteboard"
         label="Edit Product Bug Task"
         permission="launchpad.Edit"
         template="../templates/bugtask-editform.pt"
@@ -121,7 +121,7 @@
         class="canonical.launchpad.browser.bugtask.BugTaskDisplayView"
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="product maintainer_displayname milestone
-                status priority severity assignee whiteboard"
+                status priority severity assignee bugwatch whiteboard"
         label="Product Bug Task"
         permission="launchpad.View"
         template="../templates/bugtask-editform.pt"
@@ -141,7 +141,10 @@
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
         lp:url="malone/bugs/$Bug.id/+distrotask">
-        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget
+          field="owner"
+          class="canonical.widgets.OwnerWidget"
+          />
     </browser:addform>
 
     <browser:editform
@@ -149,8 +152,8 @@
         for="canonical.launchpad.interfaces.IEditableDistroBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename
-                status priority severity assignee whiteboard"
+        fields="sourcepackagename binarypackagename 
+                status priority severity assignee bugwatch whiteboard"
         label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"
         template="../templates/bugtask-editform.pt"
@@ -166,8 +169,8 @@
         for="canonical.launchpad.interfaces.IReadOnlyDistroBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskDisplayView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename
-                status priority severity assignee whiteboard"
+        fields="sourcepackagename binarypackagename 
+                status priority severity assignee bugwatch whiteboard"
         label="Source Package Bug Task"
         permission="zope.Public"
         template="../templates/bugtask-editform.pt"
@@ -195,8 +198,8 @@
         for="canonical.launchpad.interfaces.IEditableDistroReleaseBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename
-                status priority severity assignee whiteboard"
+        fields="sourcepackagename binarypackagename 
+                status priority severity assignee bugwatch whiteboard"
         label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"
         template="../templates/bugtask-editform.pt"
@@ -212,8 +215,8 @@
         for="canonical.launchpad.interfaces.IReadOnlyDistroReleaseBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskDisplayView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename
-                status priority severity assignee whiteboard"
+        fields="sourcepackagename binarypackagename 
+                status priority severity assignee bugwatch whiteboard"
         label="Source Package Bug Task"
         permission="zope.Public"
         template="../templates/bugtask-editform.pt"

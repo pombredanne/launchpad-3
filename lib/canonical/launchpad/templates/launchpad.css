@@ -487,7 +487,7 @@ a[name], .portlet :link, .portlet :visited {
 
 /* -- Don't stomp on people's preferred font sizes: -- */
 
-body, .listing {
+body {
   font-size: 100%;
 }
 code {

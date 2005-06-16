@@ -8,7 +8,8 @@ from zope.component.interfaces import IView
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine, List
+from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
+    TextLine, List
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from sqlos.interfaces import ISelectResults
@@ -84,6 +85,13 @@ class IBugTask(IHasDateCreated):
     binarypackagename = Choice(
         title=_('Binary PackageName'), required=False,
         vocabulary='BinaryPackageName')
+    bugwatch = Choice(title=_("Remote Bug Details"), required=False,
+        vocabulary='BugWatch', description=_("Select the bug watch that "
+        "represents this task in the relevant bug tracker. If none of the "
+        "bug watches represents this particular bug task, leave it as "
+        "(None). Linking the remote bug watch with the task in "
+        "this way means that a change in the remote bug status will change "
+        "the status of this bug task in Malone."))
     dateassigned = Datetime()
     datecreated  = Datetime()
     owner = Int()

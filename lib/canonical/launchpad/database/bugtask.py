@@ -70,11 +70,14 @@ class BugTask(SQLBase):
     assignee = ForeignKey(
         dbName='assignee', foreignKey='Person',
         notNull=False, default=None)
+    bugwatch = ForeignKey(dbName='bugwatch', foreignKey='BugWatch',
+        notNull=False, default=None)
     dateassigned = UtcDateTimeCol(notNull=False, default=nowUTC)
     datecreated  = UtcDateTimeCol(notNull=False, default=nowUTC)
     owner = ForeignKey(
         foreignKey='Person', dbName='owner', notNull=False, default=None)
 
+    @property
     def maintainer(self):
         if self.product:
             return self.product.owner
@@ -85,15 +88,15 @@ class BugTask(SQLBase):
             if maintainership is not None:
                 return maintainership.maintainer
         return None
-    maintainer = property(maintainer)
 
+    @property
     def maintainer_displayname(self):
         if self.maintainer:
             return self.maintainer.displayname
         else:
             return None
-    maintainer_displayname = property(maintainer_displayname)
 
+    @property
     def contextname(self):
         """See canonical.launchpad.interfaces.IBugTask.
 
@@ -132,15 +135,15 @@ class BugTask(SQLBase):
             return self.product.displayname
         else:
             raise AssertionError
-    contextname = property(contextname)
 
+    @property
     def title(self):
         """Generate the title for this bugtask based on the id of the bug
         and the bugtask's contextname.  See IBugTask.
         """
-        title = 'Bug #%s in %s' % (self.bug.id, self.contextname)
+        title = 'Bug #%s in %s: "%s"' % (
+            self.bug.id, self.contextname, self.bug.title)
         return title
-    title = property(title)
 
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""

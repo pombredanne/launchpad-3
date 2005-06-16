@@ -181,17 +181,6 @@ class BugTaskViewBase:
     bugPeoplePortlet = BugTaskPortlet(
         "../templates/portlet-bugtask-people.pt")
 
-    def bugdescription_quoted(self):
-        """Return a quoted bug description with newlines converted to BR's."""
-        bugdesc = self.context.bug.description
-
-        if bugdesc is not None:
-            bugdesc_quoted = escape(bugdesc)
-        else:
-            bugdesc_quoted = ""
-
-        return bugdesc_quoted.replace('\n', '<br />')
-
 
 class BugTaskEditView(SQLObjectEditView, BugTaskViewBase):
     pass

@@ -24,7 +24,9 @@
             tal:define="path_info request/PATH_INFO">
             <div class="user" tal:condition="not: request/lp:person ">
               <div tal:condition="python:'+login' not in path_info">
-                <a href="/+login">Log in / Register</a>
+                <a tal:attributes="href string:${request/getURL}/+login">
+                  Log in / Register
+                </a>
               </div>
             </div>
             <div class="user" tal:condition="request/lp:person">

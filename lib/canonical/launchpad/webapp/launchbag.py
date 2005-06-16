@@ -15,7 +15,8 @@ from zope.app.session.interfaces import ISession
 from canonical.launchpad.interfaces import \
         IOpenLaunchBag, ILaunchBag, \
         ILaunchpadApplication, IPerson, IProject, IProduct, IDistribution, \
-        IDistroRelease, ISourcePackage, IBug, ISourcePackageReleasePublishing
+        IDistroRelease, ISourcePackage, IBug, \
+        ISourcePackageReleasePublishing, IBugTask
 from canonical.launchpad.webapp.interfaces import ILoggedInEvent
 
 class LaunchBag(object):
@@ -33,6 +34,7 @@ class LaunchBag(object):
         ISourcePackage: 'sourcepackage',
         ISourcePackageReleasePublishing: 'sourcepackagereleasepublishing',
         IBug: 'bug',
+        IBugTask: 'bugtask',
         }
 
     _store = zope.thread.local()
@@ -116,7 +118,10 @@ class LaunchBag(object):
     sourcepackagereleasepublishing = property(sourcepackagereleasepublishing)
 
     def bug(self):
-        return self._store.bug
+        if self._store.bug:
+            return self._store.bug
+        if self._store.bugtask:
+            return self._store.bugtask.bug
     bug = property(bug)
 
 
