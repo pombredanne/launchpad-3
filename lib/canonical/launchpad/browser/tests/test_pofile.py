@@ -108,7 +108,7 @@ class DummyPOFile:
     def getPOTMsgSetTranslated(self, current=True, slice=None):
         return [DummyPOTMsgSet(), DummyPOTMsgSet()]
 
-    def getPOTMsgSetUnTranslated(self, current=True, slice=None):
+    def getPOTMsgSetUntranslated(self, current=True, slice=None):
         return [DummyPOTMsgSet(), DummyPOTMsgSet()]
 
     def canEditTranslations(self, user):

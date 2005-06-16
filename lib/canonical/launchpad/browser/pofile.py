@@ -293,7 +293,7 @@ class POFileView:
                     pofile.getPOTMsgSetTranslated(slice=slice_arg)
             elif self.show == 'untranslated':
                 filtered_potmsgsets = \
-                    pofile.getPOTMsgSetUnTranslated(slice=slice_arg)
+                    pofile.getPOTMsgSetUntranslated(slice=slice_arg)
             else:
                 raise AssertionError('show = "%s"' % self.show)
 
