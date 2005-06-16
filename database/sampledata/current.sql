@@ -8054,482 +8054,362 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'poexportrequest'::pg
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'poexportrequest'::pg_catalog.regclass;
 
 
-SELECT pg_catalog.setval('person_id_seq', 51, true);
 
 
 
-SELECT pg_catalog.setval('emailaddress_id_seq', 45, true);
 
 
 
-SELECT pg_catalog.setval('gpgkey_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('archuserid_id_seq', 10, true);
 
 
 
-SELECT pg_catalog.setval('wikiname_id_seq', 10, true);
 
 
 
-SELECT pg_catalog.setval('jabberid_id_seq', 10, true);
 
 
 
-SELECT pg_catalog.setval('ircid_id_seq', 9, true);
 
 
 
-SELECT pg_catalog.setval('teammembership_id_seq', 37, true);
 
 
 
-SELECT pg_catalog.setval('teamparticipation_id_seq', 79, true);
 
 
 
-SELECT pg_catalog.setval('schema_id_seq', 4, true);
 
 
 
-SELECT pg_catalog.setval('label_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('project_id_seq', 8, true);
 
 
 
-SELECT pg_catalog.setval('projectrelationship_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('product_id_seq', 12, true);
 
 
 
-SELECT pg_catalog.setval('productlabel_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('productseries_id_seq', 6, true);
 
 
 
-SELECT pg_catalog.setval('productrelease_id_seq', 7, true);
 
 
 
-SELECT pg_catalog.setval('productcvsmodule_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('productbkbranch_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('productsvnmodule_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('archarchive_id_seq', 9, true);
 
 
 
-SELECT pg_catalog.setval('archarchivelocation_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('archnamespace_id_seq', 14, true);
 
 
 
-SELECT pg_catalog.setval('branch_id_seq', 14, true);
 
 
 
-SELECT pg_catalog.setval('changeset_id_seq', 3, true);
 
 
 
-SELECT pg_catalog.setval('changesetfilename_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('changesetfile_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('changesetfilehash_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('productbranchrelationship_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('manifest_id_seq', 14, true);
 
 
 
-SELECT pg_catalog.setval('manifestentry_id_seq', 6, true);
 
 
 
-SELECT pg_catalog.setval('archconfig_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('processorfamily_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('processor_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('builder_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('component_id_seq', 3, true);
 
 
 
-SELECT pg_catalog.setval('section_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('distribution_id_seq', 7, true);
 
 
 
-SELECT pg_catalog.setval('distrorelease_id_seq', 9, true);
 
 
 
-SELECT pg_catalog.setval('distroarchrelease_id_seq', 6, true);
 
 
 
-SELECT pg_catalog.setval('libraryfilecontent_id_seq', 33, true);
 
 
 
-SELECT pg_catalog.setval('libraryfilealias_id_seq', 33, true);
 
 
 
-SELECT pg_catalog.setval('sourcepackagename_id_seq', 17, true);
 
 
 
-SELECT pg_catalog.setval('sourcepackagerelease_id_seq', 20, true);
 
 
 
-SELECT pg_catalog.setval('build_id_seq', 7, true);
 
 
 
-SELECT pg_catalog.setval('binarypackagename_id_seq', 13, true);
 
 
 
-SELECT pg_catalog.setval('binarypackage_id_seq', 15, true);
 
 
 
-SELECT pg_catalog.setval('packageselection_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('osfile_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('pomsgid_id_seq', 145, true);
 
 
 
-SELECT pg_catalog.setval('potranslation_id_seq', 649, true);
 
 
 
-SELECT pg_catalog.setval('language_id_seq', 558, true);
 
 
 
-SELECT pg_catalog.setval('country_id_seq', 240, true);
 
 
 
-SELECT pg_catalog.setval('license_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('potemplate_id_seq', 5, true);
 
 
 
-SELECT pg_catalog.setval('pofile_id_seq', 28, true);
 
 
 
-SELECT pg_catalog.setval('pomsgset_id_seq', 731, true);
 
 
 
-SELECT pg_catalog.setval('pomsgidsighting_id_seq', 172, true);
 
 
 
-SELECT pg_catalog.setval('potranslationsighting_id_seq', 684, true);
 
 
 
-SELECT pg_catalog.setval('pocomment_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('translationeffort_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('posubscription_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('bug_id_seq', 6, true);
 
 
 
-SELECT pg_catalog.setval('bugsubscription_id_seq', 5, true);
 
 
 
-SELECT pg_catalog.setval('bugactivity_id_seq', 6, true);
 
 
 
-SELECT pg_catalog.setval('bugexternalref_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('bugtrackertype_id_seq', 2, true);
 
 
 
-SELECT pg_catalog.setval('bugtracker_id_seq', 3, true);
 
 
 
-SELECT pg_catalog.setval('bugwatch_id_seq', 4, true);
 
 
 
-SELECT pg_catalog.setval('message_id_seq', 9, true);
 
 
 
-SELECT pg_catalog.setval('bugattachment_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('projectbugtracker_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('distributionrole_id_seq', 7, true);
 
 
 
-SELECT pg_catalog.setval('distroreleaserole_id_seq', 9, true);
 
 
 
-SELECT pg_catalog.setval('componentselection_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('sectionselection_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('bugproductinfestation_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('bugpackageinfestation_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('distroreleasequeue_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('distroreleasequeuesource_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('distroreleasequeuebuild_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('sourcepackagereleasefile_id_seq', 2, true);
 
 
 
-SELECT pg_catalog.setval('binarypackagefile_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('personlanguage_id_seq', 4, true);
 
 
 
-SELECT pg_catalog.setval('potmsgset_id_seq', 164, true);
 
 
 
-SELECT pg_catalog.setval('bounty_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('bugmessage_id_seq', 8, true);
 
 
 
-SELECT pg_catalog.setval('cveref_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('karma_id_seq', 3, true);
 
 
 
-SELECT pg_catalog.setval('spokenin_id_seq', 335, true);
 
 
 
-SELECT pg_catalog.setval('sourcepackagerelationship_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('sshkey_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('bugtask_id_seq', 15, true);
 
 
 
-SELECT pg_catalog.setval('branchlabel_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('branchrelationship_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('productreleasefile_id_seq', 2, true);
 
 
 
-SELECT pg_catalog.setval('logintoken_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('milestone_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('pushmirroraccess_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('buildqueue_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('packaging_id_seq', 7, true);
 
 
 
-SELECT pg_catalog.setval('signedcodeofconduct_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('bountysubscription_id_seq', 3, true);
 
 
 
-SELECT pg_catalog.setval('productbounty_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('distrobounty_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('projectbounty_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('mirror_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('mirrorcontent_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('mirrorsourcecontent_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('potemplatename_id_seq', 4, true);
 
 
 
-SELECT pg_catalog.setval('maintainership_id_seq', 3, true);
 
 
 
-SELECT pg_catalog.setval('messagechunk_id_seq', 8, true);
 
 
 
-SELECT pg_catalog.setval('sourcepackagepublishinghistory_id_seq', 8, true);
 
 
 
-SELECT pg_catalog.setval('packagepublishinghistory_id_seq', 11, true);
 
 
 
-SELECT pg_catalog.setval('translationgroup_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('translator_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('pocketchroot_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('posubmission_id_seq', 690, true);
 
 
 
-SELECT pg_catalog.setval('poselection_id_seq', 685, true);
 
 
 
-SELECT pg_catalog.setval('poexportrequest_id_seq', 1, false);
 
 
