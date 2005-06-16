@@ -60,17 +60,18 @@ class IPerson(Interface):
             )
     languages = Attribute(_('List of know languages by this person'))
 
+    # this is not a date of birth, it is the date the person record was
+    # created in this db
+    datecreated = Datetime(
+        title=_('Date Created'), required=True, readonly=True)
+
     # bounty relations
     ownedBounties = Attribute('Bounties issued by this person.')
     reviewerBounties = Attribute('Bounties reviewed by this person.')
     claimedBounties = Attribute('Bounties claimed by this person.')
     subscribedBounties = Attribute('Bounties to which this person subscribes.')
-    sshkeys = Attribute(_('List of SSH keys'))
 
-    # XXX: This field is used only to generate the form to create a new person.
-    password2 = Password(title=_('Confirm Password'), required=True,
-            description=_("Enter your password again to make certain "
-                "it is correct."))
+    sshkeys = Attribute(_('List of SSH keys'))
 
     # Properties of the Person object.
     ubuntite = Attribute("Ubuntite Flag")
@@ -216,6 +217,9 @@ class IPerson(Interface):
           a PROPOSED member and one of the team's administrators have to
           approve the membership.
 
+        This method returns True if this person was added as a member of
+        <team> or False if that wasn't possible.
+
         Teams cannot call this method because they're not allowed to
         login and thus can't "join" another team. Instead, they're added
         as a member (using the addMember() method) by a team administrator.
@@ -244,7 +248,7 @@ class IPerson(Interface):
         the TeamParticipation table in case the status is APPROVED.
         """
 
-    def setMembershipStatus(person, status, expires, reviewer=None,
+    def setMembershipStatus(person, status, expires=None, reviewer=None,
                             comment=None):
         """Set the status of the person's membership on this team.
 
@@ -322,7 +326,8 @@ class IPersonSet(Interface):
         These keyword arguments will be passed to Person, which is an
         SQLBase class and will do all the checks needed before inserting
         anything in the database. Please refer to the Person implementation
-        to see what keyword arguments are allowed."""
+        to see what keyword arguments are allowed.
+        """
 
     def newTeam(**kwargs):
         """Create a new Team with given keyword arguments.
@@ -330,7 +335,8 @@ class IPersonSet(Interface):
         These keyword arguments will be passed to Person, which is an
         SQLBase class and will do all the checks needed before inserting
         anything in the database. Please refer to the Person implementation
-        to see what keyword arguments are allowed."""
+        to see what keyword arguments are allowed.
+        """
 
     def get(personid, default=None):
         """Return the person with the given id.

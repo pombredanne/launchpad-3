@@ -3,13 +3,18 @@
     i18n_domain="launchpad">
 
 <subscriber
-   for="canonical.launchpad.interfaces.IBugAddForm
+   for="canonical.launchpad.interfaces.IBug
+        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+   factory="canonical.launchpad.subscribers.bugcreation.at_least_one_task" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.IBug
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_added" />
 
 <subscriber
-   for="canonical.launchpad.interfaces.IBugAddForm
-        zope.app.event.interfaces.IObjectCreatedEvent"
+   for="canonical.launchpad.interfaces.IBug
+        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    factory="canonical.launchpad.subscribers.karma.bug_added" />
 
 <subscriber
@@ -24,7 +29,7 @@
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugTask
-        zope.app.event.interfaces.IObjectCreatedEvent"
+        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bugtask_added" />
 
 <subscriber
@@ -34,12 +39,12 @@
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugMessage
-        zope.app.event.interfaces.IObjectCreatedEvent"
+        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_comment_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugMessage
-        zope.app.event.interfaces.IObjectCreatedEvent"
+        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    factory="canonical.launchpad.subscribers.karma.bug_comment_added" />
 
 <!-- XXX: Brad Bollenbach, 2005-04-12: Disabling infestation notifications for now

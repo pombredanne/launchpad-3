@@ -118,33 +118,33 @@ o PersonVocabulary - all people and teams. Results are ordered by familyname,
     >>> vocab = vocabulary_registry.get(None, "Person")
     >>> stuff = vocab.search('team')
     >>> [t.token for t in stuff]
-    ['name21', 'name18', 'name17', 'name19', 'name20']
+    ['support@ubuntu.com']
 
 o ValidPersonOrTeam - all 'valid' persons or teams. This is currently defined
-  as people with a password, at least one validated email address and not merged
+  as people with a password, a preferred email address and not merged
   (Person.merged is None) or any team.
 
     >>> vocab = vocabulary_registry.get(None, "ValidPersonOrTeam")
     >>> stuff = vocab.search('team')
     >>> [t.token for t in stuff]
-    ['name21', 'name18', 'name17', 'name19', 'name20']
+    ['support@ubuntu.com']
 
     Stuart hasn't validated his email address; he's not a valid Person.
     >>> stuff = vocab.search('bishop')
     >>> [t.token for t in stuff]
     []
 
-    'name16' is a valid Person.
+    'foo.bar@canonical.com' is a valid Person.
     >>> stuff = vocab.search('foo')
     >>> [t.token for t in stuff]
-    ['name16']
+    ['foo.bar@canonical.com']
 
 o ValidOwner - all 'valid' persons or teams in Launchpad.
 
     >>> vocab = vocabulary_registry.get(None, "ValidOwner")
     >>> stuff = vocab.search('team')
     >>> [t.token for t in stuff]
-    ['name21', 'name18', 'name17', 'name19', 'name20']
+    ['support@ubuntu.com']
 
 o ValidTeamOwner - With the exception of the team itself and all teams owned
   by that team, all valid persons and teams are valid owners for the team 
@@ -174,18 +174,5 @@ o ValidTeamOwner - With the exception of the team itself and all teams owned
   >>> vocab = vocabulary_registry.get(team, "ValidTeamOwner")
   >>> person in vocab
   True
-
-o ValidGPGKey - all LP valid GPG key for a given person, it user FTI
-  to query on Person table and return the respective rows from GPGKey
-  table.
-
-   XXX cprov 20050227
-   The concept of 'Valid GPGKey' is not well defined yet.
-
-    >>> vocab = vocabulary_registry.get(None, "ValidGPGKey")
-    >>> stuff = vocab.search('mark')
-    >>> [t.token for t in stuff]
-    ['1']
-
 
 XXX: document more vocabularies here, particularly when they break!

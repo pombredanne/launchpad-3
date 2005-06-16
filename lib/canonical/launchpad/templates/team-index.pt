@@ -50,9 +50,17 @@
           </tr>
 
           <tr tal:condition="context/preferredemail">
-            <td>Email:</td>
+            <td>Contact Email:</td>
             <td><span tal:replace="context/preferredemail/email"></span></td>
           </tr>
+
+          <tal:block tal:condition="not: context/preferredemail">
+            <tr tal:condition="context/unvalidatedemails">
+              <td>Contact Email:</td>
+              <td>This team's contact email address hasn't been validated
+                yet. [<a href="+editemail">Validate it</a>]</td>
+            </tr>
+          </tal:block>
 
         </table>
     </div> 

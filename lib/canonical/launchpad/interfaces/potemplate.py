@@ -17,6 +17,8 @@ __all__ = ('IPOTemplateSubset', 'IPOTemplateSet', 'IPOTemplate',
 class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     """A PO template. For example 'nautilus/po/nautilus.pot'."""
 
+    id = Attribute("A unique ID number")
+
     potemplatename = Choice(
         title=_("Template name"),
         required=True,
@@ -25,10 +27,6 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     name = TextLine(
         title=_("Template name"),
         readonly=True)
-
-    title = TextLine(
-        title=_("Title"),
-        required=True)
 
     description = Text(
         title=_("Description"),
@@ -119,6 +117,23 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
         "is used for this potemplate. This is inherited from the product, "
         "project and/or distro in which the pofile is found.")
 
+    pofiles = Attribute("An iterator over the PO files that exist for "
+        "this template.")
+
+    relatives_by_name = Attribute("An iterator over other PO templates "
+        "that have the same potemplate name as this one.")
+
+    relatives_by_source = Attribute("An iterator over other PO templates "
+        "that have the same source, for example those that came from the "
+        "same productrelease or the same source package.")
+
+    displayname = Attribute("A brief name for this template, generated.")
+
+    title = Attribute("A title for this template, generated.")
+
+    language_count = Attribute("The number of languages for which we have "
+        "some number of translations.")
+
     def __len__():
         """Returns the number of Current IPOMessageSets in this template."""
 
@@ -167,29 +182,10 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
         None.
         """
 
-    def filterMessageSets(current, translated, languages, slice):
-        '''
-        Return message sets from this PO template, filtered by various
-        properties.
-
-        current:
-            Whether the message sets need be complete or not.
-        translated:
-            Wether the messages sets need be translated in the specified
-            languages or not.
-        languages:
-            The languages used for testing translatedness.
-        slice:
-            The range of results to be selected, or None, for all results.
-        '''
-
     def languages():
         """Return an iterator over languages that this template's messages are
         translated into.
         """
-
-    def poFiles():
-        """Return an iterator over the PO files that exist for this language."""
 
     def poFilesToImport():
         """Returns all PO files from this POTemplate that have a rawfile 

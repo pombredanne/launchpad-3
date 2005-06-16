@@ -1,30 +1,25 @@
-#!/usr/bin/python
 
 import re
-
 from canonical.launchpad.helpers import well_formed_email
 
 MIN_NICK_LENGTH = 2
 name_sanity_pattern = re.compile(r"^[^a-z0-9]|[^a-z0-9\\+\\.\\-]+")
 
-class NicknameGenerationError(Exception):
-    """I get raised when something went wrong generating
-    a nickname."""
-    pass
 
+class NicknameGenerationError(Exception):
+    """I get raised when something went wrong generating a nickname."""
 
 def _nick_registered(nick):
     """Answer the question: is this nick registered?"""
+    # XXX: This should use IPersonSet.  Before we change this, we need to
+    #      make sure that all users of nickname.py are running inside the
+    #      launchpad web application, or are using zcml_for_scripts.
+    #      SteveAlexander, 2005-06-12
     from canonical.launchpad.database import PersonSet
-    if PersonSet().getByName(nick) is not None:
-        return True
-    else:
-        return False
-
+    return PersonSet().getByName(nick) is not None
 
 def sanitize(name):
     return name_sanity_pattern.sub('', name)
-    
 
 def generate_nick(email_addr, registered=_nick_registered,
                   report_collisions=False):
@@ -34,7 +29,6 @@ def generate_nick(email_addr, registered=_nick_registered,
     must start with a letter or a number, and must be a minimum of
     four characters.
     """
-
     email_addr = email_addr.strip().lower()
 
     if not well_formed_email(email_addr):
@@ -83,4 +77,3 @@ def generate_nick(email_addr, registered=_nick_registered,
             x += 1
 
     return generated_nick
-

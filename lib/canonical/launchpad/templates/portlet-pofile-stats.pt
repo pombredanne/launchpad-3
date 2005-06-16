@@ -9,11 +9,9 @@
             <b>Messages:</b>
             <span tal:replace="context/potemplate/count:len">N</span>
             <br/>
-            <b>Progress:</b>
-            <span tal:replace="view/completeness">N%</span>
-            <br />
             <b>Todo:</b>
             <span tal:replace="view/untranslated">N</span>
+            <br />
             <tal:block condition="context/lasttranslator">
                 <b>Latest contributor:</b>
                 <br />
@@ -21,6 +19,8 @@
                 <span tal:replace="context/lasttranslator/browsername" />
                 <br />
             </tal:block>
+            <span tal:replace="structure context/@@+barchart">--</span>
+            <br />
 
         </div>
 

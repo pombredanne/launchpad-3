@@ -92,7 +92,6 @@ SQLObject updates first. This appears to be intermitant.
 Now let's remove some members to see what happens:
 
 >>> p.leave(t3)
-True
 >>> len(_getAllMembers(t3, orderBy=defaultOrder))
 0
 

@@ -48,7 +48,7 @@ Create a PO template and put a single message set in it.
   >>> ptn = POTemplateName(name='test', translationdomain='test', title='test')
   >>> template = POTemplate(
   ...     potemplatename=ptn, distrorelease=release, sourcepackagename=spn,
-  ...     rawfile=file_alias, owner=person, title='test', rawimporter=person,
+  ...     rawfile=file_alias, owner=person, rawimporter=person,
   ...     languagepack=True)
   >>> potmsgset = template.createMessageSetFromText(u'blah')
   >>> potmsgset.sequence = 1
@@ -62,21 +62,21 @@ Get some dates.
   >>> d2000_01_02 = datetime.datetime(year=2000, month=1, day=2, tzinfo=UTC)
   >>> d2000_01_03 = datetime.datetime(year=2000, month=1, day=3, tzinfo=UTC)
 
-Create a Spanish PO file, with a translation sighting last made active on
+Create a Spanish PO file, with an active translation submission created on
 2000/01/01.
 
   >>> es = template.getOrCreatePOFile('es')
   >>> pomsgset = es.createMessageSetFromMessageSet(potmsgset)
-  >>> sighting = pomsgset.makeTranslationSighting(person, u'blah (es)', 0)
-  >>> sighting.datelastactive = d2000_01_01
+  >>> submission_es = pomsgset.makeSubmission(person, u'blah (es)', 0, False)
+  >>> submission_es.datecreated = d2000_01_01
 
-Create a Welsh PO file, with a translation sighting last made active on
+Create a Welsh PO file, with an active translation submission created on
 2000/01/03.
 
   >>> cy = template.getOrCreatePOFile('cy')
   >>> pomsgset = cy.createMessageSetFromMessageSet(potmsgset)
-  >>> sighting = pomsgset.makeTranslationSighting(person, u'blah (cy)', 0)
-  >>> sighting.datelastactive = d2000_01_03
+  >>> submission_cy = pomsgset.makeSubmission(person, u'blah (cy)', 0, False)
+  >>> submission_cy.datecreated = d2000_01_03
 
 Now we try to export the PO files we've just created.
 

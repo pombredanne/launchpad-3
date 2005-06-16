@@ -1,0 +1,13 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:mail="http://namespaces.zope.org/mail"
+    i18n_domain="zope">
+
+    <mail:queuedDelivery
+        permission="zope.SendMail"
+        queuePath="/srv/launchpad.ubuntu.com/launchpad-mailqueue"
+        mailer="smtp"
+        />
+
+</configure>
+

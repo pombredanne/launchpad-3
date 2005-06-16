@@ -3,13 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">
-      Upload <tal:block replace="context/title">Foo</tal:block> template
-      version to Rosetta
-    </title>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">

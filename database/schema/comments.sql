@@ -210,6 +210,60 @@ COMMENT ON COLUMN POFile.rawimportstatus IS 'The status of the import. See the R
 COMMENT ON COLUMN POFile.exportfile IS 'The Library file alias of an export of this PO file.';
 COMMENT ON COLUMN POFile.exporttime IS 'The time at which the file referenced by exportfile was generated.';
 
+-- POSelection
+COMMENT ON TABLE POSelection IS 'This table captures the full set
+of all the translations ever submitted for a given pomsgset and pluralform.
+It also indicates which of those is currently active.';
+COMMENT ON COLUMN POSelection.pomsgset IS 'The messageset for
+which we are recording a selection.';
+COMMENT ON COLUMN POSelection.pluralform IS 'The pluralform of
+this selected translation.';
+COMMENT ON COLUMN POSelection.activesubmission IS 'The submission which made
+this the active translation in rosetta for this pomsgset and pluralform.';
+COMMENT ON COLUMN POSelection.publishedsubmission IS 'The submission in which
+we noted this as the current translation published in revision control (or
+in the public po files for this translation template, in the package or
+tarball or branch which is considered the source of it).';
+
+-- POSubmission
+COMMENT ON TABLE POSubmission IS 'This table records the fact
+that we saw, or someone submitted, a particular translation for a particular
+msgset under a particular licence, at a specific time.';
+COMMENT ON COLUMN POSubmission.pomsgset IS 'The message set for which the
+submission or sighting was made.';
+COMMENT ON COLUMN POSubmission.pluralform IS 'The plural form of the
+submission which was made.';
+COMMENT ON COLUMN POSubmission.potranslation IS 'The translation that was
+submitted or sighted.';
+COMMENT ON COLUMN POSubmission.person IS 'The person that made
+the submission through the web to rosetta, or the last-translator on the
+pofile that we are processing, or the person who uploaded that pofile to
+rosetta. In short, our best guess as to the person who is contributing that
+translation.';
+COMMENT ON COLUMN POSubmission.origin IS 'The source of this
+translation. This indicates whether the translation was in a pofile that we
+parsed (probably one published in a package or branch or tarball), or was
+submitted through the web.';
+
+-- POMsgSet
+COMMENT ON COLUMN POMsgSet.publishedfuzzy IS 'This indicates that this
+POMsgSet was fuzzy when it was last imported from a published PO file. By
+comparing the current fuzzy state (in the "fuzzy" field) to that, we know if
+we have changed the fuzzy condition of the messageset in Rosetta.';
+COMMENT ON COLUMN POMsgSet.publishedcomplete IS 'This indicates that this
+POMsgSet was complete when it was last imported from a published PO file. By
+"complete" we mean "has a translation for every expected plural form". We
+can compare the current completeness state (in the "iscomplete" field) to
+this, to know if we have changed the completeness of the messageset in
+Rosetta since it was imported.';
+COMMENT ON COLUMN POMsgSet.isfuzzy IS 'This indicates if the msgset is
+currently fuzzy in Rosetta. The other indicator, publishedfuzzy, shows the
+same status for the last published pofile we pulled in.';
+COMMENT ON COLUMN POMsgSet.iscomplete IS 'This indicates if we believe that
+Rosetta has an active translation for every expected plural form of this
+message set.';
+
+
 /*
   Bazaar
 */
@@ -731,7 +785,7 @@ COMMENT ON COLUMN LoginToken.email IS 'The email address that this request was s
 COMMENT ON COLUMN LoginToken.created IS 'The timestamp that this request was made.';
 COMMENT ON COLUMN LoginToken.tokentype IS 'The type of request, as per dbschema.TokenType.';
 COMMENT ON COLUMN LoginToken.token IS 'The token (not the URL) emailed used to uniquely identify this request. This token will be used to generate a URL that when clicked on will continue a workflow.';
-
+COMMENT ON COLUMN LoginToken.fingerprint IS 'The GPG key fingerprint to be validated on this transaction, it means that a new register will be created relating this given key with the requester in question. The requesteremail still passing for the same usual checks.';
 
 COMMENT ON TABLE Milestone IS 'An identifier that helps a maintainer group together things in some way, e.g. "1.2" could be a Milestone that bazaar developers could use to mark a task as needing fixing in bazaar 1.2.';
 COMMENT ON COLUMN Milestone.product IS 'The product for which this is a milestone.';
@@ -840,3 +894,23 @@ COMMENT ON TABLE PocketChroot IS 'PocketChroots: Which chroot belongs to which p
 COMMENT ON COLUMN PocketChroot.distroarchrelease IS 'Which distroarchrelease this chroot applies to.';
 COMMENT ON COLUMN PocketChroot.pocket IS 'Which pocket of the distroarchrelease this chroot applies to. Valid values are specified in dbschema.PackagePublishingPocket';
 COMMENT ON COLUMN PocketChroot.chroot IS 'The chroot used by the pocket of the distroarchrelease.';
+
+-- POExportRequest
+COMMENT ON TABLE POExportRequest IS
+'A request from a user that a PO template or a PO file be exported
+asynchronously.';
+COMMENT ON COLUMN POExportRequest.person IS
+'The person who made the request.';
+COMMENT ON COLUMN POExportRequest.potemplate IS
+'The PO template being requested.';
+COMMENT ON COLUMN POExportRequest.pofile IS
+'The PO file being requested, or NULL.';
+
+-- GPGKey
+COMMENT ON TABLE GPGKey IS 'A GPG key belonging to a Person';
+COMMENT ON COLUMN GPGKey.keyid IS 'The 8 character GPG key id, uppercase and no whitespace';
+COMMENT ON COLUMN GPGKey.fingerprint IS 'The 40 character GPG fingerprint, uppercase and no whitespace';
+COMMENT ON COLUMN GPGKey.revoked IS 'True if this key has been revoked';
+COMMENT ON COLUMN GPGKey.algorithm IS 'The algorithm used to generate this key. Valid values defined in dbschema.GPGKeyAlgorithms';
+COMMENT ON COLUMN GPGKey.keysize IS 'Size of the key in bits, as reported by GPG. We may refuse to deal with keysizes < 768 bits in the future.';
+

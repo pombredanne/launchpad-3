@@ -29,8 +29,7 @@
       <table class="listing rowNavigation">
         <thead>
           <tr>
-            <th>name</th>
-            <th>template title</th>
+            <th>template name and title</th>
           </tr>
         </thead>
         <tbody>
@@ -38,8 +37,9 @@
               tal:attributes="onclick
                  string:window.location='${potview/URL}'">
             <td><a tal:attributes="href potview/URL"
-                   tal:content="potview/context/name"></a></td>
-            <td><span tal:replace="potview/context/title"></span></td>
+                   tal:content="potview/context/name">name</a>: 
+                <span tal:replace="potview/context/title">title</span>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -68,8 +68,7 @@
            tal:repeat="potview view/templateviews"
            tal:omit-tag=""> <!-- PO Template Details -->
 
-        <h2><span tal:replace="potview/name">name</span>:
-            <span tal:replace="potview/title">Template Title</span></h2>
+        <h2><span tal:replace="potview/context/title">Template Title</span></h2>
 
         <p tal:content="potview/description">
           Template description

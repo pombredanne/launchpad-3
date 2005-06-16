@@ -514,17 +514,13 @@ class AttachTranslationCatalog:
                 self.logger.warning(
                     "Creating new PO template '%s' for %s/%s" % (
                     domain.domainname, release.name, sourcepackagename.name))
-                # E.g. "gtk20 for gtk+ in hoary"
-                potemplate_title= '%s for %s in %s' % (
-                        potemplatename.name, sourcepackagename.name,
-                        release.displayname),
                 template = potemplatesubset.new(
                     potemplatename=potemplatename,
-                    title=potemplate_title,
                     contents=domain.pot_contents,
                     owner=admins)
             else:
-                template.attachRawFileData(domain.pot_contents, admins)
+                # these are ALWAYS considered "published"
+                template.attachRawFileData(domain.pot_contents, True, admins)
 
             # Choosing the shortest is used as a heuristic for selecting among
             # binary package names and domain paths.
@@ -570,8 +566,9 @@ class AttachTranslationCatalog:
                         % (language_code, release.name, sourcepackagename.name))
                     continue
 
+                # again, these are always considered "published"
                 pofile.attachRawFileData(
-                    domain.po_files[language_code], admins)
+                    domain.po_files[language_code], True, admins)
 
             # Now that we've successfully updated the information for the
             # source package, we can update the version in the PO template.

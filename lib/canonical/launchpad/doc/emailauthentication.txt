@@ -8,7 +8,9 @@ signature. First we have to import the GPG keys we will use in the
 emails:
 
     >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> import transaction
     >>> import_public_test_keys()
+    >>> transaction.commit()
 
 Now Sample Person and Foo Bar have one GPG key each. Next, let's get
 a test email that's signed and try to authenticate the user who sent it:
@@ -74,7 +76,6 @@ the From header states it's from Foo Bar:
     >>> name, addr = email.Utils.parseaddr(msg['From'])
     >>> from_user = getUtility(IPersonSet).getByEmail(addr)
     >>> principal = authenticateEmail(msg)
-    >>> principal is None
-    True
-    >>> getUtility(ILaunchBag).login is None
-    True
+    Traceback (most recent call last):
+      ...
+    InvalidSignature:...

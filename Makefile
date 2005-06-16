@@ -4,13 +4,16 @@
 PYTHON_VERSION=2.4
 PYTHON=python${PYTHON_VERSION}
 PYTHONPATH:=$(shell pwd)/lib:${PYTHONPATH}
-CONFFILE=launchpad.conf
 STARTSCRIPT=runlaunchpad.py
 TESTFLAGS=-p -v
 TESTOPTS=
 SETUPFLAGS=
 Z3LIBPATH=$(shell pwd)/sourcecode/zope/src
 HERE:=$(shell pwd)
+SHHH=${PYTHON} utilities/shhh.py
+LPCONFIG=default
+
+CONFFILE=configs/${LPCONFIG}/launchpad.conf
 
 # DO NOT ALTER : this should just build by default
 default: inplace
@@ -55,8 +58,8 @@ all: inplace runners
 inplace: build
 
 build:
-	$(MAKE) -C sourcecode build \
-	    PYTHON=${PYTHON} PYTHON_VERSION=${PYTHON_VERSION}
+	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
+	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 
 runners:
 	echo "#!/bin/sh" > bin/runzope;
@@ -89,13 +92,13 @@ ftest_inplace: inplace
 #ftest: ftest_inplace
 
 run: inplace
-	LPCONFIG=default PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
+	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
 		 $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE)
 
 debug:
-	PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) $(PYTHON) -i -c \
-            "from zope.app import Application;\
-             app = Application('Data.fs', 'site.zcml')()"
+	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
+		 $(PYTHON) -i -c \ "from zope.app import Application;\
+		    app = Application('Data.fs', 'site.zcml')()"
 
 clean:
 	find . \( -name '*.o' -o -name '*.so' -o -name '*.py[co]' -o -name \

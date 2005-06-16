@@ -15,62 +15,6 @@ from canonical.launchpad.interfaces import IVPOExportSet
 from canonical.launchpad.interfaces import IVPOExport
 
 
-class VPOExportSet:
-    """Retrieve collections of VPOExport objects."""
-
-    implements(IVPOExportSet)
-    columns = [
-        'potemplate',
-        'language',
-        'variant',
-        'potsequence',
-        'posequence',
-        'msgidpluralform',
-        'translationpluralform',
-        ]
-
-    def get_pofile_rows(self, potemplate, language, variant=None):
-        """See IVPOExportSet."""
-
-        clauses = {
-            'potemplateID': potemplate.id,
-            'languageID': language.id,
-            'orderBy': VPOExportSet.columns,
-            }
-
-        if variant:
-            clauses['variant'] = variant
-
-        return VPOExport.selectBy(**clauses)
-
-    def get_potemplate_rows(self, potemplate):
-        """See IVPOExportSet."""
-        return VPOExport.selectBy(potemplateID=potemplate.id,
-            orderBy=VPOExportSet.columns)
-
-    def get_distrorelease_rows(self, release, date=None):
-        """See IVPOExportSet."""
-
-        if date is None:
-            return VPOExport.selectBy(distroreleaseID=release.id,
-                orderBy=VPOExportSet.columns, languagepack=True)
-        else:
-            return VPOExport.select('''
-                pofile IN (
-                     SELECT POFile.id
-                     FROM POFile
-                     JOIN POTemplate ON POFile.potemplate = POTemplate.id
-                     JOIN POMsgSet ON POMsgSet.pofile = POFile.id
-                     JOIN POTranslationSighting
-                        ON POMsgSet.id = POTranslationSighting.pomsgset
-                     WHERE
-                         POTranslationSighting.datelastactive > %s AND
-                         POTemplate.distrorelease = %s
-                )
-                ''' % sqlvalues(date, release.id))
-
-
-
 class VPOExport(SQLBase):
     """Present Rosetta PO files in a form suitable for exporting them
     efficiently.
@@ -135,24 +79,82 @@ class VPOExport(SQLBase):
     posequence = IntCol(dbName='posequence')
     # POMsgSet.iscomplete
     iscomplete = BoolCol(dbName='iscomplete')
+    # POMsgSet.isfuzzy
+    isfuzzy = BoolCol(dbName='isfuzzy')
     # POMsgSet.obsolete
     obsolete = BoolCol(dbName='obsolete')
-    # POMsgSet.fuzzy
-    fuzzy = BoolCol(dbName='fuzzy')
     # POMsgSet.commenttext
     pocommenttext = StringCol(dbName='pocommenttext')
 
     # POMsgIDSighting.pluralform
     msgidpluralform = IntCol(dbName='msgidpluralform')
 
-    # POTranslationSighting.pluralform
+    # POSelection.pluralform
     translationpluralform = IntCol(dbName='translationpluralform')
-    # POTranslationSighting.active
-    active = BoolCol(dbName='active')
+    # POSelection.activesubmission
+    activesubmission = ForeignKey(foreignKey='POSubmission',
+        dbName='activesubmission')
 
     # POMsgID.pomsgid
     msgid = StringCol(dbName='msgid')
 
     # POTranslation.translation
     translation = StringCol(dbName='translation')
+
+
+class VPOExportSet:
+    """Retrieve collections of VPOExport objects."""
+
+    implements(IVPOExportSet)
+    columns = [
+        'potemplate',
+        'language',
+        'variant',
+        'potsequence',
+        'posequence',
+        'msgidpluralform',
+        'translationpluralform',
+        ]
+
+    def get_pofile_rows(self, potemplate, language, variant=None):
+        """See IVPOExportSet."""
+
+        clauses = {
+            'potemplateID': potemplate.id,
+            'languageID': language.id,
+            'orderBy': VPOExportSet.columns,
+            }
+
+        if variant:
+            clauses['variant'] = variant
+
+        return VPOExport.selectBy(**clauses)
+
+    def get_potemplate_rows(self, potemplate):
+        """See IVPOExportSet."""
+        return VPOExport.selectBy(potemplateID=potemplate.id,
+            orderBy=VPOExportSet.columns)
+
+    def get_distrorelease_rows(self, release, date=None):
+        """See IVPOExportSet."""
+
+        if date is None:
+            return VPOExport.selectBy(distroreleaseID=release.id,
+                orderBy=VPOExportSet.columns, languagepack=True)
+        else:
+            return VPOExport.select('''
+                pofile IN (
+                     SELECT POFile.id
+                     FROM POFile
+                     JOIN POTemplate ON POFile.potemplate = POTemplate.id
+                     JOIN POMsgSet ON POMsgSet.pofile = POFile.id
+                     JOIN POSelection ON POMsgSet.id = POSelection.pomsgset
+                     JOIN POSubmission ON POSubmission.id =
+                        POSelection.activesubmission
+                     WHERE
+                         POSubmission.datecreated > %s AND
+                         POTemplate.distrorelease = %s
+                )
+                ''' % sqlvalues(date, release.id))
+
 

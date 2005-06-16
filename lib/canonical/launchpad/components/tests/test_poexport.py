@@ -10,7 +10,7 @@ class TestRow:
     def __init__(self, **kw):
         self.columns = {
             'variant': None,
-            'fuzzy': False,
+            'isfuzzy': False,
             'poheader': 'Content-Type: text/plain; charset=UTF-8\n',
             'potopcomment': '',
             'pofuzzyheader': False,
@@ -18,7 +18,7 @@ class TestRow:
             'pocommenttext': '',
             'sourcecomment': '',
             'filereferences': '',
-            'active': True,
+            'activesubmission': 65,
         }
         self.columns.update(kw)
 
@@ -91,7 +91,7 @@ class BasicExportTest(ExportTest):
             # Fuzzy message.
             prototype2.clone(potsequence=2, posequence=2, msgidpluralform=0,
                 translationpluralform=0, msgid='zig', translation='zag',
-                fuzzy=True),
+                isfuzzy=True),
 
             # Obsolete message.
             prototype2.clone(potsequence=0, posequence=3, msgidpluralform=0,

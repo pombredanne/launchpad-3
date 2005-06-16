@@ -11,11 +11,11 @@ import zope.security.interfaces
 from zope.interface import implements
 from zope.component import getUtility, getAdapter
 from zope.event import notify
-from zope.exceptions import NotFoundError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
+from zope.app.traversing.browser.absoluteurl import absoluteURL
 
 from sqlobject.sqlbuilder import AND, IN, ISNULL
 
@@ -28,28 +28,17 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary, \
      MilestoneVocabulary
 
-from canonical.launchpad.database import Product, ProductSeriesSet, \
-     BugFactory, ProductMilestoneSet, Milestone, Person
-from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet, \
-     IBugTaskSet, IMilestoneSet, IAging, ILaunchBag, IProductRelease, \
-     ISourcePackage, IBugTaskSearchListingView
+from canonical.launchpad.database import (
+    Product, BugFactory, Milestone, Person)
+from canonical.launchpad.interfaces import (
+    IPerson, IProduct, IProductSet, IBugTaskSet, IAging, ILaunchBag, IProductRelease,
+    ISourcePackage, IBugTaskSearchListingView)
 from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
-
-# Traversal functions that help us look up something
-# about a project or product
-def traverseProduct(product, request, name):
-    if name == '+series':
-        return ProductSeriesSet(product = product)
-    elif name == '+milestones':
-        return ProductMilestoneSet(product = product)
-    else:
-        return product.getRelease(name)
-
 
 # A View Class for Product
 class ProductView:
@@ -264,30 +253,6 @@ class ProductBugsView(BugTaskSearchListingView):
             "select", "id", "title", "milestone", "status",
             "submittedby", "assignedto"]
 
-    def assign_to_milestones(self):
-        """Assign bug tasks to the given milestone."""
-        if helpers.is_maintainer(self.context):
-            milestone_id = self.request.get('milestone')
-            if milestone_id:
-                milestoneset = getUtility(IMilestoneSet)
-                try:
-                    milestone = milestoneset.get(milestone_id)
-                except NotFoundError:
-                    # Should only occur if someone entered the milestone
-                    # in the URL manually.
-                    return
-                taskids = self.request.get('task')
-                if taskids:
-                    if not isinstance(taskids, (list, tuple)):
-                        taskids = [taskids]
-
-                    bugtaskset = getUtility(IBugTaskSet)
-                    tasks = [bugtaskset.get(taskid) for taskid in taskids]
-                    for task in tasks:
-                        # XXX: When spiv fixes so that proxied objects
-                        #      can be assigned to a SQLBase '.id' can be
-                        #      removed. -- Bjorn Tillenius, 2005-05-04
-                        task.milestone = milestone.id
 
 class ProductFileBugView(SQLObjectAddView):
 
@@ -296,7 +261,6 @@ class ProductFileBugView(SQLObjectAddView):
     def __init__(self, context, request):
         self.request = request
         self.context = context
-        self._nextURL = '.'
         SQLObjectAddView.__init__(self, context, request)
 
     def createAndAdd(self, data):
@@ -314,11 +278,12 @@ class ProductFileBugView(SQLObjectAddView):
         # Try to avoid passing **kw, it is unreadable
         # Pass the keyword explicitly ...
         bug = BugFactory(**kw)
-        notify(SQLObjectCreatedEvent(bug, self.request))
+        notify(SQLObjectCreatedEvent(bug))
+        self.addedBug = bug
         return bug
 
     def nextURL(self):
-        return self._nextURL
+        return absoluteURL(self.addedBug, self.request)
 
 
 class ProductSetView:

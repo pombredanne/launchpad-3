@@ -5,33 +5,21 @@
 }
 
 #portal-column-one {
+    padding: 0 0 0 1em;
     vertical-align: top;
     width: 16em;
 }
 
 #portal-column-content {
     vertical-align: top;
-    margin: 0;
-    padding: 0;
+    padding: 0 1em;
 }
 
 #portal-column-two {
+    padding: 0 1em 0 0;
     vertical-align: top;
     width: 16em;
 }
-
-/* Padding for the columns */
-
-#portal-column-one .visualPadding {
-    padding: 2em 0em 1em 2em;
-}
-#portal-column-content .visualPadding {
-    padding: 0em 2em 1em 2em;
-}
-#portal-column-two .visualPadding {
-    padding: 2em 2em 1em 0em;
-}
-
 
 /* Launchpad classes */
 
@@ -107,6 +95,7 @@ label {
 #portal-footer a {
     text-decoration: none;
     text-transform: lowercase;
+    font-size: 80%;
 }
 
 #portal-logo {
@@ -368,37 +357,26 @@ tr.rowLinkified a {
    background-color: #cccccc;
 }
 
-/* Various custom list formats */
-
-ul.people {
-    list-style-image: none;
-    list-style: none;
-    margin: 0;
-}
-
-ul.people li {
-    line-height: 1.5em;
-    padding: 0;
-    background-image: url(/++resource++user.gif);
-    background-color: transparent;
-    background-repeat: no-repeat;
-    padding-left: 18px
-}
+/* Various custom list formats: */
 
 ul.search>li, li.search {
     list-style-image: url(/++resource++search_icon.gif);
 }
 
 ul.add>li, li.add {
-    list-style-image: url(/++resource++add.gif);
+  list-style-image: url(/++resource++add.gif);
 }
-
 ul.edit>li, li.edit {
-    list-style-image: url(/++resource++edit.gif);
+  list-style-image: url(/++resource++edit.gif);
 }
-
+ul.info>li, li.info {
+  list-style-image: url(/++resource++info_icon.gif);
+}
 ul.locked>li, li.locked {
-    list-style-image: url(/++resource++lock_icon.gif);
+  list-style-image: url(/++resource++lock_icon.gif);
+}
+ul.people>li, li.people {
+  list-style-image: url(/++resource++user.gif);
 }
 
 ul.languages>li, li.languages {
@@ -540,14 +518,17 @@ pre {
   padding-left: 30px;
 } /* need a px value because the image has a pixel size */
 
-/* -- Make headings lay out properly -- */
+/* -- Make headings lay out properly: -- */
 
 h1 {
   margin-bottom: 0.5em;
   padding-right: 0;
 }
+h1, h2, h3, h4, h5, h6 {
+  padding-top: 0;
+}
 
-/* Fix missing borders in tables: */
+/* -- Fix missing borders in tables: -- */
 
 table.listing>tr>td, table.listing>tbody>tr>td {
   border: 1px dotted #8cacbb;
@@ -584,10 +565,6 @@ dt dfn {
 
 li {
     margin-bottom: 0 !important;
-}
-
-li.edit, ul.edit li {
-    list-style-image: url(/++resource++edit.gif);
 }
 
 #portal-personaltools .portalUser {
@@ -630,6 +607,33 @@ thead {
 
 /* -- Launchpad-wide -- */
 
+#body {
+  padding: 0 1em;
+}
+.personal {
+  clear: left;
+  float: left;
+  margin-right: 2%;
+  width: 48%;
+}
+.statistical {
+  clear: right;
+  float: right;
+  margin-left: 2%;
+  width: 48%;
+}
+.sidebar {
+  clear: right;
+  float: right;
+  font-size: smaller;
+  width: 25%;
+  min-width: 8em;
+  max-width: 50%;
+  border: 1px solid #8cacbb;
+  background-color: #f7f9fa;
+  padding: 0.25em 0.5em;
+}
+
 .debug {
   background-color: #ffddee;
 }
@@ -654,7 +658,7 @@ thead {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  clear: both;
+  clear: left;
 	color: #000066;
 	font-family: "Lucida Grande", sans-serif;
 	font-weight: normal;
@@ -672,7 +676,6 @@ h3, h4, h5, h6 {
 .page-header h2 {
   clear: none;
   margin: 0;
-  text-transform: none;
   font-size: 1.5em;
 }
 h3, h4, h5, h6 {

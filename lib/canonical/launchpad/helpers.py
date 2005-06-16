@@ -3,15 +3,15 @@
 __metaclass__ = type
 
 import base64
+import email
 import gettextpo
 import os
-import popen2
 import random
 import re
+import sha
 import tarfile
 import time
 import warnings
-import email
 from StringIO import StringIO
 from select import select
 from math import ceil
@@ -19,24 +19,32 @@ from xml.sax.saxutils import escape as xml_escape
 from difflib import unified_diff
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implements, providedBy, directlyProvides
+from zope.interface.interfaces import IInterface
 from zope.security.interfaces import IParticipation
 from zope.security.management import newInteraction, endInteraction
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
+import canonical.base
 from canonical.database.constants import UTC_NOW
-from canonical.lp.dbschema import RosettaImportStatus
-from canonical.librarian.interfaces import ILibrarianClient, UploadFailed, \
-    DownloadFailed
-from canonical.launchpad.interfaces import ILaunchBag, IOpenLaunchBag, \
-    IHasOwner, IGeoIP, IRequestPreferredLanguages, ILanguageSet, \
-    IRequestLocalLanguages, \
-    RawFileAttachFailed, RawFileFetchFailed
-from canonical.launchpad.components.poparser import POSyntaxError, \
-    POInvalidInputError, POParser
+from canonical.lp.dbschema import RosettaImportStatus, TranslationPermission
+from canonical.librarian.interfaces import (
+    ILibrarianClient, UploadFailed, DownloadFailed
+    )
+from canonical.launchpad.interfaces import (
+    ILaunchBag, IOpenLaunchBag, IHasOwner, IGeoIP, IRequestPreferredLanguages,
+    ILanguageSet, IRequestLocalLanguages, RawFileAttachFailed, ITeam,
+    RawFileFetchFailed,
+    )
+from canonical.launchpad.components.poparser import (
+    POSyntaxError, POInvalidInputError, POParser
+    )
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.mail import SignedMessage
 from canonical.launchpad.mail.ftests import testmails_path
+
+# This import forms part of this module's API.
+from canonical.launchpad.webapp.publisher import canonical_url
 
 CHARACTERS_PER_LINE = 50
 
@@ -49,21 +57,73 @@ class TranslationConstants:
     NEWLINE_CHAR = u'<span class="po-message-special">\u21b5</span><br/>\n'
 
 
-def is_maintainer(hasowner):
-    """Return True if the logged in user is an owner of hasowner.
+class SnapshotCreationError(Exception):
+    """Something went wrong while creating a snapshot."""
 
-    Return False if he's not an owner.
+class Snapshot:
+    """Provides a simple snapshot of the given object.
 
-    The user is an owner if it either matches hasowner.owner directly or is a
-    member of the hasowner.owner team.
-
-    Raise TypeError is hasowner does not provide IHasOwner.
+    The snapshot will have the attributes given in attributenames. It
+    will also provide the same interfaces as the original object. 
     """
-    if not IHasOwner.providedBy(hasowner):
-        raise TypeError, "hasowner doesn't provide IHasOwner"
+    def __init__(self, ob, names=None, providing=None):
+        if names is None and providing is None:
+            raise SnapshotCreationError(
+                "You have to specify either 'names' or 'providing'.")
+        if IInterface.providedBy(providing):
+            providing = [providing]
+        if names is None:
+            names = set()
+            for iface in providing:
+                names.update(iface.names(all=True))
+
+        for name in names:
+            #XXX: Need to check if the attribute exists, since
+            #     Person doesn't provides all attributes in
+            #     IPerson. -- Bjorn Tillenius, 2005-04-20
+            if hasattr(ob, name):
+                setattr(self, name, getattr(ob, name))
+        if providing is not None:
+            directlyProvides(self, providing)
+
+
+def get_attribute_names(ob):
+    """Gets all the attribute names ob provides.
+
+    It loops through all the interfaces that ob provides, and returns all the
+    attribute names specified in the interfaces.
+
+        >>> from zope.interface import Interface, implements, Attribute
+        >>> class IFoo(Interface):
+        ...     foo = Attribute('Foo') 
+        ...     baz = Attribute('Baz')
+        >>> class IBar(Interface):
+        ...     bar = Attribute('Bar')
+        ...     baz = Attribute('Baz')
+        >>> class FooBar:
+        ...     implements(IFoo, IBar)
+        >>> attribute_names = get_attribute_names(FooBar())
+        >>> attribute_names.sort()
+        >>> attribute_names
+        ['bar', 'baz', 'foo']
+    """
+    ifaces = providedBy(ob)
+    names = set()
+    for iface in ifaces:
+        names.update(iface.names(all=True))
+    return list(names)
+
+
+def is_maintainer(owned_object):
+    """Is the logged in user the maintainer of this thing?
+
+    owned_object provides IHasOwner.
+    """
+    if not IHasOwner.providedBy(owned_object):
+        raise TypeError, "Object %s doesn't provide IHasOwner" % repr(owned_object)
     launchbag = getUtility(ILaunchBag)
     if launchbag.user is not None:
-        return launchbag.user.inTeam(hasowner.owner)
+        return launchbag.user.inTeam(owned_object.owner)
     else:
         return False
 
@@ -343,6 +403,31 @@ def simple_popen2(command, input, in_bufsize=1024, out_bufsize=128):
 
     return output
 
+def contactEmailAddresses(person):
+    """Return a Set of email addresses to contact this Person.
+
+    If <person> has a preferred email, the Set will contain only that
+    preferred email. 
+
+    If <person> doesn't have a preferred email but implements ITeam, the 
+    Set will contain the preferred email address of each member of <person>.
+
+    Finally, if <person> doesn't have a preferred email neither implement
+    ITeam, the Set will be empty.
+    """
+    emails = set()
+    if person.preferredemail is not None:
+        emails.add(person.preferredemail.email)
+        return emails
+
+    if ITeam.providedBy(person):
+        for member in person.activemembers:
+            contactAddresses = contactEmailAddresses(member)
+            if contactAddresses:
+                emails = emails.union(contactAddresses)
+
+    return emails
+
 # Note that this appears as "valid email" in the UI, because that term is
 # more familiar to users, even if it is less correct.
 well_formed_email_re = re.compile(
@@ -474,7 +559,7 @@ def getRawFileData(raw_file_data):
     client = getUtility(ILibrarianClient)
 
     try:
-        file = client.getFileByAlias(raw_file_data.rawfile)
+        file = client.getFileByAlias(raw_file_data.rawfile.id)
     except DownloadFailed, e:
         raise RawFileFetchFailed(str(e))
 
@@ -538,9 +623,13 @@ def request_languages(request):
             languages.append(lang)
     return languages
 
-def parse_cformat_string(s):
-    '''Parse a printf()-style format string into a sequence of interpolations
-    and non-interpolations.'''
+class UnrecognisedCFormatString(ValueError):
+    """Exception raised when a string containing C format sequences can't be
+    parsed."""
+
+def parse_cformat_string(string):
+    """Parse a printf()-style format string into a sequence of interpolations
+    and non-interpolations."""
 
     # The sequence '%%' is not counted as an interpolation. Perhaps splitting
     # into 'special' and 'non-special' sequences would be better.
@@ -549,30 +638,149 @@ def parse_cformat_string(s):
     # empty string, a string beginning with a sequence containing no
     # interpolations, or a string beginning with an interpolation.
 
-    # Check for an empty string.
+    segments = []
+    end = string
+    plain_re = re.compile('(%%|[^%])+')
+    interpolation_re = re.compile('%[^diouxXeEfFgGcspmn]*[diouxXeEfFgGcspmn]')
 
-    if s == '':
-        return ()
+    while end:
+        # Check for a interpolation-less prefix.
 
-    # Check for a interpolation-less prefix.
+        match = plain_re.match(end)
 
-    match = re.match('(%%|[^%])+', s)
+        if match:
+            segment = match.group(0)
+            segments.append(('string', segment))
+            end = end[len(segment):]
+            continue
 
-    if match:
-        t = match.group(0)
-        return (('string', t),) + parse_cformat_string(s[len(t):])
+        # Check for an interpolation sequence at the beginning.
 
-    # Check for an interpolation sequence at the beginning.
+        match = interpolation_re.match(end)
 
-    match = re.match('%[^diouxXeEfFgGcspn]*[diouxXeEfFgGcspn]', s)
+        if match:
+            segment = match.group(0)
+            segments.append(('interpolation', segment))
+            end = end[len(segment):]
+            continue
 
-    if match:
-        t = match.group(0)
-        return (('interpolation', t),) + parse_cformat_string(s[len(t):])
+        # Give up.
 
-    # Give up.
+        raise UnrecognisedCFormatString(string)
 
-    raise ValueError(s)
+    return segments
+
+def normalize_newlines(s):
+    r"""Convert newlines to Unix form.
+
+    >>> normalize_newlines('foo')
+    'foo'
+    >>> normalize_newlines('foo\n')
+    'foo\n'
+    >>> normalize_newlines('foo\r')
+    'foo\n'
+    >>> normalize_newlines('foo\r\n')
+    'foo\n'
+    >>> normalize_newlines('foo\r\nbar\r\n\r\nbaz')
+    'foo\nbar\n\nbaz'
+    """
+    return s.replace('\r\n', '\n').replace('\r', '\n')
+
+def regex_escape(*substitutions):
+    """Helper for string substitution when making regular expressions."""
+    return tuple([re.escape(string) for string in substitutions])
+
+def _tab_contraction_replacer(matchobj):
+    """Function called by contract_rosetta_tabs when substituting in
+    _tab_contraction_re."""
+    tab_in_brackets, escaped_tab_in_brackets = matchobj.groups()
+    if tab_in_brackets:
+        return '\t'
+    else:
+        assert escaped_tab_in_brackets
+        return '[tab]'
+
+_tab_contraction_re = re.compile(
+    '(%s)|(%s)' % regex_escape('[tab]', r'\[tab]'))
+
+def contract_rosetta_tabs(text):
+    r"""Replace Rosetta representation of tab characters with their native form.
+
+    Normal strings get passed through unmolested.
+
+    >>> contract_rosetta_tabs('foo')
+    'foo'
+    >>> contract_rosetta_tabs('foo\\nbar')
+    'foo\\nbar'
+
+    The string '[tab]' gets gonveted to a tab character.
+
+    >>> contract_rosetta_tabs('foo[tab]bar')
+    'foo\tbar'
+
+    The string '\[tab]' gets converted to a literal '[tab]'.
+
+    >>> contract_rosetta_tabs('foo\\[tab]bar')
+    'foo[tab]bar'
+
+    The string '\\[tab]' gets converted to a literal '\[tab]'.
+
+    >>> contract_rosetta_tabs('foo\\\\[tab]bar')
+    'foo\\[tab]bar'
+
+    And so on...
+
+    >>> contract_rosetta_tabs('foo\\\\\\[tab]bar')
+    'foo\\\\[tab]bar'
+    """
+
+    return _tab_contraction_re.sub(_tab_contraction_replacer, text)
+
+def _tab_expansion_replacer(matchobj):
+    """Function called by expand_rosetta_tabs when substituting in
+    _tab_expansion_re."""
+    tab_literal, tab_in_brackets = matchobj.groups()
+    if tab_literal:
+        return '[tab]'
+    else:
+        assert tab_in_brackets
+        return '\[tab]'
+
+_tab_expansion_re = re.compile(
+    '(%s)|(%s)' % regex_escape('\t', '[tab]'))
+
+def expand_rosetta_tabs(text):
+    r"""Replace tabs with their Rosetta representation.
+
+    Normal strings get passed through unmolested.
+
+    >>> expand_rosetta_tabs('foo')
+    'foo'
+    >>> expand_rosetta_tabs('foo\\nbar')
+    'foo\\nbar'
+
+    Tabs get converted to '[tab]'.
+
+    >>> expand_rosetta_tabs('foo\tbar')
+    'foo[tab]bar'
+
+    Literal ocurrences of '[tab]' get escaped.
+
+    >>> expand_rosetta_tabs('foo[tab]bar')
+    'foo\\[tab]bar'
+
+    Escaped ocurrences themselves get escaped.
+
+    >>> expand_rosetta_tabs('foo\\[tab]bar')
+    'foo\\\\[tab]bar'
+
+    And so on...
+
+    >>> expand_rosetta_tabs('foo\\\\[tab]bar')
+    'foo\\\\\\[tab]bar'
+    """
+
+    return _tab_expansion_re.sub(_tab_expansion_replacer, text)
 
 def parse_translation_form(form):
     """Parse a form submitted to the translation widget.
@@ -590,6 +798,7 @@ def parse_translation_form(form):
     messageSets = {}
 
     # Extract message IDs.
+
     for key in form:
         match = re.match('set_(\d+)_msgid$', key)
 
@@ -601,7 +810,6 @@ def parse_translation_form(form):
             messageSets[id]['fuzzy'] = False
 
     # Extract translations.
-
     for key in form:
         match = re.match(r'set_(\d+)_translation_([a-z]+(?:_[A-Z]+)?)_(\d+)$',
             key)
@@ -613,10 +821,10 @@ def parse_translation_form(form):
             if not id in messageSets:
                 raise AssertionError("Orphaned translation in form.")
 
-            messageSets[id]['translations'][pluralform] = form[key]
+            messageSets[id]['translations'][pluralform] = (
+                contract_rosetta_tabs(normalize_newlines(form[key])))
 
     # Extract fuzzy statuses.
-
     for key in form:
         match = re.match(r'set_(\d+)_fuzzy_([a-z]+)$', key)
 
@@ -628,9 +836,11 @@ def parse_translation_form(form):
 
 def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
                newline=TranslationConstants.NEWLINE_CHAR):
-    '''Convert a message ID to a HTML representation.'''
+    """Convert a message ID to a HTML representation."""
 
     lines = []
+
+    # Replace leading and trailing spaces on each line with special markup.
 
     for line in xml_escape(text).split('\n'):
         # Pattern:
@@ -650,23 +860,33 @@ def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
             raise AssertionError(
                 "A regular expression that should always match didn't.")
 
-    for i in range(len(lines)):
-        if 'c-format' in flags:
-            line = ''
+    if 'c-format' in flags:
+        # Replace c-format sequences with marked-up versions. If there is a
+        # problem parsing the c-format sequences on a particular line, that
+        # line is left unformatted.
 
-            for segment in parse_cformat_string(lines[i]):
+        for i in range(len(lines)):
+            formatted_line = ''
+
+            try:
+                segments = parse_cformat_string(lines[i])
+            except UnrecognisedCFormatString:
+                continue
+
+            for segment in segments:
                 type, content = segment
 
                 if type == 'interpolation':
-                    line += '<span class="interpolation">%s</span>' % content
+                    formatted_line += ('<span class="interpolation">%s</span>'
+                        % content)
                 elif type == 'string':
-                    line += content
+                    formatted_line += content
 
-            lines[i] = line
+            lines[i] = formatted_line
 
     # Replace newlines and tabs with their respective representations.
 
-    return '\n'.join(lines).replace('\n', newline).replace('\t', '\\t')
+    return expand_rosetta_tabs(newline.join(lines))
 
 def check_po_syntax(s):
     parser = POParser()
@@ -737,6 +957,7 @@ def import_tar(potemplate, importer, tarfile, pot_paths, po_paths):
     # function we did already the needed tests to be sure that pot_paths
     # follows our requirements.
     potemplate.attachRawFileData(tarfile.extractfile(pot_paths[0]).read(),
+                                 True, # the "published" flag
                                  importer)
     pot_base_dir = os.path.dirname(pot_paths[0])
 
@@ -768,7 +989,9 @@ def import_tar(potemplate, importer, tarfile, pot_paths, po_paths):
         pofile = potemplate.getOrCreatePOFile(code, variant, importer)
 
         try:
-            pofile.attachRawFileData(contents, importer)
+            # we are assming that a tarball import is ALWAYS of a
+            # "published" potemplate and "published" pofiles
+            pofile.attachRawFileData(contents, True, importer)
         except (POSyntaxError, POInvalidInputError):
             errors.append(path)
             continue
@@ -793,8 +1016,40 @@ class DummyPOFile(RosettaStats):
         self.potemplate = potemplate
         self.language = language
         self.header = ''
-        self.latest_sighting = None
+        self.latest_submission = None
         self.messageCount = len(potemplate)
+
+    @property
+    def translators(self):
+        tgroups = self.potemplate.translationgroups
+        ret = []
+        for group in tgroups:
+            translator = group.query_translator(self.language)
+            if translator is not None:
+                ret.append(translator)
+        return ret
+
+    def canEditTranslations(self, person):
+
+        tperm = self.potemplate.translationpermission
+        if tperm == TranslationPermission.OPEN:
+            # if the translation policy is "open", then yes
+            return True
+        elif tperm == TranslationPermission.CLOSED:
+            if person is not None:
+                # if the translation policy is "closed", then check if the
+                # person is in the set of translators XXX sabdfl 25/05/05 this
+                # code could be improved when we have implemented CrowdControl
+                translators = [t.translator for t in self.translators]
+                for translator in translators:
+                    if person.inTeam(translator):
+                        return True
+        else:
+            raise NotImplementedError, 'Unknown permission %s', tperm.name
+
+        # At this point you either got an OPEN (true) or you are not in the
+        # designated translation group, so you can't edit them
+        return False
 
     def currentCount(self):
         return 0
@@ -846,6 +1101,28 @@ def test_diff(lines_a, lines_b):
         lineterm='',
         )))
 
+fingerprint_re = re.compile(r"^[\dABCDEF]{40}$")
+
+def sanitiseFingerprint(fpr):
+    """Returns sanitised fingerprint if fpr is well-formed,
+    otherwise returns False.
+
+    >>> sanitiseFingerprint('C858 2652 1A6E F6A6 037B  B3F7 9FF2 583E 681B 6469')
+    'C85826521A6EF6A6037BB3F79FF2583E681B6469'
+    >>> sanitiseFingerprint('681B 6469')
+    False
+    
+    >>> sanitiseFingerprint('abnckjdiue')
+    False
+    
+    """ 
+    # replace the white spaces
+    fpr = fpr.replace(' ', '')
+
+    if not fingerprint_re.match(fpr):
+        return False
+    
+    return fpr
 
 class Participation:
     implements(IParticipation) 
@@ -885,4 +1162,42 @@ def read_test_message(filename):
     """
     return email.message_from_file(
         open(testmails_path + filename), _class=SignedMessage)
+
+def filenameToContentType(fname):
+    """ Return the a ContentType-like entry for arbitrary filenames 
+
+    deb files
+
+    >>> filenameToContentType('test.deb')
+    'application/x-debian-package'
+
+    text files
+
+    >>> filenameToContentType('test.txt')
+    'text/plain'
+
+    Not recognized format
+    
+    >>> filenameToContentType('test.tgz')
+    'application/octet-stream'
+    """
+    ftmap = {".dsc":      "text/plain",
+             ".changes":  "text/plain",
+             ".deb":      "application/x-debian-package",
+             ".udeb":     "application/x-debian-package",
+             ".txt":      "text/plain",
+             }
+    for ending in ftmap:
+        if fname.endswith(ending):
+            return ftmap[ending]
+    return "application/octet-stream"
+
+
+def get_filename_from_message_id(message_id):
+    """Returns a librarian filename based on the email message_id.
+    
+    It generates a file name that's not easily guessable.  
+    """
+    return '%s.msg' % (
+            canonical.base.base(long(sha.new(message_id).hexdigest(), 16), 62))
 

@@ -1,0 +1,84 @@
+
+Rosetta PO Export Request Queue
+-------------------------------
+
+The queue of export requests is served by a cron script. Let's check if it can
+serve those requests properly.
+
+  >>> from canonical.launchpad.ftests.harness import \
+  ...     LaunchpadFunctionalTestSetup
+  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+  >>> LaunchpadFunctionalTestSetup().setUp()
+  >>> LibrarianTestSetup().setUp()
+
+Here's somebody to make a request.
+
+  >>> from canonical.launchpad.database import Person
+  >>> person = Person.get(1)
+
+Here's the stuff they're going to request.
+
+  >>> from canonical.launchpad.database import POTemplate
+  >>> potemplate = POTemplate.get(2)
+  >>> ca = potemplate.getPOFileByLang('ca')
+  >>> cs = potemplate.getPOFileByLang('cs')
+
+And here's them making the request.
+
+  >>> from canonical.launchpad.database import POExportRequestSet
+  >>> request_set = POExportRequestSet()
+  >>> request_set.addRequest(person, None, [ca, cs])
+
+Now we request that the queue be processed.
+
+  >>> from canonical.launchpad.scripts.po_export_queue import process_queue
+  >>> process_queue()
+
+We need to make sure the Librarian data has settled into place.
+
+  >>> import transaction
+  >>> transaction.commit()
+
+Let's read our mail.
+
+  >>> from canonical.launchpad.mail.stub import test_emails
+  >>> len(test_emails)
+  1
+  >>> from_addr, to_addrs, body = test_emails[0]
+  >>> from_addr
+  'rosetta@canonical.com'
+  >>> to_addrs
+  ['mark@hbd.com']
+  >>> lines = body[body.index('\n\n')+2:].split('\n')
+  >>> for line in lines:
+  ...     print ">", line
+  > 
+  > Hello Mark Shuttleworth,
+  > 
+  > The files you requested from Rosetta are ready for download
+  > from the following location:
+  > 
+  >     http://localhost:58000/.../rosetta-pmount.tar.gz
+  > 
+  > 
+
+The mail has a URL in it.
+
+  >>> import re
+  >>> urls = re.compile(r'^ *(http://.*)$', re.M).findall(body)
+  >>> url = urls[0]
+
+Let's download it and make sure the contents look ok.
+
+  >>> import urllib2
+  >>> from canonical.launchpad.helpers import string_to_tarfile
+  >>> tarball = string_to_tarfile(urllib2.urlopen(url).read())
+  >>> for name in tarball.getnames():
+  ...   print name
+  rosetta-pmount/
+  rosetta-pmount/ca.po
+  rosetta-pmount/cs.po
+
+  >>> LibrarianTestSetup().tearDown()
+  >>> LaunchpadFunctionalTestSetup().tearDown()
+

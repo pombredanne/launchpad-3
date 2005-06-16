@@ -1,16 +1,15 @@
-
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
-    
+
     <!--PAGE DECLARATIONS-->
     <browser:page
         for="*"
         name="searchselection"
-        template="../templates/widget-searchselection.pt" 
+        template="../templates/widget-searchselection.pt"
         permission="zope.Public"
         />
 

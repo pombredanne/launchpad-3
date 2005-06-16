@@ -51,7 +51,7 @@ from canonical.launchpad.searchbuilder import NULL
 
 from canonical.lp.dbschema import \
     EnumCol, SSHKeyType, KarmaType, EmailAddressStatus, \
-    TeamSubscriptionPolicy, TeamMembershipStatus, GPGKeyAlgorithms
+    TeamSubscriptionPolicy, TeamMembershipStatus, GPGKeyAlgorithm
 
 from canonical.foaf import nickname
 
@@ -87,6 +87,8 @@ class Person(SQLBase):
                                      default=None)
 
     merged = ForeignKey(dbName='merged', foreignKey='Person', default=None)
+
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
     # RelatedJoin gives us also an addLanguage and removeLanguage for free
     languages = RelatedJoin('Language', joinColumn='person',
@@ -195,25 +197,6 @@ class Person(SQLBase):
         """See IPerson."""
         return self.teamowner is not None
 
-    def translatedTemplates(self):
-        """
-        SELECT * FROM POTemplate WHERE
-            id IN (SELECT potemplate FROM pomsgset WHERE
-                id IN (SELECT pomsgset FROM POTranslationSighting WHERE
-                    origin = 2
-                ORDER BY datefirstseen DESC))
-        """
-        # XXX: This needs a proper descriptive English docstring.
-        #      Also, what is it doing here?  It doesn't use 'self' at all.
-        #      -- SteveAlexander, 2005-04-23
-        return POTemplate.select('''
-            id IN (
-              SELECT potemplate FROM potmsgset WHERE id IN (
-                SELECT potmsgset FROM pomsgset WHERE id IN (
-                  SELECT pomsgset FROM POTranslationSighting WHERE origin = 2
-                    ORDER BY datefirstseen DESC)))
-            ''')
-
     def assignKarma(self, karmatype, points=None):
         if karmatype.schema is not KarmaType:
             raise TypeError('"%s" is not a valid KarmaType value' % karmatype)
@@ -252,25 +235,20 @@ class Person(SQLBase):
         return bool(results.count())
 
     def leave(self, team):
-        # XXX: Should these really be asserts?
-        #      -- SteveAlexander, 2005-04-23
+        """See IPerson."""
         assert not ITeam.providedBy(self)
 
+        active = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
         tm = TeamMembership.selectOneBy(personID=self.id, teamID=team.id)
-        assert tm is not None
-        assert tm.status in [TeamMembershipStatus.ADMIN,
-                             TeamMembershipStatus.APPROVED]
+        if tm is None or tm.status not in active:
+            # Ok, we're done. You are not an active member and still not being.
+            return
 
         team.setMembershipStatus(self, TeamMembershipStatus.DEACTIVATED,
                                  tm.dateexpires)
-        # XXX: Why is this returing anything?  What's the contract?
-        #      Where's the docstring?
-        #      -- SteveAlexander, 2005-04-23
-        return True
 
     def join(self, team):
-        # XXX: Don't use an assert.
-        #      SteveAlexander, 2005-04-23
+        """See IPerson."""
         assert not ITeam.providedBy(self)
 
         expired = TeamMembershipStatus.EXPIRED
@@ -326,7 +304,10 @@ class Person(SQLBase):
     def addMember(self, person, status=TeamMembershipStatus.APPROVED,
                   reviewer=None, comment=None):
         assert self.teamowner is not None
-        assert not person.hasMembershipEntryFor(self)
+        if person.hasMembershipEntryFor(self):
+            # <person> is already a member.
+            return 
+
         assert status in [TeamMembershipStatus.APPROVED,
                           TeamMembershipStatus.PROPOSED]
 
@@ -338,7 +319,7 @@ class Person(SQLBase):
         if status == TeamMembershipStatus.APPROVED:
             _fillTeamParticipation(person, self)
 
-    def setMembershipStatus(self, person, status, expires, reviewer=None,
+    def setMembershipStatus(self, person, status, expires=None, reviewer=None,
                             comment=None):
         tm = TeamMembership.selectOneBy(personID=person.id, teamID=self.id)
 
@@ -601,20 +582,13 @@ class PersonSet:
         assert ownerID
         owner = Person.get(ownerID)
         team = Person(**kw)
-        _fillTeamParticipation(owner, team)
+        team.addMember(owner)
+        team.setMembershipStatus(owner, TeamMembershipStatus.ADMIN)
         return team
 
     def newPerson(self, **kw):
         """See IPersonSet."""
         assert not kw.get('teamownerID')
-        if kw.has_key('password'):
-            # encryptor = getUtility(IPasswordEncryptor)
-            # XXX: Carlos Perello Marin 22/12/2004 We cannot use getUtility
-            # from initZopeless scripts and Rosetta's import_daemon.py
-            # calls indirectly to this function :-(
-            encryptor = SSHADigestEncryptor()
-            kw['password'] = encryptor.encrypt(kw['password'])
-
         return Person(**kw)
 
     def getByName(self, name, default=None):
@@ -708,6 +682,9 @@ class PersonSet:
 
         XXX: Are we game to delete from_person yet?
             -- StuartBishop 20050315
+        XXX: let's let it roll for a while and see what cruft develops. If
+             it's clean, let's start deleting
+            -- MarkShuttleworth 20050528
         """
         # Sanity checks
         if ITeam.providedBy(from_person):
@@ -798,23 +775,27 @@ class PersonSet:
             ''' % vars())
         skip.append(('posubscription', 'person'))
 
-        # Update only the POTranslationSightngs that will not conflict
-        # XXX: Add sampledata and test to confirm this case
-        # -- StuartBishop 20050331
+        # Update the POSubmissions. They should not conflict since each of
+        # them is independent
         cur.execute('''
-            UPDATE POTranslationSighting
+            UPDATE POSubmission
             SET person=%(to_id)d
-            WHERE person=%(from_id)d AND id NOT IN (
-                SELECT a.id
-                FROM POTranslationSighting AS a, POTranslationSighting AS b
-                WHERE a.person = %(from_id)d AND b.person = %(to_id)d
-                    AND a.pomsgset = b.pomsgset
-                    AND a.potranslation = b.potranslation
-                    AND a.license = b.license
-                AND a.pluralform = b.pluralform
-                )
+            WHERE person=%(from_id)d
             ''' % vars())
-        skip.append(('potranslationsighting', 'person'))
+        skip.append(('posubmission', 'person'))
+    
+        # We should still have the POTranslationSightingBackup. These might
+        # conflict since there is a complicated constraint to ensure there
+        # is only ever one sighting from one person. We'll just ignore that,
+        # try and slam it and see if it fails. Unlikely, since there are not
+        # likely to be many/any people translating files yet under two
+        # different accounts which they later decide to merge.
+        cur.execute('''
+            UPDATE POTranslationSightingBackup
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d
+            ''' % vars())
+        skip.append(('potranslationsightingbackup', 'person'))
     
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.
@@ -861,7 +842,13 @@ def createPerson(email, displayname=None, givenname=None, familyname=None,
     kw['displayname'] = displayname
     kw['givenname'] = givenname
     kw['familyname'] = familyname
-    kw['password'] = password
+    # XXX: Carlos Perello Marin 22/12/2004 We cannot use getUtility
+    # from initZopeless scripts and Rosetta's import_daemon.py
+    # calls indirectly to this function :-(
+    # encryptor = getUtility(IPasswordEncryptor)
+    encryptor = SSHADigestEncryptor()
+    kw['password'] = encryptor.encrypt(password)
+
     person = PersonSet().newPerson(**kw)
 
     new = EmailAddressStatus.NEW
@@ -944,13 +931,12 @@ class GPGKey(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
     keyid = StringCol(dbName='keyid', notNull=True)
-    pubkey = StringCol(dbName='pubkey', notNull=True)
     fingerprint = StringCol(dbName='fingerprint', notNull=True)
 
     keysize = IntCol(dbName='keysize', notNull=True)
 
     algorithm = EnumCol(dbName='algorithm', notNull=True,
-                        schema=GPGKeyAlgorithms)
+                        schema=GPGKeyAlgorithm)
 
     revoked = BoolCol(dbName='revoked', notNull=True)
 
@@ -962,9 +948,10 @@ class GPGKey(SQLBase):
 class GPGKeySet:
     implements(IGPGKeySet)
 
-    def new(self, ownerID, keyid, pubkey, fingerprint, keysize,
+    def new(self, ownerID, keyid, fingerprint, keysize,
             algorithm, revoked):
-        return GPGKey(owner=ownerID, keyid=keyid, pubkey=pubkey,
+        # add new key in DB
+        return GPGKey(owner=ownerID, keyid=keyid,
                       fingerprint=fingerprint, keysize=keysize,
                       algorithm=algorithm, revoked=revoked)
 
@@ -973,6 +960,12 @@ class GPGKeySet:
             return GPGKey.get(id)
         except SQLObjectNotFound:
             return default
+
+    def getByFingerprint(self, fingerprint, default=None):
+        result = GPGKey.selectOneBy(fingerprint=fingerprint)
+        if result is None:
+            return default
+        return result
 
 
 class SSHKey(SQLBase):

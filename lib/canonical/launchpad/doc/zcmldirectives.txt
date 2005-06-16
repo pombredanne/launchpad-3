@@ -2,6 +2,10 @@
 
 We have a bunch of custom zcml directives in Launchpad.
 
+== Canonical URLs ==
+
+See canonical_url.txt for information and tests of the browser:url directive.
+
 == Facets and Links ==
 
 BasicLink is one of the building-blocks of this directive.

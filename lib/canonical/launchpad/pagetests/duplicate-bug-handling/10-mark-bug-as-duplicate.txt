@@ -66,27 +66,37 @@ notification:
     >>> from_addr, to_addrs, raw_message = sent_emails.pop()
 
     >>> print from_addr
-    Malone Bugtracker <noreply@canonical.com>
+    Malone Bugtracker <2@...>
     >>> print to_addrs
-    ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
+    ['dilys@muse.19inch.net', 'mark@hbd.com',
+     'support@ubuntu.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug 2] Blackhole Trash folder'
 
-    >>> msg.get_payload(decode = True)
-    'Foo Bar <foo.bar@canonical.com> made changes to:\n\n    http://localhost:9000/malone/bugs/2\n\n*** This bug has been marked a duplicate of 1 ***\n\n'
+    >>> print msg.get_payload(decode = True) #doctest: -NORMALIZE_WHITESPACE
+    Foo Bar <foo.bar@canonical.com> made changes to:
+    <BLANKLINE>
+        http://.../malone/bugs/2
+    <BLANKLINE>
+    *** This bug has been marked a duplicate of 1 ***
+    <BLANKLINE>
+    <BLANKLINE>
 
   2. To the subscribers of the dup-target bug.
 
     >>> from_addr, to_addrs, raw_message = sent_emails.pop()
 
     >>> print from_addr
-    Malone Bugtracker <noreply@canonical.com>
+    Malone Bugtracker <1@...>
     >>> print to_addrs
-    ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
+    ['dilys@muse.19inch.net', 'mark@hbd.com',
+     'support@ubuntu.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
 
-    >>> msg.get_payload(decode = True)
-    'http://localhost:9000/malone/bugs/1\n\n*** Bug 2 has been marked a duplicate of this bug ***'
+    >>> print msg.get_payload(decode = True) #doctest: -NORMALIZE_WHITESPACE
+    http://.../malone/bugs/1
+    <BLANKLINE>
+    *** Bug 2 has been marked a duplicate of this bug ***

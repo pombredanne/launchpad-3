@@ -120,6 +120,9 @@ def bugs_assigned(context, view):
 
 bugs_createdby_index = 'Malone Bug Report by Creator'
 
+def bugs_for_context(context, view):
+    return "Bugs in %s" % context.context_title
+
 bugs_index = 'Malone Master Bug List'
 
 bugsubscription_edit = 'Modify Your Bug Subscription'
@@ -176,9 +179,9 @@ distro_add = 'Adding New Distribution'
 
 distro_edit = 'Create a new Distribution in Launchpad'
 
-distro_index = ContextTitle('Launchpad Distribution Manager: %s')
+distribution = ContextTitle('Launchpad Distribution Summary: %s')
 
-distro_members = ContextTitle('Launchpad Distribution Manager: %s')
+distro_members = ContextTitle('Distribution Members: %s')
 
 distro_search = 'Search Distributions'
 
@@ -341,7 +344,7 @@ people_index = 'Launchpad People'
 
 people_list = 'People registered with Launchpad'
 
-person_assignedbugs = ContextDisplayName('Bugs Reported By %s')
+person_assignedbugs = ContextDisplayName('Bugs Assigned To %s')
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
@@ -378,7 +381,11 @@ def pofile_index(context, view):
         context.potemplate.title, context.language.englishname)
 
 def pofile_translate(context, view):
-    return 'Translating %s' % context.potemplate.title
+    return 'Translating %s into %s with Rosetta' % (
+        context.potemplate.displayname,
+        context.language.englishname)
+
+pofile_upload = ContextTitle('%s upload in Rosetta')
 
 # portlet_* are portlets
 
@@ -431,6 +438,8 @@ products_search = 'Launchpad: Advanced Upstream Product Search'
 productseries_source = 'Add Source Import'
 
 productseries_sourceadmin = 'Add Source Import'
+
+project = ContextTitle('Upstream Project: %s')
 
 project_branches = ContextTitle('Bazaar Summary for %s')
 
@@ -553,6 +562,7 @@ template_index = '%EXAMPLE TITLE'
 template_new = 'EXAMPLE NEW TITLE'
 
 translationgroup = ContextTitle('Rosetta Translation Group: %s')
+translationgroups = 'Rosetta Translation Groups'
 
 ubuntite_list = 'FOAF: Ubuntite List'
 

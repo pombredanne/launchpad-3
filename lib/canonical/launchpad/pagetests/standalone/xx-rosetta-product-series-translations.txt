@@ -11,9 +11,9 @@ serie is working.
   ...
       <tr onclick="window.location='/products/evolution/2.1.6/+pots/evolution-2.2/af/+translate'">
   <BLANKLINE>
-        <a href="/products/evolution/2.1.6/+pots/evolution-2.2/af/+translate">
           <td>
             <a href="/products/evolution/2.1.6/+pots/evolution-2.2/af/+translate">Afrikaans</a>
           </td>
+  <BLANKLINE>
           <td>22</td>
   ...

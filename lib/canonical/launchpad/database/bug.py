@@ -10,19 +10,22 @@ from email.Utils import make_msgid
 
 from zope.interface import implements
 from zope.exceptions import NotFoundError
+from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
+from sqlobject import SQLObjectNotFound
 
-from canonical.launchpad.interfaces import \
-    IBug, IBugAddForm, IBugSet, IBugDelta
+from canonical.launchpad.interfaces import (
+    IBug, IBugAddForm, IBugSet, IBugDelta)
+from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp import dbschema
 from canonical.launchpad.database.bugset import BugSetBase
-from canonical.launchpad.database.message \
-        import Message, MessageSet, MessageChunk
+from canonical.launchpad.database.message import (
+    Message, MessageSet, MessageChunk)
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.bugsubscription import BugSubscription
@@ -76,6 +79,7 @@ class Bug(SQLBase):
     cverefs = MultipleJoin('CVERef', joinColumn='bug', orderBy='cveref')
     subscriptions = MultipleJoin(
             'BugSubscription', joinColumn='bug', orderBy='id')
+    duplicates = MultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
 
     def followup_title(self):
         return 'Re: '+ self.title
@@ -104,52 +108,34 @@ class Bug(SQLBase):
         emails = Set()
         for subscription in self.subscriptions:
             if subscription.subscription == dbschema.BugSubscription.CC:
-                preferred_email = subscription.person.preferredemail
-                # XXX: Brad Bollenbach, 2005-03-14: Subscribed users
-                # should always have a preferred email, but
-                # realistically, we've got some corruption in our db
-                # still that prevents us from guaranteeing that all
-                # subscribers will have a preferredemail
-                if preferred_email is not None:
-                    emails.add(preferred_email.email)
+                emails.update(contactEmailAddresses(subscription.person))
 
         if not self.private:
             # Collect implicit subscriptions. This only happens on
             # public bugs.
             for task in self.bugtasks:
                 if task.assignee is not None:
-                    preferred_email = task.assignee.preferredemail
-                    # XXX: Brad Bollenbach, 2005-03-14: Subscribed users
-                    # should always have a preferred email, but
-                    # realistically, we've got some corruption in our db
-                    # still that prevents us from guaranteeing that all
-                    # subscribers will have a preferredemail
-                    if preferred_email is not None:
-                        emails.add(preferred_email.email)
+                    emails.update(contactEmailAddresses(task.assignee))
 
                 if task.product is not None:
-                    preferred_email = task.product.owner.preferredemail
-                    if preferred_email is not None:
-                        emails.add(preferred_email.email)
+                    owner = task.product.owner
+                    emails.update(contactEmailAddresses(owner))
                 else:
                     if task.sourcepackagename is not None:
                         if task.distribution is not None:
                             distribution = task.distribution
                         else:
                             distribution = task.distrorelease.distribution
+
                         maintainership = Maintainership.selectOneBy(
                             sourcepackagenameID = task.sourcepackagename.id,
                             distributionID = distribution.id)
+
                         if maintainership is not None:
                             maintainer = maintainership.maintainer
-                            preferred_email = maintainer.preferredemail
-                            if preferred_email:
-                                emails.add(preferred_email.email)
+                            emails.update(contactEmailAddresses(maintainer))
 
-        preferred_email = self.owner.preferredemail
-        if preferred_email is not None:
-            emails.add(preferred_email.email)
-
+        emails.update(contactEmailAddresses(self.owner))
         emails = list(emails)
         emails.sort()
         return emails
@@ -181,14 +167,11 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
                description=None, rfc822msgid=None, summary=None,
                datecreated=None, title=None, private=False,
                owner=None):
-    """Create a bug.
+    """Create a bug and return it.
 
     Things to note when using this factory:
 
       * addview is not used for anything in this factory
-
-      * one of either distribution or product must be provided. If neither
-        are provided, a ValueError will be raised
 
       * if no description is passed, the comment will be used as the
         description
@@ -196,23 +179,35 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
       * if summary is not passed then the summary will be the
         first sentence of the description
 
-      * the appropriate bug task (exactly one, from this function) and
-        subscriptions will be added
+      * the submitter will be subscribed to the bug
 
-      * the return value is an IBugAddForm to play nicely with the Z3
-        addform machinery
+      * if either product or distribution is specified, an appropiate
+        bug task will be created
     """
-
     # make sure that the factory has been passed enough information
-    if not (distribution or product):
-        raise ValueError('Must pass BugFactory a distribution or a product')
     if not (comment or description or rfc822msgid):
         raise ValueError(
             'BugFactory requires a comment, rfc822msgid or description')
 
+    # create the bug comment if one was given
+    if comment:
+        if not rfc822msgid:
+            rfc822msgid = make_msgid('malonedeb')
+
+    # retrieve or create the message in the db
+    msg_set = MessageSet()
+    try:
+        msg = msg_set.get(rfc822msgid=rfc822msgid)
+    except NotFoundError:
+        msg = Message(
+            title=title, distribution=distribution,
+            rfc822msgid=rfc822msgid, owner=owner)
+        chunk = MessageChunk(
+                messageID=msg.id, sequence=1, content=comment, blobID=None)
+
     # extract the details needed to create the bug and optional msg
     if not description:
-        description = comment
+        description = msg.contents
 
     # if we have been passed only a description, then we set the summary to
     # be the first paragraph of it, up to 320 characters long
@@ -232,28 +227,12 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
     BugSubscription(
         person=owner.id, bug=bug.id, subscription=dbschema.BugSubscription.CC)
 
-    # create the bug comment if one was given
-    if comment:
-        if not rfc822msgid:
-            rfc822msgid = make_msgid('malonedeb')
-
-    # retrieve or create the message in the db
-    msg_set = MessageSet()
-    try:
-        msg = msg_set.get(rfc822msgid=rfc822msgid)
-    except NotFoundError:
-        msg = Message(
-            title=title, distribution=distribution,
-            rfc822msgid=rfc822msgid, owner=owner)
-        chunk = MessageChunk(
-                messageID=msg.id, sequence=1, content=comment, blobID=None)
-
     # link the bug to the message
     bugmsg = BugMessage(bugID=bug.id, messageID=msg.id)
 
     # create the task on a product if one was passed
     if product:
-        BugTask(bug=bug, product=product.id, owner=owner.id)
+        BugTask(bug=bug, product=product, owner=owner)
 
     # create the task on a source package name if one was passed
     if distribution:
@@ -262,46 +241,23 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
             distribution=distribution,
             sourcepackagename=sourcepackagename,
             binarypackagename=binarypackagename,
-            owner=owner.id)
+            owner=owner)
 
-    class BugAdded:
-        implements(IBugAddForm)
-        def __init__(self, **kw):
-            for attr, val in kw.items():
-                setattr(self, attr, val)
-
-    bug_added = BugAdded(
-        distribution=distribution, sourcepackagename=sourcepackagename,
-        binarypackagename=binarypackagename, product=product,
-        comment=comment, description=description, rfc822msgid=rfc822msgid,
-        summary=summary, datecreated=datecreated, title=title,
-        private=private, owner=owner)
-    bug_added.id = bug.id
-
-    return bug_added
+    return bug
 
 
 class BugSet(BugSetBase):
-    """A set for bugs."""
-
     implements(IBugSet)
-    table = Bug
-
-    def __getitem__(self, id):
-        """See canonical.launchpad.interfaces.bug.IBugSet."""
-        item = self.table.selectOne(self.table.q.id==id)
-        if item is None:
-            raise KeyError, id
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
-        for row in self.table.select():
+        for row in Bug.select():
             yield row
 
     def get(self, bugid):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
-        return self.table.get(bugid)
+        return Bug.get(bugid)
 
     def search(self, duplicateof=None):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
-        return self.table.selectBy(duplicateofID = duplicateof.id)
+        return Bug.selectBy(duplicateofID=duplicateof.id)

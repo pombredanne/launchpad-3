@@ -8,6 +8,7 @@ from optparse import OptionParser
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.scripts.rosetta import URLOpener, attach
+from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 _default_lock_file = '/var/lock/rosetta-package-po-attach.lock'
 
@@ -99,6 +100,7 @@ def main(argv):
                     options.lockfilename)
         return 0
 
+    execute_zcml_for_scripts()
     ztm = initZopeless()
 
     urlopener = URLOpener()
