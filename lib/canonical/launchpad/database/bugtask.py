@@ -261,22 +261,28 @@ class BugTaskSet:
             query += "("
         query += "(BugTask.bug = Bug.id AND Bug.private = FALSE)"
 
-        # XXX: Brad Bollenbach, 2005-02-03: The subselect here is due to what
-        # appears to be a bug in sqlobject not taking distinct into
-        # consideration when doing counts.
         if user:
+            # This part of the query includes private bugs that the
+            # user has permission to access.
+            #
+            # A subselect is used here, because joining through
+            # TeamParticipation is only relevant to the "user-aware"
+            # part of the WHERE condition (i.e. the bit below.) The
+            # other half of this condition (see code above) does not
+            # use TeamParticipation at all.
             query += ("""
                 OR ((BugTask.bug = Bug.id AND Bug.private = TRUE) AND
                     (Bug.id in (
-                        SELECT Bug.id FROM Bug, BugSubscription WHERE
-                           (Bug.id = BugSubscription.bug) AND
-                           (BugSubscription.person = %(personid)s) AND
-                           (BugSubscription.subscription IN
-                               (%(cc)s, %(watch)s))))))""" %
+                        SELECT Bug.id
+                        FROM Bug, BugSubscription, TeamParticipation
+                        WHERE (Bug.id = BugSubscription.bug) AND
+                              (BugSubscription.person = TeamParticipation.team) AND
+                              (TeamParticipation.person = %(personid)s) AND
+                              (BugSubscription.subscription IN
+                                  (%(cc)s, %(watch)s))))))""" %
                 sqlvalues(personid=user.id,
                           cc=dbschema.BugSubscription.CC,
-                          watch=dbschema.BugSubscription.WATCH)
-                )
+                          watch=dbschema.BugSubscription.WATCH))
 
         bugtasks = BugTask.select(query, clauseTables=["Bug", "BugTask"])
         if orderby:
