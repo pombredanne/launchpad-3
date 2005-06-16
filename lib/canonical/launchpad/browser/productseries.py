@@ -240,12 +240,15 @@ class ProductSeriesView(object):
             if not validate_svn_repo(self.svnrepository):
                 self.errormsgs.append('Please give valid SVN server details')
                 return
+        oldrcstype = self.context.rcstype
         self.context.rcstype = self.rcstype
         self.context.cvsroot = self.cvsroot
         self.context.cvsmodule = self.cvsmodule
         self.context.cvsbranch = self.cvsbranch
         self.context.svnrepository = self.svnrepository
         if not fromAdmin:
+            self.context.importstatus = ImportStatus.TESTING
+        elif (oldrcstype is None and self.rcstype is not None):
             self.context.importstatus = ImportStatus.TESTING
         self.request.response.redirect('.')
 
