@@ -31,9 +31,9 @@ from canonical.launchpad.interfaces import (
     IPasswordEncryptor, ISignedCodeOfConduct, ISignedCodeOfConductSet, 
     IObjectReassignment, ITeamReassignment, IGPGKeySet, IGpgHandler, IPymeKey)
 
-from canonical.launchpad.helpers import well_formed_email, obfuscateEmail
-from canonical.launchpad.helpers import convertToHtmlCode, shortlist
-from canonical.launchpad.helpers import sanitiseFingerprint
+from canonical.launchpad.helpers import (
+        well_formed_email, obfuscateEmail, convertToHtmlCode, shortlist,
+        sanitiseFingerprint)
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
 ##XXX: (batch_size+global) cprov 20041003
@@ -329,11 +329,13 @@ class PersonView(BasePersonView):
             # if UID isn't validated/preferred, send token email
             if uid not in emails:                
                 info += ' %s' % uid
-                token = logintokenset.new(self.context, bag.login, uid,
-                                          LoginTokenType.VALIDATEGPGUID,
-                                          fingerprint=fingerprint)
-                sendEmailValidationRequest(token,
-                                           self.request.getApplicationURL())
+
+                appurl = self.request.getApplicationURL()
+                token = logintokenset.new(
+                            self.context, getUtility(ILaunchBag).login, uid,
+                            LoginTokenType.VALIDATEGPGUID,
+                            fingerprint=fingerprint)
+                token.sendEmailValidationRequest(appurl)
 
         info += ('. At least one UID should be validated to get the key '
                  'imported as your.')
@@ -510,11 +512,11 @@ class PersonEditView(BasePersonView):
                 "You must select the email address you want to confirm.")
             return
 
-        login = getUtility(ILaunchBag).login
-        logintokenset = getUtility(ILoginTokenSet)
-        token = logintokenset.new(self.context, login, email,
-                                  LoginTokenType.VALIDATEEMAIL)
-        sendEmailValidationRequest(token, self.request.getApplicationURL())
+        token = getUtility(ILoginTokenSet).new(
+                    self.context, getUtility(ILaunchBag).login, email,
+                    LoginTokenType.VALIDATEEMAIL)
+        token.sendEmailValidationRequest(self.request.getApplicationURL())
+
         self.message = ("A new email was sent to '%s' with instructions on "
                         "how to confirm that it belongs to you." % email)
 
@@ -604,10 +606,11 @@ class PersonEditView(BasePersonView):
                     % (email.email, email.person.browsername))
             return
 
-        login = getUtility(ILaunchBag).login
-        token = logintokenset.new(person, login, newemail,
-                                  LoginTokenType.VALIDATEEMAIL)
-        sendEmailValidationRequest(token, self.request.getApplicationURL())
+        token = getUtility(ILoginTokenSet).new(
+                    person, getUtility(ILaunchBag).login, newemail,
+                    LoginTokenType.VALIDATEEMAIL)
+        token.sendEmailValidationRequest(self.request.getApplicationURL())
+
         self.message = (
                 "A new message was sent to '%s', please follow the "
                 "instructions on that message to confirm that this email "
@@ -635,22 +638,6 @@ class PersonEditView(BasePersonView):
         assert emailaddress.status == EmailAddressStatus.VALIDATED
         self.context.preferredemail = emailaddress
         self.message = "Your contact address has been changed to: %s" % email
-
-
-def sendEmailValidationRequest(token, appurl):
-    template = open(
-        'lib/canonical/launchpad/emailtemplates/validate-email.txt').read()
-    fromaddress = "Launchpad Email Validator <noreply@ubuntu.com>"
-
-    replacements = {'longstring': token.token,
-                    'requester': token.requester.browsername,
-                    'requesteremail': token.requesteremail,
-                    'toaddress': token.email,
-                    'appurl': appurl}
-    message = template % replacements
-
-    subject = "Launchpad: Validate your email address"
-    simple_sendmail(fromaddress, token.email, subject, message)
 
 
 class RequestPeopleMergeView(AddView):

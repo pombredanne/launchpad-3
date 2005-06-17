@@ -34,7 +34,7 @@ from canonical.librarian.interfaces import (
 from canonical.launchpad.interfaces import (
     ILaunchBag, IOpenLaunchBag, IHasOwner, IGeoIP, IRequestPreferredLanguages,
     ILanguageSet, IRequestLocalLanguages, RawFileAttachFailed, ITeam,
-    RawFileFetchFailed,
+    RawFileFetchFailed, ILoginTokenSet
     )
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POInvalidInputError, POParser
@@ -1164,6 +1164,7 @@ def read_test_message(filename):
     """
     return email.message_from_file(
         open(testmails_path + filename), _class=SignedMessage)
+
 
 def filenameToContentType(fname):
     """ Return the a ContentType-like entry for arbitrary filenames 

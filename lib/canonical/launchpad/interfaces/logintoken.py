@@ -52,6 +52,9 @@ class ILoginToken(Interface):
         to delete it so nobody can use that token again.
         """
 
+    def sendEmailValidationRequest(appurl):
+        """Send an email message with a magic URL to validate self.email."""
+
 
 class ILoginTokenSet(Interface):
     """The set of LoginTokens."""
@@ -75,12 +78,12 @@ class ILoginTokenSet(Interface):
         requester: a Person object or None (in case of a new account)
 
         requesteremail: the email address used to login on the system. Can
-        also be None in case of a new account
+                        also be None in case of a new account
 
         email: the email address that this request will be sent to
         
-        tokentype: the type of the request, according to
-        dbschema.LoginTokenType
+        tokentype: the type of the request. must be a dbschema.LoginTokenType
+                   item.
         
         fingerprint: the gpg key fingerprint to be used to retrive needed
         key information from the keyServer if necessary, can be None if
@@ -98,5 +101,4 @@ class ILoginTokenSet(Interface):
 
         Returns the default value if there is no such LoginToken.
         """
-
 
