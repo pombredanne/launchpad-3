@@ -62,6 +62,7 @@ class POFileView:
         self.header.finish()
         self._table_index_value = 0
         self.pluralFormCounts = None
+        self.alerts = []
         potemplate = context.potemplate
         self.is_editor = context.canEditTranslations(self.user)
 
@@ -269,7 +270,8 @@ class POFileView:
                              message_set['translations'],
                              message_set['fuzzy'],
                              message_set['error'])
-                for message_set in submitted.values()]
+                for message_set in submitted.values()
+                if message_set['error'] is not None]
 
             # We had an error, so the offset shouldn't change.
             if self.offset == 0:
@@ -421,6 +423,8 @@ class POFileView:
 
         # Put the translations in the database.
 
+        number_errors = 0
+
         for messageSet in messageSets.values():
             pot_set = potemplate.getPOTMsgSetByID(messageSet['msgid'])
             if pot_set is None:
@@ -436,6 +440,7 @@ class POFileView:
             messageSet['pot_set'] = pot_set
             messageSet['error'] = None
             new_translations = messageSet['translations']
+            fuzzy = messageSet['fuzzy']
 
             has_translations = False
             for new_translation_key in new_translations.keys():
@@ -443,7 +448,10 @@ class POFileView:
                     has_translations = True
                     break
 
-            if has_translations:
+            if has_translations and not fuzzy:
+                # The submit has translations to validate and are not set as
+                # fuzzy.
+
                 msgids_text = [messageid.msgid
                                for messageid in list(pot_set.messageIDs())]
 
@@ -458,6 +466,7 @@ class POFileView:
                     # user and jump to the next entry so this messageSet is
                     # not stored into the database.
                     messageSet['error'] = str(e)
+                    number_errors += 1
                     continue
 
             # Get hold of an appropriate message set in the PO file,
@@ -466,8 +475,6 @@ class POFileView:
                 po_set = pofile[msgid_text]
             except NotFoundError:
                 po_set = pofile.createMessageSetFromText(msgid_text)
-
-            fuzzy = messageSet['fuzzy']
 
             po_set.updateTranslationSet(
                 person=self.user,
@@ -478,6 +485,13 @@ class POFileView:
 
         # update the statistis for this po file
         pofile.updateStatistics()
+
+        if number_errors > 0:
+            # There was at least one error.
+            self.alerts.append(
+                'There were problems with %d of the submitted translations.\n'
+                'Please correct the errors before continuing.' %
+                    number_errors)
 
         return messageSets
 

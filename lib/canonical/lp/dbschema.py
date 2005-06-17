@@ -2131,3 +2131,30 @@ class MirrorFreshness(DBSchema):
 
         The Freshness was never verified and is unknown.
         """)
+
+
+class TranslationValidationStatus(DBSchema):
+    """Translation Validation Status
+
+    Every time a translation is added to Rosetta we should checked that
+    follows all rules to be a valid translation inside a .po file.
+    This schema documents the status of that validation.
+    """
+
+    UNKNOWN = Item(0, """
+        Unknown
+
+        This translation has not been validated yet.
+        """)
+
+    OK = Item(1, """
+        Ok
+
+        This translation has been validated and no errors were discovered.
+        """)
+
+    UNKNOWNERROR = Item(2, """
+        Unknown Error
+
+        This translation has an unknown error.
+        """)
