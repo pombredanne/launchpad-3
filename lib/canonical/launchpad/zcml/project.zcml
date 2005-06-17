@@ -79,8 +79,9 @@
         for="canonical.launchpad.interfaces.IProject"
         schema="canonical.launchpad.interfaces.IProject"
         label="Edit Open Source Project Details:"
-        fields="displayname title summary description homepageurl
-                wikiurl sourceforgeproject freshmeatproject"
+        fields="name displayname title summary description homepageurl
+                sourceforgeproject freshmeatproject wikiurl"
+        class="canonical.launchpad.browser.ProjectEditView"
         permission="launchpad.Edit"
         template="../templates/project-edit.pt"
         lp:url="/projects/$Project.name/+edit">

@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import sets
 from warnings import warn
+from urllib import quote as urlquote
 
 import zope.security.interfaces
 from zope.interface import implements
@@ -37,6 +38,7 @@ from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 
@@ -243,6 +245,18 @@ class ProductView:
 
         return sorted(potemplatenames, key=lambda item: item.name)
 
+class ProductEditView(ProductView, SQLObjectEditView):
+    """View class that lets you edit a Product object."""
+
+    def __init__(self, context, request):
+        ProductView.__init__(self, context, request)
+        SQLObjectEditView.__init__(self, context, request)
+
+    def changed(self):
+        # If the name changed then the URL changed, so redirect:
+        self.request.response.redirect(
+            '../%s/+edit' % urlquote(self.context.name))
+
 
 class ProductBugsView(BugTaskSearchListingView):
     implements(IBugTaskSearchListingView)
@@ -312,7 +326,6 @@ class ProductSetView:
             self.searchrequested = True
         self.results = None
         self.matches = 0
-
 
     def searchresults(self):
         """Use searchtext to find the list of Products that match

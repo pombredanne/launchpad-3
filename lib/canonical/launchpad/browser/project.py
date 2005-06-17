@@ -1,5 +1,7 @@
 """Project-related View Classes"""
 
+from urllib import quote as urlquote
+
 from canonical.launchpad.database import Project, Product, \
         ProjectBugTracker
 from canonical.database.constants import nowUTC
@@ -19,13 +21,9 @@ from zope.i18n.interfaces import IUserPreferredLanguages
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import IPerson, IProject
-
 from canonical.launchpad import helpers
-
-#
-# we need malone.browser.newBugTracker
-#
 from canonical.launchpad.browser.bugtracker import newBugTracker
+from canonical.launchpad.browser.editview import SQLObjectEditView
 
 #
 # Traversal functions that help us look up something
@@ -165,6 +163,19 @@ class ProjectView(object):
 
     def languages(self):
         return helpers.request_languages(self.request)
+
+
+class ProjectEditView(ProjectView, SQLObjectEditView):
+    """View class that lets you edit a Project object."""
+
+    def __init__(self, context, request):
+        ProjectView.__init__(self, context, request)
+        SQLObjectEditView.__init__(self, context, request)
+
+    def changed(self):
+        # If the name changed then the URL changed, so redirect:
+        self.request.response.redirect(
+            '../%s/+edit' % urlquote(self.context.name))
 
 
 class ProjectAddProductView(AddView):
