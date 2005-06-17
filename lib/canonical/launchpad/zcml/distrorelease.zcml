@@ -9,7 +9,8 @@
         <allow interface="canonical.launchpad.interfaces.IDistroRelease"/>
         <require
             permission="launchpad.Admin"
-            set_attributes="displayname title summary description version"
+            set_attributes="displayname title summary description version
+                datelastlangpack"
             />
     </content>
 

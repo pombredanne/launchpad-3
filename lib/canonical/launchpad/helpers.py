@@ -145,10 +145,12 @@ def tar_add_file(tf, path, contents):
             tarinfo = tarfile.TarInfo(joined_path)
             tarinfo.type = tarfile.DIRTYPE
             tarinfo.mtime = now
+            tarinfo.mode = 0755
             tf.addfile(tarinfo)
 
     tarinfo = tarfile.TarInfo(path)
-    tarinfo.time = now
+    tarinfo.mtime = now
+    tarinfo.mode = 0644
     tarinfo.size = len(contents)
     tf.addfile(tarinfo, StringIO(contents))
 

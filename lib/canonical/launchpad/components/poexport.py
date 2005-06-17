@@ -357,8 +357,12 @@ class TemplateTarballPOFileOutput:
     def __call__(self, potemplate, language, variant, contents):
         """See IPOFileOutput."""
 
+        language_code = language.code.encode('ascii')
+
         if variant is not None:
-            raise RuntimeError("PO files with variants are not supported.")
+            code = '%s@%s' % (language_code, variant.encode('UTF-8'))
+        else:
+            code = language_code
 
         code = language.code.encode('ascii')
         name = '%s.po' % code
@@ -401,10 +405,13 @@ class DistroRelaseTarballPOFileOutput:
     def __call__(self, potemplate, language, variant, contents):
         """See IPOFileOutput."""
 
-        if variant is not None:
-            raise RuntimeError("PO files with variants are not supported.")
+        language_code = language.code.encode('ascii')
 
-        code = language.code.encode('ascii')
+        if variant is not None:
+            code = '%s@%s' % (language_code, variant.encode('UTF-8'))
+        else:
+            code = language_code
+
         domain = potemplate.potemplatename.translationdomain.encode('ascii')
         path = os.path.join(
             'rosetta-%s' % self.release.name,
@@ -419,9 +426,16 @@ def export_distrorelease_tarball(filehandle, release, date=None):
 
     archive = tarfile.open('', 'w:gz', filehandle)
 
-    rows = getUtility(IVPOExportSet).get_distrorelease_rows(release, date)
+    pofiles = getUtility(IVPOExportSet).get_distrorelease_pofiles(
+        release, date)
     pofile_output = DistroRelaseTarballPOFileOutput(release, archive)
-    export_rows(rows, pofile_output)
+
+    for pofile in pofiles:
+        pofile_output(
+            potemplate=pofile.potemplate,
+            language=pofile.language,
+            variant=pofile.variant,
+            contents=pofile.export())
 
     contents = datetime.datetime.utcnow().strftime('%Y%m%d\n')
     fileinfo = tarfile.TarInfo('rosetta-%s/timestamp.txt' % release.name)

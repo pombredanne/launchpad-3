@@ -68,8 +68,8 @@ special = {
     'poparser.txt': DocFileSuite('../doc/poparser.txt'),
 
     # POExport stuff is Zopeless and connects as a different database user.
-    # poexport-distrorelease-date-tarball.txt is excluded, since it adds data
-    # to the database as well.
+    # poexport-distrorelease-(date-)tarball.txt is excluded, since they add
+    # data to the database as well.
     'poexport.txt': FunctionalDocFileSuite(
             '../doc/poexport.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown
@@ -78,11 +78,6 @@ special = {
             '../doc/poexport-template-tarball.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown
             ),
-    'poexport-distrorelease-tarball.txt': FunctionalDocFileSuite(
-            '../doc/poexport-distrorelease-tarball.txt',
-            setUp=poExportSetUp, tearDown=poExportTearDown
-            ),
-
     'librarian.txt': FunctionalDocFileSuite(
             '../doc/librarian.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown

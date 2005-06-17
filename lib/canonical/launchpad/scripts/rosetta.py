@@ -11,7 +11,9 @@ Some of the tests for this file are elsewhere. See:
 __metaclass__ = type
 
 import doctest
+import logging
 import os
+import sys
 import tarfile
 import urllib2
 from datetime import datetime
@@ -25,6 +27,53 @@ from canonical.launchpad.interfaces import IDistributionSet, IPersonSet, \
     IBinaryPackageNameSet
 from canonical.launchpad.database import LanguageNotFound
 from canonical.sourcerer.deb.version import Version
+
+def create_logger(name, loglevel):
+    """Create a logger.
+
+    The logger will send log messages to standard error.
+    """
+
+    logger = logging.getLogger(name)
+    handler = logging.StreamHandler(strm=sys.stderr)
+    handler.setFormatter(
+        logging.Formatter(fmt='%(asctime)s : %(levelname)-8s : %(message)s'))
+    logger.addHandler(handler)
+    logger.setLevel(loglevel)
+    return logger
+
+def calculate_loglevel(quietness, verbosity):
+    """Calculate a logging level based upon quietness and verbosity option
+    counts.
+
+    >>> calculate_loglevel(0, 0) == logging.WARN
+    True
+    >>> calculate_loglevel(1, 0) == logging.ERROR
+    True
+    >>> calculate_loglevel(0, 1) == logging.INFO
+    True
+    >>> calculate_loglevel(0, 10) == logging.DEBUG
+    True
+    """
+
+    # The logging levels are: CRITICAL, ERROR, WARN, INFO, DEBUG
+    # Relative to the defalut: -2, -1, 0, 1, 2
+    # Hence, absolute: 0, 1, 2, 3, 4
+
+    verbosity = verbosity - quietness + 2
+
+    if verbosity < 0:
+        verbosity = 0
+    elif verbosity > 4:
+        verbosity = 4
+
+    return [
+        logging.CRITICAL,
+        logging.ERROR,
+        logging.WARN,
+        logging.INFO,
+        logging.DEBUG,
+        ][verbosity]
 
 class URLOpenerError(Exception):
     pass

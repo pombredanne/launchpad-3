@@ -397,6 +397,10 @@ information which lucille will use when processing uploads and
 generating archives for this distro release';
 COMMENT ON COLUMN DistroRelease.summary IS 'A brief summary of the distro release. This will be displayed in bold at the top of the distrorelease page, above the distrorelease description. It should include any high points that are particularly important to draw to the attention of users.';
 COMMENT ON COLUMN DistroRelease.description IS 'An extensive list of the features in this release of the distribution. This will be displayed on the main distro release page, below the summary.';
+COMMENT ON COLUMN DistroRelease.datelastlangpack IS
+'The date we last generated a base language pack for this release. Language
+update packs for this release will only include translations added after that
+date.';
 
 /* ArchArchive */
 
