@@ -554,7 +554,7 @@ class ITeamMembershipSubset(Interface):
     """A Set for TeamMembership objects of a given team."""
 
     newmember = Choice(title=_('New member'), required=True,
-                       vocabulary='Person',
+                       vocabulary='ValidPersonOrTeam',
                        description=_("The user or team which is going to be "
                                      "added as the new member of this team."))
 
@@ -609,4 +609,16 @@ class IRequestPeopleMerge(Interface):
                          vocabulary='Person',
                          description=_("The duplicated account you found in "
                                        "Launchpad"))
+
+
+class IObjectReassignment(Interface):
+    """The schema used by the object reassignment page."""
+
+    owner = Choice(title=_('Owner'), vocabulary='ValidOwner', required=True)
+
+
+class ITeamReassignment(Interface):
+    """The schema used by the team reassignment page."""
+
+    owner = Choice(title=_('Owner'), vocabulary='ValidTeamOwner', required=True)
 

@@ -9,7 +9,7 @@
     <content class="canonical.launchpad.database.Project">
         <allow interface="canonical.launchpad.interfaces.IProject" />
         <require
-            permission="zope.Public"
+            permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IProject"
         />
     </content>
@@ -51,6 +51,16 @@
             name="+bounties"
             template="../templates/related-bounties.pt"
             lp:url="/projects/$Project.name/+bounties/" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProject"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.ObjectReassignmentView">
+          <browser:page
+              name="+reassign"
+              template="../templates/object-reassignment.pt"
+              lp:url="/project/$project.id/+reassign" />
     </browser:pages>
 
     <browser:pages

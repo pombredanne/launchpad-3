@@ -163,6 +163,16 @@
 
   <browser:pages
       for="canonical.launchpad.interfaces.ITeam"
+      permission="launchpad.Edit"
+      class="canonical.launchpad.browser.TeamReassignmentView">
+        <browser:page
+            name="+reassign"
+            template="../templates/object-reassignment.pt"
+            lp:url="/people/$team.id/+reassign" />
+  </browser:pages>
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.ITeam"
       permission="launchpad.AnyPerson"
       class="canonical.launchpad.browser.TeamJoinView">
       <browser:page
