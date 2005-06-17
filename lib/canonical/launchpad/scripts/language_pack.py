@@ -5,9 +5,12 @@
 
 __metaclass__ = type
 
+import datetime
 import sys
 import tarfile
 import tempfile
+import time
+from StringIO import StringIO
 
 from zope.component import getUtility
 
@@ -52,15 +55,16 @@ def export(distribution_name, release_name, update, logger):
         date = release.datereleased
 
     pofiles = export_set.get_distrorelease_pofiles(release, date)
-
-    logger.info("Number of PO files to export: %d" % len(pofiles))
+    pofile_count = len(pofiles)
+    logger.info("Number of PO files to export: %d" % pofile_count)
 
     filehandle = tempfile.TemporaryFile()
     archive = tarfile.open('', 'w:gz', filehandle)
     pofile_output = DistroRelaseTarballPOFileOutput(release, archive)
 
-    for pofile in pofiles:
-        logger.debug("Exporting PO file %d" % pofile.id)
+    for index, pofile in enumerate(pofiles):
+        logger.debug("Exporting PO file %d (%d/%d)" %
+            (pofile.id, index + 1, pofile_count))
 
         try:
             pofile_output(
@@ -75,6 +79,13 @@ def export(distribution_name, release_name, update, logger):
         # Flush database updates so that the export cache will be saved even
         # if the export process is interrupted.
         flush_database_updates()
+
+    logger.debug("Adding timestamp file")
+    contents = datetime.datetime.utcnow().strftime('%Y%m%d\n')
+    fileinfo = tarfile.TarInfo('rosetta-%s/timestamp.txt' % release.name)
+    fileinfo.size = len(contents)
+    fileinfo.mtime = int(time.time())
+    archive.addfile(fileinfo, StringIO(contents))
 
     logger.info("Done.")
 

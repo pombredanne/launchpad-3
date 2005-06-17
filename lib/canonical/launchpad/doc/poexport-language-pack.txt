@@ -15,6 +15,9 @@ has.
 
 This is a dummy logger class to capture the export's log messages.
 
+    >>> import sys
+    >>> import traceback
+
     >>> class FakeLogger:
     ...     messages = []
     ...
@@ -25,9 +28,10 @@ This is a dummy logger class to capture the export's log messages.
     ...
     ...     def exception(self, *stuff):
     ...         self.log(*stuff)
-    ...         import sys
-    ...         import traceback
-    ...         traceback.print_exception(*sys.exc_info())
+    ...
+    ...         for line in traceback.format_exception(*sys.exc_info()):
+    ...             if line.strip():
+    ...                 self.log(line)
 
 Try doing a base language pack export.
 
@@ -48,6 +52,7 @@ Try doing a base language pack export.
     Number of PO files to export: ...
     Exporting PO file ...
     ...
+    Adding timestamp file
     Done.
     Upload complete, file alias: ...
 
