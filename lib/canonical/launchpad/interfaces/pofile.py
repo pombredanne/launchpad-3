@@ -6,7 +6,12 @@ from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 
 __metaclass__ = type
 
-__all__ = ('IPOFileSet', 'IPOFile', 'IEditPOFile')
+__all__ = ('ZeroLengthPOExportError', 'IPOFileSet', 'IPOFile', 'IEditPOFile')
+
+
+class ZeroLengthPOExportError(Exception):
+    """An exception raised when a PO file export generated an empty file."""
+
 
 class IPOFileSet(Interface):
     """A set of POFile."""
@@ -24,7 +29,7 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
 
     language = Attribute("Language of this PO file.")
 
-    title = Attribute("The PO file's title.")
+    title = Attribute("A title for this PO file.")
 
     description = Attribute("PO file description.")
 
@@ -48,10 +53,30 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
 
     filename = Attribute("The name of the file that was imported")
 
+    exportfile = Attribute("The Librarian alias of the last cached export.")
+
     latest_sighting = Attribute("""Of all the translation sightings belonging
         to PO messages sets belonging to this PO file, return the one which
         was most recently modified (greatest datelastactive), or None if
         there are no sightings belonging to this PO file.""")
+
+    datecreated = Attribute("The fate this file was created.")
+
+    latest_submission = Attribute("""Of all the translation submissions
+        belonging to PO messages sets belonging to this PO file, return the
+        one which was most recently modified (greatest datelastactive), or
+        None if there are no submissions belonging to this PO file.""")
+
+    translators = Attribute("A list of Translators that have been "
+        "designated as having permission to edit these files in this "
+        "language.")
+
+    contributors = Attribute("A list of all the people who have made "
+        "some sort of contribution to this PO file.")
+
+    translationpermission = Attribute("The permission system which "
+        "is used for this pofile. This is inherited from the product, "
+        "project and/or distro in which the pofile is found.")
 
     translators = Attribute("A list of Translators that have been "
         "designated as having permission to edit these files in this "
@@ -126,7 +151,7 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
         Return the message sets using 'slice' or all of them if slice is None.
         """
 
-    def getPOTMsgSetUnTranslated(slice=None):
+    def getPOTMsgSetUntranslated(slice=None):
         """Get pot message sets that are untranslated in this PO file.
 
         'slice' is a slice object that selects a subset of POTMsgSets.

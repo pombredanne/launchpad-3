@@ -2,22 +2,28 @@
 
 __metaclass__ = type
 
+from xml.sax.saxutils import escape
+
 from zope.app.traversing.browser import absoluteurl
 from zope.interface import implements
 from zope.component import getUtility
 from zope.app.publisher.browser import BrowserView
 from zope.app.form.utility import setUpWidgets, getWidgetsData
 from zope.app.form.interfaces import IInputWidget
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
-from canonical.launchpad.interfaces import IPersonSet, ILaunchBag, \
-     IBugTaskSearch, IBugSet, IBugTaskSet, IProduct, IDistribution, \
-     IDistroRelease
+from canonical.launchpad.interfaces import (
+    IPersonSet, ILaunchBag, IDistroBugTaskSearch, IUpstreamBugTaskSearch,
+    IBugSet, IProduct, IDistribution, IDistroRelease, IUpstreamBugTask,
+    IDistroBugTask, IDistroBugTask, IBugTask, IBugTaskSet)
 from canonical.lp import dbschema
 from canonical.launchpad.interfaces import IBugTaskSearchListingView
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
+from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.bug import BoundPortlet
 
 # Bug Reports
 class BugTasksReportView:
@@ -115,6 +121,75 @@ class BugTasksReportView:
         #      -- Steve Alexander, 2005-04-22
         return getUtility(IPersonSet).search(password = NULL)
 
+
+class ViewWithBugTaskContext:
+    def __init__(self, view):
+        self.request = view.request
+        self.context = view.context
+        setUpWidgets(self, IBugTask, IInputWidget)
+
+    def alsoReportedIn(self):
+        """Return a list of IUpstreamBugTasks in which this bug is reported.
+
+        If self.context is an IUpstreamBugTasks, it will be excluded
+        from this list.
+        """
+        return [
+            task for task in self.context.bug.bugtasks
+            if task.id is not self.context.id]
+
+    def getCCs(self):
+        return [
+            s for s in self.context.bug.subscriptions
+                if s.subscription==dbschema.BugSubscription.CC]
+
+    def getWatches(self):
+        return [
+            s for s in self.context.bug.subscriptions
+                if s.subscription==dbschema.BugSubscription.WATCH]
+
+    def getIgnores(self):
+        return [
+            s for s in self.context.bug.subscriptions
+                if s.subscription==dbschema.BugSubscription.IGNORE]
+
+
+class BugTaskPortlet:
+    def __init__(self, template_filename):
+        self.template = ViewPageTemplateFile(template_filename)
+
+    def __call__(self, view, *args, **kw):
+        return self.template(ViewWithBugTaskContext(view), *args, **kw)
+
+    def __get__(self, instance, type=None):
+        return BoundPortlet(self, instance)
+
+
+class BugTaskViewBase:
+    """The base class for IBugTask view classes."""
+
+    # The portlet that shows the status of the bug in other
+    # places in which it's been reported.
+    alsoReportedInPortlet = BugTaskPortlet(
+        "../templates/portlet-bug-also-reported-in.pt")
+
+    # The portlet that shows some bug status details: whether
+    # it's public/private, and the reporter atm.
+    bugStatusPortlet = BugTaskPortlet(
+        "../templates/portlet-bug-status.pt")
+
+    bugPeoplePortlet = BugTaskPortlet(
+        "../templates/portlet-bugtask-people.pt")
+
+
+class BugTaskEditView(SQLObjectEditView, BugTaskViewBase):
+    pass
+
+
+class BugTaskDisplayView(BugTaskViewBase):
+    """Simple view class that makes bugtask portlets accessible."""
+
+
 class BugTaskSearchListingView:
 
     implements(IBugTaskSearchListingView)
@@ -122,31 +197,40 @@ class BugTaskSearchListingView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.is_maintainer = helpers.is_maintainer(self.context)
-        setUpWidgets(self, IBugTaskSearch, IInputWidget)
+        self.is_maintainer = helpers.is_maintainer(self.context.context)
+
+        if self._upstreamContext():
+            self.search_form_schema = IUpstreamBugTaskSearch
+        elif self._distributionContext() or self._distroReleaseContext():
+            self.search_form_schema = IDistroBugTaskSearch
+        else:
+            raise TypeError("Unknown context: %s" % repr(self.context.context))
+
+        setUpWidgets(self, self.search_form_schema, IInputWidget)
 
     def search(self):
         """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
         search_params = {}
-        form_params = getWidgetsData(self, IBugTaskSearch)
+
+        form_params = getWidgetsData(self, self.search_form_schema)
 
         searchtext = form_params.get("searchtext")
         if searchtext:
             if searchtext.isdigit():
-                # user wants to jump to a bug with a specific id
+                # The user wants to jump to a bug with a specific id.
                 bug = getUtility(IBugSet).get(int(searchtext))
                 self.request.response.redirect(absoluteurl(bug, self.request))
             else:
-                # user wants to filter in certain text
+                # The user wants to filter on certain text.
                 search_params["searchtext"] = searchtext
 
         statuses = form_params.get("status")
         if statuses:
             search_params["status"] = any(*statuses)
         else:
-            # likely coming into the form by clicking on a URL
-            # (vs. having submitted it with POSTed search criteria),
-            # so show NEW and ACCEPTED bugs by default
+            # The user is likely coming into the form by clicking on a
+            # URL (vs. having submitted it with POSTed search
+            # criteria), so show NEW and ACCEPTED bugs by default.
             search_params["status"] = any(
                 dbschema.BugTaskStatus.NEW, dbschema.BugTaskStatus.ACCEPTED)
 
@@ -171,21 +255,38 @@ class BugTaskSearchListingView:
             search_params["milestone"] = any(*milestones)
 
         # make this search context-sensitive
-        if IProduct.providedBy(self.context):
-            search_params["product"] = self.context
-        elif IDistribution.providedBy(self.context):
-            search_params["distribution"] = self.context
-        elif IDistroRelease.providedBy(self.context):
-            search_params["distrorelease"] = self.context
-        else:
-            raise TypeError("Unknown search context: %s" % repr(self.context))
-
-        bugtaskset = getUtility(IBugTaskSet)
-        tasks = bugtaskset.search(**search_params)
+        tasks = self.context.search(**search_params)
 
         return BatchNavigator(
             batch=Batch(tasks, int(self.request.get('batch_start', 0))),
             request=self.request)
+
+
+    def assign_to_milestones(self):
+        """Assign bug tasks to the given milestone."""
+        if not self._upstreamContext():
+            # The context is not an upstream, so, since the only
+            # context that currently supports milestones is upstream,
+            # there's nothing to do here.
+            return
+
+        if helpers.is_maintainer(self.context.context):
+            form_params = getWidgetsData(self, self.search_form_schema)
+
+            milestone_assignment = form_params.get('milestone_assignment')
+            if milestone_assignment is not None:
+                taskids = self.request.form.get('task')
+                if taskids:
+                    if not isinstance(taskids, (list, tuple)):
+                        taskids = [taskids]
+
+                    bugtaskset = getUtility(IBugTaskSet)
+                    tasks = [bugtaskset.get(taskid) for taskid in taskids]
+                    for task in tasks:
+                        # XXX: When spiv fixes so that proxied objects
+                        #      can be assigned to a SQLBase '.id' can be
+                        #      removed. -- Bjorn Tillenius, 2005-05-04
+                        task.milestone = milestone_assignment.id
 
     def task_columns(self):
         """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
@@ -206,13 +307,47 @@ class BugTaskSearchListingView:
         return False
     advanced = property(advanced)
 
+    def _upstreamContext(self):
+        """Is this page being viewed in an upstream context?
+
+        Return the IProduct if yes, otherwise return None.
+        """
+        return IProduct(self.context.context, None)
+
+    def _distributionContext(self):
+        """Is this page being viewed in a distribution context?
+
+        Return the IDistribution if yes, otherwise return None.
+        """
+        return IDistribution(self.context.context, None)
+
+    def _distroReleaseContext(self):
+        """Is this page being viewed in a distrorelease context?
+
+        Return the IDistroRelease if yes, otherwise return None.
+        """
+        return IDistroRelease(self.context.context, None)
 
 class BugTaskAbsoluteURL(BrowserView):
     """The view for an absolute URL of a bug task."""
     def __str__(self):
-        return "%s/malone/tasks/%d" % (
+        urlpath = ""
+        task = self.context
+        if task.product is not None:
+            # This is an upstream task.
+            urlpath = "/products/%s/+bugs/" % task.product.name
+        elif task.distribution is not None:
+            # This is a distribution task.
+            urlpath = "/distros/%s/+bugs/" % task.distribution.name
+        elif task.distrorelease is not None:
+            # This is a distrorelease task.
+            urlpath = "/distros/%s/%s/+bugs/" % (
+                task.distrorelease.distribution.name,
+                task.distrorelease.name)
+
+        return "%s%s%d" % (
             self.request.getApplicationURL(),
-            self.context.id)
+            urlpath, task.bug.id)
 
 
 class BugTaskAnorakSearchPageBegoneView:

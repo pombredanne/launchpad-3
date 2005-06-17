@@ -6,6 +6,11 @@
         />
 
     <vocabulary
+        name="BugWatch"
+        factory="canonical.launchpad.vocabularies.BugWatchVocabulary"
+        />
+
+    <vocabulary
         name="SourcePackageName"
         factory="canonical.launchpad.vocabularies.SourcePackageNameVocabulary"
         />
@@ -28,6 +33,11 @@
     <vocabulary
         name="BinaryPackageName"
         factory="canonical.launchpad.vocabularies.BinaryPackageNameVocabulary"
+        />
+
+    <vocabulary
+        name="GPGKeyAlgorithm"
+        factory="canonical.launchpad.vocabularies.GPGKeyAlgorithmVocabulary"
         />
 
     <vocabulary
@@ -133,11 +143,6 @@
     <vocabulary
         name="PackagingType"
         factory="canonical.launchpad.vocabularies.PackagingTypeVocabulary"
-        />
-
-    <vocabulary
-        name="ValidGPGKey"
-        factory="canonical.launchpad.vocabularies.ValidGPGKeyVocabulary"
         />
 
     <vocabulary

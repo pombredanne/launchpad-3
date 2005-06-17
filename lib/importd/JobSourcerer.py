@@ -28,10 +28,11 @@ class BubblewrapMethod(self):
         ### TEMP
         self.job.txnManager = self.txnManager
         ###
+        self.txnManager.begin()
         importer = self.makeFileImporter()
         self.importReleasesIntoLibrarian(importer)
         self.txnManager.commit()
-        self.ungodlyZopelessHack()
+        self.txnManager.begin()
         librarian = self.makeDownloadClient()
         print 'importer.getReleases =>', list(importer.getReleases())
         todo = self.makeTodo(importer)
@@ -58,15 +59,6 @@ class BubblewrapMethod(self):
                 importer.addURL (url)
             except ValueError:
                 self.logger.critical('Failed to retrieve url %s', url)
-
-    def ungodlyZopelessHack(self):
-        # XXX: Awful hack -- the librarian's updated the database, so we need
-        # to reset our connection so that we can see it.
-        # -- Andrew Bennetts, 2005-01-27
-        from canonical.database.sqlbase import SQLBase
-        SQLBase._connection.rollback()
-        SQLBase._connection.begin()
-        self.txnManager.begin()
 
     def makeDownloadClient(self):
         host = os.environ.get('LIBRARIAN_HOST', 'macaroni.ubuntu.com')

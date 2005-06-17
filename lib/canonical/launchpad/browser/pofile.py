@@ -6,6 +6,7 @@ import popen2
 import os
 import gettextpo
 import urllib
+from datetime import datetime
 
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
@@ -13,11 +14,13 @@ from zope.exceptions import NotFoundError
 from zope.security.interfaces import Unauthorized
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from canonical.launchpad.interfaces import ILaunchBag, ILanguageSet
+from canonical.launchpad.interfaces import (ILaunchBag, ILanguageSet,
+    RawFileAttachFailed, IPOExportRequestSet)
 from canonical.launchpad.components.poexport import POExport
 from canonical.launchpad.components.poparser import POHeader
 from canonical.launchpad import helpers
 from canonical.launchpad.helpers import TranslationConstants
+from canonical.launchpad.browser.pomsgset import POMsgSetView
 
 
 class POFileView:
@@ -59,8 +62,8 @@ class POFileView:
         self.header.finish()
         self._table_index_value = 0
         self.pluralFormCounts = None
-
         potemplate = context.potemplate
+        self.is_editor = context.canEditTranslations(self.user)
 
         if potemplate.productrelease:
             self.what = '%s %s' % (
@@ -94,63 +97,76 @@ class POFileView:
     def untranslated(self):
         return self.context.untranslatedCount()
 
-    def editSubmit(self):
-        if "SUBMIT" in self.request.form:
-            if self.request.method != "POST":
-                self.status_message = 'This form must be posted!'
-                return
+    def has_translators(self):
+        """We need to have this to tell us if there are any translators."""
+        for translator in self.context.translators:
+            return True
+        return False
 
-            self.header['Plural-Forms'] = 'nplurals=%s; plural=%s;' % (
-                self.request.form['pluralforms'],
-                self.request.form['expression'])
-            self.context.header = self.header.msgstr.encode('utf-8')
-            self.context.pluralforms = int(self.request.form['pluralforms'])
-            self.submitted = True
-            self.request.response.redirect('./')
-        elif "UPLOAD" in self.request.form:
-            if self.request.method != "POST":
-                self.status_message = 'This form must be posted!'
-                return
-            file = self.form['file']
+    def submitForm(self):
+        """Called from the page template to do any processing needed if a form
+        was submitted with the request."""
 
-            if not isinstance(file, FileUpload):
-                if file == '':
-                    self.status_message = 'You forgot the file!'
-                else:
-                    # XXX: Carlos Perello Marin 03/12/2004: Epiphany seems
-                    # to have an aleatory bug with upload forms (or perhaps
-                    # it's launchpad because I never had problems with
-                    # bugzilla). The fact is that some uploads don't work
-                    # and we get a unicode object instead of a file-like
-                    # object in "file". We show an error if we see that
-                    # behaviour.  For more info, look at bug #116
-                    self.status_message = 'Unknown error extracting the file.'
-                return
+        if self.request.method == 'POST':
+            if 'UPLOAD' in self.request.form:
+                self.upload()
+            elif "EDIT" in self.request.form:
+                self.edit()
 
-            filename = file.filename
+    def upload(self):
+        """Handle a form submission to change the contents of the pofile."""
 
-            if not filename.endswith('.po'):
-                self.status_message =  'Dunno what this file is.'
-                return
+        file = self.form['file']
 
-            pofile = file.read()
-
-            user = getUtility(ILaunchBag).user
-
-            try:
-                self.context.attachRawFileData(pofile, user)
+        if not isinstance(file, FileUpload):
+            if file == '':
+                self.status_message = 'Please, select a file to upload.'
+            else:
+                # XXX: Carlos Perello Marin 2004/12/30
+                # Epiphany seems to have an aleatory bug with upload forms (or
+                # perhaps it's launchpad because I never had problems with
+                # bugzilla). The fact is that some uploads don't work and we
+                # get a unicode object instead of a file-like object in
+                # "file". We show an error if we see that behaviour. For more
+                # info, look at bug #116.
                 self.status_message = (
-                    'Thank you for your upload. The PO file content will'
-                    ' appear in Rosetta in a few minutes.')
-            except RawFileAttachFailed, error:
-                # We had a problem while uploading it.
-                self.status_message = (
-                    'There was a problem uploading the file: %s.' % error)
+                    'There was an unknown error in uploading your file.')
+            return
 
-            self.submitted = True
+        filename = file.filename
+
+        if not filename.endswith('.po'):
+            self.status_message = (
+                'The file you uploaded was not recognised as a file that '
+                'can be imported.')
+            return
+
+        # make sure we have an idea if it was published
+        published_value = self.form.get('published', None)
+        published = published_value is None
+
+        pofile = file.read()
+        try:
+            self.context.attachRawFileData(pofile, published, self.user)
+            self.status_message = (
+                'Thank you for your upload. The translation content will'
+                ' appear in Rosetta in a few minutes.')
+        except RawFileAttachFailed, error:
+            # We had a problem while uploading it.
+            self.status_message = (
+                'There was a problem uploading the file: %s.' % error)
+
+    def edit(self):
+        self.header['Plural-Forms'] = 'nplurals=%s; plural=%s;' % (
+            self.request.form['pluralforms'],
+            self.request.form['expression'])
+        self.context.header = self.header.msgstr.encode('utf-8')
+        self.context.pluralforms = int(self.request.form['pluralforms'])
+
+        self.status_message = "Updated on %s" % datetime.utcnow()
 
     def completeness(self):
-        return '%.2f%%' % self.context.translatedPercentage()
+        return '%.0f%%' % self.context.translatedPercentage()
 
     def processTranslations(self):
         """Process the translation form."""
@@ -234,13 +250,8 @@ class POFileView:
         # Get message display settings.
         self.show = form.get('show')
 
-        if not self.show in ('translated', 'untranslated', 'all'):
+        if self.show not in ('translated', 'untranslated', 'all'):
             self.show = self.DEFAULT_SHOW
-
-        # Now, check restrictions to implement HoaryTranslations spec.
-        if not self.canEditTranslations():
-            # We show *only* the ones with untranslated strings.
-            self.show = 'untranslated'
 
         # Get the message sets.
         self.submitted = submitted
@@ -282,7 +293,7 @@ class POFileView:
                     pofile.getPOTMsgSetTranslated(slice=slice_arg)
             elif self.show == 'untranslated':
                 filtered_potmsgsets = \
-                    pofile.getPOTMsgSetUnTranslated(slice=slice_arg)
+                    pofile.getPOTMsgSetUntranslated(slice=slice_arg)
             else:
                 raise AssertionError('show = "%s"' % self.show)
 
@@ -294,10 +305,6 @@ class POFileView:
                 # We did a submit without errors, we should redirect to next
                 # page.
                 self.request.response.redirect(self.createURL(offset=self.offset))
-
-    def canEditTranslations(self):
-        """Say if the user is allowed to edit translations in this context."""
-        return self.context.canEditTranslations(self.user)
 
     def makeTabIndex(self):
         """Return the tab index value to navigate the form."""
@@ -341,11 +348,6 @@ class POFileView:
         if (parameters['count'] == self.DEFAULT_COUNT or
             parameters['count'] is None):
             del parameters['count']
-
-        # Now, we check restrictions to implement HoaryTranslations spec.
-        if not self.canEditTranslations():
-            # We show *only* the ones without untranslated strings.
-            parameters['show'] = 'untranslated'
 
         if parameters:
             keys = parameters.keys()
@@ -442,7 +444,6 @@ class POFileView:
                     break
 
             if has_translations:
-
                 msgids_text = [messageid.msgid
                                for messageid in list(pot_set.messageIDs())]
 
@@ -466,40 +467,38 @@ class POFileView:
             except NotFoundError:
                 po_set = pofile.createMessageSetFromText(msgid_text)
 
-            if (po_set.iscomplete and po_set.fuzzy is False and
-                not self.canEditTranslations()) :
-                # We got a translation that cannot be changed by this user.
-                # This is only possible if the user is doing a submit without
-                # using our translation form.
-                raise Unauthorized(
-                    "You are not allowed to change translations")
-
             fuzzy = messageSet['fuzzy']
 
-            po_set.updateTranslation(
+            po_set.updateTranslationSet(
                 person=self.user,
                 new_translations=new_translations,
                 fuzzy=fuzzy,
-                fromPOFile=False)
+                published=False,
+                is_editor=self.is_editor)
+
+        # update the statistis for this po file
+        pofile.updateStatistics()
 
         return messageSets
 
 
 class ViewPOExport:
-    def __call__(self):
-        pofile = self.context
-        poExport = POExport(pofile.potemplate)
-        languageCode = pofile.language.code
-        exportedFile = poExport.export(languageCode)
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.user = getUtility(ILaunchBag).user
+        self.formProcessed = False
 
-        self.request.response.setHeader('Content-Type', 'application/x-po')
-        self.request.response.setHeader('Content-Length', len(exportedFile))
-        self.request.response.setHeader('Content-Disposition',
-                'attachment; filename="%s.po"' % languageCode)
-        return exportedFile
+    def processForm(self):
+        if self.request.method != 'POST':
+            return
+
+        request_set = getUtility(IPOExportRequestSet)
+        request_set.addRequest(self.user, pofiles=[self.context])
+        self.formProcessed = True
 
 
-class ViewMOExport:
+class POFileMOExportView:
     def __call__(self):
         pofile = self.context
         poExport = POExport(pofile.potemplate)
@@ -536,174 +535,3 @@ class ViewMOExport:
             return "ERROR exporting the .mo!!"
 
 
-class POMsgSetView:
-    """Class that holds all data needed to show a POMsgSet."""
-
-    def __init__(self, potmsgset, code, plural_form_counts,
-                 web_translations=None, web_fuzzy=None, error=None):
-        """Create a object representing the potmsgset with translations.
-
-
-        'web_translations' and 'web_fuzzy' overrides the translations/fuzzy
-        flag in our database for this potmsgset.
-        If 'error' is not None, the translations at web_translations contain
-        an error with the.
-        """
-        self.potmsgset = potmsgset
-        self.id = potmsgset.id
-        self.msgids = list(potmsgset.messageIDs())
-        self.web_translations = web_translations
-        self.web_fuzzy = web_fuzzy
-        self.error = error
-        self.plural_form_counts = plural_form_counts
-        self.translations = None
-        self.language = getUtility(ILanguageSet)[code]
-
-        try:
-            self.pomsgset = potmsgset.poMsgSet(code)
-        except NotFoundError:
-            # The PO file doesn't have this message ID.
-            self.pomsgset = None
-
-        if len(self.msgids) == 0:
-            raise AssertionError(
-                'Found a POTMsgSet without any POMsgIDSighting')
-
-    def getMsgID(self):
-        """Return a msgid string prepared to render as a web page."""
-        return helpers.msgid_html(
-            self.msgids[TranslationConstants.SINGULAR_FORM].msgid,
-            self.potmsgset.flags())
-
-    def getMsgIDPlural(self):
-        """Return a msgid plural string prepared to render as a web page.
-
-        If there is no plural form, return None.
-        """
-        if self.isPlural():
-            return helpers.msgid_html(
-                self.msgids[TranslationConstants.PLURAL_FORM].msgid,
-                self.potmsgset.flags())
-        else:
-            return None
-
-    def getMaxLinesCount(self):
-        """Return the max number of lines a multiline entry will have
-
-        It will never be bigger than 12.
-        """
-        if self.isPlural():
-            singular_lines = helpers.count_lines(
-                self.msgids[TranslationConstants.SINGULAR_FORM].msgid)
-            plural_lines = helpers.count_lines(
-                self.msgids[TranslationConstants.PLURAL_FORM].msgid)
-            lines = max(singular_lines, plural_lines)
-        else:
-            lines = helpers.count_lines(
-                self.msgids[TranslationConstants.SINGULAR_FORM].msgid)
-
-        return min(lines, 12)
-
-    def isPlural(self):
-        """Return if we have plural forms or not."""
-        return len(self.msgids) > 1
-
-    def isMultiline(self):
-        """Return if the singular or plural msgid have more than one line."""
-        return self.getMaxLinesCount() > 1
-
-    def getSequence(self):
-        """Return the position number of this potmsgset."""
-        return self.potmsgset.sequence
-
-    def getFileReferences(self):
-        """Return the file references for this potmsgset.
-
-        If there are no file references, return None.
-        """
-        return self.potmsgset.filereferences
-
-    def getSourceComment(self):
-        """Return the source code comments for this potmsgset.
-
-        If there are no source comments, return None.
-        """
-        return self.potmsgset.sourcecomment
-
-    def getComment(self):
-        """Return the translator comments for this pomsgset.
-
-        If there are no comments, return None.
-        """
-        if self.pomsgset is None:
-            return None
-        else:
-            return self.pomsgset.commenttext
-
-    def _prepareTranslations(self):
-        """Prepare self.translations to be used.
-        """
-        if self.translations is None:
-            # This is done only the first time.
-            if self.web_translations is None:
-                self.web_translations = {}
-
-            # Fill the list of translations based on the input the user
-            # submitted.
-            web_translations_keys = self.web_translations.keys()
-            web_translations_keys.sort()
-            self.translations = [
-                self.web_translations[web_translations_key]
-                for web_translations_key in web_translations_keys]
-
-            if self.pomsgset is None and not self.translations:
-                if self.plural_form_counts is None or not self.isPlural():
-                    # Either we don't have plural form information or this
-                    # entry has not plural forms.
-                    self.translations = [None]
-                else:
-                    self.translations = [None] * self.plural_form_counts
-            elif self.pomsgset is not None and not self.translations:
-                self.translations = self.pomsgset.translations()
-
-    def getTranslationRange(self):
-        """Return a list with all indexes we have to get translations."""
-        self._prepareTranslations()
-        return range(len(self.translations))
-
-    def getTranslation(self, index):
-        """Return the active translation for the pluralform 'index'.
-
-        There are as many translations as the plural form information defines
-        for that language/pofile. If one of those translations does not
-        exists, it will have a None value. If the potmsgset is not a plural
-        form one, we only have one entry.
-        """
-        self._prepareTranslations()
-
-        if index in self.getTranslationRange():
-            return self.translations[index]
-        else:
-            raise IndexError('Translation out of range')
-
-    def getSuggestedTexts(self, index):
-        curr = self.getTranslation(index)
-        suggestions = self.potmsgset.getSuggestedTexts(self.language, index)
-        return [suggestion for suggestion in suggestions \
-            if suggestion != curr]
-
-    def isFuzzy(self):
-        """Return if this pomsgset is set as fuzzy or not."""
-        if self.web_fuzzy is None and self.pomsgset is None:
-            return False
-        elif self.web_fuzzy is not None:
-            return self.web_fuzzy
-        else:
-            return self.pomsgset.fuzzy
-
-    def getError(self):
-        """Return a string with the error.
-
-        If there is no error, return None.
-        """
-        return self.error

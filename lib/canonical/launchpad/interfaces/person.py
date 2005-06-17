@@ -23,17 +23,16 @@ class IPerson(Interface):
     name = TextLine(
             title=_('Name'), required=True, readonly=True,
             constraint=_valid_person_name,
-            description=_("The short name of this team, which must be unique "
-                          "among all other teams. It must be at least one "
-                          "lowercase letter (or number) followed by one or "
-                          "more letters, numbers, dots, hyphens or plus "
-                          "signs.")
+            description=_(
+                "A short unique name, beginning with a lower-case "
+                "letter or number, and containing only letters, "
+                "numbers, dots, hyphens, or plus signs.")
             )
     displayname = TextLine(
             title=_('Display Name'), required=False, readonly=False,
-            description=_("This is your name as you would like it "
-                "displayed throughout The Launchpad. Most people "
-                "use their full name here.")
+            description=_("Your name as you would like it displayed "
+            "throughout Launchpad. Most people use their full name "
+            "here.")
             )
     givenname = TextLine(
             title=_('Given Name'), required=False, readonly=False,
@@ -42,7 +41,7 @@ class IPerson(Interface):
             )
     familyname = TextLine(
             title=_('Family Name'), required=False, readonly=False,
-            description=_("Your family name or given name, the name "
+            description=_("Your family name, the name "
                 "you acquire from your parents.")
             )
     password = Password(
@@ -58,19 +57,20 @@ class IPerson(Interface):
     karmatimestamp = Datetime(
             title=_('Karma Timestamp'), required=False, readonly=True,
             )
-    languages = Attribute(_('List of know languages by this person'))
+    languages = Attribute(_('List of languages known by this person'))
+
+    # this is not a date of birth, it is the date the person record was
+    # created in this db
+    datecreated = Datetime(
+        title=_('Date Created'), required=True, readonly=True)
 
     # bounty relations
     ownedBounties = Attribute('Bounties issued by this person.')
     reviewerBounties = Attribute('Bounties reviewed by this person.')
     claimedBounties = Attribute('Bounties claimed by this person.')
     subscribedBounties = Attribute('Bounties to which this person subscribes.')
-    sshkeys = Attribute(_('List of SSH keys'))
 
-    # XXX: This field is used only to generate the form to create a new person.
-    password2 = Password(title=_('Confirm Password'), required=True,
-            description=_("Enter your password again to make certain "
-                "it is correct."))
+    sshkeys = Attribute(_('List of SSH keys'))
 
     # Properties of the Person object.
     ubuntite = Attribute("Ubuntite Flag")
@@ -127,39 +127,42 @@ class IPerson(Interface):
 
     defaultmembershipperiod = Int(
             title=_('Number of days a subscription lasts'), required=False,
-            description=_("This is the number of days all "
-                "subscriptions will last unless a different value is provided "
-                "when the subscription is approved. After this " "period the "
-                "subscription is expired and must be renewed. A value of 0 "
-                "(zero) means that subscription will never expire."))
+            description=_(
+                "The number of days a new subscription lasts "
+                "before expiring. You can customize the length "
+                "of an individual subscription when approving it. "
+                "A value of 0 means subscriptions never expire.")
+                )
 
     defaultrenewalperiod = Int(
             title=_('Number of days a renewed subscription lasts'),
             required=False,
-            description=_("This is the number of days all "
-                "subscriptions will last after being renewed. After this "
-                "period the subscription is expired and must be renewed "
-                "again. A value of 0 (zero) means that subscription renewal "
-                "periods will be the same as the membership period."))
+            description=_(
+                "The number of days a subscription lasts after "
+                "being renewed. You can customize the lengths of "
+                "individual renewals. A value of 0 means "
+                "renewals last as long as new memberships.")
+                )
 
     defaultexpirationdate = Attribute(
-            "The date, according to team's default values in which a newly "
+            "The date, according to team's default values, in which a newly "
             "approved membership will expire.")
 
     defaultrenewedexpirationdate = Attribute(
-            "The date, according to team's default values in which a just "
-            "renewed membership will expire.")
+            "The date, according to team's default values, in "
+            "which a just-renewed membership will expire.")
 
     subscriptionpolicy = Choice(
             title=_('Subscription Policy'),
             required=True, vocabulary='TeamSubscriptionPolicy',
             default=TeamSubscriptionPolicy.MODERATED,
-            description=_('How new subscriptions should be handled for this '
-                          'team. "Moderated" means that all subscriptions must '
-                          'be approved, "Open" means that any user can join '
-                          'whitout approval and "Restricted" means that new '
-                          'members can only be added by one of the '
-                          'administrators of the team.'))
+            description=_(
+                '"Moderated" means all subscriptions must be '
+                'approved. "Open" means any user can join '
+                'without approval. "Restricted" means new '
+                'members can be added only by a team '
+                'administrator.')
+            )
 
     merged = Int(title=_('Merged Into'), required=False, readonly=True,
             description=_(
@@ -216,6 +219,9 @@ class IPerson(Interface):
           a PROPOSED member and one of the team's administrators have to
           approve the membership.
 
+        This method returns True if this person was added as a member of
+        <team> or False if that wasn't possible.
+
         Teams cannot call this method because they're not allowed to
         login and thus can't "join" another team. Instead, they're added
         as a member (using the addMember() method) by a team administrator.
@@ -244,7 +250,7 @@ class IPerson(Interface):
         the TeamParticipation table in case the status is APPROVED.
         """
 
-    def setMembershipStatus(person, status, expires, reviewer=None,
+    def setMembershipStatus(person, status, expires=None, reviewer=None,
                             comment=None):
         """Set the status of the person's membership on this team.
 
@@ -322,7 +328,8 @@ class IPersonSet(Interface):
         These keyword arguments will be passed to Person, which is an
         SQLBase class and will do all the checks needed before inserting
         anything in the database. Please refer to the Person implementation
-        to see what keyword arguments are allowed."""
+        to see what keyword arguments are allowed.
+        """
 
     def newTeam(**kwargs):
         """Create a new Team with given keyword arguments.
@@ -330,7 +337,8 @@ class IPersonSet(Interface):
         These keyword arguments will be passed to Person, which is an
         SQLBase class and will do all the checks needed before inserting
         anything in the database. Please refer to the Person implementation
-        to see what keyword arguments are allowed."""
+        to see what keyword arguments are allowed.
+        """
 
     def get(personid, default=None):
         """Return the person with the given id.

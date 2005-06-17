@@ -14,29 +14,17 @@ from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.database import Distribution
-from canonical.launchpad.database import DistroRelease
-from canonical.launchpad.database import Person
-from canonical.launchpad.database import GPGKey
-from canonical.launchpad.database import SourcePackage, \
-    SourcePackageRelease, SourcePackageName
-from canonical.launchpad.database import BinaryPackage
-from canonical.launchpad.database import BinaryPackageName
-from canonical.launchpad.database import BugTracker
-from canonical.launchpad.database import Language
-from canonical.launchpad.database import Milestone
-from canonical.launchpad.database import Product
-from canonical.launchpad.database import Project
-from canonical.launchpad.database import ProductRelease
-from canonical.launchpad.database import ProductSeries
-from canonical.launchpad.database import TranslationGroup
-from canonical.launchpad.database import BugTracker
-from canonical.launchpad.database import POTemplateName
-from canonical.launchpad.interfaces import ILaunchBag, ITeam
+from sqlobject import AND, OR, CONTAINSSTRING, SQLObjectMoreThanOneResultError
+
 from canonical.lp.dbschema import EmailAddressStatus
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
-
-from sqlobject import AND, OR, CONTAINSSTRING
+from canonical.launchpad.database import (
+    Distribution, DistroRelease, Person, GPGKey, SourcePackage,
+    SourcePackageRelease, SourcePackageName, BinaryPackage, BugWatch,
+    BinaryPackageName, BugTracker, Language, Milestone, Product,
+    Project, ProductRelease, ProductSeries, TranslationGroup, BugTracker,
+    POTemplateName, EmailAddress)
+from canonical.launchpad.interfaces import ILaunchBag, ITeam
 
 class IHugeVocabulary(IVocabulary):
     """Interface for huge vocabularies.
@@ -122,14 +110,14 @@ class SQLObjectVocabularyBase:
 
 class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
     """A SQLObjectVocabulary base for database tables that have a unique
-        name column.
+    name column.
 
-        Provides all methods required by IHugeVocabulary,
-        although it doesn't actually specify this interface since it may
-        not actually be huge and require the custom widgets.
+    Provides all methods required by IHugeVocabulary, although it
+    doesn't actually specify this interface since it may not actually
+    be huge and require the custom widgets.
 
-        May still want to override _toTerm to provide a nicer title
-        and search to search on titles or descriptions.
+    May still want to override _toTerm to provide a nicer title and
+    search to search on titles or descriptions.
     """
     _orderBy = 'name'
 
@@ -184,7 +172,7 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         """
         if query:
             query = query.lower()
-            like_query = quote('%%%s%%' % quote_like(query)[1:-1])
+            like_query = "'%%' || %s || '%%'" % quote_like(query)
             fti_query = quote(query)
             sql = "fti @@ ftq(%s)" % fti_query
             return [self._toTerm(r) for r in self._table.select(sql, orderBy=self._orderBy)]
@@ -216,7 +204,7 @@ class ProjectVocabulary(SQLObjectVocabularyBase):
         """
         if query:
             query = query.lower()
-            like_query = quote('%%%s%%' % quote_like(query)[1:-1])
+            like_query = "'%%' || %s || '%%'" % quote_like(query)
             fti_query = quote(query)
             sql = "fti @@ ftq(%s)" % fti_query
             return [self._toTerm(r) for r in self._table.select(sql)]
@@ -264,37 +252,69 @@ class TranslationGroupVocabulary(NamedSQLObjectVocabulary):
         return SimpleTerm(obj, obj.name, obj.title)
 
 
-class PersonVocabulary(NamedSQLObjectVocabulary):
+class PersonVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
-    _table = Person
     _orderBy = ['familyname','givenname','displayname', 'name']
+    _table = Person
 
     def _toTerm(self, obj):
-        return SimpleTerm(
-                obj, obj.name, obj.displayname or '%s %s' % (
-                    obj.givenname, obj.familyname))
+        """Return the term for this object.
+
+        Preference is given to email-based terms, falling back on
+        name-based terms when no preferred email exists for the
+        IPerson.
+        """
+        if obj.preferredemail is not None:
+            return SimpleTerm(obj, obj.preferredemail.email, obj.browsername)
+        else:
+            return SimpleTerm(obj, obj.name, obj.browsername)
+
+    def getTermByToken(self, token):
+        """Return the term for the given token.
+
+        If the token contains an '@', treat it like an
+        email. Otherwise, treat it like a name.
+        """
+        if "@" in token:
+            # This looks like an email token, so let's do an object
+            # lookup based on that.
+            try:
+                email = EmailAddress.selectOneBy(email=token)
+            except SQLObjectMoreThanOneResultError:
+                raise LookupError, token
+
+            return self._toTerm(email.person)
+        else:
+            # This doesn't look like an email, so let's simply treat
+            # it like a name.
+            person = Person.selectOneBy(name=token)
+            return self._toTerm(person)
 
     def search(self, query):
         """Return terms where query is a subtring of the name"""
-        if not query:
-            return []
-        kw = {}
-        if self._orderBy:
-            kw['orderBy'] = self._orderBy
-        query = query.lower()
-        like_query = quote('%%%s%%' % quote_like(query)[1:-1])
-        fti_query = quote(query)
-        objs = self._table.select(
-            "name LIKE %s OR fti @@ ftq(%s)" % (like_query, fti_query), **kw
-            )
-        return [self._toTerm(obj) for obj in objs]
+        if query:
+            kw = {'clauseTables' : ["emailaddress"]}
+            if self._orderBy:
+                kw['orderBy'] = self._orderBy
+            query = query.lower()
+            like_query = "'%%' || %s || '%%'" % quote_like(query)
+            fti_query = quote(query)
+            objs = Person.select("""
+                (name LIKE %s OR fti @@ ftq(%s)) AND
+                person.id = emailaddress.person AND
+                emailaddress.status = %d
+                """ % (like_query, fti_query,
+                       EmailAddressStatus.PREFERRED.value),
+                **kw)
+
+            return [self._toTerm(obj) for obj in objs]
 
 
 class ValidPersonOrTeamVocabulary(PersonVocabulary):
     """The set of valid Persons/Teams in Launchpad.
 
-    A Person is considered valid if he have at least one validated email 
-    address, a password set and Person.merged is None. Teams have no 
+    A Person is considered valid if he have at least one validated email
+    address, a password set and Person.merged is None. Teams have no
     restrictions at all, which means that all teams are considered valid.
 
     This vocabulary is registered as ValidPersonOrTeam, ValidAssignee,
@@ -302,22 +322,24 @@ class ValidPersonOrTeamVocabulary(PersonVocabulary):
     requisites.
     """
 
-    _validpersons = ('''
-        teamowner IS NULL AND password IS NOT NULL AND merged IS NULL AND 
-        emailaddress.person = person.id AND 
-        (emailaddress.status = %s OR emailaddress.status = %s)'''
-         % sqlvalues(EmailAddressStatus.VALIDATED,
-                     EmailAddressStatus.PREFERRED))
-    _validteams = 'teamowner IS NOT NULL'
+    _validpersons = ("""
+        teamowner IS NULL AND password IS NOT NULL AND merged IS NULL AND
+        emailaddress.person = person.id AND
+        emailaddress.status = %d
+        """ % EmailAddressStatus.PREFERRED.value)
+    _validteams = ("""
+        teamowner IS NOT NULL AND
+        person.id = emailaddress.person AND
+        emailaddress.status = %d
+        """ % EmailAddressStatus.PREFERRED.value)
+
     _basequery = '(%s) OR (%s)' % (_validpersons, _validteams)
-    _clausetables = ['EmailAddress']
 
     def _select(self, query):
-        return self._table.select(
-                query,
-                orderBy=self._orderBy,
-                clauseTables=self._clausetables,
-                distinct=True)
+        return Person.select(
+            query, orderBy=self._orderBy,
+            clauseTables=["emailaddress"],
+            distinct=True)
 
     def __iter__(self):
         for obj in self._select(self._basequery):
@@ -336,10 +358,10 @@ class ValidPersonOrTeamVocabulary(PersonVocabulary):
         if not text:
             return []
         text = text.lower()
-        like_query = quote('%%%s%%' % quote_like(text)[1:-1])
+        like_query = "'%%' || %s || '%%'" % quote_like(text)
         fti_query = quote(text)
-        query = ('(%s) AND (name LIKE %s OR fti @@ ftq(%s))' % 
-                 (self._basequery, like_query, fti_query))
+        query = ("(%s) AND (name LIKE %s OR fti @@ ftq(%s))" % (
+            self._basequery, like_query, fti_query))
         return [self._toTerm(obj) for obj in self._select(query)]
 
 
@@ -524,6 +546,17 @@ class MilestoneVocabulary(NamedSQLObjectVocabulary):
             for ms in product.milestones:
                 yield SimpleTerm(ms, ms.name, ms.name)
 
+class BugWatchVocabulary(SQLObjectVocabularyBase):
+    _table = BugWatch
+
+    def __iter__(self):
+        bug = getUtility(ILaunchBag).bug
+        if bug is None:
+            raise ValueError, 'Unknown bug context for Watch list.'
+
+        for watch in bug.watches:
+            yield self._toTerm(watch)
+
 class PackageReleaseVocabulary(SQLObjectVocabularyBase):
     _table = SourcePackageRelease
     _orderBy = 'id'
@@ -567,40 +600,12 @@ class DistributionVocabulary(NamedSQLObjectVocabulary):
         """Return terms where query is a substring of the name"""
         if query:
             query = query.lower()
-            like_query = quote('%%%s%%' % quote_like(query)[1:-1])
+            like_query = "'%%' || %s || '%%'" % quote_like(query)
             fti_query = quote(query)
             kw = {}
             if self._orderBy:
                 kw['orderBy'] = self._orderBy
             objs = self._table.select("name LIKE %s" % like_query, **kw)
-            return [self._toTerm(obj) for obj in objs]
-
-        return []
-
-
-class ValidGPGKeyVocabulary(SQLObjectVocabularyBase):
-    implements(IHugeVocabulary)
-
-    _table = GPGKey
-    _orderBy = 'keyid'
-
-    def _toTerm(self, obj):
-        return SimpleTerm(
-            obj, obj.id, obj.owner.displayname + " " + obj.keyid)
-
-
-    def search(self, query):
-        """Return terms where query is a substring of the keyid"""
-        if query:
-            clauseTables = ['Person',]
-
-            query = quote(query.lower())
-
-            objs = self._table.select(("GPGKey.owner = Person.id AND "
-                                       "Person.fti @@ ftq(%s)" % query),
-                                      orderBy=self._orderBy,
-                                      clauseTables=clauseTables)
-
             return [self._toTerm(obj) for obj in objs]
 
         return []

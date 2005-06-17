@@ -1,0 +1,100 @@
+
+PO Export Request Browser Views
+-------------------------------
+
+  >>> from canonical.launchpad.ftests.harness import \
+  ...     LaunchpadFunctionalTestSetup
+  >>> LaunchpadFunctionalTestSetup().setUp()
+
+Check there are no requests in the database to start with.
+
+  >>> from canonical.launchpad.database import POExportRequest
+  >>> len(POExportRequest.select())
+  0
+
+Here's our user who's going to request some PO files.
+
+  >>> from canonical.launchpad.database import Person
+  >>> person = Person.get(13)
+
+Here's thing PO template they're going to request some files from.
+
+  >>> from canonical.launchpad.database import POTemplate
+  >>> context = POTemplate.get(1)
+
+Here's the request from the user.
+
+  >>> class DummyRequest:
+  ...     pass
+
+  >>> request = DummyRequest()
+  >>> request.method = 'POST'
+  >>> request.form = {
+  ...      'what': 'some',
+  ...      'potemplate': True,
+  ...      'es': True
+  ... }
+
+And here's the view processing that request.
+
+  >>> from canonical.launchpad.browser.potemplate import POTemplateExport
+  >>> class DummyView(POTemplateExport):
+  ...     def __init__(self):
+  ...         self.context = context
+  ...         self.request = request
+  ...         self.user = person
+
+  >>> view = DummyView()
+  >>> view.processForm()
+
+Check that the request has been added to the DB.
+
+  >>> for request in POExportRequest.select():
+  ...     things = [
+  ...         request.person.displayname,
+  ...         request.potemplate.potemplatename.name]
+  ...     if request.pofile:
+  ...         things.append(request.pofile.language.englishname)
+  ...     print things
+  [u'Carlos Perell\xf3 Mar\xedn', u'evolution-2.2']
+  [u'Carlos Perell\xf3 Mar\xedn', u'evolution-2.2', u'Spanish']
+
+Now forget that that request happened.
+
+  >>> LaunchpadFunctionalTestSetup().tearDown()
+  >>> LaunchpadFunctionalTestSetup().setUp()
+
+See, no requests!
+
+  >>> len(POExportRequest.select())
+  0
+
+Let's request a PO file instead this time.
+
+  >>> from canonical.launchpad.database import POFile
+  >>> context = POFile.get(1)
+
+Here's our new request.
+
+  >>> request = DummyRequest()
+  >>> request.method = 'POST'
+
+Here's that request getting processed.
+
+  >>> from canonical.launchpad.browser.pofile import ViewPOExport
+  >>> class DummyView(ViewPOExport):
+  ...     def __init__(self):
+  ...         self.context = context
+  ...         self.request = request
+  ...         self.user = person
+
+  >>> view = DummyView()
+  >>> view.processForm()
+
+And there it is.
+
+  >>> len(POExportRequest.select())
+  1
+
+  >>> LaunchpadFunctionalTestSetup().tearDown()
+

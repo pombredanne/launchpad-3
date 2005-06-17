@@ -13,6 +13,7 @@ messaging settings -- stub 2004-10-21
 
 __all__ = ['sendmail', 'simple_sendmail', 'raw_sendmail']
 
+import sets
 from email.Utils import make_msgid, formatdate
 from email.Message import Message
 from email.MIMEText import MIMEText
@@ -49,8 +50,8 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
     # still exists in modern Z3 -- StuartBishop 20050319
     if pisinstance(to_addrs, basestring):
         to_addrs = [to_addrs]
-    assert pisinstance(to_addrs, (list, tuple)) and len(to_addrs) > 0, \
-            'Invalid To: %r' % (to_addrs,)
+    assert (pisinstance(to_addrs, (list, tuple, sets.Set, set))
+            and len(to_addrs) > 0), 'Invalid To: %r' % (to_addrs,)
     assert pisinstance(from_addr, basestring), \
             'Invalid From: %r' % (from_addr,)
     assert pisinstance(subject, basestring), \

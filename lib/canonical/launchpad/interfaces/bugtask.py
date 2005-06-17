@@ -8,14 +8,16 @@ from zope.component.interfaces import IView
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine, List
+from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
+    TextLine, List
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
-from canonical.launchpad.interfaces import IHasProductAndAssignee, \
-    IHasDateCreated
+from canonical.launchpad.interfaces import (
+    IHasProductAndAssignee, IHasDateCreated)
+from canonical.launchpad.validators.bug import non_duplicate_bug
 
 class IEditableUpstreamBugTask(IHasProductAndAssignee):
     """A bug assigned to upstream, which is editable by the current
@@ -70,7 +72,7 @@ class IBugTask(IHasDateCreated):
     milestone = Choice(
         title=_('Target'), required=False, vocabulary='Milestone')
     status = Choice(
-        title=_('Bug Status'), vocabulary='BugStatus',
+        title=_('Status'), vocabulary='BugStatus',
         default=dbschema.BugTaskStatus.NEW)
     priority = Choice(
         title=_('Priority'), vocabulary='BugPriority',
@@ -83,20 +85,24 @@ class IBugTask(IHasDateCreated):
     binarypackagename = Choice(
         title=_('Binary PackageName'), required=False,
         vocabulary='BinaryPackageName')
+    bugwatch = Choice(title=_("Remote Bug Details"), required=False,
+        vocabulary='BugWatch', description=_("Select the bug watch that "
+        "represents this task in the relevant bug tracker. If none of the "
+        "bug watches represents this particular bug task, leave it as "
+        "(None). Linking the remote bug watch with the task in "
+        "this way means that a change in the remote bug status will change "
+        "the status of this bug task in Malone."))
     dateassigned = Datetime()
     datecreated  = Datetime()
     owner = Int()
     maintainer = TextLine(
         title=_("Maintainer"), required=True, readonly=True)
     maintainer_displayname = TextLine(
-        title = _("Maintainer"), required = True, readonly = True)
-    bugtitle = TextLine(
-        title=_("Bug Title"), required=True, readonly=True)
-    bugdescription = Text(
-        title=_("Bug Description"), required=False, readonly=True)
+        title=_("Maintainer"), required=True, readonly=True)
 
     contextname = Attribute("Description of the task's location.")
     title = Attribute("The title used for a task's Web page.")
+    whiteboard = Text(title=_("Status Explanation"), required=False)
 
 
 class IBugTaskSearch(Interface):
@@ -121,12 +127,25 @@ class IBugTaskSearch(Interface):
     assignee = Choice(
         title=_('Assignee'), vocabulary='ValidAssignee', required=False)
     unassigned = Bool(title=_('show only unassigned bugs'), required=False)
+
+
+class IUpstreamBugTaskSearch(IBugTaskSearch):
+    """The schema used by the bug task search form of a product."""
+    milestone_assignment = Choice(
+        title=_('Target'), vocabulary="Milestone", required=False)
     milestone = List(
         title=_('Target'), value_type=IBugTask['milestone'], required=False)
 
 
+class IDistroBugTaskSearch(IBugTaskSearch):
+    """The schema used by the bug task search form of a distribution or
+    distribution release."""
+
+
 class IBugTaskSearchListingView(IView):
     """A view that can be used with a bugtask search listing."""
+
+    search_form_schema = Attribute("""The schema used for the search form.""")
 
     searchtext_widget = Attribute("""The widget for entering a free-form text
                                      query on bug task details.""")
@@ -273,13 +292,13 @@ class IBugTaskSet(Interface):
                    sourcepackagename=None, binarypackagename=None, status=None,
                    priority=None, severity=None, assignee=None, owner=None,
                    milestone=None):
-        """Create a bug task on a bug.
+        """Create a bug task on a bug and return it.
 
         Exactly one of product, distribution or distrorelease must be provided.
         """
 
     def assignedBugTasks(person, minseverity=None, minpriority=None,
-                         showclosed=None, orderby=None):
+                         showclosed=None, orderby=None, user=None):
         """Return all bug tasks assigned to the given person or to a
         package/product this person maintains.
 
@@ -293,9 +312,13 @@ class IBugTaskSet(Interface):
         <orderBy>. Otherwise the order used is not predictable.
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
+
+        The <user> parameter is necessary to make sure we don't return any
+        bugtask of a private bug for which the user is not subscribed. If
+        <user> is None, no private bugtasks will be returned.
         """
 
-    def bugTasksWithSharedInterest(person1, person2, orderBy=None):
+    def bugTasksWithSharedInterest(person1, person2, orderBy=None, user=None):
         """Return all bug tasks which person1 and person2 share some interest.
 
         We assume they share some interest if they're both members of the
@@ -306,7 +329,57 @@ class IBugTaskSet(Interface):
         <orderBy>. Otherwise the order used is not predictable.
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
+
+        The <user> parameter is necessary to make sure we don't return any
+        bugtask of a private bug for which the user is not subscribed. If
+        <user> is None, no private bugtasks will be returned.
         """
+
+
+class IBugTaskSubset(Interface):
+    """A subset of bugs.
+
+    Generally speaking the 'subset' refers to the bugs reported on a
+    specific upstream, distribution, or distrorelease.
+    """
+
+    context = Attribute(
+        "The IDistribution, IDistroRelease or IProduct.")
+    context_title = TextLine(title=_("Bugs reported in"))
+
+    def __getitem__(item):
+        """Get an IBugTask.
+
+        Raise a KeyError if the IBug with that given ID is not
+        reported within this context.
+        """
+
+    def search(bug=None, searchtext=None, status=None, priority=None,
+               severity=None, milestone=None, assignee=None, submitter=None,
+               orderby=None):
+        """Return a set of IBugTasks that satisfy the query arguments.
+
+        The search results are filtered to include matches within the
+        current context.
+
+        Keyword arguments should always be used. The argument passing
+        semantics are as follows:
+
+        * BugTaskSubset.search(arg = 'foo'): Match all IBugTasks where
+          IBugTask.arg == 'foo'.
+
+        * BugTaskSubset.search(arg = any('foo', 'bar')): Match all IBugTasks
+          where IBugTask.arg == 'foo' or IBugTask.arg == 'bar'
+
+        * BugTaskSubset.search(arg1 = 'foo', arg2 = 'bar'): Match all
+          IBugTasks where IBugTask.arg1 == 'foo' and
+          IBugTask.arg2 == 'bar'
+
+        For a more thorough treatment, check out:
+
+            lib/canonical/launchpad/doc/bugtask.txt
+        """
+
 
 class IBugTasksReport(Interface):
 

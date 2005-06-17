@@ -4,13 +4,16 @@
 PYTHON_VERSION=2.4
 PYTHON=python${PYTHON_VERSION}
 PYTHONPATH:=$(shell pwd)/lib:${PYTHONPATH}
-CONFFILE=launchpad.conf
 STARTSCRIPT=runlaunchpad.py
 TESTFLAGS=-p -v
 TESTOPTS=
 SETUPFLAGS=
 Z3LIBPATH=$(shell pwd)/sourcecode/zope/src
 HERE:=$(shell pwd)
+SHHH=${PYTHON} utilities/shhh.py
+LPCONFIG=default
+
+CONFFILE=configs/${LPCONFIG}/launchpad.conf
 
 # DO NOT ALTER : this should just build by default
 default: inplace
@@ -55,8 +58,8 @@ all: inplace runners
 inplace: build
 
 build:
-	$(MAKE) -C sourcecode build \
-	    PYTHON=${PYTHON} PYTHON_VERSION=${PYTHON_VERSION}
+	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
+	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 
 runners:
 	echo "#!/bin/sh" > bin/runzope;
@@ -89,13 +92,39 @@ ftest_inplace: inplace
 #ftest: ftest_inplace
 
 run: inplace
-	LPCONFIG=default PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
+	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
 		 $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE)
 
+LAUNCHPAD_PID=launchpad.pid
+LIBRARIAN_PID=librarian.pid
+
+# Run as a daemon - hack using nohup until we move back to using zdaemon
+# properly
+start: inplace
+	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
+		 nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
+		 > nohup.out 2>&1 &
+	ln -sf `LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
+		 $(PYTHON) -c 'from canonical.config import config; \
+		    print config.librarian.server.root'`/librarian.pid \
+		    ${LIBRARIAN_PID}
+
+# Stop the daemon
+stop:
+	@ if [ -r ${LAUNCHPAD_PID} ]; then \
+		echo Killing Launchpad \(`cat ${LAUNCHPAD_PID}`\); \
+		kill `cat ${LAUNCHPAD_PID}` | true; \
+	fi
+	@ if [ -r ${LIBRARIAN_PID} ]; then \
+		echo Killing Librarian \(`cat ${LIBRARIAN_PID}`\); \
+		kill `cat ${LIBRARIAN_PID}` | true; \
+	fi
+	@rm -f ${LAUNCHPAD_PID} ${LIBRARIAN_PID}
+
 debug:
-	PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) $(PYTHON) -i -c \
-            "from zope.app import Application;\
-             app = Application('Data.fs', 'site.zcml')()"
+	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
+		 $(PYTHON) -i -c \ "from zope.app import Application;\
+		    app = Application('Data.fs', 'site.zcml')()"
 
 clean:
 	find . \( -name '*.o' -o -name '*.so' -o -name '*.py[co]' -o -name \

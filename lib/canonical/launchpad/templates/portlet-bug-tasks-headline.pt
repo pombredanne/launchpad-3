@@ -3,7 +3,7 @@
      tal:define="bug_url string:/malone/bugs/${context/id}">
 
 <table class="listing"
-       style="width: 100%; font-size: 75%; margin-top: 2px;">
+       style="width: 100%; margin-top: 2px;">
 
   <caption>Needs fixing in...</caption>
 
@@ -58,6 +58,11 @@
             distro distrorelease
           </span>
         </a>
+        <!--indicate if there is a linked watch -->
+        <img tal:condition="bugtask/bugwatch"
+             src="/++resource++lock_icon.gif"
+             alt="Watch"
+             title="This Task is linked to a Bug Watch" />
       </td>
 
       <td tal:content="bugtask/status/title">

@@ -41,7 +41,7 @@ __all__ = (
 'CodereleaseRelationships',
 'DistributionReleaseStatus',
 'EmailAddressStatus',
-'HashAlgorithms',
+'HashAlgorithm',
 'ImportTestStatus',
 'KarmaType',
 'LoginTokenType',
@@ -50,7 +50,7 @@ __all__ = (
 'PackagePublishingStatus',
 'PackagePublishingPocket',
 'PackagingType',
-'GPGKeyAlgorithms',
+'GPGKeyAlgorithm',
 'ProjectRelationship',
 'ProjectStatus',
 'RevisionControlSystems',
@@ -450,7 +450,7 @@ class PackagingType(DBSchema):
 ##XXX: (gpg+dbschema) cprov 20041004
 ## the data structure should be rearranged to support 4 field
 ## needed: keynumber(1,16,17,20), keyalias(R,g,D,G), title and description
-class GPGKeyAlgorithms(DBSchema):
+class GPGKeyAlgorithm(DBSchema):
     """
     GPG Compilant Key Algorithms Types:
 
@@ -690,7 +690,7 @@ class TeamSubscriptionPolicy(DBSchema):
         """)
 
 
-class HashAlgorithms(DBSchema):
+class HashAlgorithm(DBSchema):
     """Hash Algorithms
 
     We use "hash" or "digest" cryptographic algorithms in a number of
@@ -2059,6 +2059,13 @@ class LoginTokenType(DBSchema):
 
         One of the team administrators is trying to add a contact email
         address for the team, but this address need to be validated first.
+        """)
+
+    VALIDATEGPGUID = Item(6, """
+        Validate GPG key User ID
+
+        A user has submited a new GPG key and , consequently, its User.ids
+        as new email addresses to his account and they need to be validated.
         """)
 
 

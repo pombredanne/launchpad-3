@@ -16,7 +16,7 @@ __metaclass__ = type
 
 import os
 from zope.component import getUtility
-from canonical.lp.dbschema import GPGKeyAlgorithms
+from canonical.lp.dbschema import GPGKeyAlgorithm
 from canonical.launchpad.interfaces import IGPGKeySet, IGpgHandler, IPersonSet
 
 gpgkeysdir = os.path.join(os.path.dirname(__file__), 'gpgkeys')
@@ -27,24 +27,22 @@ def import_public_key(email_addr):
     personset = getUtility(IPersonSet)
 
     pubkey = open(os.path.join(gpgkeysdir, email_addr + '.pub')).read()
-    fingerprint = gpghandler.importPubKey(pubkey)               
+    key = gpghandler.importPubKey(pubkey)               
 
     person = personset.getByEmail(email_addr)
     for gpgkey in person.gpgkeys:
-        if gpgkey.fingerprint == fingerprint:
+        if gpgkey.fingerprint == key.fingerprint:
             # If the key's already added to the database, do nothing.
             return
         
     # Insert the key into the database.
-    keysize, algorithm, revoked = gpghandler.getKeyInfo(fingerprint)
     getUtility(IGPGKeySet).new(
         ownerID=personset.getByEmail(email_addr).id,
-        keyid=fingerprint[-8:],
-        pubkey=pubkey,
-        fingerprint=fingerprint,
-        keysize=keysize,
-        algorithm=GPGKeyAlgorithms.items[algorithm],
-        revoked=revoked)
+        keyid=key.keyid,
+        fingerprint=key.fingerprint,
+        keysize=key.keysize,
+        algorithm=GPGKeyAlgorithm.items[key.algorithm],
+        revoked=key.revoked)
 
 def import_public_test_keys():
     """Imports all the public keys located in gpgkeysdir into the db."""

@@ -9,6 +9,7 @@ import random
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, AND
+
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -22,12 +23,15 @@ class LoginToken(SQLBase):
     _table = 'LoginToken'
 
     requester = ForeignKey(dbName='requester', foreignKey='Person')
-    requesteremail = StringCol(dbName='requesteremail') 
+    requesteremail = StringCol(dbName='requesteremail', notNull=False,
+                               default=None) 
     email = StringCol(dbName='email', notNull=True)
     token = StringCol(dbName='token', unique=True)
     tokentype = EnumCol(dbName='tokentype', notNull=True,
                         schema=LoginTokenType)
     created = UtcDateTimeCol(dbName='created', notNull=True)
+    fingerprint = StringCol(dbName='fingerprint', notNull=False,
+                            default=None)
 
     title = 'Launchpad Email Verification'
 
@@ -51,16 +55,17 @@ class LoginTokenSet:
     def deleteByEmailAndRequester(self, email, requester):
         for token in self.searchByEmailAndRequester(email, requester):
             token.destroySelf()
-
-    def new(self, requester, requesteremail, email, tokentype):
+            
+    def new(self, requester, requesteremail, email, tokentype,
+            fingerprint=None):
         """See ILoginTokenSet."""
         characters = '0123456789bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ'
         length = 20
         token = ''.join([random.choice(characters) for count in range(length)])
         reqid = getattr(requester, 'id', None)
         return LoginToken(requesterID=reqid, requesteremail=requesteremail,
-                email=email, token=token, tokentype=tokentype,
-                created=UTC_NOW)
+                          email=email, token=token, tokentype=tokentype,
+                          created=UTC_NOW, fingerprint=fingerprint)
 
     def __getitem__(self, tokentext):
         token = LoginToken.selectOneBy(token=tokentext)

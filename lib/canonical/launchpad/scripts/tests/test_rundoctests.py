@@ -10,6 +10,7 @@ def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(DocTestSuite('canonical.launchpad.scripts.rosetta'))
     suite.addTest(DocTestSuite('canonical.launchpad.scripts.sort_sql'))
+    suite.addTest(DocTestSuite('canonical.launchpad.scripts'))
     return suite
 
 if __name__ == '__main__':

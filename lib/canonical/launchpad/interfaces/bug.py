@@ -1,4 +1,10 @@
 __metaclass__ = object
+__all__ = ['BugCreationConstraintsError',
+           'IBug',
+           'IBugSet',
+           'IBugDelta',
+           'IBugAddForm']
+
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -14,6 +20,14 @@ from canonical.launchpad.validators.bug import non_duplicate_bug
 from canonical.launchpad.fields import Title, Summary
 
 
+class BugCreationConstraintsError(Exception):
+    """Raised when a bug is created with not all constraints satisfied.
+
+    Currently the only constraint is that it should have at least one
+    bug task.
+    """
+
+
 class IBug(Interface):
     """The core bug entry."""
 
@@ -23,19 +37,16 @@ class IBug(Interface):
         title=_('Date Created'), required=True, readonly=True)
     name = TextLine(
         title=_('Nickname'), required=False,
-        description=_("""A short and unique name for this bug. Very few
-        bugs have a nickname, they are just bugs that are so
-        significant that people will actually remember the
-        name. Please don't set a nickname for the bug unless you
-        are certain that this is the sort of bug that the entire
-        community, upstream and all distro's, will phear."""),
+        description=_("""A short and unique name for this bug.
+        Add a nickname only if you often need to retype the URL
+        but have trouble remembering the bug number."""),
         constraint=valid_name)
     title = Title(
         title=_('Title'), required=True,
-        description=_("""A one-line summary of the problem"""))
+        description=_("""A one-line summary of the problem."""))
     summary = Summary(
         title=_('Summary'), required=False,
-        description=_("""The bug summary is a single paragraph
+        description=_("""A single paragraph
         description that should capture the essence of the bug, where it
         has been observed, and what triggers it."""))
     description = Text(
@@ -77,6 +88,8 @@ class IBug(Interface):
     externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
     cverefs = Attribute('CVE references for this bug')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
+    duplicates = Attribute('MultiJoin of the bugs which are dups of this '
+        'one')
 
     def followup_title():
         """Return a candidate title for a followup message."""
@@ -178,11 +191,11 @@ class IBugAddForm(IBug):
 
 # Interfaces for set
 class IBugSet(IAddFormCustomization):
-    """A set for bugs."""
+    """A set of bugs."""
 
     title = Attribute('Title')
 
-    def __getitem__(key):
+    def __getitem__(bugid):
         """Get a Bug."""
 
     def __iter__():

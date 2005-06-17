@@ -4,18 +4,20 @@ __metaclass__ = type
 __all__ = ['POMsgSet']
 
 import logging
+from warnings import warn
+import datetime
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
+from sqlobject import ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin
 from sqlobject import SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, sqlvalues, \
     flush_database_updates
 from canonical.launchpad.interfaces import IEditPOMsgSet
 from canonical.lp.dbschema import RosettaTranslationOrigin
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.database.potranslationsighting import \
-    POTranslationSighting
+from canonical.launchpad.database.poselection import POSelection
+from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
 
 
@@ -26,298 +28,361 @@ class POMsgSet(SQLBase):
 
     sequence = IntCol(dbName='sequence', notNull=True)
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
-    iscomplete = BoolCol(dbName='iscomplete', notNull=True)
-    obsolete = BoolCol(dbName='obsolete', notNull=True)
-    fuzzy = BoolCol(dbName='fuzzy', notNull=True)
+    iscomplete = BoolCol(dbName='iscomplete', notNull=True, default=False)
+    publishedcomplete = BoolCol(dbName='publishedcomplete', notNull=True,
+        default=False)
+    isfuzzy = BoolCol(dbName='isfuzzy', notNull=True, default=False)
+    publishedfuzzy = BoolCol(dbName='publishedfuzzy', notNull=True,
+        default=False)
+    isupdated = BoolCol(notNull=True, default=False)
     commenttext = StringCol(dbName='commenttext', notNull=False, default=None)
     potmsgset = ForeignKey(foreignKey='POTMsgSet', dbName='potmsgset',
         notNull=True)
+    obsolete = BoolCol(dbName='obsolete', notNull=True)
 
-    def getSuggestedTexts(self, pluralform):
-        """See IPOMsgSet."""
-        texts = self.potmsgset.getSuggestedTexts(self.pofile.language,
-            pluralform)
-        active = self.activeSelection(pluralform).potranslation.translation
-        return [text for text in texts if text != active]
+    selections = MultipleJoin('POSelection', joinColumn='pomsgset',
+        orderBy='pluralform')
 
+    @property
     def pluralforms(self):
         """See IPOMsgSet."""
         if len(list(self.potmsgset.messageIDs())) > 1:
-            # has plurals
+            # this messageset has plurals so return the expected number of
+            # pluralforms for this language
             return self.pofile.pluralforms
         else:
-            # message set is singular
+            # this messageset is singular only
             return 1
 
-    def translations(self):
-        """See IPOMsgSet."""
-        pluralforms = self.pluralforms()
+    @property
+    def published_texts(self):
+        pluralforms = self.pluralforms
         if pluralforms is None:
             raise RuntimeError(
                 "Don't know the number of plural forms for this PO file!")
-
-        results = list(POTranslationSighting.select(
-            'pomsgset = %d AND active = TRUE' % self.id,
-            orderBy='pluralForm'))
-
+        results = list(POSubmission.select(
+            "POSubmission.id = POSelection.publishedsubmission AND "
+            "POSelection.pomsgset = %s" % sqlvalues(self.id),
+            clauseTables=['POSelection'],
+            orderBy='pluralform'))
         translations = []
-
         for form in range(pluralforms):
             if results and results[0].pluralform == form:
                 translations.append(results.pop(0).potranslation.translation)
             else:
                 translations.append(None)
-
         return translations
 
-    # XXX: Carlos Perello Marin 15/10/04: Review this method, translations
-    # could have more than one row and we always return only the firts one!
-    def getTranslationSighting(self, pluralForm, allowOld=False):
-        """See IPOMsgSet."""
-        if allowOld:
-            translation = POTranslationSighting.selectOneBy(
-                pomsgsetID=self.id,
-                pluralform=pluralForm)
-        else:
-            translation = POTranslationSighting.selectOneBy(
-                pomsgsetID=self.id,
-                inlastrevision=True,
-                pluralform=pluralForm)
-        if translation is None:
-            # XXX: This should be a NotFoundError.
-            #      -- SteveAlexander, 2005-04-23
-            raise IndexError, pluralForm
-        return translation
+    @property
+    def active_texts(self):
+        pluralforms = self.pluralforms
+        if pluralforms is None:
+            raise RuntimeError(
+                "Don't know the number of plural forms for this PO file!")
+        results = list(POSubmission.select(
+            """POSubmission.id = POSelection.activesubmission AND
+               POSelection.pomsgset = %d""" % self.id,
+            clauseTables=['POSelection'],
+            orderBy='pluralform'))
+        translations = []
+        for form in range(pluralforms):
+            if results and results[0].pluralform == form:
+                translations.append(results.pop(0).potranslation.translation)
+            else:
+                translations.append(None)
+        return translations
 
-    def translationSightings(self):
-        """See IPOMsgSet."""
-        return POTranslationSighting.selectBy(pomsgsetID=self.id)
+    def selection(self, pluralform):
+        selection = POSelection.selectOne(
+            "pomsgset = %s AND pluralform = %s" % sqlvalues(
+                self.id, pluralform))
+        return selection
+
+    def activeSubmission(self, pluralform):
+        return POSubmission.selectOne(
+            """POSelection.pomsgset = %d AND
+               POSelection.pluralform = %d AND
+               POSelection.activesubmission = POSubmission.id
+               """ % (self.id, pluralform),
+               clauseTables=['POSelection'])
+
+    def publishedSubmission(self, pluralform):
+        return POSubmission.selectOne(
+            """POSelection.pomsgset = %d AND
+               POSelection.pluralform = %d AND
+               POSelection.publishedsubmission = POSubmission.id
+               """ % (self.id, pluralform),
+               clauseTables=['POSelection'])
 
     # IEditPOMsgSet
 
-    def updateTranslation(self, person, new_translations, fuzzy, fromPOFile):
-        was_complete = self.iscomplete
-        was_fuzzy = self.fuzzy
-        has_changes = False
-        # By default we will think that all translations for this pomsgset
-        # where available in last import
-        all_in_last_revision = True
-
-        # Get a hold of a list of existing translations for the message set.
-        old_translations = self.translations()
-
+    def updateTranslationSet(self, person, new_translations, fuzzy,
+        published, is_editor):
+        # keep track of whether or not this msgset is complete. We assume
+        # it's complete and then flag it during the process if it is not
+        complete = True
+        # it's definitely not complete if it has too few translations
+        if len(new_translations) < self.pluralforms:
+            complete = False
+        # now loop through the translations and submit them one by one
         for index in new_translations.keys():
-            # For each translation, add it to the database if it is
-            # non-null and different to the old one.
-            if new_translations[index] != old_translations[index]:
-                has_changes = True
-                if (new_translations[index] == '' or
-                    new_translations[index] is None):
-                    # Make all sightings inactive.
-                    sightings = POTranslationSighting.select(
-                        'pomsgset=%s AND pluralform = %s' % 
-                        sqlvalues(self.id, index))
-                    for sighting in sightings:
-                        sighting.active = False
-                    new_translations[index] = None
+            newtran = new_translations[index]
+            # replace any '' with None until we figure out
+            # ResettingTranslations
+            if newtran == '':
+                newtran = None
+            # see if this affects completeness
+            if newtran is None:
+                complete = False
+            # make the new sighting or submission. note that this may not in
+            # fact create a whole new submission
+            self.makeSubmission(
+                person = person,
+                text = newtran,
+                pluralform = index,
+                published = published,
+                is_editor = is_editor)
+
+        # We set the fuzzy flag first, and completeness flags as needed:
+        if published and is_editor:
+            self.publishedfuzzy = fuzzy
+            self.publishedcomplete = complete
+        elif is_editor:
+            self.isfuzzy = fuzzy
+            self.iscomplete = complete
+
+        # update the pomsgset statistics
+        self.updateStatistics()
+
+    def makeSubmission(self, person, text, pluralform, published,
+            is_editor=True):
+        # this is THE KEY method in the whole of rosetta. It deals with the
+        # sighting or submission of a translation for a pomsgset and plural
+        # form, either online or in the published po file. It has to decide
+        # exactly what to do with that submission or sighting: whether to
+        # record it or ignore it, whether to make it the active or published
+        # translation, etc.
+
+        # It takes all the key information in the sighting/submission and
+        # records that in the db. It returns either the record of the
+        # submission, a POSubmission, or None if it decided to record
+        # nothing at all. Note that it may return a submission that was
+        # created previously, if it decides that there is not enough new
+        # information in this submission to justify recording it.
+
+        # The "published" field indicates whether or not this has come from
+        # the published po file. It should NOT be set for an arbitrary po
+        # file upload, it should ONLY be set if this is genuinely the
+        # published po file.
+
+        # The "is_editor" field indicates whether or not this person is
+        # allowed to edit the active translation in Rosetta. If not, we will
+        # still create a submission if needed, but we won't make it active.
+
+        # It makes no sense to have a "published" submission from someone
+        # who is not an editor, so let's sanity check that first
+        if published and not is_editor:
+            raise AssertionError, 'published translations are ALWAYS is_editor'
+
+        # first we must deal with the situation where someone has submitted
+        # a NULL translation. This only affects the published or active data
+        # set, there is no crossover. So, for example, if upstream loses a
+        # translation, we do not remove it from the rosetta active set.
+        
+        # we should also be certain that we don't get an empty string. that
+        # should be None by this stage
+        assert text != '', 'Empty string received, should be None'
+
+        # Now get hold of any existing translation selection
+        selection = self.selection(pluralform)
+
+        # submitting an empty (None) translation gets rid of the published
+        # or active selection for that translation. But a null published
+        # translation does not remove the active submission.
+        if text is None and selection:
+            # Remove the existing active/published selection
+            # XXX sabdfl now we have no record of WHO made the translation
+            # null, if it was not null previously. This needs to be
+            # addressed in ResettingTranslations. 27/05/05
+            if published:
+                selection.publishedsubmission = None
+            else:
+                if is_editor:
+                    selection.activesubmission = None
+
+        # If nothing was submitted, return None
+        if text is None:
+            # make a note that the translation is not complete
+            if published:
+                self.publishedcomplete = False
+            else:
+                if is_editor:
                     self.iscomplete = False
-                else:
-                    try:
-                        old_sight = self.getTranslationSighting(index)
-                    except IndexError:
-                        # We don't have a sighting for this string, that means
-                        # that either the translation is new or that the old
-                        # translation does not comes from the pofile.
-                        all_in_last_revision = False
-                    else:
-                        if not old_sight.active:
-                            all_in_last_revision = False
-                    self.makeTranslationSighting(
-                        person = person,
-                        text = new_translations[index],
-                        pluralForm = index,
-                        fromPOFile = fromPOFile)
+            # we return because there is nothing further to do. Perhaps when
+            # ResettingTranslations is implemented we will continue to
+            # record the submission of the NULL translation.
+            return None
 
-        # We set the fuzzy flag as needed:
-        if fuzzy and self.fuzzy == False:
-            self.fuzzy = True
-            has_changes = True
-        elif not fuzzy and self.fuzzy == True:
-            self.fuzzy = False
-            has_changes = True
-
-        if not has_changes:
-            # We don't change the statistics if we didn't had any change.
-            return
-
-        # We do now a live update of the statistics.
-        if self.iscomplete and not self.fuzzy:
-            # New msgset translation is ready to be used.
-            if not was_complete or was_fuzzy:
-                # It was not ready before this change.
-                if fromPOFile:
-                    # The change was done outside Rosetta.
-                    self.pofile.currentcount += 1
-                else:
-                    # The change was done with Rosetta.
-                    self.pofile.rosettacount += 1
-            elif not fromPOFile and all_in_last_revision:
-                # We have updated a translation from Rosetta that was
-                # already translated.
-                self.pofile.updatescount += 1
-        else:
-            # This new msgset translation is not yet finished.
-            if was_complete and not was_fuzzy:
-                # But previously it was finished, so we lost its translation.
-                if fromPOFile:
-                    # It was lost outside Rosetta
-                    self.pofile.currentcount -= 1
-                else:
-                    # It was lost inside Rosetta
-                    self.pofile.rosettacount -= 1
-
-        # XXX: Carlos Perello Marin 10/12/2004 Sanity test, the statistics
-        # code is not as good as it should, we can get negative numbers, in
-        # case we reach that status, we just change that field to 0.
-        if self.pofile.currentcount < 0:
-            self.pofile.currentcount = 0
-        if self.pofile.rosettacount < 0:
-            self.pofile.rosettacount = 0
-
-    def makeTranslationSighting(self, person, text, pluralForm,
-        fromPOFile=False, active=True):
-        """Create a new translation sighting for this message set."""
-
-        # First get hold of a POTranslation for the specified text.
+        # Find or create a POTranslation for the specified text
         try:
             translation = POTranslation.byTranslation(text)
         except SQLObjectNotFound:
             translation = POTranslation(translation=text)
 
-        # Now get hold of any existing translation sightings.
+        # create the selection if there wasn't one
+        if selection is None:
+            selection = POSelection(
+                pomsgsetID=self.id,
+                pluralform=pluralform)
 
-        sighting = POTranslationSighting.selectOneBy(
+        # find or create the relevant submission. We always create a
+        # translation submission, unless this translation is already active
+        # (or published in the case of one coming in from a po file).
+
+        # start by trying to see if the existing one is active or if
+        # needed, published. If so, we can return, because the db already
+        # reflects this selection in all the right ways and does not need to
+        # be updated. Note that this will result in a submission for a new
+        # person ("Joe") returning a POSubmission created in the name of
+        # someone else, the person who first made this translation the
+        # active / published one.
+
+        # test if we are working with the published pofile, and if this
+        # translation is already published
+        if published and selection.publishedsubmission:
+            if selection.publishedsubmission.potranslation == translation:
+                # return the existing submission that made this translation
+                # the published one in the db
+                return selection.publishedsubmission
+        # if we are working with the active submission, see if the selection
+        # of this translation is already active
+        if not published and selection.activesubmission:
+            if selection.activesubmission.potranslation == translation:
+                # and return the active submission
+                return selection.activesubmission
+
+        # let's make a record of whether this translation was published
+        # complete, was actively complete, and was an updated one
+
+        # get the right origin for this translation submission
+        if published:
+            origin = RosettaTranslationOrigin.SCM
+        else:
+            origin = RosettaTranslationOrigin.ROSETTAWEB
+
+        # and create the submission
+        submission = POSubmission(
             pomsgsetID=self.id,
+            pluralform=pluralform,
             potranslationID=translation.id,
-            pluralform=pluralForm,
+            origin=origin,
             personID=person.id)
 
-        if sighting is None:
-            # No sighting exists yet.
+        # next, we need to update the existing active and possibly also
+        # published selections
+        if published:
+            selection.publishedsubmission = submission
+        if is_editor:
+            selection.activesubmission = submission
 
-            if fromPOFile:
-                origin = RosettaTranslationOrigin.SCM
-            else:
-                origin = RosettaTranslationOrigin.ROSETTAWEB
+        # we cannot properly update the statistics here, because we don't
+        # know if the "fuzzy" or completeness status is changing at a higher
+        # level. But we can make a good guess in some cases
 
-            sighting = POTranslationSighting(
-                pomsgsetID=self.id,
-                potranslationID=translation.id,
-                datefirstseen=UTC_NOW,
-                datelastactive=UTC_NOW,
-                inlastrevision=fromPOFile,
-                pluralform=pluralForm,
-                active=False,
-                personID=person.id,
-                origin=origin)
+        # first, if it was published complete, it is still complete, and
+        # this new submission was not from a pofile, and we were not
+        # updated, then we are now updated!
+        if not published and is_editor:
+            if self.publishedcomplete and not self.publishedfuzzy:
+                if self.iscomplete and not self.isfuzzy:
+                    if not self.isupdated:
+                        self.isupdated = True
+                        self.pofile.updatescount += 1
 
-        if not fromPOFile:
-            # The translation comes from Rosetta, it has preference always.
-            sighting.set(datelastactive=UTC_NOW, active=True)
-            new_active = sighting
-        else:
-            # The translation comes from a PO import.
-
-            # Look for the active TranslationSighting
-            active_results = POTranslationSighting.selectOneBy(
-                pomsgsetID=self.id,
-                pluralform=pluralForm,
-                active=True)
-            if active_results is None:
-                # Don't have yet an active translation, mark this one as
-                # active and present in last PO.
-                sighting.datelastactive = UTC_NOW
-                sighting.active = True
-                sighting.inlastrevision = True
-                new_active = sighting
-            else:
-                old_active = active_results
-
-                if old_active is sighting:
-                    # Current sighting is already active, only update the
-                    # timestamp and mark it as present in last import.
-                    sighting.datelastactive = UTC_NOW
-                    sighting.inlastrevision = True
-                    new_active = sighting
-                elif old_active.origin == RosettaTranslationOrigin.SCM:
-                    # The current active translation is from a previous
-                    # .po import so we can override it directly.
-                    sighting.datelastactive = UTC_NOW
-                    sighting.inlastrevision = True
-                    sighting.active = True
-                    new_active = sighting
-                else:
-                    # The current active translation is from Rosetta, we don't
-                    # remove it, just mark this sighting as present in last
-                    # .po import.
-                    sighting.inlastrevision = True
-                    previous_active_results = POTranslationSighting.select(
-                        'pomsgset=%s AND pluralform=%s AND active=FALSE'
-                            % sqlvalues(self.id, pluralForm),
-                        orderBy='-datelastactive')
-                    if (previous_active_results.count() > 1 and
-                        previous_active_results[0] is not sighting):
-                        # As we have more than one active row, there is an
-                        # old translation that is not this one, and therefore,
-                        # we get it as an update done outside Rosetta that we
-                        # should accept.
-                        sighting.active = True
-                        sighting.datelastactive = UTC_NOW
-                        new_active = sighting
-                    else:
-                        # We don't have an old translation there or it's the
-                        # same we had so we should not kill Rosetta's one.
-                        new_active = old_active
-
-        # Make all other sightings inactive.
-
-        sightings = POTranslationSighting.select(
-            'pomsgset=%d AND pluralform = %d AND id <> %d'
-            % (self.id, pluralForm, new_active.id))
-
-        # In theory we should only get one resultset.
-        if sightings.count() > 1:
-            logging.warning("Got more than one POTranslationSighting row"
-                            " for pomsgset = %d, pluralform = %d and"
-                            " id <> %d. It must be <= 1 always"
-                                % (self.id, pluralForm, new_active.id)
-                           )
-
-        for old_sighting in sightings:
-            old_sighting.active = False
-
-        # Ask for a sqlobject sync before reusing the data we just updated.
+        # flush these updates to the db so we can reuse them
         flush_database_updates()
 
-        # Implicit set of iscomplete. If we have all translations, it's 
-        # complete, if we lack a translation, it's not complete.
-        if None in self.translations():
-            self.iscomplete = False
+        # return the submission we have just made
+        return submission
+
+    def updateStatistics(self):
+        # make sure we are working with the very latest data
+        flush_database_updates()
+        # we only want to calculate the number of plural forms expected for
+        # this pomsgset once
+        pluralforms = self.pluralforms
+        # calculate the number of published plural forms
+        published_count = POSelection.select("""
+            POSelection.pomsgset = %s AND
+            POSelection.publishedsubmission IS NOT NULL AND
+            POSelection.pluralform < %s
+            """ % sqlvalues(self.id, pluralforms)).count()
+        if published_count == pluralforms:
+            self.publishedcomplete = True
         else:
+            self.publishedcomplete = False
+        # calculate the number of active plural forms
+        active_count = POSelection.select("""
+            POSelection.pomsgset = %s AND
+            POSelection.activesubmission IS NOT NULL AND
+            POSelection.pluralform < %s
+            """ % sqlvalues(self.id, pluralforms)).count()
+        if active_count == pluralforms:
             self.iscomplete = True
+        else:
+            self.iscomplete = False
+        flush_database_updates()
+        updated = POMsgSet.select("""
+            POMsgSet.id = %s AND
+            POMsgSet.isfuzzy = FALSE AND
+            POMsgSet.publishedfuzzy = FALSE AND
+            POMsgSet.iscomplete = TRUE AND
+            POMsgSet.publishedcomplete = TRUE AND
+            POSelection.pomsgset = POMsgSet.id AND
+            POSelection.pluralform < %s AND
+            ActiveSubmission.id = POSelection.activesubmission AND
+            PublishedSubmission.id = POSelection.publishedsubmission AND
+            ActiveSubmission.datecreated > PublishedSubmission.datecreated
+            """ % sqlvalues(self.id, self.pluralforms),
+            clauseTables=['POSelection',
+                          'POSubmission AS ActiveSubmission',
+                          'POSubmission AS PublishedSubmission']).count()
+        if updated:
+            self.isupdated = True
+        else:
+            self.isupdated = False
+        flush_database_updates()
 
-        # sanity check
-        assert POTranslationSighting.selectBy(
-            pomsgsetID=self.id,
-            pluralform=pluralForm,
-            potranslationID=translation.id,
-            active=True).count() <= 1, 'Multiple active translations.'
+    def getWikiSubmissions(self, pluralform):
+        """See IPOMsgSet."""
+        submissions = self.potmsgset.getWikiSubmissions(self.pofile.language,
+            pluralform)
+        active = self.activeSubmission(pluralform).potranslation
+        return [submission
+                for submission in submissions
+                if submission.potranslation != active]
 
-        assert POTranslationSighting.selectBy(
-            pomsgsetID=self.id,
-            pluralform=pluralForm,
-            potranslationID=translation.id,
-            inlastrevision=True).count() <= 1, 'Multiple SCM translations.'
+    def getSuggestedSubmissions(self, pluralform):
+        """See IPOMsgSet."""
+        # XXX sabdfl 02/06/05 this is Malone bug #906
+        fudgefactor = datetime.timedelta(0,1,0)
+        selection = self.selection(pluralform)
+        active = None
+        if selection is not None and selection.activesubmission:
+            active = selection.activesubmission
+        query = '''pomsgset = %s AND
+                   pluralform = %s''' % sqlvalues(self.id, pluralform)
+        if active:
+            query += ''' AND datecreated > %s
+                    ''' % sqlvalues(active.datecreated + fudgefactor)
+        return POSubmission.select(query, orderBy=['-datecreated'])
 
-        return sighting
+    def getCurrentSubmissions(self, pluralform):
+        """See IPOMsgSet."""
+        submissions = self.potmsgset.getCurrentSubmissions(self.pofile.language,
+            pluralform)
+        active = self.activeSubmission(pluralform).potranslation
+        return [submission
+                for submission in submissions
+                if submission.potranslation != active]
 

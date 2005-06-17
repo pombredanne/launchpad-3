@@ -319,17 +319,17 @@ def test_parse_cformat_string():
     '''
     >>> from canonical.launchpad.helpers import parse_cformat_string
     >>> parse_cformat_string('')
-    ()
+    []
     >>> parse_cformat_string('foo')
-    (('string', 'foo'),)
+    [('string', 'foo')]
     >>> parse_cformat_string('blah %d blah')
-    (('string', 'blah '), ('interpolation', '%d'), ('string', ' blah'))
+    [('string', 'blah '), ('interpolation', '%d'), ('string', ' blah')]
     >>> parse_cformat_string('%sfoo%%bar%s')
-    (('interpolation', '%s'), ('string', 'foo%%bar'), ('interpolation', '%s'))
+    [('interpolation', '%s'), ('string', 'foo%%bar'), ('interpolation', '%s')]
     >>> parse_cformat_string('%')
     Traceback (most recent call last):
     ...
-    ValueError: %
+    UnrecognisedCFormatString: %
     '''
 
 def test_parse_translation_form():
@@ -378,11 +378,21 @@ def test_parse_translation_form():
     test.
 
     >>> x = parse_translation_form({
-    ... 'set_1_msgid' : 1,
-    ... 'set_1_translation_pt_BR_0' : 'bar',
-    ... })
+    ...     'set_1_msgid' : 1,
+    ...     'set_1_translation_pt_BR_0' : 'bar',
+    ...     })
     >>> x[1]['translations'][0]
     'bar'
+
+    Newlines in translations should be normalised to Unix style (line feeds
+    only).
+
+    >>> x = parse_translation_form({
+    ...     'set_1_msgid': 1,
+    ...     'set_1_translation_cy_0': 'foo\r\nbar',
+    ...     })
+    >>> x[1]['translations'][0]
+    'foo\nbar'
     '''
 
 def test_msgid_html():
@@ -418,12 +428,32 @@ def test_msgid_html():
     Test treatment of tabs.
 
     >>> msgid_html(u'foo\tbar', [])
-    u'foo\\tbar'
+    u'foo[tab]bar'
+
+    Test valid C format strings are formatted.
+
+    >>> msgid_html(u'foo %d bar', ['c-format'])
+    u'foo <span class="interpolation">%d</span> bar'
+
+    Test bad format strings are caught and passed through.
+
+    >>> text = u'foo %z bar'
+    >>> from canonical.launchpad.helpers import parse_cformat_string
+    >>> parse_cformat_string(text)
+    Traceback (most recent call last):
+    ...
+    UnrecognisedCFormatString: foo %z bar
+
+    >>> msgid_html(text, ['c-format']) == text
+    True
     '''
 
 
 def test_suite():
-    return DocTestSuite()
+    suite = unittest.TestSuite()
+    suite.addTest(DocTestSuite())
+    suite.addTest(DocTestSuite(helpers))
+    return suite
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(test_suite())

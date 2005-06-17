@@ -64,16 +64,16 @@ Now let's add a translation to the PO file.
 
     >>> msgid = u"Failed to authenticate with LDAP server."
     >>> msgset = pofile.messageSet(msgid)
-    >>> len(msgset.translationSightings())
-    0
-    >>> msgset.updateTranslation(person, {0: 'Blah.'}, False, False)
-    >>> len(msgset.translationSightings())
-    1
+    >>> print msgset.active_texts
+    [None]
+    >>> msgset.updateTranslationSet(person, {0: 'Blah.'}, False, False, True)
+    >>> print msgset.active_texts
+    [u'Blah.']
 
 We need to sync the changed objects for the same reason as before.
 
-    >>> sighting = msgset.translationSightings()[0]
-    >>> sighting.sync()
+    >>> txt = msgset.active_texts[0]
+    >>> msgset.sync()
 
 Because we modified the PO file, the cache should now no longer be valid.
 

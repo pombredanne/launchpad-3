@@ -25,10 +25,5 @@ upstream that does not have translations in a distribution.
   ... """)
   HTTP/1.1 200 Ok
   ...
-          <div class="portletContent even">
-  <BLANKLINE>
-          <table class="rowNavigation" border="0">
-  <BLANKLINE>
-              <tr onclick="window.location='/products/netapplet/1.0/+pots/netapplet'">
-                  <td>Template for netapplet</td>
+                  <td>Template "netapplet" in NetApplet 1.0</td>
   ...

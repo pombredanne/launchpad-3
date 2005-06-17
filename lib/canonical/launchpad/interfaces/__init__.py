@@ -57,6 +57,7 @@ from canonical.launchpad.interfaces.message import *
 from canonical.launchpad.interfaces.milestone import *
 from canonical.launchpad.interfaces.package import *
 from canonical.launchpad.interfaces.packaging import *
+from canonical.launchpad.interfaces.pathlookup import *
 from canonical.launchpad.interfaces.person import *
 from canonical.launchpad.interfaces.poexport import *
 from canonical.launchpad.interfaces.pofile import *
@@ -68,7 +69,8 @@ from canonical.launchpad.interfaces.potemplate import *
 from canonical.launchpad.interfaces.potemplatename import *
 from canonical.launchpad.interfaces.potmsgset import *
 from canonical.launchpad.interfaces.potranslation import *
-from canonical.launchpad.interfaces.potranslationsighting import *
+from canonical.launchpad.interfaces.poselection import *
+from canonical.launchpad.interfaces.posubmission import *
 from canonical.launchpad.interfaces.processor import *
 from canonical.launchpad.interfaces.product import *
 from canonical.launchpad.interfaces.productrelease import *
@@ -94,6 +96,7 @@ from canonical.launchpad.interfaces.translator import *
 from canonical.launchpad.interfaces.vpoexport import *
 from canonical.launchpad.interfaces.vsourcepackagereleasepublishing import *
 from canonical.launchpad.interfaces.wikiname import *
+from canonical.launchpad.interfaces.poexportrequest import *
 
 # XXX sabdfl 29/03/05 given the comments at the top of the file, should
 # these not be elsewhere?

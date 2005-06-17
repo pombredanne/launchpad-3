@@ -1,8 +1,37 @@
-POFileSet
----------
+POFile
+------
 
->>> from canonical.launchpad.database import POFileSet
->>> pfs = POFileSet()
->>> pofile_list = pfs.getPOFilesPendingImport()
->>> len(list(pofile_list))
-1
+Get evolution template for Ubuntu Hoary
+
+>>> from zope.component import getUtility
+>>> from canonical.launchpad.interfaces import (IPOTemplateSet,
+... ISourcePackageNameSet, IDistributionSet)
+>>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
+>>> sourcepackagename = sourcepackagenameset['evolution']
+>>> distributionset = getUtility(IDistributionSet)
+>>> distribution = distributionset['ubuntu']
+>>> release = distribution['hoary']
+>>> potemplateset = getUtility(IPOTemplateSet)
+>>> potemplatesubset = potemplateset.getSubset(
+...     distrorelease=release, sourcepackagename=sourcepackagename)
+>>> potemplate = potemplatesubset['evolution-2.2']
+
+Get Xhosa translation
+
+>>> pofile = potemplate.queryPOFileByLang('xh')
+
+Get the set of POTMsgSets that are untranslated.
+
+>>> potmsgsets = list(pofile.getPOTMsgSetUntranslated())
+>>> len(potmsgsets)
+22
+
+Get Spanish translation
+
+>>> pofile = potemplate.queryPOFileByLang('es')
+
+Get the set of POTMsgSets that are untranslated.
+
+>>> potmsgsets = list(pofile.getPOTMsgSetUntranslated())
+>>> len(potmsgsets)
+14

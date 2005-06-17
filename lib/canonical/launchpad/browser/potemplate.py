@@ -12,11 +12,12 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.i18n import ZopeMessageIDFactory as _
 from zope.publisher.browser import FileUpload
 from zope.app.form.browser.add import AddView
+from zope.app.publisher.browser import BrowserView
 
 from canonical.launchpad import helpers
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import ILaunchBag, IPOTemplateSet, \
-    IPOTemplateNameSet, IPersonSet, RawFileAttachFailed
+    IPOTemplateNameSet, IPersonSet, RawFileAttachFailed, IPOExportRequestSet
 from canonical.launchpad.components.poexport import POExport
 from canonical.launchpad.browser.pofile import POFileView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -40,6 +41,12 @@ class POTemplateView:
     detailsPortlet = ViewPageTemplateFile(
         '../templates/portlet-potemplate-details.pt')
 
+    forPortlet = ViewPageTemplateFile(
+        '../templates/portlet-potemplate-for.pt')
+
+    relativesPortlet = ViewPageTemplateFile(
+        '../templates/potemplate-portlet-relateds.pt')
+
     statusLegend = ViewPageTemplateFile(
         '../templates/portlet-rosetta-status-legend.pt')
 
@@ -47,9 +54,8 @@ class POTemplateView:
         self.context = context
         self.request = request
         self.request_languages = helpers.request_languages(self.request)
-        self.name = self.context.potemplatename.name
-        self.title = self.context.potemplatename.title
         self.description = self.context.potemplatename.description
+        self.user = getUtility(ILaunchBag).user
         # XXX carlos 01/05/05 please fix up when we have the
         # MagicURLBox
 
@@ -122,13 +128,8 @@ class POTemplateView:
             if 'UPLOAD' in self.request.form:
                 self.upload()
 
-        return ''
-
     def upload(self):
         """Handle a form submission to change the contents of the template."""
-
-        # Get the launchpad Person who is doing the upload.
-        owner = getUtility(ILaunchBag).user
 
         file = self.request.form['file']
 
@@ -153,7 +154,8 @@ class POTemplateView:
             potfile = file.read()
 
             try:
-                self.context.attachRawFileData(potfile, owner)
+                # a potemplate is always "published" so published=True
+                self.context.attachRawFileData(potfile, True, self.user)
                 self.status_message = (
                     'Thank you for your upload. The template content will'
                     ' appear in Rosetta in a few minutes.')
@@ -208,7 +210,6 @@ class POTemplateAddView(AddView):
     def createAndAdd(self, data):
         # retrieve submitted values from the form
         potemplatenameid = data.get('potemplatename')
-        title = data.get('title')
         description = data.get('description')
         iscurrent = data.get('iscurrent')
         ownerid = data.get('owner')
@@ -229,7 +230,7 @@ class POTemplateAddView(AddView):
             productrelease=self.context)
         # Create the new POTemplate
         potemplate = potemplatesubset.new(
-            potemplatename=potemplatename, title=title, contents=content,
+            potemplatename=potemplatename, contents=content,
             owner=owner)
 
         # Update the other fields
@@ -243,6 +244,77 @@ class POTemplateAddView(AddView):
     def nextURL(self):
         return self._nextURL
 
+
+class POTemplateExport:
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.user = getUtility(ILaunchBag).user
+        self.formProcessed = False
+        self.errorMessage = None
+
+    def processForm(self):
+        if self.request.method != 'POST':
+            return
+
+        pofiles = []
+        what = self.request.form.get('what')
+
+        if what == 'all':
+            export_potemplate = True
+
+            pofiles =  self.context.pofiles
+        elif what == 'some':
+            export_potemplate = 'potemplate' in self.request.form
+
+            for key in self.request.form:
+                if '@' in key:
+                    code, variant = key.split('@', 1)
+                else:
+                    code = key
+                    variant = None
+
+                try:
+                    pofile = self.context.getPOFileByLang(code, variant)
+                except KeyError:
+                    pass
+                else:
+                    pofiles.append(pofile)
+        else:
+            self.errorMessage = (
+                'Please choose whether you would like all files or only some '
+                'of them.')
+            return
+
+        request_set = getUtility(IPOExportRequestSet)
+
+        if export_potemplate:
+            request_set.addRequest(self.user, self.context, pofiles)
+        else:
+            request_set.addRequest(self.user, None, pofiles)
+
+        self.formProcessed = True
+
+    def pofiles(self):
+        class BrowserPOFile:
+            def __init__(self, value, browsername):
+                self.value = value
+                self.browsername = browsername
+
+        def pofile_sort_key(pofile):
+            return pofile.language.englishname
+
+        for pofile in sorted(self.context.pofiles, key=pofile_sort_key):
+            if pofile.variant:
+                variant = pofile.variant.encode('UTF-8')
+                value = '%s@%s' % (pofile.language.code, variant)
+                browsername = '%s ("%s" variant)' % (
+                    pofile.language.englishname, variant)
+            else:
+                value = pofile.language.code
+                browsername = pofile.language.englishname
+
+            yield BrowserPOFile(value, browsername)
 
 class POTemplateTarExport:
     '''View class for exporting a tarball of translations.'''
@@ -275,11 +347,11 @@ class POTemplateTarExport:
         archive.addfile(dirinfo)
 
         # Put a file in the archive for each PO file this template has.
-        for poFile in self.context.poFiles:
-            if poFile.variant is not None:
+        for pofile in self.context.pofiles:
+            if pofile.variant is not None:
                 raise RuntimeError("PO files with variants are not supported.")
 
-            code = poFile.language.code.encode('utf-8')
+            code = pofile.language.code.encode('utf-8')
             name = '%s.po' % code
 
             # Export the PO file.
@@ -356,3 +428,23 @@ class POTemplateTranslateView:
                     [key + '=' + str(parameters[key])
                      for key in keys])
         self.request.response.redirect(new_url)
+
+
+class POTemplateAbsoluteURL(BrowserView):
+    """The view for an absolute URL of a bug task."""
+    def __str__(self):
+        if self.context.productrelease:
+            return "%s/products/%s/%s/+pots/%s/" % (
+                self.request.getApplicationURL(),
+                self.context.productrelease.product.name,
+                self.context.productrelease.version,
+                self.context.potemplatename.name)
+        elif self.context.distrorelease:
+            return "%s/distros/%s/%s/+sources/%s/+pots/%s/" % (
+                self.request.getApplicationURL(),
+                self.context.distrorelease.distribution.name,
+                self.context.distrorelease.name,
+                self.context.sourcepackagename.name,
+                self.context.potemplatename.name)
+
+

@@ -2,11 +2,16 @@
 
 __metaclass__ = type
 
+import _pythonpath
+
 import psycopg, sys, os, sets
 from ConfigParser import SafeConfigParser
 from optparse import OptionParser
 from fti import quote_identifier
 from canonical import lp
+from canonical.database.sqlbase import connect
+from canonical.config import config
+from canonical.launchpad.scripts import logger_options, logger, db_options
 
 class DbObject(object):
     def __init__(
@@ -100,20 +105,16 @@ class DbSchema(dict):
 
 
 class CursorWrapper(object):
-    def __init__(self, cursor, options):
+    def __init__(self, cursor):
         self.__dict__['_cursor'] = cursor
-        self.__dict__['_debug'] = options.debug
 
     def execute(self, cmd, params=None):
         cmd = cmd.encode('utf8')
-        DEBUG = self.__dict__['_debug']
         if params is None:
-            if DEBUG:
-                print >> sys.stdout, '%s' % (cmd, )
+            log.debug('%s' % (cmd, ))
             return self.__dict__['_cursor'].execute(cmd)
         else:
-            if DEBUG:
-                print >> sys.stderr, '%s [%r]' % (cmd, params)
+            log.debug('%s [%r]' % (cmd, params))
             return self.__dict__['_cursor'].execute(cmd, params)
 
     def __getattr__(self, key):
@@ -130,12 +131,12 @@ CONFIG_DEFAULTS = {
 def main(options):
     # Load the config file
     config = SafeConfigParser(CONFIG_DEFAULTS)
-    config.read(['security.cfg'])
+    configfile_name = os.path.join(os.path.dirname(__file__), 'security.cfg')
+    config.read([configfile_name])
 
-    constr = "dbname=%s" % lp.dbname
+    con = connect(options.dbuser)
 
-    con = psycopg.connect('dbname=%s' % (lp.dbname,))
-    cur = CursorWrapper(con.cursor(), options)
+    cur = CursorWrapper(con.cursor())
     schema = DbSchema(con)
 
     # Add our two automatically maintained groups
@@ -310,37 +311,22 @@ def main(options):
     forgotten = [obj.fullname for obj in forgotten
         if obj.type in ['table','function','view']]
     if forgotten:
-        raise RuntimeError, 'No permissions specified for %r' % (forgotten,)
+        log.warn('No permissions specified for %r', forgotten)
 
     con.commit()
 
 if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option(
-            "-D", "--debug", dest="debug", action="store_true", default=False,
-            help="Output SQL commands to stdout"
-            )
-    parser.add_option(
             "-o", "--owner", dest="owner", default="postgres",
             help="Owner of PostgreSQL objects"
             )
-    parser.add_option(
-            "-d", "--database", dest="dbname", default=lp.dbname,
-            help="PostgreSQL database."
-            )
-#     parser.add_option(
-#             "-H", "--host", dest="dbhost",
-#             default=os.environ.get("LP_DBHOST", ""),
-#             help="Hostname of PostgreSQL server."
-#             )
-#     parser.add_option(
-#             "-U", "--user", dest="dbuser",
-#             default=os.environ.get("LP_DBUSER", "postgres"),
-#             help="PostgreSQL superuser to connect as."
-#             )
+    db_options(parser)
+    logger_options(parser)
+
     (options, args) = parser.parse_args()
-    lp.dbname = options.dbname
-#    lp.dbhost = options.dbhost
-#    lp.dbuser = options.dbuser
+
+    log = logger(options)
+
     main(options)
 

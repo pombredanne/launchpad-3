@@ -38,15 +38,13 @@ what those notifications look like.
     >>> from canonical.launchpad.interfaces import IProductSet, IPersonSet, \
     ...     IDistributionSet, IDistroReleaseSet, ISourcePackageNameSet, IBugSet
 
-    >>> request = TestRequest()
     >>> bug_submitter = getUtility(IPersonSet).get(12)
-    >>> request.setPrincipal(bug_submitter)
     >>> firefox = getUtility(IProductSet).get(4)
 
     >>> firefox_crashes = BugFactory(
     ...     product = firefox, title = "firefox crashes all the time",
     ...     comment = "this is a comment", owner = bug_submitter)
-    >>> notify(SQLObjectCreatedEvent(firefox_crashes, request))
+    >>> notify(SQLObjectCreatedEvent(firefox_crashes))
 
     >>> import transaction
     >>> transaction.commit()
@@ -55,7 +53,7 @@ what those notifications look like.
     1
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> print from_addr
-    Malone Bugtracker <noreply@canonical.com>
+    Malone Bugtracker <...>
     >>> print to_addrs
     ['dilys@muse.19inch.net', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
@@ -65,8 +63,10 @@ what those notifications look like.
 Note that all bug notification emails include an absolute URL to the
 bug:
 
-    >>> msg.get_payload(decode = True)
-    'Comments and other information can be added to this bug at\nhttp://127.0.0.1/malone/bugs/...'
+    >>> print msg.get_payload(decode=True)
+    Comments and other information can be added to this bug at
+    http://.../malone/bugs/...
+    ...
 
     >>> stub.test_emails = []
 
@@ -98,7 +98,7 @@ let's hang a bug onto the ILaunchBag utility.
     ...     None, distribution = debian.id,
     ...     sourcepackagename = firefox_source.id,
     ...     owner = bug_submitter.id)
-    >>> notify(SQLObjectCreatedEvent(firefox_crashes_in_debian, request))
+    >>> notify(SQLObjectCreatedEvent(firefox_crashes_in_debian))
 
     >>> transaction.commit()
 
@@ -106,15 +106,17 @@ let's hang a bug onto the ILaunchBag utility.
     1
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> print from_addr
-    Malone Bugtracker <noreply@canonical.com>
+    Malone Bugtracker <...>
     >>> print to_addrs
     ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
 
-    >>> msg.get_payload(decode = True)
-    'Comments and other information can be added to this bug at\nhttp://127.0.0.1/malone/bugs/...'
+    >>> print msg.get_payload(decode=True)
+    Comments and other information can be added to this bug at
+    http://.../malone/bugs/...
+    ...
 
     >>> stub.test_emails = []
 
@@ -129,7 +131,7 @@ let's hang a bug onto the ILaunchBag utility.
     >>> firefox_crashes_in_sid = BugTaskFactory(
     ...     None, distrorelease = sid.id,
     ...     sourcepackagename = firefox_source.id, owner = bug_submitter.id)
-    >>> notify(SQLObjectCreatedEvent(firefox_crashes_in_sid, request))
+    >>> notify(SQLObjectCreatedEvent(firefox_crashes_in_sid))
 
     >>> transaction.commit()
 
@@ -137,15 +139,17 @@ let's hang a bug onto the ILaunchBag utility.
     1
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> print from_addr
-    Malone Bugtracker <noreply@canonical.com>
+    Malone Bugtracker <...>
     >>> print to_addrs
     ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
 
-    >>> msg.get_payload(decode = True)
-    'Comments and other information can be added to this bug at\nhttp://127.0.0.1/malone/bugs/...'
+    >>> print msg.get_payload(decode=True)
+    Comments and other information can be added to this bug at
+    http://.../malone/bugs/...
+    ...
 
     >>> stub.test_emails = []
 
@@ -162,7 +166,7 @@ let's hang a bug onto the ILaunchBag utility.
 
     >>> firefox_crashes_upstream = BugTaskFactory(
     ...     None, product = firefox.id, owner = bug_submitter.id)
-    >>> notify(SQLObjectCreatedEvent(firefox_crashes_upstream, request))
+    >>> notify(SQLObjectCreatedEvent(firefox_crashes_upstream))
 
     >>> transaction.commit()
 
@@ -170,15 +174,17 @@ let's hang a bug onto the ILaunchBag utility.
     1
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> print from_addr
-    Malone Bugtracker <noreply@canonical.com>
+    Malone Bugtracker <...>
     >>> print to_addrs
     ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
 
-    >>> msg.get_payload(decode = True)
-    'Comments and other information can be added to this bug at\nhttp://127.0.0.1/malone/bugs/...'
+    >>> print msg.get_payload(decode=True)
+    Comments and other information can be added to this bug at
+    http://.../malone/bugs/...
+    ...
 
     >>> stub.test_emails = []
 
@@ -192,8 +198,7 @@ let's hang a bug onto the ILaunchBag utility.
 
     >>> comment_on_firefox_crashes_in_debian = BugMessageFactory(
     ...     None, title = "some title", content = "just a test comment")
-    >>> notify(SQLObjectCreatedEvent(comment_on_firefox_crashes_in_debian,
-    ...     request))
+    >>> notify(SQLObjectCreatedEvent(comment_on_firefox_crashes_in_debian))
 
     >>> transaction.commit()
 
@@ -201,7 +206,7 @@ let's hang a bug onto the ILaunchBag utility.
     1
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> print from_addr
-    Malone Bugtracker <noreply@canonical.com>
+    Malone Bugtracker <...>
     >>> print to_addrs
     ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
@@ -209,7 +214,7 @@ let's hang a bug onto the ILaunchBag utility.
     '[Bug ...] firefox crashes all the time'
 
     >>> msg.get_payload(decode = True)
-    'http://127.0.0.1/malone/bugs/...'
+    'http://.../malone/bugs/...'
 
     >>> stub.test_emails = []
 
@@ -240,7 +245,7 @@ that they were the person that fixed the bug.)
     >>> firefox_crashes_in_debian.assignee = bug_submitter.id
     >>> debian_task_modified = SQLObjectModifiedEvent(
     ...     firefox_crashes_in_debian, bugtask_before_modification,
-    ...     ["status", "assignee"], bug_submitter, request)
+    ...     ["status", "assignee"])
     >>> notify(debian_task_modified)
 
     >>> transaction.commit()
@@ -249,15 +254,22 @@ that they were the person that fixed the bug.)
     1
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> print from_addr
-    Malone Bugtracker <noreply@canonical.com>
+    Malone Bugtracker <...>
     >>> print to_addrs
     ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
 
-    >>> msg.get_payload(decode = True)
-    'Sample Person <test@canonical.com> made changes to:\n\n    http://127.0.0.1/malone/bugs/...\n\nTask: debian mozilla-firefox\n       status: New => Fixed\n     assignee: (unassigned) => Sample Person\n'
+    >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
+    Sample Person <test@canonical.com> made changes to:
+    <BLANKLINE>
+        http://.../malone/bugs/...
+    <BLANKLINE>
+    Task: debian mozilla-firefox
+           status: New => Fixed
+         assignee: (unassigned) => Sample Person
+    <BLANKLINE>
 
     >>> stub.test_emails = []
 
@@ -270,7 +282,7 @@ pretending we've just added a watch to a bug.
 
     >>> from canonical.launchpad.interfaces import IBugWatchSet
     >>> bugwatch = getUtility(IBugWatchSet).get(2)
-    >>> bugwatch_added = SQLObjectCreatedEvent(bugwatch, request)
+    >>> bugwatch_added = SQLObjectCreatedEvent(bugwatch)
     >>> notify(bugwatch_added)
 
     >>> transaction.commit()
@@ -282,8 +294,14 @@ pretending we've just added a watch to a bug.
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
 
-    >>> msg.get_payload(decode = True)
-    'Sample Person <test@canonical.com> made changes to:\n\n    http://127.0.0.1/malone/bugs/1\n\n    - Changed bug watches:\n        Added: Bug 2000 [The Mozilla.org Bug Tracker]\n'
+    >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
+    Sample Person <test@canonical.com> made changes to:
+    <BLANKLINE>
+        http://.../malone/bugs/1
+    <BLANKLINE>
+        - Changed bug watches:
+            Added: Bug 2000 [The Mozilla.org Bug Tracker]
+    <BLANKLINE>
 
     >>> stub.test_emails = []
 
@@ -297,9 +315,7 @@ the changes made:
     >>> bugwatch_modified = SQLObjectModifiedEvent(
     ...     object = bugwatch,
     ...     object_before_modification = bugwatch_before_modification,
-    ...     edited_fields = ("remotebug"),
-    ...     principal = bug_submitter,
-    ...     request = request)
+    ...     edited_fields = ("remotebug"))
 
     >>> notify(bugwatch_modified)
 
@@ -312,8 +328,15 @@ the changes made:
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
 
-    >>> msg.get_payload(decode = True)
-    'Sample Person <test@canonical.com> made changes to:\n\n    http://127.0.0.1/malone/bugs/1\n\n    - Changed bug watches:\n        Added: Bug 2001 [The Mozilla.org Bug Tracker]\n      Removed: Bug 2000 [The Mozilla.org Bug Tracker]\n'
+    >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
+    Sample Person <test@canonical.com> made changes to:
+    <BLANKLINE>
+        http://.../malone/bugs/1
+    <BLANKLINE>
+        - Changed bug watches:
+            Added: Bug 2001 [The Mozilla.org Bug Tracker]
+          Removed: Bug 2000 [The Mozilla.org Bug Tracker]
+    <BLANKLINE>
 
     >>> stub.test_emails = []
 
@@ -328,7 +351,7 @@ this document:
     >>> cveref = getUtility(ICVERefSet).createCVERef(
     ...     bug = 1, cveref = "CVE-2004-0276", title="test",
     ...     owner = 12)
-    >>> cveref_added = SQLObjectCreatedEvent(cveref, request)
+    >>> cveref_added = SQLObjectCreatedEvent(cveref)
     >>> notify(cveref_added)
 
     >>> transaction.commit()
@@ -340,8 +363,14 @@ this document:
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
 
-    >>> msg.get_payload(decode = True)
-    'Sample Person <test@canonical.com> made changes to:\n\n    http://127.0.0.1/malone/bugs/1\n\n    - Changed CVE references:\n        Added: CVE-2004-0276 [test]\n'
+    >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
+    Sample Person <test@canonical.com> made changes to:
+    <BLANKLINE>
+        http://.../malone/bugs/1
+    <BLANKLINE>
+        - Changed CVE references:
+            Added: CVE-2004-0276 [test]
+    <BLANKLINE>
 
     >>> stub.test_emails = []
 
@@ -354,9 +383,7 @@ Next, let's take a look at what the edit notification looks like:
     >>> cveref_edited = SQLObjectModifiedEvent(
     ...     object_before_modification = cveref_before_modification,
     ...     object = cveref,
-    ...     edited_fields = ("title",),
-    ...     principal = request.principal,
-    ...     request = request)
+    ...     edited_fields = ("title",))
     >>> notify(cveref_edited)
 
     >>> transaction.commit()
@@ -368,8 +395,15 @@ Next, let's take a look at what the edit notification looks like:
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
 
-    >>> msg.get_payload(decode = True)
-    'Sample Person <test@canonical.com> made changes to:\n\n    http://127.0.0.1/malone/bugs/1\n\n    - Changed CVE references:\n        Added: CVE-2004-0276 [a much better title]\n      Removed: CVE-2004-0276 [test]\n'
+    >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
+    Sample Person <test@canonical.com> made changes to:
+    <BLANKLINE>
+        http://.../malone/bugs/1
+    <BLANKLINE>
+        - Changed CVE references:
+            Added: CVE-2004-0276 [a much better title]
+          Removed: CVE-2004-0276 [test]
+    <BLANKLINE>
 
     >>> stub.test_emails = []
 
@@ -384,7 +418,7 @@ publishing an object created event.
     >>> extref = getUtility(IBugExternalRefSet).createBugExternalRef(
     ...     bug = 1, url = "http://www.example.com", title="test",
     ...     owner = 12)
-    >>> extref_added = SQLObjectCreatedEvent(extref, request)
+    >>> extref_added = SQLObjectCreatedEvent(extref)
     >>> notify(extref_added)
 
     >>> transaction.commit()
@@ -396,8 +430,14 @@ publishing an object created event.
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
 
-    >>> msg.get_payload(decode = True)
-    'Sample Person <test@canonical.com> made changes to:\n\n    http://127.0.0.1/malone/bugs/1\n\n    - Changed web links:\n        Added: http://www.example.com (test)\n'
+    >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
+    Sample Person <test@canonical.com> made changes to:
+    <BLANKLINE>
+        http://.../malone/bugs/1
+    <BLANKLINE>
+        - Changed web links:
+            Added: http://www.example.com (test)
+    <BLANKLINE>
 
     >>> stub.test_emails = []
 
@@ -411,9 +451,7 @@ When a link is edited, the notification will look as follows:
     >>> extref_changed = SQLObjectModifiedEvent(
     ...     object_before_modification = extref_before_modification,
     ...     object = extref,
-    ...     edited_fields = ("url",),
-    ...     principal = request.principal,
-    ...     request = request)
+    ...     edited_fields = ("url",))
     >>> notify(extref_changed)
 
     >>> transaction.commit()
@@ -425,8 +463,15 @@ When a link is edited, the notification will look as follows:
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
 
-    >>> msg.get_payload(decode = True)
-    'Sample Person <test@canonical.com> made changes to:\n\n    http://127.0.0.1/malone/bugs/1\n\n    - Changed web links:\n        Added: http://www.example.com/somewhere.html (test)\n      Removed: http://www.example.com (test)\n'
+    >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
+    Sample Person <test@canonical.com> made changes to:
+    <BLANKLINE>
+        http://.../malone/bugs/1
+    <BLANKLINE>
+        - Changed web links:
+            Added: http://www.example.com/somewhere.html (test)
+          Removed: http://www.example.com (test)
+    <BLANKLINE>
 
     >>> stub.test_emails = []
 
@@ -470,7 +515,7 @@ report private:
     >>> bug_before_modification.duplicateof = firefox_bug.duplicateof
     >>> bug_modified = SQLObjectModifiedEvent(
     ...     firefox_bug, bug_before_modification,
-    ...     ["private"], bug_submitter, request)
+    ...     ["private"])
 
     >>> notify(bug_modified)
 
@@ -497,7 +542,7 @@ that will get notified of changes on this bug. Because the bug is
 private, and Foo Bar is not an explicit subscriber to the bug, he will
 *not* be included in the list of recipients!
 
-    >>> notify(SQLObjectCreatedEvent(firefox_crashes_upstream, request))
+    >>> notify(SQLObjectCreatedEvent(firefox_crashes_upstream))
 
     >>> transaction.commit()
 
@@ -505,7 +550,7 @@ private, and Foo Bar is not an explicit subscriber to the bug, he will
     1
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> print from_addr
-    Malone Bugtracker <noreply@canonical.com>
+    Malone Bugtracker <...>
     >>> print to_addrs
     ['mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
@@ -542,7 +587,7 @@ recipient addresses:
     ...     bug = property(bug)
 
     >>> task_with_no_subscribers = MockBugTask(firefox_crashes_upstream)
-    >>> notify(SQLObjectCreatedEvent(task_with_no_subscribers, request))
+    >>> notify(SQLObjectCreatedEvent(task_with_no_subscribers))
 
     >>> transaction.commit()
 

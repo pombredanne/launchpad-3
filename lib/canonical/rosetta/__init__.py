@@ -51,12 +51,13 @@ class RosettaApplication:
 
     def translator_count(self):
         """See IRosettaApplication."""
-        return Person.select("POTranslationSighting.person=Person.id",
-            clauseTables=['POTranslationSighting'], distinct=True).count()
+        return Person.select("POSubmission.person=Person.id",
+            clauseTables=['POSubmission'], distinct=True).count()
 
     def language_count(self):
         """See IRosettaApplication."""
-        return Language.select().count()
-
+        return Language.select("POFile.language=Language.id",
+            clauseTables=['POFile'], distinct=True).count()
+        
     name = 'Rosetta'
 

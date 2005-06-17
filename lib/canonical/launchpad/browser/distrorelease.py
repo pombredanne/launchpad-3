@@ -19,9 +19,7 @@ from canonical.launchpad.interfaces import IBugTaskSet, ILaunchBag, \
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 
-class DistroReleaseView(BugTaskSearchListingView):
-
-    implements(IBugTaskSearchListingView)
+class DistroReleaseView:
 
     detailsPortlet = ViewPageTemplateFile(
         '../templates/portlet-distrorelease-details.pt')
@@ -48,17 +46,11 @@ class DistroReleaseView(BugTaskSearchListingView):
         '../templates/portlet-browser-langs.pt')
 
     def __init__(self, context, request):
-        BugTaskSearchListingView.__init__(self, context, request)
-        self.milestone_widget = None
+        self.context = context
+        self.request = request
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(self.request)
-        self.status_message = None
-
-    def task_columns(self):
-        """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
-        return [
-            "id", "package", "title", "status", "submittedby", "assignedto"]
 
     def requestCountry(self):
         return helpers.requestCountry(self.request)
@@ -70,6 +62,20 @@ class DistroReleaseView(BugTaskSearchListingView):
         return [POTemplateView(template, self.request)
                 for template in self.context.potemplates]
 
+
+class DistroReleaseBugsView(BugTaskSearchListingView):
+
+    implements(IBugTaskSearchListingView)
+
+    def __init__(self, context, request):
+        BugTaskSearchListingView.__init__(self, context, request)
+        self.milestone_widget = None
+        self.status_message = None
+
+    def task_columns(self):
+        """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
+        return [
+            "id", "package", "title", "status", "submittedby", "assignedto"]
 
 class ReleasesAddView:
 

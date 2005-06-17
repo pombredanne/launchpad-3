@@ -19,13 +19,13 @@ class DummyPOFile:
 
 class DummyPOTemplate:
     name = 'foo'
-    poFiles = [DummyPOFile('bar', None), DummyPOFile('baz', None)]
+    pofiles = [DummyPOFile('bar', None), DummyPOFile('baz', None)]
 
 class BadDummyPOTemplate:
     """Bad, because it contains a PO file which has a non-None variant."""
 
     name = 'fnord'
-    poFiles = [DummyPOFile('snap', None), DummyPOFile('crackle', 'pop')]
+    pofiles = [DummyPOFile('snap', None), DummyPOFile('crackle', 'pop')]
 
 class DummyExporter:
     def export(self, code):

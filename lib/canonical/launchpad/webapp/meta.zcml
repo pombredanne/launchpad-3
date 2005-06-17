@@ -16,6 +16,13 @@
 
   <directive
       namespace="http://namespaces.zope.org/browser"
+      name="url"
+      schema="canonical.launchpad.webapp.metazcml.IURLDirective"
+      handler="canonical.launchpad.webapp.metazcml.url"
+      />
+
+  <directive
+      namespace="http://namespaces.zope.org/browser"
       name="favicon"
       schema="canonical.launchpad.webapp.metazcml.IFaviconDirective"
       handler="canonical.launchpad.webapp.metazcml.favicon"

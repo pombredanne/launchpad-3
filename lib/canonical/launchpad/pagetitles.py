@@ -44,6 +44,9 @@ class SubstitutionHelper:
 
 
 class ContextDisplayName(SubstitutionHelper):
+    # XXX: salgado, 2005-06-02: This should not be used for persons because
+    # they can have a NULL displayname. Maybe the right solution is to create
+    # a ContextBrowserName and use it for persons.
     def __call__(self, context, view):
         return self.text % context.displayname
 
@@ -117,6 +120,9 @@ def bugs_assigned(context, view):
 
 bugs_createdby_index = 'Malone Bug Report by Creator'
 
+def bugs_for_context(context, view):
+    return "Bugs in %s" % context.context_title
+
 bugs_index = 'Malone Master Bug List'
 
 bugsubscription_edit = 'Modify Your Bug Subscription'
@@ -173,9 +179,9 @@ distro_add = 'Adding New Distribution'
 
 distro_edit = 'Create a new Distribution in Launchpad'
 
-distro_index = ContextTitle('Launchpad Distribution Manager: %s')
+distribution = ContextTitle('Launchpad Distribution Summary: %s')
 
-distro_members = ContextTitle('Launchpad Distribution Manager: %s')
+distro_members = ContextTitle('Distribution Members: %s')
 
 distro_search = 'Search Distributions'
 
@@ -338,7 +344,7 @@ people_index = 'Launchpad People'
 
 people_list = 'People registered with Launchpad'
 
-person_assignedbugs = ContextDisplayName('Bugs Reported By %s')
+person_assignedbugs = ContextDisplayName('Bugs Assigned To %s')
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
@@ -375,7 +381,11 @@ def pofile_index(context, view):
         context.potemplate.title, context.language.englishname)
 
 def pofile_translate(context, view):
-    return 'Translating %s' % context.potemplate.title
+    return 'Translating %s into %s with Rosetta' % (
+        context.potemplate.displayname,
+        context.language.englishname)
+
+pofile_upload = ContextTitle('%s upload in Rosetta')
 
 # portlet_* are portlets
 
@@ -428,6 +438,8 @@ products_search = 'Launchpad: Advanced Upstream Product Search'
 productseries_source = 'Add Source Import'
 
 productseries_sourceadmin = 'Add Source Import'
+
+project = ContextTitle('Upstream Project: %s')
 
 project_branches = ContextTitle('Bazaar Summary for %s')
 
@@ -526,14 +538,14 @@ team_editemail = ContextDisplayName('Edit %s Contact Email Address')
 def team_editproposed(context, view):
     return '%s Proposed Members' % context.team.browsername
 
-team_index = ContextBrowsername('Team %s Information')
+team_index = ContextBrowsername('"%s" team in Launchpad')
 
 team_join = ContextBrowsername('Join %s')
 
 team_leave = ContextBrowsername('Leave %s')
 
 def team_members(context, view):
-    return 'Members of %s' % context.team.browsername
+    return '"%s" members' % context.team.browsername
 
 def teammembership_index(context, view):
     return '%s: Member of %s' % (
@@ -550,6 +562,7 @@ template_index = '%EXAMPLE TITLE'
 template_new = 'EXAMPLE NEW TITLE'
 
 translationgroup = ContextTitle('Rosetta Translation Group: %s')
+translationgroups = 'Rosetta Translation Groups'
 
 ubuntite_list = 'FOAF: Ubuntite List'
 

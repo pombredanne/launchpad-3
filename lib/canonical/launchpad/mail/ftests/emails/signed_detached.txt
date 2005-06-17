@@ -2,7 +2,6 @@ Date: Wed, 13 Apr 2005 19:17:16 -0400
 From: Sample Person <test@canonical.com>
 To: someone@somehost
 Subject: Signed Email
-Message-ID: <20050413231716.GA16989@localhost.localdomain>
 Mime-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
 	protocol="application/pgp-signature"; boundary="vtzGhvizbBRQ85DL"

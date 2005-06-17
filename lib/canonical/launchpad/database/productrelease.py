@@ -13,23 +13,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import IProductRelease
 from canonical.launchpad.interfaces import IProductReleaseSet
-
-
-class ProductReleaseSet(object):
-    """See IProductReleaseSet""" 
-    implements(IProductReleaseSet)
-
-    def new(self, version, productseries, owner, title=None, summary=None,
-            description=None, changelog=None):
-        """See IProductReleaseSet"""
-        return ProductRelease(version=version,
-                              productseries=productseries,
-                              owner=owner,
-                              title=title,
-                              summary=summary,
-                              description=description,
-                              changelog=changelog)
-
+from canonical.launchpad.database.potemplate import POTemplate
 
 class ProductRelease(SQLBase):
     """A release of a product."""
@@ -58,16 +42,24 @@ class ProductRelease(SQLBase):
     files = MultipleJoin('ProductReleaseFile', joinColumn='productrelease')
 
     files = MultipleJoin('ProductReleaseFile', joinColumn='productrelease')
-    potemplates = MultipleJoin('POTemplate', joinColumn='productrelease')
 
+    # properties
+    @property
+    def potemplates(self):
+        result = POTemplate.selectBy(productreleaseID=self.id)
+        result = list(result)
+        result.sort(key=lambda x: x.potemplatename.name)
+        return result
+
+    @property
     def product(self):
         return self.productseries.product
-    product = property(product)
 
+    @property
     def displayname(self):
         return self.productseries.product.displayname + ' ' + self.version
-    displayname = property(displayname)
 
+    # part of the get/set title property
     def title(self):
         """See IProductRelease."""
         thetitle = self.displayname
@@ -79,9 +71,9 @@ class ProductRelease(SQLBase):
         self._title = title
     title = property(title, set_title)
 
+    @property
     def potemplatecount(self):
         return len(self.potemplates)
-    potemplatecount = property(potemplatecount)
 
     def poTemplate(self, name):
         template = POTemplate.selectOne(
@@ -133,4 +125,21 @@ class ProductReleaseFile(SQLBase):
     # This should be changes to EnumCol but seems to do
     # not have an schema defined yet.
     filetype = IntCol(notNull=True)
+
+
+class ProductReleaseSet(object):
+    """See IProductReleaseSet""" 
+    implements(IProductReleaseSet)
+
+    def new(self, version, productseries, owner, title=None, summary=None,
+            description=None, changelog=None):
+        """See IProductReleaseSet"""
+        return ProductRelease(version=version,
+                              productseries=productseries,
+                              owner=owner,
+                              title=title,
+                              summary=summary,
+                              description=description,
+                              changelog=changelog)
+
 

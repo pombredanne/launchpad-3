@@ -62,9 +62,9 @@ class DummyProductRelease:
     def potemplates(self):
         return [DummyPOTemplate()]
 
+    @property
     def product(self):
         return DummyProduct()
-    product = property(product)
 
 
 class DummyProductSeries:
@@ -108,7 +108,7 @@ class DummyPOFile:
     def getPOTMsgSetTranslated(self, current=True, slice=None):
         return [DummyPOTMsgSet(), DummyPOTMsgSet()]
 
-    def getPOTMsgSetUnTranslated(self, current=True, slice=None):
+    def getPOTMsgSetUntranslated(self, current=True, slice=None):
         return [DummyPOTMsgSet(), DummyPOTMsgSet()]
 
     def canEditTranslations(self, user):
@@ -123,7 +123,8 @@ class DummyPOMsgSet:
     fuzzy = False
     commenttext = 'foo'
 
-    def translations(self):
+    @property
+    def active_texts(self):
         return ['bar']
 
 
@@ -173,7 +174,7 @@ class DummyPOTemplate:
     def hasPluralMessage(self):
         return True
 
-    def attachRawFileData(self, contents, importer=None):
+    def attachRawFileData(self, contents, published, importer=None):
         pass
 
 

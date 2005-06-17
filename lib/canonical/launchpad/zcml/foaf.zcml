@@ -1,0 +1,68 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    i18n_domain="foaf"
+    xmlns:i18n="http://namespaces.zope.org/i18n">
+
+    <securedutility
+        class="canonical.launchpad.systemhomes.FOAFApplication"
+        provides="canonical.launchpad.interfaces.IFOAFApplication" >
+        <allow interface="canonical.launchpad.interfaces.IFOAFApplication" />
+    </securedutility>
+
+  <!-- This view registers 'foaf' as a suburl of RootObject. -->
+  <browser:suburl
+      for="canonical.publication.RootObject"
+      utility="canonical.launchpad.interfaces.IFOAFApplication"
+      newlayer="canonical.launchpad.layers.FOAFLayer"
+      name="foaf" />
+  <browser:url
+      for="canonical.launchpad.interfaces.IFOAFApplication"
+      path_expression="string:foaf"
+      parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+      />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IFOAFApplication"
+      name="+index" />
+
+  <!-- deprecated suburl of projectset under foaf -->
+  <browser:suburl
+      for="canonical.launchpad.interfaces.IFOAFApplication"
+      utility="canonical.launchpad.interfaces.IProjectSet"
+      permission="zope.Public"
+      name="projects" />
+
+  <!-- This view registers 'people' as a suburl of RootObject/foaf/,
+       and as such is deprecated. -->
+  <browser:suburl
+      for="canonical.launchpad.interfaces.IFOAFApplication"
+      utility="canonical.launchpad.interfaces.IPersonSet"
+      permission="zope.Public"
+      name="people" />
+
+  <!-- pages for the foaf application -->
+  <browser:pages 
+      for="canonical.launchpad.interfaces.IFOAFApplication"
+      permission="zope.Public"
+      lp:url="foaf">
+      <browser:page 
+          name="+index"
+          template="../templates/foaf-index.pt"
+          lp:url="foaf/+index" />
+      <browser:page 
+          name="+about"
+          template="../templates/foaf-about.pt"
+          lp:url="foaf/+about" />
+      <browser:page 
+          name="+dashboard"
+          template="../templates/foaf-dashboard.pt"
+          lp:url="foaf/+dashboard" />
+      <browser:page 
+          name="+todo"
+          template="../templates/foaf-todo.pt"
+          lp:url="foaf/+todo" />
+  </browser:pages>
+
+</configure>

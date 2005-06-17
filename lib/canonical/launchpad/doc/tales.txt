@@ -41,6 +41,7 @@ Test the 'fmt:' namespace where the context is a datetime.
    >>> test_tales('dt/fmt:datetime', dt=dt)
    '2005-04-01 16:22:00'
 
+
 Test the 'lp:' namespace for presenting DBSchema classes.
 
     >>> from canonical.lp.dbschema import BinaryPackageFormat
@@ -83,6 +84,44 @@ information to distinguish a page template CONTEXTS dict from any other dict.
     'Launchpad Debug Home Page'
 
 
+Test the 'fmt:url' namespace for canonical urls.
+
+    >>> from canonical.launchpad.interfaces import ICanonicalUrlData
+    >>> from zope.interface import implements
+    >>> class ObjectThatHasUrl:
+    ...     implements(ICanonicalUrlData)
+    ...     path = 'bonobo/saki'
+    ...     inside = None
+
+    >>> object_having_url = ObjectThatHasUrl()
+    >>> test_tales('foo/fmt:url', foo=object_having_url)
+    'http://localhost:8086/bonobo/saki'
+
+Now, we need to test that it gets the correct application URL from the
+request.
+
+Make a mock-up IBrowserRequest, and use this as the interaction.
+
+    >>> from zope.publisher.interfaces.browser import \
+    ...     IBrowserApplicationRequest
+    >>> from zope.interface import implements
+    >>> class MockBrowserRequest:
+    ...     implements(IBrowserApplicationRequest)
+    ...
+    ...     interaction = None
+    ...     principal = None
+    ...
+    ...     def getApplicationURL(self):
+    ...         return 'https://mandrill.example.org:23'
+
+    >>> participation = MockBrowserRequest()
+
+    >>> login(ANONYMOUS, participation)
+
+    >>> test_tales('foo/fmt:url', foo=object_having_url)
+    'https://mandrill.example.org:23/bonobo/saki'
+
+
 Test the 'fmt:' namespace where the context is None.
 
     >>> test_tales('foo/fmt:shorten', foo=None)
@@ -106,6 +145,9 @@ Test the 'fmt:' namespace where the context is None.
     ''
     >>> test_tales('foo/fmt:pagetitle', foo=None)
     ''
+    >>> test_tales('foo/fmt:url', foo=None)
+    ''
+
 
 The 'menu:' namespace allows access to links, in the form of facets and tabs.
 

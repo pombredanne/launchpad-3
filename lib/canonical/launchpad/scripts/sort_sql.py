@@ -4,140 +4,162 @@
 
 This library provides functions for the script sort_sql.py, which resides in
 database/schema/.
-
-There are limitations on accurate parsing; see the Parser class for details.
 """
 
 __metaclass__ = type
 
-import re, sys
-
-class Line:
-    """A single logical line in an SQL dump.
-
-    A line may be composed of several physical lines. It has a value, which is
-    a hint about how to sort it.
-
-    >>> line = Line("INSERT INTO Foo VALUES (42, 'blah', 'blah');")
-    >>> line.value
-    42
-    >>> line = Line("Blah blah.")
-    >>> line.value is None
-    True
-    """
-
-    def __init__(self, line):
-        self.line = line
-
-        ins_re = re.compile('''
-            ^INSERT \s+ INTO \s+ .* VALUES \s+ \(.*? (\d+),.*\);
-            ''', re.X | re.S)
-        match = ins_re.match(line)
-        if match is not None:
-            self.value = int(match.group(1))
-        else:
-            self.value = None
-
-    def __str__(self):
-        return self.line
-
-    def __repr__(self):
-        return '(%r, %r)' % (self.value, self.line)
+import re
+import sys
 
 class Parser:
     r"""Parse an SQL dump into logical lines.
 
-    This has the limitation that it assumes that the string ';' on the end of
-    a line indicates the end of an SQL statement, which is not strictly true
-    for multi-line dump statements.
-
     >>> p = Parser()
-    >>> p.write_line('blah blah blah);')
-    >>> p.write_line('')
-    >>> p.write_line('blah')
-    >>> p.write_line('blah);')
-    >>> p.lines
-    ['blah blah blah);', '', 'blah\nblah);']
-
-    >>> p = Parser()
-    >>> p.write_line("UPDATE foo SET bar='baz';")
-    >>> p.write_line("")
-    >>> p.write_line("INSERT INTO foo VALUES (1,23);")
-    >>> p.write_line("INSERT INTO foo VALUES (2,23);")
+    >>> p.feed("UPDATE foo SET bar='baz';\n")
+    >>> p.feed("\n")
+    >>> p.feed("INSERT INTO foo (id, x) VALUES (1, 23);\n")
+    >>> p.feed("INSERT INTO foo (id, x) VALUES (2, 34);\n")
     >>> for line in p.lines:
     ...     print repr(line)
-    "UPDATE foo SET bar='baz';"
-    ''
-    'INSERT INTO foo VALUES (1,23);'
-    'INSERT INTO foo VALUES (2,23);'
-
+    (None, "UPDATE foo SET bar='baz';")
+    (None, '')
+    (1, 'INSERT INTO foo (id, x) VALUES (1, 23);')
+    (2, 'INSERT INTO foo (id, x) VALUES (2, 34);')
     """
 
     def __init__(self):
         self.lines = []
-        self.state = 'default'
+        self.buffer = ''
+        self.line = ''
 
-    def write_line(self, line):
-        """Give the parser a physical line of dump to parse.
+    def parse_quoted_string(self, string):
+        """Parse strings enclosed in single quote marks.
 
-        The line should not have a terminating newline.
+        This takes a string of the form "'foo' ..." and returns a pair
+        containing the first quoted string and the rest of the string. The
+        escape sequence "''" is recognised in the middle of a quoted string as
+        representing a single quote, but is not unescaped.
+
+        ValueError is raised if there is no quoted string at the beginning of
+        the string.
+
+        >>> p = Parser()
+        >>> p.parse_quoted_string("'foo'")
+        ("'foo'", '')
+        >>> p.parse_quoted_string("'foo' bar")
+        ("'foo'", ' bar')
+        >>> p.parse_quoted_string("'foo '' bar'")
+        ("'foo '' bar'", '')
+        >>> p.parse_quoted_string("foo 'bar'")
+        Traceback (most recent call last):
+        ...
+        ValueError: Couldn't parse quoted string
         """
 
-        if self.state == 'default':
-            if line and not line.endswith(';'):
-                self.state = 'continue'
+        quoted_pattern = re.compile('''
+            ' (?: [^'] | '' )* '
+            ''', re.X | re.S)
 
-            self.lines.append(line)
+        match = quoted_pattern.match(string)
+
+        if match:
+            quoted_length = len(match.group(0))
+            return string[:quoted_length], string[quoted_length:]
         else:
-            if line and line.endswith(';'):
-                self.state = 'default'
+            raise ValueError("Couldn't parse quoted string")
 
-            self.lines[-1] += '\n' + line
+    def is_complete_insert_statement(self, statement):
+        """Check whether a string looks like a complete SQL INSERT
+        statement."""
 
-def sort_lines(lines):
-    """Sort a set of Line objects."""
-    lines.sort(lambda x, y: cmp(x.value, y.value))
+        while statement:
+            if statement == ');\n':
+                return True
+            elif statement[0] == "'":
+                string, statement = self.parse_quoted_string(statement)
+            else:
+                statement = statement[1:]
+
+        return False
+
+    def parse_line(self, line):
+        r"""Parse a single line of SQL.
+
+        >>> p = Parser()
+
+        Something that's not an INSERT.
+
+        >>> p.parse_line('''UPDATE foo SET bar = 42;\n''')
+        (None, 'UPDATE foo SET bar = 42;\n')
+
+        A simple INSERT.
+
+        >>> p.parse_line('''INSERT INTO foo (id, x) VALUES (2, 'foo');\n''')
+        (2, "INSERT INTO foo (id, x) VALUES (2, 'foo');\n")
+
+        Something trickier: multiple lines, and a ');' in the middle.
+
+        >>> p.parse_line('''INSERT INTO foo (id, x) VALUES (3, 'blah',
+        ... 'blah
+        ... blah);
+        ... blah');
+        ... ''')
+        (3, "INSERT INTO foo (id, x) VALUES (3, 'blah',\n'blah\nblah);\nblah');\n")
+        """
+
+        if not line.startswith('INSERT '):
+            return (None, line)
+
+        insert_pattern = re.compile('''
+            ^INSERT \s+ INTO \s+ \S+ \s+ \([^)]+\) \s+ VALUES \s+ \((\d+)
+            ''', re.X)
+        match = insert_pattern.match(line)
+
+        if not match:
+            raise RuntimeError("Failed to parse INSERT statement: " + `line`)
+
+        value = int(match.group(1))
+        end = line[len(match.group(0)):]
+
+        # Make sure that the line is complete.
+
+        if self.is_complete_insert_statement(line):
+            return value, line
+        else:
+            raise ValueError("Incomplete line")
+
+    def feed(self, s):
+        """Give the parser some text to parse."""
+
+        self.buffer += s
+
+        while '\n' in self.buffer:
+            line, self.buffer = self.buffer.split('\n', 1)
+            self.line += line + '\n'
+
+            try:
+                value, line = self.parse_line(self.line)
+            except ValueError:
+                pass
+            else:
+                self.lines.append((value, self.line[:-1]))
+                self.line = ''
 
 def print_lines_sorted(file, lines):
-    r"""Print a set of Line objects in sorted order to a file-like object.
+    r"""Print a set of (value, line) pairs in sorted order.
 
     Sorting only occurs within blocks of statements.
 
-    >>> class FakeLine:
-    ...     def __init__(self, line, value):
-    ...         self.line, self.value = line, value
-    ...
-    ...     def __str__(self):
-    ...         return self.line
-    ...
     >>> lines = [
-    ...     FakeLine('foo', 3),
-    ...     FakeLine('bar', 1),
-    ...     FakeLine('baz', 2),
-    ...     FakeLine('', None),
-    ...     FakeLine('quux', 2),
-    ...     FakeLine('asdf', 1),
-    ...     FakeLine('zxcv', 3),
+    ...     (10, "INSERT INTO foo (id, x) VALUES (10, 'data');"),
+    ...     (4, "INSERT INTO foo (id, x) VALUES (4, 'data\nmore\nmore');"),
+    ...     (7, "INSERT INTO foo (id, x) VALUES (7, 'data');"),
+    ...     (1, "INSERT INTO foo (id, x) VALUES (1, 'data');"),
+    ...     (None, ""),
+    ...     (2, "INSERT INTO baz (id, x) VALUES (2, 'data');"),
+    ...     (1, "INSERT INTO baz (id, x) VALUES (1, 'data');"),
     ...     ]
-    ...
-    >>> print_lines_sorted(sys.stdout, lines)
-    bar
-    baz
-    foo
-    <BLANKLINE>
-    asdf
-    quux
-    zxcv
-
-    >>> lines = [
-    ...     Line("INSERT INTO foo (id, x) VALUES (10, 'data');"),
-    ...     Line("INSERT INTO foo (id, x) VALUES (4, 'data\nmore\nmore');"),
-    ...     Line("INSERT INTO foo (id, x) VALUES (7, 'data');"),
-    ...     Line("INSERT INTO foo (id, x) VALUES (1, 'data');"),
-    ...     Line(""),
-    ...     Line("INSERT INTO baz (id, x) VALUES (2, 'data');"),
-    ...     Line("INSERT INTO baz (id, x) VALUES (1, 'data');"),
-    ...     ]
+    >>> import sys
     >>> print_lines_sorted(sys.stdout, lines)
     INSERT INTO foo (id, x) VALUES (1, 'data');
     INSERT INTO foo (id, x) VALUES (4, 'data
@@ -153,14 +175,19 @@ def print_lines_sorted(file, lines):
 
     block = []
 
+    def print_block(block):
+        block.sort()
+
+        for line in block:
+            sort_value, string = line
+            print >>file, string
+
     for line in lines:
-        if str(line) == '':
+        sort_value, string = line
+
+        if string == '':
             if block:
-                sort_lines(block)
-
-                for line in block:
-                    file.write(str(line) + '\n')
-
+                print_block(block)
                 block = []
 
             file.write('\n')
@@ -168,8 +195,5 @@ def print_lines_sorted(file, lines):
             block.append(line)
 
     if block:
-        sort_lines(block)
-
-        for line in block:
-            file.write(str(line) + '\n')
+        print_block(block)
 

@@ -23,7 +23,7 @@ class ILoginToken(Interface):
         )
     requesteremail = Text(
         title=_('The email address that was used to login when making this request.'),
-                required=True,
+                required=False,
         )
     created = Datetime(
         title=_('The timestamp that this request was made.'), required=True,
@@ -35,6 +35,10 @@ class ILoginToken(Interface):
     token = Text(
         title=_('The token (not the URL) emailed used to uniquely identify this request.'),
                 required=True,
+        )
+    fingerprint = Text(
+        title=_('GPG Key fingerprint used to retrive key information when necessary.'),
+                required=False,
         )
 
     # used for launchpad page layout
@@ -66,17 +70,21 @@ class ILoginTokenSet(Interface):
     def deleteByEmailAndRequester(email, requester):
         """Delete all LoginToken entries with the given email and requester."""
 
-    def new(requester, requesteremail, email, tokentype):
+    def new(requester, requesteremail, email, tokentype, fingerprint=None):
         """ Create a new LoginToken object. Parameters must be:
         requester: a Person object or None (in case of a new account)
 
         requesteremail: the email address used to login on the system. Can
         also be None in case of a new account
-        
+
         email: the email address that this request will be sent to
         
         tokentype: the type of the request, according to
         dbschema.LoginTokenType
+        
+        fingerprint: the gpg key fingerprint to be used to retrive needed
+        key information from the keyServer if necessary, can be None if
+        not required to proccess the 'request' in question.  
         """
 
     def __getitem__(id):

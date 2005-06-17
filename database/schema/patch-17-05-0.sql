@@ -4,10 +4,8 @@ SET client_min_messages=ERROR;
  * Fix up the SPPH counter because otherwise it'll explode later
  */
 
-\t
 SELECT setval('sourcepackagepublishinghistory_id_seq',
     (select max(id)+1 from sourcepackagepublishinghistory));
-\t
 DROP SEQUENCE sourcepackagepublishing_id_seq;
 
 /*
@@ -74,10 +72,8 @@ UPDATE PackagePublishingHistory SET datemadepending = scheduleddeletiondate - '1
 
 -- 5. Fix up the sequence counter...
 
-\t
 SELECT setval('packagepublishinghistory_id_seq',
     (select max(id)+1 from packagepublishinghistory));
-\t
 
 -- And PP itself
 
