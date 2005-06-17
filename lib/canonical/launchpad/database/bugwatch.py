@@ -37,9 +37,7 @@ class BugWatch(SQLBase):
 
     @property
     def title(self):
-        title = self.bugtracker.title
-        title += ' #' + str(self.remotebug)
-        return title
+        return "%s #%s" % (self.bugtracker.title, self.remotebug)
 
 
 class BugWatchSet(BugSetBase):

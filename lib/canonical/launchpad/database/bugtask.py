@@ -6,7 +6,7 @@ __all__ = ['BugTask', 'BugTaskSet', 'BugTaskDelta', 'mark_task',
 
 from sets import Set
 
-from sqlobject import ForeignKey
+from sqlobject import ForeignKey, StringCol
 from sqlobject import SQLObjectNotFound
 
 from zope.exceptions import NotFoundError
@@ -56,6 +56,7 @@ class BugTask(SQLBase):
         dbName='status', notNull=True,
         schema=dbschema.BugTaskStatus,
         default=dbschema.BugTaskStatus.NEW)
+    statusexplanation = StringCol(dbName='statusexplanation', default=None)
     priority = EnumCol(
         dbName='priority', notNull=True,
         schema=dbschema.BugPriority,
@@ -205,7 +206,7 @@ class BugTaskSet:
     def search(self, bug=None, searchtext=None, status=None, priority=None,
                severity=None, product=None, distribution=None,
                distrorelease=None, milestone=None, assignee=None,
-               submitter=None, orderby=None):
+               submitter=None, statusexplanation=None, orderby=None):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
         def build_where_condition_fragment(arg_name, arg_val, cb_arg_id):
             fragment = ""
@@ -250,7 +251,14 @@ class BugTaskSet:
         if searchtext:
             if query:
                 query += " AND "
-            query += "Bug.fti @@ ftq(%s)" % quote(searchtext)
+            query += (
+                "(Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s))" % sqlvalues(
+                    searchtext, searchtext))
+
+        if statusexplanation:
+            if query:
+                query += " AND "
+            query += "BugTask.fti @@ ftq(%s)" % sqlvalues(statusexplanation)
 
         user = getUtility(ILaunchBag).user
 
@@ -390,7 +398,8 @@ class BugTaskDelta:
     implements(IBugTaskDelta)
     def __init__(self, bugtask, product=None, sourcepackagename=None,
                  binarypackagename=None, status=None, severity=None,
-                 priority=None, assignee=None, milestone=None):
+                 priority=None, assignee=None, milestone=None,
+                 statusexplanation=None):
         self.bugtask = bugtask
         self.product = product
         self.sourcepackagename = sourcepackagename
@@ -400,6 +409,7 @@ class BugTaskDelta:
         self.priority = priority
         self.assignee = assignee
         self.target = milestone
+        self.statusexplanation = statusexplanation
 
 def mark_task(obj, iface):
     directlyProvides(obj, iface + directlyProvidedBy(obj))

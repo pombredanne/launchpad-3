@@ -102,15 +102,15 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IEditableUpstreamBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
-        schema="canonical.launchpad.interfaces.IBugTask"
+        schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         fields="product maintainer_displayname milestone
-                status priority severity assignee bugwatch whiteboard"
+                status priority severity assignee bugwatch statusexplanation"
         label="Edit Product Bug Task"
         permission="launchpad.Edit"
         template="../templates/bugtask-editform.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
         <browser:widget
-          field="whiteboard"
+          field="statusexplanation"
           class="zope.app.form.browser.TextAreaWidget"
           height="2" />
     </browser:editform>
@@ -119,9 +119,9 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IReadOnlyUpstreamBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskDisplayView"
-        schema="canonical.launchpad.interfaces.IBugTask"
+        schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         fields="product maintainer_displayname milestone
-                status priority severity assignee bugwatch whiteboard"
+                status priority severity assignee bugwatch statusexplanation"
         label="Product Bug Task"
         permission="launchpad.View"
         template="../templates/bugtask-editform.pt"
@@ -153,13 +153,13 @@
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename binarypackagename 
-                status priority severity assignee bugwatch whiteboard"
+                status priority severity assignee bugwatch statusexplanation"
         label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"
         template="../templates/bugtask-editform.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
         <browser:widget
-          field="whiteboard"
+          field="statusexplanation"
           class="zope.app.form.browser.TextAreaWidget"
           height="2" />
     </browser:editform>
@@ -170,7 +170,7 @@
         class="canonical.launchpad.browser.bugtask.BugTaskDisplayView"
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename binarypackagename 
-                status priority severity assignee bugwatch whiteboard"
+                status priority severity assignee bugwatch statusexplanation"
         label="Source Package Bug Task"
         permission="zope.Public"
         template="../templates/bugtask-editform.pt"
@@ -199,13 +199,13 @@
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename binarypackagename 
-                status priority severity assignee bugwatch whiteboard"
+                status priority severity assignee bugwatch statusexplanation"
         label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"
         template="../templates/bugtask-editform.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
         <browser:widget
-          field="whiteboard"
+          field="statusexplanation"
           class="zope.app.form.browser.TextAreaWidget"
           height="2" />
     </browser:editform>
@@ -216,7 +216,7 @@
         class="canonical.launchpad.browser.bugtask.BugTaskDisplayView"
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename binarypackagename 
-                status priority severity assignee bugwatch whiteboard"
+                status priority severity assignee bugwatch statusexplanation"
         label="Source Package Bug Task"
         permission="zope.Public"
         template="../templates/bugtask-editform.pt"

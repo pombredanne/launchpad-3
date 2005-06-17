@@ -22,6 +22,7 @@ PATCH_SQL = os.path.join(
 
 ALL_FTI = [
     ('bug', ['name', 'title', 'summary', 'description']),
+    ('bugtask', ['statusexplanation']),
     ('message', ['title']),
     ('messagechunk', ['content']),
     ('person', ['givenname', 'familyname', 'displayname']),

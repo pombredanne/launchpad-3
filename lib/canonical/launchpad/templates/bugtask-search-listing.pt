@@ -245,22 +245,28 @@
             <table>
               <tr>
                 <td tal:condition="view/status_widget|nothing">
-                  <label for="status" tal:content="view/status_widget/label">
+                  <label tal:attributes="for view/status_widget/name"
+                         tal:content="view/status_widget/label">
                     Status:
                   </label>
                 </td>
                 <td tal:condition="view/severity_widget|nothing">
-                  <label for="severity" tal:content="view/severity_widget/label">
+                  <label tal:attributes="for view/severity_widget/name"
+                         tal:content="view/severity_widget/label">
                     Severity:
                   </label>
                 </td>
-                <td tal:condition="view/assignee_widget|nothing">
-                  <label for="assignee" tal:content="view/assignee_widget/label">
+                <td tal:condition="python: view.assignee_widget or
+                                           view.statusexplanation_widget">
+                  <label tal:attributes="for view/assignee_widget/name"
+                         tal:condition="view/assignee_widget|nothing"
+                         tal:content="view/assignee_widget/label">
                     Assignee:
                   </label>
                 </td>
                 <td tal:condition="view/milestone_widget|nothing">
-                  <label for="target" tal:content="view/milestone_widget/label">
+                  <label tal:attributes="for view/milestone_widget/name"
+                         tal:content="view/milestone_widget/label">
                     Target:
                   </label>
                 </td>
@@ -271,10 +277,27 @@
                     tal:content="structure view/status_widget" />
                 <td tal:condition="view/severity_widget"
                     tal:content="structure view/severity_widget" />
-                <td tal:condition="view/assignee_widget">
+                <td tal:condition="python: view.assignee_widget or
+                                           view.statusexplanation_widget">
+                  <tal:block condition="view/assignee_widget">
                     <tal:block content="structure view/assignee_widget" /><br />
                     <tal:block content="structure view/unassigned_widget" />
-                     <tal:block content="structure view/unassigned_widget/label" />
+                    <label
+                        tal:attributes="for view/unassigned_widget/name"
+                        tal:content="structure view/unassigned_widget/label">
+                      show only unassigned bugs
+                    </label>
+                    <br /><br />
+                  </tal:block>
+                  <tal:block condition="view/statusexplanation_widget">
+                    <label
+                        tal:attributes="for view/statusexplanation_widget/name"
+                        tal:content="view/statusexplanation_widget/label">
+                      Explanation of Status:
+                    </label>
+                    <br />
+                    <tal:block content="structure view/statusexplanation_widget" />
+                  </tal:block>
                 </td>
                 <td tal:condition="view/milestone_widget|nothing"
                     tal:content="structure view/milestone_widget" />

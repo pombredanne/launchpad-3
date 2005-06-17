@@ -302,6 +302,7 @@ COMMENT ON COLUMN BugTask.assignee IS 'The person who has been assigned to fix t
 COMMENT ON COLUMN BugTask.dateassigned IS 'The date on which the bug in this (sourcepackagename, distro) or product was assigned to someone to fix';
 COMMENT ON COLUMN BugTask.datecreated IS 'A timestamp for the creation of this bug assignment. Note that this is not the date the bug was created (though it might be), it''s the date the bug was assigned to this product, which could have come later.';
 COMMENT ON COLUMN BugTask.milestone IS 'A way to mark a bug for grouping purposes, e.g. to say it needs to be fixed by version 1.2';
+COMMENT ON COLUMN BugTask.statusexplanation IS 'A place to store bug task specific information as free text';
 COMMENT ON COLUMN BugTask.bugwatch IS 'This column allows us to link a bug
 task to a bug watch. In other words, we are connecting the state of the task
 to the state of the bug in a different bug tracking system. To the best of

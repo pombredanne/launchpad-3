@@ -8,8 +8,8 @@ from zope.component.interfaces import IView
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-    TextLine, List
+from zope.schema import (
+    Bool, Bytes, Choice, Datetime, Int, Text, TextLine, List)
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from sqlos.interfaces import ISelectResults
@@ -74,6 +74,8 @@ class IBugTask(IHasDateCreated):
     status = Choice(
         title=_('Status'), vocabulary='BugStatus',
         default=dbschema.BugTaskStatus.NEW)
+    statusexplanation = Text(
+        title=_("Explanation of Status"), required=False)
     priority = Choice(
         title=_('Priority'), vocabulary='BugPriority',
         default=dbschema.BugPriority.MEDIUM)
@@ -102,7 +104,6 @@ class IBugTask(IHasDateCreated):
 
     contextname = Attribute("Description of the task's location.")
     title = Attribute("The title used for a task's Web page.")
-    whiteboard = Text(title=_("Status Explanation"), required=False)
 
 
 class IBugTaskSearch(Interface):
@@ -127,6 +128,8 @@ class IBugTaskSearch(Interface):
     assignee = Choice(
         title=_('Assignee'), vocabulary='ValidAssignee', required=False)
     unassigned = Bool(title=_('show only unassigned bugs'), required=False)
+    statusexplanation = TextLine(
+        title=_("Explanation of Status"), required=False)
 
 
 class IUpstreamBugTaskSearch(IBugTaskSearch):
@@ -165,6 +168,10 @@ class IBugTaskSearchListingView(IView):
     milestone_widget = Attribute("""The widget for selecting task targets to
                                     filter on. None if the widget is not to be
                                     shown.""")
+
+    statusexplanation_widget = Attribute("""The widget for searching in status
+                                     explanations. None if the widget is not to
+                                     be shown.""")
 
     def task_columns():
         """Returns a sequence of column names to be shown in the listing.
@@ -205,6 +212,7 @@ class IBugTaskDelta(Interface):
         "A dict containing two keys, 'old' and 'new' or None.")
     assignee = Attribute(
         "A dict containing two keys, 'old' and 'new' or None.")
+    statusexplanation = Attribute("The new value of the status explanation.")
 
 
 class IUpstreamBugTask(IBugTask):

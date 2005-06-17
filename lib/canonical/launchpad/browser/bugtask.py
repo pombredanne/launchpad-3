@@ -254,6 +254,9 @@ class BugTaskSearchListingView:
         if milestones:
             search_params["milestone"] = any(*milestones)
 
+        search_params["statusexplanation"] = form_params.get(
+                "statusexplanation")
+
         # make this search context-sensitive
         tasks = self.context.search(**search_params)
 
