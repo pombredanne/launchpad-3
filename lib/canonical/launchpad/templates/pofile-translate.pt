@@ -108,6 +108,11 @@
 
         <!-- The translation form. -->
         <form method="post" tal:attributes="action view/createURL">
+          <p tal:repeat="alert view/alerts"
+             class="error alert"
+             tal:content="alert">
+             Error Message
+          </p>
           <table class="data" style="margin-top: 0.5em;">
             <thead>
               <tr class="results">

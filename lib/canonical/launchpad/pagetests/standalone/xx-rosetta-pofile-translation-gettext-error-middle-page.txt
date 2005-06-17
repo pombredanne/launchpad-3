@@ -45,5 +45,4 @@ messages for this POFile).
   <BLANKLINE>
                           <input type="text"
       name="set_142_translation_es_0" value="Migrando «%i»:"
-      tabindex="5" />
   ...
