@@ -337,8 +337,8 @@ class PersonView(BasePersonView):
                             fingerprint=fingerprint)
                 token.sendEmailValidationRequest(appurl)
 
-        info += ('. At least one UID should be validated to get the key '
-                 'imported as your.')
+        info += ('.At least one UID should be validated to get the key '
+                 'imported as yours.')
 
         return info
 
