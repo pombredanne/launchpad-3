@@ -9,6 +9,7 @@ from zope.component import getUtility
 from zope.app.pagetemplate.viewpagetemplatefile import (
     ViewPageTemplateFile, BoundPageTemplate)
 from zope.interface import implements
+from zope.exceptions import NotFoundError
 
 from canonical.lp import dbschema, decorates, Passthrough
 from canonical.launchpad.helpers import canonical_url
@@ -48,9 +49,10 @@ def traverseBugs(bugcontainer, request, name):
     if name == 'assigned':
         return BugTasksReport()
     else:
-        return getUtility(IBugSet).get(int(name))
-
-    return None
+        try:
+            return getUtility(IBugSet).get(name)
+        except NotFoundError:
+            return None
 
 
 # TODO: Steve will be hacking on a more general portlet mechanism today
