@@ -1,16 +1,9 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
 """HCT XML-RPC Server.
 
-This module provides an XML-RPC server that provides access to a banzai
+This module provides an XML-RPC server that provides access to an HCT
 backend, so the client (HCT) only needs to make XML-RPC requests instead
 of (for example) needing directaccess to the database.
 """
-
-__copyright__ = "Copyright © 2005 Canonical Ltd."
-__author__    = "Scott James Remnant <scott@canonical.com>"
-__version__   = "0.1"
-
 
 import sys
 import logging
@@ -19,16 +12,18 @@ from StringIO import StringIO
 from twisted.web.xmlrpc import XMLRPC
 from twisted.internet.threads import deferToThread
 
-import banzai
+import hct.url
+import canonical.launchpad.hctapi
 
 from hct.util.log import get_logger
+from hct.backends.xmlfiles import ManifestFile
 
 
 class TrebuchetServer(XMLRPC):
     def __init__(self, backend=None, parent_log=None):
         XMLRPC.__init__(self)
 
-        default_backend = banzai.url.backends[banzai.url.default_scheme]
+        default_backend = hct.url.backends[hct.url.default_scheme]
         self.backend = backend or default_backend
 
         self.log = get_logger("trebuchet", parent_log)
@@ -141,7 +136,7 @@ def pickle_manifest(manifest):
     if manifest is None:
         return pickle_none(manifest)
     else:
-        mf = banzai.ManifestFile(fileobj=StringIO(), manifests=(manifest,))
+        mf = ManifestFile(fileobj=StringIO(), manifests=( manifest, ))
         return pickle_none(mf.file.getvalue())
 
 def pickle_branch(branch):
@@ -149,7 +144,7 @@ def pickle_branch(branch):
     if branch is None:
         return pickle_none(branch)
     else:
-        mf = banzai.ManifestFile(fileobj=StringIO())
+        mf = ManifestFile(fileobj=StringIO())
         mf.branches.append(branch)
         mf.save()
         return pickle_none(mf.file.getvalue())

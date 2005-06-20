@@ -27,7 +27,7 @@ check_merge: build importdcheck
 	# database.
 	env PYTHONPATH=$(PYTHONPATH) \
 	    ${PYTHON} -t ./test_on_merge.py -vv \
-		--dir hct --dir sourcerer --dir banzai
+		--dir hct --dir sourcerer
 	    $(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION}
 
