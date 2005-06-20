@@ -46,6 +46,8 @@ from canonical.launchpad.mail.ftests import testmails_path
 # This import forms part of this module's API.
 from canonical.launchpad.webapp.publisher import canonical_url
 
+from canonical.launchpad.validators.gpg import valid_fingerprint
+
 
 def text_replaced(text, replacements, _cache={}):
     """Return a new string with text replaced according to the dict provided.
@@ -464,36 +466,6 @@ def contactEmailAddresses(person):
                 emails = emails.union(contactAddresses)
 
     return emails
-
-# Note that this appears as "valid email" in the UI, because that term is
-# more familiar to users, even if it is less correct.
-well_formed_email_re = re.compile(
-    r"^[_\.0-9a-z-+]+@([0-9a-z-]{1,}\.)*[a-z]{2,}$")
-
-def well_formed_email(emailaddr):
-    """Returns True if emailaddr is well-formed, otherwise returns False.
-
-    >>> well_formed_email('foo.bar@baz.museum')
-    True
-    >>> well_formed_email('mark@hbd.com')
-    True
-    >>> well_formed_email('art@cat-flap.com')
-    True
-    >>> well_formed_email('a@b.b.tw')
-    True
-    >>> well_formed_email('a@b.b.b.b.tw')
-    True
-    >>> well_formed_email('i@tm')
-    True
-    >>> well_formed_email('')
-    False
-    >>> well_formed_email('a@b')
-    False
-    >>> well_formed_email('a@foo.b')
-    False
-
-    """
-    return bool(well_formed_email_re.match(emailaddr))
 
 replacements = {0: {'.': ' |dot| ',
                     '@': ' |at| '},
@@ -1108,8 +1080,6 @@ def test_diff(lines_a, lines_b):
         lineterm='',
         )))
 
-fingerprint_re = re.compile(r"^[\dABCDEF]{40}$")
-
 def sanitiseFingerprint(fpr):
     """Returns sanitised fingerprint if fpr is well-formed,
     otherwise returns False.
@@ -1126,7 +1096,7 @@ def sanitiseFingerprint(fpr):
     # replace the white spaces
     fpr = fpr.replace(' ', '')
 
-    if not fingerprint_re.match(fpr):
+    if not valid_fingerprint(fpr):
         return False
     
     return fpr

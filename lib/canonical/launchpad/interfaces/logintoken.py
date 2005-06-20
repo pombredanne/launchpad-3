@@ -80,10 +80,11 @@ class ILoginTokenSet(Interface):
         requesteremail: the email address used to login on the system. Can
                         also be None in case of a new account
 
-        email: the email address that this request will be sent to
-        
-        tokentype: the type of the request. must be a dbschema.LoginTokenType
-                   item.
+        email: the email address that this request will be sent to.
+        It should be previosly validated by valid_email() 
+
+        tokentype: the type of the request, according to
+        dbschema.LoginTokenType
         
         fingerprint: the gpg key fingerprint to be used to retrive needed
         key information from the keyServer if necessary, can be None if

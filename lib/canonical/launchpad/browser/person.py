@@ -32,8 +32,8 @@ from canonical.launchpad.interfaces import (
     IObjectReassignment, ITeamReassignment, IGPGKeySet, IGpgHandler, IPymeKey)
 
 from canonical.launchpad.helpers import (
-        well_formed_email, obfuscateEmail, convertToHtmlCode, shortlist,
-        sanitiseFingerprint)
+        obfuscateEmail, convertToHtmlCode, shortlist, sanitiseFingerprint)
+from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
 ##XXX: (batch_size+global) cprov 20041003
@@ -319,15 +319,16 @@ class PersonView(BasePersonView):
 
         bag = getUtility(ILaunchBag)
         # build a list of already validated and preferred emailaddress
+        # in lowercase for comparision reasons
         emails = []
         for email in bag.user.validatedemails:
-            emails.append(email.email)
-        emails.append(bag.user.preferredemail.email)
+            emails.append(email.email.lower())
+        emails.append(bag.user.preferredemail.email.lower())
 
         # iter through UIDs
         for uid in uids:
             # if UID isn't validated/preferred, send token email
-            if uid not in emails:                
+            if uid.lower() not in emails:                
                 info += ' %s' % uid
 
                 appurl = self.request.getApplicationURL()
@@ -572,7 +573,7 @@ class PersonEditView(BasePersonView):
         emailset = getUtility(IEmailAddressSet)
         logintokenset = getUtility(ILoginTokenSet)
         newemail = self.request.form.get("newemail", "").strip().lower()
-        if not well_formed_email(newemail):
+        if not valid_email(newemail):
             self.message = (
                 "'%s' doesn't seem to be a valid email address." % newemail)
             self.badlyFormedEmail = newemail

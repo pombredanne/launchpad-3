@@ -17,7 +17,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.interfaces import ILoginToken, ILoginTokenSet
 from canonical.lp.dbschema import LoginTokenType, EnumCol
-
+from canonical.launchpad.validators.email import valid_email
 
 class LoginToken(SQLBase):
     implements(ILoginToken)
@@ -79,6 +79,7 @@ class LoginTokenSet:
     def new(self, requester, requesteremail, email, tokentype,
             fingerprint=None):
         """See ILoginTokenSet."""
+        assert valid_email(email)
         if tokentype not in LoginTokenType.items:
             raise ValueError(
                 "tokentype is not an item of LoginTokenType: %s" % tokentype)

@@ -13,6 +13,11 @@ import re
 # launchpad
 from canonical.config import config
 
+# validators
+from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.gpg import valid_fingerprint
+from canonical.launchpad.validators.gpg import valid_keyid
+
 # zope
 from zope.interface import implements
 from zope.component import getUtility
@@ -93,8 +98,9 @@ class GpgHandler(object):
 
         # signature.status == 0 means "Ok"
         if signature.status != 0:
-            return None, None
-
+            # return an empty signature object
+            return PymeSignature()
+        
         fingerprint = signature.fpr
         plain.seek(0,0)
         plain_data = plain.read()
@@ -210,12 +216,15 @@ class PymeKey(object):
         # retrive additional key information
         key = c.get_key(fingerprint.encode('ascii'), 0)
 
-        self.fingerprint = key.subkeys.fpr
+        if valid_fingerprint(key.subkeys.fpr):
+            self.fingerprint = key.subkeys.fpr
+        else:
+            self.fingerprint = None
         self.algorithm = key.subkeys.pubkey_algo           
         self.revoked = key.subkeys.revoked
         self.keysize = key.subkeys.length
 
-        if fingerprint != None:
+        if fingerprint is not None and valid_keyid(key.subkeys.fpr[-8:]):
             self.keyid = key.subkeys.fpr[-8:]
         else:
             self.keyid = None
@@ -223,6 +232,6 @@ class PymeKey(object):
         self.uids = []
         uid = key.uids
         while uid:
-            if not uid.revoked:
+            if valid_email(uid.uid) and not uid.revoked:
                 self.uids.append(uid.uid)
             uid = uid.next

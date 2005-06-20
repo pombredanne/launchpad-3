@@ -13,7 +13,7 @@ from zope.event import notify
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.app.security.interfaces import IAuthenticationService
 
-from canonical.launchpad.helpers import well_formed_email
+from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.interfaces import CookieAuthLoggedInEvent
 from canonical.launchpad.webapp.interfaces import LoggedOutEvent
@@ -168,7 +168,7 @@ class LoginOrRegister:
             self.registration_error = msg
             return
 
-        if not well_formed_email(self.email):
+        if not valid_email(self.email):
             self.registration_error = (
                 "The email address you provided isn't valid. "
                 "Please verify it and try again.")
