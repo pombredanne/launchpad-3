@@ -5,13 +5,13 @@
 
 import errno, os, re, shutil, string, tempfile
 import apt_pkg
-from canonical.lucille.GPGV import verify_signed_file
-from canonical.lucille.GPGV import VerificationError
-from canonical.lucille.TagFiles import parse_tagfile
-from canonical.lucille.TagFiles import TagFileParseError
-from canonical.lucille.utils import build_file_list
-from canonical.lucille.utils import fix_maintainer
-from canonical.lucille.utils import ParseMaintError
+from canonical.archivepublisher.GPGV import verify_signed_file
+from canonical.archivepublisher.GPGV import VerificationError
+from canonical.archivepublisher.TagFiles import parse_tagfile
+from canonical.archivepublisher.TagFiles import TagFileParseError
+from canonical.archivepublisher.utils import build_file_list
+from canonical.archivepublisher.utils import fix_maintainer
+from canonical.archivepublisher.utils import ParseMaintError
 
 ################################################################################
 

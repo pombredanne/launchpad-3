@@ -1,16 +1,17 @@
 # (c) Canonical Software Ltd. 2004, all rights reserved.
 #
-# This is the python package that defines the 'canonical.lucille.config'
-# package. This package is related to managing lucille's configuration
-# as stored in the distribution and distrorelease tables
+# This is the python package that defines the
+# 'canonical.archivepublisher.config' package. This package is related
+# to managing the archive publisher's configuration as stored in the
+# distribution and distrorelease tables
 
 from StringIO import StringIO
 from ConfigParser import ConfigParser
 
 class Config(object):
-    """Manage a lucille configuration from the database. (Read Only)
+    """Manage a publisher configuration from the database. (Read Only)
     This class provides a useful abstraction so that if we change
-    how the database stores configuration then lucille will not
+    how the database stores configuration then the publisher will not
     need to be re-coded to cope"""
 
     def __init__(self, distribution, distroreleases):

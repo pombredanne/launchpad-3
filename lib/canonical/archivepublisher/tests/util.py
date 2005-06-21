@@ -1,9 +1,9 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 #
 
-# Utility functions/classes for testing Lucille.
+# Utility functions/classes for testing the archive publisher.
 
-from canonical.lucille.tests import datadir
+from canonical.archivepublisher.tests import datadir
 
 class FakeDistribution(object):
     def __init__(self,name,conf):

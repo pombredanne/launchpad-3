@@ -11,23 +11,23 @@ import shutil
 class TestPool(unittest.TestCase):
 
     def testImport(self):
-        """canonical.lucille.Poolifier should be importable"""
-        from canonical.lucille import Poolifier
+        """canonical.archivepublisher.Poolifier should be importable"""
+        from canonical.archivepublisher import Poolifier
 
     def testInstatiate(self):
-        """canonical.lucille.Poolifier should be instantiatable"""
-        from canonical.lucille import Poolifier
+        """canonical.archivepublisher.Poolifier should be instantiatable"""
+        from canonical.archivepublisher import Poolifier
         p = Poolifier()
 
     def testBadStyle(self):
-        """canonical.lucille.Poolifier should not instantiate on bad style"""
-        from canonical.lucille import Poolifier
+        """canonical.archivepublisher.Poolifier should not instantiate on bad style"""
+        from canonical.archivepublisher import Poolifier
         bad_style = object()
         self.assertRaises(ValueError, Poolifier, bad_style)
 
     def testPoolificationOkay(self):
-        """canonical.lucille.Poolifier.poolify should poolify properly"""
-        from canonical.lucille import Poolifier
+        """canonical.archivepublisher.Poolifier.poolify should poolify properly"""
+        from canonical.archivepublisher import Poolifier
         p = Poolifier()
         cases = (
             ( "foo", "main", "main/f/foo" ),
@@ -38,14 +38,14 @@ class TestPool(unittest.TestCase):
             self.assertEqual( case[2], p.poolify(case[0], case[1]) )
 
     def testPoolificationWithNoComponent(self):
-        """canonical.lucille.Poolifier.poolify should raise with no component"""
-        from canonical.lucille import Poolifier
+        """canonical.archivepublisher.Poolifier.poolify should raise with no component"""
+        from canonical.archivepublisher import Poolifier
         p = Poolifier()
         self.assertRaises(ValueError, p.poolify, "foo")
 
     def testPoolificationWorksAfterComponent(self):
-        """canonical.lucille.Poolifier.poolify should work after a component"""
-        from canonical.lucille import Poolifier
+        """canonical.archivepublisher.Poolifier.poolify should work after a component"""
+        from canonical.archivepublisher import Poolifier
         p = Poolifier()
         p.component("main")
         self.assertEqual( p.poolify("foo"), "main/f/foo" )

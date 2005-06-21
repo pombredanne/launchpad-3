@@ -7,20 +7,20 @@
 import unittest
 import sys
 import shutil
-from canonical.lucille.tests import datadir
+from canonical.archivepublisher.tests import datadir
 
 class TestTagFiles(unittest.TestCase):
 
     def testImport(self):
-        """canonical.lucille.TagFiles should be importable"""
-        from canonical.lucille.TagFiles import TagFile
-        from canonical.lucille.TagFiles import TagFileParseError
-        from canonical.lucille.TagFiles import parse_tagfile
+        """canonical.archivepublisher.TagFiles should be importable"""
+        from canonical.archivepublisher.TagFiles import TagFile
+        from canonical.archivepublisher.TagFiles import TagFileParseError
+        from canonical.archivepublisher.TagFiles import parse_tagfile
 
     def testTagFileOnSingular(self):
-        """canonical.lucille.TagFiles.TagFile should parse a singular stanza
+        """canonical.archivepublisher.TagFiles.TagFile should parse a singular stanza
         """
-        from canonical.lucille.TagFiles import TagFile
+        from canonical.archivepublisher.TagFiles import TagFile
         f = TagFile(file(datadir("singular-stanza"), "r"))
         seenone = False
         for stanza in f:
@@ -31,8 +31,8 @@ class TestTagFiles(unittest.TestCase):
             self.assertEquals("FooBar" in stanza, False)
 
     def testTagFileOnSeveral(self):
-        """canonical.lucille.TagFiles.TagFile should parse multiple stanzas"""
-        from canonical.lucille.TagFiles import TagFile
+        """canonical.archivepublisher.TagFiles.TagFile should parse multiple stanzas"""
+        from canonical.archivepublisher.TagFiles import TagFile
         f = TagFile(file(datadir("multiple-stanzas"), "r"))
         seen = 0
         for stanza in f:
@@ -43,63 +43,63 @@ class TestTagFiles(unittest.TestCase):
         self.assertEquals(seen > 1, True)
 
     def testCheckParseChangesOkay(self):
-        """canonical.lucille.TagFiles.parse_tagfile should work on a good
+        """canonical.archivepublisher.TagFiles.parse_tagfile should work on a good
            changes file
         """
-        from canonical.lucille.TagFiles import parse_tagfile
+        from canonical.archivepublisher.TagFiles import parse_tagfile
         p = parse_tagfile(datadir("good-signed-changes"))
 
     def testCheckParseBadChangesRaises(self):
-        """canonical.lucille.TagFiles.parse_chantges should raise
+        """canonical.archivepublisher.TagFiles.parse_chantges should raise
            TagFileParseError on failure
         """
-        from canonical.lucille.TagFiles import parse_tagfile
-        from canonical.lucille.TagFiles import TagFileParseError
+        from canonical.archivepublisher.TagFiles import parse_tagfile
+        from canonical.archivepublisher.TagFiles import TagFileParseError
         self.assertRaises(TagFileParseError,
                           parse_tagfile, datadir("badformat-changes"), 1)
 
     def testCheckParseEmptyChangesRaises(self):
-        """canonical.lucille.TagFiles.parse_chantges should raise
+        """canonical.archivepublisher.TagFiles.parse_chantges should raise
            TagFileParseError on empty
         """
-        from canonical.lucille.TagFiles import parse_tagfile
-        from canonical.lucille.TagFiles import TagFileParseError
+        from canonical.archivepublisher.TagFiles import parse_tagfile
+        from canonical.archivepublisher.TagFiles import TagFileParseError
         self.assertRaises(TagFileParseError,
                           parse_tagfile, datadir("empty-file"), 1)
 
     def testCheckParseMalformedSigRaises(self):
-        """canonical.lucille.TagFiles.parse_chantges should raise
+        """canonical.archivepublisher.TagFiles.parse_chantges should raise
            TagFileParseError on malformed signatures
         """
-        from canonical.lucille.TagFiles import parse_tagfile
-        from canonical.lucille.TagFiles import TagFileParseError
+        from canonical.archivepublisher.TagFiles import parse_tagfile
+        from canonical.archivepublisher.TagFiles import TagFileParseError
         self.assertRaises(TagFileParseError,
                           parse_tagfile, datadir("malformed-sig-changes"), 1)
 
     def testCheckParseMalformedMultilineRaises(self):
-        """canonical.lucille.TagFiles.parse_chantges should raise
+        """canonical.archivepublisher.TagFiles.parse_chantges should raise
            TagFileParseError on malformed continuation lines"""
-        from canonical.lucille.TagFiles import parse_tagfile
-        from canonical.lucille.TagFiles import TagFileParseError
+        from canonical.archivepublisher.TagFiles import parse_tagfile
+        from canonical.archivepublisher.TagFiles import TagFileParseError
         self.assertRaises(TagFileParseError,
                           parse_tagfile, datadir("bad-multiline-changes"), 1)
 
     def testCheckParseUnterminatedSigRaises(self):
-        """canonical.lucille.TagFiles.parse_chantges should raise
+        """canonical.archivepublisher.TagFiles.parse_chantges should raise
            TagFileParseError on unterminated signatures
         """
-        from canonical.lucille.TagFiles import parse_tagfile
-        from canonical.lucille.TagFiles import TagFileParseError
+        from canonical.archivepublisher.TagFiles import parse_tagfile
+        from canonical.archivepublisher.TagFiles import TagFileParseError
         self.assertRaises(TagFileParseError,
                           parse_tagfile,
                           datadir("unterminated-sig-changes"),
                           1)
 
     def testParseChangesNotVulnerableToArchExploit(self):
-        """canonical.lucille.TagFiles.parse_tagfile should not be vulnerable
+        """canonical.archivepublisher.TagFiles.parse_tagfile should not be vulnerable
            to tags outside of the signed portion
         """
-        from canonical.lucille.TagFiles import parse_tagfile
+        from canonical.archivepublisher.TagFiles import parse_tagfile
         tf = parse_tagfile(datadir("changes-with-exploit-top"))
         self.assertRaises(KeyError, tf.__getitem__, "you")
         tf = parse_tagfile(datadir("changes-with-exploit-bottom"))

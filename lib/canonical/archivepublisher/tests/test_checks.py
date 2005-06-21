@@ -4,7 +4,7 @@
 
 import os, sys, unittest
 
-from canonical.lucille.tests import datadir
+from canonical.archivepublisher.tests import datadir
 
 datatoplevel = datadir("")
 
@@ -27,11 +27,11 @@ class TestCheckUpload(unittest.TestCase):
 
     def testImport(self):
         """Can check_upload.check_upload be imported"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
 
     def testInstatiate(self):
         """Can checks.UploadCheck be instantiated"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
         self.failUnless(isinstance(u, UploadCheck))
         self.assertEqual(u.reject_message, "")
@@ -40,28 +40,28 @@ class TestCheckUpload(unittest.TestCase):
     # reject()
     def testReject(self):
         """Test reject()"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
         u.reject("test")
         self.assertEqual(u.reject_message, "REJECTED: test\n")
 
     def testRejectWithPrefix(self):
         """Test reject() with a prefix argument"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
         u.reject("test", "ACCEPTED: ")
         self.assertEqual(u.reject_message, "ACCEPTED: test\n")
 
     def testRejectEmptyArgument(self):
         """Test reject() with an empty string"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
         u.reject("")
         self.assertEqual(u.reject_message, "")
 
     def testStrIsNum(self):
         """Test str_isnum() with various input"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
         self.assertEqual(u.str_isnum("0"), 1)
         self.assertEqual(u.str_isnum("2356"), 1)
@@ -73,7 +73,7 @@ class TestCheckUpload(unittest.TestCase):
     # changes_val_mandatory()
     def testChangesValMandatory(self):
         """Test changes_val_mandatory() with no missing fields"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
         u.changes = self.Dict(source="", binary="", architecture="", version="",
                               distribution="", maintainer="", files="", changes="")
@@ -82,7 +82,7 @@ class TestCheckUpload(unittest.TestCase):
 
     def testChangesValMandatoryBroken(self):
         """Test changes_mandatory() with all missing fields"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
         u.changes = {}
         u.changes_val_mandatory()
@@ -103,7 +103,7 @@ REJECTED: : missing mandatory field 'Version'
     # changes_val_closes()
     def testChangesValCloses(self):
         """Test changes_val_closes() with valid 'Closes'"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
 
         u.changes = self.Dict(closes="203410 198732")
@@ -120,7 +120,7 @@ REJECTED: : missing mandatory field 'Version'
 
     def testChangesValClosesInvalid(self):
         """Test changes_val_closes() with invalid 'Closes'"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
 
         u.changes = self.Dict(closes="203410a 198732")
@@ -149,7 +149,7 @@ REJECTED: : 'man' in 'Closes' field isn't a number
     # changes_val_files()
     def testChangesValFiles(self):
         """Test changes_val_files()"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
 
         u.changes = self.Dict(files="something")
@@ -164,7 +164,7 @@ REJECTED: : 'man' in 'Closes' field isn't a number
     # val_sig()
     def testValSig(self):
         """Test val_sig()"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
 
         u.directory = datatoplevel
@@ -182,7 +182,7 @@ REJECTED: : 'man' in 'Closes' field isn't a number
     # changes_parse()
     def testChangesParse(self):
         """Test changes_parse()"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
 
         u.directory = datatoplevel
@@ -199,7 +199,7 @@ REJECTED: : 'man' in 'Closes' field isn't a number
     # files_build()
     def testFilesBuild(self):
         """Test files_build()"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
 
         u.directory = datatoplevel
@@ -218,7 +218,7 @@ REJECTED: : 'man' in 'Closes' field isn't a number
     # val_email()
     def testValEmail(self):
         """Test val_email()"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
 
         u.directory = datatoplevel
@@ -236,7 +236,7 @@ REJECTED: : 'man' in 'Closes' field isn't a number
     # changes_val_source_exists()
     def testChangesValSourceExists(self):
         """Test changes_val_source_exists()"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
 
         u.directory = datatoplevel
@@ -262,7 +262,7 @@ REJECTED: : 'man' in 'Closes' field isn't a number
     # files_val_source()
     def testFilesValSource(self):
         """Test files_val_source()"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
         u.directory = datatoplevel
         u.changes_filename = "good-signed-changes"
@@ -304,7 +304,7 @@ REJECTED: %s: only one source package per .changes (> 1 .tar.gz found)
     # dsc_get_filename()
     def testDscGetFilename(self):
         """Test dsc_get_filename()"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
 
         u.directory = datatoplevel
@@ -322,7 +322,7 @@ REJECTED: %s: only one source package per .changes (> 1 .tar.gz found)
     # dsc_parse()
     def testDscParse(self):
         """Test dsc_parse()"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
 
         u.directory = datatoplevel
@@ -340,7 +340,7 @@ REJECTED: %s: only one source package per .changes (> 1 .tar.gz found)
     # dsc_val_mandatory()
     def testDscValMandatory(self):
         """Test dsc_val_mandatory() with no missing fields"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
         u.directory = datatoplevel
         u.dsc_filename = "binutils_2.15-4.dsc"
@@ -350,7 +350,7 @@ REJECTED: %s: only one source package per .changes (> 1 .tar.gz found)
 
     def testDscValMandatoryBroken(self):
         """Test dsc_mandatory() with all missing fields"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
         u.dsc = {}
         u.dsc_filename = ""
@@ -372,7 +372,7 @@ REJECTED: : missing mandatory field 'Version'
     # "^[\dA-Za-z][\dA-Za-z\+\-\.]+$"
     def testDscValSource(self):
         """Test dsc_val_source()"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
 
         u = UploadCheck()
         u.directory = datatoplevel
@@ -401,7 +401,7 @@ REJECTED: : missing mandatory field 'Version'
     # "^([0-9]+:)?[0-9A-Za-z\.\-\+:]+$"
     def testDscValVersion(self):
         """Test dsc_val_version()"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
         u.directory = datatoplevel
         u.dsc_filename = "binutils_2.15-4.dsc"
@@ -429,7 +429,7 @@ REJECTED: : missing mandatory field 'Version'
     # dsc_val_format()
     def testDscValFormat(self):
         """Test dsc_val_format()"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
         u.directory = datatoplevel
         u.dsc_filename = "binutils_2.15-4.dsc"
@@ -447,7 +447,7 @@ REJECTED: : missing mandatory field 'Version'
     # dsc_val_build_dep()
     def testDscValBuildDep(self):
         """Test dsc_val_build_dep()"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
         u.directory = datatoplevel
         u.dsc_filename = "binutils_2.15-4.dsc"
@@ -487,7 +487,7 @@ REJECTED: : missing mandatory field 'Version'
     # dsc_version_against_changes()
     def testDscVersionAgainstChanges(self):
         """Test dsc_version_against_changes()"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
         u.directory = datatoplevel
         u.changes_filename = "binutils_2.15-4_i386.changes"
@@ -503,7 +503,7 @@ REJECTED: : missing mandatory field 'Version'
     # dsc_val_files
     def testDscValFiles(self):
         """Test dsc_val_files()"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
         u.directory = datatoplevel
         u.dsc_filename = "binutils_2.15-4.dsc"
@@ -544,7 +544,7 @@ REJECTED: %s: no .tar.gz or .orig.tar.gz in 'Files' field
     # check_source_package()
     def testCheckSourcePackage(self):
         """Test check_source_package()"""
-        from canonical.lucille.checks import UploadCheck
+        from canonical.archivepublisher.checks import UploadCheck
         u = UploadCheck()
         u.directory = datatoplevel
         u.dsc_filename = "ed_0.2-20.dsc"

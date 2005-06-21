@@ -9,11 +9,11 @@ import os
 import shutil
 
 from canonical.lp.dbschema import PackagePublishingStatus
-from canonical.lucille.config import Config
+from canonical.archivepublisher.config import Config
 
-from canonical.lucille.tests import datadir
+from canonical.archivepublisher.tests import datadir
 
-from canonical.lucille.tests.util import FakeDownloadClient, \
+from canonical.archivepublisher.tests.util import FakeDownloadClient, \
                                          FakeSourcePublishing, \
                                          FakeBinaryPublishing, \
                                          _deepCopy, dist, drs
@@ -61,17 +61,17 @@ class TestPublisher(unittest.TestCase):
     
 
     def testImport(self):
-        """canonical.lucille.Publisher should be importable"""
-        from canonical.lucille import Publisher
+        """canonical.archivepublisher.Publisher should be importable"""
+        from canonical.archivepublisher import Publisher
 
     def testInstantiate(self):
-        """canonical.lucille.Publisher should be instantiatable"""
-        from canonical.lucille import Publisher
+        """canonical.archivepublisher.Publisher should be instantiatable"""
+        from canonical.archivepublisher import Publisher
         p = Publisher(cnf, self._libr)
 
     def testPathFor(self):
-        """canonical.lucille.Publisher._pathfor should work"""
-        from canonical.lucille import Publisher
+        """canonical.archivepublisher.Publisher._pathfor should work"""
+        from canonical.archivepublisher import Publisher
         p = Publisher(cnf, self._libr)
         cases = (
             ("foo", "main", None, "%s/main/f/foo" % cnf.poolroot),
@@ -81,23 +81,23 @@ class TestPublisher(unittest.TestCase):
             self.assertEqual( case[3], p._pathfor(case[0],case[1],case[2]) )
 
     def testPrepareDir(self):
-        """canonical.lucille.Publisher._preparedir should work"""
-        from canonical.lucille import Publisher
+        """canonical.archivepublisher.Publisher._preparedir should work"""
+        from canonical.archivepublisher import Publisher
         p = Publisher(cnf, self._libr)
         p._preparedir( "foo", "main" )
         self.assertEqual( True, os.path.isdir("%s/main/f/foo" % self._pooldir))
 
     def testPublish(self):
-        """canonical.lucille.Publisher._publish should work"""
-        from canonical.lucille import Publisher
+        """canonical.archivepublisher.Publisher._publish should work"""
+        from canonical.archivepublisher import Publisher
         p = Publisher(cnf, self._libr)
         p._publish( "foo", "main", "foo.txt", 1 )
         f = "%s/main/f/foo/foo.txt" % self._pooldir
         os.stat(f) # Raises if it's not there. That'll do for now
 
     def testFullPublishSource(self):
-        """canonical.lucille.Publisher.publish should work for sources"""
-        from canonical.lucille import Publisher
+        """canonical.archivepublisher.Publisher.publish should work for sources"""
+        from canonical.archivepublisher import Publisher
         p = Publisher(cnf, self._libr)
         src = _deepCopy(sourceinput1)
         p.publish( src )
@@ -105,8 +105,8 @@ class TestPublisher(unittest.TestCase):
         os.stat(f)
 
     def testFullPublishBinary(self):
-        """canonical.lucille.Publisher.publish should work for sources"""
-        from canonical.lucille import Publisher
+        """canonical.archivepublisher.Publisher.publish should work for sources"""
+        from canonical.archivepublisher import Publisher
         p = Publisher(cnf, self._libr)
         bin = _deepCopy(binaryinput1)
         p.publish( bin, False )
@@ -114,8 +114,8 @@ class TestPublisher(unittest.TestCase):
         os.stat(f)
 
     def testPublishOverrides(self):
-        """canonical.lucille.Publisher.publishOverrides should work"""
-        from canonical.lucille import Publisher
+        """canonical.archivepublisher.Publisher.publishOverrides should work"""
+        from canonical.archivepublisher import Publisher
         p = Publisher(cnf, self._libr)
         src = _deepCopy(sourceinput2)
         bin = _deepCopy(binaryinput2)
@@ -125,8 +125,8 @@ class TestPublisher(unittest.TestCase):
         os.stat("%s/override.warty.main.src" % self._overdir)
 
     def testPublishFileLists(self):
-        """canonical.lucille.Publisher.publishFileLists should work"""
-        from canonical.lucille import Publisher
+        """canonical.archivepublisher.Publisher.publishFileLists should work"""
+        from canonical.archivepublisher import Publisher
         p = Publisher(cnf, self._libr)
         src = _deepCopy(sourceinput2)
         bin = _deepCopy(binaryinput2)
@@ -135,8 +135,8 @@ class TestPublisher(unittest.TestCase):
         os.stat("%s/warty_main_binary-i386" % self._listdir )
 
     def testGenerateConfig(self):
-        """canonical.lucille.Publisher.generateAptFTPConfig should work"""
-        from canonical.lucille import Publisher
+        """canonical.archivepublisher.Publisher.generateAptFTPConfig should work"""
+        from canonical.archivepublisher import Publisher
         p = Publisher(cnf, self._libr)
         s = p.generateAptFTPConfig()
         # XXX: dsilvers 2004-11-15

@@ -15,8 +15,8 @@ export PYTHONPATH
 check: check-lucile
 
 check-lucile:
-#	${PYTHON} ./test_tagfiles.py
-#	${PYTHON} ./test_signedfiles.py
-#	${PYTHON} ./test_utils.py
+	${PYTHON} ./test_tagfiles.py
+	${PYTHON} ./test_signedfiles.py
+	${PYTHON} ./test_utils.py
 	${PYTHON} ./test_domination.py
 

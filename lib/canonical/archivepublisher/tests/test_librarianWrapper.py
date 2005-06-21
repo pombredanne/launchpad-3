@@ -9,9 +9,9 @@ import os
 import shutil
 import sha
 
-from canonical.lucille.tests.util import FakeDownloadClient, FakeUploadClient
+from canonical.archivepublisher.tests.util import FakeDownloadClient, FakeUploadClient
 
-from canonical.lucille.tests import datadir
+from canonical.archivepublisher.tests import datadir
 
 class TestLibrarianWrapper(unittest.TestCase):
 
@@ -25,20 +25,20 @@ class TestLibrarianWrapper(unittest.TestCase):
         shutil.rmtree(datadir('cache'))
 
     def testImport(self):
-        """canonical.lucille.Librarian should be importable"""
-        from canonical.lucille import Librarian
+        """canonical.archivepublisher.Librarian should be importable"""
+        from canonical.archivepublisher import Librarian
 
     def testInstatiate(self):
-        """canonical.lucille.Librarian should be instantiatable"""
-        from canonical.lucille import Librarian
+        """canonical.archivepublisher.Librarian should be instantiatable"""
+        from canonical.archivepublisher import Librarian
         lib = Librarian('localhost', 9090, 8000, datadir('cache'))
 
     def testUpload(self):
-        """canonical.lucille.Librarian Upload"""
+        """canonical.archivepublisher.Librarian Upload"""
         name = 'ed_0.2-20.dsc'
         path = datadir(name)
 
-        from canonical.lucille import Librarian
+        from canonical.archivepublisher import Librarian
         lib = Librarian('localhost', 9090, 8000, datadir('cache'))
 
         fileobj = open(path, 'rb')
@@ -58,11 +58,11 @@ class TestLibrarianWrapper(unittest.TestCase):
         os.path.exists(cached)
 
     def testDownload(self):
-        """canonical.lucille.Librarian DownloadToDisk process"""
+        """canonical.archivepublisher.Librarian DownloadToDisk process"""
         filealias = '1'
         archive = os.path.join (datadir('archive'), 'test')
 
-        from canonical.lucille import Librarian
+        from canonical.archivepublisher import Librarian
         lib = Librarian('localhost', 9090, 8000, datadir('cache'))
         ## Use Fake Librarian Class 
         downloader = FakeDownloadClient()

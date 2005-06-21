@@ -126,6 +126,10 @@ class ISourcePackageFilePublishing(Interface):
             title=_('Package publishing status'), required=True, readonly=True,
             )
 
+    pocket = Int(
+            title=_('Pocket'), required=True, readonly=True,
+            )
+
 class IBinaryPackageFilePublishing(Interface):
     """Binary package files and their publishing status"""
 
@@ -166,6 +170,10 @@ class IBinaryPackageFilePublishing(Interface):
     architecturetag = TextLine(
             title=_("Architecture tag. As per dpkg's use"), required=True,
             readonly=True,
+            )
+
+    pocket = Int(
+            title=_('Pocket'), required=True, readonly=True,
             )
 
 class ISourcePackagePublishingView(Interface):

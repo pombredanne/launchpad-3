@@ -44,6 +44,7 @@ class Distribution(SQLBase):
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistroBounty')
     bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
+    lucilleconfig = StringCol()
 
     def currentrelease(self):
         # if we have a frozen one, return that
