@@ -100,6 +100,8 @@ o ProductVocabulary - the list of selectable products. Results are
   ordered by displayname.
 
     >>> product_vocabulary = vocabulary_registry.get(None, "Product")
+    >>> product_vocabulary.search(None)
+    []
     >>> gnome_products = product_vocabulary.search("gnome")
     >>> l = [product_term.title for product_term in gnome_products]
     >>> l[:2]
@@ -112,39 +114,61 @@ o ProductVocabulary - the list of selectable products. Results are
     >>> arch.title 
     u'Arch archive mirrors'
 
-o PersonVocabulary - all people and teams. Results are ordered by familyname,
-  givenname, displayname
+o PersonAccountToMergeVocabulary - all people (but no teams). This vocabularay
+  is meant to be used only in the people merge form.
 
-    >>> vocab = vocabulary_registry.get(None, "Person")
-    >>> stuff = vocab.search('team')
-    >>> [t.token for t in stuff]
-    ['support@ubuntu.com']
+    >>> vocab = vocabulary_registry.get(None, "PersonAccountToMerge")
+
+    Searching for None returns an empty list.
+    >>> vocab.search(None)
+    []
+
+    Searching for 'team' will return an empty list, because teams are not part
+    of this vocabulary.
+    >>> vocab.search('team')
+    []
+
+    Searching for a person without a preferred email will return that person's
+    name.
+    >>> [t.token for t in vocab.search('salgado')]
+    ['salgado']
+
+    Searching for a person with a preferred email will return that person's
+    preferred email.
+    >>> [t.token for t in vocab.search('foo')]
+    ['foo.bar@canonical.com']
 
 o ValidPersonOrTeam - all 'valid' persons or teams. This is currently defined
   as people with a password, a preferred email address and not merged
   (Person.merged is None) or any team.
 
     >>> vocab = vocabulary_registry.get(None, "ValidPersonOrTeam")
-    >>> stuff = vocab.search('team')
-    >>> [t.token for t in stuff]
-    ['support@ubuntu.com']
+    >>> vocab.search(None)
+    []
+
+    Almost all teams have the word 'team' as part of their names, so a search
+    for 'team' should give us some of them.
+    >>> [t.token for t in vocab.search('team')]
+    ['name21', 'name18', 'support@ubuntu.com', 'name19', 'name20']
 
     Stuart hasn't validated his email address; he's not a valid Person.
-    >>> stuff = vocab.search('bishop')
-    >>> [t.token for t in stuff]
+    >>> [t.token for t in vocab.search('bishop')]
     []
 
     'foo.bar@canonical.com' is a valid Person.
-    >>> stuff = vocab.search('foo')
-    >>> [t.token for t in stuff]
+    >>> [t.token for t in vocab.search('foo')]
     ['foo.bar@canonical.com']
 
-o ValidOwner - all 'valid' persons or teams in Launchpad.
+o ValidOwner - all valid persons and teams are also valid owners.
 
     >>> vocab = vocabulary_registry.get(None, "ValidOwner")
-    >>> stuff = vocab.search('team')
-    >>> [t.token for t in stuff]
-    ['support@ubuntu.com']
+    >>> vocab.search(None)
+    []
+
+    Almost all teams have the word 'team' as part of their names, so a search
+    for 'team' should give us some of them.
+    >>> [t.token for t in vocab.search('team')]
+    ['name21', 'name18', 'support@ubuntu.com', 'name19', 'name20']
 
 o ValidTeamOwner - With the exception of the team itself and all teams owned
   by that team, all valid persons and teams are valid owners for the team 

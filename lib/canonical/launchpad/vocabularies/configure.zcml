@@ -41,8 +41,8 @@
         />
 
     <vocabulary
-        name="Person"
-        factory="canonical.launchpad.vocabularies.PersonVocabulary"
+        name="PersonAccountToMerge"
+        factory="canonical.launchpad.vocabularies.PersonAccountToMergeVocabulary"
         />
 
     <vocabulary

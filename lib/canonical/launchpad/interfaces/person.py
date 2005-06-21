@@ -603,10 +603,10 @@ class ITeamParticipation(Interface):
 
 
 class IRequestPeopleMerge(Interface):
-    """This schema is used only because we want the PersonVocabulary."""
+    """This schema is used only because we want a very specific vocabulary."""
 
     dupeaccount = Choice(title=_('Duplicated Account'), required=True,
-                         vocabulary='Person',
+                         vocabulary='PersonAccountToMerge',
                          description=_("The duplicated account you found in "
                                        "Launchpad"))
 
