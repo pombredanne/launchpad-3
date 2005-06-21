@@ -9,7 +9,7 @@ from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.scripts.po_export_queue import process_queue
 
 def main(args):
-    lockfile = LockFile('/var/lock/launchpad-poimport.lock')
+    lockfile = LockFile('/var/lock/rosetta-export-queue.lock')
 
     try:
         lockfile.acquire()
