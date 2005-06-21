@@ -181,9 +181,11 @@ class GpgHandler(object):
         # read and store html page
         try:
             f = urllib2.urlopen(url)
-        except urllib2.URLError, x:
-            return False, str(x.reason[1]) 
-        
+        except urllib2.URLError, e:
+            return False, 'URLError: %s at %s' % (e.reason, url) 
+        except urllib2.HTTPError, e:
+            return False, 'HTTPError: %s at %s' % (e.msg, url)
+            
         page = f.read()
         f.close()
 
