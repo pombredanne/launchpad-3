@@ -56,6 +56,8 @@ class DistroRelease(SQLBase):
     lucilleconfig = StringCol(notNull=False)
     architectures = MultipleJoin(
         'DistroArchRelease', joinColumn='distrorelease')
+    datelastlangpack = UtcDateTimeCol(dbName='datelastlangpack', notNull=False,
+                                   default=None)
 
     @property
     def parent(self):

@@ -20,6 +20,14 @@ To retrieve a specific Bug, use IBugSet.get:
     >>> print firefox_crashes.title
     Firefox crashes when Save As dialog for a nonexistent window is closed
 
+If the bug can't be found, a zope.exceptions.NotFoundError will be
+raised:
+
+    >>> bugset.get(123456)
+    Traceback (most recent call last):
+      ...
+    NotFoundError: 'Unable to locate bug with ID 123456'
+
 Searching for Bugs
 ------------------
 

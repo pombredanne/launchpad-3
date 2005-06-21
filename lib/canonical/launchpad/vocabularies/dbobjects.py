@@ -20,7 +20,7 @@ from canonical.lp.dbschema import EmailAddressStatus
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.database import (
     Distribution, DistroRelease, Person, GPGKey, SourcePackage,
-    SourcePackageRelease, SourcePackageName, BinaryPackage,
+    SourcePackageRelease, SourcePackageName, BinaryPackage, BugWatch,
     BinaryPackageName, BugTracker, Language, Milestone, Product,
     Project, ProductRelease, ProductSeries, TranslationGroup, BugTracker,
     POTemplateName, EmailAddress)
@@ -545,6 +545,17 @@ class MilestoneVocabulary(NamedSQLObjectVocabulary):
         if product is not None:
             for ms in product.milestones:
                 yield SimpleTerm(ms, ms.name, ms.name)
+
+class BugWatchVocabulary(SQLObjectVocabularyBase):
+    _table = BugWatch
+
+    def __iter__(self):
+        bug = getUtility(ILaunchBag).bug
+        if bug is None:
+            raise ValueError, 'Unknown bug context for Watch list.'
+
+        for watch in bug.watches:
+            yield self._toTerm(watch)
 
 class PackageReleaseVocabulary(SQLObjectVocabularyBase):
     _table = SourcePackageRelease

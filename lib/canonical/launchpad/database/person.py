@@ -918,7 +918,7 @@ class EmailAddressSet:
             return default
 
     def new(self, email, status, personID):
-        email = email.strip().lower()
+        email = email.strip()
         assert status in EmailAddressStatus.items
         return EmailAddress(email=email, status=status, person=personID)
 

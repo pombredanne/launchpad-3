@@ -301,7 +301,10 @@ class POTemplateExport:
                 self.value = value
                 self.browsername = browsername
 
-        for pofile in self.context.pofiles:
+        def pofile_sort_key(pofile):
+            return pofile.language.englishname
+
+        for pofile in sorted(self.context.pofiles, key=pofile_sort_key):
             if pofile.variant:
                 variant = pofile.variant.encode('UTF-8')
                 value = '%s@%s' % (pofile.language.code, variant)

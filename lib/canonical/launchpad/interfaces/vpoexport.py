@@ -8,6 +8,24 @@ __all__ = ('IVPOExportSet', 'IVPOExport')
 
 from zope.interface import Interface, Attribute
 
+class IVPOExportSet(Interface):
+    """A collection of IVPOExport-providing rows."""
+
+    def get_pofile_rows(potemplate, language, variant=None):
+        """Return all rows which belong to a particular PO file."""
+
+    def get_potemplate_rows(potemplate):
+        """Return all rows which belong to a particular PO template."""
+
+    def get_distrorelease_pofiles(release, date=None):
+        """Get a list of PO files which would be contained in an export of a
+        distribtuion release.
+        """
+
+    def get_distrorelease_rows(release, date=None):
+        """Return all rows which belong to a particular distribution
+        release.
+        """
 
 class IVPOExport(Interface):
     """Database view for efficient PO exports."""
@@ -52,20 +70,5 @@ class IVPOExport(Interface):
     msgid = Attribute("See IPOMsgID.pomsgid")
 
     translation = Attribute("See IPOTranslation.translation")
-
-
-class IVPOExportSet(Interface):
-    """A collection of IVPOExport-providing rows."""
-
-    def get_pofile_rows(potemplate, language, variant=None):
-        """Return all rows which belong to a particular PO file."""
-
-    def get_potemplate_rows(potemplate):
-        """Return all rows which belong to a particular PO template."""
-
-    def get_distrorelease_rows(potemplate):
-        """Return all rows which belong to a particular distribution
-        release.
-        """
 
 

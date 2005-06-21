@@ -44,13 +44,14 @@ class ContextToBugTaskSubsetAdapter:
 
     def search(self, bug=None, searchtext=None, status=None, priority=None,
                severity=None, milestone=None, assignee=None, submitter=None,
-               orderby=None):
+               orderby=None, statusexplanation=None):
         """See canonical.launchpad.interfaces.IBugTaskSubset."""
         context_filter_param = self._get_context_search_param()
         return getUtility(IBugTaskSet).search(
             bug=bug, searchtext=searchtext, status=status, priority=priority,
             severity=severity, milestone=milestone, assignee=assignee,
-            submitter=submitter, orderby=orderby, **context_filter_param)
+            submitter=submitter, orderby=orderby,
+            statusexplanation=statusexplanation, **context_filter_param)
 
     def _get_context_search_param(self):
         """Return a query param to filter the IBugTasks for this context.

@@ -8,8 +8,9 @@
     <content class="canonical.launchpad.database.DistroRelease">
         <allow interface="canonical.launchpad.interfaces.IDistroRelease"/>
         <require
-            permission="launchpad.Admin"
-            set_attributes="displayname title summary description version"
+            permission="launchpad.Edit"
+            set_attributes="displayname title summary description version
+                            owner datelastlangpack"
             />
     </content>
 
@@ -49,7 +50,7 @@
 
     <browser:editform
         for="canonical.launchpad.interfaces.IDistroRelease"
-        permission="launchpad.Admin"
+        permission="launchpad.Edit"
         name="+edit"
         schema="canonical.launchpad.interfaces.IDistroRelease"
         fields="displayname title summary description version"
@@ -71,6 +72,16 @@
             template="../templates/object-pots.pt"
 	        lp:url="/distros/ubuntu/hoary/+potlist"
 	        />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IDistroRelease"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.ObjectReassignmentView">
+          <browser:page
+              name="+reassign"
+              template="../templates/object-reassignment.pt"
+              lp:url="/distros/$distro.id/$release.id/+reassign" />
     </browser:pages>
 
 	<browser:page

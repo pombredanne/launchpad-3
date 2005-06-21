@@ -59,7 +59,7 @@ class IDistribution(IHasOwner):
     members = Choice(
         title=_("Members"),
         description=_("The distro's members team."), required=True,
-        vocabulary='Person')
+        vocabulary='ValidPersonOrTeam')
     releases = Attribute("DistroReleases inside this Distributions")
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugtasks = Attribute("The bug tasks filed in this distro.")

@@ -26,7 +26,7 @@ from canonical.launchpad.interfaces import ILaunchpadCelebrities
 
 from canonical.config import config
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.helpers import well_formed_email
+from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
@@ -77,7 +77,7 @@ class TeamEmailView:
         if request.form.get('ADD_EMAIL') or request.form.get('CHANGE_EMAIL'):
             emailaddress = request.form.get('newcontactemail', "")
             emailaddress = emailaddress.lower().strip()
-            if not well_formed_email(emailaddress):
+            if not valid_email(emailaddress):
                 self.errormessage = (
                     "The email address you're trying to add doesn't seem to "
                     "be valid. Please make sure it's correct and try again.")

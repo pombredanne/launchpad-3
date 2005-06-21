@@ -101,15 +101,12 @@
             <td tal:content="context/karma"></td>
           </tr>
 
-          <!-- 
           <tr>
-            <td>GPG:</td>
+            <td>GPG Keys:</td>
             <td>
-              <a href="+gpgkey"><span tal:replace="view/gpgkeysCount">0</span> GPG key(s)</a>
-              <a href="+editgpgkey">(Handle GPGs)</a>
+              <span tal:replace="view/gpgkeysCount">0</span> GPG key(s)
             </td>
           </tr>
-          -->
 
           <tr tal:condition="context/sshkeys">
             <td>SSH Keys:</td>
@@ -117,13 +114,6 @@
               <a href="+sshkey"><span tal:replace="view/sshkeysCount">0</span> SSH key(s)</a>
             </td>
           </tr>
-
-          <!--
-          <tr>
-            <td>Signed Codes of Conduct:</td>
-            <td><a href="+codesofconduct">Handle CoCs</a></td>
-          </tr>
-          -->
 
         </table>
 

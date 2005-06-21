@@ -11,15 +11,6 @@ All the setup stuff:
     >>> LaunchpadFunctionalTestSetup().setUp()
     >>> LibrarianTestSetup().setUp()
 
-This adapter should work automatically, since it's declared in ZCML. However,
-it's not working, so we set it up manually.
-
-    >>> from zope.app.tests.ztapi import provideAdapter
-    >>> from canonical.launchpad.components.poexport import POTemplateExporter
-    >>> from canonical.launchpad.interfaces import IPOTemplateExporter
-    >>> from canonical.launchpad.interfaces import IPOTemplate
-    >>> provideAdapter(IPOTemplate, IPOTemplateExporter, POTemplateExporter)
-
 Get hold of a PO file which has never been exported.
 
     >>> from canonical.launchpad.database import POFile

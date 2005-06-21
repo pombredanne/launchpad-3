@@ -123,9 +123,8 @@ EVENT: bug gets assigned to a source package
 EVENT: source package assignment edited
 
   >>> from canonical.lp.dbschema import BugTaskStatus
-  >>> edit_fields = [
-  ...     "distribution", "sourcepackagename", "binarypackagename",
-  ...     "status", "priority", "severity", "assignee"]
+  >>> from canonical.launchpad.interfaces import IBugTask
+  >>> edit_fields = IBugTask.names(all=True)
   >>> old_source_package_assignment = capture_state(
   ...     source_package_assignment, *edit_fields)
   >>> directlyProvides(old_source_package_assignment, IDistroBugTask)
@@ -154,8 +153,7 @@ EVENT: bug gets assigned to an upstream product
 
 EVENT: upstream product assignment edited
 
-  >>> edit_fields = [
-  ...     "product", "status", "priority", "severity", "milestone", "assignee"]
+  >>> edit_fields = IBugTask.names(all=True)
   >>> old_product_assignment = capture_state(product_assignment, *edit_fields)
   >>> directlyProvides(old_product_assignment, IUpstreamBugTask)
   >>> product_assignment.status = BugTaskStatus.REJECTED

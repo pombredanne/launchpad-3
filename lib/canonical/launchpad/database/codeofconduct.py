@@ -26,7 +26,7 @@ from canonical.launchpad.interfaces import ISignedCodeOfConduct
 from canonical.launchpad.interfaces import ISignedCodeOfConductSet, IGpgHandler
 from canonical.launchpad.interfaces import IPersonSet
 from canonical.launchpad.interfaces import IGPGKeySet
-from canonical.launchpad.interfaces import IGpgHandler, IPymeSignature
+from canonical.launchpad.interfaces import IGpgHandler
 
 # Python
 import os
@@ -221,7 +221,8 @@ class SignedCodeOfConductSet:
 
         # use a utility to perform the GPG operations
         gpghandler = getUtility(IGpgHandler)
-        sig = IPymeSignature(gpghandler.verifySignature(signedcode))
+
+        sig = gpghandler.verifySignature(signedcode)
 
         if not sig.fingerprint:
             return 'Failed to verify the signature'

@@ -6,7 +6,7 @@ __all__ = ['BugTask', 'BugTaskSet', 'BugTaskDelta', 'mark_task',
 
 from sets import Set
 
-from sqlobject import ForeignKey
+from sqlobject import ForeignKey, StringCol
 from sqlobject import SQLObjectNotFound
 
 from zope.exceptions import NotFoundError
@@ -56,6 +56,7 @@ class BugTask(SQLBase):
         dbName='status', notNull=True,
         schema=dbschema.BugTaskStatus,
         default=dbschema.BugTaskStatus.NEW)
+    statusexplanation = StringCol(dbName='statusexplanation', default=None)
     priority = EnumCol(
         dbName='priority', notNull=True,
         schema=dbschema.BugPriority,
@@ -70,11 +71,14 @@ class BugTask(SQLBase):
     assignee = ForeignKey(
         dbName='assignee', foreignKey='Person',
         notNull=False, default=None)
+    bugwatch = ForeignKey(dbName='bugwatch', foreignKey='BugWatch',
+        notNull=False, default=None)
     dateassigned = UtcDateTimeCol(notNull=False, default=nowUTC)
     datecreated  = UtcDateTimeCol(notNull=False, default=nowUTC)
     owner = ForeignKey(
         foreignKey='Person', dbName='owner', notNull=False, default=None)
 
+    @property
     def maintainer(self):
         if self.product:
             return self.product.owner
@@ -85,15 +89,15 @@ class BugTask(SQLBase):
             if maintainership is not None:
                 return maintainership.maintainer
         return None
-    maintainer = property(maintainer)
 
+    @property
     def maintainer_displayname(self):
         if self.maintainer:
             return self.maintainer.displayname
         else:
             return None
-    maintainer_displayname = property(maintainer_displayname)
 
+    @property
     def contextname(self):
         """See canonical.launchpad.interfaces.IBugTask.
 
@@ -132,15 +136,15 @@ class BugTask(SQLBase):
             return self.product.displayname
         else:
             raise AssertionError
-    contextname = property(contextname)
 
+    @property
     def title(self):
         """Generate the title for this bugtask based on the id of the bug
         and the bugtask's contextname.  See IBugTask.
         """
-        title = 'Bug #%s in %s' % (self.bug.id, self.contextname)
+        title = 'Bug #%s in %s: "%s"' % (
+            self.bug.id, self.contextname, self.bug.title)
         return title
-    title = property(title)
 
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""
@@ -202,7 +206,7 @@ class BugTaskSet:
     def search(self, bug=None, searchtext=None, status=None, priority=None,
                severity=None, product=None, distribution=None,
                distrorelease=None, milestone=None, assignee=None,
-               submitter=None, orderby=None):
+               submitter=None, statusexplanation=None, orderby=None):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
         def build_where_condition_fragment(arg_name, arg_val, cb_arg_id):
             fragment = ""
@@ -247,7 +251,14 @@ class BugTaskSet:
         if searchtext:
             if query:
                 query += " AND "
-            query += "Bug.fti @@ ftq(%s)" % quote(searchtext)
+            query += (
+                "(Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s))" % sqlvalues(
+                    searchtext, searchtext))
+
+        if statusexplanation:
+            if query:
+                query += " AND "
+            query += "BugTask.fti @@ ftq(%s)" % sqlvalues(statusexplanation)
 
         user = getUtility(ILaunchBag).user
 
@@ -258,22 +269,28 @@ class BugTaskSet:
             query += "("
         query += "(BugTask.bug = Bug.id AND Bug.private = FALSE)"
 
-        # XXX: Brad Bollenbach, 2005-02-03: The subselect here is due to what
-        # appears to be a bug in sqlobject not taking distinct into
-        # consideration when doing counts.
         if user:
+            # This part of the query includes private bugs that the
+            # user has permission to access.
+            #
+            # A subselect is used here, because joining through
+            # TeamParticipation is only relevant to the "user-aware"
+            # part of the WHERE condition (i.e. the bit below.) The
+            # other half of this condition (see code above) does not
+            # use TeamParticipation at all.
             query += ("""
                 OR ((BugTask.bug = Bug.id AND Bug.private = TRUE) AND
                     (Bug.id in (
-                        SELECT Bug.id FROM Bug, BugSubscription WHERE
-                           (Bug.id = BugSubscription.bug) AND
-                           (BugSubscription.person = %(personid)s) AND
-                           (BugSubscription.subscription IN
-                               (%(cc)s, %(watch)s))))))""" %
+                        SELECT Bug.id
+                        FROM Bug, BugSubscription, TeamParticipation
+                        WHERE (Bug.id = BugSubscription.bug) AND
+                              (BugSubscription.person = TeamParticipation.team) AND
+                              (TeamParticipation.person = %(personid)s) AND
+                              (BugSubscription.subscription IN
+                                  (%(cc)s, %(watch)s))))))""" %
                 sqlvalues(personid=user.id,
                           cc=dbschema.BugSubscription.CC,
-                          watch=dbschema.BugSubscription.WATCH)
-                )
+                          watch=dbschema.BugSubscription.WATCH))
 
         bugtasks = BugTask.select(query, clauseTables=["Bug", "BugTask"])
         if orderby:
@@ -381,7 +398,8 @@ class BugTaskDelta:
     implements(IBugTaskDelta)
     def __init__(self, bugtask, product=None, sourcepackagename=None,
                  binarypackagename=None, status=None, severity=None,
-                 priority=None, assignee=None, milestone=None):
+                 priority=None, assignee=None, milestone=None,
+                 statusexplanation=None):
         self.bugtask = bugtask
         self.product = product
         self.sourcepackagename = sourcepackagename
@@ -391,6 +409,7 @@ class BugTaskDelta:
         self.priority = priority
         self.assignee = assignee
         self.target = milestone
+        self.statusexplanation = statusexplanation
 
 def mark_task(obj, iface):
     directlyProvides(obj, iface + directlyProvidedBy(obj))

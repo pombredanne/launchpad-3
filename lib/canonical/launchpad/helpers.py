@@ -34,7 +34,7 @@ from canonical.librarian.interfaces import (
 from canonical.launchpad.interfaces import (
     ILaunchBag, IOpenLaunchBag, IHasOwner, IGeoIP, IRequestPreferredLanguages,
     ILanguageSet, IRequestLocalLanguages, RawFileAttachFailed, ITeam,
-    RawFileFetchFailed,
+    RawFileFetchFailed, ILoginTokenSet
     )
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POInvalidInputError, POParser
@@ -45,6 +45,50 @@ from canonical.launchpad.mail.ftests import testmails_path
 
 # This import forms part of this module's API.
 from canonical.launchpad.webapp.publisher import canonical_url
+
+from canonical.launchpad.validators.gpg import valid_fingerprint
+
+
+def text_replaced(text, replacements, _cache={}):
+    """Return a new string with text replaced according to the dict provided.
+
+    The keys of the dict are substrings to find, the values are what to replace
+    found substrings with.
+
+    >>> text_replaced('', {'a':'b'})
+    ''
+    >>> text_replaced('a', {'a':'c'})
+    'c'
+    >>> text_replaced('faa bar baz', {'a': 'A', 'aa': 'X'})
+    'fX bAr bAz'
+    >>> text_replaced('1 2 3 4', {'1': '2', '2': '1'})
+    '2 1 3 4'
+
+    The argument _cache is used as a cache of replacements that were requested
+    before, so we only compute regular expressions once.
+
+    """
+    assert replacements, "The replacements dict must not be empty."
+    # The ordering of keys and values in the tuple will be consistent within a
+    # single Python process.
+    cachekey = tuple(replacements.items())
+    if cachekey not in _cache:
+        L = []
+        for find, replace in sorted(replacements.items(),
+                                    key=lambda (key, value): len(key),
+                                    reverse=True):
+            L.append('(%s)' % re.escape(find))
+        # Make a copy of the replacements dict, as it is mutable, but we're
+        # keeping a cached reference to it.
+        replacements_copy = dict(replacements)
+        def matchobj_replacer(matchobj):
+            return replacements_copy[matchobj.group()]
+        regexsub = re.compile('|'.join(L)).sub
+        def replacer(s):
+            return regexsub(matchobj_replacer, s)
+        _cache[cachekey] = replacer
+
+    return _cache[cachekey](text)
 
 CHARACTERS_PER_LINE = 50
 
@@ -113,7 +157,6 @@ def get_attribute_names(ob):
         names.update(iface.names(all=True))
     return list(names)
 
-
 def is_maintainer(owned_object):
     """Is the logged in user the maintainer of this thing?
 
@@ -145,10 +188,12 @@ def tar_add_file(tf, path, contents):
             tarinfo = tarfile.TarInfo(joined_path)
             tarinfo.type = tarfile.DIRTYPE
             tarinfo.mtime = now
+            tarinfo.mode = 0755
             tf.addfile(tarinfo)
 
     tarinfo = tarfile.TarInfo(path)
-    tarinfo.time = now
+    tarinfo.mtime = now
+    tarinfo.mode = 0644
     tarinfo.size = len(contents)
     tf.addfile(tarinfo, StringIO(contents))
 
@@ -322,14 +367,8 @@ def getValidNameFromString(invalid_name):
     To know more about all restrictions, please, look at valid_name function
     in the database.
     """
-    # All chars should be lower case.
-    name = invalid_name.lower()
-    # Underscore is not a valid char.
-    name = name.replace('_', '-')
-    # Spaces is not a valid char for a name.
-    name = name.replace(' ', '-')
-
-    return name
+    # All chars should be lower case, underscores and spaces become dashes.
+    return text_replaced(invalid_name.lower(), {'_': '-', ' ':'-'})
 
 def requestCountry(request):
     """Return the Country object from where the request was done.
@@ -428,41 +467,17 @@ def contactEmailAddresses(person):
 
     return emails
 
-# Note that this appears as "valid email" in the UI, because that term is
-# more familiar to users, even if it is less correct.
-well_formed_email_re = re.compile(
-    r"^[_\.0-9a-z-+]+@([0-9a-z-]{1,}\.)*[a-z]{2,}$")
-
-def well_formed_email(emailaddr):
-    """Returns True if emailaddr is well-formed, otherwise returns False.
-
-    >>> well_formed_email('foo.bar@baz.museum')
-    True
-    >>> well_formed_email('mark@hbd.com')
-    True
-    >>> well_formed_email('art@cat-flap.com')
-    True
-    >>> well_formed_email('a@b.b.tw')
-    True
-    >>> well_formed_email('a@b.b.b.b.tw')
-    True
-    >>> well_formed_email('i@tm')
-    True
-    >>> well_formed_email('')
-    False
-    >>> well_formed_email('a@b')
-    False
-    >>> well_formed_email('a@foo.b')
-    False
-
-    """
-    return bool(well_formed_email_re.match(emailaddr))
-
-replacements = {0: {'\.': ' |dot| ', '@': ' |at| '},
-                1: {'\.': ' ! '    , '@': ' {} '  },
-                2: {'\.': ' , '    , '@': ' % '   },
-                3: {'\.': ' (!) '  , '@': ' (at) '},
-                4: {'\.': ' {dot} ', '@': ' {at} '}}
+replacements = {0: {'.': ' |dot| ',
+                    '@': ' |at| '},
+                1: {'.': ' ! ',
+                    '@': ' {} '},
+                2: {'.': ' , ',
+                    '@': ' % '},
+                3: {'.': ' (!) ',
+                    '@': ' (at) '},
+                4: {'.': ' {dot} ',
+                    '@': ' {at} '}
+                }
 
 def obfuscateEmail(emailaddr, idx=None):
     """Return an obfuscated version of the provided email address.
@@ -477,12 +492,8 @@ def obfuscateEmail(emailaddr, idx=None):
     'foo ! bar {} xyz ! com ! br'
     """
     if idx is None:
-        idx = random.randint(0, len(replacements.keys()) - 1)
-
-    for original, replacement in replacements[idx].items():
-        emailaddr = re.sub(r'%s' % original, r'%s' % replacement, emailaddr)
-
-    return emailaddr
+        idx = random.randint(0, len(replacements) - 1)
+    return text_replaced(emailaddr, replacements[idx])
 
 def convertToHtmlCode(text):
     """Return the given text converted to HTML codes, like &#103;.
@@ -670,7 +681,7 @@ def parse_cformat_string(string):
 
     return segments
 
-def normalize_newlines(s):
+def normalize_newlines(text):
     r"""Convert newlines to Unix form.
 
     >>> normalize_newlines('foo')
@@ -684,24 +695,7 @@ def normalize_newlines(s):
     >>> normalize_newlines('foo\r\nbar\r\n\r\nbaz')
     'foo\nbar\n\nbaz'
     """
-    return s.replace('\r\n', '\n').replace('\r', '\n')
-
-def regex_escape(*substitutions):
-    """Helper for string substitution when making regular expressions."""
-    return tuple([re.escape(string) for string in substitutions])
-
-def _tab_contraction_replacer(matchobj):
-    """Function called by contract_rosetta_tabs when substituting in
-    _tab_contraction_re."""
-    tab_in_brackets, escaped_tab_in_brackets = matchobj.groups()
-    if tab_in_brackets:
-        return '\t'
-    else:
-        assert escaped_tab_in_brackets
-        return '[tab]'
-
-_tab_contraction_re = re.compile(
-    '(%s)|(%s)' % regex_escape('[tab]', r'\[tab]'))
+    return text_replaced(text, {'\r\n': '\n', '\r': '\n'})
 
 def contract_rosetta_tabs(text):
     r"""Replace Rosetta representation of tab characters with their native form.
@@ -733,21 +727,7 @@ def contract_rosetta_tabs(text):
     >>> contract_rosetta_tabs('foo\\\\\\[tab]bar')
     'foo\\\\[tab]bar'
     """
-
-    return _tab_contraction_re.sub(_tab_contraction_replacer, text)
-
-def _tab_expansion_replacer(matchobj):
-    """Function called by expand_rosetta_tabs when substituting in
-    _tab_expansion_re."""
-    tab_literal, tab_in_brackets = matchobj.groups()
-    if tab_literal:
-        return '[tab]'
-    else:
-        assert tab_in_brackets
-        return '\[tab]'
-
-_tab_expansion_re = re.compile(
-    '(%s)|(%s)' % regex_escape('\t', '[tab]'))
+    return text_replaced(text, {'[tab]': '\t', r'\[tab]': '[tab]'})
 
 def expand_rosetta_tabs(text):
     r"""Replace tabs with their Rosetta representation.
@@ -779,8 +759,7 @@ def expand_rosetta_tabs(text):
     >>> expand_rosetta_tabs('foo\\\\[tab]bar')
     'foo\\\\\\[tab]bar'
     """
-
-    return _tab_expansion_re.sub(_tab_expansion_replacer, text)
+    return text_replaced(text, {'\t': '[tab]', '[tab]': r'\[tab]'})
 
 def parse_translation_form(form):
     """Parse a form submitted to the translation widget.
@@ -1101,8 +1080,6 @@ def test_diff(lines_a, lines_b):
         lineterm='',
         )))
 
-fingerprint_re = re.compile(r"^[\dABCDEF]{40}$")
-
 def sanitiseFingerprint(fpr):
     """Returns sanitised fingerprint if fpr is well-formed,
     otherwise returns False.
@@ -1119,7 +1096,7 @@ def sanitiseFingerprint(fpr):
     # replace the white spaces
     fpr = fpr.replace(' ', '')
 
-    if not fingerprint_re.match(fpr):
+    if not valid_fingerprint(fpr):
         return False
     
     return fpr
@@ -1162,6 +1139,7 @@ def read_test_message(filename):
     """
     return email.message_from_file(
         open(testmails_path + filename), _class=SignedMessage)
+
 
 def filenameToContentType(fname):
     """ Return the a ContentType-like entry for arbitrary filenames 

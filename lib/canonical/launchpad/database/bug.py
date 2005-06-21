@@ -256,7 +256,11 @@ class BugSet(BugSetBase):
 
     def get(self, bugid):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
-        return Bug.get(bugid)
+        try:
+            return Bug.get(bugid)
+        except SQLObjectNotFound:
+            raise NotFoundError(
+                "Unable to locate bug with ID %s" % str(bugid))
 
     def search(self, duplicateof=None):
         """See canonical.launchpad.interfaces.bug.IBugSet."""

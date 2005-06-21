@@ -17,13 +17,12 @@
   </metal:rightportlets>
 
     <div metal:fill-slot="main">
-      <p
-        tal:condition="context/bug/duplicateof"
-        class="portalMessage">
+      <p tal:condition="context/bug/duplicateof"
+         class="portalMessage">
         This bug is a duplicate of
         <a href="#"
-            tal:attributes="href context/bug/duplicateof/@@absolute_url"
-            tal:content="context/bug/duplicateof/id">42</a>
+           tal:attributes="href context/bug/duplicateof/@@absolute_url"
+           tal:content="context/bug/duplicateof/id">42</a>
       </p>
 
       <div metal:define-macro="editform">
@@ -49,57 +48,47 @@
                i18n:translate="">
               There are <strong
               tal:content="view/errors/count:len"
-              i18n:name="num_errors">6</strong> input errors.
+              i18n:name="num_errors">6</strong> input errors in the form
+              below. Please correct them and resubmit the form.
             </p>
           </div>
 
-          <div class="field">
-            <label>Title</label>
-            <br />
-            <tal:block content="context/bug/title" />
-            [<a href="#"
-                tal:attributes="href string:${context/bug/@@absolute_url}/+edit">Edit</a>]
-          </div>
-
-          <div class="field" tal:condition="context/bug/summary|nothing">
-            <label>Summary</label>
-            <br />
-            <tal:block content="context/bug/summary" />
-            [<a href="#"
-                tal:attributes="href string:${context/bug/@@absolute_url}/+edit">Edit</a>]
-          </div>
+          <p tal:condition="context/bug/summary"
+             tal:content="context/bug/summary">
+             Bug summary goes here if it exists.
+          </p>
+          
+          <h2>
+            Status of Bug #<span tal:replace="context/bug/id">132</span> in
+            <span tal:replace="context/contextname">some distro
+            package/product</span>
+          </h2>
 
           <div class="field">
             <table style="width: 20%">
             <tr>
               <td>
-                <label for="status"
+                <label tal:attributes="for view/status_widget/name"
                        tal:content="view/status_widget/label">
                   Status
                 </label>
               </td>
               <td>
-                <label for="severity"
+                <label tal:attributes="for view/severity_widget/name"
                        tal:content="view/severity_widget/label">
                   Severity
                 </label>
               </td>
               <td>
-                <label for="priority"
+                <label tal:attributes="for view/priority_widget/name"
                        tal:content="view/priority_widget/label">
                   Priority
                 </label>
               </td>
               <td tal:condition="context/product">
-                <label for="target"
+                <label tal:attributes="for view/milestone_widget/name"
                        tal:content="view/milestone_widget/label">
                   Target
-                </label>
-              </td>
-              <td>
-                <label for="assignee"
-                       tal:content="view/assignee_widget/label">
-                  Assignee
                 </label>
               </td>
             </tr>
@@ -109,11 +98,10 @@
               <td tal:content="structure view/priority_widget" />
               <td tal:condition="context/product"
                   tal:content="structure view/milestone_widget" />
-              <td nowrap tal:content="structure view/assignee_widget" />
             </tr>
             <tr tal:condition="python:context.distribution or context.distrorelease">
               <td colspan="0">
-                <label for="sourcepackagename"
+                <label tal:attributes="for view/sourcepackagename_widget/name"
                        tal:content="view/sourcepackagename_widget/label">
                   Status
                 </label>
@@ -123,25 +111,44 @@
               <td colspan="0"
                   tal:content="structure view/sourcepackagename_widget" nowrap />
             </tr>
+            <tr>
+              <td colspan="2">
+                <label tal:attributes="for view/assignee_widget/name"
+                       tal:content="view/assignee_widget/label">
+                  Assignee
+                </label>
+              </td>
+              <td colspan="2">
+                <label tal:attributes="for view/bugwatch_widget/name"
+                       tal:content="view/bugwatch_widget/label">
+                  Remote Watch
+                </label>
+              </td>
+            </tr>
+            <tr>
+              <td nowrap tal:content="structure view/assignee_widget"
+                  colspan="2" />
+              <td nowrap tal:content="structure view/bugwatch_widget"
+                  colspan="2" />
+            </tr>
             </table>
           </div>
 
-          <!-- XXX: Brad Bollenbach, 2005-06-03: Finish implementing this when
-          Bjorn lands the status whiteboard patch.
           <div class="field">
-            <label for="whiteboard"
-                   tal:content="view/whiteboard_widget/label" />
-            <tal:block replace="structure view/whiteboard_widget" />
+            <div>
+              <label tal:attributes="for view/statusexplanation_widget/name"
+                     tal:content="view/statusexplanation_widget/label" />
+            </div>
+            <div>
+              <tal:block replace="structure view/statusexplanation_widget" />
+            </div>
           </div>
-          -->
 
-          <div class="field">
-            <label>Description</label>
-            <br />
-            <tal:block replace="structure view/bugdescription_quoted" />
-            [<a href="#"
-                tal:attributes="href string:${context/bug/@@absolute_url}/+edit">Edit</a>]
-          </div>
+          <p class="boardCommentContent" 
+             tal:content="structure context/bug/description/fmt:nice_pre">
+             $Bug.description
+          </p>
+
 
           <div class="actions" tal:condition="context/required:launchpad.Edit">
             <input

@@ -27,7 +27,7 @@ check_merge: build importdcheck
 	# database.
 	env PYTHONPATH=$(PYTHONPATH) \
 	    ${PYTHON} -t ./test_on_merge.py -vv \
-		--dir hct --dir sourcerer --dir banzai
+		--dir hct --dir sourcerer
 	    $(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION}
 
@@ -94,6 +94,32 @@ ftest_inplace: inplace
 run: inplace
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
 		 $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE)
+
+LAUNCHPAD_PID=launchpad.pid
+LIBRARIAN_PID=librarian.pid
+
+# Run as a daemon - hack using nohup until we move back to using zdaemon
+# properly
+start: inplace
+	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
+		 nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
+		 > nohup.out 2>&1 &
+	ln -sf `LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
+		 $(PYTHON) -c 'from canonical.config import config; \
+		    print config.librarian.server.root'`/librarian.pid \
+		    ${LIBRARIAN_PID}
+
+# Stop the daemon
+stop:
+	@ if [ -r ${LAUNCHPAD_PID} ]; then \
+		echo Killing Launchpad \(`cat ${LAUNCHPAD_PID}`\); \
+		kill `cat ${LAUNCHPAD_PID}` | true; \
+	fi
+	@ if [ -r ${LIBRARIAN_PID} ]; then \
+		echo Killing Librarian \(`cat ${LIBRARIAN_PID}`\); \
+		kill `cat ${LIBRARIAN_PID}` | true; \
+	fi
+	@rm -f ${LAUNCHPAD_PID} ${LIBRARIAN_PID}
 
 debug:
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \

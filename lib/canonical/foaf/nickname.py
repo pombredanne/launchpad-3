@@ -1,6 +1,6 @@
 
 import re
-from canonical.launchpad.helpers import well_formed_email
+from canonical.launchpad.validators.email import valid_email
 
 MIN_NICK_LENGTH = 2
 name_sanity_pattern = re.compile(r"^[^a-z0-9]|[^a-z0-9\\+\\.\\-]+")
@@ -31,7 +31,7 @@ def generate_nick(email_addr, registered=_nick_registered,
     """
     email_addr = email_addr.strip().lower()
 
-    if not well_formed_email(email_addr):
+    if not valid_email(email_addr):
         raise NicknameGenerationError("%s is not a valid email address" 
                                       % email_addr)
 

@@ -22,7 +22,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 # canonical imports
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (IPOFileSet, IEditPOFile,
-    IPersonSet, IRawFileData, ITeam, IPOTemplateExporter)
+    IPersonSet, IRawFileData, ITeam, IPOTemplateExporter,
+    ZeroLengthPOExportError)
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.pofile_adapters import POFileImporter
 from canonical.launchpad.components.poparser import POParser, POHeader
@@ -263,7 +264,7 @@ class POFile(SQLBase, RosettaStats):
             for potmsgset in results[slice]:
                 yield potmsgset
 
-    def getPOTMsgSetUnTranslated(self, slice=None):
+    def getPOTMsgSetUntranslated(self, slice=None):
         """See IPOFile."""
         # A POT set is not translated if the PO message set have
         # POMsgSet.iscomplete = FALSE or we don't have such POMsgSet or
@@ -273,20 +274,17 @@ class POFile(SQLBase, RosettaStats):
         potmsgids = self._connection.queryAll('''
             SELECT POTMsgSet.id, POTMsgSet.sequence
             FROM POTMsgSet
-            JOIN POTemplate ON POTemplate.id = POTMsgSet.potemplate
-            JOIN POFile ON POTemplate.id = POFile.potemplate
-            LEFT OUTER JOIN POMsgSet ON POTMsgSet.id = POMsgSet.potmsgset
+            LEFT OUTER JOIN POMsgSet ON
+                POTMsgSet.id = POMsgSet.potmsgset AND
+                POMsgSet.pofile = %s
             WHERE
-                (POMsgSet.id IS NULL OR
-                 POMsgSet.pofile=POFile.id) AND
                 (POMsgSet.isfuzzy = TRUE OR
                  POMsgSet.iscomplete = FALSE OR
                  POMsgSet.id IS NULL) AND
                  POTMsgSet.sequence > 0 AND
-                 POTemplate.id = %s AND
-                 POFile.id = %s
+                 POTMsgSet.potemplate = %s
             ORDER BY POTMsgSet.sequence
-            ''' % sqlvalues(self.potemplate.id, self.id))
+            ''' % sqlvalues(self.id, self.potemplate.id))
 
         if slice is not None:
             # Want only a subset specified by slice.
@@ -668,6 +666,10 @@ class POFile(SQLBase, RosettaStats):
             return self.fetchExportCache()
         else:
             contents = self.uncachedExport()
+
+            if len(contents) == 0:
+                raise ZeroLengthPOExportError
+
             self.updateExportCache(contents)
             return contents
 

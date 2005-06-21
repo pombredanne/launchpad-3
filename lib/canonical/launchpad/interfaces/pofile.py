@@ -6,7 +6,12 @@ from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 
 __metaclass__ = type
 
-__all__ = ('IPOFileSet', 'IPOFile', 'IEditPOFile')
+__all__ = ('ZeroLengthPOExportError', 'IPOFileSet', 'IPOFile', 'IEditPOFile')
+
+
+class ZeroLengthPOExportError(Exception):
+    """An exception raised when a PO file export generated an empty file."""
+
 
 class IPOFileSet(Interface):
     """A set of POFile."""
@@ -146,7 +151,7 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
         Return the message sets using 'slice' or all of them if slice is None.
         """
 
-    def getPOTMsgSetUnTranslated(slice=None):
+    def getPOTMsgSetUntranslated(slice=None):
         """Get pot message sets that are untranslated in this PO file.
 
         'slice' is a slice object that selects a subset of POTMsgSets.

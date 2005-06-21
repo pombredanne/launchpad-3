@@ -9,10 +9,10 @@
     <content class="canonical.launchpad.database.Distribution">
         <allow interface="canonical.launchpad.interfaces.IDistribution"/>
         <require
-            permission="launchpad.Admin"
+            permission="launchpad.Edit"
             set_attributes="displayname title summary description
                             translationgroup translationpermission
-                            members"
+                            members owner"
             />
     </content>
 
@@ -59,6 +59,16 @@
             lp:url="/distros/$Distribution.name/+members/" />
     </browser:pages>
 
+    <browser:pages
+        for="canonical.launchpad.interfaces.IDistribution"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.ObjectReassignmentView">
+          <browser:page
+              name="+reassign"
+              template="../templates/object-reassignment.pt"
+              lp:url="/distros/$distro.id/+reassign" />
+    </browser:pages>
+
     <browser:addform
         name="+filebug"
         for="canonical.launchpad.interfaces.IDistribution"
@@ -84,7 +94,7 @@
 
     <browser:editform
         for="canonical.launchpad.interfaces.IDistribution"
-        permission="launchpad.Admin"
+        permission="launchpad.Edit"
         name="+edit"
         schema="canonical.launchpad.interfaces.IDistribution"
         fields="displayname title summary description"
