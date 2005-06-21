@@ -250,7 +250,6 @@ class ProductSeriesView(object):
             self.context.importstatus = ImportStatus.TESTING
         elif (oldrcstype is None and self.rcstype is not None):
             self.context.importstatus = ImportStatus.TESTING
-        self.request.response.redirect('.')
 
     def adminSource(self):
         """Make administrative changes to the source details of the
@@ -287,6 +286,10 @@ class ProductSeriesView(object):
             self.errormsgs.append('Invalid target Arch branch name.')
         if not pybaz.NameParser.is_version_id(self.targetarchversion):
             self.errormsgs.append('Invalid target Arch version id.')
+
+        # possibly resubmit for testing
+        if self.context.autoTestFailed() and form.get('resetToAutotest', False):
+            self.context.importstatus = ImportStatus.TESTING
 
         # Return if there were any errors, so as not to update anything.
         if self.errormsgs:

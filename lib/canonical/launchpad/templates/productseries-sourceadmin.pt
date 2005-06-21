@@ -165,6 +165,15 @@
 
   </fieldset>
 
+  <fieldset tal:condition="context/autoTestFailed">
+    <legend>Failed Import Control</legend>
+    <div class="field">
+      <label>Retest</label>
+      <div class="formHelp">Retest this series in roomba?</div>
+      <input type="checkbox" name="resetToAutotest" />
+    </div>
+  </fieldset>
+
   <fieldset>
 
     <legend>Product and Project Status</legend>
