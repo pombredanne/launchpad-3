@@ -10,7 +10,11 @@ from canonical.launchpad.scripts.po_export_queue import process_queue
 
 def main(args):
     lockfile = LockFile('/var/lock/launchpad-poimport.lock')
-    lockfile.acquire()
+
+    try:
+        lockfile.acquire()
+    except OSError:
+        return 0
 
     try:
         ztm = initZopeless()

@@ -620,8 +620,16 @@ class POFile(SQLBase, RosettaStats):
         if self.exportfile is None:
             return False
 
-        change_time = self.latest_submission.datecreated
-        return change_time < self.exporttime
+        if self.exporttime == UTC_NOW:
+            # XXX
+            # This is a workaround for the fact that UTC_NOW can't be compared
+            # against datetime values.
+            # -- Dafydd Harries, 2005/06/21
+
+            return True
+        else:
+            change_time = self.latest_submission.datecreated
+            return change_time < self.exporttime
 
     def updateExportCache(self, contents):
         """See IPOFile."""
