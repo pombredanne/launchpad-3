@@ -20,26 +20,8 @@
 
 <body>
     <div class="page-header">
-        <div class="page-header-ribbon"
-            tal:define="path_info request/PATH_INFO">
-            <div class="user" tal:condition="not: request/lp:person ">
-              <div tal:condition="python:'+login' not in path_info">
-                <a tal:attributes="href string:${request/getURL}/+login">
-                  Log in / Register
-                </a>
-              </div>
-            </div>
-            <div class="user" tal:condition="request/lp:person">
-                Welcome,
-                <a
-                  tal:attributes="href string:/people/${request/lp:person/name}"
-                  tal:content="request/lp:person/browsername"
-                >
-                  [An error has occurred in Launchpad. Please report the address of this page to a Launchpad admin.]
-                </a>
-                &ndash;
-                <a href="/+logout">Log out</a>
-            </div>
+        <div class="page-header-ribbon">
+            <div tal:replace="structure context/@@login_status" />
             <address>
                <span tal:replace="structure request/fmt:breadcrumbs" />
             </address>
