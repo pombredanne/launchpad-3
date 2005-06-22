@@ -44,21 +44,6 @@ class ProjectView(object):
         self.request = request
         self.form = self.request.form
 
-    languagesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-project-languages.pt')
-
-    relatedBountiesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-related-bounties.pt')
-
-    trackersPortlet = ViewPageTemplateFile(
-        '../templates/portlet-project-trackers.pt')
-
-    detailsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-project-details.pt')
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-project-actions.pt')
-
     def edit(self):
         """
         Update the contents of a Project. This method is called by a

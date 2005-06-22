@@ -102,25 +102,6 @@ class BugView:
         self.context = context
         self.request = request
 
-    watchPortlet = BugPortlet(
-        '../templates/portlet-bug-watch.pt')
-    productInfestationPortlet = BugPortlet(
-        '../templates/portlet-bug-productinfestation.pt')
-    packageInfestationPortlet = BugPortlet(
-        '../templates/portlet-bug-sourcepackageinfestation.pt')
-    referencePortlet = BugPortlet(
-        '../templates/portlet-bug-reference.pt')
-    duplicatesPortlet = BugPortlet(
-        '../templates/bug-portlet-duplicates.pt')
-    cvePortlet = BugPortlet(
-        '../templates/portlet-bug-cve.pt')
-    peoplePortlet = BugPortlet(
-        '../templates/portlet-bug-people.pt')
-    tasksHeadline = BugPortlet(
-        '../templates/portlet-bug-tasks-headline.pt')
-    actionsPortlet = BugPortlet(
-        '../templates/portlet-bug-actions.pt')
-
     def getCCs(self):
         return [s for s in self.context.subscriptions
                 if s.subscription==dbschema.BugSubscription.CC]

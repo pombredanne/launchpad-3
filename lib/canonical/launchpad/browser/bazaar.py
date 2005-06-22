@@ -14,9 +14,6 @@ from canonical.lp.dbschema import ImportStatus
 
 class BazaarApplicationView:
 
-    importsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-upstream-imports.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request

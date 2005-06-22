@@ -8,7 +8,7 @@
     <div metal:fill-slot="body">
       <div
         class="sidebar"
-        tal:content="structure view/actionsPortlet"
+        tal:content="structure context/@@+portlet-actions"
       />
       <h1>
         Edit #8220;<span tal:replace="context/browsername">

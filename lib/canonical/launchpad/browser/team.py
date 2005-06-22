@@ -39,12 +39,6 @@ from canonical.database.sqlbase import flush_database_updates
 
 class TeamEditView(SQLObjectEditView):
 
-    viewsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-person-views.pt')
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-team-actions.pt')
-
     def __init__(self, context, request):
         SQLObjectEditView.__init__(self, context, request)
         self.team = self.context
@@ -220,12 +214,6 @@ class TeamView:
     actions to process.
     """
 
-    viewsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-person-views.pt')
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-team-actions.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -351,9 +339,6 @@ class TeamLeaveView(TeamView):
 
 
 class TeamMembersView:
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-team-actions.pt')
 
     def __init__(self, context, request):
         self.context = context

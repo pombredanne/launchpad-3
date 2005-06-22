@@ -35,21 +35,6 @@ class POTemplateSubsetView:
 
 class POTemplateView:
 
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-potemplate-actions.pt')
-
-    detailsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-potemplate-details.pt')
-
-    forPortlet = ViewPageTemplateFile(
-        '../templates/portlet-potemplate-for.pt')
-
-    relativesPortlet = ViewPageTemplateFile(
-        '../templates/potemplate-portlet-relateds.pt')
-
-    statusLegend = ViewPageTemplateFile(
-        '../templates/portlet-rosetta-status-legend.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request

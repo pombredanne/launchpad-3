@@ -106,9 +106,6 @@ def validate_svn_repo(repo):
 # constraints. -- StuartBishop 20050502
 class ProductSeriesView(object):
 
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-productseries-actions.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.product = context.product

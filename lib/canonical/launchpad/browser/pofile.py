@@ -29,27 +29,6 @@ class POFileView:
     MAX_COUNT = 100
     DEFAULT_SHOW = 'all'
 
-    aboutPortlet = ViewPageTemplateFile(
-        '../templates/portlet-rosetta-about.pt')
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-pofile-actions.pt')
-
-    contributorsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-pofile-contributors.pt')
-
-    detailsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-pofile-details.pt')
-
-    translatorsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-pofile-translators.pt')
-
-    quickHelpPortlet = ViewPageTemplateFile(
-        '../templates/portlet-rosetta-quickhelp.pt')
-
-    statsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-pofile-stats.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request

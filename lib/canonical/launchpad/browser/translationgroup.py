@@ -28,9 +28,6 @@ __all__ = ['TranslationGroupView',
 
 class TranslationGroupView:
 
-    relatedsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-translationgroup-relateds.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request

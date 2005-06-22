@@ -143,14 +143,7 @@ class PersonRdfView(object):
 
 
 class BasePersonView:
-    """A base class to be used by all IPerson view classes."""
-
-    viewsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-person-views.pt')
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-person-actions.pt')
-    
+    """A base class to be used by all IPerson view classes."""    
 
 class PersonView(BasePersonView):
     """A simple View class to be used in all Person's pages."""

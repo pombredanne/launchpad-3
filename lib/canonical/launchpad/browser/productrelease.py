@@ -52,27 +52,6 @@ def newProductRelease(form, product, owner, series=None):
 class ProductReleaseView:
     """A View class for ProductRelease objects"""
 
-    summaryPortlet = ViewPageTemplateFile(
-        '../templates/portlet-object-summary.pt')
-
-    detailsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-productrelease-details.pt')
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-productrelease-actions.pt')
-
-    statusLegend = ViewPageTemplateFile(
-        '../templates/portlet-rosetta-status-legend.pt')
-
-    prefLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-pref-langs.pt')
-
-    countryPortlet = ViewPageTemplateFile(
-        '../templates/portlet-country-langs.pt')
-
-    browserLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-browser-langs.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request

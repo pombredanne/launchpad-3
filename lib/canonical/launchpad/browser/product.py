@@ -47,51 +47,6 @@ class ProductView:
 
     __used_for__ = IProduct
 
-    summaryPortlet = ViewPageTemplateFile(
-        '../templates/portlet-object-summary.pt')
-
-    translationsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-translations.pt')
-
-    translatablesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-translatables.pt')
-
-    latestBugPortlet = ViewPageTemplateFile(
-        '../templates/portlet-latest-bugs.pt')
-
-    relatedBountiesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-related-bounties.pt')
-
-    branchesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-branches.pt')
-
-    detailsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-details.pt')
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-actions.pt')
-
-    projectPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-project.pt')
-
-    milestonePortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-milestones.pt')
-
-    packagesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-packages.pt')
-
-    prefLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-pref-langs.pt')
-
-    countryPortlet = ViewPageTemplateFile(
-        '../templates/portlet-country-langs.pt')
-
-    browserLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-browser-langs.pt')
-
-    statusLegend = ViewPageTemplateFile(
-        '../templates/portlet-rosetta-status-legend.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.product = context
@@ -303,9 +258,6 @@ class ProductFileBugView(SQLObjectAddView):
 class ProductSetView:
 
     __used_for__ = IProductSet
-
-    detailsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-productset-details.pt')
 
     def __init__(self, context, request):
 

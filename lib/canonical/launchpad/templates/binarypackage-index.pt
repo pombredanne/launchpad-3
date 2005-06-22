@@ -6,23 +6,26 @@
 <body>
 
   <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure view/launchbag/distribution/@@+portlet-details" />
+    <div tal:replace="structure view/launchbag/distrorelease/@@+portlet-details" />
+    <div tal:replace="structure view/launchbag/distroarchrelease/@@+portlet-details" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure view/lastversionsPortlet" />
+    <div tal:replace="structure context/@@+portlet-lastversions" />
   </metal:rightportlets>
 
   <div metal:fill-slot="main">
-
     <h1>Package Overview</h1>
 
-    <p class="documentDescription" tal:content="context/summary">
-    Package Summary</p>
-
+    <h2 class="documentDescription" tal:content="context/summary">
+    Package Summary</h2>
+    
+    <h2>Description</h2>
     <p tal:content="context/description" />
 
+    <h2>Current Package Details</h2>
     <ul>
-            
       <li><b>Package Version:</b> <span tal:replace="context/version" />
 
       <li><b>Package Status:</b> <span tal:replace="context/status" />
@@ -59,7 +62,10 @@
       </li>
 
     </ul>
-
+    <h2>Package Relationship</h2>
+    <table width="100%" valign="top">
+    <tr>
+    <td>
     <h4>Package Dependences</h4>
 
     <ul>
@@ -77,7 +83,8 @@
         </li> 
       </span> 
     </ul> 
-
+    </td>
+    <td>
     <h4>Package Recommends</h4>
 
     <ul>
@@ -94,7 +101,10 @@
         </li>
       </span>
     </ul>
-
+    </td>
+    </tr>
+    <tr>
+    <td>
     <h4>Package Conflicts</h4>
 
     <ul>
@@ -112,7 +122,8 @@
         </li>
       </span>
     </ul>
-
+    </td>
+    <td>
     <h4>Package Replaces</h4>
 
     <ul>
@@ -129,7 +140,10 @@
         </li>
       </span>
     </ul>
-
+    </td>
+    </tr>
+    <tr>
+    <td>
     <h4>Package Suggests</h4>
 
     <ul>
@@ -147,7 +161,8 @@
         </li>
       </span>
     </ul>
-
+    </td>
+    <td>
     <h4>Package Provides</h4>
     
     <ul>
@@ -163,6 +178,9 @@
         </li>
       </span>
     </ul>
+    </td>
+    </tr>
+    </table>
 
   </div>
 

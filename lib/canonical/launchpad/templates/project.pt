@@ -7,13 +7,13 @@
 
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure view/detailsPortlet" />
-    <div tal:replace="structure view/relatedBountiesPortlet" />
+    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-related-bounties" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure view/actionsPortlet" />
-    <div tal:replace="structure view/trackersPortlet" />
+    <div tal:replace="structure context/@@+portlet-actions" />
+    <div tal:replace="structure context/@@+portlet-trackers" />
 </metal:rightportlets>
 
 

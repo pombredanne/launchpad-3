@@ -21,30 +21,6 @@ from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 
 class DistroReleaseView:
 
-    detailsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-distrorelease-details.pt')
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-distrorelease-actions.pt')
-
-    linksPortlet = ViewPageTemplateFile(
-        '../templates/portlet-distrorelease-links.pt')
-
-    translationsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-distrorelease-translations.pt')
-
-    statusLegend = ViewPageTemplateFile(
-        '../templates/portlet-rosetta-status-legend.pt')
-
-    prefLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-pref-langs.pt')
-
-    countryPortlet = ViewPageTemplateFile(
-        '../templates/portlet-country-langs.pt')
-
-    browserLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-browser-langs.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request

@@ -6,13 +6,13 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure view/detailsPortlet" />
-  <div tal:replace="structure view/forPortlet" />
-  <div tal:replace="structure view/relativesPortlet" />
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-for" />
+  <div tal:replace="structure context/@@+portlet-relateds" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure view/actionsPortlet" />
+  <div tal:replace="structure context/@@+portlet-actions" />
 </metal:rightportlets>
 
 
@@ -29,7 +29,7 @@
       [ <a href="/rosetta/prefs">Choose Languages</a> ]
     </div>
 
-    <div tal:replace="structure view/statusLegend" />
+    <div tal:replace="structure context/@@+portlet-status-legend" />
 
 </div>
 

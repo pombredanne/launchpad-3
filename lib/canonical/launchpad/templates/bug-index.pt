@@ -6,17 +6,17 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure view/peoplePortlet" />
-    <div tal:replace="structure view/productInfestationPortlet" />
-    <div tal:replace="structure view/packageInfestationPortlet" />
-    <div tal:replace="structure view/duplicatesPortlet" />
+    <div tal:replace="structure context/@@+portlet-bug-people" />
+    <div tal:replace="structure context/@@+portlet-bug-productinfestation" />
+    <div tal:replace="structure context/@@+portlet-bug-packageinfestation" />
+    <div tal:replace="structure context/@@+bug-portlet-duplicates" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure view/actionsPortlet" />
-    <div tal:replace="structure view/cvePortlet" />
-    <div tal:replace="structure view/referencePortlet" />
-    <div tal:replace="structure view/watchPortlet" />
+    <div tal:replace="structure context/@@+portlet-bug-actions" />
+    <div tal:replace="structure context/@@+portlet-bug-cve" />
+    <div tal:replace="structure context/@@+portlet-bug-reference" />
+    <div tal:replace="structure context/@@+portlet-bug-watch" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -58,7 +58,7 @@
      $Bug.description
   </p>
 
-  <div tal:replace="structure view/tasksHeadline" />
+  <div tal:replace="structure context/@@+portlet-bug-tasks-headline" />
 
   <div class="boardComment">
     <fieldset class="collapsible collapsed">

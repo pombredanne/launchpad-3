@@ -123,9 +123,9 @@ class BugTasksReportView:
 
 
 class ViewWithBugTaskContext:
-    def __init__(self, view):
-        self.request = view.request
-        self.context = view.context
+    def __init__(self, context, request):
+        self.request = request
+        self.context = context
         setUpWidgets(self, IBugTask, IInputWidget)
 
     def alsoReportedIn(self):
@@ -153,34 +153,8 @@ class ViewWithBugTaskContext:
             s for s in self.context.bug.subscriptions
                 if s.subscription==dbschema.BugSubscription.IGNORE]
 
-
-class BugTaskPortlet:
-    def __init__(self, template_filename):
-        self.template = ViewPageTemplateFile(template_filename)
-
-    def __call__(self, view, *args, **kw):
-        return self.template(ViewWithBugTaskContext(view), *args, **kw)
-
-    def __get__(self, instance, type=None):
-        return BoundPortlet(self, instance)
-
-
 class BugTaskViewBase:
     """The base class for IBugTask view classes."""
-
-    # The portlet that shows the status of the bug in other
-    # places in which it's been reported.
-    alsoReportedInPortlet = BugTaskPortlet(
-        "../templates/portlet-bug-also-reported-in.pt")
-
-    # The portlet that shows some bug status details: whether
-    # it's public/private, and the reporter atm.
-    bugStatusPortlet = BugTaskPortlet(
-        "../templates/portlet-bug-status.pt")
-
-    bugPeoplePortlet = BugTaskPortlet(
-        "../templates/portlet-bugtask-people.pt")
-
 
 class BugTaskEditView(SQLObjectEditView, BugTaskViewBase):
     pass

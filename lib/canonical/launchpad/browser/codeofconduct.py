@@ -41,9 +41,6 @@ from canonical.launchpad.database import SignedCodeOfConduct
 class CodeOfConductView(object):
     """Simple view class for CoC page."""
     
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-codeofconduct-actions.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -82,9 +79,6 @@ class CodeOfConductDownloadView(object):
 class CodeOfConductSetView(object):
     """Simple view class for CoCSet page."""
     
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-codeofconductset-actions.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -174,9 +168,6 @@ class SignedCodeOfConductAckView(AddView):
 class SignedCodeOfConductView(object):
     """Simple view class for SignedCoC page."""
     
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-signedcodeofconduct-actions.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request

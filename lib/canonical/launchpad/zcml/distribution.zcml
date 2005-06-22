@@ -57,6 +57,18 @@
             name="+members"
             template="../templates/distribution-members.pt"
             lp:url="/distros/$Distribution.name/+members/" />
+        <browser:page
+            name="+portlet-actions"
+            template="../templates/portlet-distro-actions.pt"
+            lp:url="/distros/$Distribution.name/+portlet-actions/" />
+        <browser:page
+            name="+portlet-details"
+            template="../templates/portlet-distro-details.pt"
+            lp:url="/distros/$Distribution.name/+portlet-details/" />
+        <browser:page
+            name="+portlet-bounties"
+            template="../templates/portlet-related-bounties.pt"
+            lp:url="/distros/$Distribution.name/+portlet-bounties/" />
     </browser:pages>
 
     <browser:pages

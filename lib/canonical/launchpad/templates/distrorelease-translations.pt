@@ -12,9 +12,9 @@
 </tal:comment>
 <metal:rightportlets fill-slot="portlets_two"
     tal:condition="python:context.potemplatecount <= 5">
-    <div tal:replace="structure view/prefLangPortlet" />
-    <div tal:replace="structure view/countryPortlet" />
-    <div tal:replace="structure view/browserLangPortlet" />
+    <div tal:replace="structure context/@@+portlet-pref-langs" />
+    <div tal:replace="structure context/@@+portlet-country-langs" />
+    <div tal:replace="structure context/@@+portlet-browser-langs" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">

@@ -382,6 +382,10 @@ ul.search>li, li.search {
   list-style-image: url(/++resource++search_icon.gif);
 }
 
+ul.architecture>li, li.architecture {
+    list-style-image: url(/++resource++document_icon.gif);
+}
+
 /* Translation template stuff: */
 
 .messageSourceString {
