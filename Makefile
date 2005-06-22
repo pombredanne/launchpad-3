@@ -91,7 +91,7 @@ ftest_inplace: inplace
 
 #ftest: ftest_inplace
 
-run: inplace kill
+run: inplace stop
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
 		 $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE)
 
