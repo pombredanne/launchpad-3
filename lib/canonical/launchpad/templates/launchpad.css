@@ -849,7 +849,9 @@ input {
 
 /* 
 This style is used for multi-select widgets. These get a scrollbar if they
-expand above a certain size.
+expand above a certain size. The box is floated in order to allow it to shrink
+to the smallest appropriate width; this may mean that it will be necessary to
+use the 'clear' attribute on other elemtens surrounding the multi-select box.
 */
 
 .multi_select {
