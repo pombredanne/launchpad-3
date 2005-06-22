@@ -1,0 +1,147 @@
+
+PO Imports
+----------
+
+The tale of a PO template and a PO file and how they get imported into
+Rosetta.
+
+    >>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
+    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+
+    >>> LaunchpadFunctionalTestSetup().setUp()
+    >>> LibrarianTestSetup().setUp()
+
+Here's some database classes we'll be using.
+
+    >>> from canonical.launchpad.database import Person
+    >>> from canonical.launchpad.database import POTemplate
+    >>> from canonical.launchpad.database import POFile
+
+We need this for the Librarian to work properly.
+
+    >>> import transaction
+
+Here's a fake logger to capture any errors that happen.
+
+    >>> class FakeLogger:
+    ...     def log(self, *stuff, **kw):
+    ...         print 'log>', ' '.join(stuff)
+    ...
+    ...         if 'exc_info' in kw:
+    ...             import sys
+    ...             import traceback
+    ...             exception = traceback.format_exception(*sys.exc_info())
+    ...             for thing in exception:
+    ...                 for line in thing.splitlines():
+    ...                     self.log(line)
+    ...
+    ...     warning = log
+
+Here's the person who'll be doing the import.
+
+    >>> person = Person.get(1)
+
+Here's the PO template that'll get imported.
+
+    >>> potemplate = POTemplate.get(1)
+
+And this is the file that'll get imported.
+
+    >>> potemplate_contents = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ...
+    ... msgid "foo"
+    ... msgstr ""
+    ...
+    ... msgid "bar"
+    ... msgstr ""
+    ...
+    ... msgid "baz"
+    ... msgstr ""
+    ... '''
+
+Importing happens in two steps. First, we attach the file data to the
+template. The potemplate is always "published"
+
+    >>> potemplate.attachRawFileData(potemplate_contents, True, person)
+
+The file data is stored in the Librarian, so we have to commit the transaction
+to make sure it's stored properly.
+
+    >>> transaction.commit()
+
+Second, we tell the PO template to import from the file data it has.
+
+    >>> potemplate.doRawImport(FakeLogger())
+
+Once we've done this, the correct message IDs should show up in the template.
+
+    >>> messageSets = list(potemplate.getPOTMsgSets())
+    >>> [messageSet.primemsgid_.msgid for messageSet in messageSets]
+    [u'foo', u'bar', u'baz']
+
+Now let's get a PO file to import.
+
+    >>> pofile = potemplate.getOrCreatePOFile('cy')
+
+It's newly created, so it has no message sets yet.
+
+    >>> len(pofile.currentMessageSets())
+    0
+
+Here are the contents of the file we'll be importing.
+
+    >>> pofile_contents = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "PO-Revision-Date: 2005-06-03 19:41+0100\n"
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ...
+    ... msgid "foo"
+    ... msgstr "blah"
+    ...
+    ... #, fuzzy
+    ... msgid "bar"
+    ... msgstr "heffalump"
+    ...
+    ... msgid "balloon"
+    ... msgstr "blah"
+    ... '''
+
+The process of importing a PO file is much like that of importing a PO
+template. Remember, we need to tell the system that this po file is a
+"published" one.
+
+    >>> pofile.attachRawFileData(pofile_contents, True, person)
+    >>> transaction.commit()
+    >>> pofile.doRawImport(FakeLogger())
+    log> There is a problem with the dates importing cy language for template Template for evolution in hoary. New: 2005-06-03 19:41+0100, old YEAR-MO-DA HO:MI+ZONE
+
+Here's a current message set: i.e. it has a corresponding current message set
+in the PO template. It should not be publishedfuzzy.
+
+    >>> messageSets = list(pofile.currentMessageSets())
+    >>> messageSets[0].potmsgset.primemsgid_.msgid
+    u'foo'
+    >>> messageSets[0].publishedfuzzy
+    False
+
+And here's a non-current message set. It shouldn't be fuzzy either.
+
+    >>> messageSets = list(pofile.messageSetsNotInTemplate())
+    >>> messageSets[0].potmsgset.primemsgid_.msgid
+    u'balloon'
+    >>> messageSets[0].publishedfuzzy
+    False
+
+This message set should be fuzzy, however.
+
+    >>> messageSet = pofile.messageSet(u'bar')
+    >>> messageSet.publishedfuzzy
+    True
+
+    >>> LibrarianTestSetup().tearDown()
+    >>> LaunchpadFunctionalTestSetup().tearDown()
+

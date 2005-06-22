@@ -17,7 +17,12 @@ class IVPOExportSet(Interface):
     def get_potemplate_rows(potemplate):
         """Return all rows which belong to a particular PO template."""
 
-    def get_distrorelease_rows(potemplate):
+    def get_distrorelease_pofiles(release, date=None):
+        """Get a list of PO files which would be contained in an export of a
+        distribtuion release.
+        """
+
+    def get_distrorelease_rows(release, date=None):
         """Return all rows which belong to a particular distribution
         release.
         """
@@ -26,13 +31,10 @@ class IVPOExport(Interface):
     """Database view for efficient PO exports."""
 
     name = Attribute("See IPOTemplateName.name")
-
     translationdomain = Attribute("See IPOTemplateName.translationdomain")
 
     potemplate = Attribute("See IPOTemplate.id")
-
     distrorelease = Attribute("See IPOTemplate.distrorelease")
-
     sourcepackagename = Attribute("See IPOTemplate.sourcepackagename")
     productrelease = Attribute("See IPOTemplate.productrelease")
     potheader = Attribute("See IPOTemplate.header")
@@ -57,15 +59,16 @@ class IVPOExport(Interface):
     posequence = Attribute("See IPOMsgSet.sequence")
     iscomplete = Attribute("See IPOMsgSet.iscomplete")
     obsolete = Attribute("See IPOMsgSet.obsolete")
-    fuzzy = Attribute("See IPOMsgSet.fuzzy")
+    isfuzzy = Attribute("See IPOMsgSet.isfuzzy")
     pocommenttext = Attribute("See IPOMsgSet.commenttext")
 
     msgidpluralform = Attribute("See IPOMsgIDSighting.pluralform")
 
-    translationpluralform = Attribute("See IPOTranslationSighting.pluralform")
-    active = Attribute("See IPOTranslationSighting.active")
+    translationpluralform = Attribute("See IPOSelection.pluralform")
+    activesubmission = Attribute("See IPOSelection.activesubmission")
 
     msgid = Attribute("See IPOMsgID.pomsgid")
 
     translation = Attribute("See IPOTranslation.translation")
+
 

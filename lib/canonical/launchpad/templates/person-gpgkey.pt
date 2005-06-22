@@ -3,16 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-  <title metal:fill-slot="title">
-    <span tal:replace="context/displayname">Name</span>
-    GPG Keys</title>
-  <!-- Plone style sheet -->
-  <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Soyuz style sheet -->
-  <style type="text/css" media="screen">@import url(soyuz.css);</style>
-</head>
-
 <body>
 
   <metal:leftportlets fill-slot="portlets_one">
@@ -69,22 +59,6 @@
     </form>
     </div>
 
-    <div>
-    <form name="add" action="" method="POST">
-    <input type="hidden" name="action" value="import_gpg" />
-    <fieldset>
-    <legend>Import GPG Public Key</legend>
-    <div>
-        <label>Public Key</label>
-        <div class="formHelp">
-	   Paste the ASCII armored public key (use: `gpg --export -a YOU`)
-	</div>
-        <textarea name="pubkey" rows="20"></textarea>
-        <input type="submit" value="Import"/>
-    </fieldset>
-    </form>
-    </div>
-    
   </div>
 </body>
 </html>

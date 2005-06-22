@@ -23,7 +23,7 @@ class ILoginToken(Interface):
         )
     requesteremail = Text(
         title=_('The email address that was used to login when making this request.'),
-                required=True,
+                required=False,
         )
     created = Datetime(
         title=_('The timestamp that this request was made.'), required=True,
@@ -36,6 +36,10 @@ class ILoginToken(Interface):
         title=_('The token (not the URL) emailed used to uniquely identify this request.'),
                 required=True,
         )
+    fingerprint = Text(
+        title=_('GPG Key fingerprint used to retrive key information when necessary.'),
+                required=False,
+        )
 
     # used for launchpad page layout
     title = Attribute('Title')
@@ -47,6 +51,9 @@ class ILoginToken(Interface):
         new user, validating an email address or reseting a password), we have
         to delete it so nobody can use that token again.
         """
+
+    def sendEmailValidationRequest(appurl):
+        """Send an email message with a magic URL to validate self.email."""
 
 
 class ILoginTokenSet(Interface):
@@ -66,17 +73,22 @@ class ILoginTokenSet(Interface):
     def deleteByEmailAndRequester(email, requester):
         """Delete all LoginToken entries with the given email and requester."""
 
-    def new(requester, requesteremail, email, tokentype):
+    def new(requester, requesteremail, email, tokentype, fingerprint=None):
         """ Create a new LoginToken object. Parameters must be:
         requester: a Person object or None (in case of a new account)
 
         requesteremail: the email address used to login on the system. Can
-        also be None in case of a new account
-        
-        email: the email address that this request will be sent to
-        
+                        also be None in case of a new account
+
+        email: the email address that this request will be sent to.
+        It should be previosly validated by valid_email() 
+
         tokentype: the type of the request, according to
         dbschema.LoginTokenType
+        
+        fingerprint: the gpg key fingerprint to be used to retrive needed
+        key information from the keyServer if necessary, can be None if
+        not required to proccess the 'request' in question.  
         """
 
     def __getitem__(id):
@@ -90,5 +102,4 @@ class ILoginTokenSet(Interface):
 
         Returns the default value if there is no such LoginToken.
         """
-
 

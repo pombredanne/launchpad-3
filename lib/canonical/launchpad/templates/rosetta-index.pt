@@ -3,17 +3,11 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="rosetta">
 
-<head>
-    <title metal:fill-slot="title">Rosetta</title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure view/translationGroupsPortlet" />
+    <div tal:replace="structure view/statsPortlet" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
@@ -32,61 +26,60 @@
         about Rosetta</a> or follow the links below to start translating.
     </p>
 
-    <ul>
-
-        <li tal:condition="not: request/lp:person">
-            You might like to
-            <a href="+login">log in</a>.
-        </li>
-
-    </ul>
-
-    <h1>Translations in Ubuntu</h1>
+    <h2>Translations in Ubuntu</h2>
 
     <p>Rosetta is the primary translation system for the Ubuntu Project. You
-    can help translation any application in Ubuntu, or any of the Ubuntu
+    can help to translate any application in Ubuntu, or any of the Ubuntu
     derivative distributions, using this web interface. Select a release
     from the list below:</p>
     
     <div style="margin-left: 50px;">
 
-        <p tal:repeat="distrorelease context/translatable_distroreleases">
-            <img src="/++resource++product_icon.gif">
-            <b>Version <span tal:replace="distrorelease/version" /> "<span
-            tal:replace="distrorelease/title">distrorelease
-            title</span>"</b>&nbsp;[&nbsp;<a tal:attributes="href
-            string:/distros/${distrorelease/distribution/name}/${distrorelease/name}/+translations">Translate</a>&nbsp;]
-            <br />
-            <span tal:replace="distrorelease/summary">product
-            summary</span>
-        </p>
+      <p tal:repeat="distrorelease context/translatable_distroreleases">
+        <img src="/++resource++product_icon.gif">
+        <b><span tal:replace="distrorelease/version" />: "<span
+        tal:replace="distrorelease/title">distrorelease
+        title</span>"</b>&nbsp;[&nbsp;<a tal:attributes="href
+        string:/distros/${distrorelease/distribution/name}/${distrorelease/name}/+translations">Translate</a>&nbsp;]
+        <br />
+        <span tal:replace="distrorelease/summary">product
+        summary</span>
+      </p>
 
     </div> <!-- indent -->
 
-    <h1>Translatable Applications</h1>
+    <h2>Translatable Applications</h2>
 
-    <p>The following open source applications can currently be translated as
-    part of the Rosetta Translation Project. Select an application to
-    translate it into your own language, using only the your web browser. If
-    your favourite open source application is not listed here, you can see
-    if it is <a href="products">registered with the Launchpad</a> and then
-    start to translate it immediately!</p>
+    <p>Rosetta is being used to translate the following open source
+    applications. Select an application to translate it into your
+    own language, using only your web browser. If your favourite open
+    source application is not listed here, you can see
+    if it is <a href="/products/">registered with the Launchpad</a> and then
+    ask the Rosetta Admins on <a
+    href="mailto:rosetta-users@lists.ubuntu.com">Rosetta's mailing list</a>
+    to import its translation templates so you can begin to translate
+    immediately!</p>
 
-    <div style="margin-left: 50px;">
-    
-        <p tal:repeat="product context/translatable_products">
-            <img src="/++resource++product_icon.gif"> <b><span
-            tal:replace="product/title">product title</span></b>
-            [ <a tal:attributes="href
-            string:products/${product/name}">Translate</a> ]
-            <br />
-            <span tal:replace="product/summary">product
-            summary</span>
-        </p>
+    <table class="listing">
+      <thead>
+        <tr>
+          <th>Application</th>
+          <th>Title</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="product context/translatable_products">
+          <td><img src="/++resource++product_icon.gif"> <span tal:replace="product/name">product</span></td>
+          
+          <td><a href="" tal:content="product/title"
+                 tal:attributes="href
+                     string:/products/${product/name}/+translations">
+                     Product Title here</a></td>
+        </tr>
+      </tbody>
+    </table>
 
-    </div> <!-- indent -->
-
-    <p>Find or register <a href="products">another open source
+    <p>Find or register <a href="/products/">any other open source
     application</a> for translation.</p>
 
 </div>

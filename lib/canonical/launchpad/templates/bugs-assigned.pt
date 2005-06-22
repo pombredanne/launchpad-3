@@ -3,10 +3,6 @@
     metal:use-macro="context/@@malone_template/master"
     i18n:domain="malone">
 
-    <title metal:fill-slot="title">Malone Bugs assigned to
-    <span tal:replace="view/user/browsername"></span>
-    </title>
-
 <body>
 
 <metal:rightportlets fill-slot="portlets_two">
@@ -108,7 +104,7 @@
                 <td tal:content="bugtask/status/title">status</td>
                 <td tal:content="bugtask/severity/title">severity</td>
                 <td tal:content="bugtask/priority/title">priority</td>
-                <td tal:content="bugtask/assignee/displayname|default">-</td>
+                <td tal:content="bugtask/assignee/browsername|default">-</td>
             </tr>
 
         </table>

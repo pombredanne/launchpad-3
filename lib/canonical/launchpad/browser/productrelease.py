@@ -9,7 +9,7 @@ from canonical.launchpad.interfaces import IProductReleaseSet
 
 from canonical.launchpad import helpers
 
-from canonical.launchpad.browser.potemplate import ViewPOTemplate
+from canonical.launchpad.browser.potemplate import POTemplateView
 
 
 def traverseProductRelease(productrelease, request, name):
@@ -59,7 +59,7 @@ class ProductReleaseView:
         '../templates/portlet-productrelease-details.pt')
 
     actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-actions.pt')
+        '../templates/portlet-productrelease-actions.pt')
 
     statusLegend = ViewPageTemplateFile(
         '../templates/portlet-rosetta-status-legend.pt')
@@ -100,7 +100,7 @@ class ProductReleaseView:
         self.request.response.redirect(self.request.URL[-1])
 
     def templateviews(self):
-        return [ViewPOTemplate(template, self.request)
+        return [POTemplateView(template, self.request)
                 for template in self.context.potemplates]
 
     def requestCountry(self):

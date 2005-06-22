@@ -24,12 +24,16 @@ def vocab_factory(schema):
     return factory
 
 # DB Schema Vocabularies
+
 SubscriptionVocabulary = vocab_factory(dbschema.BugSubscription)
 BugStatusVocabulary = vocab_factory(dbschema.BugTaskStatus)
 BugPriorityVocabulary = vocab_factory(dbschema.BugPriority)
 BugSeverityVocabulary = vocab_factory(dbschema.BugSeverity)
 BugRefVocabulary = vocab_factory(dbschema.BugExternalReferenceType)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
-#RemoteBugStatusVocabulary = vocab_factory(dbschema.RemoteBugStatus)
 PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
-TeamSubscriptionPolicyVocabulary = vocab_factory(dbschema.TeamSubscriptionPolicy)
+TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)
+TeamSubscriptionPolicyVocabulary = vocab_factory(
+        dbschema.TeamSubscriptionPolicy)
+GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
+

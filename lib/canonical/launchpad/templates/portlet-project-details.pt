@@ -14,7 +14,24 @@
 
             <b>Project Maintainer:</b><br />
             <img src="/++resource++user.gif">
-            <span tal:replace="context/owner/browsername">ownername</span><br />
+            <a tal:content="context/owner/browsername"
+               tal:attributes="href string:/people/${context/owner/name}/"
+               >ownername</a><br />
+
+            <b>Translation Group:</b><br />
+            <img src="/++resource++languages.gif">
+            <tal:block condition="context/translationgroup">
+            <a tal:attributes="href
+                     string:/rosetta/groups/${context/translationgroup/name}/"
+               tal:content="context/translationgroup/title"
+            >Group</a><br />
+            </tal:block>
+            <tal:block condition="not: context/translationgroup">
+            <i>Not assigned</i><br />
+            </tal:block>
+            <b>Translation Perms:</b><br />
+            <span tal:replace="context/translationpermission/title">Open</span>
+            <br />
 
             <b>Products:</b><br />
             <span tal:repeat="prod context/products" tal:omit-tag>

@@ -29,7 +29,7 @@ class IMaintainership(Interface):
         this maintainer."""))
 
     maintainer = Choice(title=_('Maintainer'), required=True,
-                   vocabulary='ValidPerson',
+                   vocabulary='ValidMaintainer',
                    description=_("""The person who is the maintainer of this
                    source package in this distribution."""))
 

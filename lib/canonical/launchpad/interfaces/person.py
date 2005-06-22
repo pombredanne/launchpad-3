@@ -23,17 +23,16 @@ class IPerson(Interface):
     name = TextLine(
             title=_('Name'), required=True, readonly=True,
             constraint=_valid_person_name,
-            description=_("The short name of this team, which must be unique "
-                          "among all other teams. It must be at least one "
-                          "lowercase letter (or number) followed by one or "
-                          "more letters, numbers, dots, hyphens or plus "
-                          "signs.")
+            description=_(
+                "A short unique name, beginning with a lower-case "
+                "letter or number, and containing only letters, "
+                "numbers, dots, hyphens, or plus signs.")
             )
     displayname = TextLine(
             title=_('Display Name'), required=False, readonly=False,
-            description=_("This is your name as you would like it "
-                "displayed throughout The Launchpad. Most people "
-                "use their full name here.")
+            description=_("Your name as you would like it displayed "
+            "throughout Launchpad. Most people use their full name "
+            "here.")
             )
     givenname = TextLine(
             title=_('Given Name'), required=False, readonly=False,
@@ -42,7 +41,7 @@ class IPerson(Interface):
             )
     familyname = TextLine(
             title=_('Family Name'), required=False, readonly=False,
-            description=_("Your family name or given name, the name "
+            description=_("Your family name, the name "
                 "you acquire from your parents.")
             )
     password = Password(
@@ -58,25 +57,26 @@ class IPerson(Interface):
     karmatimestamp = Datetime(
             title=_('Karma Timestamp'), required=False, readonly=True,
             )
-    languages = Attribute(_('List of know languages by this person'))
+    languages = Attribute(_('List of languages known by this person'))
+
+    # this is not a date of birth, it is the date the person record was
+    # created in this db
+    datecreated = Datetime(
+        title=_('Date Created'), required=True, readonly=True)
 
     # bounty relations
     ownedBounties = Attribute('Bounties issued by this person.')
     reviewerBounties = Attribute('Bounties reviewed by this person.')
     claimedBounties = Attribute('Bounties claimed by this person.')
     subscribedBounties = Attribute('Bounties to which this person subscribes.')
-    sshkeys = Attribute(_('List of SSH keys'))
 
-    # XXX: This field is used only to generate the form to create a new person.
-    password2 = Password(title=_('Confirm Password'), required=True,
-            description=_("Enter your password again to make certain "
-                "it is correct."))
+    sshkeys = Attribute(_('List of SSH keys'))
 
     # Properties of the Person object.
     ubuntite = Attribute("Ubuntite Flag")
     gpgkeys = Attribute("List of GPGkeys")
     irc = Attribute("IRC")
-    bugs = Attribute("Bug")
+    reportedbugs = Attribute("All BugTasks reported by this Person.")
     wiki = Attribute("Wiki")
     jabber = Attribute("Jabber")
     archuser = Attribute("Arch user")
@@ -108,48 +108,61 @@ class IPerson(Interface):
                                  "DEACTIVATED status"))
     deactivatedmembers = Attribute("List of members with DEACTIVATED status")
 
-    teamowner = Int(title=_('Team Owner'), required=False, readonly=False)
+    teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
+                       vocabulary='ValidTeamOwner')
+    teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
+                      readonly=True)
     teamdescription = Text(title=_('Team Description'), required=False,
                            readonly=False)
 
-    preferredemail = Int(title=_("The preferred email address for this "
-                                 "person. The one we'll use to communicate "
-                                 "with him."), readonly=False)
+    preferredemail = TextLine(
+            title=_("Preferred Email Address"), description=_(
+                "The preferred email address for this person. The one "
+                "we'll use to communicate with them."), readonly=False)
+
+    preferredemail_sha1 = TextLine(title=_("SHA-1 Hash of Preferred Email"),
+            description=_("The SHA-1 hash of the preferred email address as "
+                "a hexadecimal string. This is used as a key by FOAF RDF spec"
+                ), readonly=True)
+
     defaultmembershipperiod = Int(
             title=_('Number of days a subscription lasts'), required=False,
-            description=_("This is the number of days all "
-                "subscriptions will last unless a different value is provided "
-                "when the subscription is approved. After this " "period the "
-                "subscription is expired and must be renewed. A value of 0 "
-                "(zero) means that subscription will never expire."))
+            description=_(
+                "The number of days a new subscription lasts "
+                "before expiring. You can customize the length "
+                "of an individual subscription when approving it. "
+                "A value of 0 means subscriptions never expire.")
+                )
 
     defaultrenewalperiod = Int(
             title=_('Number of days a renewed subscription lasts'),
             required=False,
-            description=_("This is the number of days all "
-                "subscriptions will last after being renewed. After this "
-                "period the subscription is expired and must be renewed "
-                "again. A value of 0 (zero) means that subscription renewal "
-                "periods will be the same as the membership period."))
+            description=_(
+                "The number of days a subscription lasts after "
+                "being renewed. You can customize the lengths of "
+                "individual renewals. A value of 0 means "
+                "renewals last as long as new memberships.")
+                )
 
     defaultexpirationdate = Attribute(
-            "The date, according to team's default values in which a newly "
+            "The date, according to team's default values, in which a newly "
             "approved membership will expire.")
 
     defaultrenewedexpirationdate = Attribute(
-            "The date, according to team's default values in which a just "
-            "renewed membership will expire.")
+            "The date, according to team's default values, in "
+            "which a just-renewed membership will expire.")
 
     subscriptionpolicy = Choice(
             title=_('Subscription Policy'),
             required=True, vocabulary='TeamSubscriptionPolicy',
             default=TeamSubscriptionPolicy.MODERATED,
-            description=_('How new subscriptions should be handled for this '
-                          'team. "Moderated" means that all subscriptions must '
-                          'be approved, "Open" means that any user can join '
-                          'whitout approval and "Restricted" means that new '
-                          'members can only be added by one of the '
-                          'administrators of the team.'))
+            description=_(
+                '"Moderated" means all subscriptions must be '
+                'approved. "Open" means any user can join '
+                'without approval. "Restricted" means new '
+                'members can be added only by a team '
+                'administrator.')
+            )
 
     merged = Int(title=_('Merged Into'), required=False, readonly=True,
             description=_(
@@ -165,9 +178,12 @@ class IPerson(Interface):
     def browsername():
         """Return a textual name suitable for display in a browser."""
 
+    def isTeam():
+        """True if this Person is actually a Team, otherwise False."""
+
     def assignKarma(karmatype, points=None):
         """Assign <points> worth of karma to this Person.
-        
+
         If <points> is None, then get the default number of points from the
         given karmatype.
         """
@@ -179,7 +195,7 @@ class IPerson(Interface):
         """Removed the language from the list of know languages."""
 
     def inTeam(team):
-        """Return true if this person is in the given team.
+        """Return True if this person is a member or the owner of <team>.
         
         This method is meant to be called by objects which implement either
         IPerson or ITeam, and it will return True when you ask if a Person is
@@ -188,6 +204,9 @@ class IPerson(Interface):
 
     def hasMembershipEntryFor(team):
         """Tell if this person is a direct member of the given team."""
+
+    def hasParticipationEntryFor(team):
+        """Tell if this person is a direct/indirect member of the given team."""
 
     def join(team):
         """Join the given team if its subscriptionpolicy is not RESTRICTED.
@@ -199,6 +218,9 @@ class IPerson(Interface):
         - If the team subscriptionpolicy is MODERATED, the user is added as
           a PROPOSED member and one of the team's administrators have to
           approve the membership.
+
+        This method returns True if this person was added as a member of
+        <team> or False if that wasn't possible.
 
         Teams cannot call this method because they're not allowed to
         login and thus can't "join" another team. Instead, they're added
@@ -228,7 +250,7 @@ class IPerson(Interface):
         the TeamParticipation table in case the status is APPROVED.
         """
 
-    def setMembershipStatus(person, status, expires, reviewer=None,
+    def setMembershipStatus(person, status, expires=None, reviewer=None,
                             comment=None):
         """Set the status of the person's membership on this team.
 
@@ -272,11 +294,15 @@ class IPerson(Interface):
         "Rosetta Translators", because we are member of both of them.
         """
 
+    def subscriptionPolicyDesc():
+        """Return a long description of this team's subscription policy."""
+
 
 class ITeam(IPerson):
     """ITeam extends IPerson.
 
-    The teamowner should never be None."""
+    The teamowner should never be None.
+    """
 
 
 class IPersonSet(Interface):
@@ -302,7 +328,8 @@ class IPersonSet(Interface):
         These keyword arguments will be passed to Person, which is an
         SQLBase class and will do all the checks needed before inserting
         anything in the database. Please refer to the Person implementation
-        to see what keyword arguments are allowed."""
+        to see what keyword arguments are allowed.
+        """
 
     def newTeam(**kwargs):
         """Create a new Team with given keyword arguments.
@@ -310,7 +337,8 @@ class IPersonSet(Interface):
         These keyword arguments will be passed to Person, which is an
         SQLBase class and will do all the checks needed before inserting
         anything in the database. Please refer to the Person implementation
-        to see what keyword arguments are allowed."""
+        to see what keyword arguments are allowed.
+        """
 
     def get(personid, default=None):
         """Return the person with the given id.
@@ -396,10 +424,6 @@ class IPersonSet(Interface):
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
         """
-
-    def getContributorsForPOFile(pofile):
-        """Return the list of persons that have an active contribution for a
-        concrete POFile."""
 
     def getUbuntites():
         """Return a set of person with valid Ubuntite flag."""
@@ -530,7 +554,7 @@ class ITeamMembershipSubset(Interface):
     """A Set for TeamMembership objects of a given team."""
 
     newmember = Choice(title=_('New member'), required=True,
-                       vocabulary='Person',
+                       vocabulary='ValidPersonOrTeam',
                        description=_("The user or team which is going to be "
                                      "added as the new member of this team."))
 
@@ -579,10 +603,22 @@ class ITeamParticipation(Interface):
 
 
 class IRequestPeopleMerge(Interface):
-    """This schema is used only because we want the PersonVocabulary."""
+    """This schema is used only because we want a very specific vocabulary."""
 
     dupeaccount = Choice(title=_('Duplicated Account'), required=True,
-                         vocabulary='Person',
+                         vocabulary='PersonAccountToMerge',
                          description=_("The duplicated account you found in "
                                        "Launchpad"))
+
+
+class IObjectReassignment(Interface):
+    """The schema used by the object reassignment page."""
+
+    owner = Choice(title=_('Owner'), vocabulary='ValidOwner', required=True)
+
+
+class ITeamReassignment(Interface):
+    """The schema used by the team reassignment page."""
+
+    owner = Choice(title=_('Owner'), vocabulary='ValidTeamOwner', required=True)
 

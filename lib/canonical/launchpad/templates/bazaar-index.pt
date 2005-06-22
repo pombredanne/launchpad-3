@@ -3,10 +3,6 @@
     metal:use-macro="context/@@malone_template/master"
     i18n:domain="bazaar">
 
-<head>
-    <title metal:fill-slot="title">The Launchpad Bazaar</title>
-</head>
-
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">

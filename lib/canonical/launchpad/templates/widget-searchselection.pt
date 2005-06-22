@@ -3,15 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="rosetta">
 
-<head>
-    <title xmetal:fill-slot="title">Rosetta: <span
-        xtal:replace="context/title">Project Title</span></title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body metal:fill-slot="main">
 
 <tal:testvalues define="selection python: {'title':'Mozilla Firefox',

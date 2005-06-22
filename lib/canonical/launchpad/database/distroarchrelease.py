@@ -10,8 +10,8 @@ from sqlobject import StringCol, ForeignKey, RelatedJoin
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.lp import dbschema
 
-from canonical.launchpad.interfaces import IDistroArchRelease
-from canonical.launchpad.interfaces import IBinaryPackageSet
+from canonical.launchpad.interfaces import \
+     IDistroArchRelease, IBinaryPackageSet, IPocketChroot
 from canonical.launchpad.database.publishing import PackagePublishing
 
 
@@ -32,10 +32,6 @@ class DistroArchRelease(SQLBase):
     architecturetag = StringCol(dbName='architecturetag', notNull=True)
 
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-
-    chroot = ForeignKey(dbName='chroot',
-                        foreignKey='LibraryFileAlias',
-                        notNull=False)
 
     packages = RelatedJoin('BinaryPackage', joinColumn='distroarchrelease',
                             intermediateTable='PackagePublishing',
@@ -69,9 +65,26 @@ class DistroArchRelease(SQLBase):
     def __getitem__(self, name):
         binset = getUtility(IBinaryPackageSet)
         packages = binset.getByNameInDistroRelease(
-            self.distrorelease.id, name=name, archtag=self.architecturetag)
+            self.distrorelease.id, name=name, archtag=self.architecturetag,
+            orderBy='id')
+
         try:
             return packages[0]
         except IndexError:
             raise KeyError, name
+
+
+class PocketChroot(SQLBase):
+    implements(IPocketChroot)
+    _table = "PocketChroot"
+
+    distroarchrelease = ForeignKey(dbName='distroarchrelease',
+                                   foreignKey='DistroArchRelease',
+                                   notNull=True)
+    pocket = dbschema.EnumCol(dbName='pocket',
+                              schema=dbschema.PackagePublishingPocket)
+
+    chroot = ForeignKey(dbName='chroot',
+                        foreignKey='LibraryFileAlias')
+
 

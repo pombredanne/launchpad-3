@@ -17,24 +17,20 @@
       for="canonical.launchpad.interfaces.IPerson"
       name="+index" />
 
-  <browser:addform
-      name="+newteam"
+  <browser:editform
+      name="+review"
       for="canonical.launchpad.interfaces.IPerson"
-      schema="canonical.launchpad.interfaces.ITeam"
-      label="Create a new Team"
-      fields="name displayname teamdescription defaultmembershipperiod 
-              defaultrenewalperiod subscriptionpolicy"
-      content_factory="canonical.launchpad.database.Person"
-      class="canonical.launchpad.browser.TeamAddView"
-      permission="launchpad.Edit"
-      template="../templates/foaf-newteam.pt"
-      lp:url="/people/$person.id/+newteam">
+      schema="canonical.launchpad.interfaces.IPerson"
+      label="Person Review"
+      fields="name displayname givenname familyname password"
+      permission="launchpad.Admin"
+      template="../templates/person-review.pt"
+      lp:url="/people/$person.id/+review">
       <browser:widget
-          field="teamdescription"
-          class="zope.app.form.browser.TextAreaWidget"
-          displayWidth="50"
-          height="10" />
-  </browser:addform>
+          field="password"
+          class="canonical.widgets.PasswordChangeWidget"
+          />
+  </browser:editform>
 
   <browser:pages
       for="canonical.launchpad.interfaces.IPerson"
@@ -49,9 +45,13 @@
           template="../templates/person-packages.pt"
           lp:url="/people/$Person.name/+packages" />
       <browser:page
-          name="+bugs"
-          template="../templates/person-bugs.pt"
-          lp:url="/people/$Person.name/+bugs" />
+          name="+assignedbugs"
+          template="../templates/person-assignedbugs.pt"
+          lp:url="/people/$Person.name/+assignedbugs" />
+      <browser:page
+          name="+reportedbugs"
+          template="../templates/person-reportedbugs.pt"
+          lp:url="/people/$Person.name/+reportedbugs" />
       <browser:page
           name="+karma"
           template="../templates/person-karma.pt"
@@ -65,14 +65,18 @@
           attribute="showSSHKeys"
           lp:url="/people/$Person.name/+sshkey" />
       <browser:page
-          name="+gpgkey"
-          attribute="showGPGKeys"
-          lp:url="/people/$Person.name/+gpgkey" />
-      <browser:page
           name="+bounties"
           template="../templates/person-bounties.pt"
           lp:url="/people/$Person.name/+bounties" />
   </browser:pages>
+
+  <browser:page
+      for="canonical.launchpad.interfaces.IPerson"
+      name="+rdf"
+      template="../templates/person-foaf.pt"
+      lp:url="/person/$Person.name/+rdf"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.PersonRdfView" />
 
   <browser:pages
       for="canonical.launchpad.interfaces.IPerson"
@@ -134,6 +138,16 @@
           lp:url="/people/$Person.name/+bounties" />
   </browser:pages>
 
+  <browser:pages
+      for="canonical.launchpad.interfaces.ITeam"
+      permission="launchpad.Edit"
+      class="canonical.launchpad.browser.TeamEmailView">
+        <browser:page
+            name="+editemail"
+            template="../templates/team-editemail.pt"
+            lp:url="/people/$team.id/+editemail" />
+  </browser:pages>
+
   <browser:editform
       name="+edit"
       for="canonical.launchpad.interfaces.ITeam"
@@ -146,6 +160,16 @@
       template="../templates/team-edit.pt"
       lp:url="/people/$person.id/+edit">
   </browser:editform>
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.ITeam"
+      permission="launchpad.Edit"
+      class="canonical.launchpad.browser.TeamReassignmentView">
+        <browser:page
+            name="+reassign"
+            template="../templates/object-reassignment.pt"
+            lp:url="/people/$team.id/+reassign" />
+  </browser:pages>
 
   <browser:pages
       for="canonical.launchpad.interfaces.ITeam"
@@ -185,6 +209,29 @@
   <browser:traverse
       for="canonical.launchpad.interfaces.IPersonSet"
       getter="getByName" />
+  <browser:url
+      for="canonical.launchpad.interfaces.IPerson"
+      path_expression="name"
+      parent_utility="canonical.launchpad.interfaces.IPersonSet"
+      />
+
+  <browser:addform
+      name="+newteam"
+      for="canonical.launchpad.interfaces.IPersonSet"
+      schema="canonical.launchpad.browser.ITeamCreation"
+      label="Create a new Team"
+      fields="name displayname contactemail teamdescription 
+              defaultmembershipperiod defaultrenewalperiod subscriptionpolicy"
+      class="canonical.launchpad.browser.TeamAddView"
+      permission="launchpad.AnyPerson"
+      template="../templates/foaf-newteam.pt"
+      lp:url="/people/+newteam">
+      <browser:widget
+          field="teamdescription"
+          class="zope.app.form.browser.TextAreaWidget"
+          displayWidth="50"
+          height="10" />
+  </browser:addform>
 
   <browser:pages
       for="canonical.launchpad.interfaces.IPersonSet"

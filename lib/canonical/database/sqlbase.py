@@ -1,13 +1,29 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
+import psycopg
 from sqlos import SQLOS
 from sqlos.adapter import PostgresAdapter
 from sqlobject.sqlbuilder import sqlrepr
 from sqlobject.styles import Style
-from datetime import datetime, date, time
+from datetime import datetime
 from sqlobject import connectionForURI
 import thread, warnings
+import time
+
+from canonical.config import config
 
 __all__ = ['SQLBase', 'quote', 'quote_like', 'sqlvalues',
            'ZopelessTransactionManager', 'ConflictingTransactionManagerError']
+
+
+# First, let's monkey-patch SQLObject a little, to stop its getID function from
+# returning None for security-proxied SQLObjects!
+import zope.security.proxy
+import sqlobject.main
+sqlobject.main.isinstance = zope.security.proxy.isinstance
+
 
 class LaunchpadStyle(Style):
     """A SQLObject style for launchpad. 
@@ -76,21 +92,91 @@ class SQLBase(SQLOS):
 
 
 class _ZopelessConnectionDescriptor(object):
+    """Descriptor for SQLObject._connection.
+
+    It provides per-thread transactions.  If implicitActivate is set (the
+    default), then these transactions will be created on-demand if they don't
+    already exist.  If implicitActivate is not set, then this will return None
+    for a thread until `_activate` is called, and after `_deactivate` is called.
+    """
     def __init__(self, connectionURI, sqlosAdapter=PostgresAdapter,
-                 debug=False):
+                 debug=False, implicitActivate=True, reconnect=False):
         self.connectionURI = connectionURI
         self.sqlosAdapter = sqlosAdapter
         self.transactions = {}
         self.debug = debug
+        self.implicitActivate = implicitActivate
+        self.reconnect = reconnect
 
-    def __get__(self, inst, cls=None):
+    def _reconnect(self):
+        first = True
+        conn = None
+        while True:
+            if first:
+                first = False
+            else:
+                # Sleep so that we aren't completely hammering things.
+                time.sleep(1)
+                
+            # Be neat and tidy: try to close the remains of any previous
+            # attempt.
+            if conn is not None:
+                try:
+                    conn.close()
+                except psycopg.Error:
+                    pass
+                conn = None
+                
+            # Make a connection, and a cursor.  If this fails, just loop and try
+            # again.
+            try:
+                conn = connectionForURI(self.connectionURI).makeConnection()
+                cur = conn.cursor()
+            except psycopg.Error:
+                continue
+
+            # Check that the cursor really works, making sure to close it
+            # afterwards.  If it doesn't, back to the top...
+            try:
+                try:
+                    cur.execute('SELECT 1;')
+                except psycopg.Error:
+                    continue
+            finally:
+                cur.close()
+
+            # Great!  We have a working connection.  We're done.
+            return conn
+
+    def _activate(self):
+        """Activate SQLBase._connection for the current thread."""
         tid = thread.get_ident()
-        if tid not in self.transactions:
+        assert tid not in self.transactions, (
+            "Already activated the connection descriptor for this thread.")
+
+        # Build a connection (retrying if necessary)
+        if self.reconnect:
+            conn = self._reconnect()
+        else:
             conn = connectionForURI(self.connectionURI).makeConnection()
-            adapted = self.sqlosAdapter(conn)
-            adapted.debug = self.debug
-            self.transactions[tid] = adapted.transaction()
-        return self.transactions[tid]
+
+        # Wrap it in SQLOS's loving arms.
+        adapted = self.sqlosAdapter(conn)
+        adapted.debug = self.debug
+
+        # Create a Transaction, and put it in the transactions dict.
+        self.transactions[tid] = adapted.transaction()
+
+    def _deactivate(self):
+        """Deactivate SQLBase._connection for the current thread."""
+        del self.transactions[thread.get_ident()]
+    
+    def __get__(self, inst, cls=None):
+        """Return the Transaction object for this thread if it exists, or None."""
+        tid = thread.get_ident()
+        if self.implicitActivate and tid not in self.transactions:
+            self._activate()
+        return self.transactions.get(thread.get_ident(), None)
 
     def __set__(self, inst, value):
         '''Do nothing
@@ -102,21 +188,28 @@ class _ZopelessConnectionDescriptor(object):
         #import warnings
         #warnings.warn("Something tried to set a _connection.  Ignored.")
 
-    def install(cls, connectionURI, sqlClass=SQLBase, debug=False):
+    def install(cls, connectionURI, sqlClass=SQLBase, debug=False,
+                implicitActivate=True, reconnect=False):
         if isinstance(sqlClass.__dict__.get('_connection'),
                 _ZopelessConnectionDescriptor):
             # ZopelessTransactionManager.__new__ should now prevent this from
             # happening, so raise an error if it somehow does anyway.
             raise RuntimeError, "Already installed _connection descriptor."
         cls.sqlClass = sqlClass
-        sqlClass._connection = cls(connectionURI, debug=debug)
+        descriptor = cls(connectionURI, debug=debug,
+                         implicitActivate=implicitActivate, reconnect=reconnect)
+        sqlClass._connection = descriptor
+        return descriptor
     install = classmethod(install)
 
     def uninstall(cls):
         # Explicitly close all connections we opened.
         descriptor = cls.sqlClass.__dict__.get('_connection')
         for trans in descriptor.transactions.itervalues():
-            trans.rollback()
+            try:
+                trans.rollback()
+            except psycopg.Error:
+                pass
             trans._dbConnection._connection.close()
 
         # Remove the _connection descriptor.  This assumes there was no
@@ -145,7 +238,8 @@ class ZopelessTransactionManager(object):
     _installed = None
     alreadyInited = False
 
-    def __new__(cls, connectionURI, sqlClass=SQLBase, debug=False):
+    def __new__(cls, connectionURI, sqlClass=SQLBase, debug=False,
+                implicitBegin=True):
         if cls._installed is not None:
             if (cls._installed.connectionURI != connectionURI or
                 cls._installed.sqlClass != sqlClass or
@@ -158,10 +252,12 @@ class ZopelessTransactionManager(object):
             # so return that one, but also emit a warning.
             warnings.warn(alreadyInstalledMsg, stacklevel=2)
             return cls._installed
-        cls._installed = object.__new__(cls, connectionURI, sqlClass, debug)
+        cls._installed = object.__new__(cls, connectionURI, sqlClass, debug,
+                                        implicitBegin)
         return cls._installed
 
-    def __init__(self, connectionURI, sqlClass=SQLBase, debug=False):
+    def __init__(self, connectionURI, sqlClass=SQLBase, debug=False,
+                 implicitBegin=True):
         # For some reason, Python insists on calling __init__ on anything
         # returned from __new__, even if it's not a newly constructed object
         # (i.e. type.__call__ calls __init__, rather than object.__new__ like
@@ -175,14 +271,17 @@ class ZopelessTransactionManager(object):
         #      instead of self.manager?
         from transaction import manager
         self.manager = manager
-        _ZopelessConnectionDescriptor.install(connectionURI, debug=debug)
+        desc = _ZopelessConnectionDescriptor.install(
+            connectionURI, debug=debug, implicitActivate=implicitBegin,
+            reconnect=not implicitBegin)
         self.sqlClass = sqlClass
+        self.desc = desc
         # The next two instance variables are used for the check in __new__
         self.connectionURI = connectionURI
         self.debug = debug
-        #self.cls._connection = adapter(self.connection.makeConnection())
-        #self.dm = self.cls._connection._dm
-        #self.begin()
+        self.implicitBegin = implicitBegin
+        if self.implicitBegin:
+            self.begin()
 
     def uninstall(self):
         _ZopelessConnectionDescriptor.uninstall()
@@ -196,13 +295,23 @@ class ZopelessTransactionManager(object):
         return self.sqlClass._connection._dm
 
     def begin(self):
+        if not self.implicitBegin:
+            self.desc._activate()
         _clearCache()
         txn = self.manager.begin()
         txn.join(self._dm())
 
     def commit(self, sub=False):
         self.manager.get().commit(sub)
-        self.begin()
+
+        # We always remove the existing transaction & connection, for
+        # simplicity.  SQLObject does connection pooling, and we don't have any
+        # indication that reconnecting every transaction would be a performance
+        # problem anyway.
+        self.desc._deactivate()
+
+        if self.implicitBegin:
+            self.begin()
 
     def abort(self, sub=False):
         objects = list(self._dm().objects)
@@ -210,7 +319,9 @@ class ZopelessTransactionManager(object):
         for obj in objects:
             obj.reset()
             obj.expire()
-        self.begin()
+        self.desc._deactivate()
+        if self.implicitBegin:
+            self.begin()
 
 
 def _clearCache():
@@ -239,9 +350,9 @@ def quote(x):
     >>> quote("hello")
     "'hello'"
     >>> quote("'hello'")
-    "'''hello'''"
+    "'\\'hello\\''"
     >>> quote(r"\'hello")
-    "'\\\\''hello'"
+    "'\\\\\\'hello'"
 
     Timezone handling is not implemented, since all timestamps should
     be UTC anyway.
@@ -254,11 +365,13 @@ def quote(x):
     >>> quote(time(13, 45, 50))
     "'13:45:50'"
 
-    Note that we have to special case datetime handling, as
-    SQLObject's quote function is quite broken ( http://tinyurl.com/4bk8p )
+    This function special cases datetime objects, due to a bug that has
+    since been fixed in SQLOS (it installed an SQLObject converter that
+    stripped the time component from the value).  By itself, the sqlrepr
+    function has the following output:
 
     >>> sqlrepr(datetime(2003, 12, 4, 13, 45, 50), 'postgres')
-    "'2003-12-04'"
+    "'2003-12-04T13:45:50'"
 
     """
     if isinstance(x, datetime):
@@ -322,7 +435,7 @@ def sqlvalues(*values, **kwvalues):
     >>> sqlvalues(1)
     ('1',)
     >>> sqlvalues(1, "bad ' string")
-    ('1', "'bad '' string'")
+    ('1', "'bad \\\\' string'")
 
     You can also use it when using dict-style substitution.
 
@@ -344,6 +457,25 @@ def sqlvalues(*values, **kwvalues):
         return tuple([quote(item) for item in values])
     elif kwvalues:
         return dict([(key, quote(value)) for key, value in kwvalues.items()])
+
+def quoteIdentifier(identifier):
+    r'''Quote an identifier, such as a table name.
+    
+    In SQL, identifiers are quoted using " rather than ' which is reserved
+    for strings.
+
+    >>> print quoteIdentifier('hello')
+    "hello"
+    >>> print quoteIdentifier("'")
+    "'"
+    >>> print quoteIdentifier('"')
+    """"
+    >>> print quoteIdentifier("\\")
+    "\"
+    >>> print quoteIdentifier('\\"')
+    "\"""
+    '''
+    return '"%s"' % identifier.replace('"','""')
 
 def flush_database_updates():
     """Flushes all pending database updates for the current connection.
@@ -370,6 +502,8 @@ def flush_database_updates():
     """
     # XXX: turn that comment into a doctest
     #        - Andrew Bennetts, 2005-02-16
+    # https://launchpad.ubuntu.com/malone/bugs/452
+    #        - Brad Bollenbach, 2005-04-20
     for object in list(SQLBase._connection._dm.objects):
         object.syncUpdate()
 
@@ -383,6 +517,9 @@ def flush_database_updates():
 def begin():
     """Begins a transaction, aborting the current one if necessary."""
     transaction = SQLBase._connection
+    if transaction is None:
+        ZopelessTransactionManager._installed.begin()
+        return
     if not transaction._obsolete:
         # XXX: This perhaps should raise a warning?
         #        - Andrew Bennetts, 2005-02-11
@@ -396,6 +533,20 @@ def rollback():
 def commit():
     SQLBase._connection.commit()
 
+def connect(user, dbname=None):
+    """Return a fresh DB-API connecction to the database.
+
+    Use None for the user to connect as the default PostgreSQL user.
+    This is not the default because the option should be rarely used.
+
+    Default database name is the one specified in the main configuration file.
+    """
+    con_str = 'dbname=%s' % (dbname or config.dbname)
+    if user:
+        con_str += ' user=%s' % user
+    if config.dbhost:
+        con_str += ' host=%s' % config.dbhost
+    return psycopg.connect(con_str)
 
 def cursor():
     '''Return a cursor from the current database connection.

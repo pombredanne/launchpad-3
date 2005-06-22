@@ -1,0 +1,196 @@
+Test the Person +review page.
+
+This test also confirms the behavior of the password change widget.
+
+
+First ensure we can get the basic form
+
+
+  >>> print http(r"""
+  ... GET /people/stub/+review HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+            <h2>Stuart Bishop</h2>
+  ...
+        <form action="http://localhost:9000/people/stub/+review"
+              method="post" enctype="multipart/form-data">
+  ...
+                  <div><input class="textType" id="field.displayname" name="field.displayname" size="20" type="text" value="Stuart Bishop"  /></div>
+  ...
+                  <div><input class="textType" id="field.givenname" name="field.givenname" size="20" type="text" value="Stuart"  /></div>
+  ...
+                  <div><input class="textType" id="field.familyname" name="field.familyname" size="20" type="text" value="Bishop"  /></div>
+  ...
+  <div>
+  <input type="password" value="" style=""
+         name="field.password" id="field.password"
+         maxlength="" class="" size="20" />
+  <br />
+  <input type="password" value="" style=""
+         name="field.password_dupe" id="field.password_dupe"
+         maxlength="" class="" size="20" />
+  </div>
+  ...
+              <input type="submit" name="UPDATE_SUBMIT"
+  ...
+        </form>
+  ...
+
+
+Confirm that mismatched passwords are handled correctly. Note also that
+the password fields are empty (we don't want to return the password
+entered back to the client for security reasons).
+
+  >>> print http(r"""
+  ... POST /people/stub/+review HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Accept-Language: en-au,en-gb;q=0.7,en;q=0.3
+  ... Content-Length: 806
+  ... Content-Type: multipart/form-data; boundary=---------------------------562019032012077591862423452
+  ... Referer: http://localhost:9000/people/stub/+review
+  ... 
+  ... -----------------------------562019032012077591862423452
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... Stuart Bishop
+  ... -----------------------------562019032012077591862423452
+  ... Content-Disposition: form-data; name="field.givenname"
+  ... 
+  ... Stuart
+  ... -----------------------------562019032012077591862423452
+  ... Content-Disposition: form-data; name="field.familyname"
+  ... 
+  ... Bishop
+  ... -----------------------------562019032012077591862423452
+  ... Content-Disposition: form-data; name="field.password"
+  ... 
+  ... foo
+  ... -----------------------------562019032012077591862423452
+  ... Content-Disposition: form-data; name="field.password_dupe"
+  ... 
+  ... 
+  ... -----------------------------562019032012077591862423452
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------562019032012077591862423452--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+               There are <strong>1</strong> input errors.
+  ...
+  <div>
+  <input type="password" value="" style=""
+         name="field.password" id="field.password"
+         maxlength="" class="" size="20" />
+  <br />
+  <input type="password" value="" style=""
+         name="field.password_dupe" id="field.password_dupe"
+         maxlength="" class="" size="20" />
+  </div>
+  ...
+  ...<span class="error">Passwords do not match</span>...
+  ...
+
+
+Now change the password correctly.
+
+  >>> print http(r"""
+  ... POST /people/stub/+review HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Accept-Language: en-au,en-gb;q=0.7,en;q=0.3
+  ... Content-Length: 823
+  ... Content-Type: multipart/form-data; boundary=---------------------------16539223822440519001173234445
+  ... Referer: http://localhost:9000/people/stub/+review
+  ... 
+  ... -----------------------------16539223822440519001173234445
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... Stuart Bishop
+  ... -----------------------------16539223822440519001173234445
+  ... Content-Disposition: form-data; name="field.givenname"
+  ... 
+  ... Stuart
+  ... -----------------------------16539223822440519001173234445
+  ... Content-Disposition: form-data; name="field.familyname"
+  ... 
+  ... Bishop
+  ... -----------------------------16539223822440519001173234445
+  ... Content-Disposition: form-data; name="field.password"
+  ... 
+  ... foo
+  ... -----------------------------16539223822440519001173234445
+  ... Content-Disposition: form-data; name="field.password_dupe"
+  ... 
+  ... foo
+  ... -----------------------------16539223822440519001173234445
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------16539223822440519001173234445--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  <p class="portalMessage">Updated on ...</p>
+  ...
+
+
+Leaving the password blank will be accepted, as this means 'keep the
+current value'. Also ensure other fields can be changed.
+
+  
+  >>> print http(r"""
+  ... POST /people/stub/+review HTTP/1.1
+  ... Accept-Language: en-au,en-gb;q=0.7,en;q=0.3
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 834
+  ... Content-Type: multipart/form-data; boundary=---------------------------1828846877754354973268517541
+  ... Referer: http://localhost:9000/people/stub/+review
+  ... 
+  ... -----------------------------1828846877754354973268517541
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... Stuart Bishop Changed
+  ... -----------------------------1828846877754354973268517541
+  ... Content-Disposition: form-data; name="field.givenname"
+  ... 
+  ... Stuart Changed
+  ... -----------------------------1828846877754354973268517541
+  ... Content-Disposition: form-data; name="field.familyname"
+  ... 
+  ... Bishop Changed
+  ... -----------------------------1828846877754354973268517541
+  ... Content-Disposition: form-data; name="field.password"
+  ... 
+  ... 
+  ... -----------------------------1828846877754354973268517541
+  ... Content-Disposition: form-data; name="field.password_dupe"
+  ... 
+  ... 
+  ... -----------------------------1828846877754354973268517541
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------1828846877754354973268517541--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+            <h2>Stuart Bishop Changed</h2>
+  ...
+                  <div><input class="textType" id="field.displayname" name="field.displayname" size="20" type="text" value="Stuart Bishop Changed"  /></div>
+  ...
+                  <div><input class="textType" id="field.givenname" name="field.givenname" size="20" type="text" value="Stuart Changed"  /></div>
+  ...
+                  <div><input class="textType" id="field.familyname" name="field.familyname" size="20" type="text" value="Bishop Changed"  /></div>
+  ...
+      <input type="password" value="" style=""
+         name="field.password" id="field.password"
+         maxlength="" class="" size="20" />
+      <br />
+      <input type="password" value="" style=""
+         name="field.password_dupe" id="field.password_dupe"
+         maxlength="" class="" size="20" />
+  ...
+

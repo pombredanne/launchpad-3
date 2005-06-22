@@ -1,0 +1,81 @@
+When an email arrives in Launchpad the user who sent it needs to be
+authenticated. This is done by authenticateEmail:
+
+    >>> from canonical.launchpad.mail.incoming import authenticateEmail
+
+The only way of authenticating the user is by looking at the GPG
+signature. First we have to import the GPG keys we will use in the
+emails:
+
+    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> import transaction
+    >>> import_public_test_keys()
+    >>> transaction.commit()
+
+Now Sample Person and Foo Bar have one GPG key each. Next, let's get
+a test email that's signed and try to authenticate the user who sent it:
+
+    >>> from canonical.launchpad.helpers import read_test_message
+    >>> msg = read_test_message('signed_detached.txt')
+    >>> principal = authenticateEmail(msg)
+
+If the authentication fails, None is return, if it succeeds the
+authenticated principal:
+
+    >>> principal is not None
+    True
+
+We can check that the user really got authenticated by looking at the
+user in the launch bag:
+
+    >>> import email
+    >>> from canonical.launchpad.interfaces import ILaunchBag, IPersonSet
+    >>> from zope.component import getUtility
+    >>> launchbag = getUtility(ILaunchBag)
+    >>> name, addr = email.Utils.parseaddr(msg['From'])
+    >>> from_user = getUtility(IPersonSet).getByEmail(addr)
+    >>> launchbag.user == from_user
+    True
+    >>> launchbag.login
+    'test@canonical.com'
+    
+In the above email the GPG signature was detached from the actual
+message. Inline signatures are supported as well. 
+
+    >>> msg = read_test_message('signed_inline.txt')
+    >>> principal = authenticateEmail(msg)
+    >>> principal is not None
+    True
+    >>> name, addr = email.Utils.parseaddr(msg['From'])
+    >>> from_user = getUtility(IPersonSet).getByEmail(addr)
+    >>> launchbag.user == from_user
+    True
+    >>> launchbag.login
+    'test@canonical.com'
+
+As well as signed multipart messages:
+   
+    >>> msg = read_test_message('signed_multipart.txt')
+    >>> principal = authenticateEmail(msg)
+    >>> principal is not None
+    True
+    >>> name, addr = email.Utils.parseaddr(msg['From'])
+    >>> from_user = getUtility(IPersonSet).getByEmail(addr)
+    >>> launchbag.user == from_user
+    True
+    >>> launchbag.login
+    'foo.bar@canonical.com'
+
+Since a GPG key can be associated with several addresses, the user to
+authenticate is extracted from the From header. If the key used to sign
+the email doesn't belong to that user, he won't be authenticated, as
+shown below where the email was signed with Sample Person's key, but
+the From header states it's from Foo Bar:
+
+    >>> msg = read_test_message('signed_incorrect_from.txt')
+    >>> name, addr = email.Utils.parseaddr(msg['From'])
+    >>> from_user = getUtility(IPersonSet).getByEmail(addr)
+    >>> principal = authenticateEmail(msg)
+    Traceback (most recent call last):
+      ...
+    InvalidSignature:...

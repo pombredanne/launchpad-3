@@ -1,0 +1,61 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>PO File Export</h1>
+
+    <tal:comment replace="nothing">
+        This condition will become unneccessary once we can guarantee that all
+        logged in users have a preferred email address.
+    </tal:comment>
+
+    <tal:block condition="not: view/user/preferredemail">
+        <p>
+        In order to be able to export a PO file, you must first choose a
+        preferred email address. This is so that we can send you a
+        notification when the export is complete.
+        </p>
+
+        <p>
+        <a tal:attributes="href
+        string:/people/${view/user/name}/+emails">Configure email
+        addresses</a>
+        </p>
+    </tal:block>
+
+    <tal:block condition="view/user/preferredemail">
+        <tal:thing content="view/processForm" />
+
+        <tal:block condition="view/formProcessed">
+            <p>
+            Your request has been received. Expect to receive an email shortly.
+            </p>
+        </tal:block>
+
+        <tal:block condition="not: view/formProcessed">
+            <p>
+            Once you have confirmed, an export of this file will be made
+            shortly, and a notification will be sent to your email address
+            <strong
+            tal:content="view/user/preferredemail/email">user@domain</strong>.
+            </p>
+
+            <form action="" method="POST" enctype="multipart/form-data">
+                <div class="formControls">
+                    <input type="submit" value="Confirm Export" />
+                </div>
+            </form>
+
+        </tal:block>
+
+    </tal:block>
+
+</div>
+
+</body>
+</html>

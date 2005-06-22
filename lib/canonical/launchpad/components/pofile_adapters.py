@@ -24,13 +24,8 @@ SINGULAR = 0
 PLURAL = 1
 
 
-# XXX: if you *modify* the adapted pofile "object", it assumes you're updating
-#      it from the latest revision (for the purposes of inLastRevision fields).
-#      That should probably be optional.
-
-
 class WatchedSet(sets.Set):
-    """ Mutable set class that "warns" a callable when changed."""
+    """Mutable set class that "warns" a callable when changed."""
     # (Used for bridging flags/flagsComment)
 
     # need __slots__ because sets.Set says we do
@@ -89,97 +84,96 @@ class WatchedSet(sets.Set):
 class TranslationsList(object):
     """Special list-like object to bridge translations.  It pretends to
     be a list of strings, but it actually fetches values from the database,
-    using translation sightings associated with the passed message set."""
-    def __init__(self, messageset, person):
+    using translation selections associated with the passed message set."""
+    def __init__(self, messageset, person, published, is_editor):
         # message set we'll use to access the database
         self._msgset = messageset
         # a person - in case we need to create rows
         self._who = person
+        # remember whether we are displaying / modifying the translations
+        # that are active in rosetta, or that are published in the pofile
+        self._published = published
+        # remember whether or not the person making this submission has
+        # permission to edit this pofile
+        self._is_editor = is_editor
         # cache the number of plural forms, as we use that value a lot
         # find the correct number of forms - fortunately we
         # have a method that does just that
-        self._nplurals = messageset.pluralforms()
+        self._nplurals = messageset.pluralforms
 
-    # XXX: this list implementation is incomplete.  Dude, if you want to do
+    # This list implementation is incomplete.  Dude, if you want to do
     # del foo.msgstrs[2]
     # or
     # foo.msgstrs.pop()
     # then you're probably on crack anyway.
 
     def __setitem__(self, index, value):
-        "one single item is being set; index is the plural form"
-        # an empty value is interpreted by Rosetta as not having
-        # translation for this form; we don't have sightings for
-        # the empty translation.
-        if not value:
-            # check if there was already a
-            # translation in the DB which needs to be outdated
-            try:
-                sighting = self._msgset.getTranslationSighting(index, allowOld=False)
-            except IndexError:
-                # nothing passed, nothing in the DB, then it's ok
-                return
-            # there is one in the DB; mark it as historic
-            sighting.inlastrevision = False
-            # Mark the msgset as fuzzy only if the one in the DB came from
-            # the SCM.
-            if sighting.origin == RosettaTranslationOrigin.SCM:
-                self._msgset.fuzzy = True
-            # we're done
-            return
-
-        # value is not empty; there is actually a translation
+        """Set one single item. Index is the plural form"""
         # check that the plural form index makes sense
         if index >= self._nplurals:
             # Don't fail, just print a warning.
-            warnings.warn("Found more pluralforms entries than specified for"
-                          " this language.")
+            warnings.warn("Found more pluralforms than expected "
+                "for this language.")
         # if we don't have a Person instance, we can't create rows
         if self._who is None:
             raise UnknownUserError, \
-                  "Tried to create objects but have no Person to associate it with"
-        # create a translation sighting, or update an existing one
-        self._msgset.makeTranslationSighting(self._who, value, index,
-                                             fromPOFile=True)
+                "Cannot create objects that have no Person"
+        # create a translation submission
+        self._msgset.makeSubmission(self._who, value, index,
+            self._published, self._is_editor)
 
     def __getitem__(self, index):
         "one single item is being requested; index is the plural form"
         # first check if it is in the database
-        try:
-            return self._msgset.getTranslationSighting(index, allowOld=False).potranslation.translation
-        except IndexError:
+        submission =  self._msgset.activeSubmission(index)
+        if submission is not None:
+            return submission.potranslation.translation
+        elif 0 <= index < self._nplurals:
             # it's not; but if it's a valid plural form, we should return
             # an empty string
-            if index < self._nplurals:
-                return ''
-            # otherwise, raise an exception
-            raise IndexError, index
+            return ''
+        # otherwise, raise an exception
+        raise IndexError, index
 
     def __len__(self):
-        "return the number of actual translations."
-        # XXX shouldn't it maybe return self._nplurals since this is the
-        # number of items __getitem__ will return?
-        return len(list(self._msgset.translations()))
+        """Return the number of translations expected."""
+        return self._nplurals
 
     def append(self, value):
-        "add a new item at the end of the list"
+        """Add a new item at the end of the list"""
+        # get the set of translations
+        translations = self._msgset.active_texts
         # only valid if we're not already complete
-        if len(self) >= self._nplurals:
+        if translations[-1] is not None:
             raise ValueError, "Too many plural forms"
         # and if we have an associated Person object
         if self._who is None:
             raise UnknownUserError, \
-                  "Tried to create objects but have no Person to associate it with"
-        # XXX: should probably check if value is not empty/None
-        # create (or update) a translation sighting
-        self._msgset.makeTranslationSighting(self._who, value, len(self),
-                                             fromPOFile=True)
+                  "Tried to create objects but have no Person to associate with"
+        # translations is a list like [ item1, ..., itemn, None, ..., None ]
+        #  we want to set pluralform to the index of the first None
+        # in the run of None's at the end of the list.  There may be
+        # None's embedded in the run of items at the start of the list,
+        # but they should be ignored so index() would give the wrong
+        # answer
+        pluralform = 0
+        for index, tran in reversed(enumerate(translations)):
+            if not tran:
+                pluralform = index + 1
+        if pluralform >= len(translations):
+            raise ValueError, "No space left for extra translation"
+
+        # create the translation submission
+        self._msgset.makeSubmission(self._who, value, pluralform,
+            self._published, self._is_editor)
 
 
 class MessageProxy(POMessage):
+
     implements(IPOMessage)
 
-    def __init__(self, potmsgset, pomsgset=None, person=None, fuzzy=False):
+    def __init__(self, potmsgset, published, is_editor, pomsgset=None,
+        person=None, fuzzy=False):
         """Initialize a proxy.  We pretend to be a POMessage (and
         in fact shamelessly leech its methods), but our *data* is
         acquired from the database. The person object is used in case
@@ -187,12 +181,15 @@ class MessageProxy(POMessage):
         self._potmsgset = potmsgset
         self._pomsgset = pomsgset
         self._who = person
+        self._published = published
+        self._is_editor = is_editor
         self._fuzzy = fuzzy
         # create and store the TranslationsList object; since it's
         # fully dynamic, we can have a single one troughout our
         # lifetime
         if pomsgset:
-            self._translations = TranslationsList(pomsgset, person)
+            self._translations = TranslationsList(pomsgset, person,
+                published, is_editor)
 
     # property: msgid
     # in rosetta: primeMessageID points to it
@@ -239,6 +236,8 @@ class MessageProxy(POMessage):
         # all the code necessary to do this
         if self._pomsgset:
             self._translations[SINGULAR] = value
+            # make sure we update statistics
+            self._pomsgset.updateStatistics()
     msgstr = property(_get_msgstr, _set_msgstr)
 
     # property: msgstrPlurals (a list)
@@ -256,6 +255,8 @@ class MessageProxy(POMessage):
         if self._pomsgset:
             for index, item in enumerate(value):
                 self._translations[index] = item
+            # make sure we update statistics
+            self._pomsgset.updateStatistics()
     msgstrPlurals = property(_get_msgstrPlurals, _set_msgstrPlurals)
 
     # property: commentText
@@ -311,14 +312,15 @@ class MessageProxy(POMessage):
             fl = [flag.strip() for flag in flags.split(',')]
         else:
             fl = []
-        if self._pomsgset and self._pomsgset.fuzzy:
+        if self._published and self._pomsgset and self._pomsgset.publishedfuzzy:
             fl.append('fuzzy')
-        elif self._fuzzy and self._pomsgset and \
-            len(self._translations) > 1:
+        elif not self._published and self._pomsgset and self._pomsgset.isfuzzy:
+            fl.append('fuzzy')
+        elif self._fuzzy and self._pomsgset and len(self._translations) > 1:
             # This fuzzy is added to let gettext handle better the incomplete
             # translations. It makes sense only with plural forms.
             for translation in self._translations:
-                if translation == '':
+                if not translation:
                     fl.append('fuzzy')
                     break
         return WatchedSet(self._set_flags, fl)
@@ -329,9 +331,15 @@ class MessageProxy(POMessage):
             # XXX: Carlos Perello Marin 15/10/04: I'm not sure if we should
             # remove the fuzzy flag if the pomsgset is None
             if self._pomsgset:
-                self._pomsgset.fuzzy = True
+                if self._published:
+                    self._pomsgset.publishedfuzzy = True
+                else:
+                    self._pomsgset.isfuzzy = True
         elif self._pomsgset:
-            self._pomsgset.fuzzy = False
+            if self._published:
+                self._pomsgset.publishedfuzzy = False
+            else:
+                self._pomsgset.isfuzzy = False
         self._potmsgset.flagscomment = self.flagsText(value, withHash=False)
     flags = property(_get_flags, _set_flags)
 
@@ -351,14 +359,19 @@ class TemplateImporter(object):
     "Importer object used for importing templates"
     __used_for__ = IPOTemplate
 
-    def __init__(self, potemplate, person):
+    # code that uses this will need to learn to set published and is_editor
+    # correctly. PLEASE DO NOT set published=True or is_editor=False unless
+    # you understand NonEditorTranslation and PoTranslationStorage
+    def __init__(self, potemplate, person, published, is_editor):
         self.potemplate = potemplate
         # how many msgsets we already have; used for setting msgset.sequence
         self.len = 0
         self.person = person
+        self.published = published
+        self.is_editor = is_editor
 
     def doImport(self, filelike):
-        "Import a file (or similar object)"
+        """Import a file (or similar object)"""
         # each import, if an importer does more than one,
         # has to start with a fresh parser
         self.parser = POParser(translation_factory=self)
@@ -370,13 +383,16 @@ class TemplateImporter(object):
         # how much memory do we want to eat?
         self.parser.write(filelike.read())
         self.parser.finish()
+        # update the statistics of each of the pofiles
+        for pofile in self.potemplate.pofiles:
+            pofile.updateStatistics()
         if self.parser.header is None:
             raise POInvalidInputError('PO template has no header', 0)
         # Store the .pot header into the database.
         self.potemplate.header = self.parser.header.msgstr.encode('utf-8')
 
     def __call__(self, msgid, **kw):
-        "Instantiate a single message/messageset"
+        """Instantiate a single message/messageset."""
         # first fetch the message set
         try:
             # is it already in the db?
@@ -391,7 +407,8 @@ class TemplateImporter(object):
         self.len += 1
         potmsgset.sequence = self.len
         # create the proxy
-        proxy = MessageProxy(potmsgset=potmsgset, person=self.person)
+        proxy = MessageProxy(potmsgset, self.published, self.is_editor,
+            person=self.person)
         # capture all exceptions - we want (do we?) our IndexError, KeyError,
         # etc-s to become POInvalidInputError-s.
         try:
@@ -427,12 +444,21 @@ class POFileImporter(object):
     "Importer object used for importing PO files"
     __used_for__ = IPOFile
 
-    def __init__(self, pofile, person):
+    # anything that uses this will need to learn how to use published and
+    # is_editor correctly. PLEASE DO NOT do that until you understand
+    # PoTranslationStorage and NonEditorTranslation fully
+    def __init__(self, pofile, person, published, is_editor):
         self.pofile = pofile
         # how many msgsets we already have; used for setting msgset.sequence
         self.len = 0
         self.person = person
         self.header_stored = False
+        # deal with cases where something was attached before we knew about
+        # the difference between uploads and published ones
+        if published is None:
+            published = False
+        self.published = published
+        self.is_editor = is_editor
 
     def store_header(self):
         "Store the info about the header in the database"
@@ -454,11 +480,12 @@ class POFileImporter(object):
                 # we absolutely don't know it; only complain if
                 # a plural translation is present
                 header.pluralforms = 1
-        # store it; use a single db operation
+        # store it; use a single db operation. XXX sabdfl 27/05/05 should we
+        # also differentiate between washeaderfuzzy and isheaderfuzzy?
         self.pofile.set(
             topcomment=header.commentText.encode('utf-8'),
             header=header.msgstr.encode('utf-8'),
-            headerfuzzy='fuzzy' in header.flags,
+            fuzzyheader='fuzzy' in header.flags,
             pluralforms=header.nplurals)
         # state that we've done so, or someone might give us a card
         self.header_stored = True
@@ -480,11 +507,14 @@ class POFileImporter(object):
         self.store_header()
         if not self.header_stored:
             raise POInvalidInputError('PO file has no header', 0)
+        # now we need to update the statistics of the pofile
+        self.pofile.updateStatistics()
+
 
     def __call__(self, msgid, **kw):
         "Instantiate a single message/messageset"
         # check if we already stored the header, and if we haven't,
-        # store it, so that msgset.pluralforms() can return the
+        # store it, so that msgset.pluralforms can return the
         # right thing
         self.store_header()
         # fetch the message set
@@ -502,7 +532,8 @@ class POFileImporter(object):
         self.len += 1
         pomsgset.sequence = self.len
         # create the proxy
-        proxy = MessageProxy(potmsgset=pomsgset.potmsgset, pomsgset=pomsgset, person=self.person)
+        proxy = MessageProxy(pomsgset.potmsgset, self.published,
+            self.is_editor, pomsgset=pomsgset, person=self.person)
         # capture all exceptions - we want (do we?) our IndexError, KeyError,
         # etc-s to become POInvalidInputError-s.
         try:

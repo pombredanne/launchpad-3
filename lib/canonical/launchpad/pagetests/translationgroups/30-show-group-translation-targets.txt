@@ -1,0 +1,24 @@
+
+We should now see the various distro's, projects and products that the group
+has been assigned as the translator for.
+
+  >>> print http(r"""
+  ... GET /rosetta/groups/polyglot/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+            <h2>The PolyGlot Translation Group</h2>
+  ...
+      <h4>this group translates for...</h4>
+  ...
+                    <a href="/distros/ubuntu">ubuntu</a>
+  ...
+                    <a href="/products/netapplet">NetApplet</a>
+  ...
+                    <a href="/projects/gnome">GNOME</a>
+  ...
+

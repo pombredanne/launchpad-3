@@ -3,14 +3,15 @@
 Add full text indexes to the launchpad database
 '''
 
-import sys, os.path, os
-sys.path.append(os.path.join(
-    os.path.dirname(__file__), os.pardir, os.pardir, 'lib',
-    ))
+import _pythonpath
 
-import psycopg, popen2, re
+import sys, os.path, popen2, re
 from optparse import OptionParser
-from canonical.lp import dbname, dbhost
+import psycopg
+from canonical.database.sqlbase import connect
+from canonical import lp
+from canonical.config import config
+from canonical.launchpad.scripts import logger, logger_options, db_options
 
 # Defines parser and locale to use.
 DEFAULT_CONFIG = 'default'
@@ -21,6 +22,7 @@ PATCH_SQL = os.path.join(
 
 ALL_FTI = [
     ('bug', ['name', 'title', 'summary', 'description']),
+    ('bugtask', ['statusexplanation']),
     ('message', ['title']),
     ('messagechunk', ['content']),
     ('person', ['givenname', 'familyname', 'displayname']),
@@ -40,8 +42,7 @@ def quote_identifier(identifier):
 
 def execute(con, sql, results=False):
     sql = sql.strip()
-    if options.verbose > 1:
-        print '* %s' % sql
+    log.debug('* %s' % sql)
     cur = con.cursor()
     cur.execute(sql)
     if results:
@@ -111,16 +112,16 @@ def setup(con, configuration=DEFAULT_CONFIG):
 
     try:
         execute(con, 'SELECT * from pg_ts_cfg')
-        if options.verbose:
-            print '* tsearch2 already installed'
+        log.debug('tsearch2 already installed')
     except psycopg.ProgrammingError:
         con.rollback()
-        if options.verbose:
-            print '* Installing tsearch2'
-        if dbhost:
-            cmd = 'psql -d %s -h %s -f -' % (dbname, dbhost)
+        log.debug('Installing tsearch2')
+        if config.dbhost:
+            cmd = 'psql -d %s -h %s -f -' % (config.dbname, config.dbhost)
         else:
-            cmd = 'psql -d %s -f -' % (dbname,)
+            cmd = 'psql -d %s -f -' % (config.dbname, )
+        if options.dbuser:
+            cmd += ' -U %s' % options.dbuser
         p = popen2.Popen4(cmd)
         c = p.tochild
         print >> c, "SET client_min_messages=ERROR;"
@@ -130,10 +131,8 @@ def setup(con, configuration=DEFAULT_CONFIG):
         p.tochild.close()
         rv = p.wait()
         if rv != 0:
-            print '* Error executing %s:' % cmd
-            print '---'
-            print p.fromchild.read()
-            print '---'
+            log.fatal('Error executing %s:', cmd)
+            log.debug(p.fromchild.read())
             sys.exit(rv)
 
     # Create ftq helper
@@ -197,12 +196,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
 
 
 def main():
-    if options.verbose:
-        print "* Connecting to dbname='%s' host='%s'" % (dbname, dbhost)
-    if dbhost:
-        con = psycopg.connect('dbname=%s host=%s' % (dbname, dbhost))
-    else:
-        con = psycopg.connect('dbname=%s' % (dbname,))
+    con = connect(lp.dbuser)
     setup(con)
     if not options.setup:
         for row in ALL_FTI:
@@ -212,15 +206,16 @@ def main():
 if __name__ == '__main__':
     parser = OptionParser()
     parser.add_option(
-            "-v", "--verbose", dest="verbose",
-            action="count", default=0,
-            help="Verbose",
-            )
-    parser.add_option(
             "-s", "--setup-only", dest="setup",
             action="store_true", default=False,
             help="Only install tsearch2 - don't build the indexes",
             )
+    db_options(parser)
+    logger_options(parser)
+
     (options, args) = parser.parse_args()
+
+    log = logger(options)
+
     main()
 

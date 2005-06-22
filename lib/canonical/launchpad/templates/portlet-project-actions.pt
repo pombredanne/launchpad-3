@@ -1,15 +1,16 @@
-<div class="portlet">
+<div class="portlet" tal:condition="context/required:launchpad.Edit">
     <h4>Actions:</h4>
 
     <div class="portletBody">
-        <div class="portletContent even">
+      <div class="portletContent">
 
-        <img src="/++resource++edit.gif">
-        <a href="+edit">Edit Project</a><br />
-
-        <img src="/++resource++edit.gif">
-        <a href="+review">Review Project</a><br />
-
+        <ul>
+          <li class="edit">
+            <a href="+edit">Edit Project</a>
+          </li>
+          <li class="edit">
+            <a href="+changetranslators">Change Translators</a>
+          </li>
         </div>
     </div>
 </div>

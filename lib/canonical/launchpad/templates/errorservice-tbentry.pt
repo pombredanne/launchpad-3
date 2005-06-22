@@ -1,14 +1,9 @@
-<html>
-
-<head>
-  <title metal:fill-slot="title">Traceback Entry</title>
-</head>
+<html metal:use-macro="context/@@main_template/master">
 
 <body>
- <div tal:define="entry python:context.getLogEntryById(request.get('id'))">
-  <pre tal:content="entry/tb_text">
-        Traceback (text)
-  </pre>
+    <div metal:fill-slot="main"
+        tal:define="entry python:context.getLogEntryById(request.get('id'))">
+    <pre tal:content="entry/tb_text">Traceback (text)</pre>
  </div>
 </body>
 

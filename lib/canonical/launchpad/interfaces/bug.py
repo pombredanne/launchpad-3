@@ -1,4 +1,10 @@
 __metaclass__ = object
+__all__ = ['BugCreationConstraintsError',
+           'IBug',
+           'IBugSet',
+           'IBugDelta',
+           'IBugAddForm']
+
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -10,83 +16,68 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.lp import dbschema
 from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.bug import non_duplicate_bug
 from canonical.launchpad.fields import Title, Summary
 
 
-# CONTENT
+class BugCreationConstraintsError(Exception):
+    """Raised when a bug is created with not all constraints satisfied.
+
+    Currently the only constraint is that it should have at least one
+    bug task.
+    """
+
+
 class IBug(Interface):
     """The core bug entry."""
 
     id = Int(
-            title=_('Bug ID'), required=True, readonly=True,
-            )
+        title=_('Bug ID'), required=True, readonly=True)
     datecreated = Datetime(
-            title=_('Date Created'), required=True, readonly=True,
-            )
+        title=_('Date Created'), required=True, readonly=True)
     name = TextLine(
-            title=_('Nickname'), required=False,
-            description=_("""A short and unique name for this bug. Very few
-                bugs have a nickname, they are just bugs that are so
-                significant that people will actually remember the
-                name. Please don't set a nickname for the bug unless you
-                are certain that this is the sort of bug that the entire
-                community, upstream and all distro's, will phear."""),
-            constraint=valid_name,
-            )
+        title=_('Nickname'), required=False,
+        description=_("""A short and unique name for this bug.
+        Add a nickname only if you often need to retype the URL
+        but have trouble remembering the bug number."""),
+        constraint=valid_name)
     title = Title(
-            title=_('Title'), required=True,
-            description=_("""A one-line summary of the problem"""),
-            )
+        title=_('Title'), required=True,
+        description=_("""A one-line summary of the problem."""))
     summary = Summary(
-            title=_('Summary'), required=False,
-            description=_("""The bug summary is a single paragraph
-            description that should capture the essence of the bug, where it
-            has been observed, and what triggers it."""),
-            )
+        title=_('Summary'), required=False,
+        description=_("""A single paragraph
+        description that should capture the essence of the bug, where it
+        has been observed, and what triggers it."""))
     description = Text(
-            title=_('Description'), required=False,
-            description=_("""A detailed description of the problem,
-            including the steps required to reproduce it""")
-            )
-    ownerID = Int(
-            title=_('Owner'), required=True, readonly=True
-            )
+        title=_('Description'), required=False,
+        description=_("""A detailed description of the problem,
+        including the steps required to reproduce it."""))
+    ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = Attribute("The owner's IPerson")
     duplicateof = Int(
-            title=_('Duplicate Of'), required=False,
-            )
+        title=_('Duplicate Of'), required=False, constraint=non_duplicate_bug)
     communityscore = Int(
-            title=_('Community Score'), required=True, readonly=True,
-            default=0,
-            )
+        title=_('Community Score'), required=True, readonly=True,
+        default=0)
     communitytimestamp = Datetime(
-            title=_('Community Timestamp'), required=True, readonly=True,
-            #default=datetime.utcnow,
-            )
+        title=_('Community Timestamp'), required=True, readonly=True)
     hits = Int(
-            title=_('Hits'), required=True, readonly=True,
-            default=0,
-            )
+        title=_('Hits'), required=True, readonly=True, default=0)
     hitstimestamp = Datetime(
-            title=_('Hits Timestamp'), required=True, readonly=True,
-            #default=datetime.utcnow,
-            )
+        title=_('Hits Timestamp'), required=True, readonly=True)
     activityscore = Int(
-            title=_('Activity Score'), required=True, readonly=True,
-            default=0,
-            )
+        title=_('Activity Score'), required=True, readonly=True,
+        default=0)
     activitytimestamp = Datetime(
-            title=_('Activity Timestamp'),
-            required=True, readonly=True,
-            #default=datetime.utcnow,
-            )
+        title=_('Activity Timestamp'), required=True, readonly=True)
     private = Bool(
-            title=_("Should this bug be kept confidential?"), required=False,
-            description=_(
-                "Check this box if, for example, this bug exposes a security "
-                "vulnerability. If selected, this bug will be visible only to "
-                "its subscribers."),
-            default=False)
+        title=_("Should this bug be kept confidential?"), required=False,
+        description=_(
+        "Check this box if, for example, this bug exposes a security "
+        "vulnerability. If selected, this bug will be visible only to "
+        "its subscribers."),
+        default=False)
 
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
     messages = Attribute('SQLObject.RelatedJoin of IMessages')
@@ -97,6 +88,8 @@ class IBug(Interface):
     externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
     cverefs = Attribute('CVE references for this bug')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
+    duplicates = Attribute('MultiJoin of the bugs which are dups of this '
+        'one')
 
     def followup_title():
         """Return a candidate title for a followup message."""
@@ -104,8 +97,9 @@ class IBug(Interface):
     def subscribe(person, subscription):
         """Subscribe person to the bug, with the provided subscription type.
 
-        Returns an IBugSubscription. Raises a ValueError if the person is
-        already subscribed.
+        subscription is a dbschema item, e.g. BugSubscription.CC. Raises a
+        ValueError if the person is already subscribed. Returns an
+        IBugSubscription.
         """
 
     def unsubscribe(person):
@@ -123,6 +117,10 @@ class IBug(Interface):
 
     def notificationRecipientAddresses():
         """Return the list of email addresses that recieve notifications.
+
+        If this bug is a duplicate of another bug, the CC'd list of
+        the dup target will be appended to the list of recipient
+        addresses.
         """
 
 
@@ -139,6 +137,8 @@ class IBugDelta(Interface):
     description = Attribute("The new bug description or None.")
     private = Attribute("A dict with two keys, 'old' and 'new', or None.")
     name = Attribute("A dict with two keys, 'old' and 'new', or None.")
+    duplicateof = Attribute(
+        "The ID of which this bug report is a duplicate, or None.")
 
     # other things linked to the bug
     external_reference = Attribute(
@@ -191,15 +191,22 @@ class IBugAddForm(IBug):
 
 # Interfaces for set
 class IBugSet(IAddFormCustomization):
-    """A set for bugs."""
+    """A set of bugs."""
 
     title = Attribute('Title')
 
-    def __getitem__(key):
+    def __getitem__(bugid):
         """Get a Bug."""
 
     def __iter__():
         """Iterate through Bugs."""
 
     def get(bugid):
-        """Get a specific bug by its ID."""
+        """Get a specific bug by its ID.
+
+        If it can't be found, a zope.exceptions.NotFoundError will be
+        raised.
+        """
+
+    def search(duplicateof=None):
+        """Find bugs matching the search criteria provided."""

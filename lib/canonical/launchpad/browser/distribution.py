@@ -2,7 +2,9 @@
 
 __metaclass__ = type
 
+from zope.interface import implements
 from zope.component import getUtility
+from zope.app.traversing.browser.absoluteurl import absoluteURL
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form.browser.add import AddView
 from zope.app.form.browser import SequenceWidget, ObjectWidget
@@ -18,10 +20,12 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import BugTaskStatus
 from canonical.launchpad.interfaces import IDistribution, \
-        IDistributionSet, IPerson, IBugTaskSet, ILaunchBag
+        IDistributionSet, IPerson, IBugTaskSet, ILaunchBag, \
+        IBugTaskSearchListingView
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.helpers import is_maintainer
 from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.browser import BugTaskSearchListingView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 
 class DistributionView:
@@ -35,23 +39,20 @@ class DistributionView:
     relatedBountiesPortlet = ViewPageTemplateFile(
         '../templates/portlet-related-bounties.pt')
 
+
+class DistributionBugsView(BugTaskSearchListingView):
+
+    implements(IBugTaskSearchListingView)
+
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        bugtasks_to_show = getUtility(IBugTaskSet).search(
-            status = any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
-            distribution = self.context, orderby = "-id")
-        self.batch = Batch(
-            list(bugtasks_to_show), int(request.get('batch_start', 0)))
-        self.batchnav = BatchNavigator(self.batch, request)
-        self.is_maintainer = is_maintainer(self.context)
+        BugTaskSearchListingView.__init__(self, context, request)
+        self.milestone_widget = None
 
     def task_columns(self):
+        """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
         return [
-            "id", "package", "title", "status", "submittedby", "assignedto"]
-
-    def assign_to_milestones(self):
-        return []
+            "select", "id", "title", "package", "status", "submittedby",
+            "assignedto"]
 
 
 class DistributionFileBugView(SQLObjectAddView):
@@ -79,12 +80,13 @@ class DistributionFileBugView(SQLObjectAddView):
             title = kw['title'], comment = kw['comment'],
             private = kw['private'], owner = kw['owner'])
 
-        notify(SQLObjectCreatedEvent(bug, self.request))
+        notify(SQLObjectCreatedEvent(bug))
 
+        self.addedBug = bug 
         return bug
 
     def nextURL(self):
-        return '.'
+        return absoluteURL(self.addedBug, self.request)
 
 
 class DistributionSetView:

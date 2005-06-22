@@ -1,0 +1,28 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+  <body>
+
+    <!-- This page uses the launchpad-addform.pt METAL -->
+
+    <div metal:fill-slot="main">
+
+      <div metal:use-macro="context/@@launchpad_addform/addform">
+
+        <h1 tal:condition="view/label"
+            tal:content="view/label"
+            metal:fill-slot="heading">
+            Add a template in Rosetta
+        </h1>
+
+        <legend metal:fill-slot="form_legend">New template details</legend>
+
+      </div>
+
+    </div>
+  </body>
+
+</html>
+

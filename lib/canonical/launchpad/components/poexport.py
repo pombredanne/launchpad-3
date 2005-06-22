@@ -265,7 +265,7 @@ def export_rows(rows, pofile_output):
             # Create new message set
 
             msgset = OutputMsgSet(pofile)
-            msgset.fuzzy = row.fuzzy
+            msgset.fuzzy = row.isfuzzy
 
             if row.potsequence:
                 msgset.sequence = row.potsequence
@@ -287,10 +287,11 @@ def export_rows(rows, pofile_output):
         if row.msgidpluralform == len(msgset.msgids):
             msgset.add_msgid(row.msgid)
 
-        if row.active and row.translationpluralform >= len(msgset.msgstrs):
-                msgset.add_msgstr(row.translationpluralform, row.translation)
+        if row.activesubmission and \
+            row.translationpluralform >= len(msgset.msgstrs):
+            msgset.add_msgstr(row.translationpluralform, row.translation)
 
-        if row.fuzzy and not 'fuzzy' in msgset.flags:
+        if row.isfuzzy and not 'fuzzy' in msgset.flags:
             msgset.flags.append('fuzzy')
 
         if row.pocommenttext and not msgset.commenttext:
@@ -356,8 +357,12 @@ class TemplateTarballPOFileOutput:
     def __call__(self, potemplate, language, variant, contents):
         """See IPOFileOutput."""
 
+        language_code = language.code.encode('ascii')
+
         if variant is not None:
-            raise RuntimeError("PO files with variants are not supported.")
+            code = '%s@%s' % (language_code, variant.encode('UTF-8'))
+        else:
+            code = language_code
 
         code = language.code.encode('ascii')
         name = '%s.po' % code
@@ -400,10 +405,13 @@ class DistroRelaseTarballPOFileOutput:
     def __call__(self, potemplate, language, variant, contents):
         """See IPOFileOutput."""
 
-        if variant is not None:
-            raise RuntimeError("PO files with variants are not supported.")
+        language_code = language.code.encode('ascii')
 
-        code = language.code.encode('ascii')
+        if variant is not None:
+            code = '%s@%s' % (language_code, variant.encode('UTF-8'))
+        else:
+            code = language_code
+
         domain = potemplate.potemplatename.translationdomain.encode('ascii')
         path = os.path.join(
             'rosetta-%s' % self.release.name,
@@ -418,9 +426,16 @@ def export_distrorelease_tarball(filehandle, release, date=None):
 
     archive = tarfile.open('', 'w:gz', filehandle)
 
-    rows = getUtility(IVPOExportSet).get_distrorelease_rows(release, date)
+    pofiles = getUtility(IVPOExportSet).get_distrorelease_pofiles(
+        release, date)
     pofile_output = DistroRelaseTarballPOFileOutput(release, archive)
-    export_rows(rows, pofile_output)
+
+    for pofile in pofiles:
+        pofile_output(
+            potemplate=pofile.potemplate,
+            language=pofile.language,
+            variant=pofile.variant,
+            contents=pofile.export())
 
     contents = datetime.datetime.utcnow().strftime('%Y%m%d\n')
     fileinfo = tarfile.TarInfo('rosetta-%s/timestamp.txt' % release.name)
@@ -483,7 +498,7 @@ class DistroReleasePOExporter:
 # XXX Carlos Perello Marin 2005-04-14: Code that implements the old
 # POExport code. We should remove this when Rosetta moves to the new code.
 
-_created_with_rosetta = 'Rosetta (http://launchpad.ubuntu.com/rosetta/)'
+_created_with_rosetta = 'Rosetta (https://launchpad.ubuntu.com/rosetta/)'
 
 class POExport:
     """Class that exports pofiles from the database.
@@ -526,9 +541,7 @@ class POExport:
                 fuzzy = False
             messages.append(
                 MessageProxy(
-                    potmsgset=potmsgset,
-                    pomsgset=pomsgset,
-                    fuzzy=fuzzy))
+                    potmsgset, False, True, pomsgset=pomsgset, fuzzy=fuzzy))
 
         # Get all obsolete messages from the POFile, that's all messagesets
         # that were in the POFile last time we imported it but are not anymore
@@ -540,9 +553,7 @@ class POExport:
             # incomplete as fuzzy.
             obsolete_messages.append(
                 MessageProxy(
-                    potmsgset=potmsgset,
-                    pomsgset=pomsgset,
-                    fuzzy=True))
+                    potmsgset, False, True, pomsgset=pomsgset, fuzzy=True))
 
         # We parse the header of the POFile before exporting it to be able to
         # know the POFile encoding
@@ -565,15 +576,14 @@ class POExport:
 
         # First we get last translator that touched a string and the date when
         # it was done.
-        last_changed = poFile.latest_sighting
+        last_changed = poFile.latest_submission
 
         if last_changed is not None:
             # We have at least one pomsgset with a translation so we are able
             # to update .po's headers.
 
-            # It's safe to assume that all times in Rosetta are UTC dates.
-            header['PO-Revision-Date'] = last_changed.datelastactive.strftime(
-                '%F %R+0000')
+            header['PO-Revision-Date'] = last_changed.datecreated.strftime(
+                '%F %R%z')
 
             # Look for the email address of the last translator
             if last_changed.person.preferredemail is not None:
@@ -593,12 +603,7 @@ class POExport:
                 raise RuntimeError(
                     'All Person rows should have at least one email address!')
 
-            # Now, it's time to get a name for our translator
-            if last_changed.person.displayname is not None:
-                name = last_changed.person.displayname
-            else:
-                name = last_changed.person.name
-
+            name = last_changed.person.browsername
             # Finally the pofile header is updated.
             header['Last-Translator'] = '%s <%s>' % (name, email)
 

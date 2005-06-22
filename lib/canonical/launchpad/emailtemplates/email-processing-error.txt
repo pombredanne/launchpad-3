@@ -1,0 +1,5 @@
+An error was encountered while processing your request.
+
+Error message:
+
+%(error_msg)s

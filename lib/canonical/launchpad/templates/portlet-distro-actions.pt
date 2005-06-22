@@ -2,23 +2,25 @@
     <h4>Actions:</h4>
 
     <div class="portletBody">
-        <div class="portletContent even">
+      <div class="portletContent">
 
-        <img src="/++resource++edit.gif">
-        <a href="+edit">Edit Distro Details</a><br />
-        <img src="/++resource++edit.gif">
-        <a href="+selectmemberteam">Change members team.</a><br />
-<!-- 	XXX: Daniel Debonzi 20050107 -->
-<!-- 	Create DistroRelease is not working when at this time -->
-<!-- 	when Im changing write permissions to launchpad.Admin -->
-<!-- 	to be able to get Soyuz im production. Instead of get it -->
-<!-- 	working I will comment the link since there is no derivation -->
-<!-- 	definitions enought to implement it properly. -->
-<!--         <img src="/++resource++edit.gif"> -->
-<!--         <a href="+new">Create Release</a><br /> -->
-        <img src="/++resource++add.gif">
-        <a href="+packages">Search Packages</a><br />
-
-        </div>
+        <ul>
+          <li class="edit"
+              tal:condition="context/required:launchpad.Edit">
+            <a href="+edit">Edit Details</a>
+          </li>
+          <li class="edit"
+              tal:condition="context/required:launchpad.Edit">
+            <a href="+selectmemberteam">Change Members</a>
+          </li>
+          <li class="edit"
+              tal:condition="context/required:launchpad.Edit">
+            <a href="+changetranslators">Change Translators</a>
+          </li>
+          <li class="search">
+            <a href="+packages">Search Packages</a>
+          </li>
+        </ul>
+      </div>
     </div>
 </div>

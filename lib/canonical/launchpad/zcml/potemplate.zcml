@@ -10,8 +10,8 @@
         <require
             permission="zope.Public"
             interface="canonical.launchpad.interfaces.IEditPOTemplate"
-            set_attributes="name title description copyright path
-                            priority distrorelease sourcepackagename"
+            set_attributes="name description iscurrent owner path
+                            filename distrorelease sourcepackagename"
             />
         <require
             permission="zope.Public"
@@ -35,18 +35,42 @@
         for="canonical.launchpad.interfaces.IPOTemplate"
         permission="zope.Public"
         template="../templates/potemplate-index.pt"
-        class="canonical.launchpad.browser.ViewPOTemplate"
+        class="canonical.launchpad.browser.POTemplateView"
         lp:url="Rosetta/products/$Product.name/$POTemplate.name/+index"
         />
 
     <browser:page
-        name="+edit"
+        name="+upload"
         for="canonical.launchpad.interfaces.IPOTemplate"
         permission="launchpad.Edit"
-        template="../templates/potemplate-edit.pt"
-        class="canonical.launchpad.browser.ViewPOTemplate"
-        lp:url="Rosetta/products/$Product.name/$POTemplate.name/+edit"
+        template="../templates/potemplate-upload.pt"
+        class="canonical.launchpad.browser.POTemplateView"
+        lp:url="Rosetta/products/$Product.name/$POTemplate.name/+upload"
         />
+
+    <browser:editform
+        name="+admin"
+        schema="canonical.launchpad.interfaces.IPOTemplate"
+        class="canonical.launchpad.browser.POTemplateAdminView"
+        label="Change PO template Information"
+        permission="launchpad.Admin"
+        template="../templates/potemplate-admin.pt"
+        fields="potemplatename description header iscurrent owner
+                productrelease distrorelease sourcepackagename
+                sourcepackageversion binarypackagename languagepack path
+                filename" >
+    </browser:editform>
+
+    <browser:editform
+        name="+edit"
+        schema="canonical.launchpad.interfaces.IPOTemplate"
+        class="canonical.launchpad.browser.POTemplateEditView"
+        label="Change PO template Information"
+        permission="launchpad.Edit"
+        template="../templates/potemplate-edit.pt"
+        fields="name description owner path filename" >
+        lp:url="Rosetta/products/$Product.name/$POTemplate.name/+edit"
+    </browser:editform>
 
     <browser:page
         name="+translate"
@@ -61,7 +85,15 @@
         for="canonical.launchpad.interfaces.IPOTemplate"
         permission="zope.Public"
         template="../templates/potemplate-chart.pt"
-        class="canonical.launchpad.browser.ViewPOTemplate"
+        class="canonical.launchpad.browser.POTemplateView"
+        />
+
+    <browser:page
+        name="+export"
+        for="canonical.launchpad.interfaces.IPOTemplate"
+        permission="launchpad.AnyPerson"
+        template="../templates/potemplate-export.pt"
+        class="canonical.launchpad.browser.POTemplateExport"
         />
 
     <browser:page
@@ -72,6 +104,25 @@
         attribute="__call__"
         />
 
+    <!-- needed for @@absolute_url to work -->
+    <view
+        for="canonical.launchpad.interfaces.IPOTemplate"
+        factory="canonical.launchpad.browser.potemplate.POTemplateAbsoluteURL"
+        type="zope.publisher.interfaces.http.IHTTPRequest"
+        permission="zope.Public"
+        provides="zope.app.traversing.browser.interfaces.IAbsoluteURL">
+    </view>
+
+    <view
+        name="absolute_url"
+        for="canonical.launchpad.interfaces.IPOTemplate"
+        factory="canonical.launchpad.browser.potemplate.POTemplateAbsoluteURL"
+        type="zope.publisher.interfaces.http.IHTTPRequest"
+        permission="zope.Public"
+        provides="zope.app.traversing.browser.interfaces.IAbsoluteURL">
+    </view>
+
+    <!-- POTemplateSet -->
     <content class="canonical.launchpad.database.POTemplateSet">
         <require
             permission="zope.Public"

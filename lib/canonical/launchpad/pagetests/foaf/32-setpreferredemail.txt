@@ -1,10 +1,5 @@
   Now we set foo@baz.com as 'name16' preferred email address.
 
-  Get the id of the email address we want to set as preferred. 
-
-  >>> from canonical.launchpad.database import EmailAddress
-  >>> id = EmailAddress.byEmail('foo@baz.com').id
-
 
   >>> print http(r"""
   ... GET /people/name16/+emails HTTP/1.1
@@ -24,10 +19,10 @@
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... PREFERRED_EMAIL=%d&newemail=&password=test&SUBMIT_CHANGES=Submit""" % id)
+  ... VALIDATED_SELECTED=foo%40baz.com&SET_PREFERRED=Set%20as%20Contact%20Address""")
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-  ...Thank you for your email changes...
+  ...Your contact address has been changed to: foo@baz.com...
   ...

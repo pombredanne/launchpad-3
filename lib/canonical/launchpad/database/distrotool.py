@@ -7,6 +7,7 @@ from datetime import datetime
 
 from zope.interface import implements
 
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import IDistroTools
 from canonical.launchpad.database.distribution import Distribution
 
@@ -48,7 +49,7 @@ class DistroTools:
                                 version=version,
                                 owner=owner,
                                 parentrelease=int(parent),
-                                datereleased=datetime.utcnow(),
+                                datereleased=UTC_NOW,
                                 components=1,
                                 releasestatus=1,
                                 sections=1,

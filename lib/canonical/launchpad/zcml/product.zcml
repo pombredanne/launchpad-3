@@ -10,10 +10,16 @@
     <content class="canonical.launchpad.database.Product">
         <allow interface="canonical.launchpad.interfaces.IProduct" />
         <require
-            permission="zope.Public"
+            permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IProduct"
         />
     </content>
+
+    <adapter
+        for="canonical.launchpad.interfaces.IProduct"
+        provides="canonical.launchpad.interfaces.IBugTaskSubset"
+        factory="canonical.launchpad.components.product.ProductToBugTaskSubsetAdapter" 
+        permission="zope.Public" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
@@ -22,17 +28,17 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
         layer="canonical.launchpad.layers.MaloneLayer"
-        name="+malone-index" />
+        name="+bugs" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
         layer="canonical.launchpad.layers.RosettaLayer"
-        name="+rosetta-index"
+        name="+translations"
         />
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IProduct"
-        function="canonical.launchpad.browser.traverseProduct" />
+        function="canonical.launchpad.browser.traversers.traverse_product" />
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IProduct"
@@ -47,6 +53,30 @@
             name="+index"
             template="../templates/product-index.pt"
             lp:url="/products/$Product.name/" />
+        <browser:page
+            name="+translations"
+            template="../templates/product-translations.pt"
+            lp:url="/products/evolution/+translations" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProduct"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.ObjectReassignmentView">
+          <browser:page
+              name="+reassign"
+              template="../templates/object-reassignment.pt"
+              lp:url="/product/$product.id/+reassign" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProduct"
+        permission="launchpad.Admin"
+        class="canonical.launchpad.browser.ProductView" >
+        <browser:page
+            name="+potemplatenames"
+            template="../templates/object-potemplatenames.pt"
+            lp:url="/products/$Product.name/+potemplatenames" />
     </browser:pages>
 
     <browser:pages
@@ -56,26 +86,6 @@
             name="+bounties"
             template="../templates/related-bounties.pt"
             lp:url="/products/$Product.name/+bounties/" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProduct"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.ProductTranslationView" >
-        <browser:page
-            name="+rosetta-index"
-            template="../templates/product-translations.pt"
-            lp:url="/rosetta/products/$Product.name/" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProduct"
-        class="canonical.launchpad.browser.ProductBugsView"
-        permission="zope.Public" >
-        <browser:page
-            name="+malone-index"
-            template="../templates/product-bugs.pt"
-            lp:url="/malone/products/$Product.name/" />
     </browser:pages>
 
     <browser:pages
@@ -99,9 +109,10 @@
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IProduct"
         label="Edit Upstream Product Details:"
-        fields="displayname title summary description homepageurl
-                screenshotsurl wikiurl programminglang downloadurl
-                sourceforgeproject freshmeatproject"
+        fields="name displayname title summary description homepageurl
+                sourceforgeproject freshmeatproject wikiurl screenshotsurl
+                downloadurl programminglang"
+        class="canonical.launchpad.browser.ProductEditView"
         permission="launchpad.Edit"
         template="../templates/product-edit.pt"
         lp:url="/products/$Product.name/+edit">
@@ -136,6 +147,16 @@
         template="../templates/launchpad-editform.pt"
         lp:url="/products/$Product.name/+review">
     </browser:editform>
+
+    <browser:editform
+        name="+changetranslators"
+        for="canonical.launchpad.interfaces.IProduct"
+        schema="canonical.launchpad.interfaces.IProduct"
+        fields="translationgroup translationpermission"
+        permission="launchpad.Edit"
+        label="Select A New Translation Group"
+        template="../templates/launchpad-editform.pt"
+        lp:url="/products/$Product.name/+changetranslators" />
 
     <browser:addform
         name="+filebug"
@@ -190,6 +211,11 @@
     <browser:traverse
         for="canonical.launchpad.interfaces.IProductSet"
         getter="__getitem__" />
+    <browser:url
+        for="canonical.launchpad.interfaces.IProduct"
+        path_expression="name"
+        parent_utility="canonical.launchpad.interfaces.IProductSet"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSet"
@@ -200,9 +226,9 @@
             template="../templates/products-index.pt"
             lp:url="/products/+index" />
         <browser:page
-            name="+search"
-            template="../templates/products-search.pt"
-            lp:url="/products/+search" />
+            name="+all"
+            template="../templates/doap-listall.pt"
+            lp:url="/products/+all" />
     </browser:pages>
 
     <browser:pages
@@ -222,13 +248,29 @@
         label="Register an Open Source (Upstream) Product"
         fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
-                downloadurl"
+                downloadurl programminglang"
         content_factory="canonical.launchpad.database.Product"
         class="canonical.launchpad.browser.ProductSetAddView"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
         lp:url="doap/products/+new">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget
+           field="homepageurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+        <browser:widget
+           field="screenshotsurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+        <browser:widget
+           field="wikiurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+        <browser:widget
+           field="downloadurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
     </browser:addform>
 
 </configure>

@@ -3,14 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">The Bazaar Upstream-Sync Review</title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">
@@ -39,7 +31,7 @@
 
             <p><em tal:content="product/title">Product Title</em>
                     [ <a tal:attributes="href
-                    string:${project/name}/${product/name}/+review">Review</a> ]
+                    string:/products/${product/name}/+review">Review</a> ]
             </p>
         
             <div tal:repeat="series product/serieslist">
@@ -50,7 +42,7 @@
                     <span tal:replace="series/summary">source
                     description</span>
                     [ <a tal:attributes="href
-                    string:${project/name}/${product/name}/+series/${series/name}/+sourceadmin">Admin</a> ]
+                    string:/products/${product/name}/+series/${series/name}/+sourceadmin">Admin</a> ]
                 </p>
             </div>
 

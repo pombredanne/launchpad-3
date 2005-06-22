@@ -10,6 +10,7 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.lp.dbschema import EmailAddressStatus, LoginTokenType
+from canonical.lp.dbschema import GPGKeyAlgorithm
 
 from canonical.foaf.nickname import generate_nick
 
@@ -18,7 +19,8 @@ from canonical.launchpad.webapp.login import logInPerson
 
 from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
 from canonical.launchpad.interfaces import IPasswordEncryptor, IEmailAddressSet
-from canonical.launchpad.interfaces import ILoginTokenSet
+from canonical.launchpad.interfaces import ILoginTokenSet, IGPGKeySet
+from canonical.launchpad.interfaces import IGpgHandler
 
 
 class LoginTokenView(object):
@@ -26,13 +28,15 @@ class LoginTokenView(object):
 
     This view will check the token type and then redirect to the specific view
     for that type of token. We use this view so we don't have to add
-    "+validate", "+newaccount", etc, on URLs we send by email.
+    "+validateemail", "+newaccount", etc, on URLs we send by email.
     """
 
     PAGES = {LoginTokenType.PASSWORDRECOVERY: '+resetpassword',
              LoginTokenType.ACCOUNTMERGE: '+accountmerge',
              LoginTokenType.NEWACCOUNT: '+newaccount',
-             LoginTokenType.VALIDATEEMAIL: '+validate'}
+             LoginTokenType.VALIDATEEMAIL: '+validateemail',
+             LoginTokenType.VALIDATETEAMEMAIL: '+validateteamemail',
+             LoginTokenType.VALIDATEGPGUID: '+validateuid'}
 
     def __init__(self, context, request):
         self.context = context
@@ -55,6 +59,7 @@ class ResetPasswordView(object):
         """Check the email address, check if both passwords match and then
         reset the user's password. When password is successfully changed, the
         LoginToken (self.context) used is removed, so nobody can use it again.
+
         """
         if self.request.method != "POST":
             return
@@ -127,20 +132,38 @@ class ValidateEmailView(object):
         if self.request.method != "POST":
             return
 
-        self.formProcessed = True
-        self.validate()
-
-    def validate(self):
-        """Check the requester and requesteremail, verify if the user provided
-        the correct password and then set the email address status to
-        VALIDATED. Also, if this is the first validated email for this user,
-        we set it as the PREFERRED one for that user.
-        When everything went ok, we delete the LoginToken (self.context) from
-        the database, so nobody can use it again.
-        """
         # Email validation requests must have a registered requester.
         assert self.context.requester is not None
-        assert self.context.requesteremail is not None
+        self.formProcessed = True
+        if self.context.tokentype == LoginTokenType.VALIDATEEMAIL:
+            self.validatePersonEmail()
+        elif self.context.tokentype == LoginTokenType.VALIDATETEAMEMAIL:
+            self.validateTeamEmail()
+        elif self.context.tokentype == LoginTokenType.VALIDATEGPGUID:
+            self.validateGpgUid()
+
+    def validateTeamEmail(self):
+        """Set the new email address as the team's contact email address."""
+        requester = self.context.requester
+        email = self._registerEmail(self.context.email)
+        if email is not None:
+            if requester.preferredemail is not None:
+                requester.preferredemail.destroySelf()
+            requester.preferredemail = email
+
+        # At this point, either this email address is validated or it can't be
+        # validated for this team because it's owned by someone else in
+        # Launchpad, so we can safely delete all logintokens for this team 
+        # and this email address.
+        logintokenset = getUtility(ILoginTokenSet)
+        logintokenset.deleteByEmailAndRequester(self.context.email, requester)
+
+    def validatePersonEmail(self):
+        """Check the password and validate a person's email address.
+        
+        Also, if this is the first validated email for this user, we 
+        set it as the PREFERRED one for that user. 
+        """
         requester = self.context.requester
         password = self.request.form.get("password")
         encryptor = getUtility(IPasswordEncryptor)
@@ -155,8 +178,39 @@ class ValidateEmailView(object):
             # with the user.
             status = EmailAddressStatus.PREFERRED
 
+        email = self._registerEmail(self.context.email)
+        if email is not None:
+            email.status = status
+
+        # At this point, either this email address is validated or it can't be
+        # validated for this user because it's owned by someone else in
+        # Launchpad, so we can safely delete all logintokens for this user 
+        # and this email address.
+        logintokenset = getUtility(ILoginTokenSet)
+        logintokenset.deleteByEmailAndRequester(self.context.email, requester)
+
+  
+    def validateGpgUid(self):
+        """Check the password and validate a gpg key UID.
+        Validate it as normal email account then insert the gpg key if
+        needed.
+        """
+        self.validatePersonEmail()
+        self._ensureGPG()   
+
+
+    def _registerEmail(self, emailaddress):
+        """Register <emailaddress> with status VALIDATED and return it.
+
+        If <emailaddress> is already registered in Launchpad, we just set 
+        it as VALIDATED and then return.
+        """
+        validated = (EmailAddressStatus.VALIDATED, EmailAddressStatus.PREFERRED)
+        status = EmailAddressStatus.VALIDATED
+        requester = self.context.requester
+
         emailset = getUtility(IEmailAddressSet)
-        email = emailset.getByEmail(self.context.email)
+        email = emailset.getByEmail(emailaddress)
         if email is not None:
             if email.person.id != requester.id:
                 self.errormessage = (
@@ -166,30 +220,67 @@ class ValidateEmailView(object):
                         'in this case you should be able to '
                         '<a href="/people/+requestmerge">merge them</a> '
                         'into a single one.')
-                self.context.destroySelf()
-                return
+                return None
 
-            if email.status != EmailAddressStatus.NEW:
-                self.errormessage = ("This email is already validated. "
-                                     "There's no need to validate it again.")
-                self.context.destroySelf()
-                return
+            elif email.status in validated:
+                self.errormessage = (
+                        "This email is already registered and validated "
+                        "for your Launchpad account. There's no need to "
+                        "validate it again.")
+                return None
 
-            # This email was obtained via gina or lucille and have been
-            # marked as NEW on the DB. In this case all we have to do is
-            # set that email status to VALIDATED (or PREFERRED, if it's the
-            # first validated).
-            email.status = status
-            self.context.destroySelf()
-            return
+            else:
+                return email
 
         # New email validated by the user. We must add it to our emailaddress
         # table.
-        email = emailset.new(self.context.email, status, requester.id)
-        self.context.destroySelf()
-        logintokenset = getUtility(ILoginTokenSet)
-        logintokenset.deleteByEmailAndRequester(self.context.email, requester)
+        email = emailset.new(emailaddress, status, requester.id)
+        return email
 
+    def _ensureGPG(self):
+        """Ensure the correspondent GPGKey entry for the UID."""
+        fingerprint = self.context.fingerprint        
+        gpgkeyset = getUtility(IGPGKeySet)
+        
+        # No fingerprint, is it plausible ??
+        if fingerprint == None:
+            self.errormessage = ('No fingerprint information attached to '
+                                 'this Token.') 
+            return
+        
+        # GPG was already inserted 
+        if gpgkeyset.getByFingerprint(fingerprint):
+            self.errormessage = ('The GPG Key in question was already '
+                                 'imported to the Launchpad Context.') 
+            return
+
+        # Import the respective public key
+        gpghandler = getUtility(IGpgHandler)
+
+        result, pubkey = gpghandler.getPubKey(fingerprint)
+        
+        if not result:
+            self.errormessage = ('Could not get GPG key: %' % pubkey)
+            return
+
+        key = gpghandler.importPubKey(pubkey)
+
+        if not key:
+            self.errormessage = ('Could not Import GPG key')
+            return
+        
+        # Otherwise prepare to add
+        ownerID = self.context.requester.id
+        fingerprint = key.fingerprint
+        keyid = key.keyid
+        keysize = key.keysize
+        algorithm = GPGKeyAlgorithm.items[key.algorithm]
+        revoked = key.revoked
+        
+        # Add new key in DB. See IGPGKeySet for further information
+        gpgkeyset.new(ownerID, keyid, fingerprint, keysize, algorithm, revoked)
+        self.errormessage = ('GPG key %s successfully imported' % fingerprint)
+        
 
 class NewAccountView(AddView):
 
@@ -198,7 +289,6 @@ class NewAccountView(AddView):
         self.request = request
         AddView.__init__(self, context, request)
         self._nextURL = '.'
-        self.passwordMismatch = False
 
     def nextURL(self):
         return self._nextURL
@@ -211,18 +301,6 @@ class NewAccountView(AddView):
         kw = {}
         for key, value in data.items():
             kw[str(key)] = value
-
-        errors = []
-
-        password = kw['password']
-        # We don't want to pass password2 to PersonSet.new().
-        password2 = kw.pop('password2')
-        if password2 != password:
-            self.passwordMismatch = True
-            errors.append('Password mismatch')
-
-        if errors:
-            raise WidgetsError(errors)
 
         kw['name'] = generate_nick(self.context.email)
         person = getUtility(IPersonSet).newPerson(**kw)
@@ -238,7 +316,7 @@ class NewAccountView(AddView):
 
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email.email)
-        if principal is not None and principal.validate(password):
+        if principal is not None and principal.validate(kw['password']):
             logInPerson(self.request, principal, email.email)
         return True
 

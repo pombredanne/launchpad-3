@@ -1,0 +1,1 @@
+gpg --default-key john.doe@snakeoil --no-default-keyring --secret-keyring ./john.doe@snakeoil.gpg --keyring ./john.doe@snakeoil.pub --clearsign

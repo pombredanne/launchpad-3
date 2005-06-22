@@ -1,0 +1,29 @@
+<div class="portlet">
+
+    <h4>Statistics:</h4>
+
+    <div class="portletBody">
+
+        <div class="portletContent even">
+
+            <b>Messages:</b>
+            <span tal:replace="context/potemplate/count:len">N</span>
+            <br/>
+            <b>Todo:</b>
+            <span tal:replace="view/untranslated">N</span>
+            <br />
+            <tal:block condition="context/lasttranslator">
+                <b>Latest contributor:</b>
+                <br />
+                <img src="/++resource++user.gif" />
+                <span tal:replace="context/lasttranslator/browsername" />
+                <br />
+            </tal:block>
+            <span tal:replace="structure context/@@+barchart">--</span>
+            <br />
+
+        </div>
+
+    </div>
+
+</div>

@@ -8,8 +8,9 @@
     <content class="canonical.launchpad.database.DistroRelease">
         <allow interface="canonical.launchpad.interfaces.IDistroRelease"/>
         <require
-            permission="launchpad.Admin"
-            set_attributes="displayname title summary description version"
+            permission="launchpad.Edit"
+            set_attributes="displayname title summary description version
+                            owner datelastlangpack"
             />
     </content>
 
@@ -19,6 +20,16 @@
         <allow interface="canonical.launchpad.interfaces.IDistroReleaseSet" />
     </securedutility>
 
+    <adapter
+        for="canonical.launchpad.interfaces.IDistroRelease"
+        provides="canonical.launchpad.interfaces.IBugTaskSubset"
+        factory="canonical.launchpad.components.distrorelease.DistroReleaseToBugTaskSubsetAdapter"
+        permission="zope.Public" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IDistroRelease"
+        function="canonical.launchpad.browser.traversers.traverse_distrorelease" />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistroRelease"
         name="+index" />
@@ -27,10 +38,6 @@
         for="canonical.launchpad.interfaces.IDistroRelease"
         layer="canonical.launchpad.layers.MaloneLayer"
         name="+bugs" />
-
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IDistroRelease"
-        getter="traverse" />
 
 	<browser:page
             for="canonical.launchpad.interfaces.IDistroRelease"
@@ -43,7 +50,7 @@
 
     <browser:editform
         for="canonical.launchpad.interfaces.IDistroRelease"
-        permission="launchpad.Admin"
+        permission="launchpad.Edit"
         name="+edit"
         schema="canonical.launchpad.interfaces.IDistroRelease"
         fields="displayname title summary description version"
@@ -56,15 +63,25 @@
 	    permission="zope.Public">
 
 	    <browser:page
-	        name="+bugs"
-            template="../templates/distrorelease-bugs.pt"
-	        lp:url="/distros/$Distribution.name/$Release.name/+bugs"
-	        />
-	    <browser:page
             name="+translations"
-            template="../templates/object-pots.pt"
+            template="../templates/distrorelease-translations.pt"
 	        lp:url="/distros/ubuntu/hoary/+translations"
 	        />
+	    <browser:page
+            name="+potlist"
+            template="../templates/object-pots.pt"
+	        lp:url="/distros/ubuntu/hoary/+potlist"
+	        />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IDistroRelease"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.ObjectReassignmentView">
+          <browser:page
+              name="+reassign"
+              template="../templates/object-reassignment.pt"
+              lp:url="/distros/$distro.id/$release.id/+reassign" />
     </browser:pages>
 
 	<browser:page

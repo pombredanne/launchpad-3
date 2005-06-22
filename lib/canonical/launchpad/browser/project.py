@@ -1,5 +1,7 @@
 """Project-related View Classes"""
 
+from urllib import quote as urlquote
+
 from canonical.launchpad.database import Project, Product, \
         ProjectBugTracker
 from canonical.database.constants import nowUTC
@@ -19,13 +21,9 @@ from zope.i18n.interfaces import IUserPreferredLanguages
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import IPerson, IProject
-
 from canonical.launchpad import helpers
-
-#
-# we need malone.browser.newBugTracker
-#
 from canonical.launchpad.browser.bugtracker import newBugTracker
+from canonical.launchpad.browser.editview import SQLObjectEditView
 
 #
 # Traversal functions that help us look up something
@@ -36,7 +34,7 @@ def traverseProject(project, request, name):
 
 
 #
-# This is a View on a Project object, which is used in the DOAP
+# This is a View on a Project object, which is used in the Hatchery
 # system.
 #
 class ProjectView(object):
@@ -167,6 +165,19 @@ class ProjectView(object):
         return helpers.request_languages(self.request)
 
 
+class ProjectEditView(ProjectView, SQLObjectEditView):
+    """View class that lets you edit a Project object."""
+
+    def __init__(self, context, request):
+        ProjectView.__init__(self, context, request)
+        SQLObjectEditView.__init__(self, context, request)
+
+    def changed(self):
+        # If the name changed then the URL changed, so redirect:
+        self.request.response.redirect(
+            '../%s/+edit' % urlquote(self.context.name))
+
+
 class ProjectAddProductView(AddView):
 
     __used_for__ = IProject
@@ -219,7 +230,7 @@ class ProjectSetView(object):
             self.soyuz is not None):
             self.searchrequested = True
         self.results = None
-        self.gotmatches = 0
+        self.matches = 0
 
     def searchresults(self):
         """Use searchtext to find the list of Projects that match
@@ -232,7 +243,7 @@ class ProjectSetView(object):
                                                malone=self.malone,
                                                rosetta=self.rosetta,
                                                soyuz=self.soyuz)
-        self.gotmatches = len(list(self.results))
+        self.matches = self.results.count()
         return self.results
 
     def newproject(self):
@@ -249,6 +260,8 @@ class ProjectSetView(object):
             return
         if not self.request.method == "POST":
             return
+        # Enforce lowercase project name
+        self.form['name'] = self.form['name'].lower()
         # Extract the details from the form
         name = self.form['name']
         displayname = self.form['displayname']

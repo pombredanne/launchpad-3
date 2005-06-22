@@ -13,7 +13,7 @@ from zope.event import notify
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.app.security.interfaces import IAuthenticationService
 
-from canonical.launchpad.helpers import well_formed_email
+from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.interfaces import CookieAuthLoggedInEvent
 from canonical.launchpad.webapp.interfaces import LoggedOutEvent
@@ -127,6 +127,21 @@ class LoginOrRegister:
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
         if principal is not None and principal.validate(password):
+            person = getUtility(IPersonSet).getByEmail(email)
+            if person.preferredemail is None:
+                self.login_error = (
+                    "The email address '%s', which you're trying to use to "
+                    "login has not yet been validated to use in Launchpad. We "
+                    "sent an email to that address with instructions on how "
+                    "to confirm that it belongs to you. As soon as we have "
+                    "that confirmation you'll be able to log into Launchpad."
+                    % email)
+                appurl = self.request.getApplicationURL()
+                token = getUtility(ILoginTokenSet).new(
+                            person, email, email, LoginTokenType.VALIDATEEMAIL)
+                token.sendEmailValidationRequest(appurl)
+                return
+
             logInPerson(self.request, principal, email)
             # Redirect only when we're not at the root /+login.
             # If we're on the root page, then show the page which will say
@@ -147,13 +162,13 @@ class LoginOrRegister:
         if person is not None:
             msg = ('The email address %s is already registered in our system. '
                    'If you are sure this is your email address, please go to '
-                   'the <a href="+forgottenpassword">Forgotten Password</a> '
+                   'the <a href="/+forgottenpassword">Forgotten Password</a> '
                    'page and follow the instructions to retrieve your '
                    'password.') % cgi.escape(self.email)
             self.registration_error = msg
             return
 
-        if not well_formed_email(self.email):
+        if not valid_email(self.email):
             self.registration_error = (
                 "The email address you provided isn't valid. "
                 "Please verify it and try again.")
@@ -258,8 +273,8 @@ class ForgottenPasswordPage:
 
 
 def sendPasswordResetEmail(token, appurl):
-    template_file = 'lib/canonical/launchpad/templates/forgottenpassword.txt'
-    template = open(template_file).read()
+    template = open(
+        'lib/canonical/launchpad/emailtemplates/forgottenpassword.txt').read()
     fromaddress = "Launchpad Team <noreply@canonical.com>"
 
     replacements = {'longstring': token.token,
@@ -273,7 +288,8 @@ def sendPasswordResetEmail(token, appurl):
 
 
 def sendNewUserEmail(token, appurl):
-    template = open('lib/canonical/launchpad/templates/newuser-email.txt').read()
+    template = open(
+        'lib/canonical/launchpad/emailtemplates/newuser-email.txt').read()
     replacements = {'longstring': token.token, 'appurl': appurl}
     message = template % replacements
 

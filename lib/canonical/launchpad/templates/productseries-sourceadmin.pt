@@ -3,14 +3,6 @@
   metal:use-macro="context/@@main_template/master"
   i18n:domain="rosetta">
 
-<head>
-  <title metal:fill-slot="title">Add Source Import</title>
-  <!-- Plone style sheet -->
-  <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Launchpad style sheet -->
-  <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">
@@ -75,7 +67,7 @@
       <div class="formHelp">
       Address for the SVN repository, either in svn:// or http(s):// form.
       </div>
-    <input type="text" name="svnrepository" size="30"
+    <input type="text" name="svnrepository" size="70"
        tal:attributes="value view/svnrepository" />
   </div>
 
@@ -173,6 +165,15 @@
 
   </fieldset>
 
+  <fieldset tal:condition="context/autoTestFailed">
+    <legend>Failed Import Control</legend>
+    <div class="field">
+      <label>Retest</label>
+      <div class="formHelp">Retest this series in roomba?</div>
+      <input type="checkbox" name="resetToAutotest" />
+    </div>
+  </fieldset>
+
   <fieldset>
 
     <legend>Product and Project Status</legend>
@@ -182,7 +183,10 @@
       Title</span></b></p>
       <p tal:condition="python: not (context.product.project.reviewed and
          context.product.project.active)"
-         class="portalMessage">This project is not yet approved.</p>
+         class="portalMessage">This project is not yet 
+         <a tal:attributes="href
+             string:/projects/${context/product/project/name}/+review">
+         approved</a>.</p>
 
       <p tal:content="context/product/project/summary">product
       summary</p>
@@ -192,7 +196,10 @@
     Title</span></b></p>
     <div tal:condition="python: not (context.product.reviewed and
       context.product.active)" class="portalMessage">This product is
-      not yet approved.</div>
+      not yet 
+      <a tal:attributes="href
+        string:/products/${context/product/name}/+review">
+        approved</a>.</div>
       <p><span tal:replace="context/product/summary">product
       summary</span></p>
 

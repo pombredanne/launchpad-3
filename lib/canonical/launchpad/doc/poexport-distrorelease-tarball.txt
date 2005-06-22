@@ -1,9 +1,8 @@
 
+  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+  >>> LibrarianTestSetup().setUp()
+
 Get a tarball representation of a release's translations.
-
-This is needed to make utilities work.
-
-  >>> login(ANONYMOUS)
 
 Get hold of our distribution release.
 
@@ -25,36 +24,12 @@ Check the tarball has the right members.
   >>> tarfile = string_to_tarfile(tarfile_string)
   >>> for name in tarfile.getnames():
   ...     print name
-  ...
   rosetta-hoary/
-  rosetta-hoary/ca/
-  rosetta-hoary/ca/LC_MESSAGES/
-  rosetta-hoary/ca/LC_MESSAGES/pmount.po
-  rosetta-hoary/cs/
-  rosetta-hoary/cs/LC_MESSAGES/
-  rosetta-hoary/cs/LC_MESSAGES/pmount.po
-  rosetta-hoary/fr/
-  rosetta-hoary/fr/LC_MESSAGES/
-  rosetta-hoary/fr/LC_MESSAGES/pmount.po
-  rosetta-hoary/de/
-  rosetta-hoary/de/LC_MESSAGES/
-  rosetta-hoary/de/LC_MESSAGES/pmount.po
-  rosetta-hoary/nb/
-  rosetta-hoary/nb/LC_MESSAGES/
-  rosetta-hoary/nb/LC_MESSAGES/pmount.po
-  rosetta-hoary/hr/
-  rosetta-hoary/hr/LC_MESSAGES/
-  rosetta-hoary/hr/LC_MESSAGES/pmount.po
+  ...
   rosetta-hoary/es/
   rosetta-hoary/es/LC_MESSAGES/
   rosetta-hoary/es/LC_MESSAGES/pmount.po
-  rosetta-hoary/es_ES/
-  rosetta-hoary/es_ES/LC_MESSAGES/
-  rosetta-hoary/es_ES/LC_MESSAGES/pmount.po
-  rosetta-hoary/it_IT/
-  rosetta-hoary/it_IT/LC_MESSAGES/
-  rosetta-hoary/it_IT/LC_MESSAGES/pmount.po
-  rosetta-hoary/es/LC_MESSAGES/evolution-2.2.po
+  ...
   rosetta-hoary/timestamp.txt
 
 
@@ -63,4 +38,6 @@ Check the PO file looks like what we expected.
   >>> fh = tarfile.extractfile('rosetta-hoary/es/LC_MESSAGES/evolution-2.2.po')
   >>> fh.readline()
   '# traducci\xc3\xb3n de es.po al Spanish\n'
+
+  >>> LibrarianTestSetup().tearDown()
 

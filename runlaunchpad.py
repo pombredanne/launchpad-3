@@ -1,4 +1,4 @@
-#! /usr/bin/env python2.3
+#! /usr/bin/env python2.4
 ##############################################################################
 #
 # Copyright (c) 2001, 2002 Zope Corporation and Contributors.
@@ -16,9 +16,22 @@
 
 $Id: z3.py 25266 2004-06-04 21:25:45Z jim $
 """
-import os
 import sys
+
+if sys.version_info < (2, 4, 0):
+    print ("ERROR: Your python version is not supported by Launchpad."
+            "Launchpad needs Python 2.4 or greater. You are running: " 
+            + sys.version)
+    sys.exit(1)
+
+import os
+import os.path
+import atexit
+import signal
+import subprocess
+import time
 from zope.app.server.main import main
+from configs import generate_overrides
 
 basepath = filter(None, sys.path)
 
@@ -30,13 +43,79 @@ ZDOptions.schemafile = os.path.abspath(os.path.join(
         os.path.dirname(__file__), 'lib', 'canonical',
         'config', 'schema.xml'))
 
+def start_librarian():
+    # Imported here as path is not set fully on module load
+    from canonical.config import config
+
+    # Don't run the Librarian if it wasn't asked for. We only want it
+    # started up developer boxes really, as the production Librarian
+    # doesn't use this startup script.
+    if not config.librarian.server.launch:
+        return
+
+    if not os.path.isdir(config.librarian.server.root):
+        os.makedirs(config.librarian.server.root, 0700)
+
+    pidfile = os.path.join(config.librarian.server.root, 'librarian.pid')
+    tacfile = os.path.abspath(os.path.join(
+        os.path.dirname(__file__), 'daemons', 'librarian.tac'
+        ))
+
+    ver = '%d.%d' % sys.version_info[:2]
+    args = [
+        "twistd%s" % ver,
+        "--no_save",
+        "--nodaemon",
+        "--python", tacfile,
+        "--pidfile", pidfile,
+        "--logfile", "-",
+        "--prefix", "Librarian",
+        ]
+
+    if config.librarian.server.spew:
+        args.append("--spew")
+
+    librarian_process = subprocess.Popen(args, stdin=subprocess.PIPE)
+    librarian_process.stdin.close()
+    # I've left this off - we still check at termination and we can
+    # avoid the startup delay. -- StuartBishop 20050525
+    #time.sleep(1)
+    #if librarian_process.poll() != None:
+    #    raise RuntimeError(
+    #            "Librarian did not start: %d" % librarian_process.returncode
+    #            )
+    def stop_librarian():
+        if librarian_process.poll() is None:
+            os.kill(librarian_process.pid, signal.SIGTERM)
+            librarian_process.wait()
+        else:
+            print >> sys.stderr, "*** ERROR: Librarian died prematurely!"
+            print >> sys.stderr, "***        Return code was %d" % (
+                    librarian_process.returncode,
+                    )
+    atexit.register(stop_librarian)
+
+
+def make_pidfile():
+    """Create a pidfile so we can be killed easily.
+
+    Registers an atexit callback to remove the file on termination.
+    """
+    pidfile = os.path.join(os.path.dirname(__file__), 'launchpad.pid')
+    def nukepidfile():
+        if os.path.exists(pidfile):
+            os.unlink(pidfile)
+    atexit.register(nukepidfile)
+    f = open(pidfile, 'w')
+    print >> f, str(os.getpid())
+    f.close()
+
+
+ 
 def run(argv=list(sys.argv)):
 
-    if sys.version_info < ( 2,3,4 ):
-        print """\
-        ERROR: Your python version is not supported by Zope3.
-        Zope3 needs Python 2.3.4 or greater. You are running:""" + sys.version
-        sys.exit(1)
+    # Sort ZCML overrides for our current config
+    generate_overrides()
 
     # setting python paths
     program = argv[0]
@@ -46,8 +125,15 @@ def run(argv=list(sys.argv)):
     srcdir = os.path.join(here, src)
     sys.path = [srcdir, here] + basepath
 
-    main(argv[1:])
+    # We really want to replace this with a generic startup harness.
+    # However, this should last us until this is developed
+    start_librarian()
 
+    # Store our process id somewhere
+    make_pidfile()
+
+    main(argv[1:])
+        
 
 if __name__ == '__main__':
     run()

@@ -8,6 +8,7 @@ __metaclass__ = type
 import cgi
 import re
 import sets
+import os.path
 import warnings
 from zope.interface import Interface, Attribute, implements
 from zope.component import getAdapter
@@ -15,17 +16,40 @@ from zope.component import getAdapter
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.app.traversing.interfaces import ITraversable
+import zope.security.management
+import zope.app.security.permission
 from zope.exceptions import NotFoundError
-from canonical.launchpad.interfaces import \
+from canonical.launchpad.interfaces import (
     IPerson, ILink, IFacetList, ITabList, ISelectionAwareLink
+    )
 import canonical.lp.dbschema
 from canonical.lp import decorates
-import zope.security.management
+import canonical.launchpad.pagetitles
+from canonical.launchpad.helpers import canonical_url
 
 
 class TraversalError(NotFoundError):
     """XXX Remove this when we upgrade to a more recent Zope x3"""
     # Steve Alexander, Tue Dec 14 13:07:38 UTC 2004
+
+
+def _get_request():
+    """Return the request, looked up from the interaction.
+
+    If there is no request, then return None.
+    """
+    interaction = zope.security.management.queryInteraction()
+    requests = [
+        participation
+        for participation in interaction.participations
+        if IBrowserApplicationRequest.providedBy(participation)
+        ]
+    if not requests:
+        return None
+    assert len(requests) == 1, (
+        "We expect only one IBrowserApplicationRequest in the interaction."
+        " Got %s." % len(requests))
+    return requests[0]
 
 
 class LinkDecorator:
@@ -34,20 +58,9 @@ class LinkDecorator:
 
     def __init__(self, context):
         self.context = context
-        self.selected = self._is_selected_link(self._get_request())
-
-    def _get_request(self):
-        """Returns the request."""
-        interaction = zope.security.management.queryInteraction()
-        requests = [
-            participation
-            for participation in interaction.participations
-            if IBrowserApplicationRequest.providedBy(participation)
-            ]
-        assert len(requests) == 1, (
-            "We expect only one IBrowserApplicationRequest in the interaction."
-            " Got %s." % len(requests))
-        return requests[0]
+        request = _get_request()
+        assert request is not None
+        self.selected = self._is_selected_link(request)
 
     def _is_selected_link(self, request):
         """Returns True if the link is selected."""
@@ -138,6 +151,20 @@ class MenuAPI:
                     (self.context,
                      ', '.join([facet.id for facet in selectedfacets])))
             return selectedfacets[0].id
+
+
+class CountAPI:
+    """Namespace to provide counting-related functions, such as length.
+
+    This is available for all objects.  Individual operations may fail for
+    objects that do not support them.
+    """
+    def __init__(self, context):
+        self._context = context
+
+    def len(self):
+        """somelist/count:len  gives you an int that is len(somelist)."""
+        return len(self._context)
 
 
 class HTMLFormAPI:
@@ -247,6 +274,8 @@ class NoneFormatter:
         'date',
         'time',
         'datetime',
+        'pagetitle',
+        'url'
         ])
 
     def __init__(self, context):
@@ -265,24 +294,28 @@ class NoneFormatter:
             raise TraversalError, name
 
 
+class ObjectFormatterAPI:
+    """Adapter from any object to a formatted string.  Used for fmt:url."""
+
+    def __init__(self, context):
+        self._context = context
+
+    def url(self):
+        request = _get_request()
+        return canonical_url(self._context, request)
+
+
 class DateTimeFormatterAPI:
-    """Adapter from datetime objects to a formatted string.
-
-    If the datetime object is None, for example from a NULL column in
-    the database, then the methods that would return a formatted
-    string instead return None.
-
-    This allows you to say::
-
-      <span tal:content="some_datetime/fmt:date | default">Not known</span>
-
-    """
+    """Adapter from datetime objects to a formatted string."""
 
     def __init__(self, datetimeobject):
         self._datetime = datetimeobject
 
     def time(self):
-        return self._datetime.strftime('%T')
+        if self._datetime.tzinfo:
+            return self._datetime.strftime('%T %Z')
+        else:
+            return self._datetime.strftime('%T')
 
     def date(self):
         return self._datetime.strftime('%Y-%m-%d')
@@ -326,6 +359,57 @@ class RequestFormatterAPI:
                         (self.request.URL[index], segment))
         sep = '<span class="breadcrumbSeparator"> &raquo; </span>'
         return sep.join(L)
+
+
+class PageTemplateContextsAPI:
+    """Adapter from page tempate's CONTEXTS object to fmt:pagetitle.
+
+    This is registered to be used for the dict type.
+    """
+
+    implements(ITraversable)
+
+    def __init__(self, contextdict):
+        self.contextdict = contextdict
+
+    def traverse(self, name, furtherPath):
+        if name == 'pagetitle':
+            return self.pagetitle()
+        else:
+            raise TraversalError(name)
+
+    def pagetitle(self):
+        """Return the string title for the page template CONTEXTS dict.
+
+        Take the simple filename without extension from
+        self.contextdict['template'].filename, replace any hyphens with
+        underscores, and use this to look up a string, unicode or function in
+        the module canonical.launchpad.pagetitles.
+
+        If no suitable object is found in canonical.launchpad.pagetitles,
+        emit a warning that this page has no title, and return the default
+        page title.
+        """
+        template = self.contextdict['template']
+        filename = os.path.basename(template.filename)
+        name, ext = os.path.splitext(filename)
+        name = name.replace('-', '_')
+        titleobj = getattr(canonical.launchpad.pagetitles, name, None)
+        if titleobj is None:
+            warnings.warn(
+                 "No page title in canonical.launchpad.pagetitles for %s"
+                 % name)
+            return canonical.launchpad.pagetitles.DEFAULT_LAUNCHPAD_TITLE
+        elif isinstance(titleobj, basestring):
+            return titleobj
+        else:
+            context = self.contextdict['context']
+            view = self.contextdict['view']
+            title = titleobj(context, view)
+            if title is None:
+                return canonical.launchpad.pagetitles.DEFAULT_LAUNCHPAD_TITLE
+            else:
+                return title
 
 
 class FormattersAPI:
@@ -382,5 +466,26 @@ class FormattersAPI:
             maxlength = int(furtherPath.pop())
             return self.shorten(maxlength)
         else:
-            raise TraversalError, name
+            raise TraversalError(name)
+
+
+class PermissionRequiredQuery:
+    """Check if the logged in user has a given permission on a given object.
+
+    Example usage::
+        tal:condition="person/required:launchpad.Edit"
+    """
+
+    implements(ITraversable)
+
+    def __init__(self, context):
+        self.context = context
+
+    def traverse(self, name, furtherPath):
+        if len(furtherPath) > 0:
+            raise TraversalError(
+                    "There should be no further path segments after "
+                    "required:permission")
+        zope.app.security.permission.checkPermission(self.context, name)
+        return zope.security.management.checkPermission(name, self.context)
 

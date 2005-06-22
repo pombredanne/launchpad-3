@@ -7,9 +7,10 @@ __metaclass__ = type
 from zope.interface import implements
 from zope.component import getUtility
 
-from sqlobject import StringCol, ForeignKey, MultipleJoin, DateTimeCol
+from sqlobject import StringCol, ForeignKey, MultipleJoin
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import \
     PackagePublishingStatus, BugTaskStatus, EnumCol, DistributionReleaseStatus
 
@@ -47,7 +48,7 @@ class DistroRelease(SQLBase):
     sections = ForeignKey(
         dbName='sections', foreignKey='Schema', notNull=True)
     releasestatus = EnumCol(notNull=True, schema=DistributionReleaseStatus)
-    datereleased = DateTimeCol(notNull=True)
+    datereleased = UtcDateTimeCol(notNull=False)
     parentrelease =  ForeignKey(
         dbName='parentrelease', foreignKey='DistroRelease', notNull=False)
     owner = ForeignKey(
@@ -55,25 +56,28 @@ class DistroRelease(SQLBase):
     lucilleconfig = StringCol(notNull=False)
     architectures = MultipleJoin(
         'DistroArchRelease', joinColumn='distrorelease')
+    datelastlangpack = UtcDateTimeCol(dbName='datelastlangpack', notNull=False,
+                                   default=None)
 
+    @property
     def parent(self):
         """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
         if self.parentrelease:
             return self.parentrelease.title
         return ''
-    parent = property(parent)
 
+    @property
     def status(self):
         return self.releasestatus.title
-    status = property(status)
 
+    @property
     def sourcecount(self):
         query = ('SourcePackagePublishing.status = %s '
                  'AND SourcePackagePublishing.distrorelease = %s'
                  % sqlvalues(PackagePublishingStatus.PUBLISHED, self.id))
         return SourcePackagePublishing.select(query).count()
-    sourcecount = property(sourcecount)
 
+    @property
     def binarycount(self):
         """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
         clauseTables = ['DistroArchRelease']
@@ -84,19 +88,22 @@ class DistroRelease(SQLBase):
                  % sqlvalues(PackagePublishingStatus.PUBLISHED, self.id))
         return PackagePublishing.select(
             query, clauseTables=clauseTables).count()
-    binarycount = property(binarycount)
 
+    @property
     def architecturecount(self):
         """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
         return len(list(self.architectures))
 
+    @property
     def potemplates(self):
-        return POTemplate.selectBy(distroreleaseID=self.id)
-    potemplates = property(potemplates)
+        result = POTemplate.selectBy(distroreleaseID=self.id)
+        result = list(result)
+        result.sort(key=lambda x: x.potemplatename.name)
+        return result
 
+    @property
     def potemplatecount(self):
-        return self.potemplates.count()
-    potemplatecount = property(potemplatecount)
+        return len(self.potemplates)
 
     def getBugSourcePackages(self):
         """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
@@ -115,17 +122,6 @@ class DistroRelease(SQLBase):
         """Get SourcePackages in a DistroRelease with BugTask"""
         srcset = getUtility(ISourcePackageSet)
         return srcset.findByNameInDistroRelease(self.id, pattern)
-
-    def traverse(self, name):
-        """Get SourcePackages in a DistroRelease with BugTask"""
-        if name == '+sources':
-            from canonical.launchpad.database.sourcepackage import \
-                SourcePackageSet
-            return SourcePackageSet(distrorelease=self)
-        elif name  == '+packages':
-            return PublishedPackageSet()
-        else:
-            return self.__getitem__(name)
 
     def __getitem__(self, arch):
         """Get SourcePackages in a DistroRelease with BugTask"""

@@ -209,7 +209,7 @@ class LaunchpadLoginSource:
         person = removeSecurityProxy(person)
         principal = LaunchpadPrincipal(
             person.id,
-            person.displayname,
+            person.browsername,
             '%s %s' % (person.givenname, person.familyname),
             person.password,
             )

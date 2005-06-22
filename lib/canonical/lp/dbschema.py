@@ -41,14 +41,16 @@ __all__ = (
 'CodereleaseRelationships',
 'DistributionReleaseStatus',
 'EmailAddressStatus',
-'HashAlgorithms',
+'HashAlgorithm',
 'ImportTestStatus',
 'KarmaType',
+'LoginTokenType',
 'ManifestEntryType',
 'PackagePublishingPriority',
 'PackagePublishingStatus',
+'PackagePublishingPocket',
 'PackagingType',
-'GPGKeyAlgorithms',
+'GPGKeyAlgorithm',
 'ProjectRelationship',
 'ProjectStatus',
 'RevisionControlSystems',
@@ -63,6 +65,7 @@ __all__ = (
 'TeamMembershipStatus',
 'TeamSubscriptionPolicy',
 'TranslationPriority',
+'TranslationPermission',
 'DistroReleaseQueueStatus',
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
@@ -447,7 +450,7 @@ class PackagingType(DBSchema):
 ##XXX: (gpg+dbschema) cprov 20041004
 ## the data structure should be rearranged to support 4 field
 ## needed: keynumber(1,16,17,20), keyalias(R,g,D,G), title and description
-class GPGKeyAlgorithms(DBSchema):
+class GPGKeyAlgorithm(DBSchema):
     """
     GPG Compilant Key Algorithms Types:
 
@@ -624,43 +627,38 @@ class TeamMembershipStatus(DBSchema):
     PROPOSED = Item(1, """
         Proposed Member
 
-        The person has been proposed or has proposed themselves as a
-        member of this team. This status conveys no access rights or
-        privileges to the person.
+        You are a proposed member of this team. To become an active member your
+        subscription has to bo approved by one of the team's administrators.
         """)
 
     APPROVED = Item(2, """
         Approved Member
 
-        This person is currently a member of the team. This status means
-        that the person will have full access as a member of the team.
+        You are an active member of this team.
         """)
 
     ADMIN = Item(3, """
         Administrator
 
-        This person is currently an administrator of the team. This status 
-        means that the person will have full access as an administrator of 
-        the team.
+        You are an administrator of this team.
         """)
 
     DEACTIVATED = Item(4, """
         Deactivated Member
 
-        Either the member or any of the team's administrators have canceled
-        this subscription.
+        Your subscription to this team has been deactivated.
         """)
 
     EXPIRED = Item(5, """
         Expired Member
-        
-        The period for which this subscription was valid has expired.
+
+        Your subscription to this team is expired.
         """)
 
     DECLINED = Item(6, """
         Declined Member
 
-        User was proposed as a member but the subscription was not approved.
+        Your proposed subscription to this team has been declined.
         """)
 
 
@@ -682,19 +680,17 @@ class TeamSubscriptionPolicy(DBSchema):
     OPEN = Item(2, """
         Open Team
 
-        This team is 'Free for All', which means that anyone can join and
-        new subscriptions are not subjected to approval.
+        Any user can join and no approval is required.
         """)
 
     RESTRICTED = Item(3, """
         Restricted Team
 
         New members can only be added by one of the team's administrators.
-        Users cannot ask to join the team.
         """)
 
 
-class HashAlgorithms(DBSchema):
+class HashAlgorithm(DBSchema):
     """Hash Algorithms
 
     We use "hash" or "digest" cryptographic algorithms in a number of
@@ -1077,6 +1073,31 @@ class TranslationPriority(DBSchema):
         A low priority POTemplate should only show up if a comprehensive
         search or complete listing is requested by the user.  """)
 
+class TranslationPermission(DBSchema):
+    """Translation Permission System
+
+    Projects, products and distributions can all have content that needs to
+    be translated. In this case, Rosetta allows them to decide how open they
+    want that translation process to be. At one extreme, anybody can add or
+    edit any translation, without review. At the other, only the designated
+    translator for that group in that language can edit its translation
+    files. This schema enumerates the options.
+    """
+
+    OPEN = Item(1, """
+        Open
+
+        This group allows totally open access to its translations. Any
+        logged-in user can add or edit translations in any language, without
+        any review.""")
+
+    CLOSED = Item(100, """
+        Closed
+
+        This group allows only designated translators to edit the
+        translations of its files. No other contributions will be considered
+        or allowed.""")
+
 class DistroReleaseQueueStatus(DBSchema):
     """Distro Release Queue Status
 
@@ -1242,6 +1263,41 @@ class PackagePublishingPriority(DBSchema):
         other priority levels; or packages which are only useful to people
         who have very specialised needs.  """)
 
+class PackagePublishingPocket(DBSchema):
+    """Package Publishing Pocket
+
+    A single distrorelease can at its heart be more than one logical
+    distrorelease as the tools would see it. For example there may be a
+    distrorelease called 'hoary' and a SECURITY pocket subset of that would
+    be referred to as 'hoary-security' by the publisher and the distro side
+    tools.
+    """
+
+    PLAIN = Item(0, """
+        Plain
+
+        This pocket indicates a lack of suffix. It is the default pocket and
+        by default will be the only one supported by a distrorelease.
+
+        If a distrorelease is FROZEN CURRENT or STABLE then this pocket is
+        considered an immutable set.
+        """)
+
+    UPDATES = Item(1, """
+        Updates
+
+        This pocket indicates the '-updates' suffix. This is the common pocket
+        into which uploads might go when a distrorelease is FROZEN or CURRENT.
+        """)
+
+    SECURITY = Item(2, """
+        Security
+
+        This pocket indicates the '-security' suffix. It also enforces initial
+        embargos and similar security related behaviour. The Security pocket is
+        commonly not used until a distrorelease is in CURRENT or STABLE.
+        """)
+
 class SourcePackageRelationships(DBSchema):
     """Source Package Relationships
 
@@ -1331,32 +1387,32 @@ class BinaryPackagePriority(DBSchema):
     specific priority. This schema documents the priorities that Launchpad
     knows about.  """
 
-    REQUIRED = Item(1, """
+    REQUIRED = Item(10, """
         Required Package
 
         This package is required for the distribution to operate normally.
         Usually these are critical core packages that are essential for the
         correct operation of the operating system.  """)
 
-    IMPORTANT = Item(2, """
+    IMPORTANT = Item(20, """
         Important
 
         This package is important, and should be installed under normal
         circumstances.  """)
 
-    STANDARD = Item(3, """
+    STANDARD = Item(30, """
         Standard
 
         The typical install of this distribution should include this
         package.  """)
 
-    OPTIONAL = Item(4, """
+    OPTIONAL = Item(40, """
         Optional
 
         This is an optional package in this distribution.
         """)
 
-    EXTRA = Item(5, """
+    EXTRA = Item(50, """
         Extra
 
         This is an extra package in this distribution. An "extra" package
@@ -1998,6 +2054,21 @@ class LoginTokenType(DBSchema):
         need to be validated.
         """)
 
+    VALIDATETEAMEMAIL = Item(5, """
+        Validate Team Email
+
+        One of the team administrators is trying to add a contact email
+        address for the team, but this address need to be validated first.
+        """)
+
+    VALIDATEGPGUID = Item(6, """
+        Validate GPG key User ID
+
+        A user has submited a new GPG key and , consequently, its User.ids
+        as new email addresses to his account and they need to be validated.
+        """)
+
+
 class BuildStatus(DBSchema):
     """Build status type
 
@@ -2059,4 +2130,31 @@ class MirrorFreshness(DBSchema):
         Freshness Unknown
 
         The Freshness was never verified and is unknown.
+        """)
+
+
+class TranslationValidationStatus(DBSchema):
+    """Translation Validation Status
+
+    Every time a translation is added to Rosetta we should checked that
+    follows all rules to be a valid translation inside a .po file.
+    This schema documents the status of that validation.
+    """
+
+    UNKNOWN = Item(0, """
+        Unknown
+
+        This translation has not been validated yet.
+        """)
+
+    OK = Item(1, """
+        Ok
+
+        This translation has been validated and no errors were discovered.
+        """)
+
+    UNKNOWNERROR = Item(2, """
+        Unknown Error
+
+        This translation has an unknown error.
         """)

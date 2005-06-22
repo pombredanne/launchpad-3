@@ -6,12 +6,6 @@
 
 <!-- THIS IS AN EXAMPLE -->
 
-<head>
-    <title metal:fill-slot="title">$EXAMPLE TITLE</title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">

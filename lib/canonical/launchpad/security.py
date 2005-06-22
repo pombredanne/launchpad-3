@@ -7,18 +7,14 @@ __metaclass__ = type
 from zope.interface import implements, Interface
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IAuthorization, IHasOwner
-from canonical.launchpad.interfaces import IPerson, ITeam
-from canonical.launchpad.interfaces import ITeamMembershipSubset
-from canonical.launchpad.interfaces import ITeamMembership
-from canonical.launchpad.interfaces import IProductSeriesSource
-from canonical.launchpad.interfaces import IProductSeriesSourceAdmin
-from canonical.launchpad.interfaces import IMilestone, IBug, IBugTask
-from canonical.launchpad.interfaces import IUpstreamBugTask, IDistroBugTask
-from canonical.launchpad.interfaces import IReadOnlyUpstreamBugTask
-from canonical.launchpad.interfaces import IProduct
-from canonical.launchpad.interfaces import IPOTemplate, IPOFile
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.interfaces import (
+    IAuthorization, IHasOwner, IPerson, ITeam, ITeamMembershipSubset,
+    ITeamMembership, IProductSeriesSource, IProductSeriesSourceAdmin,
+    IMilestone, IBug, IBugTask, IUpstreamBugTask, IDistroBugTask,
+    IDistroReleaseBugTask, IReadOnlyUpstreamBugTask, ITranslator,
+    IProduct, IProductRelease, IPOTemplate, IPOFile,
+    IPOTemplateName, IPOTemplateNameSet, ISourcePackage,
+    ILaunchpadCelebrities, IDistroRelease)
 
 
 class AuthorizationBase:
@@ -58,8 +54,15 @@ class EditByOwnersOrAdmins(AuthorizationBase):
         return user.inTeam(self.obj.owner) or user.inTeam(admins)
 
 
-class EditByOwnerOfProduct(EditByOwnersOrAdmins):
-    usedfor = IProduct
+class EditDistroReleaseByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IDistroRelease
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.owner) or 
+                user.inTeam(self.obj.distribution.owner) or
+                user.inTeam(admins)) 
 
 
 class AdminSeriesSourceByButtSource(AuthorizationBase):
@@ -184,6 +187,24 @@ class EditDistroBugTask(AuthorizationBase):
             return False
 
 
+class EditDistroReleaseBugTask(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IDistroReleaseBugTask
+
+    def checkAuthenticated(self, user):
+        """Allow all authenticated users to edit the task."""
+        if not self.obj.bug.private:
+            # public bug
+            return True
+        else:
+            # private bug
+            for subscription in self.obj.bug.subscriptions:
+                if user.inTeam(subscription.person):
+                    return True
+
+            return False
+
+
 class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IBugTask
@@ -270,30 +291,92 @@ class UseApiDoc(AuthorizationBase):
         return True
 
 
-class EditPOTemplateDetails(AuthorizationBase):
-    permission = 'launchpad.Edit'
+class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
+    """Base class that allow access to Rosetta experts and Launchpad admins.
+    """
+
+    def checkAuthenticated(self, user):
+        """Allow Launchpad's admins and Rosetta experts edit all fields."""
+        admins = getUtility(ILaunchpadCelebrities).admin
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+        return user.inTeam(admins) or user.inTeam(rosetta_experts)
+
+
+class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = IPOTemplate
+
+
+class EditPOTemplateDetails(EditByOwnersOrAdmins):
     usedfor = IPOTemplate
 
     def checkAuthenticated(self, user):
-        """Allow the owner of the POTemplate if it's not in a product release.
+        """Allow product/sourcepackage/potemplate owner, experts and admis.
         """
-        if self.obj.productrelease is not None:
-            # It's a PO file from a product, it has no restrictions.
+        if (self.obj.productrelease is not None and
+            user.inTeam(self.obj.productrelease.productseries.product.owner)):
+            # The user is the owner of the product.
             return True
-        else:
-            return user.inTeam(self.obj.owner)
+
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+
+        return (EditByOwnersOrAdmins.checkAuthenticated(self, user) or
+                user.inTeam(rosetta_experts))
 
 
-class EditPOFileDetails(AuthorizationBase):
-    permission = 'launchpad.Edit'
+# XXX: Carlos Perello Marin 2005-05-24: This should be using
+# SuperSpecialPermissions when implemented.
+# See: https://launchpad.ubuntu.com/malone/bugs/753/
+class AddPOTemplate(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = IProductRelease
+
+
+class EditPOFileDetails(EditByOwnersOrAdmins):
     usedfor = IPOFile
 
     def checkAuthenticated(self, user):
-        """Allow the owner of the POFile if it's not in a product release.
+        """Allow anyone that can edit translations, owner, experts and admis.
         """
-        if self.obj.potemplate.productrelease is not None:
-            # It's a PO file from a product, it has no restrictions.
-            return True
-        else:
-            return user.inTeam(self.obj.owner)
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+
+        return (EditByOwnersOrAdmins.checkAuthenticated(self, user) or
+                self.obj.canEditTranslations(user) or
+                user.inTeam(rosetta_experts))
+
+
+class ChangeTranslatorInGroup(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = ITranslator
+
+    def checkAuthenticated(self, user):
+        """Allow the owner of a translation group to edit the translator
+        of any language in the group."""
+        return (user.inTeam(self.obj.translationgroup.owner) or
+                OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user))
+
+
+# XXX: Carlos Perello Marin 2005-05-24: This should be using
+# SuperSpecialPermissions when implemented.
+# See: https://launchpad.ubuntu.com/malone/bugs/753/
+class ListProductPOTemplateNames(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = IProduct
+
+# XXX: Carlos Perello Marin 2005-05-24: This should be using
+# SuperSpecialPermissions when implemented.
+# See: https://launchpad.ubuntu.com/malone/bugs/753/
+class ListSourcePackagePOTemplateNames(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = ISourcePackage
+
+class EditPOTemplateName(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = IPOTemplateName
+
+
+class EditPOTemplateNameSet(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = IPOTemplateNameSet
+
 

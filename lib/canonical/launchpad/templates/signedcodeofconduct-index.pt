@@ -2,15 +2,6 @@
       lang="en"
       metal:use-macro="context/@@main_template/master"
       i18n:domain="rosetta">
-
-<head>
-    <title metal:fill-slot="title">Signed Code of Conduct Entry</title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
 <metal:rightportlets fill-slot="portlets_two">
@@ -39,7 +30,7 @@
       <pre tal:content="context/signedcode">CONTENT</pre>
 
       <p tal:condition="context/recipient"><b>Recipient:</b> 
-         <span tal:content="context/recipient/displayname">RECIPIENT</span></p>
+         <span tal:content="context/recipient/browsername">RECIPIENT</span></p>
 
       <p tal:condition="context/admincomment"><b>AdminComment:</b></p>
       <pre tal:condition="context/admincomment" 

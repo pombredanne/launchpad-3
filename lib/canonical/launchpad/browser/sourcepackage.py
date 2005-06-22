@@ -3,6 +3,7 @@ __metaclass__ = type
 # Python standard library imports
 import cgi
 import re
+import sets
 from apt_pkg import ParseSrcDepends
 
 from zope.component import getUtility
@@ -12,7 +13,7 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import IPOTemplateSet
-from canonical.launchpad.browser.potemplate import ViewPOTemplate
+from canonical.launchpad.browser.potemplate import POTemplateView
 
 from canonical.soyuz.generalapp import builddepsSet
 
@@ -152,6 +153,9 @@ class SourcePackageInDistroSetView(object):
 
 class SourcePackageView:
 
+    actionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-sourcepackage-actions.pt')
+
     translationsPortlet = ViewPageTemplateFile(
         '../templates/portlet-sourcepackage-translations.pt')
 
@@ -173,8 +177,6 @@ class SourcePackageView:
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(self.request)
-        # Cache value for the return value of self.templates
-        self._template_languages = None
         self.status_message = None
 
     def binaries(self):
@@ -237,8 +239,20 @@ class SourcePackageView:
         return helpers.browserLanguages(self.request)
 
     def templateviews(self):
-        return [ViewPOTemplate(template, self.request)
+        return [POTemplateView(template, self.request)
                 for template in self.context.potemplates]
+
+    def potemplatenames(self):
+        potemplatenames = []
+
+        for potemplate in self.context.potemplates:
+            potemplatenames.append(potemplate.potemplatename)
+
+        # Remove the duplicates
+        S = sets.Set(potemplatenames)
+        potemplatenames = list(S)
+
+        return sorted(potemplatenames, key=lambda item: item.name)
 
 
 class SourcePackageBugsView:

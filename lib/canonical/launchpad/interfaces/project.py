@@ -4,6 +4,7 @@
 """
 
 from canonical.launchpad.fields import Title, Summary
+from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 
@@ -23,11 +24,15 @@ class IProject(IHasOwner):
                    description=_("""Project owner, it can either a valid
                    Person or Team inside Launchpad context."""))
     
-    name = TextLine(title=_('Name'), required=True, description=_("""The short
-        name of this project, which must be unique among all the products.
-        It should be at least one lowercase letters or number followed by
-        one or more chars, numbers, plusses, dots or hyphens and will be
-        part of the url to this project in the Launchpad."""))
+    name = TextLine(
+            title=_('Name'), required=True, 
+            description=_("""The short
+            name of this project, which must be unique among all the products.
+            It should be at least one lowercase letters or number followed by
+            one or more chars, numbers, plusses, dots or hyphens and will be
+            part of the url to this project in the Launchpad."""),
+            constraint=valid_name,
+            )
 
     displayname = TextLine(title=_('Display Name'), description=_("""The
         display name of the project is a short name, appropriately
@@ -73,11 +78,33 @@ class IProject(IHasOwner):
                                   freshmeat."""),
                                 required=False)
 
-    active = Bool(title=_('Active'), required=False, description=_("""Whether
-        or not this project is considered active."""))
+    translationgroup = Choice(
+        title = _("Translation group"),
+        description = _("The translation group for this product. This group "
+            "is made up of a set of translators for all the languages "
+            "approved by the group manager. These translators then have "
+            "permission to edit the groups translation files, based on the "
+            "permission system selected below."),
+        required=False,
+        vocabulary='TranslationGroup')
 
-    reviewed = Bool(title=_('Reviewed'), required=False, description=_("""Whether
-        or not this project has been reviewed."""))
+    translationpermission = Choice(
+        title=_("Translation Permission System"),
+        description=_("The permissions this group requires for "
+            "translators. If 'Open', then anybody can edit translations "
+            "in any language. If 'Reviewed', then anybody can make "
+            "suggestions but only the designated translators can edit "
+            "or confirm translations. And if 'Closed' then only the "
+            "designated translation group will be able to touch the "
+            "translation files at all."),
+        required=True,
+        vocabulary='TranslationPermission')
+
+    active = Bool(title=_('Active'), required=False,
+        description=_("Whether or not this project is considered active."))
+
+    reviewed = Bool(title=_('Reviewed'), required=False,
+        description=_("Whether or not this project has been reviewed."))
 
     bounties = Attribute(_("The bounties that are related to this project."))
 
@@ -136,8 +163,8 @@ class IProjectSet(Interface):
         products that needs review."""
 
     def forSyncReview():
-        """Return a list of projects that have sourcesources which need
-        review."""
+        """Return a list of projects that have productseries ready to
+        import which need review."""
 
 class IProjectBugTracker(Interface):
     id = Int(title=_('ID'))

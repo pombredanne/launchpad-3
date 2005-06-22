@@ -5,20 +5,11 @@
     metal:use-macro="context/@@main_template/master"
     i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">File a Bug in a Distribution</title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">
 
     <h1>Registered Distributions</h1>
-    <p>Please select the distribution in which you want to file a bug.</p>
     <table width="100%" class="listing rowNavigation">
         <tr>
             <th>Name</th>

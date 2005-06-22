@@ -25,6 +25,7 @@
         keyword_arguments="subscription person"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
+        class="canonical.launchpad.browser.addview.SQLObjectAddView"
         lp:url="malone/bugs/$Bug.id/people/+new" />
 
     <browser:editform

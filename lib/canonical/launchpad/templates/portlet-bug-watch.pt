@@ -6,16 +6,17 @@
     </h4>
     
     <div class="portletBody">
-        <div class="portletContent odd"
-             tal:repeat="watch context/watches">
-            
+        <div class="portletContent odd">
+
+          <tal:block repeat="watch context/watches">
             <a tal:attributes="href string:$bug_url/watches/${watch/id}/+edit">
                 <img src="/++resource++search_icon.gif" alt="" />
-                #<span tal:replace="watch/remotebug" />,
-                 <span tal:replace="watch/bugtracker/title" />
+                 <span tal:replace="watch/bugtracker/name" />
+                #<span tal:replace="watch/remotebug" />
                 <div class="portletDetails"
                      tal:content="watch/remotestatus" />
             </a>
+          </tal:block>
 
         </div>
         

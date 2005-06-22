@@ -1,63 +1,22 @@
-<tal:block replace="view/processForm" />
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+<tal:block replace="view/processTranslations" /><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
       i18n:domain="rosetta">
 
-  <head>
-    <title metal:fill-slot="title">Translating
-      <span tal:replace="context/potemplate/title">template title</span>
-    </title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-  </head>
   <body>
 
-    <div metal:fill-slot="portlets_one">
-      <div class="portlet">
-        <h4>What&#8217;s going on here?</h4>
-        <div class="portletBody">
-          <ul>
-            <li><a href="/rosetta/+about">About Rosetta</a></li>
-          </ul>
-        </div>
-      </div>
+<metal:leftportlets fill-slot="portlets_one">
+      <div tal:replace="structure view/aboutPortlet" />
+      <div tal:replace="structure view/quickHelpPortlet" />
+      <div tal:replace="structure view/statsPortlet" />
+      <div tal:replace="structure view/contributorsPortlet" />
+</metal:leftportlets>
 
-      <div class="portlet">
-        <h4>Special characters</h4>
-
-        <div class="portletBody">
-            <ul>
-            <li><span class="po-message-special"
-                style="padding: 0.2em">&#x2022;</span> &ndash; a space
-                character</li>
-            <li><span class="po-message-special"
-                style="padding: 0.2em">&#x21b5;</span> &ndash; a new line</li>
-            </ul>
-            <p>
-              In your translation, include spaces and new lines matching those indicated. (Don&#8217;t use these symbols).
-            </p>
-        </div>
-      </div>
-
-      <div class="portlet">
-        <h4>PO File Details</h4>
-
-        <div class="portletBody">
-          <a href="." tal:content="context/language/englishname">Language</a>
-        </div>
-      </div>
-
-      <div class="portlet">
-        <h4>template description</h4>
-
-        <div class="portletBody" tal:content="context/description">
-            portlet description
-        </div>
-      </div>
-    </div>
+<metal:rightportlets fill-slot="portlets_two">
+      <div tal:replace="structure view/actionsPortlet" />
+      <div tal:replace="structure view/detailsPortlet" />
+      <div tal:replace="structure view/translatorsPortlet" />
+</metal:rightportlets>
 
     <div metal:fill-slot="main">
 
@@ -69,6 +28,12 @@
         Use the forms below to provide good translations of the strings listed
         there, taking care to understand the context within which each string
         is being used.
+      </p>
+
+      <p class="portalMessage" tal:condition="not: view/is_editor">
+        You are not an official translator for this file. You can make
+        suggestions, but your translations will be stored and reviewed for
+        acceptance later by the designated translators.
       </p>
 
     <!-- Plural form error message. -->
@@ -100,7 +65,7 @@
 
         <form method="post"
           style="text-align: right;"
-          tal:condition="view/canEditTranslations"
+          tal:condition="view/is_editor"
           tal:attributes="action view/createURL"
         >
           <label>Show:</label>
@@ -143,6 +108,11 @@
 
         <!-- The translation form. -->
         <form method="post" tal:attributes="action view/createURL">
+          <p tal:repeat="alert view/alerts"
+             class="error alert"
+             tal:content="alert">
+             Error Message
+          </p>
           <table class="data" style="margin-top: 0.5em;">
             <thead>
               <tr class="results">
@@ -150,22 +120,18 @@
 
                   <!-- Show which messages are displayed. -->
                   <div style="width: 50%; float: left;">
-                    <tal:block tal:condition="view/atBeginning">
-                      <tal:block tal:condition="view/atEnd">
-                        All
-                        <strong tal:content="context/potemplate/__len__">23</strong>
-                        items
-                      </tal:block>
+                    <tal:block tal:condition="view/onlyOneForm">
+                      All
+                      <strong tal:content="context/potemplate/count:len">23</strong>
+                      items
                     </tal:block>
-                    <tal:block tal:condition="not:view/atBeginning">
-                      <tal:block tal:condition="not:view/atEnd">
-                      Items
-                      <strong tal:content="view/getFirstMessageShown">5</strong>
-                      &rarr;
-                      <strong tal:content="view/getLastMessageShown">10</strong>
-                      of
-                      <strong tal:content="context/potemplate/__len__">23</strong>
-                      </tal:block>
+                    <tal:block tal:condition="not:view/onlyOneForm">
+                    Items
+                    <strong tal:content="view/getFirstMessageShown">5</strong>
+                    &rarr;
+                    <strong tal:content="view/getLastMessageShown">10</strong>
+                    of
+                    <strong tal:content="context/potemplate/count:len">23</strong>
                     </tal:block>
                   </div>
 
@@ -242,7 +208,22 @@
                         plural source
                       </td>
                     </tr>
-                    <tr>
+                    <tr class="discreet"
+                        tal:condition="messageSet/msgidHasTab"
+                    >
+                        <td/>
+                        <td/>
+                        <td>
+                            <img
+                              alt="Note:"
+                              src="/@@/info_icon.gif"
+                              title="This is a note to translators"
+                            />
+                            <code>[tab]</code> represents a tab character.
+                            Please enter it as <code>[tab]</code> in your
+                            translation too.
+                        </td>
+                    </tr>
                     <tr
                       class="discreet"
                       tal:condition="messageSet/getSourceComment"
@@ -294,6 +275,13 @@
                         <tal:comment tal:replace="nothing">
                           XXX: Carlos Perello Marin 2005-05-05
                           This 'python:' expression should be fixed by SteveA.
+
+                          Note that we use a separate tag inside the textarea
+                          rather than using tal:content on the textarea
+                          directly so that leading spaces are preserved. This
+                          is a workarou ndfor browser weirdness. Note also
+                          that the lack of indentation is deliberate: the
+                          content must begin directly after the newline.
                         </tal:comment>
                         <textarea
                           tal:condition="messageSet/isMultiline"
@@ -302,9 +290,37 @@
                             rows messageSet/getMaxLinesCount;
                             tabindex view/makeTabIndex;
                             "
-                          tal:content="structure python:messageSet.getTranslation(index)"
-                          >
+                          ><div tal:replace="structure python:messageSet.getTranslation(index)" />
                         </textarea>
+                        <tal:block condition="not:messageSet/isMultiline">
+                          <tal:block define="submissions python:messageSet.getSuggestedSubmissions(index)">
+                            <tal:block condition="submissions">
+                              <pre><b>Suggestions:</b><br />
+<tal:block repeat="submission submissions"><span
+tal:replace="submission/potranslation/translation">submission</span> (<span
+tal:replace="submission/person/browsername">person name</span>)
+</tal:block></pre>
+                            </tal:block>
+                          </tal:block>
+                          <tal:block define="submissions python:messageSet.getCurrentSubmissions(index)">
+                            <tal:block condition="submissions">
+                              <pre><b>Currently Published Elsewhere:</b><br />
+<tal:block repeat="submission submissions"><span
+tal:replace="submission/potranslation/translation">suggestion</span> (<span
+tal:replace="submission/person/browsername">person name</span>)
+</tal:block></pre>
+                            </tal:block>
+                          </tal:block>
+                          <tal:block define="submissions python:messageSet.getWikiSubmissions(index)">
+                            <tal:block condition="submissions">
+                              <pre><b>From the Global Translation Wiki:</b><br />
+<tal:block repeat="submission submissions"><span
+tal:replace="submission/potranslation/translation">suggestion</span> (<span
+tal:replace="submission/person/browsername">person name</span>)
+</tal:block></pre>
+                            </tal:block>
+                          </tal:block>
+                        </tal:block>
                         </tal:block>
                         <div>
                           <label class="fuzzy-checkbox">
@@ -373,7 +389,7 @@
             tal:content="context/language/englishname"
             tal:omit-tag=""
           >Spanish</span>
-          <span tal:replace="view/completeness" tal:omit-tag="">0</span> %
+          <span tal:replace="view/completeness" tal:omit-tag="">0 %</span>
         </p>
       </div> <!-- condition: not: view/lacksPluralFormInformation -->
     </div>

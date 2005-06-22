@@ -1,10 +1,10 @@
 <metal:page define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
 <metal:block define-slot="top_slot" />
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
-      tal:attributes="lang default_language|default;
-                      xml:lang default_language|default;">
-  <head>
-    <metal:block define-slot="title"></metal:block>
+    tal:attributes="lang default_language|default;
+                    xml:lang default_language|default;">
+<head>
+    <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
     <!-- Plone style sheet -->
     <style type="text/css"
         media="screen">@import url(/@@/plone.css);</style>
@@ -14,23 +14,26 @@
     <!-- Launchpad JS code -->
     <script type="text/javascript" src="/@@/launchpad.js"></script>
     <link rel="shortcut icon" href="/@@/defaultFavicon.gif" />
-  </head>
 
-  <body>
+    <metal:block define-slot="head_epilogue"></metal:block>
+</head>
 
+<body>
     <div class="page-header">
-        <div class="page-header-ribbon" tal:define="path_info request/PATH_INFO">
+        <div class="page-header-ribbon"
+            tal:define="path_info request/PATH_INFO">
             <div class="user" tal:condition="not: request/lp:person ">
-              <!-- sabdfl... you're welcome, mpt ;-) -->
               <div tal:condition="python:'+login' not in path_info">
-                <a href="/+login">Log in / Register</a>
+                <a tal:attributes="href string:${request/getURL}/+login">
+                  Log in / Register
+                </a>
               </div>
             </div>
             <div class="user" tal:condition="request/lp:person">
                 Welcome,
                 <a
                   tal:attributes="href string:/people/${request/lp:person/name}"
-                  tal:content="request/lp:person/displayname"
+                  tal:content="request/lp:person/browsername"
                 >
                   [An error has occurred in Launchpad. Please report the address of this page to a Launchpad admin.]
                 </a>
@@ -38,73 +41,28 @@
                 <a href="/+logout">Log out</a>
             </div>
             <address>
-               <span tal:replace="structure request/fmt:breadcrumbs" /><br />
+               <span tal:replace="structure request/fmt:breadcrumbs" />
             </address>
         </div>
-        <div class="clear-everything-hackishly" style="clear: both;">
+        <div class="visualClear">
             <a href="/">
                 <img src="/@@/launchpad.png" alt="Launchpad Home" />
             </a>
-
-            <tal:block condition="nothing">
-                Commented out until this actually works. Broken templates
-                rolled out to production are embarassing and unprofessional!
-
-                <table class="launchpad-apps" tal:define="path_info request/PATH_INFO">
-                <tr>
-                    <td class="plain">
-                        <a href=".">Overview</a>
-                    </td>
-
-              <td class="selected" tal:condition="python:'+bug' in path_info or '+malone' in path_info">
-                <a href="+bugs">Bugs</a>
-              </td>
-              <td class="plain"
-                tal:condition="python:'+bug' not in path_info or '+malone' in path_info">
-                <a href="+bugs">Bugs</a>
-              </td>
-
-              <td class="selected"
-                tal:condition="python:'+transl' in path_info or '+roset' in path_info">
-                <a href="+translations">Translations</a>
-              </td>
-              <td class="plain"
-                tal:condition="python:'+transl' not in path_info or '+roset' in path_info">
-                <a href="+translations">Translations</a>
-              </td>
-              <td rowspan="2">
-                <img src="/@@/launchpad.png" alt="Launchpad Home" />
-              </td>
-            </tr><tr>
-              <td class="selected"
-                tal:condition="python:'/+bount' in path_info">
-                <a href="+bounties">Bounties</a>
-              </td>
-              <td class="plain"
-                tal:condition="python:'+bount' not in path_info">
-                <a href="+bounties">Bounties</a>
-              </td>
-            </tr>
-            </table>
-        </tal:block>
-
-          <h2 tal:content="context/title | default">The Launchpad</h2>
-
+          <h2><metal:block define-slot="titleheader"
+                           tal:content="context/title | default"
+               >The Launchpad</metal:block></h2>
         </div>
-
-        <tal:block condition="nothing">
-            Commented out until this actually works. Broken templates
-            rolled out to production are embarassing and unprofessional!
-        <div id="portal-personaltools"
-             style="text-align: left;"
-             tal:define="path_info request/PATH_INFO">
-           &nbsp;
-        </div>
-        </tal:block>
 
     </div><!-- class="page-header"-->
 
-    <div class="visualClear"></div>
+    <div class="visualClear" id="body">
+      <metal:block define-slot="body" tal:condition="nothing">
+        Use this slot for pages that only have one column of
+        portlets (using div class="sidebar"), so that the rest of
+        the page can expand into the width that would otherwise be
+        used by the other column.
+      </metal:block>
+    </div>
 
     <table id="portal-columns">
         <tbody>
@@ -113,18 +71,15 @@
                 <!-- start of the left (by default at least) column -->
                 <td id="portal-column-one"
                     metal:define-slot="column_one">
-                <div class="visualPadding">
                     <metal:portlets define-slot="portlets_one">
 
                     </metal:portlets>
-                    &nbsp;
-                </div>
                 </td>
                 <!-- end of the left (by default at least) column -->
 
                 <td id="portal-column-content">
                 <div id="region-content">
-                    <metal:main define-slot="main">
+                    <metal:main define-slot="main" tal:condition="nothing">
                         <p>Main content area.</p>
                     </metal:main>
                 </div>
@@ -132,12 +87,9 @@
 
                 <!-- start of right (by default at least) column -->
                 <td id="portal-column-two" metal:define-slot="column_two">
-                    <div class="visualPadding">
                         <metal:portlets define-slot="portlets_two">
 
                         </metal:portlets>
-                        &nbsp;
-                    </div>
                 </td>
                 <!-- end of the right (by default at least) column -->
 

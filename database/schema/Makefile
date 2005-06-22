@@ -2,7 +2,7 @@
 # One day the guts of this will be migrated to Python
 #
 
-PYTHON=python2.3
+PYTHON=python2.4
 
 # The database dump to restore on database creation
 SAMPLEDATA=../sampledata/current.sql
@@ -36,26 +36,27 @@ default: all
 # it is currently needed to get the fti columns populated correctly.
 test: create 
 	@ echo "* Installing tsearch2 into ts2 schema"
-	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py --setup-only
+	@ ${PYTHON} fti.py --setup-only -d ${TEST_DBNAME}
 	@ echo "* Loading base database schema"
 	@ psql -d ${TEST_DBNAME} -f ${BASELINE} | grep : | cat
 	@ echo "* Patching the database schema"
-	@ ls -1 patch-${REV}-*.sql | sort | \
-	    xargs -n 1 psql -d ${TEST_DBNAME} -q -f | cat
+	@ ${PYTHON} upgrade.py -d ${TEST_DBNAME}
 	@ echo "* Setting up full text indexes"
-	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py
+	@ ${PYTHON} fti.py -d ${TEST_DBNAME}
 	@ echo "* Adding comments"
 	@ psql -d ${TEST_DBNAME} -f comments.sql | grep : | cat
 	@ echo "* Security setup"
-	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} security.py
+	@ ${PYTHON} security.py -d ${TEST_DBNAME}
 	@ echo "* Creating database \"$(EMPTY_DBNAME)\" with no sample data."
 	@ createdb -E UNICODE --template ${TEST_DBNAME} ${EMPTY_DBNAME} \
 	    | grep : | cat
 	@ echo "* Loading sample data"
-	@ psql -d ${TEST_DBNAME} -f $(SAMPLEDATA) | grep : | cat
+	@ psql -v ON_ERROR_STOP=1 -d ${TEST_DBNAME} -f $(SAMPLEDATA) > /dev/null
 	@ echo "* Setting up full text indexes"
-	@ env LP_DBNAME=${EMPTY_DBNAME} ${PYTHON} fti.py
-	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py
+	@ ${PYTHON} fti.py -d ${EMPTY_DBNAME}
+	@ ${PYTHON} fti.py -d ${TEST_DBNAME}
+	@ echo "* Resetting sequences"
+	@ ${PYTHON} reset_sequences.py -d ${TEST_DBNAME}
 	@ echo "* Vacuuming"
 	@ psql -d ${TEST_DBNAME} -c 'vacuum full analyze' | grep : | cat
 
@@ -100,7 +101,16 @@ check: search_path
 	@if [ "`md5sum ${BASELINE}`" != "${MD5SUM}" ]; then echo "* ${BASELINE} is corrupt or has been modified"; exit 1; else echo "* Using ${BASELINE} as baseline"; fi
 
 search_path:
-	@if [ "`(echo '\t'; echo 'show search_path') | psql -d template1 -q -A -f -`" != "\$$user,public,ts2" ]; then echo "* Add the following to /etc/postgresql/postgresql.conf:"; echo "*   search_path='\$$user,public,ts2'"; echo "* Then reload PostgreSQL:"; echo "*   sudo /etc/init.d/postgresql reload"; exit 1; fi
+	@if [ "`(echo '\t'; echo 'show search_path') | psql -d template1 -q -A -f -`" != "\$$user,public,ts2" ]; then \
+		echo "* It appears your search path is unconfigured."; \
+		echo "	Have you read http://wiki.launchpad.canonical.com/DatabaseSetup?";  \
+		echo; \
+		echo "* Add the following to /etc/postgresql/postgresql.conf:"; \
+		echo "    search_path='\$$user,public,ts2'"; \
+		echo "* Then reload PostgreSQL:";  \
+		echo "    sudo /etc/init.d/postgresql reload";  \
+		exit 1; \
+	 fi
 
 
 all: dev test
@@ -144,7 +154,10 @@ newsample-soyuz:
 	pg_dump -d ${DBNAME} -a -D -O --table=potemplate | grep -v "\(SET \| TOC \)" > ../sampledata/new-rosetta.sql
 
 newsampledata:
-	pg_dump --schema=public --disable-triggers -a -D -O -d ${DBNAME} | grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|^--\)" > $(NEWSAMPLEDATA)
+	pg_dump --schema=public --disable-triggers -a -D -O -d ${DBNAME} \
+	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|SELECT pg_catalog\.setval\|^--\)" \
+	| $(PYTHON) sort_sql.py \
+	> $(NEWSAMPLEDATA)
 
 .PHONY: default base all
 

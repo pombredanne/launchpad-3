@@ -1,0 +1,15 @@
+<div class="portlet" tal:condition="context/required:launchpad.Admin">
+    <h4>Actions:</h4>
+
+    <div class="portletBody">
+        <div class="portletContent">
+
+            <ul>
+                <li class="edit"
+                    tal:condition="context/required:launchpad.Admin">
+                  <a href="+potemplatenames">Edit template names</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>

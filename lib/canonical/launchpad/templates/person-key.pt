@@ -3,21 +3,11 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-  <title metal:fill-slot="title">
-    <span tal:replace="context/displayname">Name</span>
-    GPG Key</title>
-  <!-- Plone style sheet -->
-  <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Launchpad style sheet -->
-  <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">
 
-    <h1 tal:content="context/displayname">PERSON</h1> 
+    <h1 tal:content="context/browsername">PERSON</h1> 
 
     <div tal:condition="context/gpg"> 
     <fieldset> 
@@ -35,13 +25,8 @@
     </div>
     </fieldset>
 
-    <pre>
-      <span tal:content="context/gpg/pubkey" />
-    </pre>
-    </div>
-
     <h3>Back to 
-    <a href="./" tal:content="context/displayname">PERSON</a>
+    <a href="./" tal:content="context/browsername">PERSON</a>
     </h3>
 
 </div>

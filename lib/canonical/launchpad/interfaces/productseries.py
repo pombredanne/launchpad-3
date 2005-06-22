@@ -5,6 +5,8 @@ from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
                         TextLine, Password
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
+
+from canonical.launchpad.validators.name import valid_name
 _ = MessageIDFactory('launchpad')
 
 class IProductSeries(Interface):
@@ -16,6 +18,7 @@ class IProductSeries(Interface):
     # field names
     product = Choice( title=_('Product'), required=True,
                       vocabulary='Product')
+    name = Text(title=_('Name'), required=True, constraint=valid_name)
     name = TextLine(title=_('Name'), required=True)
     title = Attribute('Title')
     displayname = TextLine( title=_('Display Name'), required=True)
@@ -103,6 +106,9 @@ class IProductSeriesSource(Interface):
 
     def autoSyncEnabled():
         """is the series source enabled for automatic syncronisation?"""
+
+    def autoTestFailed():
+        """has the series source failed automatic testing by roomba?"""
     
     def namesReviewed():
         """Return True if the product and project details have been reviewed
@@ -117,7 +123,7 @@ class IProductSeriesSourceAdmin(Interface):
         """enable this to sync"""
 
     def enableAutoSync():
-        """enable this sourcesource for automatic syncronisation"""
+        """enable this series RCS for automatic baz syncronisation"""
     
 
 class IProductSeriesSet(Interface):

@@ -27,6 +27,8 @@ o add a web link related to this bug
 o add a reference to a bug on an external bugtracker to track the status of the
   same bug as reported on other bug trackers
 
+o mark the bug as a duplicate of another bug
+
 Each of these can happen more than once to a bug over the course of its
 lifetime. For auditing reasons, it's useful to track when these happen, why
 these things happen, and who made them happen.
@@ -34,22 +36,28 @@ these things happen, and who made them happen.
 Tracking Bug Activity in Launchpad
 ==================================
 
-Bug activity tracking is done using event subscribers. The handlers are simple
-little functions.
+Before going any further--because editing a bug requires an
+authenticated user--let's login:
+
+  >>> from canonical.launchpad.ftests import login
+  >>> login("test@canonical.com")
+
+Bug activity tracking is done using event subscribers. The handlers
+are simple little functions.
 
   >>> from datetime import datetime
   >>> from zope.event import notify
   >>> from zope.interface import directlyProvides
-  >>> from canonical.launchpad.event.sqlobjectevent import \
-  ...     SQLObjectCreatedEvent, SQLObjectModifiedEvent
-  >>> from canonical.launchpad.database import Bug, BugActivity, \
-  ...     BugPackageInfestation, BugProductInfestation, \
-  ...     BugTask
-  >>> from canonical.launchpad.interfaces import IBugAddForm, \
-  ...     IUpstreamBugTask, IDistroBugTask
+  >>> from canonical.database.constants import UTC_NOW
+  >>> from canonical.launchpad.event.sqlobjectevent import (
+  ...     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
+  >>> from canonical.launchpad.database import (
+  ...     BugFactory, BugActivity, BugPackageInfestation,
+  ...     BugProductInfestation, BugTask)
+  >>> from canonical.launchpad.interfaces import (
+  ...     IUpstreamBugTask, IDistroBugTask, IProductSet)
   >>> from zope.publisher.browser import TestRequest
 
-  >>> request = TestRequest()
   >>> def capture_state(obj, *fields):
   ...     class State: pass
   ...     state = State()
@@ -57,29 +65,25 @@ little functions.
   ...         setattr(state, field, getattr(obj, field))
   ...     return state
 
-XXX: Bjorn Tillenius, 2005-03-15,  Since BugTask._init() checks the
-     current user, we need to login first:
-
-  >>> from canonical.launchpad.ftests import login
-  >>> login('launchpad.anonymous')
-
-Here's a list of events that happen, and the resulting activity logged:
+Here's a list of events that happen, and the resulting activity
+logged:
 
   >>> from canonical.launchpad.database import Person
   >>> user = Person.get(12)
 
 EVENT: user files a bug
 
-  >>> bug = Bug(
-  ...     title = "a test bug", summary = "this is only a test bug",
-  ...     description = "this is only a test bug\nplease ignore",
-  ...     owner = user.id)
+  >>> bug = BugFactory(
+  ...     product=getUtility(IProductSet)['firefox'],
+  ...     title="a test bug", summary="this is only a test bug",
+  ...     comment="this is only a test bug\nplease ignore",
+  ...     owner=user)
   >>> bug.activity
   []
-  >>> object_created = SQLObjectCreatedEvent(bug, request)
+  >>> object_created = SQLObjectCreatedEvent(bug)
   >>> notify(object_created)
   >>> latest_activity = bug.activity[-1]
-  >>> latest_activity.person == user.id
+  >>> latest_activity.person == user
   True
   >>> latest_activity.whatchanged
   u'bug'
@@ -89,11 +93,11 @@ EVENT: user files a bug
 EVENT: bug edited
 
   >>> old_state = capture_state(
-  ...     bug, "id", "title", "summary", "description", "name", "private")
+  ...     bug, "id", "title", "summary", "description", "name", "private",
+  ...     "duplicateof")
   >>> bug.title = "new bug title"
   >>> bug_edited = SQLObjectModifiedEvent(
-  ...     bug, old_state, ["title", "summary", "description"],
-  ...     user, request)
+  ...     bug, old_state, ["title", "summary", "description"])
   >>> notify(bug_edited)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
@@ -106,9 +110,9 @@ EVENT: bug edited
 EVENT: bug gets assigned to a source package
 
   >>> source_package_assignment = BugTask(
-  ...     bug = bug, sourcepackagename = 1, distribution = 1, owner = user.id)
+  ...     bug=bug, sourcepackagename=1, distribution=1, owner=user.id)
   >>> source_package_assignment_added = SQLObjectCreatedEvent(
-  ...     source_package_assignment, request)
+  ...     source_package_assignment)
   >>> notify(source_package_assignment_added)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
@@ -119,16 +123,14 @@ EVENT: bug gets assigned to a source package
 EVENT: source package assignment edited
 
   >>> from canonical.lp.dbschema import BugTaskStatus
-  >>> edit_fields = [
-  ...     "distribution", "sourcepackagename", "binarypackagename",
-  ...     "status", "priority", "severity", "assignee"]
+  >>> from canonical.launchpad.interfaces import IBugTask
+  >>> edit_fields = IBugTask.names(all=True)
   >>> old_source_package_assignment = capture_state(
   ...     source_package_assignment, *edit_fields)
   >>> directlyProvides(old_source_package_assignment, IDistroBugTask)
   >>> source_package_assignment.status = BugTaskStatus.ACCEPTED
   >>> source_package_assignment_edited = SQLObjectModifiedEvent(
-  ...     source_package_assignment, old_source_package_assignment,
-  ...     edit_fields, user, request)
+  ...     source_package_assignment, old_source_package_assignment, edit_fields)
   >>> notify(source_package_assignment_edited)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
@@ -140,9 +142,8 @@ EVENT: source package assignment edited
 
 EVENT: bug gets assigned to an upstream product
 
-  >>> product_assignment = BugTask(bug = bug, product = 8, owner = user.id)
-  >>> product_assignment_added = SQLObjectCreatedEvent(
-  ...     product_assignment, request)
+  >>> product_assignment = BugTask(bug=bug, product=8, owner=user.id)
+  >>> product_assignment_added = SQLObjectCreatedEvent(product_assignment)
   >>> notify(product_assignment_added)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
@@ -152,14 +153,12 @@ EVENT: bug gets assigned to an upstream product
 
 EVENT: upstream product assignment edited
 
-  >>> edit_fields = [
-  ...     "product", "status", "priority", "severity", "milestone", "assignee"]
+  >>> edit_fields = IBugTask.names(all=True)
   >>> old_product_assignment = capture_state(product_assignment, *edit_fields)
   >>> directlyProvides(old_product_assignment, IUpstreamBugTask)
   >>> product_assignment.status = BugTaskStatus.REJECTED
   >>> product_assignment_edited = SQLObjectModifiedEvent(
-  ...     product_assignment, old_product_assignment, edit_fields, user,
-  ...     request)
+  ...     product_assignment, old_product_assignment, edit_fields)
   >>> notify(product_assignment_edited)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
@@ -172,15 +171,14 @@ EVENT: upstream product assignment edited
 EVENT: source package infestation gets documented
 
   >>> from canonical.lp.dbschema import BugInfestationStatus
-  >>> right_now = datetime.now()
+  >>> right_now = UTC_NOW
   >>> package_infestation = BugPackageInfestation(
   ...     bug=bug.id, explicit=True, datecreated=right_now,
   ...     creatorID=user.id, dateverified=right_now,
   ...     verifiedbyID=user.id, lastmodified=right_now,
   ...     lastmodifiedbyID=user.id, sourcepackagerelease=14,
   ...     infestationstatus=BugInfestationStatus.AFFECTED)
-  >>> package_infesation_added = SQLObjectCreatedEvent(
-  ...     package_infestation, request)
+  >>> package_infesation_added = SQLObjectCreatedEvent(package_infestation)
   >>> notify(package_infesation_added)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
@@ -194,8 +192,7 @@ EVENT: source package infestation edited
   >>> old_package_infestation = capture_state(package_infestation, *edit_fields)
   >>> package_infestation.infestationstatus = BugInfestationStatus.VICTIMIZED
   >>> package_infestation_edited = SQLObjectModifiedEvent(
-  ...     package_infestation, old_package_infestation, edit_fields, user,
-  ...     request)
+  ...     package_infestation, old_package_infestation, edit_fields)
   >>> notify(package_infestation_edited)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
@@ -207,7 +204,7 @@ EVENT: source package infestation edited
 
 EVENT: product infestation gets documented
 
-  >>> right_now = datetime.now()
+  >>> right_now = UTC_NOW
   >>> product_infestation = BugProductInfestation(
   ...     bug=bug.id, explicit=True, datecreated=right_now,
   ...     creatorID=user.id, dateverified=right_now,
@@ -215,7 +212,7 @@ EVENT: product infestation gets documented
   ...     lastmodifiedbyID=user.id, productrelease=4,
   ...     infestationstatus=BugInfestationStatus.AFFECTED)
   >>> product_infesation_added = SQLObjectCreatedEvent(
-  ...     product_infestation, request)
+  ...     product_infestation)
   >>> notify(product_infesation_added)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
@@ -229,8 +226,7 @@ EVENT: product infestation edited
   >>> old_product_infestation = capture_state(product_infestation, *edit_fields)
   >>> product_infestation.infestationstatus = BugInfestationStatus.UNKNOWN
   >>> product_infestation_edited = SQLObjectModifiedEvent(
-  ...     product_infestation, old_product_infestation, edit_fields, user,
-  ...     request)
+  ...     product_infestation, old_product_infestation, edit_fields)
   >>> notify(product_infestation_edited)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
@@ -240,12 +236,59 @@ EVENT: product infestation edited
   >>> latest_activity.newvalue == BugInfestationStatus.UNKNOWN.title
   True
 
+EVENT: this bug report is marked as a duplicate of another bug report
+
+  >>> edit_fields = [
+  ...     "id", "title", "summary", "description", "name",
+  ...     "private", "duplicateof"]
+  >>> old_bug = capture_state(bug, *edit_fields)
+  >>> bug.duplicateof = 1
+  >>> bug_edited = SQLObjectModifiedEvent(bug, old_bug, edit_fields)
+  >>> notify(bug_edited)
+  >>> latest_activity = bug.activity[-1]
+  >>> latest_activity.whatchanged
+  u'marked as duplicate'
+  >>> latest_activity.oldvalue is None
+  True
+  >>> latest_activity.newvalue == u'1'
+  True
+
+EVENT: add a subscriber to this bug
+
+  >>> from canonical.lp.dbschema import BugSubscription as SubscriptionType
+  >>> from canonical.launchpad.database import BugSubscription
+  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+  >>> bug_subscription = BugSubscription(
+  ...     bug=bug, person=foo_bar, subscription=SubscriptionType.CC)
+  >>> notify(SQLObjectCreatedEvent(bug_subscription))
+  >>> latest_activity = bug.activity[-1]
+  >>> latest_activity.whatchanged
+  u'bug'
+  >>> latest_activity.message
+  u'added subscriber Foo Bar (CC)'
+
+EVENT: edit a bug subscription
+
+  >>> edit_fields = ['bug', 'person', 'subscription']
+  >>> old_bug_subscription = capture_state(bug_subscription, *edit_fields)
+  >>> bug_subscription.subscription = SubscriptionType.WATCH
+  >>> bug_subscription_edited = SQLObjectModifiedEvent(
+  ...     bug_subscription, old_bug_subscription, edit_fields)
+  >>> notify(bug_subscription_edited)
+  >>> latest_activity = bug.activity[-1]
+  >>> latest_activity.whatchanged
+  u'subscriber Foo Bar'
+  >>> latest_activity.oldvalue
+  u'CC'
+  >>> latest_activity.newvalue
+  u'Watch'
+
 For the future?
 ===============
 
 At some point, we may find it useful to track the following events as well:
 
-EVENT: add a subscriber to this bug
 
 EVENT: add a web link related to this bug
 

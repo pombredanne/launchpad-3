@@ -1,8 +1,5 @@
 
 
-  >>> from canonical.launchpad.ftests import login
-  >>> login('launchpad.anonymous')
-
 A person is adaptable to ICrowd.
 
   >>> from canonical.launchpad.interfaces import IPersonSet, ICrowd

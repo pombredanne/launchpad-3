@@ -5,16 +5,6 @@
     metal:use-macro="context/@@main_template/master"
     i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">Bounties for
-      <span tal:replace="context/displayname">Context</span>
-    </title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -22,25 +12,25 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure view/actionsPortlet" />
+    <div class="sidebar" tal:content="structure view/actionsPortlet" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
   <h1>Bounties for
-    <span tal:replace="context/displayname">Context</span>
+    <span tal:replace="context/browsername">Context</span>
   </h1>
 
   <p class="documentDescription">These are the bounties that are related to
-  <span tal:replace="context/displayname">Context</span>. This report
+  <span tal:replace="context/browsername">Context</span>. This report
   includes bounties issued by, claimed by or reviewed by the person, as well
-  as bounties to which <span tal:replace="context/displayname" /> has
+  as bounties to which <span tal:replace="context/browsername" /> has
   subscribed. Click on a column header to sort by that header.</p>
 
   <h3>Bounties Issued</h3>
 
     <p tal:condition="not: context/ownedBounties"><span
-    tal:replace="context/displayname">Person DisplayName</span> has not
+    tal:replace="context/browsername">Person browsername</span> has not
     issued any bounties through the Launchpad system. Anybody can issue a
     bounty using  PayPal to place the bounty funds in escrow until
     the work is done.</p>
@@ -68,7 +58,7 @@
   <h3>Bounties Claimed</h3>
 
   <p tal:condition="not: context/claimedBounties"><span
-  tal:replace="context/displayname">Person DisplayName</span> has not
+  tal:replace="context/browsername">Person browsername</span> has not
   claimed any bounties in the Launchpad system. You claim a bounty by
   registering for it, and submitting code for review. If that code is judged
   by the bounty reviewer to be the winning entry before the deadline for the
@@ -98,7 +88,7 @@
   <h3>Bounties Reviewed:</h3>
 
   <p tal:condition="not: context/reviewerBounties"><span
-  tal:replace="context/displayname">Person DisplayName</span> is not the
+  tal:replace="context/browsername">Person browsername</span> is not the
   reviewer of any Launchpad bounties. The reviewer is responsible for
   judging the quality of bounty submissions and determines the winner, if
   any, of a bounty.</p>
@@ -126,7 +116,7 @@
   <h3>Bounties Subscribed:</h3>
 
   <p tal:condition="not: context/subscribedBounties"><span
-  tal:replace="context/displayname">Person DisplayName</span> has not
+  tal:replace="context/browsername">Person browsername</span> has not
   subscribed to any bounties.</p>
 
     <table width="100%" class="listing rowNavigation"

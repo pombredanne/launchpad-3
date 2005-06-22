@@ -2,7 +2,7 @@ Foo Bar cannot access task #16, because it's filed on a private bug on
 which Foo Bar is not an explicit subscriber.
 
   >>> print http(r"""
-  ... GET /malone/tasks/16/+edit HTTP/1.1
+  ... GET /products/firefox/+bugs/7/+edit HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)

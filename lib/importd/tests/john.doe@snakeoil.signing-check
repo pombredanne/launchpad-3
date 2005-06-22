@@ -1,0 +1,1 @@
+tla-gpg-check gpg_command="gpg --verify-files -q --no-show-notation --batch --no-tty --no-default-keyring --keyring ./john.doe@snakeoil.pub -" 2>&1 | grep "^gpg: Good signature from" 1>&2"

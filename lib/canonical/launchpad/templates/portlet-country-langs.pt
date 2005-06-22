@@ -8,13 +8,20 @@
 
         <div class="portletContent even">
 
-            <div tal:condition="country/languages" tal:omit-tag>
+            <ul tal:condition="country/languages">
             
-                <span tal:repeat="lang country/languages" tal:omit-tag>
-                    o <span tal:replace="lang/englishname" /><br />
-                </span>
+                <li tal:repeat="lang country/languages">
+                   <span tal:replace="lang/englishname" />
+                </li>
 
-            </div>
+            </ul>
+
+            <tal:block condition="not: country/languages">
+              No languages currently registered as spoken in <span
+              tal:replace="country/name">country</span>, please contact the
+              Rosetta Admins on #launchpad to make sure we correct this.
+              Thank you!
+            </tal:block>
 
         </div>
     </div>

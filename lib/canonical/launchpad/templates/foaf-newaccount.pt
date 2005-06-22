@@ -3,31 +3,23 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="launchpad">
 
-    <title metal:fill-slot="title">Create a New Launchpad Account</title>
-
   <body>
 
-  <!-- This page uses the launchpad-addform.pt METAL -->
+    <tal:dummy>
+      This page uses the launchpad-addform.pt METAL.
+    </tal:dummy>
 
   <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
-        <h1 metal:fill-slot="heading">Launchpad Account Details</h1>
+        <h1 metal:fill-slot="heading">Complete your registration</h1>
 
         <div metal:fill-slot="extra_info" class="formHelp">
           Fill in the form bellow to finish your registration process on
           Launchpad.
 
         </div>
-
-        <div metal:fill-slot="extra_top" tal:condition="view/passwordMismatch">
-          <p class="portalMessage" class="portalMessage">Your password and 
-          confirmation did not match. Please try again.</p>
-        </div>
-
-        <legend metal:fill-slot="addform_legend">
-          Personal Information</legend>
 
   </div>
 

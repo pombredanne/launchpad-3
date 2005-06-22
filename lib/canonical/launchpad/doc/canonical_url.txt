@@ -1,0 +1,259 @@
+= Canonical URLs =
+
+See https://wiki.launchpad.canonical.com/CanonicalUrls
+
+== The browser:url ZCML directive ==
+
+The browser:url directive registers an ICanonicalUrlData adapter.
+
+In this test, we'll use a URL hierarchy /countries/England/+towns/London
+
+In this test, we'll use interfaces ICountrySet, ICountry and ITown, which we
+will put in canonical.launchpad.ftests.
+
+    >>> from canonical.launchpad.interfaces import ICanonicalUrlData
+    >>> from zope.interface import Interface, Attribute, implements
+
+    >>> class ICountrySet(Interface):
+    ...     pass
+
+    >>> class ICountry(Interface):
+    ...     name = Attribute('the name of this country')
+
+    >>> class ITown(Interface):
+    ...     """Dummy interface for use in browser:url tests."""
+    ...     country = Attribute('the country the town is in')
+    ...     name = Attribute('the name of this town')
+
+Put the interfaces into canonical.launchpad.ftests, ensuring that there
+are not already objects with those names there.
+
+    >>> import canonical.launchpad.ftests
+    >>> for interface in ICountrySet, ICountry, ITown:
+    ...     name = interface.getName()
+    ...     assert getattr(canonical.launchpad.ftests, name, None) is None
+    ...     setattr(canonical.launchpad.ftests, name, interface)
+    ...     interface.__module__ = 'canonical.launchpad.ftests'
+
+We don't have ICanonicalUrlData adapters for objects that provide any of these
+interfaces.  First, we create some countryset, country and town objects.
+
+    >>> class CountrySet:
+    ...     implements(ICountrySet)
+    >>> countryset_instance = CountrySet()
+
+    >>> class Country:
+    ...    implements(ICountry)
+    ...    name = 'England'
+    >>> country_instance = Country()
+
+    >>> class Town:
+    ...     implements(ITown)
+    ...     country = country_instance
+    ...     name = 'London'
+    >>> town_instance = Town()
+
+Next, we check there are no ICanonicalUrlData adapters for these objects.
+
+    >>> for obj in countryset_instance, country_instance, town_instance:
+    ...     assert ICanonicalUrlData(obj, None) is None
+
+Configure a browser:url for ITown.  Our first attempt fails because we mistyped
+'countryOopsTypo', and there is no such name in ITown.
+
+    >>> from zope.configuration import xmlconfig
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure xmlns:browser="http://namespaces.zope.org/browser">
+    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
+    ...   <browser:url
+    ...       for="canonical.launchpad.ftests.ITown"
+    ...       path_expression="string:+towns/${name}"
+    ...       attribute_to_parent="countryOopsTypo"
+    ...       />
+    ... </configure>
+    ... """)
+    Traceback (most recent call last):
+    ...
+    ZopeXMLConfigurationError: File "<string>", line ...
+        AttributeError: The name "countryOopsTypo" is not in canonical.launchpad.ftests.ITown
+
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure xmlns:browser="http://namespaces.zope.org/browser">
+    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
+    ...   <browser:url
+    ...       for="canonical.launchpad.ftests.ITown"
+    ...       path_expression="string:+towns/${name}"
+    ...       attribute_to_parent="country"
+    ...       />
+    ... </configure>
+    ... """)
+
+Now, there is an ICanonicalUrlData registered for ITown.
+
+    >>> town_urldata = ICanonicalUrlData(town_instance)
+    >>> from zope.interface.verify import verifyObject
+    >>> verifyObject(ICanonicalUrlData, town_urldata)
+    True
+    >>> town_urldata.path
+    u'+towns/London'
+    >>> town_urldata.inside is country_instance
+    True
+
+The parent of an object might be accessible via an attribute, or it might
+be a utility.  This is the case for an ICountry object: its parent is the
+ICountrySet.  I need to put the countryset_instance somewhere we can get
+at it from zcml.  I'll put it in canonical.launchpad.ftests.
+
+    >>> assert getattr(
+    ...     canonical.launchpad.ftests, 'countryset_instance', None) is None
+
+    >>> canonical.launchpad.ftests.countryset_instance = countryset_instance
+
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure
+    ...     xmlns="http://namespaces.zope.org/zope"
+    ...     xmlns:browser="http://namespaces.zope.org/browser">
+    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
+    ...   <configure package="zope.app.component">
+    ...       <include file="meta.zcml" />
+    ...   </configure>
+    ...   <utility
+    ...       provides="canonical.launchpad.ftests.ICountrySet"
+    ...       component="canonical.launchpad.ftests.countryset_instance"
+    ...       />
+    ...   <browser:url
+    ...       for="canonical.launchpad.ftests.ICountry"
+    ...       path_expression="name"
+    ...       parent_utility="canonical.launchpad.ftests.ICountrySet"
+    ...       />
+    ... </configure>
+    ... """)
+
+Now, there is an ICanonicalUrlData registered for ICountry.
+
+    >>> country_urldata = ICanonicalUrlData(country_instance)
+    >>> from zope.interface.verify import verifyObject
+    >>> verifyObject(ICanonicalUrlData, country_urldata)
+    True
+    >>> country_urldata.path
+    'England'
+    >>> country_urldata.inside is countryset_instance
+    True
+
+We need to specify a browser:url for ICountrySet.  Its parent will be the
+ILaunchpadRoot utility.
+
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure xmlns:browser="http://namespaces.zope.org/browser">
+    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
+    ...   <browser:url
+    ...       for="canonical.launchpad.ftests.ICountrySet"
+    ...       path_expression="string:countries"
+    ...       parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    ...       />
+    ... </configure>
+    ... """)
+
+Now, there is an ICanonicalUrlData registered for ICountrySet.
+
+    >>> countryset_urldata = ICanonicalUrlData(countryset_instance)
+    >>> from zope.interface.verify import verifyObject
+    >>> verifyObject(ICanonicalUrlData, countryset_urldata)
+    True
+    >>> countryset_urldata.path
+    u'countries'
+    >>> from canonical.launchpad.interfaces import ILaunchpadRoot
+    >>> countryset_urldata.inside is getUtility(ILaunchpadRoot)
+    True
+
+
+== The Launchpad root object ==
+
+The ILaunchpadRoot object has its own ICanonicalUrlData adapter.
+
+    >>> root_urldata = ICanonicalUrlData(getUtility(ILaunchpadRoot))
+    >>> verifyObject(ICanonicalUrlData, root_urldata)
+    True
+    >>> root_urldata.path
+    ''
+    >>> root_urldata.inside is None
+    True
+
+
+== The canonical_url function ==
+
+The canonical_url function gives you the canonical URL for an object, by
+stitching together the various ICanonicalUrlData adapters for that object
+and the objects it is inside of (or in other words, hierarchically below).
+
+    >>> from canonical.launchpad.helpers import canonical_url
+    >>> canonical_url(getUtility(ILaunchpadRoot))
+    'http://localhost:8086/'
+    >>> canonical_url(countryset_instance)
+    u'http://localhost:8086/countries'
+    >>> canonical_url(country_instance)
+    u'http://localhost:8086/countries/England'
+    >>> canonical_url(town_instance)
+    u'http://localhost:8086/countries/England/+towns/London'
+
+We can see that this is the root_url as configured in launchpad.conf.
+
+    >>> from canonical.config import config
+    >>> config.launchpad.root_url
+    'http://localhost:8086/'
+
+If anywhere in the chain we have an object that cannot be adapted to
+ICanonicalUrlData, a NoCanonicalUrl error is raised.
+
+The next few lines tests the case where the object you want a URL for cannot
+itself be adapted to ICanonicalUrlData.
+
+    >>> object_that_has_no_url = object()
+    >>> canonical_url(object_that_has_no_url)
+    Traceback (most recent call last):
+    ...
+    NoCanonicalUrl: No url for <...object at ...> because <...object at ...> broke the chain.
+
+Now, we must test the case where the object can be adapted to
+ICanonicalUrlData, but its parent or its parent's parent (and so on) cannot.
+
+    >>> class ObjectThatHasUrl:
+    ...     implements(ICanonicalUrlData)
+    ...     def __init__(self, name, parent):
+    ...         self.path = name
+    ...         self.inside = parent
+    >>> unrooted_object = ObjectThatHasUrl('unrooted', object_that_has_no_url)
+    >>> canonical_url(unrooted_object)
+    Traceback (most recent call last):
+    ...
+    NoCanonicalUrl: No url for <...ObjectThatHasUrl...> because <...object...> broke the chain.
+
+The first argument to NoCanonicalUrl is the object that a canonical url was
+requested for.  The second argument is the object that broke the chain.
+
+== canonical_url and requests ==
+
+You can pass an http request object into canonical_url as its optional
+second argument.  This tells canonical_url to use the protocol, host and port
+from the request.  To get this information, canonical_url uses the operation
+getApplicationURL() from
+zope.publisher.interfaces.http.IHTTPApplicationRequest.
+
+    >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
+    >>> class DummyRequest:
+    ...     implements(IHTTPApplicationRequest)
+    ...     def getApplicationURL(self, depth=0, path_only=False):
+    ...         assert depth == 0, 'this is not a real IHTTPApplicationRequest'
+    ...         assert not path_only, 'not a real IHTTPApplicationRequest'
+    ...         return 'https://mandrill.example.org:23'
+
+    >>> canonical_url(country_instance, DummyRequest())
+    u'https://mandrill.example.org:23/countries/England'
+
+
+We've finished with our interfaces and utility component, so remove them from
+canonical.launchpad.ftests.
+
+    >>> for name in 'ICountrySet', 'ICountry', 'ITown', 'countryset_instance':
+    ...     delattr(canonical.launchpad.ftests, name)
+

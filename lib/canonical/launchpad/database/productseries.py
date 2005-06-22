@@ -8,8 +8,11 @@ import sets
 from warnings import warn
 
 from zope.interface import implements
+from zope.exceptions import NotFoundError
 
-from sqlobject import ForeignKey, StringCol, DateTimeCol, MultipleJoin
+from sqlobject import ForeignKey, StringCol, MultipleJoin, DateTimeCol
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 
 # canonical imports
 from canonical.launchpad.interfaces import \
@@ -17,6 +20,7 @@ from canonical.launchpad.interfaces import \
     IProductSeriesSet
 from canonical.launchpad.database.packaging import Packaging
 from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import \
     EnumCol, ImportStatus, RevisionControlSystems
 
@@ -34,7 +38,7 @@ class ProductSeries(SQLBase):
     branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
                            schema=ImportStatus, default=None)
-    datelastsynced = DateTimeCol(default=None)
+    datelastsynced = UtcDateTimeCol(default=None)
     syncinterval = DateTimeCol(default=None)
     rcstype = EnumCol(dbName='rcstype',
                       schema=RevisionControlSystems,
@@ -54,11 +58,11 @@ class ProductSeries(SQLBase):
     targetarchbranch = StringCol(default=None)
     targetarchversion = StringCol(default=None)
     # key dates on the road to import happiness
-    dateautotested = DateTimeCol(default=None)
-    datestarted = DateTimeCol(default=None)
-    datefinished = DateTimeCol(default=None)
-    dateprocessapproved = DateTimeCol(default=None)
-    datesyncapproved = DateTimeCol(default=None)
+    dateautotested = UtcDateTimeCol(default=None)
+    datestarted = UtcDateTimeCol(default=None)
+    datefinished = UtcDateTimeCol(default=None)
+    dateprocessapproved = UtcDateTimeCol(default=None)
+    datesyncapproved = UtcDateTimeCol(default=None)
 
     releases = MultipleJoin('ProductRelease', joinColumn='productseries',
                              orderBy=['version'])
@@ -85,7 +89,7 @@ class ProductSeries(SQLBase):
         for release in self.releases:
             if release.version==version:
                 return release
-        raise KeyError, version
+        raise NotFoundError(version)
 
     def getPackage(self, distrorelease):
         for pkg in self.sourcepackages:
@@ -96,7 +100,7 @@ class ProductSeries(SQLBase):
 
     def certifyForSync(self):
         """Enable the sync for processing."""
-        self.dateprocessapproved = 'NOW'
+        self.dateprocessapproved = UTC_NOW
         self.syncinterval = datetime.timedelta(1)
         self.importstatus = ImportStatus.PROCESSING
 
@@ -110,9 +114,12 @@ class ProductSeries(SQLBase):
 
     def enableAutoSync(self):
         """Enable autosyncing?"""
-        self.datesyncapproved = 'NOW'
+        self.datesyncapproved = UTC_NOW
         self.importstatus = ImportStatus.SYNCING
 
+    def autoTestFailed(self):
+        """Has the series source failed automatic testing by roomba?"""
+        return self.importstatus == ImportStatus.TESTFAILED
 
 class ProductSeriesSet:
 
@@ -166,7 +173,7 @@ class ProductSeriesSet:
             clauseTables.add('Project')
             clauseTables.add('Product')
         # now just add filters on import status
-        if forimport:
+        if forimport or importstatus:
             if len(query) > 0:
                 query += ' AND '
             query += 'ProductSeries.importstatus IS NOT NULL'

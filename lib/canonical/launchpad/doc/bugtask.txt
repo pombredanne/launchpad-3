@@ -22,7 +22,7 @@ All BugTask creation and retrieval is done through an IBugTaskSet utility.
 
 To create a bug task, you have to be logged in:
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.launchpad.ftests import login, ANONYMOUS
     >>> login('foo.bar@canonical.com')
 
 There are three kinds of bug tasks. We need to pass the bug task creation
@@ -105,12 +105,12 @@ with the system as an anonymous (i.e. unauthenticated) user:
 
     >>> from canonical.launchpad.interfaces import IPerson
     >>> from canonical.launchpad.database import Person
-    >>> login('launchpad.anonymous')
+    >>> login(ANONYMOUS)
 
 let's fetch the BugTask with ID 1:
 
     >>> bugtask = bugtaskset.get(1)
-    >>> bugtask.bugtitle
+    >>> bugtask.bug.title
     u'Firefox does not support SVG'
 
 If you pass an ID for which no object exists, you'll get a
@@ -120,6 +120,108 @@ zope.exceptions.NotFoundError:
     Traceback (most recent call last):
       ...
     NotFoundError: 'BugTask with ID -1 does not exist'
+
+Each task has a "contextname", a string describing the site of the
+task. It concatenates the display names of the distribution,
+
+    >>> bugtask = bugtaskset.get(1)
+    >>> bugtask.contextname
+    u'Ubuntu'
+
+distro release, or product;
+
+    >>> bugtask = bugtaskset.get(2)
+    >>> bugtask.contextname
+    u'Mozilla Firefox'
+
+the name of the source package (if any); and the name of the binary
+package (but only if it's named differently from the source
+package).
+
+Let's thoroughly test BugTask.contextname.  We'll set up a dummy bugtask
+class into which we put a copy of the contextname method, so we can test
+it in isolation.
+
+    >>> from canonical.launchpad.database import BugTask
+    >>> class DummyBugTask:
+    ...     distribution = None
+    ...     distrorelease = None
+    ...     sourcepackagename = None
+    ...     binarypackagename = None
+    ...     product = None
+    ...
+    ...     # This next line is a hack to take a copy of the method and
+    ...     # add it to this class.
+    ...     contextname = BugTask.contextname.fget
+    >>> class NamedThing:
+    ...     def __init__(self, name):
+    ...         self.name = '[%s.name]' % name
+    ...         self.displayname = '[%s.displayname]' % name
+
+When all the important attributes are None, then the bugtask is in an invalid
+state.
+
+    >>> bugtask = DummyBugTask()
+    >>> bugtask.contextname()
+    Traceback (most recent call last):
+    ...
+    AssertionError
+
+Product alone:
+
+    >>> bugtask.product = NamedThing('product')
+    >>> bugtask.contextname()
+    '[product.displayname]'
+
+Put things back the way they were.
+
+    >>> bugtask.product = None
+
+Distribution alone.
+
+    >>> bugtask.distribution = NamedThing('distribution')
+    >>> bugtask.contextname()
+    '[distribution.displayname]'
+
+Distribution and sourcepackagename.
+
+    >>> bugtask.sourcepackagename = NamedThing('spn')
+    >>> bugtask.contextname()
+    '[distribution.displayname] [spn.name]'
+
+Distribution and sourcepackagename and binarypackagename.
+
+    >>> bugtask.binarypackagename = NamedThing('bpn')
+    >>> bugtask.contextname()
+    '[distribution.displayname] [spn.name] [bpn.name]'
+
+Reset the state of our bugtask.
+
+    >>> bugtask.binarypackagename = None
+    >>> bugtask.sourcepackagename = None
+    >>> bugtask.distribution = None
+
+Just a distrorelease.
+
+    >>> bugtask.distrorelease = NamedThing('distrorelease')
+    >>> bugtask.contextname()
+    '[distrorelease.displayname]'
+
+Distrorelease and sourcepackagename.
+
+    >>> bugtask.sourcepackagename = NamedThing('spn')
+    >>> bugtask.contextname()
+    '[distrorelease.displayname] [spn.name]'
+
+Distrorelease, sourcepackagename and binarypackagename.
+
+    >>> bugtask.binarypackagename = NamedThing('bpn')
+    >>> bugtask.contextname()
+    '[distrorelease.displayname] [spn.name] [bpn.name]'
+
+Note that we haven't tested any combinations that shouldn't occur, except
+for the case when everything is None.
+
 
 To retrieve a set of bug tasks matching a set of search criteria, use
 BugTaskSet.search. Here's how you'd grab all the NEW and ACCEPTED tasks:
@@ -217,7 +319,7 @@ Upstream Bug Tasks
 Only the maintainer and the assignee (if there is one) may edit upstream
 bug tasks.
 
-    >>> login('launchpad.anonymous')
+    >>> login(ANONYMOUS)
     >>> upstream_task.status = STATUS_ACCEPTED
     Traceback (most recent call last):
       ...
@@ -295,7 +397,6 @@ the logged in person from the maintainer team, so that he can't edit the
 task anymore:
 
     >>> sample_person.leave(foo_team)
-    True
     >>> upstream_task.status = STATUS_FIXED
     Traceback (most recent call last):
       ...
@@ -312,14 +413,13 @@ Now Sample Person is allowed to edit the bug task again:
     >>> login('test@canonical.com')
     >>> upstream_task.status = STATUS_FIXED
 
-
 Distro and Distro Release Bug Tasks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Any logged-in user can edit tasks filed on distros as long as the bug
 is not marked private. So, as an anonymous user, we can edit anything:
 
-    >>> login('launchpad.anonymous')
+    >>> login(ANONYMOUS)
     >>> distro_task.status = STATUS_FIXED
     Traceback (most recent call last):
       ...
@@ -339,9 +439,6 @@ We can edit the task:
     >>> distro_task.status = STATUS_FIXED
     >>> distro_release_task.assignee = sample_person
 
-For bugs that *are* marked private, see the next section...
-
-
 Bug Privacy
 ===========
 
@@ -357,7 +454,6 @@ anyone.
 Let's log in as the user Foo Bar (to be allowed to edit bugs):
 
     >>> login('foo.bar@canonical.com')
-    >>> request = TestRequest()
 
 and mark one of the Firefox bugs private:
 
@@ -373,14 +469,24 @@ and mark one of the Firefox bugs private:
     ...     return state
     >>> old_state = capture_state(
     ...     bug_firefox_no_svg_support.bug, "id", "title",
-    ...     "summary", "description", "private", "name")
+    ...     "summary", "description", "private", "name",
+    ...     "duplicateof")
     >>> bug_firefox_no_svg_support.bug.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     bug_firefox_no_svg_support.bug, old_state,
-    ...     ["id", "title", "private"], getUtility(IPersonSet).get(16),
-    ...     request)
+    ...     ["id", "title", "private"])
     >>> notify(bug_set_private)
     >>> transaction.commit()
+
+Because Foo Bar is a member of the Ubuntu Team, and the Ubuntu Team is
+one of the maintainers on this bug report, Foo Bar will see the bug in
+searches:
+
+    >>> firefox = productset.get(4)
+    >>> firefox_bugtasks = bugtaskset.search(
+    ...     product=firefox, status=any(STATUS_NEW, STATUS_ACCEPTED))
+    >>> [bugtask.bug.id for bugtask in firefox_bugtasks]
+    [6, 5, 4, 1]
 
 Now, if we log in as David Allouche:
 

@@ -4,24 +4,15 @@ translations.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/ HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.7,es;q=0.3
   ... """)
   HTTP/1.1 200 Ok
   ...
-          Template for evolution in hoary</title>
+          <title>Template "evolution-2.2" in ubuntu hoary package "evolution" in Rosetta</title>
   ...
               22 messages<br />
   ...
                   Rosetta Administrators<br />
   ...
-      <h1>Translation Template: Template for evolution in hoary
+      <h1>Translation Template</h1>
   ...
-        <a href="/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate">
-          <td>
-            <a href="/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate">Spanish</a>
-          </td>
-          <td>7</td>
-          <td>15</td>
-  ...
-              Carlos Perelló Marín
-  ...
+

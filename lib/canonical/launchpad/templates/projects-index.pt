@@ -3,69 +3,96 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">Launchpad Project Registry</title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
-<div metal:fill-slot="main">
+<metal:leftportlets fill-slot="portlets_one">
+  <div class="portlet">
+    <h4>Open Source Projects:</h4>
 
-    <h1>Launchpad Project Registry</h1>
+    <div class="portletBody">
+      <div class="portletContent even">
 
-    <form method="post">
+        <p>Enter a project name or detail, and press search to find all
+        projects matching those words in the Launchpad. You can also
+        <a href="/projects/+all">see all projects</a> registered in the
+        launchpad.</p>
 
-        <fieldset>
+      </div>
+    </div>
+  </div>
+</metal:leftportlets>
 
-            <legend>Search for a project</legend>
+    <div metal:fill-slot="main">
 
-            <input name="text" size="45"
-                   tal:attributes="value view/text" />
+      <h1>Find Projects in Launchpad</h1>
 
-            &nbsp;
-            
-            <input type="submit" value="Search" />
+      <form method="get">
+        <table>
+          <tr>
+            <td>
+              <input name="text" size="30" tal:attributes="value view/text" />
+                <input
+                  tal:condition="view/searchrequested"
+                  type="submit"
+                  value="Search Again"
+                />
+                <input
+                  tal:condition="not: view/searchrequested"
+                  type="submit"
+                  value="Search"
+                />
+            </td>
+          </tr>
+        </table>
+        <p class="formHelp">
+        Enter any part of the project name, title or
+        description.
+        </p>
 
-            &nbsp;
-
-            <a style="font-size: 0.85;" href="+search">Advanced
-            Search</a>
-
-            <p class="formHelp">
-            Enter any part of the project name, title or
-            description.
-            </p>
-
-
-        </fieldset>
-
-    </form>
+      </form>
 
     <div tal:condition="view/searchrequested">
 
-        <table class="rowNavigation" width="100%">
-            <tr tal:repeat="project view/searchresults"
-                tal:attributes="onclick string:window.location='${project/name}';"
-                valign="top"
-                vspace="5">
-                <td>
-                    <img src="/++resource++product_icon.gif">
-                    <b tal:content="project/title">$Project.title</b>
-                    (<a tal:attributes="href project/name" href="#"
-                        tal:content="project/name">$Project.name</a>)
-                    <br />
-                <span tal:content="project/summary">
-                    $Project.summary</span>
-                </td>
+        <table class="data" tal:define="results view/searchresults">
+          <thead>
+            <tr class="results">
+              <td colspan="0">
+                <span tal:replace="view/matches">3</span>
+                <span tal:condition="python: view.matches == 1">result</span>
+                <span tal:condition="python: view.matches != 1">results</span>
+              </td>
             </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <dl condition="view/matches" class="projects">
+                  <tal:block repeat="project results">
+                    <dt>
+                      <a tal:attributes="href project/name"
+                        ><dfn
+                          tal:content="project/title"
+                        >$project.title</dfn>
+                        (<span
+                          tal:replace="project/name"
+                        >$project.name
+                      </span>)</a>
+                    </dt>
+                    <dd tal:content="project/summary">
+                      $project.shortdesc
+                    </dd>
+                  </tal:block>
+                </dl>
+                <p tal:condition="not: view/matches">
+                  <strong>No projects matching
+                  &#8220;<span tal:replace="view/text">moz</span>&#8221;
+                  were found.</strong>
+                  You can <a href="+new">register a new project </a>.
+                </p>
+              </td>
+            </tr>
+          </tbody>
         </table>
-
-        <div tal:condition="not: view/gotmatches"><b>No matching upstream
-        projects.</b> You can <a href="+new">register a new project </a>.</div>
 
     </div>
 

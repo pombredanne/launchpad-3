@@ -3,14 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="rosetta">
 
-<head>
-    <title metal:fill-slot="title">About Rosetta</title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">
@@ -37,11 +29,12 @@
 
     <p>It's easy to add a new project to be translated in Rosetta. First you
     need to add the product to the Launchpad registry. You can seach for
-    existing registered open source products <a href="products">here</a>,
-    and then add yours if it's not already listed.</p>
-
-    <p>Once you have the product in the registry, click on "Add Translation"
-    to import a PO Template and PO Files.</p>
+    existing registered open source products <a href="/products/">here</a>,
+    and then add yours if it's not already listed. Once the product is
+    registered in the Launchpad, you can email the Rosetta mailing list (see
+    address above) and ask the Rosetta admins to import the usptream
+    translation templates and resource files - then you are ready to
+    translate.</p>
 
 </div>
 

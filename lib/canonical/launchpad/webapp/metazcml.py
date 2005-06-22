@@ -12,26 +12,31 @@ from zope.component import queryView, queryMultiView, getDefaultViewName
 from zope.component import getUtility
 from zope.component.interfaces import IDefaultViewName
 from zope.schema import TextLine, Id
-from zope.configuration.fields import \
+from zope.configuration.fields import (
     GlobalObject, PythonIdentifier, Path, Tokens
+    )
 from zope.security.checker import CheckerPublic, Checker
 from zope.security.proxy import ProxyFactory
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces import NotFound
 from zope.app import zapi
-from zope.app.component.metaconfigure import handler, adapter, utility, view
-from zope.app.component.metaconfigure import PublicPermission
+from zope.app.component.metaconfigure import (
+    handler, adapter, utility, view, PublicPermission
+    )
 from zope.app.component.contentdirective import ContentDirective
 from zope.app.component.interface import provideInterface
 from zope.app.security.fields import Permission
+from zope.app.pagetemplate.engine import Engine
 from zope.app.component.fields import LayerField
 from zope.app.file.image import Image
 from zope.app.publisher.browser.viewmeta import page
 import zope.app.publisher.browser.metadirectives
 
 from canonical.launchpad.layers import setAdditionalLayer
-from canonical.launchpad.interfaces import \
-    IAuthorization, IOpenLaunchBag, IBasicLink, ILink, IFacetList, ITabList
+from canonical.launchpad.interfaces import (
+    IAuthorization, IOpenLaunchBag, IBasicLink, ILink, IFacetList, ITabList,
+    ICanonicalUrlData
+    )
 
 try:
     from zope.publisher.interfaces.browser import IDefaultBrowserLayer
@@ -535,6 +540,31 @@ class ITraverseDirective(Interface):
         )
 
 
+class IURLDirective(Interface):
+    """Say how to compute canonical urls."""
+
+    for_ = GlobalObject(
+        title=u"Specification of the object that has this canonical url",
+        required=True
+        )
+
+    path_expression = TextLine(
+        title=u"TALES expression that evaluates to the path"
+               " relative to the parent object.",
+        required=True
+        )
+
+    attribute_to_parent = PythonIdentifier(
+        title=u"Name of the attribute that gets you to the parent object",
+        required=False
+        )
+
+    parent_utility = GlobalObject(
+        title=u"Interface of the utility that is the parent of the object",
+        required=False
+        )
+
+
 class IFaviconDirective(Interface):
 
     for_ = GlobalObject(
@@ -716,6 +746,81 @@ def traverse(_context, for_, getter=None, function=None, permission=None,
     view(_context, factory, layer, name, [for_], permission=permission,
          provides=provides)
 
+
+class InterfaceInstanceDispatcher:
+    """Dispatch getitem on names that appear in the interface to the instance.
+    """
+    def __init__(self, interface, instance):
+        self.interface = interface
+        self.instance = instance
+
+    def __getitem__(self, name):
+        if name in self.interface:
+            return getattr(self.instance, name)
+        else:
+            raise KeyError(name)
+
+
+class TALESContextForInterfaceInstance:
+
+    def __init__(self, interface, instance):
+        self.vars = InterfaceInstanceDispatcher(interface, instance)
+
+
+class CanonicalUrlDataBase:
+
+    # This is not true in this base class.  It will be true for subclasses
+    # that provide an 'inside' property.
+    implements(ICanonicalUrlData)
+
+    # Filled in by subclass.
+    _for = None
+    _compiled_path_expression = None 
+
+    def __init__(self, context):
+        self.context = context
+        self._expression_context = TALESContextForInterfaceInstance(
+            self._for, context)
+
+    @property
+    def path(self):
+        return self._compiled_path_expression(self._expression_context)
+
+def url(_context, for_, path_expression, attribute_to_parent=None,
+        parent_utility=None):
+    """browser:url directive handler."""
+    if not attribute_to_parent and not parent_utility:
+        raise TypeError(
+            'Must provide either attribute_to_parent or parent_utility.')
+    if attribute_to_parent:
+        if attribute_to_parent not in for_:
+            raise AttributeError('The name "%s" is not in %s.%s'
+                % (attribute_to_parent, for_.__module__, for_.__name__))
+    else:
+        # Check that parent_utility can be looked up.
+        # can't do this, as the utility directive hasn't been processed yet
+        #getUtility(parent_utility)
+        pass
+    compiled_path_expression = Engine.compile(path_expression)
+
+    if attribute_to_parent:
+        class CanonicalUrlData(CanonicalUrlDataBase):
+            _for = for_
+            _compiled_path_expression = compiled_path_expression
+            @property
+            def inside(self):
+                return getattr(self.context, attribute_to_parent)
+    else:
+        class CanonicalUrlData(CanonicalUrlDataBase):
+            _for = for_
+            _compiled_path_expression = compiled_path_expression
+            @property
+            def inside(self):
+                return getUtility(parent_utility)
+
+    factory = [CanonicalUrlData]
+    provides = ICanonicalUrlData
+    adapter(_context, factory, provides, [for_])
 
 class FaviconRendererBase:
 

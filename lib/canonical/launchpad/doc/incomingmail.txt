@@ -1,0 +1,93 @@
+Incoming Mail
+===============
+
+When an email is sent to Launchpad we need to handle it somehow. This
+is done by handleEmails:
+
+    >>> from canonical.launchpad.mail.incoming import handleMail
+
+Basically what it does is to open the Launchpad mail box, and for each
+message it:
+
+    * Authenticates the sender
+    * Finds the correct mail handler
+    * Lets the handler process the message
+    * Deletes the message from the mail box
+
+Mail Handlers
+-------------
+
+A mail handler is a utility which knows how to handle mail sent to a
+specific domain. It is registered as a named utility providing
+IMailHandler. The name of the utility is the domain that's handled.
+
+Let's create some utilities which keep track of which mails they
+handle, and register them for some domains:    
+
+    >>> from canonical.launchpad.interfaces import IMailHandler
+    >>> from zope.interface import implements
+    >>> class MockHandler:
+    ...     implements(IMailHandler)
+    ...     def __init__(self):
+    ...         self.handledMails = []
+    ...     def process(self, mail, to_addr, filealias):
+    ...         self.handledMails.append(mail['Message-Id']) 
+    ...         return True
+
+    >>> from zope.app.tests import ztapi
+    >>> foo_handler = MockHandler()
+    >>> bar_handler = MockHandler()
+    >>> ztapi.provideUtility(IMailHandler, foo_handler, 'foo.com') 
+    >>> ztapi.provideUtility(IMailHandler, bar_handler, 'bar.com') 
+
+Now we send a few test mails to foo.com, bar.com, and baz.com:
+
+    >>> import transaction
+    >>> from canonical.launchpad.helpers import read_test_message
+    >>> from canonical.launchpad.mail import sendmail
+
+    >>> msgids = {'foo.com': [], 'bar.com': [], 'baz.com': []}
+    >>> msg = read_test_message('signed_detached.txt')
+    >>> for domain in ('foo.com', 'bar.com', 'foo.com', 'baz.com'):
+    ...     msg.replace_header('To', '123@%s' % domain)
+    ...     msgids[domain].append("<%s>" % sendmail(msg))
+    ...     transaction.commit()
+
+The test mails are now in Launchpad's mail box, so now we can call
+handleMail, so that every mail gets handled by the correct handler.
+Since the User gets authenticated using GPG signatures we have to
+import the keys first. We also need to start the Librarian, since every
+mail will get filed in there:
+
+    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+    >>> import_public_test_keys()
+    >>> transaction.commit()
+    >>> LibrarianTestSetup().setUp()
+
+    >>> handleMail()
+   
+    >>> LibrarianTestSetup().tearDown()
+
+Now we can see that each handler handled that mails sent to its domain:
+
+    >>> foo_handler.handledMails == msgids['foo.com']
+    True
+    >>> bar_handler.handledMails == msgids['bar.com']
+    True
+
+Unhandled Mail
+--------------
+
+So, what happened to the message that got sent to baz.com? Since there
+wasn't a handler registered for that domain, an error message was sent
+to the errors email address, which specified in launchpad.conf as
+errors_address.
+
+    >>> from canonical.launchpad.mail import stub
+    >>> from canonical.config import config
+    >>> transaction.commit()
+    >>> to_addrs = [to_addr_list[0]
+    ...             for from_addr, to_addr_list, raw_mail in stub.test_emails]
+    >>> to_addrs == [config.launchpad.errors_address]
+    True

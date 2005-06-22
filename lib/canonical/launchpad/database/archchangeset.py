@@ -5,14 +5,16 @@ __all__ = ['Changeset', 'ChangesetFileName', 'ChangesetFileHash',
            'ChangesetFile', 'RevisionMapper']
 
 from canonical.database.sqlbase import quote, SQLBase
-from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol
+from canonical.database.constants import UTC_NOW
+from sqlobject import StringCol, ForeignKey, IntCol
+from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import RevisionNotRegistered
 from canonical.launchpad.interfaces import RevisionAlreadyRegistered
 
 from canonical.launchpad.database.archbranch import VersionMapper
 from canonical.lp.dbschema import EnumCol
-from canonical.lp.dbschema import HashAlgorithms
+from canonical.lp.dbschema import HashAlgorithm
 
 
 class Changeset(SQLBase):
@@ -22,7 +24,7 @@ class Changeset(SQLBase):
     _columns = [
         ForeignKey(name='branch', foreignKey='Branch', dbName='branch',
                    notNull=True),
-        DateTimeCol('datecreated', dbName='datecreated', notNull=True),
+        UtcDateTimeCol('datecreated', dbName='datecreated', notNull=True),
         StringCol('name', dbName='name', notNull=True),
         StringCol('logmessage', dbName='logmessage', notNull=True),
         ForeignKey(name='archID', foreignKey='ArchUserID', dbName='archID',
@@ -59,10 +61,10 @@ class ChangesetFile(SQLBase):
 class ChangesetFileHash(SQLBase):
     _table = 'ChangesetFileHash'
     _columns = [
-        ForeignKey(name='changesetfile', foreignKey='ChangesetFile', 
+        ForeignKey(name='changesetfile', foreignKey='ChangesetFile',
                    dbName='changesetfile', notNull=True),
         EnumCol('hashalg', dbName='hashalg', notNull=True,
-                schema=HashAlgorithms),
+                schema=HashAlgorithm),
         StringCol('hash', dbName='hash', notNull=True),
         ]
 
@@ -87,7 +89,7 @@ class RevisionMapper:
         #FIXME: ask Mark if we should include correct date?
         revision.set_changeset(Changeset(
             branch=VersionMapper()._getDBBranchId(revision.version),
-            datecreated='now',
+            datecreated=UTC_NOW,
             name=revision.name,
             logmessage='',
             ))
@@ -137,8 +139,8 @@ class RevisionMapper:
                           filecontents="",
                           filesize=size)
         for hashalg, hashval in checksums.items():
-            hash_mapping = {"md5": HashAlgorithms.MD5,
-                            "sha1": HashAlgorithms.SHA1}
+            hash_mapping = {"md5": HashAlgorithm.MD5,
+                            "sha1": HashAlgorithm.SHA1}
             hashid = hash_mapping[hashalg]
             hasha = ChangesetFileHash(changesetfile=f.id,
                                       hashalg=hashid,

@@ -9,51 +9,71 @@ __all__ = ('IRosettaStats', )
 class IRosettaStats(Interface):
     """Rosetta-related statistics."""
 
+    def testStatistics():
+        """Ensure that the statistics here are self-consistent.
+
+        For example, the number of nonUpdated and Updated messages
+        should add up to the currentCount.
+        """
+
+    def updateStatistics():
+        """Update the statistics associated with this object."""
+
     def messageCount():
-        """Returns the number of Current IPOMessageSets in all templates
-        inside this object."""
+        """Return the number of current IPOMessageSets inside this object."""
 
-    def currentCount(language=None):
-        """Returns the number of msgsets matched to a potemplate for this
-        object that have a non-fuzzy translation in its PO file for this
-        language when we last parsed it."""
+    def publishedCount(language=None):
+        """Return the number of msgsets published and matched to a potemplate.
 
-    def currentPercentage(language=None):
-        """Returns the percentage of current msgsets inside this object."""
+        That's the msgsets for this object that have a complete, non-fuzzy
+        translation in its PO file for this language when we last parsed it.
+        """
 
     def updatesCount(language=None):
-        """Returns the number of msgsets for this object where we have a
-        newer translation in rosetta than the one in the PO file for this
-        language, when we last parsed it."""
+        """Return the number of msgsets newer in Rosetta.
 
-    def updatesPercentage(language=None):
-        """Returns the percentage of updated msgsets inside this object."""
-
-    def rosettaCount(language=None):
-        """Returns the number of msgsets where we have a translation in rosetta
-        but there was no translation in the PO file for this language when we
-        last parsed it."""
-
-    def rosettaPercentage(language=None):
-        """Returns the percentage of msgsets translated with Rosetta inside
-        this object."""
-
-    def translatedCount(language=None):
-        """Returns the number of msgsets that are translated."""
-
-    def translatedPercentage(language=None):
-        """Returns the percentage of msgsets translated for this object."""
-
-    def untranslatedCount(language=None):
-        """Returns the number of msgsets that are untranslated."""
-
-    def untranslatedPercentage(language=None):
-        """Returns the percentage of msgsets untranslated for this object."""
+        That's the msgsets for this object where we have a newer translation
+        in rosetta than the one in the PO file for this language, when we last
+        parsed it.
+        """
 
     def nonUpdatesCount(language=None):
-        """Returns the number of msgsets that are translated and don't have an
-        update from Rosetta."""
+        """Return the number of msgsets translated and without an update in
+        Rosetta.
+        """
+
+    def rosettaCount(language=None):
+        """Return the number of msgsets translated only in rosetta.
+
+        That's the msgsets that are translated in Rosetta and there was no
+        translation in the PO file for this language when we last parsed it.
+        """
+
+    def translatedCount(language=None):
+        """Return the total number of msgsets that are translated in Rosetta.
+        """
+
+    def untranslatedCount(language=None):
+        """Return the number of msgsets that are untranslated."""
+
+    def updatesPercentage(language=None):
+        """Return the percentage of updated msgsets inside this object."""
+
+    def currentPercentage(language=None):
+        """Return the percentage of current msgsets inside this object."""
+
+    def rosettaPercentage(language=None):
+        """Return the percentage of msgsets translated with Rosetta inside
+        this object.
+        """
+
+    def translatedPercentage(language=None):
+        """Return the percentage of msgsets translated for this object."""
+
+    def untranslatedPercentage(language=None):
+        """Return the percentage of msgsets untranslated for this object."""
 
     def nonUpdatesPercentage(language=None):
-        """Returns the percentage of msgsets for this object that are 
-        translated and don't have an update from Rosetta."""
+        """Return the percentage of msgsets for this object that are
+        translated and don't have an update from Rosetta.
+        """

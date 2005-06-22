@@ -43,6 +43,11 @@ class IPackagePublishing(Interface):
             title=_('The status of this publishing record'),
             required=False, readonly=False,
             )
+
+    pocket = Int(
+            title=_('The pocket into which this entry is published'),
+            required=True, readonly=True,
+            )
     
 class ISourcePackagePublishing(Interface):
     """A source package publishing record."""
@@ -77,6 +82,11 @@ class ISourcePackagePublishing(Interface):
     scheduleddeletiondate = Datetime(
             title=_('The date on which this record is scheduled for deletion'),
             required=False, readonly=False,
+            )
+    
+    pocket = Int(
+            title=_('The pocket into which this entry is published'),
+            required=True, readonly=True,
             )
     
 class ISourcePackageFilePublishing(Interface):
@@ -114,6 +124,10 @@ class ISourcePackageFilePublishing(Interface):
 
     publishingstatus = Int(
             title=_('Package publishing status'), required=True, readonly=True,
+            )
+
+    pocket = Int(
+            title=_('Pocket'), required=True, readonly=True,
             )
 
 class IBinaryPackageFilePublishing(Interface):
@@ -156,6 +170,10 @@ class IBinaryPackageFilePublishing(Interface):
     architecturetag = TextLine(
             title=_("Architecture tag. As per dpkg's use"), required=True,
             readonly=True,
+            )
+
+    pocket = Int(
+            title=_('Pocket'), required=True, readonly=True,
             )
 
 class ISourcePackagePublishingView(Interface):
@@ -266,3 +284,98 @@ class ISourcePackagePublishingHistory(Interface):
             title=_('The date on which this record was removed from the published set'),
             required=False, readonly=False,
             )
+
+    pocket = Int(
+            title=_('The pocket into which this entry is published'),
+            required=True, readonly=False,
+            )
+    
+    embargo = Bool(
+            title=_('Whether or not this record is under embargo'),
+            required=True, readonly=False,
+            )
+
+    embargolifted = Datetime(
+            title=_('The date on which this record had its embargo lifted'),
+            required=False, readonly=False,
+            )
+
+class IPackagePublishingHistory(Interface):
+    """A binary package publishing record."""
+
+    id = Int(
+            title=_('ID'), required=True, readonly=True,
+            )
+    binarypackage = Int(
+            title=_('The binary package being published'), required=False,
+            readonly=False,
+            )
+    distroarchrelease = Int(
+            title=_('The distroarchrelease being published into'),
+            required=False, readonly=False,
+            )
+    component = Int(
+            title=_('The component being published into'),
+            required=False, readonly=False,
+            )
+    section = Int(
+            title=_('The section being published into'),
+            required=False, readonly=False,
+            )
+    priority = Int(
+            title=_('The priority being published into'),
+            required=False, readonly=False,
+            )
+    datepublished = Datetime(
+            title=_('The date on which this record was published'),
+            required=False, readonly=False,
+            )
+    scheduleddeletiondate = Datetime(
+            title=_('The date on which this record is scheduled for deletion'),
+            required=False, readonly=False,
+            )
+    status = Int(
+            title=_('The status of this publishing record'),
+            required=False, readonly=False,
+            )
+    
+    datecreated = Datetime(
+            title=_('The date on which this record was created'),
+            required=True, readonly=False,
+            )
+
+    datesuperseded = Datetime(
+            title=_('The date on which this record was marked superseded'),
+            required=False, readonly=False,
+            )
+    
+    supersededby = Int(
+            title=_('The build which superseded this one'),
+            required=False, readonly=False,
+            )
+
+    datemadepending = Datetime(
+            title=_('The date on which this record was set as pending removal'),
+            required=False, readonly=False,
+            )
+
+    dateremoved = Datetime(
+            title=_('The date on which this record was removed from the published set'),
+            required=False, readonly=False,
+            )
+
+    pocket = Int(
+            title=_('The pocket into which this entry is published'),
+            required=True, readonly=False,
+            )
+    
+    embargo = Bool(
+            title=_('Whether or not this record is under embargo'),
+            required=True, readonly=False,
+            )
+
+    embargolifted = Datetime(
+            title=_('The date and time at which this record had its embargo lifted'),
+            required=False, readonly=False,
+            )
+

@@ -47,7 +47,8 @@
     <include file="package.zcml" />
     <include file="packaging.zcml" />
     <include file="person.zcml" />
-    <include file="person.zcml" />
+    <include file="poexport.zcml" />
+    <include file="poexportrequest.zcml" />
     <include file="pofile.zcml" />
     <include file="pomsgid.zcml" />
     <include file="pomsgset.zcml" />
@@ -55,7 +56,8 @@
     <include file="potemplate.zcml" />
     <include file="potemplatename.zcml" />
     <include file="potmsgset.zcml" />
-    <include file="potranslationsighting.zcml" />
+    <include file="poselection.zcml" />
+    <include file="posubmission.zcml" />
     <include file="potranslation.zcml" />
     <include file="processor.zcml" />
     <include file="productrelease.zcml" />
@@ -64,17 +66,17 @@
     <include file="product.zcml" />
     <include file="project.zcml" />
     <include file="publishedpackage.zcml" />
-    <include file="skins.zcml" />
     <include file="sourcepackage.zcml" />
     <include file="sourcepackagename.zcml" />
     <include file="sourcepackagerelease.zcml" />
     <include file="sourcepackagereleaseindistro.zcml" />
     <include file="vsourcepackagereleasepublishing.zcml" />
-    <include file="sourcesource.zcml" />
     <include file="sshkey.zcml" />
     <include file="teammembership.zcml" />
     <include file="teamparticipation.zcml" />
     <include file="team-subscriptions.zcml" />
+    <include file="translationgroup.zcml" />
+    <include file="translator.zcml" />
     <include file="wikiname.zcml" />
     <include file="component.zcml" />
     <include file="section.zcml" />
@@ -83,6 +85,13 @@
     <include file="fields.zcml" />
     <include file="resources.zcml" />
     <include file="widgets.zcml" />
+
+    <!-- System homepages -->
+    <include file="rosetta.zcml" />
+    <include file="malone.zcml" />
+    <include file="doap.zcml" />
+    <include file="foaf.zcml" />
+    <include file="bazaar.zcml" />
 
     <!-- Event configuration -->
     <include file="bug-events.zcml" />

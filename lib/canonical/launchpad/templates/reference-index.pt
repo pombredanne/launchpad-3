@@ -3,12 +3,6 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="rosetta">
 
-<head>
-  <title metal:fill-slot="title">Web References for Malong Bug #
-    <span tal:replace="context/bug/id">345</span>
-  </title>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">

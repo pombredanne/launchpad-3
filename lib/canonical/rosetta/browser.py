@@ -6,12 +6,16 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
-from canonical.launchpad.interfaces import ILanguageSet, ILaunchBag, IGeoIP, \
-    IRequestPreferredLanguages
+from canonical.launchpad.interfaces import (
+    ILanguageSet, ILaunchBag, IGeoIP, IRequestPreferredLanguages
+    )
 from canonical.launchpad import helpers
 
 
-class RosettaApplicationView(object):
+class RosettaApplicationView:
+
+    translationGroupsPortlet = ViewPageTemplateFile(
+            '../launchpad/templates/portlet-rosetta-groups.pt')
 
     prefLangPortlet = ViewPageTemplateFile(
             '../launchpad/templates/portlet-pref-langs.pt')
@@ -21,6 +25,9 @@ class RosettaApplicationView(object):
 
     browserLangPortlet = ViewPageTemplateFile(
         '../launchpad/templates/portlet-browser-langs.pt')
+
+    statsPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-rosetta-stats.pt')
 
     def __init__(self, context, request):
         self.context = context

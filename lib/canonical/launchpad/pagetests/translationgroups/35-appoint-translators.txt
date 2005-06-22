@@ -1,0 +1,127 @@
+At first there should be no translators in the polyglot group.
+
+  >>> print http(r"""
+  ... GET /rosetta/groups/polyglot/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+            <h2>The PolyGlot Translation Group</h2>
+  ...
+    <p>There are no translators yet
+    appointed in this group. You can <a href="+appoint">appoint a
+    translator</a> for any language to this group now.
+    </p>
+  ...
+
+Now, let's appoint a translator. First see if we can display the
+appointments page.
+
+  >>> print http(r"""
+  ... GET /rosetta/groups/polyglot/+appoint HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+            <h2>The PolyGlot Translation Group</h2>
+  ...
+  <select name="field.language" size="1" >
+  ...
+  <input type="text" name="field.translator" value=""
+         cssclass="" id="field.translator" size="20" />
+  ...
+
+Now let's make an appointment. Hoary Gnome Team will translate into
+Abkhasian. We should get redirected back to the group page.
+
+  >>> print http(r"""
+  ... POST /rosetta/groups/polyglot/+appoint HTTP/1.1
+  ... Content-Length: 568
+  ... Content-Type: multipart/form-data; boundary=---------------------------145492490015831423901241554584
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... 
+  ... -----------------------------145492490015831423901241554584
+  ... Content-Disposition: form-data; name="field.language"
+  ... 
+  ... 2
+  ... -----------------------------145492490015831423901241554584
+  ... Content-Disposition: form-data; name="field.language-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------145492490015831423901241554584
+  ... Content-Disposition: form-data; name="field.translator"
+  ... 
+  ... name21
+  ... -----------------------------145492490015831423901241554584
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------145492490015831423901241554584--
+  ... """)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: .
+  <BLANKLINE>
+  ...
+
+And let's appoint Foo Bar for Afrikaans too.
+
+  >>> print http(r"""
+  ... POST /rosetta/groups/polyglot/+appoint HTTP/1.1
+  ... Content-Length: 558
+  ... Content-Type: multipart/form-data; boundary=---------------------------1528991119743688478288052508
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... 
+  ... -----------------------------1528991119743688478288052508
+  ... Content-Disposition: form-data; name="field.language"
+  ... 
+  ... 9
+  ... -----------------------------1528991119743688478288052508
+  ... Content-Disposition: form-data; name="field.language-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------1528991119743688478288052508
+  ... Content-Disposition: form-data; name="field.translator"
+  ... 
+  ... name16
+  ... -----------------------------1528991119743688478288052508
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------1528991119743688478288052508--
+  ... """)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: .
+  <BLANKLINE>
+  ...
+
+Now we should see both of those appointments on the polyglot page:
+
+  >>> print http(r"""
+  ... GET /rosetta/groups/polyglot/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+            <h2>The PolyGlot Translation Group</h2>
+  ...
+    <p>The translators in this group are listed below. You can appoint
+    additional translators <a href="+appoint">here</a>, or select the relevant
+    link to change or remove them.</p>
+  ...
+        <td>Abkhazian</td>
+        <td><a href="/people/name21/+translations">Hoary Gnome Team</a>
+  ...
+        <td>Afrikaans</td>
+        <td><a href="/people/name16/+translations">Foo Bar</a>
+  ...
+

@@ -1,0 +1,72 @@
+  Change the owner of the grumpy distrorelease.
+
+
+  Logged in as Sample Person we don't have permission to do that, because he's
+  not the owner nor a member of the admins team.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/grumpy/+reassign HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 403 Forbidden
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+
+
+  Now we're logged in as Mark Shutleworth and reassign grumpy to Foo Bar.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/grumpy/+reassign HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... 
+  ... field.owner=name16&existing=existing&CHANGE_OWNER=Change+Owner""")
+  HTTP/1.1 303 See Other
+  ... 
+  Location: .
+  ...
+
+
+  Foo Bar is the owner here
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/grumpy/ HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...Admin...
+  ...
+  ...Foo Bar...
+  ...
+
+
+  Now we reassign it to a newly create team: ubuntu2
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/grumpy/+reassign HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... 
+  ... field.owner=ubuntu2&existing=new&CHANGE_OWNER=Change+Owner""")
+  HTTP/1.1 303 See Other
+  ... 
+  Location: .
+  ...
+
+
+  And the new team can be seen as the owner.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/grumpy/ HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...Admin...
+  ...
+  ...ubuntu2...
+  ...
