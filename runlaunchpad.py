@@ -46,6 +46,7 @@ ZDOptions.schemafile = os.path.abspath(os.path.join(
 def start_librarian():
     # Imported here as path is not set fully on module load
     from canonical.config import config
+    from canonical.pidfile import make_pidfile, pidfile_path
 
     # Don't run the Librarian if it wasn't asked for. We only want it
     # started up developer boxes really, as the production Librarian
@@ -56,7 +57,7 @@ def start_librarian():
     if not os.path.isdir(config.librarian.server.root):
         os.makedirs(config.librarian.server.root, 0700)
 
-    pidfile = os.path.join(config.librarian.server.root, 'librarian.pid')
+    pidfile = pidfile_path('librarian')
     tacfile = os.path.abspath(os.path.join(
         os.path.dirname(__file__), 'daemons', 'librarian.tac'
         ))
@@ -88,30 +89,9 @@ def start_librarian():
         if librarian_process.poll() is None:
             os.kill(librarian_process.pid, signal.SIGTERM)
             librarian_process.wait()
-        else:
-            print >> sys.stderr, "*** ERROR: Librarian died prematurely!"
-            print >> sys.stderr, "***        Return code was %d" % (
-                    librarian_process.returncode,
-                    )
     atexit.register(stop_librarian)
 
 
-def make_pidfile():
-    """Create a pidfile so we can be killed easily.
-
-    Registers an atexit callback to remove the file on termination.
-    """
-    pidfile = os.path.join(os.path.dirname(__file__), 'launchpad.pid')
-    def nukepidfile():
-        if os.path.exists(pidfile):
-            os.unlink(pidfile)
-    atexit.register(nukepidfile)
-    f = open(pidfile, 'w')
-    print >> f, str(os.getpid())
-    f.close()
-
-
- 
 def run(argv=list(sys.argv)):
 
     # Sort ZCML overrides for our current config
@@ -125,12 +105,15 @@ def run(argv=list(sys.argv)):
     srcdir = os.path.join(here, src)
     sys.path = [srcdir, here] + basepath
 
+    # Import canonical modules here, after path munging
+    from canonical.pidfile import make_pidfile, pidfile_path
+
     # We really want to replace this with a generic startup harness.
     # However, this should last us until this is developed
     start_librarian()
 
     # Store our process id somewhere
-    make_pidfile()
+    make_pidfile('launchpad')
 
     main(argv[1:])
         

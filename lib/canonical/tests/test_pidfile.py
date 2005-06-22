@@ -2,10 +2,10 @@
 
 import unittest
 from zope.testing.doctestunit import DocTestSuite
-import canonical.base
+import canonical.pidfile
 
 def test_suite():
-    suite = DocTestSuite(canonical.base)
+    suite = DocTestSuite(canonical.pidfile)
     return suite
 
 if __name__ == "__main__":
