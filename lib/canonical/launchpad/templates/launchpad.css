@@ -846,3 +846,16 @@ input {
 .fieldRequired {
   color: #999999
 }
+
+/* 
+This style is used for multi-select widgets. These get a scrollbar if they
+expand above a certain size.
+*/
+
+.multi_select {
+    max-height: 20em;
+    overflow: auto;
+    float: left;
+    padding: 0 1em;
+}
+

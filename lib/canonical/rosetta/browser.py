@@ -3,6 +3,8 @@
 
 __metaclass__ = type
 
+from sets import Set
+
 from zope.component import getUtility
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
@@ -56,14 +58,23 @@ class ViewPreferences:
         self.person = getUtility(ILaunchBag).user
 
     def languages(self):
-        return [
-            language
-            for language in getUtility(ILanguageSet)
-            if language.visible
-            ]
+        class BrowserLanguage:
+            def __init__(self, code, englishname, is_checked):
+                self.code = code
+                self.englishname = englishname
 
-    def selectedLanguages(self):
-        return self.person.languages
+                if is_checked:
+                    self.checked = 'checked'
+                else:
+                    self.checked = ''
+
+        user_languages = list(self.person.languages)
+
+        for language in getUtility(ILanguageSet):
+            yield BrowserLanguage(
+                code=language.code,
+                englishname=language.englishname,
+                is_checked=language in user_languages)
 
     def submit(self):
         '''Process a POST request to one of the Rosetta preferences forms.'''
@@ -79,34 +90,26 @@ class ViewPreferences:
         languages the user has, and the latter is matched to the former.
         '''
 
+        all_languages = getUtility(ILanguageSet)
         old_languages = self.person.languages
+        new_languages = []
 
-        if 'selectedlanguages' in self.request.form:
-            if isinstance(self.request.form['selectedlanguages'], list):
-                new_languages = self.request.form['selectedlanguages']
-            else:
-                new_languages = [self.request.form['selectedlanguages']]
-        else:
-            new_languages = []
+        for key, value in self.request.form.iteritems():
+            if value == u'on':
+                try:
+                    language = all_languages[key]
+                except KeyError:
+                    pass
+                else:
+                    new_languages.append(language)
 
-        # XXX
-        # Making the values submitted in the form be the language codes rather
-        # than the English names would make this simpler. However, given that
-        # the language preferences form is currently based on JavaScript, it
-        # would take JavaScript hacking to make that work.
-        #
-        # https://launchpad.ubuntu.com/malone/bugs/127
-        # -- Dafydd, 2005/02/03
+        # Add languages to the user's preferences.
 
-        # Add languages.
-        for englishname in new_languages:
-            for language in self.languages():
-                if language.englishname == englishname:
-                    if language not in old_languages:
-                        self.person.addLanguage(language)
+        for language in Set(new_languages) - Set(old_languages):
+            self.person.addLanguage(language)
 
-        # Remove languages.
-        for language in old_languages:
-            if language.englishname not in new_languages:
-                self.person.removeLanguage(language)
+        # Remove languages from the user's preferences.
+
+        for language in Set(old_languages) - Set(new_languages):
+            self.person.removeLanguage(language)
 
