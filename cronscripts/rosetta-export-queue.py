@@ -19,8 +19,7 @@ def main(args):
     try:
         ztm = initZopeless()
         execute_zcml_for_scripts()
-        process_queue()
-        ztm.commit()
+        process_queue(ztm)
     finally:
         lockfile.release()
 

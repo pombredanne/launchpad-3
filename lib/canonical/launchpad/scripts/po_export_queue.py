@@ -96,7 +96,7 @@ def process_request(person, potemplate, objects):
             '    %s' % url,
             ''))
 
-def process_queue():
+def process_queue(transaction_manager):
     """Process each request in the PO export queue.
 
     Each item is removed from the queue as it is processed, so the queue will
@@ -122,4 +122,12 @@ def process_queue():
             # Librarian will refuse to accept.
             # -- Dafydd Harries, 2005/06/16
             pass
+
+        # This is here in case we need to process the same file twice in the
+        # same queue run. If we try to do that all in one transaction, the
+        # second time we get to the file we'll get a Librarian lookup error
+        # because files are not accessible in the same transaction as they're
+        # created.
+
+        transaction_manager.commit()
 
