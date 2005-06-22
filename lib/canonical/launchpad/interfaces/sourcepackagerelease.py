@@ -36,6 +36,10 @@ class ISourcePackageRelease(Interface):
     name = Attribute('The sourcepackagename for this release, as text')
     title = Attribute('The title of this sourcepackage')
 
+    productrelease = Attribute("The best guess we have as to the Launchpad "
+                               "ProductRelease associated with this "
+                               "SourcePackageRelease.")
+
     def branches():
         """Return the list of branches in a source package release"""
 
