@@ -573,12 +573,8 @@ class POFile(SQLBase, RosettaStats):
                         familyname = " ".join(items[1:])
 
                     # We create a new user without a password.
-                    try:
-                        person = createPerson(email, name, givenname,
-                                              familyname, password=None)
-                    except:
-                        # We had a problem creating the person...
-                        person = None
+                    person = getUtility(IPersonSet).createPerson(
+                            email, name, givenname, familyname, password=None)
 
                     if person is None:
                         # XXX: Carlos Perello Marin 20/12/2004 We have already

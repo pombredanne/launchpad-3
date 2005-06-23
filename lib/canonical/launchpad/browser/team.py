@@ -658,8 +658,3 @@ class TeamMembershipEditView:
 
         return html
 
-
-def traverseTeam(team, request, name):
-    if name == '+members':
-        return ITeamMembershipSubset(team)
-

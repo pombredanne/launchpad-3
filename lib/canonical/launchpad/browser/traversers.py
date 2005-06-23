@@ -9,7 +9,7 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IBugSet, IBugTaskSet, IBugTaskSubset, IBugTasksReport,
     IDistributionSet, IProjectSet, IProductSet, ISourcePackageSet,
-    IBugTrackerSet, ILaunchBag)
+    IBugTrackerSet, ILaunchBag, ITeamMembershipSubset)
 
 from canonical.launchpad.database import (
     ProductSeriesSet, ProductMilestoneSet, PublishedPackageSet,
@@ -60,8 +60,6 @@ def traverse_distribution(distribution, request, name):
     else:
         return getUtility(ILaunchBag).distribution[name]
 
-    return None
-
 
 def traverse_distrorelease(distrorelease, request, name):
     """Traverse an IDistroRelease."""
@@ -73,4 +71,11 @@ def traverse_distrorelease(distrorelease, request, name):
         return IBugTaskSubset(distrorelease)
     else:
         return distrorelease[name]
+
+
+def traverseTeam(team, request, name):
+    if name == '+members':
+        return ITeamMembershipSubset(team)
+    
+    return None
 
