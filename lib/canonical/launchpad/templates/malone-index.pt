@@ -6,12 +6,13 @@
 <body>
 <div metal:fill-slot="main">
 
-    <h1>Welcome to Malone!</h1>
+    <h1>Welcome to Malone</h1>
     <p class="discreet">
         Malone is a system for reporting bugs in software. Please choose a link
         below to get started.
     </p>
 
+    <h2>Bugs on Packages</h2>
     <ul>
         <li tal:replace="nothing">
             <!-- XXX: Brad Bollenbach, 2004-12-16: Find a place to put this. -->
@@ -23,16 +24,43 @@
             similar. <b>If you're not sure, start here.</b>
         </li>
         <li>
-            <a href="products">File a Bug on a Product</a> - report a bug
-            on something that you installed manually.
+            <!-- XXX ubuntu is hardcoded -->
+            <a href="distros/ubuntu">View Ubuntu Bugs</a> - view bugs
+            filed in Ubuntu, the best distribution ever.
         </li>
         <li>
-            <a href="distros">View Distribution Bugs</a> - view bugs filed on
-            specific distributions and releases of distributions
+            <a href="distros">View Bugs in other Distributions</a> - view bugs filed on
+            packages in distributions.
         </li>
+    </ul>
+    <h2>Bugs on Products</h2>
+    <ul>
+        <form method="get" action="products">
+          <li>
+            <input type="hidden" name="exact" value="1">
+            Jump to bugs in product: <input type="text" name="text" size="20">
+          </li>
+        </form>
         <li>
-            <a href="assigned">Assigned Bug Reports</a> - retrieve reports on
-            bugs assigned to a specific person
+            <a href="products">Locate Product and View Bugs</a> -
+            locate a product to view or file bugs
+        </li>
+    </ul>
+    <h2>Quick Links</h2>
+    <ul>
+        <form method="get" action="bugs" name="goto">
+          <li>
+            Go to bug report #<input type="text" name="id" size="5" />
+          </li>
+        </form>
+        <script>
+        <!-- 
+            document.forms['goto'].id.focus();
+        //-->
+        </script>
+        <li>
+            <a href="assigned">My Bug Reports</a> - retrieve reports on
+            bugs assigned to yourself
         </li>
     </ul>
 

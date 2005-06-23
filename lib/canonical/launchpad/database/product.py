@@ -385,13 +385,17 @@ class ProductSet:
     def search(self, text=None, soyuz=None,
                rosetta=None, malone=None,
                bazaar=None,
-               show_inactive=False):
+               show_inactive=False,
+               exact=False):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         clauseTables = sets.Set()
         clauseTables.add('Product')
         query = '1=1 '
         if text:
-            query += " AND Product.fti @@ ftq(%s) " % sqlvalues(text)
+            if exact:
+                query += " AND Product.name = %s" % sqlvalues(text)
+            else:
+                query += " AND Product.fti @@ ftq(%s) " % sqlvalues(text)
         if rosetta:
             clauseTables.add('POTemplate')
             clauseTables.add('ProductRelease')

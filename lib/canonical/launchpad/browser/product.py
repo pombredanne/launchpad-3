@@ -269,6 +269,10 @@ class ProductSetView:
         self.malone = form.get('malone')
         self.bazaar = form.get('bazaar')
         self.text = form.get('text')
+        self.exact = form.get('exact')
+        self.matches = 0
+        self.results = None
+
         self.searchrequested = False
         if (self.text is not None or
             self.bazaar is not None or
@@ -276,20 +280,33 @@ class ProductSetView:
             self.rosetta is not None or
             self.soyuz is not None):
             self.searchrequested = True
-        self.results = None
-        self.matches = 0
 
+        if self.exact:
+            # Exact matching redirects into the appropriate app
+            self.searchresults()
+            if self.matches:
+                # name is a primary key for product
+                assert self.matches == 1, self.matches
+                self.request.response.redirect(self.results[0].name)
+            else:
+                # If we didn't match an exact request, let the normal
+                # fti query happen
+                self.exact = None
+                self.results = None
+                self.matches = None
+                
     def searchresults(self):
         """Use searchtext to find the list of Products that match
         and then present those as a list. Only do this the first
         time the method is called, otherwise return previous results.
         """
         if self.results is None:
-            self.results = self.context.search(text=self.text,
+            self.results = self.context.search(text=self.text, 
                                                bazaar=self.bazaar,
-                                               malone=self.malone,
+                                               malone=self.malone, 
                                                rosetta=self.rosetta,
-                                               soyuz=self.soyuz)
+                                               soyuz=self.soyuz, 
+                                               exact=self.exact)
         self.matches = self.results.count()
         return self.results
 
