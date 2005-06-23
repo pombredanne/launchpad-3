@@ -14,9 +14,10 @@ from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.interfaces import ILoginToken, ILoginTokenSet
 from canonical.lp.dbschema import LoginTokenType, EnumCol
-
+from canonical.launchpad.validators.email import valid_email
 
 class LoginToken(SQLBase):
     implements(ILoginToken)
@@ -35,6 +36,22 @@ class LoginToken(SQLBase):
 
     title = 'Launchpad Email Verification'
 
+    def sendEmailValidationRequest(self, appurl):
+        """See ILoginToken."""
+        template = open(
+            'lib/canonical/launchpad/emailtemplates/validate-email.txt').read()
+        fromaddress = "Launchpad Email Validator <noreply@ubuntu.com>"
+
+        replacements = {'longstring': self.token,
+                        'requester': self.requester.browsername,
+                        'requesteremail': self.requesteremail,
+                        'toaddress': self.email,
+                        'appurl': appurl}
+        message = template % replacements
+
+        subject = "Launchpad: Validate your email address"
+        simple_sendmail(fromaddress, self.email, subject, message)
+
 
 class LoginTokenSet:
     implements(ILoginTokenSet)
@@ -43,22 +60,30 @@ class LoginTokenSet:
         self.title = 'Launchpad Email Verification System'
 
     def get(self, id, default=None):
+        """See ILoginTokenSet."""
         try:
             return LoginToken.get(id)
         except SQLObjectNotFound:
             return default
 
     def searchByEmailAndRequester(self, email, requester):
+        """See ILoginTokenSet."""
         return LoginToken.select(AND(LoginToken.q.email==email,
                                      LoginToken.q.requesterID==requester.id))
 
     def deleteByEmailAndRequester(self, email, requester):
+        """See ILoginTokenSet."""
         for token in self.searchByEmailAndRequester(email, requester):
             token.destroySelf()
             
     def new(self, requester, requesteremail, email, tokentype,
             fingerprint=None):
         """See ILoginTokenSet."""
+        assert valid_email(email)
+        if tokentype not in LoginTokenType.items:
+            raise ValueError(
+                "tokentype is not an item of LoginTokenType: %s" % tokentype)
+
         characters = '0123456789bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ'
         length = 20
         token = ''.join([random.choice(characters) for count in range(length)])
@@ -68,6 +93,7 @@ class LoginTokenSet:
                           created=UTC_NOW, fingerprint=fingerprint)
 
     def __getitem__(self, tokentext):
+        """See ILoginTokenSet."""
         token = LoginToken.selectOneBy(token=tokentext)
         if token is None:
             raise KeyError, tokentext

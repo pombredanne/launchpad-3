@@ -413,7 +413,6 @@ Now Sample Person is allowed to edit the bug task again:
     >>> login('test@canonical.com')
     >>> upstream_task.status = STATUS_FIXED
 
-
 Distro and Distro Release Bug Tasks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -439,9 +438,6 @@ We can edit the task:
 
     >>> distro_task.status = STATUS_FIXED
     >>> distro_release_task.assignee = sample_person
-
-For bugs that *are* marked private, see the next section...
-
 
 Bug Privacy
 ===========
@@ -481,6 +477,16 @@ and mark one of the Firefox bugs private:
     ...     ["id", "title", "private"])
     >>> notify(bug_set_private)
     >>> transaction.commit()
+
+Because Foo Bar is a member of the Ubuntu Team, and the Ubuntu Team is
+one of the maintainers on this bug report, Foo Bar will see the bug in
+searches:
+
+    >>> firefox = productset.get(4)
+    >>> firefox_bugtasks = bugtaskset.search(
+    ...     product=firefox, status=any(STATUS_NEW, STATUS_ACCEPTED))
+    >>> [bugtask.bug.id for bugtask in firefox_bugtasks]
+    [6, 5, 4, 1]
 
 Now, if we log in as David Allouche:
 

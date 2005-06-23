@@ -1,0 +1,60 @@
+
+Language Pack Exports
+--------------------
+
+    >>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
+    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+    >>> LaunchpadFunctionalTestSetup().setUp()
+    >>> LibrarianTestSetup().setUp()
+
+This is a workaround to give this test the same permissions as the cron script
+has.
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login("daf@canonical.com")
+
+This is a dummy logger class to capture the export's log messages.
+
+    >>> import sys
+    >>> import traceback
+
+    >>> class FakeLogger:
+    ...     messages = []
+    ...
+    ...     def log(self, *stuff):
+    ...         self.messages.append(' '.join(stuff))
+    ...
+    ...     debug = info = warn = error = log
+    ...
+    ...     def exception(self, *stuff):
+    ...         self.log(*stuff)
+    ...
+    ...         for line in traceback.format_exception(*sys.exc_info()):
+    ...             if line.strip():
+    ...                 self.log(line)
+
+Try doing a base language pack export.
+
+    >>> from canonical.launchpad.scripts.language_pack import \
+    ...    export_language_pack
+    >>> logger = FakeLogger()
+    >>> export_language_pack(
+    ...     distribution_name='ubuntu',
+    ...     release_name='hoary',
+    ...     update=False,
+    ...     output_file=None,
+    ...     email_addresses=['daf@canonical.com'],
+    ...     logger=logger)
+    True
+    >>> for message in logger.messages:
+    ...     print message
+    Selecting PO files for export
+    Number of PO files to export: ...
+    Exporting PO file ...
+    ...
+    Adding timestamp file
+    Done.
+    Upload complete, file alias: ...
+
+    >>> LibrarianTestSetup().tearDown()
+    >>> LaunchpadFunctionalTestSetup().tearDown()

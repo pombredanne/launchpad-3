@@ -30,6 +30,11 @@
             template="../templates/translationgroup.pt"
             name="+index"
             lp:url="/rosetta/groups/$TranslationGroup.name/+index" />
+        <!-- TranslationGroup portlets -->
+        <browser:page
+            name="+portlet-relateds"
+            template="../templates/portlet-translationgroup-relateds.pt"
+            lp:url="/rosetta/groups/$TranslationGroup.name/+portlet-relateds" />
     </browser:pages>
 
     <browser:page

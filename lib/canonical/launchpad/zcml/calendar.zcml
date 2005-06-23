@@ -45,6 +45,13 @@
       lp:url="/$CalendarOwner/+calendar-create" />
 
   <browser:page
+      for="canonical.launchpad.interfaces.ICalendarOwner"
+      page="+portlet-calendar"
+      template="../templates/portlet-calendar-info.pt"
+      class="canonical.launchpad.browser.CalendarInfoPortletView"
+      lp:url="/$CalendarOwner/+portlet-calendar" />
+
+  <browser:page
       for="canonical.publication.RootObject"
       name="calendar"
       permission="launchpad.AnyPerson"

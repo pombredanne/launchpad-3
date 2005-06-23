@@ -663,10 +663,10 @@ class ViewCalendarSubscribe(object):
 
 
 class CalendarInfoPortletView(object):
-    def __init__(self, view):
-        self.request = view.request
-        self.context = view.context
-        self.calendar = ICalendarOwner(view.context).calendar
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.calendar = ICalendarOwner(context).calendar
 
         self.user_timezone = getUtility(ILaunchBag).timezone
         now = datetime.now(self.user_timezone)
@@ -700,11 +700,3 @@ class CalendarInfoPortletView(object):
         self.layout = calendar.monthcalendar(now.year, now.month)
 
         self.canSubscribe = (IPerson(self.request.principal, None) is not None)
-
-class CalendarInfoPortlet(object):
-    def __init__(self, template_filename):
-        self.template = ViewPageTemplateFile(template_filename)
-    def __call__(self, view, *args, **kw):
-        return self.template(CalendarInfoPortletView(view), *args, **kw)
-    def __get__(self, instance, type=None):
-        return BoundPageTemplate(self, instance)

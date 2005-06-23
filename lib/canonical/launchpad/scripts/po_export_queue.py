@@ -9,7 +9,7 @@ from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.helpers import tar_add_file, getRawFileData, \
     join_lines
 from canonical.launchpad.interfaces import IPOExportRequestSet, \
-    IPOTemplate, IPOFile, ILibraryFileAliasSet
+    IPOTemplate, IPOFile, ILibraryFileAliasSet, ZeroLengthPOExportError
 
 def get_object_name_and_url(person, potemplate, object):
     """Return the name and URL of the given object.
@@ -96,7 +96,7 @@ def process_request(person, potemplate, objects):
             '    %s' % url,
             ''))
 
-def process_queue():
+def process_queue(transaction_manager):
     """Process each request in the PO export queue.
 
     Each item is removed from the queue as it is processed, so the queue will
@@ -112,5 +112,22 @@ def process_queue():
             return
 
         person, potemplate, objects = request
-        process_request(person, potemplate, objects)
+
+        try:
+            process_request(person, potemplate, objects)
+        except ZeroLengthPOExportError:
+            # XXX
+            # This is a temporary workaround for a problem where the export
+            # code sometimes generates a zero-length PO file, which the
+            # Librarian will refuse to accept.
+            # -- Dafydd Harries, 2005/06/16
+            pass
+
+        # This is here in case we need to process the same file twice in the
+        # same queue run. If we try to do that all in one transaction, the
+        # second time we get to the file we'll get a Librarian lookup error
+        # because files are not accessible in the same transaction as they're
+        # created.
+
+        transaction_manager.commit()
 

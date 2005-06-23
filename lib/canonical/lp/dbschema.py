@@ -1387,32 +1387,32 @@ class BinaryPackagePriority(DBSchema):
     specific priority. This schema documents the priorities that Launchpad
     knows about.  """
 
-    REQUIRED = Item(1, """
+    REQUIRED = Item(10, """
         Required Package
 
         This package is required for the distribution to operate normally.
         Usually these are critical core packages that are essential for the
         correct operation of the operating system.  """)
 
-    IMPORTANT = Item(2, """
+    IMPORTANT = Item(20, """
         Important
 
         This package is important, and should be installed under normal
         circumstances.  """)
 
-    STANDARD = Item(3, """
+    STANDARD = Item(30, """
         Standard
 
         The typical install of this distribution should include this
         package.  """)
 
-    OPTIONAL = Item(4, """
+    OPTIONAL = Item(40, """
         Optional
 
         This is an optional package in this distribution.
         """)
 
-    EXTRA = Item(5, """
+    EXTRA = Item(50, """
         Extra
 
         This is an extra package in this distribution. An "extra" package
@@ -2130,4 +2130,31 @@ class MirrorFreshness(DBSchema):
         Freshness Unknown
 
         The Freshness was never verified and is unknown.
+        """)
+
+
+class TranslationValidationStatus(DBSchema):
+    """Translation Validation Status
+
+    Every time a translation is added to Rosetta we should checked that
+    follows all rules to be a valid translation inside a .po file.
+    This schema documents the status of that validation.
+    """
+
+    UNKNOWN = Item(0, """
+        Unknown
+
+        This translation has not been validated yet.
+        """)
+
+    OK = Item(1, """
+        Ok
+
+        This translation has been validated and no errors were discovered.
+        """)
+
+    UNKNOWNERROR = Item(2, """
+        Unknown Error
+
+        This translation has an unknown error.
         """)

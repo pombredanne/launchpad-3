@@ -54,6 +54,43 @@
             template="../templates/object-pots.pt"
             lp:url="/products/evolution/2.1.6/+potlist"
             />
+        <!-- ProductReleases Portlets -->
+        <browser:page
+            name="+portlet-actions"
+            template="../templates/portlet-productrelease-actions.pt"
+            lp:url="/products/evolution/2.1.6/+portlet-actions"
+            />
+        <browser:page
+            name="+portlet-summary"
+            template="../templates/portlet-object-summary.pt"
+            lp:url="/products/evolution/2.1.6/+portlet-summary"
+            />
+        <browser:page
+            name="+portlet-details"
+            template="../templates/portlet-productrelease-details.pt"
+            lp:url="/products/evolution/2.1.6/+portlet-details"
+            />
+        <browser:page
+            name="+portlet-pref-langs"
+            template="../templates/portlet-pref-langs.pt"
+            lp:url="/products/evolution/2.1.6/+portlet-pref-langs"
+            />
+        <browser:page
+            name="+portlet-country"
+            template="../templates/portlet-country-langs.pt"
+            lp:url="/products/evolution/2.1.6/+portlet-country"
+            />
+        <browser:page
+            name="+portlet-browser-langs"
+            template="../templates/portlet-browser-langs.pt"
+            lp:url="/products/evolution/2.1.6/+portlet-browser-langs"
+            />
+        <browser:page
+            name="+portlet-status-legend"
+            template="../templates/portlet-rosetta-status-legend.pt"
+            lp:url="/products/evolution/2.1.6/+portlet-status-legend"
+            />
+
     </browser:pages>
 
     <browser:pages

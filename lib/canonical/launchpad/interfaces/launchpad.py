@@ -236,6 +236,7 @@ class ILaunchBag(Interface):
     product = Attribute('Product, or None')
     distribution = Attribute('Distribution, or None')
     distrorelease = Attribute('DistroRelease, or None')
+    distroarchrelease = Attribute('DistroArchRelease, or None')
     sourcepackage = Attribute('Sourcepackage, or None')
     sourcepackagereleasepublishing = Attribute(
         'SourcepackageReleasePublishing, or None')

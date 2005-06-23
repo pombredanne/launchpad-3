@@ -9,10 +9,10 @@
     <content class="canonical.launchpad.database.Distribution">
         <allow interface="canonical.launchpad.interfaces.IDistribution"/>
         <require
-            permission="launchpad.Admin"
+            permission="launchpad.Edit"
             set_attributes="displayname title summary description
                             translationgroup translationpermission
-                            members"
+                            members owner"
             />
     </content>
 
@@ -57,6 +57,28 @@
             name="+members"
             template="../templates/distribution-members.pt"
             lp:url="/distros/$Distribution.name/+members/" />
+        <browser:page
+            name="+portlet-actions"
+            template="../templates/portlet-distro-actions.pt"
+            lp:url="/distros/$Distribution.name/+portlet-actions/" />
+        <browser:page
+            name="+portlet-details"
+            template="../templates/portlet-distro-details.pt"
+            lp:url="/distros/$Distribution.name/+portlet-details/" />
+        <browser:page
+            name="+portlet-bounties"
+            template="../templates/portlet-related-bounties.pt"
+            lp:url="/distros/$Distribution.name/+portlet-bounties/" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IDistribution"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.ObjectReassignmentView">
+          <browser:page
+              name="+reassign"
+              template="../templates/object-reassignment.pt"
+              lp:url="/distros/$distro.id/+reassign" />
     </browser:pages>
 
     <browser:addform
@@ -84,7 +106,7 @@
 
     <browser:editform
         for="canonical.launchpad.interfaces.IDistribution"
-        permission="launchpad.Admin"
+        permission="launchpad.Edit"
         name="+edit"
         schema="canonical.launchpad.interfaces.IDistribution"
         fields="displayname title summary description"

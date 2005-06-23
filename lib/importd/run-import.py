@@ -5,6 +5,9 @@
 import sys
 
 from CommandLineRunner import Doer
+from canonical.lp import initZopeless
+
+initZopeless()
 
 if len (sys.argv) > 3:
     level = int(sys.argv[3])

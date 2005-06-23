@@ -52,6 +52,9 @@ class ILoginToken(Interface):
         to delete it so nobody can use that token again.
         """
 
+    def sendEmailValidationRequest(appurl):
+        """Send an email message with a magic URL to validate self.email."""
+
 
 class ILoginTokenSet(Interface):
     """The set of LoginTokens."""
@@ -75,10 +78,11 @@ class ILoginTokenSet(Interface):
         requester: a Person object or None (in case of a new account)
 
         requesteremail: the email address used to login on the system. Can
-        also be None in case of a new account
+                        also be None in case of a new account
 
-        email: the email address that this request will be sent to
-        
+        email: the email address that this request will be sent to.
+        It should be previosly validated by valid_email() 
+
         tokentype: the type of the request, according to
         dbschema.LoginTokenType
         
@@ -98,5 +102,4 @@ class ILoginTokenSet(Interface):
 
         Returns the default value if there is no such LoginToken.
         """
-
 

@@ -36,6 +36,12 @@
             name="+index"
             template="../templates/team-members.pt"
             lp:url="people/$team/+members/+index" />
+        <!-- TeamMembership portlets -->
+        <browser:page
+            name="+portlet-actions"
+            template="../templates/portlet-team-actions.pt"
+            lp:url="people/$team/+members/+portlet-actions" />
+
     </browser:pages>
 
     <browser:addform

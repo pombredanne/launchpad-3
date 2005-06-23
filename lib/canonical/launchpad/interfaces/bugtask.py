@@ -8,7 +8,8 @@ from zope.component.interfaces import IView
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine, List
+from zope.schema import (
+    Bool, Bytes, Choice, Datetime, Int, Text, TextLine, List)
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from sqlos.interfaces import ISelectResults
@@ -73,6 +74,8 @@ class IBugTask(IHasDateCreated):
     status = Choice(
         title=_('Status'), vocabulary='BugStatus',
         default=dbschema.BugTaskStatus.NEW)
+    statusexplanation = Text(
+        title=_("Explanation of Status"), required=False)
     priority = Choice(
         title=_('Priority'), vocabulary='BugPriority',
         default=dbschema.BugPriority.MEDIUM)
@@ -84,6 +87,13 @@ class IBugTask(IHasDateCreated):
     binarypackagename = Choice(
         title=_('Binary PackageName'), required=False,
         vocabulary='BinaryPackageName')
+    bugwatch = Choice(title=_("Remote Bug Details"), required=False,
+        vocabulary='BugWatch', description=_("Select the bug watch that "
+        "represents this task in the relevant bug tracker. If none of the "
+        "bug watches represents this particular bug task, leave it as "
+        "(None). Linking the remote bug watch with the task in "
+        "this way means that a change in the remote bug status will change "
+        "the status of this bug task in Malone."))
     dateassigned = Datetime()
     datecreated  = Datetime()
     owner = Int()
@@ -94,7 +104,6 @@ class IBugTask(IHasDateCreated):
 
     contextname = Attribute("Description of the task's location.")
     title = Attribute("The title used for a task's Web page.")
-    whiteboard = Text(title=_("Status Explanation"), required=False)
 
 
 class IBugTaskSearch(Interface):
@@ -119,14 +128,27 @@ class IBugTaskSearch(Interface):
     assignee = Choice(
         title=_('Assignee'), vocabulary='ValidAssignee', required=False)
     unassigned = Bool(title=_('show only unassigned bugs'), required=False)
+    statusexplanation = TextLine(
+        title=_("Explanation of Status"), required=False)
+
+
+class IUpstreamBugTaskSearch(IBugTaskSearch):
+    """The schema used by the bug task search form of a product."""
     milestone_assignment = Choice(
         title=_('Target'), vocabulary="Milestone", required=False)
     milestone = List(
         title=_('Target'), value_type=IBugTask['milestone'], required=False)
 
 
+class IDistroBugTaskSearch(IBugTaskSearch):
+    """The schema used by the bug task search form of a distribution or
+    distribution release."""
+
+
 class IBugTaskSearchListingView(IView):
     """A view that can be used with a bugtask search listing."""
+
+    search_form_schema = Attribute("""The schema used for the search form.""")
 
     searchtext_widget = Attribute("""The widget for entering a free-form text
                                      query on bug task details.""")
@@ -146,6 +168,10 @@ class IBugTaskSearchListingView(IView):
     milestone_widget = Attribute("""The widget for selecting task targets to
                                     filter on. None if the widget is not to be
                                     shown.""")
+
+    statusexplanation_widget = Attribute("""The widget for searching in status
+                                     explanations. None if the widget is not to
+                                     be shown.""")
 
     def task_columns():
         """Returns a sequence of column names to be shown in the listing.
@@ -186,6 +212,7 @@ class IBugTaskDelta(Interface):
         "A dict containing two keys, 'old' and 'new' or None.")
     assignee = Attribute(
         "A dict containing two keys, 'old' and 'new' or None.")
+    statusexplanation = Attribute("The new value of the status explanation.")
 
 
 class IUpstreamBugTask(IBugTask):

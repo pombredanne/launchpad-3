@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import sets
 from warnings import warn
+from urllib import quote as urlquote
 
 import zope.security.interfaces
 from zope.interface import implements
@@ -37,62 +38,14 @@ from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
-from canonical.launchpad.browser.cal import CalendarInfoPortlet
 
 # A View Class for Product
 class ProductView:
 
     __used_for__ = IProduct
-
-    summaryPortlet = ViewPageTemplateFile(
-        '../templates/portlet-object-summary.pt')
-
-    translationsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-translations.pt')
-
-    translatablesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-translatables.pt')
-
-    latestBugPortlet = ViewPageTemplateFile(
-        '../templates/portlet-latest-bugs.pt')
-
-    relatedBountiesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-related-bounties.pt')
-
-    branchesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-branches.pt')
-
-    detailsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-details.pt')
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-actions.pt')
-
-    projectPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-project.pt')
-
-    milestonePortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-milestones.pt')
-
-    packagesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-packages.pt')
-
-    prefLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-pref-langs.pt')
-
-    countryPortlet = ViewPageTemplateFile(
-        '../templates/portlet-country-langs.pt')
-
-    browserLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-browser-langs.pt')
-
-    statusLegend = ViewPageTemplateFile(
-        '../templates/portlet-rosetta-status-legend.pt')
-
-    calendarInfoPortlet = CalendarInfoPortlet(
-        '../templates/portlet-calendar-info.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -247,6 +200,18 @@ class ProductView:
 
         return sorted(potemplatenames, key=lambda item: item.name)
 
+class ProductEditView(ProductView, SQLObjectEditView):
+    """View class that lets you edit a Product object."""
+
+    def __init__(self, context, request):
+        ProductView.__init__(self, context, request)
+        SQLObjectEditView.__init__(self, context, request)
+
+    def changed(self):
+        # If the name changed then the URL changed, so redirect:
+        self.request.response.redirect(
+            '../%s/+edit' % urlquote(self.context.name))
+
 
 class ProductBugsView(BugTaskSearchListingView):
     implements(IBugTaskSearchListingView)
@@ -294,9 +259,6 @@ class ProductSetView:
 
     __used_for__ = IProductSet
 
-    detailsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-productset-details.pt')
-
     def __init__(self, context, request):
 
         self.context = context
@@ -316,7 +278,6 @@ class ProductSetView:
             self.searchrequested = True
         self.results = None
         self.matches = 0
-
 
     def searchresults(self):
         """Use searchtext to find the list of Products that match

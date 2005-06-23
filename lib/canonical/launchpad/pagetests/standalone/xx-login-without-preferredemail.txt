@@ -1,0 +1,33 @@
+  'salgado' doesn't have a preferred email address. He can't login without
+  first validating his email address.
+
+
+  >>> print http(r"""
+  ... POST /+login HTTP/1.1
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... loginpage_email=guilherme.salgado%40canonical.com&loginpage_password=zeca&loginpage_submit_login=Log+In""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...The email address 'guilherme.salgado@canonical.com', which you're...
+  ...trying to use to login has not yet been validated to use in Launchpad...
+  ...We sent an email to that address with instructions on how to confirm...
+  ...that it belongs to you...
+  ...
+
+
+  When this happens, we automatically send an email to that address so the
+  user can validate it and login.
+
+  >>> import email
+  >>> from canonical.launchpad.mail import stub
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+
+  Check if the email was sent to the right address.
+
+  >>> to_addrs
+  ['guilherme.salgado@canonical.com']
+

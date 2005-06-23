@@ -350,7 +350,7 @@ class SourcePackageSet(object):
     def _querystr(self, text=None):
         querystr = ''
         if self.distrorelease:
-            querystr += 'distrorelease = %d' %  self.distrorelease 
+            querystr += 'distrorelease = %d' %  sqlvalues(self.distrorelease)
         if text:
             if len(querystr):
                 querystr += ' AND '

@@ -20,8 +20,8 @@ class IGpgHandler(Interface):
         :param signature: The signature (or None if content is clearsigned)
         :param key: The key to verify against (or None to search launchpad)
         
-        :returns: True if content is correctly signed, False if it isn't
-        Also returns the fingerprint of the key in question.
+        :returns: a PymeSignature object containing the signature information
+        See IPymeSignature for further info.
         """
 
     def importPubKey(pubkey):
@@ -72,4 +72,4 @@ class IPymeKey(Interface):
     revoked = Attribute("Key Revoked")
     keysize = Attribute("Key Size")
     keyid = Attribute("Pseudo Key ID (fpr last 8 digits)")
-    uids = Attribute("List of contained UIDs.")
+    uids = Attribute("List containing only well formed and non-revoked UIDs")

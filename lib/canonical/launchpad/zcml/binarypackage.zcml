@@ -18,13 +18,23 @@
         for="canonical.launchpad.database.BinaryPackage" 
         getter="__getitem__" />
 
-    <browser:page
+    <browser:pages
         for="canonical.launchpad.database.BinaryPackage" 
         class="canonical.launchpad.browser.BinaryPackageView"
-        permission="zope.Public"
-        name="+index"
-        template="../templates/binarypackage-index.pt"
-        lp:url="Soyuz/distros/$Distribution/$Distrorelease/$Archtag/$Bin/+index"/>
+        permission="zope.Public">
+
+        <browser:page
+            name="+index"
+            template="../templates/binarypackage-index.pt"
+            lp:url="distros/$Distro/$Distrorelease/$Archtag/$Bin/+index"/>
+
+        <browser:page
+            name="+portlet-lastversions"
+            template="../templates/portlet-binarypackage-lastversions.pt"
+            lp:url="distros/$Distro/$Distrorelease/$Archtag/$Bin/+portlet-lastversions"/>
+   </browser:pages>
+
+
 
     <!-- BinaryPackageSet -->
     <content class="canonical.launchpad.database.BinaryPackageSet">

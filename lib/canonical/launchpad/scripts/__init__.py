@@ -100,6 +100,9 @@ def execute_zcml_for_scripts(use_web_security=False):
         for thread in threading.enumerate():
             if isinstance(thread, zope.app.mail.delivery.QueueProcessorThread):
                 thread.stop()
+                thread.join(30)
+                if thread.isAlive():
+                    raise RuntimeError("QueueProcessorThread did not shut down")
     atexit.register(kill_queue_processor_threads)
 
     # This is a convenient hack to set up a zope interaction, before we get

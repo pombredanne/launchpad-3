@@ -1,6 +1,7 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 '''UtcDateTimeCol for SQLObject'''
 
+import math
 import datetime
 import pytz
 
@@ -81,17 +82,43 @@ class UtcDateTimeValidator(validators.Validator):
     def toPython(self, value, state):
         """Add the UTC timezone to a timezone-less value from the database.
 
+            >>> from datetime import datetime
             >>> validator = UtcDateTimeValidator()
             >>> validator.toPython(None, None)
-            >>> validator.toPython(datetime.datetime(2004,1,1,12,0,0), None)
-            datetime.datetime(2004, 1, 1, 12, 0, tzinfo=<StaticTzInfo 'UTC'>)
+            >>> print validator.toPython(datetime(2004, 1, 1, 12, 0, 0),
+            ...                          None)
+            2004-01-01 12:00:00+00:00
+            >>> print validator.toPython(datetime(2004, 1, 1, 12, 0, 0, 5000),
+            ...                          None)
+            2004-01-01 12:00:00.005000+00:00
+            >>>
+
+        The validator also works if the database adapter returns mx.DateTime
+        instances.
+
+            >>> from mx.DateTime import DateTime
+            >>> print validator.toPython(DateTime(2004, 1, 1, 12, 0, 0), None)
+            2004-01-01 12:00:00+00:00
+            >>> print validator.toPython(DateTime(2004, 1, 1, 12, 0, 0.005),
+            ...                          None)
+            2004-01-01 12:00:00.005000+00:00
             >>>
         """
         # does it look like a datetime type (datetime or mx.DateTime)?
         try:
             return datetime.datetime(value.year, value.month, value.day,
                                      value.hour, value.minute, value.second,
-                                     tzinfo=_utc_tz)
+                                     value.microsecond, tzinfo=_utc_tz)
         except AttributeError:
-            # if it isn't a datetime type, return it unchanged
-            return value
+            # mx.DateTime values don't have microsecond, instead
+            # encoding the value into the seconds component.
+            try:
+                (fracsecond, second) = math.modf(value.second)
+                second = int(second)
+                microsecond = int(fracsecond * 1000000)
+                return datetime.datetime(value.year, value.month, value.day,
+                                         value.hour, value.minute, second,
+                                         microsecond, tzinfo=_utc_tz)
+            except AttributeError:
+                # if it isn't a datetime type, return it unchanged
+                return value

@@ -84,6 +84,7 @@ def generate_bug_edit_email(bug_delta):
         body += (
             "*** This bug has been marked a duplicate of %d ***\n\n" %
             bug_delta.duplicateof.id)
+
     if bug_delta.title is not None:
         body += "    - Changed title to:\n"
         body += "        %s\n" % bug_delta.title
@@ -201,7 +202,8 @@ def generate_bug_edit_email(bug_delta):
 
                     changerow = (
                         "%(label)13s: %(oldval)s => %(newval)s\n" % {
-                        'label' : fieldname, 'oldval' : oldval_display,
+                        'label' : fieldname.capitalize(),
+                        'oldval' : oldval_display,
                         'newval' : newval_display})
                     body += changerow
 
@@ -215,9 +217,19 @@ def generate_bug_edit_email(bug_delta):
 
                 changerow = (
                     "%(label)13s: %(oldval)s => %(newval)s\n" % {
-                    'label' : "assignee", 'oldval' : oldval_display,
+                    'label' : "Assignee", 'oldval' : oldval_display,
                     'newval' : newval_display})
                 body += changerow
+    
+            if bugtask_delta.statusexplanation is not None:
+                if not body.endswith("\n\n"):
+                    body += "\n"
+                body += "      Changed explanation of status to:\n"
+                body += "\n".join(wrap(
+                    bugtask_delta.statusexplanation, width = 72,
+                    initial_indent = u"          ",
+                    subsequent_indent = u"          "))
+                body += "\n"
 
     return (subject, body)
 
@@ -379,7 +391,7 @@ def get_task_delta(old_task, new_task):
 
     # calculate the differences in the fields that both types of tasks
     # have in common
-    for field_name in ("status", "severity", "priority"):
+    for field_name in ("status", "severity", "priority", "assignee"):
         old_val = getattr(old_task, field_name)
         new_val = getattr(new_task, field_name)
         if old_val != new_val:
@@ -387,12 +399,8 @@ def get_task_delta(old_task, new_task):
             changes[field_name]["old"] = old_val
             changes[field_name]["new"] = new_val
 
-    old_assignee = getattr(old_task, "assignee")
-    new_assignee = getattr(new_task, "assignee")
-    if old_assignee != new_assignee:
-        changes["assignee"] = {}
-        changes["assignee"]["old"] = old_assignee
-        changes["assignee"]["new"] = new_assignee
+    if old_task.statusexplanation != new_task.statusexplanation:
+        changes["statusexplanation"] = new_task.statusexplanation
 
     if changes:
         changes["bugtask"] = old_task

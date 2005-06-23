@@ -106,6 +106,9 @@ class IProductSeriesSource(Interface):
 
     def autoSyncEnabled():
         """is the series source enabled for automatic syncronisation?"""
+
+    def autoTestFailed():
+        """has the series source failed automatic testing by roomba?"""
     
     def namesReviewed():
         """Return True if the product and project details have been reviewed

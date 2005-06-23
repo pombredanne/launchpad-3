@@ -12,7 +12,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import IPOTemplateSet
+from canonical.launchpad.interfaces import IPOTemplateSet, ILaunchBag
 from canonical.launchpad.browser.potemplate import POTemplateView
 
 from canonical.soyuz.generalapp import builddepsSet
@@ -46,15 +46,6 @@ def traverseSourcePackage(sourcepackage, request, name):
         raise KeyError, 'No such suburl for Source Package: %s' % name
 
 class SourcePackageReleasePublishingView(object):
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-sourcepackagerelease-actions.pt')
-
-    lastversionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-sourcepackagerelease-lastversions.pt')
-
-    statusLegend = ViewPageTemplateFile(
-        '../templates/portlet-rosetta-status-legend.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -153,27 +144,10 @@ class SourcePackageInDistroSetView(object):
 
 class SourcePackageView:
 
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-sourcepackage-actions.pt')
-
-    translationsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-sourcepackage-translations.pt')
-
-    statusLegend = ViewPageTemplateFile(
-        '../templates/portlet-rosetta-status-legend.pt')
-
-    prefLangPortlet = ViewPageTemplateFile(
-            '../templates/portlet-pref-langs.pt')
-
-    countryPortlet = ViewPageTemplateFile(
-        '../templates/portlet-country-langs.pt')
-
-    browserLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-browser-langs.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self.launchbag = getUtility(ILaunchBag)
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(self.request)

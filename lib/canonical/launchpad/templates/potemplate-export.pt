@@ -70,7 +70,8 @@
                         Selected files
                     </label>
 
-                    <div style="margin-left: 2em">
+                    <div class="multi_select"
+                            style="margin-left: 2em; margin-bottom: 1em;">
                         <div class="field">
                             <label>
                                 <input type="checkbox" name="potemplate" />
@@ -89,7 +90,7 @@
                     </div>
                 </div>
 
-                <div class="formControls">
+                <div class="formControls" style="clear: left">
                     <input type="submit" value="Request Export" />
                 </div>
 

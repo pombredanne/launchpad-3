@@ -32,9 +32,20 @@
         class="canonical.launchpad.browser.editview.SQLObjectEditView"
         label="Change Bug Watch"
         permission="launchpad.AnyPerson"
-        template="../templates/default-editform.pt"
+        template="../templates/bugwatch-editform.pt"
         fields="bugtracker remotebug"
         lp:url="malone/bugs/$Bug.id/watches/$Watch.id/+edit" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IBugWatch"
+        permission="launchpad.AnyPerson">
+        <browser:page
+            name="+portlet-bugtasks"
+            template="../templates/bugwatch-portlet-bugtasks.pt" />
+        <browser:page
+            name="+portlet-details"
+            template="../templates/bugwatch-portlet-details.pt" />
+    </browser:pages>
 
     <!--BugWatchSet -->
     <content class="canonical.launchpad.database.BugWatchSet">

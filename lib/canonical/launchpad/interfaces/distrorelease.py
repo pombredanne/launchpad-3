@@ -51,6 +51,8 @@ class IDistroRelease(IHasOwner):
     architecturecount = Attribute("The number of architectures in this "
         "release.")
     architectures = Attribute("The Architecture-specific Releases")
+    datelastlangpack = Attribute(
+        "The date of the last base language pack export for this release.")
 
     def getBugSourcePackages():
         """Get SourcePackages in a DistroRelease with BugTask"""

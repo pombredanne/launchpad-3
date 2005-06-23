@@ -6,19 +6,19 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure view/detailsPortlet" />
-    <div tal:replace="structure view/translationsPortlet" />
+    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-translations" />
     <div tal:condition="python:request.principal and request.principal.id == context.owner.id"
-         tal:replace="structure view/milestonePortlet" />
-    <div tal:replace="structure view/projectPortlet" />
+         tal:replace="structure context/@@+portlet-milestones" />
+    <div tal:replace="structure context/@@+portlet-project" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure view/actionsPortlet" />
-    <div tal:replace="structure view/latestBugPortlet" />
-    <div tal:replace="structure view/relatedBountiesPortlet" />
-    <div tal:replace="structure view/packagesPortlet" />
-    <div tal:replace="structure view/calendarInfoPortlet" />
+    <div tal:replace="structure context/@@+portlet-actions" />
+    <div tal:replace="structure context/@@+portlet-latest-bugs" />
+    <div tal:replace="structure context/@@+portlet-related-bounties" />
+    <div tal:replace="structure context/@@+portlet-packages" />
+    <div tal:replace="structure context/@@+portlet-calendar" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main" class="documentContent">

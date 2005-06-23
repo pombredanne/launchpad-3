@@ -35,21 +35,6 @@ class POTemplateSubsetView:
 
 class POTemplateView:
 
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-potemplate-actions.pt')
-
-    detailsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-potemplate-details.pt')
-
-    forPortlet = ViewPageTemplateFile(
-        '../templates/portlet-potemplate-for.pt')
-
-    relativesPortlet = ViewPageTemplateFile(
-        '../templates/potemplate-portlet-relateds.pt')
-
-    statusLegend = ViewPageTemplateFile(
-        '../templates/portlet-rosetta-status-legend.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -301,7 +286,10 @@ class POTemplateExport:
                 self.value = value
                 self.browsername = browsername
 
-        for pofile in self.context.pofiles:
+        def pofile_sort_key(pofile):
+            return pofile.language.englishname
+
+        for pofile in sorted(self.context.pofiles, key=pofile_sort_key):
             if pofile.variant:
                 variant = pofile.variant.encode('UTF-8')
                 value = '%s@%s' % (pofile.language.code, variant)

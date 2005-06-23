@@ -45,6 +45,10 @@
             name="+index"
             template="../templates/series.pt"
             lp:url="/products/$Product.name/+series/$ProductSeries.name/" />
+        <browser:page
+            name="+portlet-actions"
+            template="../templates/portlet-productseries-actions.pt" />
+
     </browser:pages>
 
     <browser:pages

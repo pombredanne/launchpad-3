@@ -8,10 +8,10 @@
     <div metal:fill-slot="body">
       <div
         class="sidebar"
-        tal:content="structure view/actionsPortlet"
+        tal:content="structure context/@@+portlet-actions"
       />
       <h1>
-        #8220;<span tal:replace="context/browsername">
+        &#8220;<span tal:replace="context/browsername">
         Foo</span>&#8221; team
       </h1>
       <table>

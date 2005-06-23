@@ -260,7 +260,7 @@ class ValidateEmailView(object):
         result, pubkey = gpghandler.getPubKey(fingerprint)
         
         if not result:
-            self.errormessage = ('Could not get GPG key')
+            self.errormessage = ('Could not get GPG key: %' % pubkey)
             return
 
         key = gpghandler.importPubKey(pubkey)
@@ -278,8 +278,8 @@ class ValidateEmailView(object):
         revoked = key.revoked
         
         # Add new key in DB. See IGPGKeySet for further information
-        return gpgkeyset.new(ownerID, keyid, fingerprint,
-                             keysize, algorithm, revoked)
+        gpgkeyset.new(ownerID, keyid, fingerprint, keysize, algorithm, revoked)
+        self.errormessage = ('GPG key %s successfully imported' % fingerprint)
         
 
 class NewAccountView(AddView):

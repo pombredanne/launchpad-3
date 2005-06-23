@@ -17,9 +17,11 @@
 
           <div metal:fill-slot="extra_info"
             class="documentDescription">
-            Please edit the details of the upstream product "<span
+            <p>Please edit the details of the upstream product "<span
             tal:replace="context/displayname">product</span>" below. Your
-            changes will become immediately visible.
+            changes will become immediately visible.</p>
+            <p>NOTE: If you change the product's Name, the product URL
+            will change!</p>
           </div>
         
           <div class="row"

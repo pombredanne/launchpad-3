@@ -7,14 +7,14 @@
 <body>
 
   <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure view/detailsPortlet" />
-    <div tal:replace="structure view/summaryPortlet" />
-    <div tal:replace="structure view/projectPortlet" />
+    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-summary" />
+    <div tal:replace="structure context/@@+portlet-project" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure view/prefLangPortlet" />
-    <div tal:replace="structure view/translatablesPortlet" />
+    <div tal:replace="structure context/@@+portlet-pref-lang" />
+    <div tal:replace="structure context/@@+portlet-translatables" />
   </metal:rightportlets>
 
   <div metal:fill-slot="main">

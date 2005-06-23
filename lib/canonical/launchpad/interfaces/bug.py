@@ -202,7 +202,11 @@ class IBugSet(IAddFormCustomization):
         """Iterate through Bugs."""
 
     def get(bugid):
-        """Get a specific bug by its ID."""
+        """Get a specific bug by its ID.
+
+        If it can't be found, a zope.exceptions.NotFoundError will be
+        raised.
+        """
 
     def search(duplicateof=None):
         """Find bugs matching the search criteria provided."""

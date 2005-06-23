@@ -22,7 +22,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 # canonical imports
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (IPOFileSet, IEditPOFile,
-    IPersonSet, IRawFileData, ITeam, IPOTemplateExporter)
+    IPersonSet, IRawFileData, ITeam, IPOTemplateExporter,
+    ZeroLengthPOExportError)
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.pofile_adapters import POFileImporter
 from canonical.launchpad.components.poparser import POParser, POHeader
@@ -619,8 +620,16 @@ class POFile(SQLBase, RosettaStats):
         if self.exportfile is None:
             return False
 
-        change_time = self.latest_submission.datecreated
-        return change_time < self.exporttime
+        if self.exporttime == UTC_NOW:
+            # XXX
+            # This is a workaround for the fact that UTC_NOW can't be compared
+            # against datetime values.
+            # -- Dafydd Harries, 2005/06/21
+
+            return True
+        else:
+            change_time = self.latest_submission.datecreated
+            return change_time < self.exporttime
 
     def updateExportCache(self, contents):
         """See IPOFile."""
@@ -665,6 +674,10 @@ class POFile(SQLBase, RosettaStats):
             return self.fetchExportCache()
         else:
             contents = self.uncachedExport()
+
+            if len(contents) == 0:
+                raise ZeroLengthPOExportError
+
             self.updateExportCache(contents)
             return contents
 

@@ -9,7 +9,7 @@ import os
 import sys
 import time
 import psycopg
-from signal import SIGTERM, SIGKILL
+from signal import SIGINT, SIGTERM, SIGKILL
 
 if len(sys.argv) != 2:
     print >> sys.stderr, 'Must specify one, and only one, database to destroy'
@@ -48,7 +48,7 @@ cur.execute(
         )
 
 # Shoot connections and slaughter the survivors
-for signal in [SIGTERM, SIGKILL]:
+for signal in [SIGINT, SIGTERM, SIGKILL]:
     cur.execute(
             "SELECT procpid FROM pg_stat_activity WHERE datname=%s", [database]
             )
@@ -56,7 +56,7 @@ for signal in [SIGTERM, SIGKILL]:
     for (pid,) in pids:
         os.kill(pid, signal)
     if len(pids) > 0:
-	time.sleep(2)
+	time.sleep(5)
 
 # Destroy the database
 

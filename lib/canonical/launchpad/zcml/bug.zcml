@@ -39,6 +39,42 @@
             name="activity"
             template="../templates/bug-activity.pt"
             lp:url="malone/bugs/$Bugs.id/activity" />
+        <browser:page
+            name="+portlet-bug-watch"
+            template="../templates/portlet-bug-watch.pt"
+            lp:url="malone/bugs/$Bugs.id/+portlet-bug-watch" />
+        <browser:page
+            name="+portlet-bug-productinfestation"
+            template="../templates/portlet-bug-productinfestation.pt"
+            lp:url="malone/bugs/$Bugs.id/+portlet-bug-productinfestation" />
+        <browser:page
+            name="+portlet-bug-packageinfestation"
+            template="../templates/portlet-bug-sourcepackageinfestation.pt"
+            lp:url="malone/bugs/$Bugs.id/+portlet-bug-packageinfestation" />
+        <browser:page
+            name="+portlet-bug-reference"
+            template="../templates/portlet-bug-reference.pt"
+            lp:url="malone/bugs/$Bugs.id/+portlet-bug-reference" />
+        <browser:page
+            name="+bug-portlet-duplicates"
+            template="../templates/bug-portlet-duplicates.pt"
+            lp:url="malone/bugs/$Bugs.id/+bug-portlet-duplicates" />
+        <browser:page
+            name="+portlet-bug-cve"
+            template="../templates/portlet-bug-cve.pt"
+            lp:url="malone/bugs/$Bugs.id/+portlet-bug-cve" />
+        <browser:page
+            name="+portlet-bug-people"
+            template="../templates/portlet-bug-people.pt"
+            lp:url="malone/bugs/$Bugs.id/+portlet-bug-people" />
+        <browser:page
+            name="+portlet-bug-tasks-headline"
+            template="../templates/portlet-bug-tasks-headline.pt"
+            lp:url="malone/bugs/$Bugs.id/+portlet-bug-tasks-headline" />
+        <browser:page
+            name="+portlet-bug-actions"
+            template="../templates/portlet-bug-actions.pt"
+            lp:url="malone/bugs/$Bugs.id/+portlet-bug-actions" />
     </browser:pages>
 
     <!-- Bug -->

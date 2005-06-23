@@ -13,32 +13,28 @@ from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form.browser.add import AddView
+from zope.app.form.utility import setUpWidgets, getWidgetsData
+from zope.app.form.interfaces import (
+        IInputWidget, ConversionError, WidgetInputError)
 from zope.component import getUtility
 
 # lp imports
-from canonical.lp.dbschema import LoginTokenType, SSHKeyType
-from canonical.lp.dbschema import EmailAddressStatus
+from canonical.lp.dbschema import (
+    LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus)
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
 # interface import
-from canonical.launchpad.interfaces import ISSHKeySet, IBugTaskSet
-from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
-from canonical.launchpad.interfaces import IWikiNameSet, IJabberIDSet
-from canonical.launchpad.interfaces import IIrcIDSet, IArchUserIDSet
-from canonical.launchpad.interfaces import ILaunchBag, ILoginTokenSet
-from canonical.launchpad.interfaces import IPasswordEncryptor
-from canonical.launchpad.interfaces import ISignedCodeOfConduct
-from canonical.launchpad.interfaces import ISignedCodeOfConductSet
-from canonical.launchpad.interfaces import IGPGKeySet, IGpgHandler, IPymeKey
+from canonical.launchpad.interfaces import (
+    ISSHKeySet, IBugTaskSet, IPersonSet, IEmailAddressSet, IWikiNameSet,
+    IJabberIDSet, IIrcIDSet, IArchUserIDSet, ILaunchBag, ILoginTokenSet,
+    IPasswordEncryptor, ISignedCodeOfConduct, ISignedCodeOfConductSet, 
+    IObjectReassignment, ITeamReassignment, IGPGKeySet, IGpgHandler, IPymeKey)
 
-from canonical.launchpad.helpers import well_formed_email, obfuscateEmail
-from canonical.launchpad.helpers import convertToHtmlCode, shortlist
-from canonical.launchpad.helpers import sanitiseFingerprint
+from canonical.launchpad.helpers import (
+        obfuscateEmail, convertToHtmlCode, shortlist, sanitiseFingerprint)
+from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.mail.sendmail import simple_sendmail
-
-# browser import
-from canonical.launchpad.browser.cal import CalendarInfoPortlet
 
 ##XXX: (batch_size+global) cprov 20041003
 ## really crap constant definition for BatchPages
@@ -147,14 +143,7 @@ class PersonRdfView(object):
 
 
 class BasePersonView:
-    """A base class to be used by all IPerson view classes."""
-
-    viewsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-person-views.pt')
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-person-actions.pt')
-    
+    """A base class to be used by all IPerson view classes."""    
 
 class PersonView(BasePersonView):
     """A simple View class to be used in all Person's pages."""
@@ -162,8 +151,6 @@ class PersonView(BasePersonView):
     # restricted set of methods to be proxied by form_action()
     permitted_actions = ['claim_gpg', 'remove_gpg',
                          'add_ssh', 'remove_ssh']
-
-    calendarInfoPortlet = CalendarInfoPortlet('../templates/portlet-calendar-info.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -325,24 +312,27 @@ class PersonView(BasePersonView):
 
         bag = getUtility(ILaunchBag)
         # build a list of already validated and preferred emailaddress
+        # in lowercase for comparision reasons
         emails = []
         for email in bag.user.validatedemails:
-            emails.append(email.email)
-        emails.append(bag.user.preferredemail.email)
+            emails.append(email.email.lower())
+        emails.append(bag.user.preferredemail.email.lower())
 
         # iter through UIDs
         for uid in uids:
             # if UID isn't validated/preferred, send token email
-            if uid not in emails:                
+            if uid.lower() not in emails:                
                 info += ' %s' % uid
-                token = logintokenset.new(self.context, bag.login, uid,
-                                          LoginTokenType.VALIDATEGPGUID,
-                                          fingerprint=fingerprint)
-                sendEmailValidationRequest(token,
-                                           self.request.getApplicationURL())
 
-        info += ('. At least one UID should be validated to get the key '
-                 'imported as your.')
+                appurl = self.request.getApplicationURL()
+                token = logintokenset.new(
+                            self.context, getUtility(ILaunchBag).login, uid,
+                            LoginTokenType.VALIDATEGPGUID,
+                            fingerprint=fingerprint)
+                token.sendEmailValidationRequest(appurl)
+
+        info += ('.At least one UID should be validated to get the key '
+                 'imported as yours.')
 
         return info
 
@@ -516,11 +506,11 @@ class PersonEditView(BasePersonView):
                 "You must select the email address you want to confirm.")
             return
 
-        login = getUtility(ILaunchBag).login
-        logintokenset = getUtility(ILoginTokenSet)
-        token = logintokenset.new(self.context, login, email,
-                                  LoginTokenType.VALIDATEEMAIL)
-        sendEmailValidationRequest(token, self.request.getApplicationURL())
+        token = getUtility(ILoginTokenSet).new(
+                    self.context, getUtility(ILaunchBag).login, email,
+                    LoginTokenType.VALIDATEEMAIL)
+        token.sendEmailValidationRequest(self.request.getApplicationURL())
+
         self.message = ("A new email was sent to '%s' with instructions on "
                         "how to confirm that it belongs to you." % email)
 
@@ -576,7 +566,7 @@ class PersonEditView(BasePersonView):
         emailset = getUtility(IEmailAddressSet)
         logintokenset = getUtility(ILoginTokenSet)
         newemail = self.request.form.get("newemail", "").strip().lower()
-        if not well_formed_email(newemail):
+        if not valid_email(newemail):
             self.message = (
                 "'%s' doesn't seem to be a valid email address." % newemail)
             self.badlyFormedEmail = newemail
@@ -610,10 +600,11 @@ class PersonEditView(BasePersonView):
                     % (email.email, email.person.browsername))
             return
 
-        login = getUtility(ILaunchBag).login
-        token = logintokenset.new(person, login, newemail,
-                                  LoginTokenType.VALIDATEEMAIL)
-        sendEmailValidationRequest(token, self.request.getApplicationURL())
+        token = getUtility(ILoginTokenSet).new(
+                    person, getUtility(ILaunchBag).login, newemail,
+                    LoginTokenType.VALIDATEEMAIL)
+        token.sendEmailValidationRequest(self.request.getApplicationURL())
+
         self.message = (
                 "A new message was sent to '%s', please follow the "
                 "instructions on that message to confirm that this email "
@@ -641,22 +632,6 @@ class PersonEditView(BasePersonView):
         assert emailaddress.status == EmailAddressStatus.VALIDATED
         self.context.preferredemail = emailaddress
         self.message = "Your contact address has been changed to: %s" % email
-
-
-def sendEmailValidationRequest(token, appurl):
-    template = open(
-        'lib/canonical/launchpad/emailtemplates/validate-email.txt').read()
-    fromaddress = "Launchpad Email Validator <noreply@ubuntu.com>"
-
-    replacements = {'longstring': token.token,
-                    'requester': token.requester.browsername,
-                    'requesteremail': token.requesteremail,
-                    'toaddress': token.email,
-                    'appurl': appurl}
-    message = template % replacements
-
-    subject = "Launchpad: Validate your email address"
-    simple_sendmail(fromaddress, token.email, subject, message)
 
 
 class RequestPeopleMergeView(AddView):
@@ -780,4 +755,123 @@ def sendMergeRequestEmail(token, dupename, appurl):
 
     subject = "Launchpad: Merge of Accounts Requested"
     simple_sendmail(fromaddress, token.email, subject, message)
+
+
+class ObjectReassignmentView:
+    """A view class used when reassigning an object that implements IHasOwner.
+
+    By default we assume that the owner attribute is IHasOwner.owner and the
+    vocabulary for the owner widget is ValidPersonOrTeam (which is the one
+    used in IObjectReassignment). If any object has special needs, it'll be
+    necessary to subclass ObjectReassignmentView and redefine the schema 
+    and/or ownerOrMaintainerAttr attributes.
+
+    Subclasses can also specify a callback to be called after the reassignment
+    takes place. This callback must accept three arguments (in this order):
+    the object whose owner is going to be changed, the old owner and the new
+    owner.
+
+    Also, if the object for which you're using this view doesn't have a
+    displayname or name attribute, you'll have to subclass it and define the
+    contextName attribute in your subclass constructor.
+    """
+
+    ownerOrMaintainerAttr = 'owner'
+    schema = IObjectReassignment
+    callback = None
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.user = getUtility(ILaunchBag).user
+        self.errormessage = ''
+        self.ownerOrMaintainer = getattr(context, self.ownerOrMaintainerAttr)
+        setUpWidgets(self, self.schema, IInputWidget)
+        self.contextName = (getattr(self.context, 'displayname', None) or
+                            getattr(self.context, 'name', None))
+
+    def processForm(self):
+        if self.request.method == 'POST':
+            self.changeOwner()
+
+    def changeOwner(self):
+        """Change the owner of self.context to the one choosen by the user."""
+        newOwner = self._getNewOwner()
+        if newOwner is None:
+            return
+
+        oldOwner = getattr(self.context, self.ownerOrMaintainerAttr)
+        setattr(self.context, self.ownerOrMaintainerAttr, newOwner)
+        if callable(self.callback):
+            self.callback(self.context, oldOwner, newOwner)
+        self.request.response.redirect('.')
+
+    def _getNewOwner(self):
+        """Return the new owner for self.context, as specified by the user.
+        
+        If anything goes wrong, return None and assign an error message to
+        self.errormessage to inform the user about what happened.
+        """
+        personset = getUtility(IPersonSet)
+        request = self.request
+        owner_name = request.form.get(self.owner_widget.name)
+        if not owner_name:
+            self.errormessage = (
+                "You have to specify the name of the person/team that's "
+                "going to be the new %s." % self.ownerOrMaintainerAttr)
+            return None
+
+        if request.form.get('existing') == 'existing':
+            try:
+                # By getting the owner using getInputValue() we make sure
+                # it's valid according to the vocabulary of self.schema's
+                # owner widget.
+                owner = self.owner_widget.getInputValue()
+            except WidgetInputError:
+                self.errormessage = (
+                    "The person/team named '%s' is not a valid owner for %s."
+                    % (owner_name, self.contextName))
+                return None
+            except ConversionError:
+                self.errormessage = (
+                    "There's no person/team named '%s' in Launchpad."
+                    % owner_name)
+                return None
+        else:
+            if personset.getByName(owner_name):
+                self.errormessage = (
+                    "There's already a person/team with the name '%s' in "
+                    "Launchpad. Please choose a different name or select "
+                    "the option to make that person/team the new owner, "
+                    "if that's what you want." % owner_name)
+                return None
+
+            owner = personset.newTeam(teamownerID=self.user.id, name=owner_name)
+
+        return owner
+
+
+class TeamReassignmentView(ObjectReassignmentView):
+
+    ownerOrMaintainerAttr = 'teamowner'
+    schema = ITeamReassignment
+
+    def __init__(self, context, request):
+        ObjectReassignmentView.__init__(self, context, request)
+        self.contextName = self.context.browsername
+        self.callback = self._addOwnerAsMember
+
+    def _addOwnerAsMember(self, team, oldOwner, newOwner):
+        """Add the new and the old owners as administrators of the team.
+
+        When a user creates a new team, he is added as an administrator of
+        that team. To be consistent with this, we must make the new owner an
+        administrator of the team.
+        Also, the ObjectReassignment spec says that we must make the old owner
+        an administrator of the team, and so we do.
+        """
+        team.addMember(newOwner)
+        team.setMembershipStatus(newOwner, TeamMembershipStatus.ADMIN)
+        team.addMember(oldOwner)
+        team.setMembershipStatus(oldOwner, TeamMembershipStatus.ADMIN)
 

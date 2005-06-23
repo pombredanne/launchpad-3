@@ -57,6 +57,7 @@ INSERT INTO person (id, displayname, givenname, familyname, "password", teamowne
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (49, 'Kęstutis Biliūnas', 'Kęstutis', 'Biliūnas', 'YbUJ4nzlxjYtaLLFMqUFL3LplUpS3FxcYwiCAS0WaAcnXS8Sst9BgA==', NULL, NULL, 0, '2005-05-06 21:12:37.221421', 'kebil', NULL, '''biliūnas'':2,4 ''kęstutis'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.568323');
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (50, 'Valentina Commissari', 'Valentina', 'Commissari', 'fgwbt51c6ajsTet6DTbQBqAzQ7Q9S1G7S0APNvMX7YN2qpdbNbEn3Q==', NULL, NULL, 0, '2005-05-06 21:12:39.082421', 'tsukimi', NULL, '''valentina'':1,3 ''commissari'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.569518');
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (51, 'Helge Kreutzmann', 'Helge', 'Kreutzmann', 'sYVFKi2dWAfkFkWekcW296s2dZ0ihYcxAXtwumI1FQJes4PWD8xvqQ==', NULL, NULL, 0, '2005-05-06 21:12:42.747648', 'kreutzm', NULL, '''helg'':1,3 ''kreutzmann'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.570701');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (52, 'No Privileges Person', 'No', 'Privileges', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'no-priv', NULL, '''person'':5 ''privileg'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'person'::pg_catalog.regclass;
@@ -108,6 +109,7 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (42, 'kebil@kaunas.i
 INSERT INTO emailaddress (id, email, person, status) VALUES (43, 'tsukimi@quaqua.net', 50, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (44, 'kreutzm@itp.uni-hannover.de', 51, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (45, 'support@ubuntu.com', 17, 4);
+INSERT INTO emailaddress (id, email, person, status) VALUES (46, 'no-priv@canonical.com', 52, 4);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'emailaddress'::pg_catalog.regclass;
@@ -226,6 +228,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (35, 13, 30, 3, '2005-03-07 13:05:57.610314', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (36, 16, 24, 2, '2005-04-14 00:00:00', NULL, 16, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (37, 13, 31, 2, '2005-05-07 00:00:00', NULL, 13, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (38, 1, 25, 3, '2005-03-03 10:02:53.830191', NULL, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'teammembership'::pg_catalog.regclass;
@@ -303,6 +306,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (76, 49, 49);
 INSERT INTO teamparticipation (id, team, person) VALUES (77, 50, 50);
 INSERT INTO teamparticipation (id, team, person) VALUES (78, 51, 51);
 INSERT INTO teamparticipation (id, team, person) VALUES (79, 31, 13);
+INSERT INTO teamparticipation (id, team, person) VALUES (80, 25, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'teamparticipation'::pg_catalog.regclass;
@@ -416,6 +420,7 @@ releases, and there should be other series for the stable releases
 of the product.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.91214');
 INSERT INTO productseries (id, product, name, displayname, summary, branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, bkrepository, releaseroot, releasefileglob, releaseverstyle, targetarcharchive, targetarchcategory, targetarchbranch, targetarchversion, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated) VALUES (5, 11, 'releases', 'NetApplet Releases', 'Releases of Network Applet', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.899819');
 INSERT INTO productseries (id, product, name, displayname, summary, branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, bkrepository, releaseroot, releasefileglob, releaseverstyle, targetarcharchive, targetarchcategory, targetarchbranch, targetarchversion, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated) VALUES (6, 12, 'main', 'MAIN', 'The primary upstream development branch, from which all releases are made.', NULL, 2, NULL, NULL, 1, ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52', 'a52dec', 'MAIN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.913564');
+INSERT INTO productseries (id, product, name, displayname, summary, branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, bkrepository, releaseroot, releasefileglob, releaseverstyle, targetarcharchive, targetarchcategory, targetarchbranch, targetarchversion, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated) VALUES (7, 12, 'failedbranch', 'FAILEDBRANCH', 'A branch where auto test has failed.', NULL, 3, NULL, NULL, 1, ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52', 'a52dec', 'AUTOTESTFAILED', NULL, NULL, NULL, NULL, NULL, NULL, 'a52dec@bazaar.ubuntu.com', 'a52dec', 'AUTOTESTFAILED', '0', NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.913564');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'productseries'::pg_catalog.regclass;
@@ -847,25 +852,25 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distrorelease'::pg_catalog.regclass;
 
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname) VALUES (1, 1, 'warty', 'The Warty Warthog
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack) VALUES (1, 1, 'warty', 'The Warty Warthog
 Release', 'Warty was the first stable release of Ubuntu. Key feature goals
 included releasing on time, with the latest version of the Gnome Desktop
 Environment, and the creation of all the infrastructure required to manage
 Ubuntu itself. Warty includes excellent support for Python, with most of the
 widely used Python libraries installed by default.', '4.10', 1, 1, 4, '2004-08-20 00:00:00', NULL, 17, NULL, 'Warty is the first release of Ubuntu,
-with a planned release date of October 2004.', 'warty');
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname) VALUES (2, 2, 'six', 'Six Six Six', 'some text to describe the whole 666 release of RH', '6.0.1', 1, 1, 4, '2004-03-21 00:00:00', NULL, 8, NULL, 'some text to describe the whole 666 release of RH', 'six');
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname) VALUES (3, 1, 'hoary', 'The Hoary Hedgehog Release', 'Hoary is the second release of Ubuntu. Key feature goals include the integration of Hoary with the Launchpad for bugs and translation information, as well as Gnome 2.10 and the X.org window system.', '5.04', 1, 1, 2, '2004-08-25 00:00:00', 1, 1, NULL, 'Hoary is the second released of Ubuntu, with release planned for April 2005.', 'hoary');
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname) VALUES (4, 2, '7.0', 'Seven', 'The release that we would not expect', '7.0.1', 1, 1, 3, '2004-04-01 00:00:00', 2, 7, NULL, 'The release that we would not expect', '7.0');
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname) VALUES (5, 1, 'grumpy', 'The Grumpy
+with a planned release date of October 2004.', 'warty', NULL);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack) VALUES (2, 2, 'six', 'Six Six Six', 'some text to describe the whole 666 release of RH', '6.0.1', 1, 1, 4, '2004-03-21 00:00:00', NULL, 8, NULL, 'some text to describe the whole 666 release of RH', 'six', NULL);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack) VALUES (3, 1, 'hoary', 'The Hoary Hedgehog Release', 'Hoary is the second release of Ubuntu. Key feature goals include the integration of Hoary with the Launchpad for bugs and translation information, as well as Gnome 2.10 and the X.org window system.', '5.04', 1, 1, 2, '2004-08-25 00:00:00', 1, 1, NULL, 'Hoary is the second released of Ubuntu, with release planned for April 2005.', 'hoary', NULL);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack) VALUES (4, 2, '7.0', 'Seven', 'The release that we would not expect', '7.0.1', 1, 1, 3, '2004-04-01 00:00:00', 2, 7, NULL, 'The release that we would not expect', '7.0', NULL);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack) VALUES (5, 1, 'grumpy', 'The Grumpy
 Groundhog Release', 'Grumpy, the third release of Ubuntu Linux, is not yet
 in active development. This information is purely a placeholder.', '5.10', 1, 1, 1, '2004-08-29 00:00:00', 1, 1, NULL, 'Grumpy is the third release of
-Ubuntu, planned for October 2005.', 'grumpy');
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname) VALUES (6, 3, 'woody', 'WOODY', 'WOODY is the current stable verison of Debian GNU/Linux', '3.0', 1, 1, 4, '2003-01-01 00:00:00', NULL, 2, NULL, 'WOODY is the current stable verison of Debian GNU/Linux', 'woody');
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname) VALUES (7, 3, 'sarge', 'Sarge', 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', '3.1', 1, 1, 3, '2004-09-29 00:00:00', 6, 5, NULL, 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', 'sarge');
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname) VALUES (8, 3, 'sid', 'Sid', 'Sid is the CRAZY unstable version of Debian GNU/Linux.', '3.2', 1, 1, 1, '2004-12-29 00:00:00', 6, 6, NULL, 'Sid is the CRAZY unstable version of Debian GNU/Linux.', 'sid');
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname) VALUES (9, 7, '2k5', 'Guada 2005', 'This release places extra emphasis on usability and installability. The installer is adapted from Ubuntu to assume your country, language, keyboard and time zone preference, thus ensuring that installs ask the minimum number of questions possible.', '2005', 1, 1, 2, NULL, 3, 4, NULL, 'Guada 2005 is a rapid-install version of
-Ubuntu Hoary for the Andalucian marketplace.', 'Guada2005');
+Ubuntu, planned for October 2005.', 'grumpy', NULL);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack) VALUES (6, 3, 'woody', 'WOODY', 'WOODY is the current stable verison of Debian GNU/Linux', '3.0', 1, 1, 4, '2003-01-01 00:00:00', NULL, 2, NULL, 'WOODY is the current stable verison of Debian GNU/Linux', 'woody', NULL);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack) VALUES (7, 3, 'sarge', 'Sarge', 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', '3.1', 1, 1, 3, '2004-09-29 00:00:00', 6, 5, NULL, 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', 'sarge', NULL);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack) VALUES (8, 3, 'sid', 'Sid', 'Sid is the CRAZY unstable version of Debian GNU/Linux.', '3.2', 1, 1, 1, '2004-12-29 00:00:00', 6, 6, NULL, 'Sid is the CRAZY unstable version of Debian GNU/Linux.', 'sid', NULL);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack) VALUES (9, 7, '2k5', 'Guada 2005', 'This release places extra emphasis on usability and installability. The installer is adapted from Ubuntu to assume your country, language, keyboard and time zone preference, thus ensuring that installs ask the minimum number of questions possible.', '2005', 1, 1, 2, NULL, 3, 4, NULL, 'Guada 2005 is a rapid-install version of
+Ubuntu Hoary for the Andalucian marketplace.', 'Guada2005', NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distrorelease'::pg_catalog.regclass;
@@ -991,6 +996,7 @@ INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, products
 INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries) VALUES (1, 4, 9, 1, 3);
 INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries) VALUES (1, 6, 10, 3, 5);
 INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries) VALUES (1, 7, 15, 1, 6);
+INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries) VALUES (1, 9, 1, 1, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'packaging'::pg_catalog.regclass;
@@ -1037,8 +1043,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'binarypackage'::pg_catalog.regclass;
 
-INSERT INTO binarypackage (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 1, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', NULL, NULL, NULL, 'mozilla-firefox', NULL, NULL, NULL, NULL, true, '''web'':3,7 ''browser'':4,8 ''firefox'':2,6 ''mozilla'':1,5');
-INSERT INTO binarypackage (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''pmount'':1,3 ''descript'':4 ''shortdesc'':2');
+INSERT INTO binarypackage (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', NULL, NULL, NULL, 'mozilla-firefox', NULL, NULL, NULL, NULL, true, '''web'':3,7 ''browser'':4,8 ''firefox'':2,6 ''mozilla'':1,5');
+INSERT INTO binarypackage (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''pmount'':1,3 ''descript'':4 ''shortdesc'':2');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'binarypackage'::pg_catalog.regclass;
@@ -6449,15 +6455,15 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'bugtask'::pg_catalog.regclass;
 
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone) VALUES (1, 1, 1, NULL, NULL, NULL, NULL, 10, 30, 20, 5, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.910183', 12, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone) VALUES (2, 1, 4, NULL, NULL, NULL, NULL, 10, 10, 20, 1, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.910878', 12, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone) VALUES (3, 2, 1, NULL, NULL, NULL, NULL, 10, 20, 20, NULL, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.908491', 12, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone) VALUES (4, 1, NULL, 3, NULL, 1, NULL, 20, 40, 20, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.79024', 12, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone) VALUES (5, 2, NULL, 3, NULL, 1, NULL, 20, 40, 20, 12, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.824591', 12, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone) VALUES (6, 3, NULL, 3, NULL, 1, NULL, 10, 20, 30, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.825533', 16, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone) VALUES (13, 4, 4, NULL, NULL, NULL, NULL, 10, 30, 30, NULL, '2005-01-14 17:20:12.820778', '2005-01-14 17:20:12.820778', 12, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone) VALUES (14, 5, 4, NULL, NULL, NULL, NULL, 10, 30, 30, 12, '2005-01-14 17:27:03.702622', '2005-01-14 17:27:03.702622', 12, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone) VALUES (15, 6, 4, NULL, NULL, NULL, NULL, 10, 30, 50, NULL, '2005-01-14 17:35:39.548665', '2005-01-14 17:35:39.548665', 12, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (1, 1, 1, NULL, NULL, NULL, NULL, 10, 30, 20, 5, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.910183', 12, NULL, NULL, NULL, '');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (2, 1, 4, NULL, NULL, NULL, NULL, 10, 10, 20, 1, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.910878', 12, NULL, NULL, NULL, '');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (3, 2, 1, NULL, NULL, NULL, NULL, 10, 20, 20, NULL, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.908491', 12, NULL, NULL, NULL, '');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (4, 1, NULL, 3, NULL, 1, NULL, 20, 40, 20, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.79024', 12, NULL, NULL, NULL, '');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (5, 2, NULL, 3, NULL, 1, NULL, 20, 40, 20, 12, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.824591', 12, NULL, NULL, 'Upstream said that they won''t bother fixing it.', '''fix'':8 ''won'':5 ''said'':2 ''bother'':7 ''upstream'':1');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (6, 3, NULL, 3, NULL, 1, NULL, 10, 20, 30, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.825533', 16, NULL, NULL, NULL, '');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (13, 4, 4, NULL, NULL, NULL, NULL, 10, 30, 30, NULL, '2005-01-14 17:20:12.820778', '2005-01-14 17:20:12.820778', 12, NULL, NULL, NULL, '');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (14, 5, 4, NULL, NULL, NULL, NULL, 10, 30, 30, 12, '2005-01-14 17:27:03.702622', '2005-01-14 17:27:03.702622', 12, NULL, NULL, NULL, '');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (15, 6, 4, NULL, NULL, NULL, NULL, 10, 30, 50, NULL, '2005-01-14 17:35:39.548665', '2005-01-14 17:35:39.548665', 12, NULL, NULL, 'The status explanation is useful to provide task specific information.', '''use'':5 ''task'':8 ''explan'':3 ''inform'':10 ''provid'':7 ''specif'':9 ''status'':2');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bugtask'::pg_catalog.regclass;
@@ -6632,8 +6638,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'packagepublishinghistory'::pg_catalog.regclass;
 
-INSERT INTO packagepublishinghistory (id, binarypackage, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (9, 12, 1, 2, 1, 1, 1, '2005-05-05 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
-INSERT INTO packagepublishinghistory (id, binarypackage, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (11, 15, 6, 2, 1, 1, 4, '2005-05-05 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO packagepublishinghistory (id, binarypackage, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (9, 12, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO packagepublishinghistory (id, binarypackage, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (11, 15, 6, 2, 1, 1, 40, '2005-05-05 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'packagepublishinghistory'::pg_catalog.regclass;
@@ -8054,482 +8060,362 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'poexportrequest'::pg
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'poexportrequest'::pg_catalog.regclass;
 
 
-SELECT pg_catalog.setval('person_id_seq', 51, true);
 
 
 
-SELECT pg_catalog.setval('emailaddress_id_seq', 45, true);
 
 
 
-SELECT pg_catalog.setval('gpgkey_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('archuserid_id_seq', 10, true);
 
 
 
-SELECT pg_catalog.setval('wikiname_id_seq', 10, true);
 
 
 
-SELECT pg_catalog.setval('jabberid_id_seq', 10, true);
 
 
 
-SELECT pg_catalog.setval('ircid_id_seq', 9, true);
 
 
 
-SELECT pg_catalog.setval('teammembership_id_seq', 37, true);
 
 
 
-SELECT pg_catalog.setval('teamparticipation_id_seq', 79, true);
 
 
 
-SELECT pg_catalog.setval('schema_id_seq', 4, true);
 
 
 
-SELECT pg_catalog.setval('label_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('project_id_seq', 8, true);
 
 
 
-SELECT pg_catalog.setval('projectrelationship_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('product_id_seq', 12, true);
 
 
 
-SELECT pg_catalog.setval('productlabel_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('productseries_id_seq', 6, true);
 
 
 
-SELECT pg_catalog.setval('productrelease_id_seq', 7, true);
 
 
 
-SELECT pg_catalog.setval('productcvsmodule_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('productbkbranch_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('productsvnmodule_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('archarchive_id_seq', 9, true);
 
 
 
-SELECT pg_catalog.setval('archarchivelocation_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('archnamespace_id_seq', 14, true);
 
 
 
-SELECT pg_catalog.setval('branch_id_seq', 14, true);
 
 
 
-SELECT pg_catalog.setval('changeset_id_seq', 3, true);
 
 
 
-SELECT pg_catalog.setval('changesetfilename_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('changesetfile_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('changesetfilehash_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('productbranchrelationship_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('manifest_id_seq', 14, true);
 
 
 
-SELECT pg_catalog.setval('manifestentry_id_seq', 6, true);
 
 
 
-SELECT pg_catalog.setval('archconfig_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('processorfamily_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('processor_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('builder_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('component_id_seq', 3, true);
 
 
 
-SELECT pg_catalog.setval('section_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('distribution_id_seq', 7, true);
 
 
 
-SELECT pg_catalog.setval('distrorelease_id_seq', 9, true);
 
 
 
-SELECT pg_catalog.setval('distroarchrelease_id_seq', 6, true);
 
 
 
-SELECT pg_catalog.setval('libraryfilecontent_id_seq', 33, true);
 
 
 
-SELECT pg_catalog.setval('libraryfilealias_id_seq', 33, true);
 
 
 
-SELECT pg_catalog.setval('sourcepackagename_id_seq', 17, true);
 
 
 
-SELECT pg_catalog.setval('sourcepackagerelease_id_seq', 20, true);
 
 
 
-SELECT pg_catalog.setval('build_id_seq', 7, true);
 
 
 
-SELECT pg_catalog.setval('binarypackagename_id_seq', 13, true);
 
 
 
-SELECT pg_catalog.setval('binarypackage_id_seq', 15, true);
 
 
 
-SELECT pg_catalog.setval('packageselection_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('osfile_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('pomsgid_id_seq', 145, true);
 
 
 
-SELECT pg_catalog.setval('potranslation_id_seq', 649, true);
 
 
 
-SELECT pg_catalog.setval('language_id_seq', 558, true);
 
 
 
-SELECT pg_catalog.setval('country_id_seq', 240, true);
 
 
 
-SELECT pg_catalog.setval('license_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('potemplate_id_seq', 5, true);
 
 
 
-SELECT pg_catalog.setval('pofile_id_seq', 28, true);
 
 
 
-SELECT pg_catalog.setval('pomsgset_id_seq', 731, true);
 
 
 
-SELECT pg_catalog.setval('pomsgidsighting_id_seq', 172, true);
 
 
 
-SELECT pg_catalog.setval('potranslationsighting_id_seq', 684, true);
 
 
 
-SELECT pg_catalog.setval('pocomment_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('translationeffort_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('posubscription_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('bug_id_seq', 6, true);
 
 
 
-SELECT pg_catalog.setval('bugsubscription_id_seq', 5, true);
 
 
 
-SELECT pg_catalog.setval('bugactivity_id_seq', 6, true);
 
 
 
-SELECT pg_catalog.setval('bugexternalref_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('bugtrackertype_id_seq', 2, true);
 
 
 
-SELECT pg_catalog.setval('bugtracker_id_seq', 3, true);
 
 
 
-SELECT pg_catalog.setval('bugwatch_id_seq', 4, true);
 
 
 
-SELECT pg_catalog.setval('message_id_seq', 9, true);
 
 
 
-SELECT pg_catalog.setval('bugattachment_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('projectbugtracker_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('distributionrole_id_seq', 7, true);
 
 
 
-SELECT pg_catalog.setval('distroreleaserole_id_seq', 9, true);
 
 
 
-SELECT pg_catalog.setval('componentselection_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('sectionselection_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('bugproductinfestation_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('bugpackageinfestation_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('distroreleasequeue_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('distroreleasequeuesource_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('distroreleasequeuebuild_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('sourcepackagereleasefile_id_seq', 2, true);
 
 
 
-SELECT pg_catalog.setval('binarypackagefile_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('personlanguage_id_seq', 4, true);
 
 
 
-SELECT pg_catalog.setval('potmsgset_id_seq', 164, true);
 
 
 
-SELECT pg_catalog.setval('bounty_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('bugmessage_id_seq', 8, true);
 
 
 
-SELECT pg_catalog.setval('cveref_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('karma_id_seq', 3, true);
 
 
 
-SELECT pg_catalog.setval('spokenin_id_seq', 335, true);
 
 
 
-SELECT pg_catalog.setval('sourcepackagerelationship_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('sshkey_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('bugtask_id_seq', 15, true);
 
 
 
-SELECT pg_catalog.setval('branchlabel_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('branchrelationship_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('productreleasefile_id_seq', 2, true);
 
 
 
-SELECT pg_catalog.setval('logintoken_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('milestone_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('pushmirroraccess_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('buildqueue_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('packaging_id_seq', 7, true);
 
 
 
-SELECT pg_catalog.setval('signedcodeofconduct_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('bountysubscription_id_seq', 3, true);
 
 
 
-SELECT pg_catalog.setval('productbounty_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('distrobounty_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('projectbounty_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('mirror_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('mirrorcontent_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('mirrorsourcecontent_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('potemplatename_id_seq', 4, true);
 
 
 
-SELECT pg_catalog.setval('maintainership_id_seq', 3, true);
 
 
 
-SELECT pg_catalog.setval('messagechunk_id_seq', 8, true);
 
 
 
-SELECT pg_catalog.setval('sourcepackagepublishinghistory_id_seq', 8, true);
 
 
 
-SELECT pg_catalog.setval('packagepublishinghistory_id_seq', 11, true);
 
 
 
-SELECT pg_catalog.setval('translationgroup_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('translator_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('pocketchroot_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('posubmission_id_seq', 690, true);
 
 
 
-SELECT pg_catalog.setval('poselection_id_seq', 685, true);
 
 
 
-SELECT pg_catalog.setval('poexportrequest_id_seq', 1, false);
 
 

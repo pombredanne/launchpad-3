@@ -382,6 +382,10 @@ ul.search>li, li.search {
   list-style-image: url(/++resource++search_icon.gif);
 }
 
+ul.architecture>li, li.architecture {
+    list-style-image: url(/++resource++document_icon.gif);
+}
+
 /* Translation template stuff: */
 
 .messageSourceString {
@@ -487,7 +491,7 @@ a[name], .portlet :link, .portlet :visited {
 
 /* -- Don't stomp on people's preferred font sizes: -- */
 
-body, .listing {
+body {
   font-size: 100%;
 }
 code {
@@ -845,6 +849,20 @@ input {
    same colour as background */
 .fieldRequired {
   color: #999999
+}
+
+/* 
+This style is used for multi-select widgets. These get a scrollbar if they
+expand above a certain size. The box is floated in order to allow it to shrink
+to the smallest appropriate width; this may mean that it will be necessary to
+use the 'clear' attribute on other elemtens surrounding the multi-select box.
+*/
+
+.multi_select {
+    max-height: 20em;
+    overflow: auto;
+    float: left;
+    padding: 0 1em;
 }
 
 /*

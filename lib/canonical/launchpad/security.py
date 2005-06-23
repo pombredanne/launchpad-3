@@ -7,21 +7,14 @@ __metaclass__ = type
 from zope.interface import implements, Interface
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IAuthorization, IHasOwner
-from canonical.launchpad.interfaces import IPerson, ITeam
-from canonical.launchpad.interfaces import ITeamMembershipSubset
-from canonical.launchpad.interfaces import ITeamMembership
-from canonical.launchpad.interfaces import IProductSeriesSource
-from canonical.launchpad.interfaces import IProductSeriesSourceAdmin
-from canonical.launchpad.interfaces import IMilestone, IBug, IBugTask
-from canonical.launchpad.interfaces import IUpstreamBugTask, IDistroBugTask, \
-     IDistroReleaseBugTask
-from canonical.launchpad.interfaces import IReadOnlyUpstreamBugTask
-from canonical.launchpad.interfaces import ITranslator
-from canonical.launchpad.interfaces import IProduct, IProductRelease
-from canonical.launchpad.interfaces import IPOTemplate, IPOFile, \
-    IPOTemplateName, IPOTemplateNameSet, ISourcePackage
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.interfaces import (
+    IAuthorization, IHasOwner, IPerson, ITeam, ITeamMembershipSubset,
+    ITeamMembership, IProductSeriesSource, IProductSeriesSourceAdmin,
+    IMilestone, IBug, IBugTask, IUpstreamBugTask, IDistroBugTask,
+    IDistroReleaseBugTask, IReadOnlyUpstreamBugTask, ITranslator,
+    IProduct, IProductRelease, IPOTemplate, IPOFile,
+    IPOTemplateName, IPOTemplateNameSet, ISourcePackage,
+    ILaunchpadCelebrities, IDistroRelease)
 
 
 class AuthorizationBase:
@@ -59,6 +52,17 @@ class EditByOwnersOrAdmins(AuthorizationBase):
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.obj.owner) or user.inTeam(admins)
+
+
+class EditDistroReleaseByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IDistroRelease
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.owner) or 
+                user.inTeam(self.obj.distribution.owner) or
+                user.inTeam(admins)) 
 
 
 class AdminSeriesSourceByButtSource(AuthorizationBase):

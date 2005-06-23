@@ -130,6 +130,8 @@
             default="bounces@canonical.com" />
         <key name="admin_address" datatype="string" required="no"
             default="system-error@launchpad.ubuntu.com" />
+        <key name="pid_dir" datatype="existing-directory" required="no"
+            default="/tmp" />
         <section name="*" type="launchpad" attribute="launchpad" />
         <section name="*" type="librarian" attribute="librarian" />
         <section name="*" type="zopeless" attribute="zopeless" />

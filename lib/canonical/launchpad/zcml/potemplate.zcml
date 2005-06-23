@@ -30,14 +30,43 @@
         name="+index"
         />
 
-    <browser:page
-        name="+index"
+    <browser:pages
         for="canonical.launchpad.interfaces.IPOTemplate"
-        permission="zope.Public"
-        template="../templates/potemplate-index.pt"
         class="canonical.launchpad.browser.POTemplateView"
-        lp:url="Rosetta/products/$Product.name/$POTemplate.name/+index"
+        permission="zope.Public">
+        
+        <browser:page
+            name="+index"
+            template="../templates/potemplate-index.pt"
+            lp:url="Rosetta/products/$Product.name/$POTemplate.name/+index"
         />
+        <browser:page
+            name="+chart"
+            template="../templates/potemplate-chart.pt"
+        />
+        <!-- Potemplate Portlets -->
+        <browser:page
+            name="+portlet-actions"
+            template="../templates/portlet-potemplate-actions.pt"
+        />
+        <browser:page
+            name="+portlet-details"
+            template="../templates/portlet-potemplate-details.pt"
+        />
+        <browser:page
+            name="+portlet-relateds"
+            template="../templates/potemplate-portlet-relateds.pt"
+        />
+        <browser:page
+            name="+portlet-for"
+            template="../templates/portlet-potemplate-for.pt"
+        />
+        <browser:page
+            name="+portlet-status-legend"
+            template="../templates/portlet-rosetta-status-legend.pt"
+        />
+
+    </browser:pages>
 
     <browser:page
         name="+upload"
@@ -78,14 +107,6 @@
         permission="launchpad.AnyPerson"
         class="canonical.launchpad.browser.POTemplateTranslateView"
         attribute="__call__"
-        />
-
-    <browser:page
-        name="+chart"
-        for="canonical.launchpad.interfaces.IPOTemplate"
-        permission="zope.Public"
-        template="../templates/potemplate-chart.pt"
-        class="canonical.launchpad.browser.POTemplateView"
         />
 
     <browser:page

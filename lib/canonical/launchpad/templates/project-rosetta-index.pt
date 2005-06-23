@@ -6,8 +6,8 @@
 <body>
 
 <metal:rightportlets fill-slot="portlets_two">
-        <div tal:replace="structure view/languagesPortlet" />
-        <div tal:replace="structure view/trackersPortlet" />
+        <div tal:replace="structure context/@@+portlet-languages" />
+        <div tal:replace="structure context/@@+portlet-trackers" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">

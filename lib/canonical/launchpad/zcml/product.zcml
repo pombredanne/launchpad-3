@@ -58,6 +58,61 @@
             name="+translations"
             template="../templates/product-translations.pt"
             lp:url="/products/evolution/+translations" />
+	<!-- Products Portlets -->
+        <browser:page
+            name="+portlet-details"
+            template="../templates/portlet-product-details.pt"
+            lp:url="/products/evolution/+portlet-details" />
+        <browser:page
+            name="+portlet-translations"
+            template="../templates/portlet-product-translations.pt"
+            lp:url="/products/evolution/+portlet-translations" />
+        <browser:page
+            name="+portlet-milestones"
+            template="../templates/portlet-product-milestones.pt"
+            lp:url="/products/evolution/+portlet-milestones" />
+        <browser:page
+            name="+portlet-project"
+            template="../templates/portlet-product-project.pt"
+            lp:url="/products/evolution/+portlet-project" />
+        <browser:page
+            name="+portlet-actions"
+            template="../templates/portlet-product-actions.pt"
+            lp:url="/products/evolution/+portlet-actions" />
+        <browser:page
+            name="+portlet-latest-bugs"
+            template="../templates/portlet-latest-bugs.pt"
+            lp:url="/products/evolution/+portlet-latest-bugs" />
+        <browser:page
+            name="+portlet-related-bounties"
+            template="../templates/portlet-related-bounties.pt"
+            lp:url="/products/evolution/+portlet-related-bounties" />
+        <browser:page
+            name="+portlet-packages"
+            template="../templates/portlet-product-packages.pt"
+            lp:url="/products/evolution/+portlet-packages" />
+        <browser:page
+            name="+portlet-summary"
+            template="../templates/portlet-object-summary.pt"
+            lp:url="/products/evolution/+portlet-summary" />
+        <browser:page
+            name="+portlet-pref-lang"
+            template="../templates/portlet-pref-langs.pt"
+            lp:url="/products/evolution/+portlet-pref-langs" />
+        <browser:page
+            name="+portlet-translatables"
+            template="../templates/portlet-product-translatables.pt"
+            lp:url="/products/evolution/+portlet-translatables" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProduct"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.ObjectReassignmentView">
+          <browser:page
+              name="+reassign"
+              template="../templates/object-reassignment.pt"
+              lp:url="/product/$product.id/+reassign" />
     </browser:pages>
 
     <browser:pages
@@ -100,9 +155,10 @@
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IProduct"
         label="Edit Upstream Product Details:"
-        fields="displayname title summary description homepageurl
+        fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
                 downloadurl programminglang"
+        class="canonical.launchpad.browser.ProductEditView"
         permission="launchpad.Edit"
         template="../templates/product-edit.pt"
         lp:url="/products/$Product.name/+edit">
@@ -219,6 +275,10 @@
             name="+all"
             template="../templates/doap-listall.pt"
             lp:url="/products/+all" />
+        <browser:page
+            name="+portlet-details"
+            template="../templates/portlet-productset-details.pt"
+            lp:url="/products/+portlet-details" />
     </browser:pages>
 
     <browser:pages

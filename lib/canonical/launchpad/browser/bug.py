@@ -9,6 +9,7 @@ from zope.component import getUtility
 from zope.app.pagetemplate.viewpagetemplatefile import (
     ViewPageTemplateFile, BoundPageTemplate)
 from zope.interface import implements
+from zope.exceptions import NotFoundError
 
 from canonical.lp import dbschema, decorates, Passthrough
 from canonical.launchpad.helpers import canonical_url
@@ -48,9 +49,10 @@ def traverseBugs(bugcontainer, request, name):
     if name == 'assigned':
         return BugTasksReport()
     else:
-        return getUtility(IBugSet).get(int(name))
-
-    return None
+        try:
+            return getUtility(IBugSet).get(name)
+        except NotFoundError:
+            return None
 
 
 # TODO: Steve will be hacking on a more general portlet mechanism today
@@ -99,25 +101,6 @@ class BugView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-
-    watchPortlet = BugPortlet(
-        '../templates/portlet-bug-watch.pt')
-    productInfestationPortlet = BugPortlet(
-        '../templates/portlet-bug-productinfestation.pt')
-    packageInfestationPortlet = BugPortlet(
-        '../templates/portlet-bug-sourcepackageinfestation.pt')
-    referencePortlet = BugPortlet(
-        '../templates/portlet-bug-reference.pt')
-    duplicatesPortlet = BugPortlet(
-        '../templates/bug-portlet-duplicates.pt')
-    cvePortlet = BugPortlet(
-        '../templates/portlet-bug-cve.pt')
-    peoplePortlet = BugPortlet(
-        '../templates/portlet-bug-people.pt')
-    tasksHeadline = BugPortlet(
-        '../templates/portlet-bug-tasks-headline.pt')
-    actionsPortlet = BugPortlet(
-        '../templates/portlet-bug-actions.pt')
 
     def getCCs(self):
         return [s for s in self.context.subscriptions

@@ -1,0 +1,96 @@
+= Logging in =
+
+== The LoginStatus browser class ==
+
+The LoginStatus class is a view support class that handles the logic for
+showing the "Log in / Register" link that appears on most pages.
+
+    >>> from canonical.launchpad.browser import LoginStatus
+    >>> class DummyRequest(dict):
+    ...
+    ...     def __init__(self, url, path_info, query):
+    ...         self['PATH_INFO'] = path_info
+    ...         self['QUERY_STRING'] = query
+    ...         self.url = url
+    ...
+    ...     def getURL(self):
+    ...         return self.url
+
+Generic request without query args.
+
+    >>> request = DummyRequest('http://localhost/foo/bar', '/foo/bar', '')
+    >>> context = object()
+    >>> status = LoginStatus(context, request)
+    >>> status.logged_in
+    False
+    >>> status.login_shown
+    True
+    >>> status.login_url
+    'http://localhost/foo/bar/+login'
+
+Generic request with implied index page.
+
+    >>> request = DummyRequest(
+    ...     'http://localhost/foo/bar/+index', '/foo/bar', '')
+    >>> context = object()
+    >>> status = LoginStatus(context, request)
+    >>> status.login_url
+    'http://localhost/foo/bar/+login'
+
+Generic request with implied index page and query parameters.
+
+    >>> request = DummyRequest(
+    ...     'http://localhost/foo/bar/+index', '/foo/bar', 'x=1&y=2')
+    >>> context = object()
+    >>> status = LoginStatus(context, request)
+    >>> status.login_url
+    'http://localhost/foo/bar/+login?x=1&y=2'
+
+
+Generic request with trailing slash.
+
+    >>> request = DummyRequest(
+    ...     'http://localhost/foo/bar/+index', '/foo/bar/', '')
+    >>> context = object()
+    >>> status = LoginStatus(context, request)
+    >>> status.login_url
+    'http://localhost/foo/bar/+login'
+
+The login page.
+
+    >>> request = DummyRequest(
+    ...     'http://localhost/foo/bar/+login', '/foo/bar/+login', '')
+    >>> context = object()
+    >>> status = LoginStatus(context, request)
+    >>> status.logged_in
+    False
+    >>> status.login_shown
+    False
+
+The logout page.
+
+    >>> request = DummyRequest(
+    ...     'http://localhost/+logout', '/+logout', '')
+    >>> context = object()
+    >>> status = LoginStatus(context, request)
+    >>> status.logged_in
+    False
+    >>> status.login_shown
+    True
+    >>> status.login_url
+    'http://localhost/+login'
+
+
+
+Logging in.
+
+    >>> login('foo.bar@canonical.com')
+    >>> request = DummyRequest(
+    ...     'http://localhost/foo/bar', '/foo/bar', '')
+    >>> context = object()
+    >>> status = LoginStatus(context, request)
+    >>> status.logged_in
+    True
+    >>> status.login_shown
+    False
+

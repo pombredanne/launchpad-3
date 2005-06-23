@@ -221,8 +221,8 @@ let's hang a bug onto the ILaunchBag utility.
 4. Editing a task.
 
 Let's demonstrate a notification email where Sample Person marks a
-task Fixed and, in the process, makes themselves the assignee (to note
-that they were the person that fixed the bug.)
+task Accepted, assigns himself to it, and adds a note in the status
+explanation.
 
     >>> from zope.interface import implements
     >>> from canonical.launchpad.interfaces import IDistroBugTask
@@ -233,16 +233,13 @@ that they were the person that fixed the bug.)
     ...     pass
 
     >>> bugtask_before_modification = MockObject()
-    >>> bugtask_before_modification.status = firefox_crashes_in_debian.status
-    >>> bugtask_before_modification.priority = firefox_crashes_in_debian.priority
-    >>> bugtask_before_modification.severity = firefox_crashes_in_debian.severity
-    >>> bugtask_before_modification.assignee = firefox_crashes_in_debian.assignee
-    >>> bugtask_before_modification.sourcepackagename = firefox_crashes_in_debian.sourcepackagename
-    >>> bugtask_before_modification.binarypackagename = firefox_crashes_in_debian.binarypackagename
-    >>> bugtask_before_modification.distribution = firefox_crashes_in_debian.distribution
-    >>> bugtask_before_modification.distrorelease = None
+    >>> for name in IDistroBugTask.names(all=True):
+    ...     setattr(bugtask_before_modification, name,
+    ...             getattr(firefox_crashes_in_debian, name))
     >>> firefox_crashes_in_debian.status = BugTaskStatus.FIXED
     >>> firefox_crashes_in_debian.assignee = bug_submitter.id
+    >>> firefox_crashes_in_debian.statusexplanation = (
+    ...     'Waiting for upstream fix.')
     >>> debian_task_modified = SQLObjectModifiedEvent(
     ...     firefox_crashes_in_debian, bugtask_before_modification,
     ...     ["status", "assignee"])
@@ -267,8 +264,11 @@ that they were the person that fixed the bug.)
         http://.../malone/bugs/...
     <BLANKLINE>
     Task: debian mozilla-firefox
-           status: New => Fixed
-         assignee: (unassigned) => Sample Person
+           Status: New => Fixed
+         Assignee: (unassigned) => Sample Person
+    <BLANKLINE>
+          Changed explanation of status to:
+              Waiting for upstream fix.
     <BLANKLINE>
 
     >>> stub.test_emails = []

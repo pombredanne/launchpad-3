@@ -29,16 +29,7 @@ from canonical.launchpad.browser import BugTaskSearchListingView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 
 class DistributionView:
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-distro-actions.pt')
-
-    detailsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-distro-details.pt')
-
-    relatedBountiesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-related-bounties.pt')
-
+    """Default Distribution view class."""
 
 class DistributionBugsView(BugTaskSearchListingView):
 

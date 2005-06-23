@@ -106,9 +106,6 @@ def validate_svn_repo(repo):
 # constraints. -- StuartBishop 20050502
 class ProductSeriesView(object):
 
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-productseries-actions.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.product = context.product
@@ -240,6 +237,7 @@ class ProductSeriesView(object):
             if not validate_svn_repo(self.svnrepository):
                 self.errormsgs.append('Please give valid SVN server details')
                 return
+        oldrcstype = self.context.rcstype
         self.context.rcstype = self.rcstype
         self.context.cvsroot = self.cvsroot
         self.context.cvsmodule = self.cvsmodule
@@ -247,7 +245,8 @@ class ProductSeriesView(object):
         self.context.svnrepository = self.svnrepository
         if not fromAdmin:
             self.context.importstatus = ImportStatus.TESTING
-        self.request.response.redirect('.')
+        elif (oldrcstype is None and self.rcstype is not None):
+            self.context.importstatus = ImportStatus.TESTING
 
     def adminSource(self):
         """Make administrative changes to the source details of the
@@ -284,6 +283,10 @@ class ProductSeriesView(object):
             self.errormsgs.append('Invalid target Arch branch name.')
         if not pybaz.NameParser.is_version_id(self.targetarchversion):
             self.errormsgs.append('Invalid target Arch version id.')
+
+        # possibly resubmit for testing
+        if self.context.autoTestFailed() and form.get('resetToAutotest', False):
+            self.context.importstatus = ImportStatus.TESTING
 
         # Return if there were any errors, so as not to update anything.
         if self.errormsgs:

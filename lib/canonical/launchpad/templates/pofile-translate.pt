@@ -6,16 +6,16 @@
   <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-      <div tal:replace="structure view/aboutPortlet" />
-      <div tal:replace="structure view/quickHelpPortlet" />
-      <div tal:replace="structure view/statsPortlet" />
-      <div tal:replace="structure view/contributorsPortlet" />
+      <div tal:replace="structure context/@@+portlet-about" />
+      <div tal:replace="structure context/@@+portlet-quickhelp" />
+      <div tal:replace="structure context/@@+portlet-stats" />
+      <div tal:replace="structure context/@@+portlet-contributors" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-      <div tal:replace="structure view/actionsPortlet" />
-      <div tal:replace="structure view/detailsPortlet" />
-      <div tal:replace="structure view/translatorsPortlet" />
+      <div tal:replace="structure context/@@+portlet-actions" />
+      <div tal:replace="structure context/@@+portlet-details" />
+      <div tal:replace="structure context/@@+portlet-translators" />
 </metal:rightportlets>
 
     <div metal:fill-slot="main">
@@ -108,6 +108,11 @@
 
         <!-- The translation form. -->
         <form method="post" tal:attributes="action view/createURL">
+          <p tal:repeat="alert view/alerts"
+             class="error alert"
+             tal:content="alert">
+             Error Message
+          </p>
           <table class="data" style="margin-top: 0.5em;">
             <thead>
               <tr class="results">
