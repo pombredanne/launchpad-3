@@ -9,7 +9,6 @@ from zope.component import getUtility
 from zope.app.pagetemplate.viewpagetemplatefile import (
     ViewPageTemplateFile, BoundPageTemplate)
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 
 from canonical.lp import dbschema, decorates, Passthrough
 from canonical.launchpad.helpers import canonical_url
@@ -17,43 +16,9 @@ from canonical.launchpad.interfaces import (
     IPerson, ILaunchBag, IBugSet, IBugTaskSet, IDistributionSet, IBugAddForm,
     IBug)
 from canonical.lp import dbschema
-from canonical.launchpad.database import (
-    BugAttachmentSet, BugExternalRefSet, BugSubscriptionSet, BugWatchSet,
-    BugProductInfestationSet, BugPackageInfestationSet, Person, Bug,
-    BugTasksReport, CVERefSet)
+from canonical.launchpad.database import Person, Bug
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
-
-def traverseBug(bug, request, name):
-    if name == 'attachments':
-        return BugAttachmentSet(bug=bug.id)
-    elif name == 'references':
-        return BugExternalRefSet(bug=bug.id)
-    elif name == 'cverefs':
-        return CVERefSet(bug=bug.id)
-    elif name == 'people':
-        return BugSubscriptionSet(bug=bug.id)
-    elif name == 'watches':
-        return BugWatchSet(bug=bug.id)
-    elif name == 'tasks':
-        return getUtility(IBugTaskSet).get(bug.id)
-    elif name == 'productinfestations':
-        return BugProductInfestationSet(bug=bug.id)
-    elif name == 'packageinfestations':
-        return BugPackageInfestationSet(bug=bug.id)
-
-    return None
-
-
-def traverseBugs(bugcontainer, request, name):
-    if name == 'assigned':
-        return BugTasksReport()
-    else:
-        try:
-            return getUtility(IBugSet).get(name)
-        except NotFoundError:
-            return None
-
 
 # TODO: Steve will be hacking on a more general portlet mechanism today
 # (2004-12-09)

@@ -13,14 +13,14 @@
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IBug" />
     </content>
-    
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBug"
         name="+index" />
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IBug"
-        function="canonical.launchpad.browser.traverseBug" />
+        function="canonical.launchpad.browser.traversers.traverse_bug" />
     <browser:url
         for="canonical.launchpad.interfaces.IBug"
         path_expression="string:${id}"
@@ -158,16 +158,12 @@
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IBugSet"
-        function="canonical.launchpad.browser.traverseBugs" />
+        function="canonical.launchpad.browser.traversers.traverse_bugs" />
     <browser:url
         for="canonical.launchpad.interfaces.IBugSet"
         path_expression="string:bugs"
         parent_utility="canonical.launchpad.interfaces.IMaloneApplication"
         />
-
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IBugSet"
-        name="+index" />
 
     <browser:addform
         name="+product"
@@ -222,28 +218,6 @@
         factory="canonical.launchpad.browser.bug.BugAddForm"
         provides="canonical.launchpad.interfaces.IBugAddForm"
         />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IBugSet"
-        class="canonical.launchpad.browser.BugTaskAnorakSearchPageBegoneView"
-        permission="zope.Public"
-        lp:url="malone/bugs/$Bug.id">
-        <browser:page
-            name="+index"
-            template="../templates/bugs-index.pt"
-            lp:url="malone/bugs/$Bug.id/index" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IBugSet"
-        class="canonical.launchpad.browser.BugsCreatedByView"
-        permission="zope.Public"
-        lp:url="malone/bugs/created/$Bug.owner">
-        <browser:page
-            name="created"
-            template="../templates/bugs-createdby-index.pt"
-            lp:url="malone/bugs/created/$Bug.owner/index" />
-    </browser:pages>
 
     <!-- BugSubset -->
     <browser:traverse
