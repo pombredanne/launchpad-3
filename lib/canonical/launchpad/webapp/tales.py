@@ -18,7 +18,8 @@ from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.app.traversing.interfaces import ITraversable
 from zope.exceptions import NotFoundError
 from canonical.launchpad.interfaces import (
-    IPerson, IFacetMenu, IExtraFacetMenu, IApplicationMenu)
+    IPerson, IFacetMenu, IExtraFacetMenu,
+    IApplicationMenu, IExtraApplicationMenu)
 import canonical.lp.dbschema
 from canonical.lp import decorates
 import canonical.launchpad.pagetitles
@@ -63,18 +64,36 @@ class MenuAPI:
             menu.request = get_current_browser_request()
             return menu
 
-    def application(self):
-        # Get the selected link from the facet menu.
+    def _get_selected_facetname(self):
+        """Returns the name of the selected facet, or None if there is no
+        selected facet.
+        """
         facetmenu = self.facet()
         selectedfacetname = None
         for link in facetmenu:
             if link.selected:
-                selectedfacetname = link.name
-                break
-        else:
+                return link.name
+        return None
+
+    def application(self):
+        selectedfacetname = self._get_selected_facetname()
+        if selectedfacetname is None:
             # No facet menu is selected.  So, return empty list.
             return []
         menu = queryAdapter(self._context, IApplicationMenu, selectedfacetname)
+        if menu is None:
+            return []
+        else:
+            menu.request = get_current_browser_request()
+            return menu
+
+    def extraapplication(self):
+        selectedfacetname = self._get_selected_facetname()
+        if selectedfacetname is None:
+            # No facet menu is selected.  So, return empty list.
+            return []
+        menu = queryAdapter(
+            self._context, IExtraApplicationMenu, selectedfacetname)
         if menu is None:
             return []
         else:

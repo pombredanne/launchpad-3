@@ -3,13 +3,14 @@
 
 __metaclass__ = type
 __all__ = ['nearest_menu', 'FacetMenu', 'ExtraFacetMenu',
-           'ApplicationMenu', 'Link', 'DefaultLink']
+           'ApplicationMenu', 'ExtraApplicationMenu',
+           'Link', 'DefaultLink']
 
 import urlparse
 from zope.interface import implements
 from canonical.launchpad.interfaces import (
     IMenuBase, IFacetMenu, IExtraFacetMenu, IApplicationMenu,
-    ILink, IDefaultLink
+    IExtraApplicationMenu, ILink, IDefaultLink
     )
 from canonical.launchpad.webapp.publisher import (
     canonical_url, canonical_url_iterator
@@ -69,11 +70,12 @@ class MenuBase:
         """See IFacetMenu."""
         assert self.links is not None, (
             'Subclasses of %s must provide self.links' % self._baseclassname)
-        contexturl = canonical_url(self.context, self.request)
+        contexturlobj = Url(canonical_url(self.context, self.request))
         if self.request is None:
-            requesturl = None
+            requesturlobj = None
         else:
-            requesturl = self.request.getURL()
+            requesturlobj = Url(self.request.getURL())
+
 
         output_links = []
         default_link = None
@@ -83,15 +85,16 @@ class MenuBase:
             method = getattr(self, linkname)
             link = method()
             link.name = linkname
-            link.url = '%s/%s' % (contexturl, link.target)
-            if requesturl is not None:
-                if url2_is_inside_url1(link.url, requesturl):
+            link.url = '%s/%s' % (contexturlobj.without_query, link.target)
+            if requesturlobj is not None:
+                linkurlobj = Url(link.url)
+                if requesturlobj.is_inside(linkurlobj):
                     link.selected = True
                     assert selected_link is None, (
                         'There can be only one selected link')
                     selected_link = link
-                # TODO: compute whether the link is linked.  For now, all
-                #       links are linked.
+                if requesturlobj == linkurlobj:
+                    link.linked = False
             if IDefaultLink.providedBy(link):
                 assert default_link is None, (
                     'There can be only one DefaultLink')
@@ -99,8 +102,8 @@ class MenuBase:
             output_links.append(link)
         if (selected_link is None and
             default_link is not None and
-            requesturl is not None and
-            url2_is_inside_url1(contexturl, requesturl)):
+            requesturlobj is not None and
+            requesturlobj.is_inside(contexturlobj)):
             default_link.selected = True
         return iter(output_links)
 
@@ -129,15 +132,48 @@ class ApplicationMenu(MenuBase):
     _baseclassname = 'ApplicationMenu'
 
 
-def url2_is_inside_url1(url1, url2):
-    addressingscheme, networklocation, path, parameters, query, fragmentids = (
-        urlparse.urlparse(url1))
-    path1 = path
-    addressingscheme, networklocation, path, parameters, query, fragmentids = (
-        urlparse.urlparse(url2))
-    path2 = path
-    if not path1.endswith('/'):
-        path1 += '/'
-    if not path2.endswith('/'):
-        path2 += '/'
-    return path2.startswith(path1)
+class ExtraApplicationMenu(MenuBase):
+    """Base class for extra application menus."""
+
+    implements(IExtraApplicationMenu)
+
+    _baseclassname = 'ExtraApplicationMenu'
+
+
+class Url:
+    """A class for url operations."""
+
+    def __init__(self, url):
+        self.url = url
+        urlparts = iter(urlparse.urlparse(url))
+        self.addressingscheme = urlparts.next()
+        self.networklocation = urlparts.next()
+        self.path = urlparts.next()
+        if self.path.endswith('/'):
+            self.pathslash = self.path
+        else:
+            self.pathslash = self.path + '/'
+        self.parameters = urlparts.next()
+        self.query = urlparts.next()
+        self.fragmentids = urlparts.next()
+
+    @property
+    def without_query(self):
+        """Returns the URL including addressing scheme and path, but without
+        the query or other things.
+        """
+        return '%s://%s%s' % (
+            self.addressingscheme, self.networklocation, self.path)
+
+    def __repr__(self):
+        return '<Url %s>' % self.url
+
+    def is_inside(self, otherurl):
+        return self.pathslash.startswith(otherurl.pathslash)
+
+    def __eq__(self, otherurl):
+        return (otherurl.pathslash == self.pathslash and
+                otherurl.query == self.query)
+
+    def __ne__(self, otherurl):
+        return not self.__eq__(self, otherurl)

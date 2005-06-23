@@ -7,7 +7,7 @@ An object has a facetmenu if it can be adapted to IFacetMenu.
     >>> from canonical.launchpad.webapp import nearest_menu, canonical_url
     >>> from canonical.launchpad.interfaces import (
     ...     ICanonicalUrlData, IFacetMenu, IExtraFacetMenu,
-    ...     IApplicationMenu,
+    ...     IApplicationMenu, IExtraApplicationMenu,
     ...     ILink, IDefaultLink,
     ...     )
     >>> from zope.interface import implements, directlyProvides, Interface
@@ -290,6 +290,50 @@ isn't really.
     http://localhost:8086/sesamestreet/+bar False
 
 
+== How do we tell whether a link from a facetmenu is linked? ==
+
+A link is linked if its link's target differs from the current URL.
+
+The following request is for a url that is different from all of the facet
+menu links for 'sesamestreet'.  So, all links will be linked.
+
+    >>> request = DummyRequest('http://localhost:8086/sesamestreet/+xxx')
+    >>> facets = Facets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.linked
+    http://localhost:8086/sesamestreet/+foo True
+    http://localhost:8086/sesamestreet/+bar True
+
+This next request is for +foo, but with a query string.  So, both links will
+still be linked.
+
+    >>> request = DummyRequest('http://localhost:8086/sesamestreet/+foo?123')
+    >>> facets = Facets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.linked
+    http://localhost:8086/sesamestreet/+foo True
+    http://localhost:8086/sesamestreet/+bar True
+
+Next, we'll use the link +bar.  The +bar link will not be linked.
+
+    >>> request = DummyRequest('http://localhost:8086/sesamestreet/+bar')
+    >>> facets = Facets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.linked
+    http://localhost:8086/sesamestreet/+foo True
+    http://localhost:8086/sesamestreet/+bar False
+
+Now, we use +bar with a trailing slash.  The +bar link will still be not
+linked.
+
+    >>> request = DummyRequest('http://localhost:8086/sesamestreet/+bar/')
+    >>> facets = Facets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.linked
+    http://localhost:8086/sesamestreet/+foo True
+    http://localhost:8086/sesamestreet/+bar False
+
+
 == DefaultLink ==
 
 Use a DefaultLink instead of a Link when you want it to be selected for any
@@ -500,8 +544,9 @@ part of the test, we won't worry about that.
     ...         text = 'First menu'
     ...         return Link(target, text)
 
-Now, we can make an instance of this FooApplicationMenu class, with a
-context object to show that its methods can access `self.context`.
+Now, we can make an instance of this FooApplicationMenu class.  We should
+really be using some link text that shows that its methods can access
+`self.context`. That's a minor TODO item.
 
     >>> housefooappmenu = FooApplicationMenu(house)
 
@@ -520,6 +565,61 @@ are as we expect.
     target: +first
     text: First menu
     url: http://localhost:8086/sesamestreet/number73/+first
+
+
+== Extra Application Menus ==
+
+Extra application menus are like application menus, but meant to be displayed
+in a portlet box rather than as tabs.
+
+    >>> from canonical.launchpad.webapp import ExtraApplicationMenu
+
+ExtraApplicationMenu is meant to be used as a base-class for writing your own
+IExtraApplicationMenu classes.  Here's what happens when you use it on its own.
+
+    >>> bad_idea_menu = ExtraApplicationMenu(object())
+    >>> for link in bad_idea_menu:
+    ...     pass
+    Traceback (most recent call last):
+    ...
+    AssertionError: Subclasses of ExtraApplicationMenu must provide self.links
+
+So, we must test ExtraApplicationMenu by making our own menu subclass.  We'll
+just call our menu 'FooExtraApplicationMenu' as we intend it to be used when
+the 'foo' facet is selected.  The same things about 'usedfor' and 'facet' apply
+as for the ApplicationMenu subclass.
+
+    >>> class FooExtraApplicationMenu(ExtraApplicationMenu):
+    ...
+    ...     links = ['extrafirst']
+    ...     facet = 'foo'
+    ...
+    ...     def extrafirst(self):
+    ...         target = '+extrafirst'
+    ...         text = 'Extra first menu'
+    ...         return Link(target, text)
+
+Now, we can make an instance of this FooExtraApplicationMenu class.  As with
+FooApplicationMenu, we should really use link text that shows it can access
+self.context.  That's a minor TODO item.
+
+    >>> housefooextraappmenu = FooExtraApplicationMenu(house)
+
+We can go through each attribute of each of the links, checking that they
+are as we expect.
+
+    >>> for link in housefooextraappmenu:
+    ...     print '--- link %s ---' % link.name
+    ...     for attrname in sorted(ILink.names()):
+    ...         print '%s: %s' % (attrname, getattr(link, attrname))
+    --- link extrafirst ---
+    linked: True
+    name: extrafirst
+    selected: False
+    summary: None
+    target: +extrafirst
+    text: Extra first menu
+    url: http://localhost:8086/sesamestreet/number73/+extrafirst
 
 
 == Registering menus in ZCML ==
@@ -577,6 +677,16 @@ IThingHavingApplicationMenus.
     True
     >>> canonical.launchpad.ftests.FooMenuForThing = FooMenuForThing
 
+And for an extra application menu for IThingHavingApplicationMenus.
+
+    >>> class FooExtraMenuForThing(FooExtraApplicationMenu):
+    ...     usedfor = IThingHavingApplicationMenus
+    ...     facet = 'foo'
+
+    >>> getattr(
+    ...     canonical.launchpad.ftests, 'FooExtraMenuForThing', None) is None
+    True
+    >>> canonical.launchpad.ftests.FooExtraMenuForThing = FooExtraMenuForThing
 
 Now, check that we have no IFacetMenu adapter and no IExtraFacetMenu adapter
 for an IThingHavingFacets object.
@@ -590,12 +700,15 @@ for an IThingHavingFacets object.
     True
 
 We also need to check that we have no IApplicationMenu adapter named 'foo' for
-an IThingHavingApplicationMenus object.
+an IThingHavingApplicationMenus object, and the same for IExtraApplicationMenu.
 
     >>> class SomeOtherThing:
     ...     implements(IThingHavingApplicationMenus)
     >>> something_with_appmenus = SomeOtherThing()
     >>> queryAdapter(something_with_appmenus, IApplicationMenu, 'foo') is None
+    True
+    >>> queryAdapter(
+    ...     something_with_appmenus, IExtraApplicationMenu, 'foo') is None
     True
 
     >>> from zope.configuration import xmlconfig
@@ -604,7 +717,8 @@ an IThingHavingApplicationMenus object.
     ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
     ...   <browser:menus
     ...       module="canonical.launchpad.ftests"
-    ...       classes="FacetsForThing ExtraFacetsForThing FooMenuForThing"
+    ...       classes="FacetsForThing ExtraFacetsForThing
+    ...                FooMenuForThing FooExtraMenuForThing"
     ...       />
     ... </configure>
     ... """)
@@ -620,6 +734,11 @@ an IThingHavingApplicationMenus object.
     >>> menu = queryAdapter(something_with_appmenus, IApplicationMenu, 'foo')
     >>> menu.context = something_with_appmenus
     >>> menu.__class__ is FooMenuForThing
+    True
+    >>> menu = queryAdapter(
+    ...     something_with_appmenus, IExtraApplicationMenu, 'foo')
+    >>> menu.context = something_with_appmenus
+    >>> menu.__class__ is FooExtraMenuForThing
     True
 
 The browser:menus directive also makes security declarations for the adapters.
@@ -676,8 +795,14 @@ we registered only one application menu for a house, against 'foo'.  The
     >>> list(menu)
     []
 
+The same goes for the menu:extraapplication menu.
+
+    >>> menu = test_tales('house/menu:extraapplication', house=house)
+    >>> list(menu)
+    []
+
 Now, if we change the request so that the 'foo' facet is selected, we get
-a menu.
+a couple of menus.
 
     >>> participation = DummyRequest(
     ...     'http://localhost:8086/sesamestreet/+foo')
@@ -688,6 +813,11 @@ a menu.
     >>> for link in menu:
     ...     print link.url, link.selected
     http://localhost:8086/sesamestreet/number73/+first False
+
+    >>> menu = test_tales('house/menu:extraapplication', house=house)
+    >>> for link in menu:
+    ...     print link.url, link.selected
+    http://localhost:8086/sesamestreet/number73/+extrafirst False
 
 When there is no menu for a thing, we get an empty iterator.
 
@@ -700,6 +830,9 @@ When there is no menu for a thing, we get an empty iterator.
     >>> menu = test_tales('thing/menu:application', thing=root)
     >>> list(menu)
     []
+    >>> menu = test_tales('thing/menu:extraapplication', thing=root)
+    >>> list(menu)
+    []
 
 
 == Cleaning up ==
@@ -710,45 +843,46 @@ module.
     >>> del canonical.launchpad.ftests.FacetsForThing
     >>> del canonical.launchpad.ftests.ExtraFacetsForThing
     >>> del canonical.launchpad.ftests.FooMenuForThing
+    >>> del canonical.launchpad.ftests.FooExtraMenuForThing
     >>> del canonical.launchpad.ftests.IThingHavingFacets
     >>> del canonical.launchpad.ftests.IThingHavingApplicationMenus
 
 
-== url2_is_inside_url1 function ==
+== The Url class ==
 
-    >>> from canonical.launchpad.webapp.menu import url2_is_inside_url1
-    >>> url1 = 'http://localhost/foo/bar?123'
-    >>> url2 = 'http://localhost/foo/bar/baz'
-    >>> url2_is_inside_url1(url1, url2)
+    >>> from canonical.launchpad.webapp.menu import Url
+    >>> url1 = Url('http://localhost/foo/bar?123')
+    >>> url2 = Url('http://localhost/foo/bar/baz')
+    >>> url2.is_inside(url1)
     True
 
 These next two are equivalent, so the answer should be True, even through
 the "outside" one is shorter than the "inside" one.
 
-    >>> url1 = 'http://localhost/foo/bar/'
-    >>> url2 = 'http://localhost/foo/bar'
-    >>> url2_is_inside_url1(url1, url2)
+    >>> url1 = Url('http://localhost/foo/bar/')
+    >>> url2 = Url('http://localhost/foo/bar')
+    >>> url2.is_inside(url1)
     True
 
 The next two are exactly the same.  We consider a url to be inside itself.
 
-    >>> url1 = 'http://localhost/foo/bar/'
-    >>> url2 = url1
-    >>> url2_is_inside_url1(url1, url2)
+    >>> url1 = Url('http://localhost/foo/bar/')
+    >>> url2 = Url('http://localhost/foo/bar/')
+    >>> url2.is_inside(url1)
     True
 
 In the next case, the string of url2 starts with the string of url1.  But,
 because url2 continues within the same path step, url2 is not inside url1.
 
-    >>> url1 = 'http://localhost/foo/ba'
-    >>> url2 = 'http://localhost/foo/bar'
-    >>> url2_is_inside_url1(url1, url2)
+    >>> url1 = Url('http://localhost/foo/ba')
+    >>> url2 = Url('http://localhost/foo/bar')
+    >>> url2.is_inside(url1)
     False
 
 Here, url2 is url1 plus an extra path step.  So, url2 is inside url1.
 
-    >>> url1 = 'http://localhost/foo/bar/'
-    >>> url2 = 'http://localhost/foo/bar/baz'
-    >>> url2_is_inside_url1(url1, url2)
+    >>> url1 = Url('http://localhost/foo/bar/')
+    >>> url2 = Url('http://localhost/foo/bar/baz')
+    >>> url2.is_inside(url1)
     True
-    
+

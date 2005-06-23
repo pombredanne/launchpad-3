@@ -34,7 +34,7 @@ import zope.app.publisher.browser.metadirectives
 from canonical.launchpad.layers import setAdditionalLayer
 from canonical.launchpad.interfaces import (
     IAuthorization, IOpenLaunchBag, ICanonicalUrlData,
-    IFacetMenu, IExtraFacetMenu, IApplicationMenu
+    IFacetMenu, IExtraFacetMenu, IApplicationMenu, IExtraApplicationMenu
     )
 
 try:
@@ -446,7 +446,9 @@ def menus(_context, module, classes):
     if not inspect.ismodule(module):
         raise TypeError("module attribute must be a module: %s, %s" %
                         module, type(module))
-    menutypes = [IFacetMenu, IExtraFacetMenu, IApplicationMenu]
+    menutypes = [IFacetMenu, IExtraFacetMenu, IApplicationMenu,
+                 IExtraApplicationMenu]
+    applicationmenutypes = [IApplicationMenu, IExtraApplicationMenu]
     for menuname in classes:
         menuclass = getattr(module, menuname)
         implemented = None
@@ -457,11 +459,11 @@ def menus(_context, module, classes):
                     (menuclass, menutypes))
                 provides = menutype
                 name = ''
-                if menutype is IApplicationMenu:
+                if menutype in applicationmenutypes:
                     name = getattr(menuclass, 'facet', None)
                     if name is None:
                         raise AssertionError(
-                            'The IApplicationMenu %r needs a "facet" attribute'
+                            'The menu %r needs a "facet" attribute'
                             ' saying what facet it is to be used for.'
                             % menuclass)
                 break
