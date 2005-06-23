@@ -7,12 +7,8 @@ specifically Hoary.
   ... Cookie: launchpad=H1vIudYGuGZjRj7VSlW7Z7Rqe6MUCmrjeRp5FrHkNWjK7djzx4RzVE
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
   ...
-      <title>
-      Release The Hoary Hedgehog Release: Bugs
-      </title>
+      <title>Bugs in The Hoary Hedgehog Release</title>
   ...
 
 This page checks that we can see a list of bugs on the distributions, in
@@ -27,7 +23,5 @@ this case Ubuntu.
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-      <title>
-      Release Ubuntu Linux: Bugs
-      </title>
+      <title>Bugs in Ubuntu Linux</title>
   ...

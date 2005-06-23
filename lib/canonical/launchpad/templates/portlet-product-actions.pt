@@ -1,15 +1,36 @@
 <div class="portlet">
-    <h4>Actions:</h4>
+    <h4>Product Actions:</h4>
 
     <div class="portletBody">
         <div class="portletContent even">
 
-            <ul class="edit">
-                <li><a href="+edit">Edit Product</a></li>
-                <li><a href="+addseries">Add Branch</a></li>
-                <li><a href="+addpackage">Add Package</a></li>
-              
-                <li tal:condition="python:request.principal and request.principal.id == context.owner.id"><a href="+milestone">Add Milestone</a></li>
+            <ul>
+                <li class="edit"
+                    tal:condition="context/required:launchpad.Edit">
+                  <a href="+edit">Edit Details</a>
+                </li>
+                <li class="edit"
+                    tal:condition="context/required:launchpad.Admin">
+                  <a href="+review">Review</a>
+                </li>
+                <li class="add"
+                    tal:condition="context/required:launchpad.Edit">
+                  <a href="+addpackage">Link To Package</a>
+                </li>
+                <li class="add"><a href="+addseries">Add Branch</a></li>
+                <li class="edit"
+                    tal:condition="context/required:launchpad.Edit">
+                  <a href="+changetranslators">Change Translators</a>
+                </li>
+                <li class="edit"
+                    tal:condition="context/required:launchpad.Admin">
+                  <a href="+potemplatenames">Edit template names</a>
+                </li>
+                <li class="add"
+                    tal:condition="context/required:launchpad.Edit">
+                  <a href="+milestone">Add Milestone</a>
+                </li>
+            </ul>
         </div>
     </div>
 </div>

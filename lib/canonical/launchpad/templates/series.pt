@@ -4,20 +4,10 @@
     metal:use-macro="context/@@main_template/master"
     i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">
-      <span tal:replace="context/product/displayname">Product</span>
-      Release Series:
-      <span tal:replace="context/displayname">$PSeries.displayname</span>
-    </title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-</head>
-
 <body>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure view/actionsPortlet" />
+    <div tal:replace="structure context/@@+portlet-actions" />
 </metal:rightportlets>
 
 
@@ -30,10 +20,6 @@
         just a single paragraph of text really, giving the status of
         this series of releases.
     </p>
-
-    <div>
-        [ <a href="+review">Review Series Details</a> ]
-    </div>
 
     <div tal:condition="context/releases">
       <h2>Releases:</h2>

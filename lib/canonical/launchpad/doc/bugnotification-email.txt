@@ -69,8 +69,19 @@ notification to be sent:
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
-    >>> body
-    u'Sample Person <test@canonical.com> made changes to:\n\n    http://www.example.com/bugs/2\n\n    - Changed title:\n        the new title\n    - Changed description:\n        a new description that is quite long. but the nice thing is that\n        the edit notification email generator knows how to indent and\n        wrap descriptions, so this will appear quite nice in the actual\n        email that gets sent\n'
+    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    Sample Person <test@canonical.com> made changes to:
+    <BLANKLINE>
+        http://www.example.com/bugs/2
+    <BLANKLINE>
+        - Changed title to:
+            the new title
+        - Changed description to:
+            a new description that is quite long. but the nice thing is that
+            the edit notification email generator knows how to indent and
+            wrap descriptions, so this will appear quite nice in the actual
+            email that gets sent
+    <BLANKLINE>
 
 Another edit, this time the summary:
 
@@ -84,9 +95,15 @@ Another edit, this time the summary:
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
-    >>> body
-    u"Sample Person <test@canonical.com> made changes to:\n\n
-    http://www.example.com/bugs/2\n\n    - Changed summary:\n        this summary isn't particularly short is it? after all, what\n        kind of summary is so long that it needs to be wrapped?\n"
+    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    Sample Person <test@canonical.com> made changes to:
+    <BLANKLINE>
+        http://www.example.com/bugs/2
+    <BLANKLINE>
+        - Changed summary to:
+            this summary isn't particularly short is it? after all, what
+            kind of summary is so long that it needs to be wrapped?
+    <BLANKLINE>
 
 Let's set the bug private (for demo purposes, we need to switch logins
 to a user that is explicitly subscribed to this bug):
@@ -102,8 +119,14 @@ to a user that is explicitly subscribed to this bug):
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
-    >>> body
-    u'Sample Person <test@canonical.com> made changes to:\n\n    http://www.example.com/bugs/2\n\n    - Changed private:\n        False => True\n'
+    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    Sample Person <test@canonical.com> made changes to:
+    <BLANKLINE>
+        http://www.example.com/bugs/2
+    <BLANKLINE>
+        - Changed private:
+            False => True
+    <BLANKLINE>
 
 2. Editing a bug task.
 
@@ -130,8 +153,15 @@ of adding bug tasks here too, but at the time of this writing I'm not
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
-    >>> body
-    u'Sample Person <test@canonical.com> made changes to:\n\n    http://www.example.com/bugs/2\n\nTask: Upstream Ubuntu\n       status: New => Accepted\n     assignee: (unassigned) => Sample Person\n'
+    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    Sample Person <test@canonical.com> made changes to:
+    <BLANKLINE>
+        http://www.example.com/bugs/2
+    <BLANKLINE>
+    Task: Upstream Ubuntu
+           Status: New => Accepted
+         Assignee: (unassigned) => Sample Person
+    <BLANKLINE>
 
 3. Adding and editing web links.
 
@@ -160,8 +190,14 @@ Adding a web link can be seen as "editing" a bug.
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
-    >>> body
-    u'Sample Person <test@canonical.com> made changes to:\n\n    http://www.example.com/bugs/2\n\n    - Changed web links:\n        Added: http://www.example.com/foo/bar (some title)\n'
+    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    Sample Person <test@canonical.com> made changes to:
+    <BLANKLINE>
+        http://www.example.com/bugs/2
+    <BLANKLINE>
+        - Changed web links:
+            Added: http://www.example.com/foo/bar (some title)
+    <BLANKLINE>
 
 Editing a web link shows the previous link as "Removed" and the newly
 modified link as having been "Added" (though no actual "adding" or
@@ -182,8 +218,15 @@ modified link as having been "Added" (though no actual "adding" or
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
-    >>> body
-    u'Sample Person <test@canonical.com> made changes to:\n\n    http://www.example.com/bugs/2\n\n    - Changed web links:\n        Added: http://www.example.com/foo/bar (some better title)\n      Removed: http://www.example.com/foo/bar (some title)\n'
+    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    Sample Person <test@canonical.com> made changes to:
+    <BLANKLINE>
+        http://www.example.com/bugs/2
+    <BLANKLINE>
+        - Changed web links:
+            Added: http://www.example.com/foo/bar (some better title)
+          Removed: http://www.example.com/foo/bar (some title)
+    <BLANKLINE>
 
 4. Adding and editing bug watches.
 
@@ -212,8 +255,14 @@ generated when a bug watch is added:
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
-    >>> body
-    u'Sample Person <test@canonical.com> made changes to:\n\n    http://www.example.com/bugs/2\n\n    - Changed bug watches:\n        Added: Bug 123 [The Mozilla.org Bug Tracker]\n'
+    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    Sample Person <test@canonical.com> made changes to:
+    <BLANKLINE>
+        http://www.example.com/bugs/2
+    <BLANKLINE>
+        - Changed bug watches:
+            Added: Bug 123 [The Mozilla.org Bug Tracker]
+    <BLANKLINE>
 
 When edited, we display the change to a bug watch as though the
 previous data was "removed" and the new, current data was "added."
@@ -233,8 +282,15 @@ Let's demonstrate with an example:
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
-    >>> body
-    u'Sample Person <test@canonical.com> made changes to:\n\n    http://www.example.com/bugs/2\n\n    - Changed bug watches:\n        Added: Bug 12 [The Mozilla.org Bug Tracker]\n      Removed: Bug 123 [The Mozilla.org Bug Tracker]\n'
+    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    Sample Person <test@canonical.com> made changes to:
+    <BLANKLINE>
+        http://www.example.com/bugs/2
+    <BLANKLINE>
+        - Changed bug watches:
+            Added: Bug 12 [The Mozilla.org Bug Tracker]
+          Removed: Bug 123 [The Mozilla.org Bug Tracker]
+    <BLANKLINE>
 
 5. Adding and editing CVE refs.
 
@@ -261,8 +317,14 @@ Adding a CVE ref will generate a notification that looks as follows:
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
-    >>> body
-    u'Sample Person <test@canonical.com> made changes to:\n\n    http://www.example.com/bugs/2\n\n    - Changed CVE references:\n        Added: CAN-2004-0718 [a test cve ref]\n'
+    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    Sample Person <test@canonical.com> made changes to:
+    <BLANKLINE>
+        http://www.example.com/bugs/2
+    <BLANKLINE>
+        - Changed CVE references:
+            Added: CAN-2004-0718 [a test cve ref]
+    <BLANKLINE>
 
 Editing a CVE ref generates an email that refers to the previous CVE
 ref as "removed" and the newly modified CVE ref as "added". An example
@@ -281,8 +343,15 @@ follows:
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
-    >>> body
-    u'Sample Person <test@canonical.com> made changes to:\n\n    http://www.example.com/bugs/2\n\n    - Changed CVE references:\n        Added: CAN-2004-0719 [a test cve ref]\n      Removed: CAN-2004-0718 [a test cve ref]\n'
+    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    Sample Person <test@canonical.com> made changes to:
+    <BLANKLINE>
+        http://www.example.com/bugs/2
+    <BLANKLINE>
+        - Changed CVE references:
+            Added: CAN-2004-0719 [a test cve ref]
+          Removed: CAN-2004-0718 [a test cve ref]
+    <BLANKLINE>
 
 6. Adding an infestation.
 

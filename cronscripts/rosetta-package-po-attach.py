@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 
-import logging
 import sys
 from optparse import OptionParser
 
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts.lockfile import LockFile
-from canonical.launchpad.scripts.rosetta import URLOpener, attach
+from canonical.launchpad.scripts.rosetta import URLOpener, attach, \
+    calculate_loglevel, create_logger
+from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 _default_lock_file = '/var/lock/rosetta-package-po-attach.lock'
 
@@ -35,54 +36,6 @@ def parse_options(args):
 
     return options
 
-def create_logger(name, loglevel):
-    """Create a logger.
-
-    The logger will send log messages to standard error.
-    """
-
-    logger = logging.getLogger(name)
-    handler = logging.StreamHandler(strm=sys.stderr)
-    handler.setFormatter(
-        logging.Formatter(fmt='%(asctime)s %(levelname)s %(message)s'))
-    logger.addHandler(handler)
-    logger.setLevel(loglevel)
-    return logger
-
-def calculate_loglevel(quietness, verbosity):
-    """Calculate a logging level based upon quietness and verbosity option
-    counts.
-
-    >>> calculate_loglevel(0, 0)
-    logging.WARN
-    >>> calculate_loglevel(1, 0)
-    logging.ERROR
-    >>> calculate_loglevel(0, 1)
-    logging.INFO
-    >>> calculate_loglevel(0, 10)
-    logging.DEBUG
-
-    """
-
-    # The logging levels are: CRITICAL, ERROR, WARN, INFO, DEBUG
-    # Relative to the defalut: -2, -1, 0, 1, 2
-    # Hence, absolute: 0, 1, 2, 3, 4
-
-    verbosity = verbosity - quietness + 2
-
-    if verbosity < 0:
-        verbosity = 0
-    elif verbosity > 4:
-        verbosity = 4
-
-    return [
-        logging.CRITICAL,
-        logging.ERROR,
-        logging.WARN,
-        logging.INFO,
-        logging.DEBUG,
-        ][verbosity]
-
 def main(argv):
     options = parse_options(argv[1:])
 
@@ -99,8 +52,8 @@ def main(argv):
                     options.lockfilename)
         return 0
 
+    execute_zcml_for_scripts()
     ztm = initZopeless()
-
     urlopener = URLOpener()
 
     # Bare except clause: so that the lockfile is reliably deleted.

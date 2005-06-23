@@ -5,10 +5,6 @@
     metal:use-macro="context/@@malone_template/master"
     i18n:domain="launchpad">
 
-  <head>
-    <title metal:fill-slot="title">Launchpad Auto-Add Form</title>
-  </head>
-
   <body>
 
   <!-- This page uses the launchpad-addform.pt METAL -->
@@ -35,9 +31,6 @@
             form. The auto-generated elements will use the layout from
             launchpad-widget-macros.pt so try to follow that pattern.</div>
         </div>
-
-        <legend metal:fill-slot="addform_legend" tal:replace="nothing">The
-        Form Legend (alter as appropriate)</legend>
 
         <div class="row"
             metal:fill-slot="extra_bottom" tal:replace="nothing">

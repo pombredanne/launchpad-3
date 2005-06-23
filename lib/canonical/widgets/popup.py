@@ -60,7 +60,7 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
     _matches = None
     def matches(self):
         '''Return a list of matches (as ITokenizedTerm) to whatever the
-           user currently has entered in the form. 
+           user currently has entered in the form.
 
         '''
         # Use a cached version if we have it to avoid repeating expensive
@@ -82,7 +82,7 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
         # Cache and return the search
         self._matches = list(self.vocabulary.search(formValue))
         return self._matches
-        
+
     def formToken(self):
         val = self._getFormValue()
 
@@ -101,7 +101,7 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
             ''''500','400')'''
             )
         return template % (self.context.vocabularyName, self.name)
-            
+
 
 class ISinglePopupView(Interface):
 

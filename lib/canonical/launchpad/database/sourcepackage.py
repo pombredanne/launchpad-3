@@ -33,7 +33,7 @@ class SourcePackage:
     true database object, but rather attempts to represent the concept of a
     source package in a distribution, with links to the relevant dataase
     objects.
-    
+
     Note that the Magic SourcePackage can be initialised with EITHER a
     distrorelease OR a distribution. This means you can specify either
     "package foo in ubuntu" or "package foo in warty", and then methods
@@ -72,35 +72,36 @@ class SourcePackage:
         else:
             self.currentrelease = SourcePackageRelease.get(r.id)
 
+    @property
     def displayname(self):
         dn = ' the ' + self.sourcepackagename.name + ' source package in '
         dn += self.distrorelease.displayname
         return dn
-    displayname = property(displayname)
 
+    @property
     def title(self):
         titlestr = self.sourcepackagename.name
         titlestr += ' in ' + self.distribution.displayname
         titlestr += ' ' + self.distrorelease.displayname
         return titlestr
-    title = property(title)
 
+    @property
     def distribution(self):
         return self.distrorelease.distribution
-    distribution = property(distribution)
 
+    @property
     def distro(self):
         return self.distribution
-    distro = property(distro)
 
+    @property
     def format(self):
         return self.currentrelease.format
-    format = property(format)
 
+    @property
     def changelog(self):
         return self.currentrelease.changelog
-    changelog = property(changelog)
 
+    @property
     def manifest(self):
         """For the moment, the manifest of a SourcePackage is defined as the
         manifest of the .currentrelease of that SourcePackage in the
@@ -108,14 +109,14 @@ class SourcePackage:
         current working copy of the manifest for a source package.
         """
         return self.currentrelease.manifest
-    manifest = property(manifest)
 
+    @property
     def maintainer(self):
         querystr = "distribution = %s AND sourcepackagename = %s"
         querystr %= sqlvalues(self.distribution, self.sourcepackagename)
         return Maintainership.select(querystr)
-    maintainer = property(maintainer)
 
+    @property
     def releases(self):
         """For the moment, we will return all releases with the same name.
         Clearly, this is wrong, because it will mix different flavors of a
@@ -136,8 +137,8 @@ class SourcePackage:
         L.sort()
         ret = [item for sortkey, item in L]
         return ret
-    releases = property(releases)
 
+    @property
     def releasehistory(self):
         """This is just like .releases but it spans ALL the distroreleases
         for this distribution. So it is a full history of all the releases
@@ -153,28 +154,31 @@ class SourcePackage:
         L.sort()
         ret = [item for sortkey, item in L]
         return ret
-    releasehistory = property(releasehistory)
 
+    @property
     def name(self):
         return self.sourcepackagename.name
-    name = property(name)
 
+    @property
     def bugtasks(self):
         querystr = "distribution = %i AND sourcepackagename = %i"
         querystr %= sqlvalues(self.distribution, self.sourcepackagename)
         return BugTask.select(querystr)
-    bugtasks = property(bugtasks)
 
+    @property
     def potemplates(self):
-        return POTemplate.selectBy(
+        result = POTemplate.selectBy(
             distroreleaseID=self.distrorelease.id,
             sourcepackagenameID=self.sourcepackagename.id)
-    potemplates = property(potemplates)
+        result = list(result)
+        result.sort(key=lambda x: x.potemplatename.name)
+        return result
 
+    @property
     def potemplatecount(self):
-        return self.potemplates.count()
-    potemplatecount = property(potemplatecount)
+        return len(self.potemplates)
 
+    @property
     def product(self):
         # we have moved to focusing on productseries as the linker
         from warnings import warn
@@ -184,8 +188,8 @@ class SourcePackage:
         if ps is not None:
             return ps.product
         return None
-    product = property(product)
 
+    @property
     def productseries(self):
         # First we look to see if there is packaging data for this
         # distrorelease and sourcepackagename. If not, we look up through
@@ -232,18 +236,20 @@ class SourcePackage:
             return sp.productseries
         # capitulate
         return None
-    productseries = property(productseries)
 
+    @property
     def shouldimport(self):
         """Note that this initial implementation of the method knows that we
-        are only interested in importing hoary and breezy packages
-        initially. Also, it knows that we should only import packages where
-        the upstream revision control is in place and working.
+        are only interested in importing ubuntu packages initially. Also, it
+        knows that we should only import packages where the upstream
+        revision control is in place and working.
         """
-        if self.distrorelease.name <> "hoary":
+        if self.distribution.name <> "ubuntu":
             return False
-        return self.productseries.branch is not None
-    shouldimport = property(shouldimport)
+        ps = self.productseries
+        if ps is None:
+            return False
+        return ps.branch is not None
 
     def bugsCounter(self):
         from canonical.launchpad.database.bugtask import BugTask
@@ -280,6 +286,7 @@ class SourcePackage:
             distribution=self.distribution,
             version=version)
 
+    @property
     def pendingrelease(self):
         # XXX: This needs a system doc test and a page test.
         #      It had an obvious error in it.
@@ -291,8 +298,8 @@ class SourcePackage:
         if ret is None:
             return None
         return SourcePackageRelease.get(ret.id)
-    pendingrelease = property(pendingrelease)
 
+    @property
     def publishedreleases(self):
         ret = VSourcePackageReleasePublishing.selectBy(
                 sourcepackagenameID=self.sourcepackagename.id,
@@ -302,7 +309,6 @@ class SourcePackage:
         if ret.count() == 0:
             return None
         return shortlist(ret)
-    publishedreleases = property(publishedreleases)
 
 
 class SourcePackageSet(object):
@@ -344,7 +350,7 @@ class SourcePackageSet(object):
     def _querystr(self, text=None):
         querystr = ''
         if self.distrorelease:
-            querystr += 'distrorelease = %d' %  self.distrorelease 
+            querystr += 'distrorelease = %d' %  sqlvalues(self.distrorelease)
         if text:
             if len(querystr):
                 querystr += ' AND '

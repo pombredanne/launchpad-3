@@ -4,23 +4,16 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="launchpad">
 
-    <title metal:fill-slot="title">Edit Team Information
-    </title>
-
   <body>
-
-  <metal:rightportlets fill-slot="portlets_two">
-      <div tal:replace="structure view/actionsPortlet" />
-  </metal:rightportlets>
-
-  <div metal:fill-slot="main">
-
-  <div tal:condition="nothing">
-    This file is a modified version of zope/app/form/browser/edit.pt for use
-    in the Launchpad system. You should not edit this file, but rather use
-    it from your custom editform. You create your own template for the
-    specific editform, called table-edit.pt for example, which is the template
-    which uses this one.</div>
+    <div metal:fill-slot="body">
+      <div
+        class="sidebar"
+        tal:content="structure context/@@+portlet-actions"
+      />
+      <h1>
+        Edit #8220;<span tal:replace="context/browsername">
+        Foo</span>&#8221; team
+      </h1>
 
     <div metal:define-macro="editform">
 
@@ -28,11 +21,6 @@
             enctype="multipart/form-data">
 
         <div metal:define-macro="formbody">
-
-          <h3 tal:condition="view/label"
-              tal:content="view/label"
-              metal:define-slot="heading"
-              >Edit something</h3>
 
           <p class="portalMessage"
              tal:define="status view/update"
@@ -42,57 +30,19 @@
           <p tal:condition="view/errors"
              class="portalMessage"
              i18n:translate="">
-             There are <strong tal:content="python:len(view.errors)"
+             There are <strong tal:content="view/errors/count:len"
                               i18n:name="num_errors">6</strong> input errors.
           </p>
 
-          <div metal:define-slot="extra_info"
-            class="documentDescription"
-            tal:replace="nothing">
-            This is where a document heading paragraph can be inserted. In
-            your actual customised editform, you can fill-slot this with 
-            a descriptive paragraph.
-          </div>
-
-          <fieldset>
-
-          <legend metal:define-slot="editform_legend" tal:replace="nothing">
-             Fieldset Legend
-          </legend>
-
-          <div class="row"
-               metal:define-slot="extra_top" tal:replace="nothing">
-            <div class="label">Extra top</div>
-            <div class="field"><input type="text" style="width:100%" /></div>
-          </div>
-        
           <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
         
-          <div class="separator"></div>
-        
-          <div class="row"
-               metal:define-slot="extra_bottom" tal:replace="nothing">
-            <div class="label">Extra bottom</div>
-            <div class="field"><input type="text" style="width:100%" /></div>
-          </div>
-
-          </fieldset>
-
         </div>
 
-        <div class="row">
-          <div class="controls">
+          <div class="form actions">
             <input type="submit" name="UPDATE_SUBMIT"
-                   value="Change" style="float: right;"
+                   value="Save Changes"
                    i18n:attributes="value submit-button"/>
           </div>
-        </div>
-
-        <div class="row" metal:define-slot="extra_buttons"
-              tal:replace="nothing">
-        </div>
-
-        <div class="separator"></div>
 
       </form>
 

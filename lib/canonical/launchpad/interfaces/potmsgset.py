@@ -28,6 +28,16 @@ class IPOTMsgSet(Interface):
 
     flagscomment = Attribute("The flags this set has.")
 
+    def getWikiSubmissions(language, pluralform):
+        """Return an iterator over all the submissions in any PO file for
+        this pluralform in this language, for the same msgid."""
+
+    def getCurrentSubmissions(language, pluralform):
+        """Return an iterator over each of the submissions out there that
+        are currently published or active in any PO file for the same
+        language and prime msgid."""
+        
+
     def flags():
         """Return a list of flags on this set."""
 
@@ -42,10 +52,9 @@ class IPOTMsgSet(Interface):
         plural form provided."""
 
     def translationsForLanguage(language):
-        """Return an iterator over translation strings for this set in the
-        given language.
-
-        XXX: This is quite UI-oriented. Refactor?
+        """Return an iterator over the active translation strings for this
+        set in the given language.
+        XXX very UI-specific, perhaps this should be elsewhere?
         """
 
     def poMsgSet(language, variant=None):

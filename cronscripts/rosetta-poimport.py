@@ -8,6 +8,8 @@ from optparse import OptionParser
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.scripts.lockfile import LockFile
+from canonical.launchpad.scripts.rosetta import create_logger, \
+    calculate_loglevel
 from canonical.launchpad.database import POTemplateSet, POFileSet
 
 _default_lock_file = '/var/lock/launchpad-poimport.lock'
@@ -93,36 +95,14 @@ def main():
     process.run()
     logger.debug('Finished the import process')
 
-def setUpLogger():
-    loglevel = logging.WARN
-
-    for i in range(options.verbose):
-        if loglevel == logging.INFO:
-            loglevel = logging.DEBUG
-        elif loglevel == logging.WARN:
-            loglevel = logging.INFO
-    for i in range(options.quiet):
-        if loglevel == logging.WARN:
-            loglevel = logging.ERROR
-        elif loglevel == logging.ERROR:
-            loglevel = logging.CRITICAL
-
-    hdlr = logging.StreamHandler(strm=sys.stderr)
-    hdlr.setFormatter(logging.Formatter(
-        fmt='%(asctime)s %(levelname)s %(message)s'
-        ))
-    logger.addHandler(hdlr)
-    logger.setLevel(loglevel)
-
 if __name__ == '__main__':
     execute_zcml_for_scripts()
 
     options = parse_options()
 
     # Get the global logger for this task.
-    logger = logging.getLogger("poimport")
-    # customized the logger output.
-    setUpLogger()
+    loglevel = calculate_loglevel(options.quiet, options.verbose)
+    logger = create_logger('poimport', loglevel)
 
     # Create a lock file so we don't have two daemons running at the same time.
     lockfile = LockFile(options.lockfilename, logger=logger)

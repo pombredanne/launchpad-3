@@ -1,0 +1,21 @@
+<div class="portlet">
+
+  <h4>Rosetta Statistics:</h4>
+
+  <div class="portletBody">
+    <div class="portletContent even">
+
+      <img src="/++resource++info_icon.gif">
+      <span tal:replace="context/potemplate_count">5</span> Templates<br />
+      <img src="/++resource++info_icon.gif">
+      <span tal:replace="context/pomsgid_count">5</span> Strings<br />
+      <img src="/++resource++info_icon.gif">
+      <span tal:replace="context/pofile_count">5</span> PO Files<br />
+      <img src="/++resource++info_icon.gif">
+      <span tal:replace="context/language_count">5</span> Languages<br />
+      <img src="/++resource++info_icon.gif">
+      <span tal:replace="context/translator_count">5</span> Translators<br />
+
+    </div>
+  </div>
+</div>

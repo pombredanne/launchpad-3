@@ -1,8 +1,13 @@
 <configure xmlns="http://namespaces.zope.org/zope">
-    
+
     <vocabulary
         name="BugTracker"
         factory="canonical.launchpad.vocabularies.BugTrackerVocabulary"
+        />
+
+    <vocabulary
+        name="BugWatch"
+        factory="canonical.launchpad.vocabularies.BugWatchVocabulary"
         />
 
     <vocabulary
@@ -31,23 +36,43 @@
         />
 
     <vocabulary
-        name="Person"
-        factory="canonical.launchpad.vocabularies.PersonVocabulary"
+        name="GPGKeyAlgorithm"
+        factory="canonical.launchpad.vocabularies.GPGKeyAlgorithmVocabulary"
         />
 
     <vocabulary
-        name="ValidPerson"
-        factory="canonical.launchpad.vocabularies.ValidPersonVocabulary"
+        name="PersonAccountToMerge"
+        factory="canonical.launchpad.vocabularies.PersonAccountToMergeVocabulary"
+        />
+
+    <vocabulary
+        name="ValidPersonOrTeam"
+        factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+        />
+
+    <vocabulary
+        name="ValidAssignee"
+        factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+        />
+
+    <vocabulary
+        name="ValidMaintainer"
+        factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+        />
+
+    <vocabulary
+        name="ValidOwner"
+        factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+        />
+
+    <vocabulary
+        name="ValidTeamOwner"
+        factory="canonical.launchpad.vocabularies.ValidTeamOwnerVocabulary"
         />
 
     <vocabulary
         name="TeamSubscriptionPolicy"
         factory="canonical.launchpad.vocabularies.TeamSubscriptionPolicyVocabulary"
-        />
-
-    <vocabulary
-        name="ValidOwner"
-        factory="canonical.launchpad.vocabularies.ValidOwnerVocabulary"
         />
 
     <vocabulary
@@ -121,8 +146,23 @@
         />
 
     <vocabulary
-        name="ValidGPGKey"
-        factory="canonical.launchpad.vocabularies.ValidGPGKeyVocabulary"
+        name="Language"
+        factory="canonical.launchpad.vocabularies.LanguageVocabulary"
+        />
+
+    <vocabulary
+        name="TranslationGroup"
+        factory="canonical.launchpad.vocabularies.TranslationGroupVocabulary"
+        />
+
+    <vocabulary
+        name="TranslationPermission"
+        factory="canonical.launchpad.vocabularies.TranslationPermissionVocabulary"
+        />
+
+    <vocabulary
+        name="POTemplateName"
+        factory="canonical.launchpad.vocabularies.POTemplateNameVocabulary"
         />
 
     <!-- Define the widget used by Choice fields that use huge vocabularies -->

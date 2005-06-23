@@ -1,0 +1,16 @@
+<div class="user" tal:condition="view/login_shown">
+    <a tal:attributes="href view/login_url">
+      Log in / Register
+    </a>
+</div>
+
+<div class="user" tal:condition="view/logged_in">
+    Welcome,
+    <a
+      tal:attributes="href string:/people/${request/lp:person/name}"
+      tal:content="request/lp:person/browsername"
+    >User's browser name
+    </a>
+    &ndash;
+    <a href="/+logout">Log out</a>
+</div>

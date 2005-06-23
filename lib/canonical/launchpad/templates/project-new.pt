@@ -3,13 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">Register a Project with the
-    Launchpad</title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">
@@ -21,7 +14,7 @@
     <div class="documentDescription">
     Please fill in the details of your project in the spaces below
     to register the project in Launchpad. Please read the description of
-    each field carefully, this each field is used in a different way
+    each field carefully, each field is used in a different way
     in the system and is equally important.
     </div>
 

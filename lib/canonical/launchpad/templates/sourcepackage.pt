@@ -3,23 +3,16 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-  <title metal:fill-slot="title">
-    <span tal:replace="context/title">apache2 in ubuntu warty</span>
-  </title>
-  <!-- Plone style sheet -->
-  <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Launchpad style sheet -->
-  <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
   <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure view/translationsPortlet" /><br />
+    <div tal:replace="structure view/launchbag/distribution/@@+portlet-details" />
+    <div tal:replace="structure view/launchbag/distrorelease/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-translations" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-actions" />
   </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -28,6 +21,8 @@
 
   <p tal:condition="not:context/currentrelease">This source package is not
   published in <span tal:replace="context/distrorelease/title" />.</p>
+
+  <h2 tal:content="context/name">NAME</h2>
 
   <h2>Upstream Details</h2>
 
@@ -46,7 +41,7 @@
       <li><b>Branch: </b>
         <a tal:define="productseries context/productseries"
            tal:content="productseries/name"
-           tal:attributes="href string:/products/${productseries/product/name}/${productseries/name}">
+           tal:attributes="href string:/products/${productseries/product/name}/+series/${productseries/name}">
          ProductSeries</a></li>
     </ul>
   <i tal:condition="not:context/productseries">
@@ -83,13 +78,14 @@
               </ul>
               <i tal:condition="not:files">No files available for download.</i>
             </div>
-
-        <li><b>Binary Packages</b><a tal:condition="current/changelog"
+        </li>
+      </ul>
+        <h2>Binary Packages<a tal:condition="current/changelog"
                 href="+changelog">(View Changelog)</a>
                <span tal:condition="not:current/changelog" tal:omit-tag>
                    No Changelog for this Source Release )
-               </span>
-        </li>
+               </span></h2>
+        
 
 
         <ul tal:define="binaries view/binaries">
@@ -105,9 +101,13 @@
                  </span>
             </li>
         </ul>
+          <h2>Package Relationship</h2>
 
-
-        <ul>
+       <table width="100%" valign="top">
+       <tr>
+       <td>
+       <h4>Build Dependencies</h4>
+       <ul>
          <li tal:condition="not:view/builddepends">
            No Build Dependencies</li>
          <li tal:repeat="dep view/builddepends">
@@ -117,20 +117,23 @@
                   tal:content="string:(${dep/signal} ${dep/version})" />
          </li>
        </ul>
+       </td>
 
+       <td>
+       <h4>Platform-independent Build Dependencies</h4>
+       <ul>
        <li tal:condition="not:view/builddependsindep">
             No Platform-independent Dependencies</li>
-       <li tal:condition="view/builddependsindep">
-          <ul>
-            <li tal:repeat="dep view/builddependsindep">
-              <a tal:content="dep/name"
-                 tal:attributes="href string:../../i386/${dep/name}" />
-              <span tal:condition="dep/signal"
-                    tal:replace="string:(${dep/signal} ${dep/version})" />
-            </li>
-          </ul>
-        </li>
-      </ul>
+         <li tal:repeat="dep view/builddependsindep">
+           <a tal:content="dep/name"
+              tal:attributes="href string:../../i386/${dep/name}" />
+           <span tal:condition="dep/signal"
+                  tal:content="string:(${dep/signal} ${dep/version})" />
+         </li>
+        </ul>
+        </td>
+        </tr>
+        </table>
 
   </tal:block>
 

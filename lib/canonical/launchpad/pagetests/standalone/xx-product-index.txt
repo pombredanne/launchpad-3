@@ -1,8 +1,29 @@
-
+Check that the product main page works.
 
   >>> print http(r"""
   ... GET /doap/products/ubuntu HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
+  ...
+
+Check that the product index page works for a product with translations for
+upstream and in a distribution.
+
+  >>> print http(r"""
+  ... GET /products/evolution HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...
+
+Check that the product index page works for a product with translations for
+upstream that does not have translations in a distribution.
+
+  >>> print http(r"""
+  ... GET /products/netapplet HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+                  <td>Template "netapplet" in NetApplet 1.0</td>
   ...

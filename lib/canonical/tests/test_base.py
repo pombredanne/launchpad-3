@@ -8,10 +8,7 @@ def test_suite():
     suite = DocTestSuite(canonical.base)
     return suite
 
-def _test():
-    import doctest, test_dbschema
-    return doctest.testmod(test_dbschema)
-
 if __name__ == "__main__":
-    _test()
+    DEFAULT = test_suite()
+    unittest.main(defaultTest='DEFAULT')
 

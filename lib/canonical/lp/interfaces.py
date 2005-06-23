@@ -1,6 +1,10 @@
-from zope.interface import Interface
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+from zope.interface import Interface, Attribute
 
 class IBatchNavigator(Interface):
+
+    batch = Attribute("The IBatch for which navigation links are provided.")
 
     def prevBatchURL():
         """Return a URL to the previous chunk of results."""

@@ -5,26 +5,16 @@
     metal:use-macro="context/@@main_template/master"
     i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">Overview of Distributions in
-    Launchpad</title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">
 
-    <h1>Launchpad Distribution Management: All Distributions</h1>
-
-    
-        <p>This page shows all distributions that are registered in the
-        Launchpad. Note that some of these distributions are "read-only", we
-        monitor those distributions and present package information for them
-        in Launchpad, but they cannot be altered or managed through the
-        Launchpad. The Launchpad representations of those distributions
-        might be out of date.</p>
+    <p>This page shows all distributions that are registered in the
+    Launchpad. Note that some of these distributions are "read-only", we
+    monitor those distributions and present package information for them
+    in Launchpad, but they cannot be altered or managed through the
+    Launchpad. The Launchpad representations of those distributions
+    might be out of date.</p>
 
     <table width="100%" class="listing rowNavigation">
         <tr>

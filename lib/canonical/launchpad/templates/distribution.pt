@@ -1,0 +1,64 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-bounties" />
+</metal:leftportlets>
+
+
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
+
+
+<div metal:fill-slot="main">
+
+   <h1><span tal:replace="context/title">TITLE</span>:
+    Distribution Overview</h1>
+
+    <p class="documentDescription" tal:content="context/summary">
+        Distribution Summary
+    </p>
+
+    <table width="100%" style="font-size: 80%;" class="listing rowNavigation">
+      <thead>
+        <tr>
+            <th>Release</th>
+            <th>Title</th>
+            <th>Version</th>
+            <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="release context/releases"
+            tal:attributes="onclick
+                string:window.location='${release/name}'">
+            <td tal:content="release/displayname">displayname</td>
+            <td><a tal:content="release/title"
+                   tal:attributes="href string:${release/name}">
+                   distribution name</a>
+            </td>
+            <td tal:content="release/version">VERSION</td>
+            <td tal:content="release/releasestatus/title">RELEASESTATE</td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <!--It is not inside the table because this table rows behave like links-->
+    <i tal:condition="not: context/releases">
+      &nbsp&nbsp&nbsp No Releases Yet.
+    </i>
+
+    <p tal:content="context/description">
+        Distribution description
+    </p>
+
+</div>
+
+</body>
+</html>

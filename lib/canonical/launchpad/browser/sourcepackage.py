@@ -3,6 +3,7 @@ __metaclass__ = type
 # Python standard library imports
 import cgi
 import re
+import sets
 from apt_pkg import ParseSrcDepends
 
 from zope.component import getUtility
@@ -11,8 +12,8 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import IPOTemplateSet
-from canonical.launchpad.browser.potemplate import ViewPOTemplate
+from canonical.launchpad.interfaces import IPOTemplateSet, ILaunchBag
+from canonical.launchpad.browser.potemplate import POTemplateView
 
 from canonical.soyuz.generalapp import builddepsSet
 
@@ -45,15 +46,6 @@ def traverseSourcePackage(sourcepackage, request, name):
         raise KeyError, 'No such suburl for Source Package: %s' % name
 
 class SourcePackageReleasePublishingView(object):
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-sourcepackagerelease-actions.pt')
-
-    lastversionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-sourcepackagerelease-lastversions.pt')
-
-    statusLegend = ViewPageTemplateFile(
-        '../templates/portlet-rosetta-status-legend.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -152,29 +144,13 @@ class SourcePackageInDistroSetView(object):
 
 class SourcePackageView:
 
-    translationsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-sourcepackage-translations.pt')
-
-    statusLegend = ViewPageTemplateFile(
-        '../templates/portlet-rosetta-status-legend.pt')
-
-    prefLangPortlet = ViewPageTemplateFile(
-            '../templates/portlet-pref-langs.pt')
-
-    countryPortlet = ViewPageTemplateFile(
-        '../templates/portlet-country-langs.pt')
-
-    browserLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-browser-langs.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self.launchbag = getUtility(ILaunchBag)
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(self.request)
-        # Cache value for the return value of self.templates
-        self._template_languages = None
         self.status_message = None
 
     def binaries(self):
@@ -237,8 +213,20 @@ class SourcePackageView:
         return helpers.browserLanguages(self.request)
 
     def templateviews(self):
-        return [ViewPOTemplate(template, self.request)
+        return [POTemplateView(template, self.request)
                 for template in self.context.potemplates]
+
+    def potemplatenames(self):
+        potemplatenames = []
+
+        for potemplate in self.context.potemplates:
+            potemplatenames.append(potemplate.potemplatename)
+
+        # Remove the duplicates
+        S = sets.Set(potemplatenames)
+        potemplatenames = list(S)
+
+        return sorted(potemplatenames, key=lambda item: item.name)
 
 
 class SourcePackageBugsView:

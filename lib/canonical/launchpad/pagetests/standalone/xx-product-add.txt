@@ -1,7 +1,7 @@
-
+Test that the page to add a new product loads.
 
   >>> print http(r"""
-  ... GET /doap/products/+new HTTP/1.1
+  ... GET /products/+new HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -12,11 +12,12 @@
           <h1>Register an Open Source (Upstream) Product</h1>
   ...
 
+Test that the page to add a new product works.
 
   >>> print http(r"""
-  ... POST /doap/products/+new HTTP/1.1
+  ... POST /products/+new HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 1805
+  ... Content-Length: 1920
   ... Content-Type: multipart/form-data; boundary=---------------------------43746069110828506211603039137
   ... Referer: http://localhost:9000/doap/products/+new
   ... 
@@ -64,6 +65,10 @@
   ... Content-Disposition: form-data; name="field.downloadurl"
   ... 
   ... http://www.testing.com/download/
+  ... -----------------------------43746069110828506211603039137
+  ... Content-Disposition: form-data; name="field.programminglang"
+  ... 
+  ... Visual Python++, C
   ... -----------------------------43746069110828506211603039137
   ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
   ... 

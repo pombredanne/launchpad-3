@@ -9,7 +9,7 @@ class IBugSubscription(Interface):
 
     id = Int(title=_('ID'), readonly=True, required=True)
     person = Choice(
-            title=_('Person ID'), required=True, vocabulary='ValidPerson',
+            title=_('Person ID'), required=True, vocabulary='ValidPersonOrTeam',
             readonly=True,
             )
     bug = Int(title=_('Bug ID'), required=True, readonly=True)
@@ -29,6 +29,7 @@ class IBugSubscriptionSet(Interface):
     """A set for IBugSubscription objects."""
 
     title = Attribute('Title')
+    bug = Attribute('the bug')
 
     def __getitem__(key):
         """Get a BugSubscription object."""

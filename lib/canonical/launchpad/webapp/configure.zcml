@@ -3,6 +3,27 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     i18n_domain="canonical.launchpad">
 
+    <!-- links -->
+    <content class="canonical.launchpad.webapp.menu.Link">
+      <allow interface="canonical.launchpad.interfaces.ILink" />
+    </content>
+
+    <content class="canonical.launchpad.webapp.menu.DefaultLink">
+      <allow interface="canonical.launchpad.interfaces.IDefaultLink" />
+    </content>
+
+    <!-- urls -->
+    <utility
+        provides="canonical.launchpad.interfaces.ILaunchpadRoot"
+        component="canonical.publication.rootObject"
+        />
+
+    <adapter
+        provides="canonical.launchpad.interfaces.ICanonicalUrlData"
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        factory="canonical.launchpad.webapp.publisher.LaunchpadRootUrlData"
+        />
+
     <!-- Annotations -->
 
     <content class="canonical.launchpad.webapp.annotation.SQLObjectAnnotation">
@@ -32,38 +53,29 @@
     <!-- TALES namespaces. -->
 
     <adapter
-        for="zope.interface.Interface"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.MenuAPI"
-        name="menu"
-        />
-    <class class="canonical.launchpad.webapp.tales.FacetListDecorator">
-      <allow interface="canonical.launchpad.interfaces.IFacetList" />
-    </class>
-    <class class="canonical.launchpad.webapp.metazcml.FacetList">
-      <allow interface="canonical.launchpad.interfaces.IFacetList" />
-    </class>
-    <class class="canonical.launchpad.webapp.tales.TabListDecorator">
-      <allow interface="canonical.launchpad.interfaces.ITabList" />
-    </class>
-    <class class="canonical.launchpad.webapp.metazcml.TabList">
-      <allow interface="canonical.launchpad.interfaces.ITabList" />
-    </class>
-    <class class="canonical.launchpad.webapp.metazcml.Link">
-      <allow interface="canonical.launchpad.interfaces.ILink" />
-    </class>
-    <class class="canonical.launchpad.webapp.tales.LinkDecorator">
-      <allow
-        interface="canonical.launchpad.interfaces.ISelectionAwareLink" />
-    </class>
-
-    <adapter
         for="zope.publisher.interfaces.IApplicationRequest"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.RequestAPI"
         name="lp"
         />
 
+    <!-- TALES menu: namespace -->
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.MenuAPI"
+        name="menu"
+        />
+
+    <!-- TALES count: namespace -->
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.CountAPI"
+        name="count"
+        />
+
+    <!-- TALES htmlform: namespace -->
     <adapter
         for="zope.publisher.interfaces.browser.IBrowserApplicationRequest"
         provides="zope.app.traversing.interfaces.IPathAdapter"
@@ -71,6 +83,7 @@
         name="htmlform"
         />
 
+    <!-- TALES fmt: namespace -->
     <adapter
         for="zope.publisher.interfaces.browser.IBrowserApplicationRequest"
         provides="zope.app.traversing.interfaces.IPathAdapter"
@@ -78,9 +91,20 @@
         name="fmt"
         />
 
+    <!-- The next directive is registered for all dicts, but we really only
+         want it to apply to the page template's CONTEXTS dict.
+      -->
+    <adapter
+        for="dict"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PageTemplateContextsAPI"
+        name="fmt"
+        />
+
     <!-- The next directive should be registered for 'int' only.
         However, there's a bug in adapter registration that stops
         this working.  To be fixed in ZopeX3 RSN.
+        XXX: SteveAlexander, 2005-05-21.
         -->
     <adapter
         for="*"
@@ -108,6 +132,20 @@
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.NoneFormatter"
         name="fmt"
+        />
+
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.ObjectFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PermissionRequiredQuery"
+        name="required"
         />
 
     <!-- Authentication. -->

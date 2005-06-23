@@ -1,0 +1,12 @@
+The bugtask search facility supports searching on a simple text
+string.
+
+  >>> print http(r"""
+  ... GET /distros/debian/+bugs?field.searchtext=blackhole&search=Search&advanced=&status=10&status=20&assignee=all HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...1...result...
+  ...
+              <a href="...">2</a>
+  ...

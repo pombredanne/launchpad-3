@@ -9,7 +9,7 @@
     <content class="canonical.launchpad.database.Project">
         <allow interface="canonical.launchpad.interfaces.IProject" />
         <require
-            permission="zope.Public"
+            permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IProject"
         />
     </content>
@@ -34,11 +34,12 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProject"
+        permission="zope.Public"
         class="canonical.launchpad.browser.ProjectView"
-        permission="zope.Public" >
+        lp:url="Rosetta/projects/$Project.name">
         <browser:page
             name="+index"
-            template="../templates/project-index.pt"
+            template="../templates/project.pt"
             lp:url="/projects/$Project.name/" />
         <browser:page name="+malone-index"
             template="../templates/project-bugs.pt"
@@ -51,17 +52,43 @@
             name="+bounties"
             template="../templates/related-bounties.pt"
             lp:url="/projects/$Project.name/+bounties/" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProject"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.ProjectView"
-        lp:url="Rosetta/projects/$Project.name">
         <browser:page
             name="+rosetta-index"
             template="../templates/project-rosetta-index.pt"
             lp:url="Rosetta/projects/$Project.name/+index" />
+
+       <!-- Projects portlets -->
+       <browser:page
+            name="+portlet-languages"
+            template="../templates/portlet-project-languages.pt"
+            lp:url="Rosetta/projects/$Project.name/+portlet-languages" />
+       <browser:page
+            name="+portlet-related-bounties"
+            template="../templates/portlet-related-bounties.pt"
+            lp:url="Rosetta/projects/$Project.name/+portlet-related-bounties" />
+       <browser:page
+            name="+portlet-trackers"
+            template="../templates/portlet-project-trackers.pt"
+            lp:url="Rosetta/projects/$Project.name/+portlet-trackers" />
+       <browser:page
+            name="+portlet-details"
+            template="../templates/portlet-project-details.pt"
+            lp:url="Rosetta/projects/$Project.name/+portlet-details" />
+       <browser:page
+            name="+portlet-actions"
+            template="../templates/portlet-project-actions.pt"
+            lp:url="Rosetta/projects/$Project.name/+portlet-actions" />
+
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProject"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.ObjectReassignmentView">
+          <browser:page
+              name="+reassign"
+              template="../templates/object-reassignment.pt"
+              lp:url="/project/$project.id/+reassign" />
     </browser:pages>
 
     <browser:pages
@@ -79,8 +106,9 @@
         for="canonical.launchpad.interfaces.IProject"
         schema="canonical.launchpad.interfaces.IProject"
         label="Edit Open Source Project Details:"
-        fields="displayname title summary description homepageurl
-                wikiurl sourceforgeproject freshmeatproject"
+        fields="name displayname title summary description homepageurl
+                sourceforgeproject freshmeatproject wikiurl"
+        class="canonical.launchpad.browser.ProjectEditView"
         permission="launchpad.Edit"
         template="../templates/project-edit.pt"
         lp:url="/projects/$Project.name/+edit">
@@ -99,6 +127,16 @@
         lp:url="/projects/$Project.name/+review">
     </browser:editform>
 
+    <browser:editform
+        name="+changetranslators"
+        for="canonical.launchpad.interfaces.IProject"
+        schema="canonical.launchpad.interfaces.IProject"
+        fields="translationgroup translationpermission"
+        permission="launchpad.Edit"
+        label="Select A New Translation Group"
+        template="../templates/launchpad-editform.pt"
+        lp:url="/projects/$Project.name/+changetranslators" />
+
     <browser:addform
         name="+newproduct"
         for="canonical.launchpad.interfaces.IProject"
@@ -106,12 +144,28 @@
         label="Add a Product to this Project"
         fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
-                downloadurl owner"
+                downloadurl programminglang owner"
         class="canonical.launchpad.browser.ProjectAddProductView"
         permission="launchpad.AnyPerson"
         template="../templates/product-add.pt"
         lp:url="/projects/$Project.name/+newproduct">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget
+           field="homepageurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+        <browser:widget
+           field="screenshotsurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+        <browser:widget
+           field="wikiurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+        <browser:widget
+           field="downloadurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
     </browser:addform>
 
 
@@ -133,6 +187,11 @@
     <browser:traverse
         for="canonical.launchpad.interfaces.IProjectSet"
         getter="__getitem__" />
+    <browser:url
+        for="canonical.launchpad.interfaces.IProject"
+        path_expression="name"
+        parent_utility="canonical.launchpad.interfaces.IProjectSet"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProjectSet"
@@ -140,13 +199,13 @@
         class="canonical.launchpad.browser.ProjectSetView"
         lp:url="/projects/">
         <browser:page
+            name="+all" 
+            template="../templates/doap-listall.pt"
+            lp:url="/projects/+all" />
+        <browser:page
             name="+index" 
             template="../templates/projects-index.pt"
             lp:url="/projects/+index" />
-        <browser:page
-            name="+search"
-            template="../templates/projects-search.pt"
-            lp:url="/projects/+search" />
     </browser:pages>
 
     <browser:pages

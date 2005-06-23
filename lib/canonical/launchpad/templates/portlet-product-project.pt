@@ -5,6 +5,12 @@
     <div class="portletBody">
         <div class="portletContent even">
 
+            <b>Launchpad page:</b><br />
+            <img src="/++resource++link_icon.gif" alt="" />
+            <a tal:attributes="href string:/projects/${context/project/name}/"
+               tal:content="context/project/displayname">Project
+                    launchpad page</a><br />
+
             <div tal:condition="context/project/homepageurl" tal:omit-tag>
                 <b>External links:</b><br />
                 <img src="/++resource++link_icon.gif" alt="" />
@@ -23,9 +29,21 @@
             <span tal:repeat="prod view/projproducts" tal:omit-tag>
                 <img src="/++resource++product_icon.gif">
                 <a tal:content="prod/displayname"
-                   tal:attributes="href string:../${prod/name}">
+                   tal:attributes="href string:/products/${prod/name}/">
                    product displayname</a><br />
             </span>
+
+            <b>Translation Group:</b><br />
+            <img src="/++resource++languages.gif">
+            <tal:block condition="context/translationgroup">
+            <a tal:attributes="href
+                     string:/rosetta/groups/${context/translationgroup/name}/"
+               tal:content="context/translationgroup/title"
+            >Group</a><br />
+            </tal:block>
+            <tal:block condition="not: context/translationgroup">
+            <i>Not assigned</i><br />
+            </tal:block>
 
             <b>Project Status:</b><br />
             <span tal:condition="context/project/reviewed"

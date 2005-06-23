@@ -3,8 +3,6 @@
     metal:use-macro="context/@@malone_template/master"
     i18n:domain="malone">
 
-    <title metal:fill-slot="title">About Malone</title>
-
 <body>
 <div metal:fill-slot="main">
 

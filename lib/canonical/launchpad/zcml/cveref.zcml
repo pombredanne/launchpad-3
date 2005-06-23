@@ -13,6 +13,12 @@
                  set_schema="canonical.launchpad.interfaces.ICVERef" />
     </content>
 
+    <browser:url
+        for="canonical.launchpad.interfaces.ICVERef"
+        path_expression="string:cverefs"
+        attribute_to_parent="bug"
+        />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.ICVERef"
         name="+index" />

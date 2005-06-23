@@ -9,6 +9,7 @@ privileges to do what we're going to demonstrate.
 >>> from zope.interface.verify import verifyObject
 >>> from canonical.launchpad.interfaces import IPersonSet, IPerson
 >>> from canonical.launchpad.ftests import login
+>>> from canonical.launchpad.helpers import contactEmailAddresses
 
 >>> login("robertc@robertcollins.net")
 
@@ -52,6 +53,12 @@ If a Person is a Team then the Person will provide the ITeam interface.
 
 >>> ITeam.providedBy(buttsource)
 True
+
+If a team don't have a contact email address, all notifications we send to the
+team will go to the preferred email of each member.
+
+>>> contactEmailAddresses(buttsource)
+set([u'david.allouche@canonical.com', u'robertc@robertcollins.net', u'foo.bar@canonical.com'])
 
 We don't support changing a Person into a Team or a Team into a Person.
 
@@ -131,10 +138,10 @@ IPersonSet.search.
 >>> from canonical.launchpad.searchbuilder import NULL
 >>> valid_people = personset.search(password = NULL)
 >>> valid_people.count()
-23
+22
 
 Passing no args would return all people:
 
 >>> all_people = personset.search()
 >>> all_people.count()
-51
+52

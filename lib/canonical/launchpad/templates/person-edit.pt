@@ -3,24 +3,14 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">Edit
-      <span tal:replace="context/displayname">Name</span>
-      Information</title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
   <metal:leftportlets fill-slot="portlets_one">
-      <div tal:replace="structure view/viewsPortlet" />
+      <div tal:replace="structure context/@@+portlet-views" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure view/actionsPortlet" />
+      <div tal:replace="structure context/@@+portlet-actions" />
   </metal:rightportlets>
 
 <div metal:fill-slot="main">

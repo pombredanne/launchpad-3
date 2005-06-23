@@ -4,6 +4,7 @@ __metaclass__ = type
 __all__ = ['Language', 'LanguageSet']
 
 from zope.interface import implements
+from zope.exceptions import NotFoundError
 
 from sqlobject import StringCol, IntCol, BoolCol
 from sqlobject import RelatedJoin, SQLObjectNotFound
@@ -31,6 +32,11 @@ class Language(SQLBase):
     countries = RelatedJoin('Country', joinColumn='language',
         otherColumn='country', intermediateTable='SpokenIn')
 
+    @property
+    def displayname(self):
+        """See ILanguage."""
+        return '%s (%s)' % (self.englishname, self.code)
+
 
 class LanguageSet:
     implements(ILanguageSet)
@@ -42,7 +48,7 @@ class LanguageSet:
         try:
             return Language.byCode(code)
         except SQLObjectNotFound:
-            raise KeyError, code
+            raise NotFoundError, code
 
     def keys(self):
         return [language.code for language in Language.select()]

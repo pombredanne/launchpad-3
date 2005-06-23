@@ -1,0 +1,63 @@
+
+Test attaching of raw file data to a PO template.
+
+    >>> from canonical.launchpad.ftests.harness import \
+    ...     LaunchpadFunctionalTestSetup
+    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+    >>> LaunchpadFunctionalTestSetup().setUp()
+    >>> LibrarianTestSetup().setUp()
+
+Get hold of a person who will own the new PO template.
+
+    >>> from canonical.launchpad.database import Person
+    >>> person = Person.get(1)
+
+Create a PO template name for Firefox.
+
+    >>> from canonical.launchpad.database import POTemplateNameSet
+    >>> potemplatename = POTemplateNameSet().new('firefox', 'firefox')
+
+Get hold of a Firefox product release.
+
+    >>> from canonical.launchpad.database import ProductRelease
+    >>> productrelease = ProductRelease.get(1)
+    >>> productrelease.productseries.product.name
+    u'firefox'
+
+Get a POTemplateSubset for the Firefox release.
+
+    >>> from canonical.launchpad.database import POTemplateSubset
+    >>> subset = POTemplateSubset(productrelease=productrelease)
+
+Create a new PO template.
+
+    >>> potemplate = subset.new(
+    ...     potemplatename=potemplatename,
+    ...     contents='# This is a test PO template.',
+    ...     owner=person,
+    ...     )
+
+Commit the transaction so that we can get the file back out of the Librarian.
+
+    >>> import transaction
+    >>> transaction.commit()
+
+Check that the getRawFileData can retrieve the flie.
+
+    >>> from canonical.launchpad import helpers
+    >>> helpers.getRawFileData(potemplate)
+    '# This is a test PO template.'
+
+Attach another file to the PO template.
+
+    >>> potemplate.attachRawFileData(
+    ...     '# This is another test PO template.', True)
+
+    >>> transaction.commit()
+
+    >>> helpers.getRawFileData(potemplate)
+    '# This is another test PO template.'
+
+>>> LibrarianTestSetup().tearDown()
+>>> LaunchpadFunctionalTestSetup().tearDown()
+

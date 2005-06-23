@@ -1,7 +1,3 @@
-
-<!--
-  <title metal:fill-slot="title">A Fake Title</title>
--->
 <div class="portlet">
     <h4>Context</h4>
 
@@ -12,7 +8,7 @@
         </tr>
         <tr>
             <td>Person</td>
-            <td tal:content="bag/person/displayname|nothing" />
+            <td tal:content="bag/person/browsername|nothing" />
         </tr>
         <tr>
             <td>Project</td>
@@ -40,7 +36,7 @@
         </tr>
         <tr>
             <td>User</td>
-            <td tal:content="bag/user/displayname|nothing" />
+            <td tal:content="bag/user/browsername|nothing" />
         </tr>
     </table>
 </div>

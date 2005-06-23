@@ -1,0 +1,125 @@
+We are going to test the ability to link a bug task with a bug watch. First,
+we render the bug page and show that we can see the bug watch:
+
+  >>> print http(r"""
+  ... GET /malone/bugs/1/+index HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+              <a href="/malone/bugs/1/watches/2/+edit">
+                  <img src="/++resource++search_icon.gif" alt="" />
+                   mozilla.org
+                  #2000
+                  <div class="portletDetails"></div>
+              </a>
+  ...
+
+Now let's view the task page. Because we are the maintainer for the Ubuntu
+product, and this bug task is on the ubuntu product, we will be able to edit
+the task (we get a form instead of a plain rendition of it).
+
+  >>> print http(r"""
+  ... GET /products/ubuntu/+bugs/1 HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+  <select name="field.bugwatch" size="1" >
+  ...
+
+Right, now let's link the bugwatch with the task, POSTING the results of the
+form.
+
+  >>> print http(r"""
+  ... POST /products/ubuntu/+bugs/1/+edit HTTP/1.1
+  ... Content-Length: 1700
+  ... Content-Type: multipart/form-data; boundary=---------------------------6732896103366711491579814469
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... 
+  ... -----------------------------6732896103366711491579814469
+  ... Content-Disposition: form-data; name="field.product"
+  ... 
+  ... ubuntu
+  ... -----------------------------6732896103366711491579814469
+  ... Content-Disposition: form-data; name="field.milestone"
+  ... 
+  ... 
+  ... -----------------------------6732896103366711491579814469
+  ... Content-Disposition: form-data; name="field.milestone-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------6732896103366711491579814469
+  ... Content-Disposition: form-data; name="field.status"
+  ... 
+  ... New
+  ... -----------------------------6732896103366711491579814469
+  ... Content-Disposition: form-data; name="field.status-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------6732896103366711491579814469
+  ... Content-Disposition: form-data; name="field.priority"
+  ... 
+  ... Medium
+  ... -----------------------------6732896103366711491579814469
+  ... Content-Disposition: form-data; name="field.priority-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------6732896103366711491579814469
+  ... Content-Disposition: form-data; name="field.severity"
+  ... 
+  ... Minor
+  ... -----------------------------6732896103366711491579814469
+  ... Content-Disposition: form-data; name="field.severity-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------6732896103366711491579814469
+  ... Content-Disposition: form-data; name="field.assignee"
+  ... 
+  ... name16
+  ... -----------------------------6732896103366711491579814469
+  ... Content-Disposition: form-data; name="field.bugwatch"
+  ... 
+  ... 2
+  ... -----------------------------6732896103366711491579814469
+  ... Content-Disposition: form-data; name="field.bugwatch-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------6732896103366711491579814469
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Save Changes
+  ... -----------------------------6732896103366711491579814469--
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+              <p class="portalMessage">Updated on ...</p>
+  ...
+
+
+Finally, let's view the bug page again. We should see the padlock next to
+the relevant task. The padlock is an initial UI choice to represent the
+linking of the task to the bugwatch, symbolising the idea that the status of
+the task is "locked" to the status of the remote bug being watched. That's
+not entirely true, because we will allow people to edit the status of a bug
+that is linked to a remote watch.
+
+  >>> print http(r"""
+  ... GET /malone/bugs/1 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+  .../++resource++lock_icon.gif" alt="Watch"...
+  ...
+

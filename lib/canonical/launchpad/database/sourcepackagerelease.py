@@ -9,9 +9,11 @@ from urllib2 import URLError
 from zope.interface import implements
 from zope.component import getUtility
 
-from sqlobject import StringCol, ForeignKey, MultipleJoin, DateTimeCol
+from sqlobject import StringCol, ForeignKey, MultipleJoin
 
 from canonical.database.sqlbase import SQLBase
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import \
     EnumCol, SourcePackageUrgency, SourcePackageFormat
 
@@ -20,6 +22,8 @@ from canonical.launchpad.interfaces import \
 
 from canonical.launchpad.database.binarypackage import \
     BinaryPackage, DownloadURL
+from canonical.launchpad.database.publishing import \
+     SourcePackagePublishing
 
 from canonical.librarian.interfaces import ILibrarianClient
 
@@ -39,8 +43,8 @@ class SourcePackageRelease(SQLBase):
     manifest = ForeignKey(foreignKey='Manifest', dbName='manifest')
     urgency = EnumCol(dbName='urgency', schema=SourcePackageUrgency,
                       notNull=True)
-    dateuploaded = DateTimeCol(dbName='dateuploaded', notNull=True,
-                               default='NOW')
+    dateuploaded = UtcDateTimeCol(dbName='dateuploaded', notNull=True,
+                                  default=UTC_NOW)
     dsc = StringCol(dbName='dsc')
     version = StringCol(dbName='version', notNull=True)
     changelog = StringCol(dbName='changelog')
@@ -62,6 +66,46 @@ class SourcePackageRelease(SQLBase):
     def name(self):
         return self.sourcepackagename.name
     name = property(name)
+
+    @property
+    def productrelease(self):
+        """See ISourcePackageRelease."""
+        series = None
+
+        # Use any published source package to find the product series.
+        # We can do this because if we ever find out that a source package
+        # release in two product series, we've almost certainly got a data
+        # problem there.
+        publishings = SourcePackagePublishing.selectBy(
+            sourcepackagereleaseID=self.id)
+        for publishing in publishings:
+            # imports us, so avoid circular import
+            from canonical.launchpad.database.sourcepackage import \
+                 SourcePackage
+            sp = SourcePackage(self.sourcepackagename,
+                               publishing.distrorelease)
+            sp_series = sp.productseries
+            if sp_series is not None:
+                if series is None:
+                    series = sp_series
+                elif series != sp_series:
+                    # XXX: we could warn about this --keybuk 22jun05
+                    pass
+
+        # No series -- no release
+        if series is None:
+            return None
+
+        # XXX: find any release with the exact same version, or which
+        # we begin with and after a dash.  We could be more intelligent
+        # about this, but for now this will work for most. --keybuk 22jun05
+        for release in series.releases:
+            if release.version == self.version:
+                return release
+            elif self.version.startswith("%s-" % release.version):
+                return release
+        else:
+            return None
 
     def binaries(self):
         clauseTables = ['SourcePackageRelease', 'BinaryPackage', 'Build']

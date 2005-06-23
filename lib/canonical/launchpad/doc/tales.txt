@@ -16,6 +16,20 @@ TALES features.
     ...
 
 
+Test the 'count:' namespace.
+
+count:len gives you a number which is len(thing).
+
+    >>> test_tales('foo/count:len', foo=[])
+    0
+    >>> test_tales('foo/count:len', foo=[1, 2, 3])
+    3
+    >>> test_tales('foo/count:len', foo=object())
+    Traceback (most recent call last):
+    ...
+    TypeError: len() of unsized object
+
+
 Test the 'fmt:' namespace where the context is a datetime.
 
    >>> from datetime import datetime
@@ -26,6 +40,7 @@ Test the 'fmt:' namespace where the context is a datetime.
    '16:22:00'
    >>> test_tales('dt/fmt:datetime', dt=dt)
    '2005-04-01 16:22:00'
+
 
 Test the 'lp:' namespace for presenting DBSchema classes.
 
@@ -52,6 +67,61 @@ Test the 'fmt:' namespace where the context is a string.
      'wrap: break-word;">hello &amp; goodbye</pre>']
 
 
+Test the 'fmt:' namespace where the context is a dict.
+
+fmt:pagetitle takes a page template CONTEXTS dict, and gives you a string
+for use in the <title> element of a page.
+
+This case ought to apply only to a page template's CONTEXTS dict.  However, we
+have to make this namespace available for all dicts, as there is no type
+information to distinguish a page template CONTEXTS dict from any other dict.
+
+    >>> class MockPageTemplateFile:
+    ...     filename = '/blah/blah/debug-root-index.pt'
+    ...
+    >>> CONTEXTS = {'template': MockPageTemplateFile}
+    >>> test_tales('foo/fmt:pagetitle', foo=CONTEXTS)
+    'Launchpad Debug Home Page'
+
+
+Test the 'fmt:url' namespace for canonical urls.
+
+    >>> from canonical.launchpad.interfaces import ICanonicalUrlData
+    >>> from zope.interface import implements
+    >>> class ObjectThatHasUrl:
+    ...     implements(ICanonicalUrlData)
+    ...     path = 'bonobo/saki'
+    ...     inside = None
+
+    >>> object_having_url = ObjectThatHasUrl()
+    >>> test_tales('foo/fmt:url', foo=object_having_url)
+    'http://localhost:8086/bonobo/saki'
+
+Now, we need to test that it gets the correct application URL from the
+request.
+
+Make a mock-up IBrowserRequest, and use this as the interaction.
+
+    >>> from zope.publisher.interfaces.browser import \
+    ...     IBrowserApplicationRequest
+    >>> from zope.interface import implements
+    >>> class MockBrowserRequest:
+    ...     implements(IBrowserApplicationRequest)
+    ...
+    ...     interaction = None
+    ...     principal = None
+    ...
+    ...     def getApplicationURL(self):
+    ...         return 'https://mandrill.example.org:23'
+
+    >>> participation = MockBrowserRequest()
+
+    >>> login(ANONYMOUS, participation)
+
+    >>> test_tales('foo/fmt:url', foo=object_having_url)
+    'https://mandrill.example.org:23/bonobo/saki'
+
+
 Test the 'fmt:' namespace where the context is None.
 
     >>> test_tales('foo/fmt:shorten', foo=None)
@@ -73,122 +143,29 @@ Test the 'fmt:' namespace where the context is None.
     ''
     >>> test_tales('foo/fmt:datetime', foo=None)
     ''
+    >>> test_tales('foo/fmt:pagetitle', foo=None)
+    ''
+    >>> test_tales('foo/fmt:url', foo=None)
+    ''
 
-The 'menu:' namespace allows access to links, in the form of facets and tabs.
-
-First, let's parse the zcml configuration for some links and facet lists.
-
-    >>> from zope.configuration import xmlconfig
-    >>> zcmlcontext = xmlconfig.string("""
-    ... <configure xmlns:browser="http://namespaces.zope.org/browser">
-    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
-    ...   <browser:link id="link1" href="linkone" title="Link one"
-    ...                 summary="This is link one" />
-    ...
-    ...   <browser:link id="link2" href="linktwo" title="Link two"
-    ...                 summary="This is link two" />
-    ...
-    ...   <browser:link id="link3" href="linkthree" title="Link three"
-    ...                 summary="This is link three" />
-    ...
-    ...   <browser:link id="link4" href="linkfour" title="Link four"
-    ...                 summary="This is link four" />
-    ...
-    ...   <browser:facetlist for="canonical.launchpad.interfaces.IPerson"
-    ...                      links="link1 link2"
-    ...                      disabled="link2"
-    ...                      overflow="link3" />
-    ...
-    ...   <!-- links and overflow attributes omitted, so we get it from more
-    ...        more general interface.  Different link disabled.  -->
-    ...   <browser:facetlist for="canonical.launchpad.interfaces.ITeam"
-    ...                      disabled="link1" />
-    ...
-    ...   <browser:tablist for="canonical.launchpad.interfaces.ITeam"
-    ...                    disabled="link3"
-    ...                    facet="link1"
-    ...                    links="link2 link3"
-    ...                    overflow="link4" />
-    ... </configure>
-    ... """)
-
-
-We need to log in first.
-
-Make a mock-up IBrowserRequest, and use this as the interaction.
-
-    >>> from zope.publisher.interfaces.browser import \
-    ...     IBrowserApplicationRequest
-    >>> from zope.interface import implements
-    >>> class MockBrowserRequest:
-    ...     implements(IBrowserApplicationRequest)
-    ...
-    ...     interaction = None
-    ...     principal = None
-    ...     application_url = 'http://localhost:9000'
-    ...
-    ...     def __init__(self, url):
-    ...         self.url = self.application_url + url
-    ...
-    ...     def getURL(self):
-    ...         return self.url
-    ...
-    ...     def getApplicationURL(self):
-    ...         return self.application_url
-
-    >>> participation = MockBrowserRequest('/foo/bar/linkone/baz')
-
-    >>> from canonical.launchpad.ftests import login, ANONYMOUS
-    >>> login(ANONYMOUS, participation)
+Test the 'required:' namespace.  We're already logged in as the anonymous user,
+and anonymous users can't edit any person:
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> person = getUtility(IPersonSet).getByName('sabdfl')
+    >>> test_tales('person/required:launchpad.Edit', person=person)
+    False
 
-There are particular main links available for an IPerson.
+Anonymous users can do anything with the zope.Public permission.
 
-    >>> links = test_tales('foo/menu:facet/links', foo=person)
-    >>> for link in links:
-    ...     print link.id, link.title, link.href, link.enabled, link.selected
+    >>> test_tales('person/required:zope.Public', person=person)
+    True
+
+Queries about permissions that don't exist will raise an exception:
+
+    >>> test_tales('person/required:mushroom.Badger', person=person)
+    Traceback (most recent call last):
     ...
-    link1 Link one linkone True True
-    link2 Link two linktwo False False
-
-There are overflow links available for an IPerson.
-
-    >>> links = test_tales('foo/menu:facet/overflow', foo=person)
-    >>> for link in links:
-    ...     print link.id, link.title, link.href, link.enabled, link.selected
-    ...
-    link3 Link three linkthree True False
+    ValueError: ('Undefined permission id', 'mushroom.Badger')
 
 
-    >>> team = getUtility(IPersonSet).getByName('buttsource')
-
-There are particular main links available for an ITeam.
-
-    >>> links = test_tales('foo/menu:facet/links', foo=team)
-    >>> for link in links:
-    ...     print link.id, link.title, link.href, link.enabled, link.selected
-    ...
-    link1 Link one linkone False True
-    link2 Link two linktwo True False
-
-There are overflow links available for an ITeam.
-
-    >>> links = test_tales('foo/menu:facet/overflow', foo=team)
-    >>> for link in links:
-    ...     print link.id, link.title, link.href, link.enabled, link.selected
-    ...
-    link3 Link three linkthree True False
-
-When a particular facet is selected, we have tabs available that are
-related to that facet.
-
-Let's look at the tabs for an ITeam.
-
-    >>> links = test_tales('foo/menu:tab/links', foo=team)
-    >>> for link in links:
-    ...     print link.id, link.title, link.href, link.enabled, link.selected
-    ...
-    link2 Link two linktwo True False
-    link3 Link three linkthree False False

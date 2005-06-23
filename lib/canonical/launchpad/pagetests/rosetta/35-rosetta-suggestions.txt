@@ -1,0 +1,37 @@
+
+We are going to test the system by which rosetta provides alternative
+translation suggestions. This will need to be updated when we change the
+presentation of these items. This test does not test much policy, just tests
+some known sampledata which should always present one of each of the three
+kinds of suggestions.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+  <BLANKLINE>
+                                <pre><b>Suggestions:</b><br />
+  Srprise! (non-editor) (Valentina Commissari)
+  </pre>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+                                <pre><b>Currently Published Elsewhere:</b><br />
+   tarjetas (Carlos Perelló Marín)
+  </pre>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+                                <pre><b>From the Global Translation Wiki:</b><br />
+   bang bang in evo hoary (Mark Shuttleworth)
+  </pre>
+  <BLANKLINE>
+  ...
+

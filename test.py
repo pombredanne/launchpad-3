@@ -19,7 +19,7 @@ $Id: test.py 25177 2004-06-02 13:17:31Z jim $
 import sys, os, psycopg
 
 here = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(here, 'lib'))
+sys.path.insert(0, os.path.join(here, 'lib'))
 
 # Set PYTHONPATH environment variable for spawned processes
 os.environ['PYTHONPATH'] = ':'.join(sys.path)

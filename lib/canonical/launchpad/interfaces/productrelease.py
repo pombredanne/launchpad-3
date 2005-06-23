@@ -34,4 +34,7 @@ class IProductRelease(Interface):
     product = Attribute(_('Retrive Product Instance from ProductSeries.'))
     files = Attribute(_('Iterable of product release files.'))
     potemplates = Attribute(
-        _("Returns an iterator over this productrelease's PO templates."))
+        _("Return an iterator over this productrelease's PO templates."))
+    potemplatecount = Attribute(_("The number of POTemplates for this "
+                        "ProductRelease."))
+

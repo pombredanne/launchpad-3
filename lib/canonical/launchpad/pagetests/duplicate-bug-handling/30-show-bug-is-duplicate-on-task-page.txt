@@ -1,0 +1,25 @@
+When a bug is marked as a duplicate of another bug, the task edit page
+will show such information in a prominent way.
+
+  >>> print http(r"""
+  ... GET /products/ubuntu/+bugs/2/+edit HTTP/1.1
+  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+          This bug is a duplicate of
+          <a href="...">1</a>
+  ...
+
+And just as well for anonymous users.
+
+  >>> print http(r"""
+  ... GET /products/ubuntu/+bugs/2/+edit HTTP/1.1
+  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+          This bug is a duplicate of
+          <a href="...">1</a>
+  ...

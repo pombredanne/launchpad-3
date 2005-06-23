@@ -1,0 +1,20 @@
+HCT Backend API
+===============
+
+The hctapi module contains an implementation of the HCT backend API
+that talks directly to the Launchpad database, creating HCT objects
+from database objects and vice-versa.
+
+We should be able to import it.
+
+    >>> from canonical.launchpad import hctapi
+
+Importing it should automatically register it with the HCT URL system,
+and make it the default backend.
+
+    >>> import hct.url
+    >>> print hct.url.default_scheme
+    lp
+
+Further tests for this backend are done in pyunit style, and can be
+found in lib/canonical/launchpad/tests/test_hctapi.py.

@@ -9,23 +9,29 @@ __all__ = ['CodeOfConduct', 'CodeOfConductSet', 'CodeOfConductConf',
            'SignedCodeOfConduct', 'SignedCodeOfConductSet',
            'sendAdvertisementEmail']
 
-import os
-from datetime import datetime
-from sha import sha
-
 from zope.interface import implements
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
 
-from sqlobject import DateTimeCol, ForeignKey, StringCol, BoolCol
+from sqlobject import ForeignKey, StringCol, BoolCol
 
 from canonical.database.sqlbase import SQLBase, quote, flush_database_updates
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
-from canonical.launchpad.interfaces import \
-    ICodeOfConduct, ICodeOfConductSet, ICodeOfConductConf, \
-    ISignedCodeOfConduct, ISignedCodeOfConductSet, IGpgHandler
+from canonical.launchpad.interfaces import ICodeOfConduct, ICodeOfConductSet
+from canonical.launchpad.interfaces import ICodeOfConductConf
+from canonical.launchpad.interfaces import ISignedCodeOfConduct
+from canonical.launchpad.interfaces import ISignedCodeOfConductSet, IGpgHandler
+from canonical.launchpad.interfaces import IPersonSet
+from canonical.launchpad.interfaces import IGPGKeySet
+from canonical.launchpad.interfaces import IGpgHandler
 
+# Python
+import os
+from datetime import datetime
+from sha import sha
 
 class CodeOfConduct:
     """CoC class model.
@@ -126,7 +132,7 @@ class CodeOfConductConf:
     ## Integrate this class with LaunchpadCentral configuration
     ## in the future
 
-    path = 'lib/canonical/launchpad/templates/codesofconduct/'
+    path = 'lib/canonical/launchpad/codesofconduct/'
     prefix = 'Ubuntu Code of Conduct - '
     current = '1.0'
 
@@ -145,8 +151,8 @@ class SignedCodeOfConduct(SQLBase):
     signingkey = ForeignKey(foreignKey="GPGKey", dbName="signingkey",
                             notNull=False, default=None)
 
-    datecreated = DateTimeCol(dbName='datecreated', notNull=False,
-                              default=datetime.utcnow())
+    datecreated = UtcDateTimeCol(dbName='datecreated', notNull=False,
+                                 default=UTC_NOW)
 
     recipient = ForeignKey(foreignKey="Person", dbName="recipient",
                            notNull=False, default=None)
@@ -160,7 +166,7 @@ class SignedCodeOfConduct(SQLBase):
         """Build a Fancy Title for CoC."""
         # XXX: cprov 20040224
         # We need the proposed field 'version'
-        displayname = '%s' % self.owner.displayname
+        displayname = '%s' % self.owner.browsername
 
         if self.signingkey:
             displayname += '(%s)' % self.signingkey.keyid
@@ -215,19 +221,22 @@ class SignedCodeOfConductSet:
 
         # use a utility to perform the GPG operations
         gpghandler = getUtility(IGpgHandler)
-        fingerprint, plain = gpghandler.verifySignature(signedcode)
 
-        if not fingerprint:
+        sig = gpghandler.verifySignature(signedcode)
+
+        if not sig.fingerprint:
             return 'Failed to verify the signature'
 
-        # XXX cprov 20050328
-        # Do not support multiple keys
-        gpg = user.gpgkeys[0]
+        gpgkeyset = getUtility(IGPGKeySet)
 
-        if fingerprint != gpg.fingerprint:
-            return ('User and Signature do not match.\n'
-                    'Sig %s != User %s' % (fingerprint, gpg.fingerprint))
+        gpg = gpgkeyset.getByFingerprint(sig.fingerprint)
 
+        if not gpg:
+            return 'Not valid key: %s' % sig.fingerprint
+
+        if gpg.owner.id != user.id:
+            return 'Signature Onwer and User mismatch'
+        
         if gpg.revoked:
             return  'Signed with a revoked Key.'
 
@@ -236,7 +245,7 @@ class SignedCodeOfConductSet:
         current = coc.content
 
         # calculate text digest 
-        plain_dig = sha(plain).hexdigest()
+        plain_dig = sha(sig.plain_data).hexdigest()
         current_dig = sha(current).hexdigest()
 
         if plain_dig != current_dig:
@@ -248,7 +257,7 @@ class SignedCodeOfConductSet:
                    '----- Signed Code Of Conduct -----\n'
                    '%s\n'
                    '-------------- End ---------------\n'
-                   % (fingerprint, plain))
+                   % (sig.fingerprint, sig.plain_data))
         # Send Advertisement Email
         sendAdvertisementEmail(user, subject, content)
 
@@ -302,7 +311,7 @@ class SignedCodeOfConductSet:
         content = ('State: %s\n'
                    'Comment: %s\n'
                    'Modified by %s'
-                    % (state, admincomment, recipient.displayname))
+                    % (state, admincomment, recipient.browsername))
 
         # Send Advertisement Email if preferredemail is set.
         if sign.owner.preferredemail:
@@ -315,7 +324,7 @@ class SignedCodeOfConductSet:
         active = True
 
         subject = 'Launchpad: Code Of Conduct Signature Acknowledge'
-        content = 'Paper Submitted acknowledge by %s' % recipient.displayname
+        content = 'Paper Submitted acknowledge by %s' % recipient.browsername
 
         # Send Advertisement Email if preferredemail is set
         if user.preferredemail:
@@ -325,12 +334,12 @@ class SignedCodeOfConductSet:
                             active=active)
 
 def sendAdvertisementEmail(user, subject, content):
-    template = open('lib/canonical/launchpad/templates/'
+    template = open('lib/canonical/launchpad/emailtemplates/'
                     'signedcoc-acknowledge.txt').read()
 
     fromaddress = "Launchpad Code Of Conduct System <noreply@ubuntu.com>"
 
-    replacements = {'user': user.displayname,
+    replacements = {'user': user.browsername,
                     'content': content}
 
     message = template % replacements

@@ -16,30 +16,23 @@
 
   <directive
       namespace="http://namespaces.zope.org/browser"
+      name="url"
+      schema="canonical.launchpad.webapp.metazcml.IURLDirective"
+      handler="canonical.launchpad.webapp.metazcml.url"
+      />
+
+  <directive
+      namespace="http://namespaces.zope.org/browser"
+      name="menus"
+      schema="canonical.launchpad.webapp.metazcml.IMenusDirective"
+      handler="canonical.launchpad.webapp.metazcml.menus"
+      />
+
+  <directive
+      namespace="http://namespaces.zope.org/browser"
       name="favicon"
       schema="canonical.launchpad.webapp.metazcml.IFaviconDirective"
       handler="canonical.launchpad.webapp.metazcml.favicon"
-      />
-
-  <directive
-      namespace="http://namespaces.zope.org/browser"
-      name="link"
-      schema="canonical.launchpad.webapp.metazcml.ILinkDirective"
-      handler="canonical.launchpad.webapp.metazcml.link"
-      />
-
-  <directive
-      namespace="http://namespaces.zope.org/browser"
-      name="facetlist"
-      schema="canonical.launchpad.webapp.metazcml.IFacetListDirective"
-      handler="canonical.launchpad.webapp.metazcml.facetlist"
-      />
-
-  <directive
-      namespace="http://namespaces.zope.org/browser"
-      name="tablist"
-      schema="canonical.launchpad.webapp.metazcml.ITabListDirective"
-      handler="canonical.launchpad.webapp.metazcml.tablist"
       />
 
   <complexDirective

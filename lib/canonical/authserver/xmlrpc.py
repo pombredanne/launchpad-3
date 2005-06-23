@@ -30,6 +30,9 @@ class UserDetailsResource(xmlrpc.XMLRPC):
     def xmlrpc_createUser(self, loginID, sshaDigestedPassword, displayname,
                           emailAddresses):
         """Create a user
+
+        loginID is actually the preferred email address but has not been
+        renamed to avoid breaking the API.
         
         :returns: user dict, or TBD if there is an error such as a database
             constraint being violated.
@@ -40,7 +43,7 @@ class UserDetailsResource(xmlrpc.XMLRPC):
                       emailAddresses))
         return self.storage.createUser(loginID,
                                        sshaDigestedPassword.decode('base64'), 
-                                       displayname, emailAddresses)
+                                       displayname, list(emailAddresses))
 
     def xmlrpc_changePassword(self, loginID, sshaDigestedPassword,
                               newSshaDigestedPassword):
@@ -94,6 +97,9 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
     def xmlrpc_createUser(self, loginID, password, displayname,
                           emailAddresses):
         """Create a user
+
+        loginID is actually the preferred email address, but has not been
+        updated to avoid breaking the API.
         
         :returns: user dict, or TBD if there is an error such as a database
             constraint being violated.

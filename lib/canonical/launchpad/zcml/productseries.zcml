@@ -45,6 +45,10 @@
             name="+index"
             template="../templates/series.pt"
             lp:url="/products/$Product.name/+series/$ProductSeries.name/" />
+        <browser:page
+            name="+portlet-actions"
+            template="../templates/portlet-productseries-actions.pt" />
+
     </browser:pages>
 
     <browser:pages
@@ -94,6 +98,10 @@
         permission="launchpad.Admin"
         template="../templates/launchpad-editform.pt"
         lp:url="/products/$Product.name/+series/$ProductSeries.name/+review">
+        <browser:widget
+            field="name"
+            class="zope.app.form.browser.TextWidget"
+            displayWidth="20" />
     </browser:editform>
 
     <!-- ProductSeriesSet -->

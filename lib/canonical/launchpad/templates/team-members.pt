@@ -3,176 +3,151 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-  <title metal:fill-slot="title">Members of 
-    <span tal:replace="context/team/browsername" /></title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
-<metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure view/actionsPortlet" />
-</metal:rightportlets>
-
-<div metal:fill-slot="main">
-
+    <div metal:fill-slot="body">
+      <div
+        class="sidebar"
+        tal:content="structure context/@@+portlet-actions"
+      />
     <tal:block tal:define="activeMembersCount view/activeMembersCount;
                            inactiveMembersCount view/inactiveMembersCount;
                            proposedMembersCount view/proposedMembersCount">
 
-      <h1>Members of <span tal:replace="context/team/browsername" /></h1>
+        <h1>
+          Members of
+          &#8220;<span tal:replace="context/team/browsername" />&#8221;
+        </h1>
+        <p tal:condition="not: view/allMembersCount">
+          This team currently has no members.
+        </p>
+        <tal:block condition="view/allMembersCount">
+          <p>
+            Select a member to change their details.
+          </p>
+          <tal:block condition="activeMembersCount">
+            <h2>Active members</h2>
+            <table class="listing">
+              <thead>
+                <tr>
 
-      <br />
-
-      <p tal:condition="view/allMembersCount">These are all members of this team.
-        You can add new ones in the <a href="+add">Add Members</a> page of this team.</p>
-
-      <p tal:condition="not: view/allMembersCount">This team currently have no
-        members. You can add new ones in the <a href="+add">Add Members</a> 
-        page of this team.</p>
-
-      <fieldset tal:condition="activeMembersCount">
-        <legend>Active members</legend>
-
-        <p>Active members are comprised of <em>approved members</em> and 
-        <em>administrators</em> of a team. These members can be promoted 
-        to administrators, demoted to normal members, deactivated or can
-        have their expiration date changed.</p>
-
-        <table width="100%" class="listing lpListing rowNavigation"> 
-          <tr>
             <th>Name</th>
             <th>Member since</th>
             <th>Expires</th>
             <th>Status</th>
           </tr>
-          <tr tal:repeat="membership view/activeMemberships"
-              class="rowLinkified">
-            <tal:block tal:define="member membership/person">
-            <td>
+
+              </thead>
+              <tbody>
+                <tr tal:repeat="membership view/activeMemberships">
+                  <tal:block define="member membership/person">
+                    <td>
               <a tal:attributes="href member/name"
                  tal:content="member/browsername"
                  title="Edit this membership" />
-            </td>
+                    </td>
+                    <td
+                      tal:content="membership/datejoined/fmt:date"
+                    >2005-06-14</td>
+                    <td
+                      tal:condition="not: membership/dateexpires"
+                    >&ndash;</td>
+                    <td
+                      tal:condition="membership/dateexpires"
+                      talcontent="membership/dateexpires/fmt:date"
+                    >2006-06-13</td>
+                    <td tal:content="membership/statusname"></td>
+                  </tal:block>
+                </tr>
+              </tbody>
+            </table>
+          </tal:block>
+          <tal:block condition="proposedMembersCount">
+            <h2>Proposed members</h2>
+            <p>
+              Proposed members may be approved or declined by a
+              team administrator.
+            </p>
+            <table class="listing">
+              <thead>
 
-            <td>
-              <a tal:attributes="href member/name"
-                 tal:content="membership/datejoined/fmt:date"
-                 title="Edit this membership" />
-            </td>
-
-            <td tal:condition="membership/dateexpires">
-              <a tal:attributes="href member/name" 
-                 tal:content="membership/dateexpires/fmt:date"
-                 title="Edit this membership" />
-            </td>
-
-            <td tal:condition="not: membership/dateexpires">
-              <a tal:attributes="href member/name"
-                 title="Edit this membership">Never</a>
-            </td>
-
-            <td>
-              <a tal:attributes="href member/name" 
-                 tal:content="membership/statusname"
-                 title="Edit this membership" />
-            </td>
-            </tal:block>
-          </tr>
-        </table>
-
-      </fieldset>
-
-      <fieldset tal:condition="proposedMembersCount">
-        <legend>Proposed members</legend>
-
-        <p>Proposed members are the ones who wish to join this team, but in
-        order for them to become real members a team administrator must 
-        approve it's subscription. A team administrator can also decline
-        proposed subscriptions if they think a member should not join this
-        team.</p>
-
-        <table width="100%" class="listing lpListing rowNavigation"> 
           <tr>
             <th>Name</th>
-            <th>Join requested in</th>
+                  <th>Applied for membership</th>
           </tr>
-          <tr tal:repeat="membership view/proposedMemberships"
-              class="rowLinkified">
+              </thead>
+              <tbody>
+                <tr tal:repeat="membership view/proposedMemberships">
+
             <tal:block tal:define="member membership/person">
             <td>
               <a tal:attributes="href member/name"
                  tal:content="member/browsername"
                  title="Approve/Decline this membership" />
             </td>
-            <td>
-              <a tal:attributes="href member/name"
-                 tal:content="membership/datejoined/fmt:date"
-                 title="Approve/Decline this membership" />
-            </td>
+                  <td
+                    tal:content="membership/datejoined/fmt:date"
+                  >2005-04-01</td>
             </tal:block>
           </tr>
-        </table>
+                <tr>
+              </tbody>
+            </table>
+            <ul class="edit">
+              <li>
+                <a href="+editproposed"
+                >Edit all proposed members&#8230;</a>
+              </li>
+            </ul>
+          </tal:block>
+          <tal:block condition="inactiveMembersCount">
+            <h2>Inactive members</h2>
+            <p>
+              Inactive members are those whose
+              subscriptions have expired, or were
+              deactivated by themselves or by an admin.
+            </p>
+            <table class="listing">
+              <thead>
 
-        <div style="float:right">
-          <a href="+editproposed">Edit All Proposed Members</a>
-        </div>
-      </fieldset>
-
-      <fieldset tal:condition="inactiveMembersCount">
-        <legend>Inactive members</legend>
-
-        <p>These are members who, at some point were active members for this
-        team but are not any longer. Either their subscriptions have
-        <em>expired</em> or were <em>deactivated</em> by themselves or any
-        administrator of this team. Inactive members can become active members
-        again only if a team administrator renew their subscriptions (in case 
-        of <em>expired</em> ones) or reactivate it (for <em>deactivated</em>
-        ones).</p>
-
-        <table width="100%" class="listing lpListing rowNavigation"> 
           <tr>
             <th>Name</th>
             <th>Joined in</th>
             <th>Status</th>
           </tr>
-          <tr tal:repeat="membership view/inactiveMemberships"
-              class="rowLinkified">
-            <tal:block tal:define="member membership/person">
+
+              </thead>
+              <tbody>
+                <tr tal:repeat="membership view/inactiveMemberships">
+                  <tal:block define="member membership/person">
+
             <td>
               <a tal:attributes="href member/name"
                  tal:content="member/browsername"
                  title="Renew/Reactivate this membership" />
             </td>
-            <td>
-              <a tal:attributes="href member/name"
-                 tal:content="membership/datejoined/fmt:date"
-                 title="Renew/Reactivate this membership" />
-            </td>
+                    <td
+                      tal:content="membership/datejoined/fmt:date"
+                    >2005-04-01</td>
 
             <td tal:condition="membership/isExpired">
-              <a tal:attributes="href member/name"
-                 title="Renew/Reactivate this membership">
-                Membership expired in <span tal:replace="membership/dateexpires/fmt:date" />
-              </a>
+                      Expired on
+                      <span tal:replace="membership/dateexpires/fmt:date" />
             </td>
-            <td tal:condition="not: membership/isExpired">
-              <a tal:attributes="href member/name"
-                 tal:content="membership/statusname"
-                 title="Renew/Reactivate this membership" />
-            </td>
-            </tal:block>
-          </tr>
-        </table>
-
-      </fieldset>
-
-    </tal:block>
-
+                    <td
+                      tal:condition="not: membership/isExpired"
+                      tal:content="membership/statusname"
+                    />
+                  </tal:block>
+                </tr>
+              </tbody>
+            </table>
+          </tal:block>
+          <ul class="add">
+            <li><a href="+add">Add a new member</a></li>
+          </ul>
+        </tal:block>
+        </tal:block>
 </div>
 
 </body>

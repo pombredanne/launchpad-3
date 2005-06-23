@@ -3,63 +3,25 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="rosetta">
 
-<head>
-    <title metal:fill-slot="title">Rosetta
-        <span tal:replace="context/title">template title</span></title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
-
 <metal:leftportlets fill-slot="portlets_one">
-
-<div class="portlet">
-
-    <h4>Template Details:</h4>
-
-    <div class="portletBody">
-        <div class="portletContent odd">
-            <img src="/++resource++document_icon.gif" />
-            <span tal:replace="view/num_messages" /><br />
-            <div tal:condition="context/owner" tal:omit-tag>
-                <b>Owner:</b><br />
-                <img src="/++resource++user.gif" />
-                <span tal:replace="context/owner/browsername" /><br />
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="portlet">
-
-    <h4>Actions:</h4>
-
-    <div class="portletBody">
-        <div class="portletContent even">
-            <p><img src="/++resource++edit.gif"><a href="+edit">Edit this
-            template</a>. This will modify the template header information and
-            will let you upload a new PO template version.<br />
-            This is an advanced operation, limited to 
-            <span tal:replace="context/owner/browsername" />, the current owner of
-            this template in Rosetta.</p>
-        </div>
-    </div>
-</div>
-
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-for" />
+  <div tal:replace="structure context/@@+portlet-relateds" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
 </metal:rightportlets>
 
 
 <div metal:fill-slot="main">
 
-    <h1>Translation Template: <span tal:replace="context/title">Potemplate Title</span>
-    </h1>
+    <h1>Translation Template</h1>
+
+    <p tal:content="context/description">A brief paragraph describing the
+    potemplate would go here.</p>
 
     <div tal:replace="structure context/@@+chart" />
 
@@ -67,7 +29,7 @@
       [ <a href="/rosetta/prefs">Choose Languages</a> ]
     </div>
 
-    <div tal:replace="structure view/statusLegend" />
+    <div tal:replace="structure context/@@+portlet-status-legend" />
 
 </div>
 

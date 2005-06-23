@@ -10,11 +10,13 @@ from datetime import datetime
 from zope.interface import implements
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, StringCol
+from sqlobject import ForeignKey, StringCol
 
 from canonical.launchpad.interfaces import ICVERef, ICVERefSet
 
 from canonical.database.sqlbase import SQLBase
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.bugset import BugSetBase
 
 
@@ -27,7 +29,7 @@ class CVERef(SQLBase):
     bug = ForeignKey(foreignKey='Bug', dbName='bug', notNull=True)
     cveref = StringCol(notNull=True)
     title = StringCol(notNull=True)
-    datecreated = DateTimeCol(notNull=True, default=datetime.utcnow())
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
 
     def url(self):

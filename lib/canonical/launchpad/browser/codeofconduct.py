@@ -16,6 +16,8 @@ from zope.component import getUtility
 from zope.exceptions import NotFoundError
 import zope.security.interfaces
 
+from canonical.database.constants import UTC_NOW
+
 # lp imports
 from canonical.lp import dbschema                       
 from canonical.lp.z3batching import Batch
@@ -39,9 +41,6 @@ from canonical.launchpad.database import SignedCodeOfConduct
 class CodeOfConductView(object):
     """Simple view class for CoC page."""
     
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-codeofconduct-actions.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -80,9 +79,6 @@ class CodeOfConductDownloadView(object):
 class CodeOfConductSetView(object):
     """Simple view class for CoCSet page."""
     
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-codeofconductset-actions.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -172,9 +168,6 @@ class SignedCodeOfConductAckView(AddView):
 class SignedCodeOfConductView(object):
     """Simple view class for SignedCoC page."""
     
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-signedcodeofconduct-actions.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -230,7 +223,7 @@ class SignedCodeOfConductEditView(EditView):
         EditView.__init__(self, context, request)
 
     def changed(self):
-        self.context.datecreated = datetime.utcnow()
+        self.context.datecreated = UTC_NOW
         self.context.recipient = None
         self.context.admincomment = None
         self.context.active = None

@@ -44,18 +44,15 @@ class DistroReleaseVersions:
         self.versions = {}
 
 class BinPackage:
-    
+
     def __init__(self, name, summary, description):
         self.name = name
         self.summary = summary
         self.description = description
         self.distroreleases = {}
-    
+
 
 class PublishedPackageSetView:
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-translations.pt')
 
     def __init__(self, context, request):
         self.context = context

@@ -13,7 +13,8 @@ from canonical.launchpad.ftests.harness import \
         _disconnect_sqlos, _reconnect_sqlos
 from zope.testing.doctest import DocFileSuite
 from zope.component import getUtility
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces import ILaunchBag, IOpenLaunchBag
+from canonical.launchpad.mail import stub
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 
@@ -30,16 +31,22 @@ def setUp(test):
     LaunchpadTestSetup().setUp()
     _reconnect_sqlos()
     setGlobs(test)
+    # Set up an anonymous interaction.
+    login(ANONYMOUS)
 
 def tearDown(test):
+    getUtility(IOpenLaunchBag).clear()
     _disconnect_sqlos()
     sqlos.connection.connCache = {}
     LaunchpadTestSetup().tearDown()
+    stub.test_emails = []
 
 def poExportSetUp(test):
     sqlos.connection.connCache = {}
     LaunchpadZopelessTestSetup(dbuser='poexport').setUp()
     setGlobs(test)
+    # Set up an anonymous interaction.
+    login(ANONYMOUS)
 
 def poExportTearDown(test):
     LaunchpadZopelessTestSetup().tearDown()
@@ -61,8 +68,8 @@ special = {
     'poparser.txt': DocFileSuite('../doc/poparser.txt'),
 
     # POExport stuff is Zopeless and connects as a different database user.
-    # poexport-distrorelease-date-tarball.txt is excluded, since it adds data
-    # to the database as well.
+    # poexport-distrorelease-(date-)tarball.txt is excluded, since they add
+    # data to the database as well.
     'poexport.txt': FunctionalDocFileSuite(
             '../doc/poexport.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown
@@ -71,11 +78,6 @@ special = {
             '../doc/poexport-template-tarball.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown
             ),
-    'poexport-distrorelease-tarball.txt': FunctionalDocFileSuite(
-            '../doc/poexport-distrorelease-tarball.txt',
-            setUp=poExportSetUp, tearDown=poExportTearDown
-            ),
-
     'librarian.txt': FunctionalDocFileSuite(
             '../doc/librarian.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown

@@ -1,108 +1,138 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
+from zope.schema import Bool, Choice, Text, TextLine, Bytes
 
 from canonical.launchpad.interfaces.rawfiledata import ICanAttachRawFileData
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 
+from zope.i18nmessageid import MessageIDFactory
+_ = MessageIDFactory('launchpad')
+
 __metaclass__ = type
 
 __all__ = ('IPOTemplateSubset', 'IPOTemplateSet', 'IPOTemplate',
-           'IEditPOTemplate')
-
-class IPOTemplateSubset(Interface):
-    """A subset of POTemplate."""
-
-    sourcepackagename = Attribute(
-        "The sourcepackagename associated with this subset of POTemplates.")
-
-    distrorelease = Attribute(
-        "The distrorelease associated with this subset of POTemplates.")
-
-    productrelease = Attribute(
-        "The productrelease associated with this subset of POTemplates.")
-
-    title = Attribute("Title - use for launchpad pages")
-
-    def __iter__():
-        """Returns an iterator over all POTemplate for this subset."""
-
-    def __getitem__(name):
-        """Get a POTemplate by its name."""
-
-
-class IPOTemplateSet(Interface):
-    """A set of PO templates."""
-
-    def __iter__():
-        """Return an iterator over all PO templates."""
-
-    def __getitem__(name):
-        """Get a PO template by its name."""
-
-    def getSubset(distrorelease=None, sourcepackagename=None,
-                  productrelease=None):
-        """Return a POTemplateSubset object depending on the given arguments.
-        """
-
-    def getTemplatesPendingImport():
-        """Return a list of PO templates that have data to be imported."""
-
+           'IEditPOTemplate', 'IPOTemplateWithContent')
 
 class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     """A PO template. For example 'nautilus/po/nautilus.pot'."""
 
-    id = Attribute("The id of this POTemplate.")
+    id = Attribute("A unique ID number")
 
-    productrelease = Attribute("The PO template's product release.")
+    potemplatename = Choice(
+        title=_("Template name"),
+        required=True,
+        vocabulary="POTemplateName")
 
-    priority = Attribute("The PO template priority.")
+    name = TextLine(
+        title=_("Template name"),
+        readonly=True)
 
-    potemplatename = Attribute("The PO template name.")
+    description = Text(
+        title=_("Description"),
+        required=False)
 
-    name = Attribute("The POTemplateName.name, a short text name usually "
-                     "derived from the template translation domain.")
+    header = Text(
+        title=_('Header'),
+        description=_(
+            "The standard template header as gettext creates it. It's used to"
+            " get some default values when creating a new PO file."),
+        required=True)
 
-    title = Attribute("The PO template's title.")
+    iscurrent = Bool(
+        title=_("Should be new translations accepted?"),
+        description=_(
+            "If unchecked, people can no longer change the template's"
+            " translations."),
+        required=True,
+        default=True)
 
-    description = Attribute("The PO template's description.")
+    owner = Choice(
+        title=_("Owner"),
+        required=True,
+        description=_(
+            "The owner can change all these fields, and upload new versions"
+            " of the template."),
+        vocabulary="ValidOwner")
 
-    copyright = Attribute("The copyright information for this PO template.")
+    productrelease = Choice(
+        title=_("Product Release"),
+        required=False,
+        vocabulary="ProductRelease")
 
-    license = Attribute("The license that applies to this PO template.")
+    distrorelease = Choice(
+        title=_("Distribution Release"),
+        required=False,
+        vocabulary="DistroRelease")
+
+    sourcepackagename = Choice(
+        title=_("Source Package Name"),
+        description=_(
+            "The source package this template comes from."),
+        required=False,
+        vocabulary="SourcePackageName")
+
+    sourcepackageversion = TextLine(
+        title=_("Source Package Version"),
+        required=False)
+
+    binarypackagename = Choice(
+        title=_("Binary Package"),
+        description=_(
+            "The package in which this template's translations are installed."
+            ),
+        required=False,
+        vocabulary="BinaryPackageName")
+
+    languagepack = Bool(
+        title=_("Include translations for this template in language packs?"),
+        description=_(
+            "Check this box if this template is part of a language pack so"
+            "its translations should be exported that way."),
+        required=True,
+        default=False)
+
+    path = TextLine(
+        title=_("Path of the template in the source tree"),
+        required=False)
+
+    filename = TextLine(
+        title=_("Filename of template in the source tree"),
+        required=False)
+
+    priority = Attribute("The template priority.")
+
+    copyright = Attribute("The copyright information for this template.")
+
+    license = Attribute("The license that applies to this template.")
 
     datecreated = Attribute("When this template was created.")
 
-    path = Attribute("The path to the template in the source.")
+    translationgroups = Attribute("The translation groups that have "
+        "been selected to apply to this template. There can be several "
+        "because they can be inherited from project to product, for "
+        "example.")
 
-    iscurrent = Attribute("Whether this template is current or not.")
+    translationpermission = Attribute("The permission system which "
+        "is used for this potemplate. This is inherited from the product, "
+        "project and/or distro in which the pofile is found.")
 
-    owner = Attribute("The owner of the template.")
+    pofiles = Attribute("An iterator over the PO files that exist for "
+        "this template.")
 
-    sourcepackagename = Attribute(
-        "The name of the sourcepackage from where this PO template is.")
+    relatives_by_name = Attribute("An iterator over other PO templates "
+        "that have the same potemplate name as this one.")
 
-    sourcepackageversion = Attribute(
-        "The version of the sourcepackage from where this PO template comes.")
+    relatives_by_source = Attribute("An iterator over other PO templates "
+        "that have the same source, for example those that came from the "
+        "same productrelease or the same source package.")
 
-    distrorelease = Attribute(
-        "The distribution where this PO template belongs.")
+    displayname = Attribute("A brief name for this template, generated.")
 
-    header = Attribute("The header of this .pot file.")
+    title = Attribute("A title for this template, generated.")
 
-    binarypackagename = Attribute(
-        "The name of the binarypackage where this potemplate's translations"
-        " are installed.")
-
-    languagepack = Attribute(
-        "Flag to know if this potemplate belongs to a languagepack.")
-
-    filename = Attribute(
-        "The file name this PO Template had when last imported.")
-
-    # A "current" messageset is one that was in the latest version of
-    # the POTemplate parsed and recorded in the database. Current
-    # MessageSets are indicated by having 'sequence > 0'
+    language_count = Attribute("The number of languages for which we have "
+        "some number of translations.")
 
     def __len__():
         """Returns the number of Current IPOMessageSets in this template."""
@@ -110,6 +140,9 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     def __iter__():
         """Return an iterator over current IPOTMsgSets in this template."""
 
+    # A "current" messageset is one that was in the latest version of
+    # the POTemplate parsed and recorded in the database. Current
+    # MessageSets are indicated by having 'sequence > 0'
     def messageSet(key, onlyCurrent=False):
         """Extract one or several POTMessageSets from this template.
 
@@ -149,29 +182,10 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
         None.
         """
 
-    def filterMessageSets(current, translated, languages, slice):
-        '''
-        Return message sets from this PO template, filtered by various
-        properties.
-
-        current:
-            Whether the message sets need be complete or not.
-        translated:
-            Wether the messages sets need be translated in the specified
-            languages or not.
-        languages:
-            The languages used for testing translatedness.
-        slice:
-            The range of results to be selected, or None, for all results.
-        '''
-
     def languages():
         """Return an iterator over languages that this template's messages are
         translated into.
         """
-
-    def poFiles():
-        """Return an iterator over the PO files that exist for this language."""
 
     def poFilesToImport():
         """Returns all PO files from this POTemplate that have a rawfile 
@@ -195,17 +209,6 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     def hasPluralMessage():
         """Test whether this template has any message sets which are plural
         message sets."""
-
-    def canEditTranslations(person):
-        """Say if a person is able to edit existing translations.
-
-        Return True or False depending if the user is allowed to edit those
-        translations.
-
-        At this moment, only translations from a distro release are locked.
-        """
-
-    # TODO provide a way to look through non-current message ids.
 
 
 class IEditPOTemplate(IPOTemplate):
@@ -250,3 +253,53 @@ class IEditPOTemplate(IPOTemplate):
 
         Returns the newly created message set.
         """
+
+
+class IPOTemplateSubset(Interface):
+    """A subset of POTemplate."""
+
+    sourcepackagename = Attribute(
+        "The sourcepackagename associated with this subset of POTemplates.")
+
+    distrorelease = Attribute(
+        "The distrorelease associated with this subset of POTemplates.")
+
+    productrelease = Attribute(
+        "The productrelease associated with this subset of POTemplates.")
+
+    title = Attribute("Title - use for launchpad pages")
+
+    def __iter__():
+        """Returns an iterator over all POTemplate for this subset."""
+
+    def __getitem__(name):
+        """Get a POTemplate by its name."""
+
+    def new(potemplatename, title, contents, owner):
+        """Create a new template for the context of this Subset."""
+
+
+class IPOTemplateSet(Interface):
+    """A set of PO templates."""
+
+    def __iter__():
+        """Return an iterator over all PO templates."""
+
+    def __getitem__(name):
+        """Get a PO template by its name."""
+
+    def getSubset(distrorelease=None, sourcepackagename=None,
+                  productrelease=None):
+        """Return a POTemplateSubset object depending on the given arguments.
+        """
+
+    def getTemplatesPendingImport():
+        """Return a list of PO templates that have data to be imported."""
+
+
+class IPOTemplateWithContent(IEditPOTemplate):
+    """Interface for an IPOTemplate used to create the new POTemplate form."""
+
+    content = Bytes(
+        title=_("Select a template file to import"),
+        required=True)

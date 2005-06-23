@@ -3,35 +3,25 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">Packages Maintained By
-      <span tal:replace="context/displayname">Name</span></title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
   <metal:leftportlets fill-slot="portlets_one">
-      <div tal:replace="structure view/viewsPortlet" />
+    <div tal:replace="structure context/@@+portlet-views" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
-      <div tal:replace="structure view/actionsPortlet" />
-  </metal:rightportlets>
+      <div class="sidebar" tal:replace="structure context/@@+portlet-actions" />  </metal:rightportlets>
 
   <div metal:fill-slot="main">
 
       <h1>Package Maintenance Report</h1>
 
       <p tal:condition="context/maintainerships"><span
-      tal:replace="context/displayname">Person DisplayName</span> is the
+      tal:replace="context/browsername">maintainer</span> is the
       maintainer of the following distribution packages:</p>
       
       <p tal:condition="not: context/maintainerships"><span
-      tal:replace="context/displayname">Person DisplayName</span> is not
+      tal:replace="context/browsername">maintainer</span> is not
       currently recorded as the maintainer of any packages in the Launchpad
       system.</p>
 

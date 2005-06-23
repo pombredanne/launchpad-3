@@ -4,24 +4,34 @@ __metaclass__ = type
 
 from datetime import datetime, timedelta
 
+import pytz
+
 # zope imports
+from zope.schema import TextLine
 from zope.event import notify
+from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 from zope.component import getUtility
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.i18nmessageid import MessageIDFactory
+_ = MessageIDFactory('launchpad')
 
 # interface import
-from canonical.launchpad.interfaces import IPersonSet, ILaunchBag
+from canonical.launchpad.interfaces import IPersonSet, ILaunchBag, ITeam
+from canonical.launchpad.interfaces import IEmailAddressSet
+from canonical.launchpad.interfaces import ILoginTokenSet
 from canonical.launchpad.interfaces import ITeamMembershipSet
 from canonical.launchpad.interfaces import ITeamMembershipSubset
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 
+from canonical.config import config
 from canonical.launchpad.browser.editview import SQLObjectEditView
-
+from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.event.team import JoinTeamRequestEvent
+from canonical.launchpad.mail.sendmail import simple_sendmail
 
 # lp imports
-from canonical.lp.dbschema import TeamMembershipStatus
+from canonical.lp.dbschema import TeamMembershipStatus, LoginTokenType
 from canonical.lp.dbschema import TeamSubscriptionPolicy
 
 from canonical.database.sqlbase import flush_database_updates
@@ -29,27 +39,180 @@ from canonical.database.sqlbase import flush_database_updates
 
 class TeamEditView(SQLObjectEditView):
 
-    viewsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-person-views.pt')
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-team-actions.pt')
-
     def __init__(self, context, request):
         SQLObjectEditView.__init__(self, context, request)
         self.team = self.context
+
+
+class TeamEmailView:
+    """A View to edit a team's contact email address."""
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.team = self.context
+        self.wrongemail = None
+        self.errormessage = ""
+        self.feedback = ""
+
+    def processForm(self):
+        """Process the form, if it was submitted."""
+        # Any self-posting form that updates the database and want to display
+        # these updated values have to flush all db updates. This is why we
+        # call flush_database_updates() here.
+
+        request = self.request
+        if request.method != "POST":
+            # Nothing to do
+            return
+
+        emailset = getUtility(IEmailAddressSet)
+
+        if request.form.get('ADD_EMAIL') or request.form.get('CHANGE_EMAIL'):
+            emailaddress = request.form.get('newcontactemail', "")
+            emailaddress = emailaddress.lower().strip()
+            if not valid_email(emailaddress):
+                self.errormessage = (
+                    "The email address you're trying to add doesn't seem to "
+                    "be valid. Please make sure it's correct and try again.")
+                # We want to display the invalid address so the user can just
+                # fix what's wrong and send again.
+                self.wrongemail = emailaddress
+                return
+
+            email = emailset.getByEmail(emailaddress)
+            if email is not None:
+                if email.person.id != self.team.id:
+                    self.errormessage = (
+                        "The email address you're trying to add is already "
+                        "registered in Launchpad for %s."
+                        % email.person.browsername())
+                else:
+                    self.errormessage = (
+                        "This is the current contact email address of this "
+                        "team. There's no need to add it again.")
+                return
+
+            self._sendEmailValidationRequest(emailaddress)
+            flush_database_updates()
+            return
+        elif request.form.get('REMOVE_EMAIL'):
+            if self.team.preferredemail is None:
+                self.errormessage = "This team has no contact email address."
+                return
+            self.team.preferredemail.destroySelf()
+            self.feedback = (
+                "The contact email address of this team has been removed. "
+                "From now on, all notifications directed to this team will "
+                "be sent to all team members.")
+            flush_database_updates()
+            return
+        elif (request.form.get('REMOVE_UNVALIDATED') or
+              request.form.get('VALIDATE')):
+            email = self.request.form.get("UNVALIDATED_SELECTED")
+            if email is None:
+                self.feedback = ("You must select the email address you want "
+                                 "to remove/confirm.")
+                return
+
+            if request.form.get('REMOVE_UNVALIDATED'):
+                getUtility(ILoginTokenSet).deleteByEmailAndRequester(
+                    email, self.context)
+                self.feedback = (
+                    "The email address '%s' has been removed." % email)
+            elif request.form.get('VALIDATE'):
+                self._sendEmailValidationRequest(email)
+
+            flush_database_updates()
+            return
+
+    def _sendEmailValidationRequest(self, email):
+        """Send a validation message to <email> and update self.feedback."""
+        appurl = self.request.getApplicationURL()
+        sendEmailValidationRequest(self.team, email, appurl)
+        self.feedback = (
+            "A new message was sent to '%s', please follow the instructions "
+            "on that message to validate the new contact email address of "
+            "this team." % email)
+
+
+class ITeamCreation(ITeam):
+    """An interface to be used by the team creation form.
+
+    We need this special interface so we can allow people to specify a contact
+    email address for a team upon its creation.
+    """
+
+    contactemail = TextLine(
+        title=_("Contact Email Address"), required=False, readonly=False,
+        description=_(
+            "This is the email address we'll send all notifications to this "
+            "team. If no contact address is chosen, notifications directed to "
+            "this team will be sent to all team members. After finishing the "
+            "team creation, a new message will be sent to this address with "
+            "instructions on how to finish its registration."))
+
+
+class TeamAddView(AddView):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        AddView.__init__(self, context, request)
+        self._nextURL = '.'
+
+    def nextURL(self):
+        return self._nextURL
+
+    def createAndAdd(self, data):
+        kw = {}
+        for key, value in data.items():
+            kw[str(key)] = value
+
+        email = kw.pop('contactemail', None)
+        kw['teamownerID'] = getUtility(ILaunchBag).user.id
+        team = getUtility(IPersonSet).newTeam(**kw)
+        notify(ObjectCreatedEvent(team))
+
+        if email is not None:
+            appurl = self.request.getApplicationURL()
+            sendEmailValidationRequest(team, email, appurl)
+
+        self._nextURL = '/people/%s' % team.name
+        return team
+
+
+def sendEmailValidationRequest(team, email, appurl):
+    """Send a validation message to <email>, so it can be registered to <team>.
+
+    We create the necessary LoginToken entry and then send the message to
+    <email>, with <team> as the requester. The user which actually made the
+    request in behalf of the team is also shown on the message.
+    """
+    template = open(
+        'lib/canonical/launchpad/emailtemplates/validate-teamemail.txt').read()
+
+    fromaddress = "Launchpad Email Validator <noreply@ubuntu.com>"
+    subject = "Launchpad: Validate your team's contact email address"
+    login = getUtility(ILaunchBag).login
+    user = getUtility(ILaunchBag).user
+    token = getUtility(ILoginTokenSet).new(
+                team, login, email, LoginTokenType.VALIDATETEAMEMAIL)
+
+    replacements = {'longstring': token.token,
+                    'team': token.requester.browsername,
+                    'requester': '%s (%s)' % (user.browsername, user.name),
+                    'toaddress': token.email,
+                    'appurl': appurl,
+                    'admin_email': config.admin_address}
+    message = template % replacements
+    simple_sendmail(fromaddress, token.email, subject, message)
 
 
 class TeamView:
     """A simple View class to be used in Team's pages where we don't have
     actions to process.
     """
-
-    viewsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-person-views.pt')
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-team-actions.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -67,13 +230,13 @@ class TeamView:
 
         return user.inTeam(self.context.teamowner)
 
-    def userHaveMembershipEntry(self):
-        """Return True if the logged in user have a TeamMembership entry for
+    def userHasMembershipEntry(self):
+        """Return True if the logged in user has a TeamMembership entry for
         this Team."""
         return bool(self._getMembershipForUser())
 
     def userIsActiveMember(self):
-        """Return True if the logged in user have a TeamParticipation entry
+        """Return True if the logged in user has a TeamParticipation entry
         for this Team. This implies a membership status of either ADMIN or
         APPROVED."""
         user = getUtility(ILaunchBag).user
@@ -82,44 +245,17 @@ class TeamView:
 
         return user.inTeam(self.context)
 
-    def subscriptionPolicyDesc(self):
-        policy = self.context.subscriptionpolicy
-        if policy == TeamSubscriptionPolicy.RESTRICTED:
-            return "Restricted team. Only administrators can add new members"
-        elif policy == TeamSubscriptionPolicy.MODERATED:
-            return ("Moderated team. New subscriptions are subjected to "
-                    "approval by one of the team's administrators.")
-        elif policy == TeamSubscriptionPolicy.OPEN:
-            return "Open team. Any user can join and no approval is required"
-
     def membershipStatusDesc(self):
         tm = self._getMembershipForUser()
-        if tm is None:
-            return "You are not a member of this team."
+        assert tm is not None, (
+            'This method is not meant to be called for users which are not '
+            'members of this team.')
 
-        if tm.status == TeamMembershipStatus.PROPOSED:
-            desc = ("You are currently a proposed member of this team."
-                    "Your subscription depends on approval by one of the "
-                    "team's administrators.")
-        elif tm.status == TeamMembershipStatus.APPROVED:
-            desc = ("You are currently an approved member of this team.")
-        elif tm.status == TeamMembershipStatus.ADMIN:
-            desc = ("You are currently an administrator of this team.")
-        elif tm.status == TeamMembershipStatus.DEACTIVATED:
-            desc = "Your subscription for this team is currently deactivated."
-            if tm.reviewercomment is not None:
-                desc += "The reason provided for the deactivation is: '%s'" % \
-                        tm.reviewercomment
-        elif tm.status == TeamMembershipStatus.EXPIRED:
-            desc = ("Your subscription for this team is currently expired, "
-                    "waiting for renewal by one of the team's administrators.")
-        elif tm.status == TeamMembershipStatus.DECLINED:
-            desc = ("Your subscription for this team is currently declined. "
-                    "Clicking on the 'Join' button will put you on the "
-                    "proposed members queue, waiting for the approval of one "
-                    "of the team's administrators")
-
-        return desc
+        description = tm.status.description
+        if tm.status == TeamMembershipStatus.DEACTIVATED and tm.reviewercomment:
+            description += ("The reason for the deactivation is: '%s'"
+                            % tm.reviewercomment)
+        return description
 
     def userCanRequestToLeave(self):
         """Return true if the user can request to leave this team.
@@ -203,9 +339,6 @@ class TeamLeaveView(TeamView):
 
 
 class TeamMembersView:
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-team-actions.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -393,7 +526,7 @@ class TeamMembershipEditView:
         year = int(self.request.form.get('year'))
         month = int(self.request.form.get('month'))
         day = int(self.request.form.get('day'))
-        return datetime(year, month, day)
+        return datetime(year, month, day, tzinfo=pytz.timezone('UTC'))
 
     def _setMembershipData(self, status):
         """Set all data specified on the form, for this TeamMembership.
@@ -524,9 +657,4 @@ class TeamMembershipEditView:
         html += '</select>'
 
         return html
-
-
-def traverseTeam(team, request, name):
-    if name == '+members':
-        return ITeamMembershipSubset(team)
 

@@ -6,7 +6,12 @@ from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 
 __metaclass__ = type
 
-__all__ = ('IPOFileSet', 'IPOFile', 'IEditPOFile')
+__all__ = ('ZeroLengthPOExportError', 'IPOFileSet', 'IPOFile', 'IEditPOFile')
+
+
+class ZeroLengthPOExportError(Exception):
+    """An exception raised when a PO file export generated an empty file."""
+
 
 class IPOFileSet(Interface):
     """A set of POFile."""
@@ -24,7 +29,7 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
 
     language = Attribute("Language of this PO file.")
 
-    title = Attribute("The PO file's title.")
+    title = Attribute("A title for this PO file.")
 
     description = Attribute("PO file description.")
 
@@ -48,10 +53,41 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
 
     filename = Attribute("The name of the file that was imported")
 
+    exportfile = Attribute("The Librarian alias of the last cached export.")
+
     latest_sighting = Attribute("""Of all the translation sightings belonging
         to PO messages sets belonging to this PO file, return the one which
         was most recently modified (greatest datelastactive), or None if
         there are no sightings belonging to this PO file.""")
+
+    datecreated = Attribute("The fate this file was created.")
+
+    latest_submission = Attribute("""Of all the translation submissions
+        belonging to PO messages sets belonging to this PO file, return the
+        one which was most recently modified (greatest datelastactive), or
+        None if there are no submissions belonging to this PO file.""")
+
+    translators = Attribute("A list of Translators that have been "
+        "designated as having permission to edit these files in this "
+        "language.")
+
+    contributors = Attribute("A list of all the people who have made "
+        "some sort of contribution to this PO file.")
+
+    translationpermission = Attribute("The permission system which "
+        "is used for this pofile. This is inherited from the product, "
+        "project and/or distro in which the pofile is found.")
+
+    translators = Attribute("A list of Translators that have been "
+        "designated as having permission to edit these files in this "
+        "language.")
+
+    contributors = Attribute("A list of all the people who have made "
+        "some sort of contribution to this PO file.")
+
+    translationpermission = Attribute("The permission system which "
+        "is used for this pofile. This is inherited from the product, "
+        "project and/or distro in which the pofile is found.")
 
     def __len__():
         """Returns the number of current IPOMessageSets in this PO file."""
@@ -115,7 +151,7 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
         Return the message sets using 'slice' or all of them if slice is None.
         """
 
-    def getPOTMsgSetUnTranslated(slice=None):
+    def getPOTMsgSetUntranslated(slice=None):
         """Get pot message sets that are untranslated in this PO file.
 
         'slice' is a slice object that selects a subset of POTMsgSets.
@@ -129,13 +165,25 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
         """Gives all pofiles that have a rawfile pending of import into
         Rosetta."""
 
-    def getContributors():
-        """Returns the list of persons that have an active contribution inside
-        this POFile."""
+    def validExportCache():
+        """Does this PO file have a cached export that is up to date?"""
+
+    def updateExportCache(contents):
+        """Update this PO file's export cache with a string."""
+
+    def export():
+        """Export this PO file as a string."""
 
 
 class IEditPOFile(IPOFile):
     """Edit interface for a PO File."""
+
+    def canEditTranslations(person):
+        """Say if a person is able to edit existing translations.
+
+        Return True or False indicating whether the person is allowed
+        to edit these translations.
+        """
 
     def expireAllMessages():
         """Mark our of our message sets as not current (sequence=0)"""

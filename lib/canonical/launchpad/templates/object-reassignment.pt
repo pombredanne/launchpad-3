@@ -1,0 +1,66 @@
+<tal:do-this-first: tal:condition="view/processForm" />
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <h1>Change the <span tal:replace="view/ownerOrMaintainerAttr" /> of 
+    <span tal:replace="view/contextName" />
+  </h1>
+
+  <p class="portalMessage" tal:condition="view/errormessage"
+     tal:content="view/errormessage" />
+
+  <form action="" method="POST">
+
+    <table width="100%">
+      <tr>
+        <td align="right">
+          Current <span tal:replace="view/ownerOrMaintainerAttr" />:
+        </td>
+        <td>
+          <span tal:replace="view/ownerOrMaintainer/browsername" />
+        </td>
+      <tr>
+
+      <tr>
+        <td align="right">Change to:</td>
+        <td><tal:block content="structure view/owner_widget" /></td>
+      </tr>
+
+      <tr>
+        <td align="right">This is:</td>
+        <td>
+          <label for="existing">
+            <input type="radio" value="existing" id="existing" 
+                   name="existing" checked />an existing person or team
+          </label>
+          <br />
+
+          <label for="new">
+            <input type="radio" value="new" id="new" 
+                   name="existing" />a new team I'm creating here
+          </label>
+          <br />
+
+          You can change details and members<br />
+          of the team once it's created.
+        </td>
+      </tr>
+
+      <tr>
+        <td></td>
+        <td>
+          <input type="submit" value="Change Owner" name="CHANGE_OWNER" />
+        </td>
+      </tr>
+    </table>
+
+</div> 
+
+</body>
+</html>

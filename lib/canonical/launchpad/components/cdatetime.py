@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 from datetime import datetime
+import pytz
 
 from zope.interface import implements
 from canonical.launchpad.interfaces import IAging
@@ -26,7 +27,7 @@ class AgingAdapter:
         """See canonical.launchpad.interfaces.ITimeDelta."""
         age = ""
         datecreated = self.context.datecreated
-        right_now = datetime.utcnow()
+        right_now = datetime.now(pytz.timezone('UTC'))
         delta = right_now - datecreated
         if not delta.days:
             if delta.seconds < SECONDS_PER_HOUR:

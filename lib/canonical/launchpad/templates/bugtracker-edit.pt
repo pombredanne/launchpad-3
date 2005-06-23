@@ -3,12 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-    <title metal:fill-slot="title">Edit
-    <span tal:replace="context/title">bugtracker title</span>
-    Details
-    </title>
-
-
 <head>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>

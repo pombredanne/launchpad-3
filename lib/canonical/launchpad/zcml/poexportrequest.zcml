@@ -1,0 +1,14 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:lp="http://launchpad.canonical.com"
+    i18n_domain="launchpad">
+
+    <securedutility
+        class="canonical.launchpad.database.POExportRequestSet"
+        provides="canonical.launchpad.interfaces.IPOExportRequestSet">
+        <allow interface="canonical.launchpad.interfaces.IPOExportRequestSet" />
+    </securedutility>
+
+</configure>

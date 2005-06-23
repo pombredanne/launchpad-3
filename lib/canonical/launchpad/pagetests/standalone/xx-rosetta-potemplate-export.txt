@@ -1,0 +1,98 @@
+
+Exporting Files from PO Templates Through the Web
+-------------------------------------------------
+
+If we haven't logged in yet, we should be prompted to.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+export HTTP/1.1
+  ... """)
+  HTTP/1.1 303 See Other
+  Content-Length: 0
+  Content-Type: text/plain;charset=utf-8
+  Location: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+export/+login
+  <BLANKLINE>
+
+If we GET the page while logged in, we should get a confirmation form.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+export HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+            <h2>Template "evolution-2.2" in ubuntu hoary package "evolution"</h2>
+  <BLANKLINE>
+  ...
+  <BLANKLINE>
+      <h1>Export Translations</h1>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+              <p>
+              The files you request will be exported shortly, and a notification
+              will be sent to your email address <strong>carlos@canonical.com</strong>.
+              </p>
+  <BLANKLINE>
+              <h2>Select Files for Exporting</h2>
+  <BLANKLINE>
+              <form action="" method="POST">
+  ...
+
+If we POST the page, it should add the request to the queue.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+export HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 172
+  ... Content-Type: multipart/form-data; boundary=---------------------------1317525699644877998171790582
+  ... 
+  ... -----------------------------1317525699644877998171790582
+  ... Content-Disposition: form-data; name="what"
+  ... 
+  ... all
+  ... -----------------------------1317525699644877998171790582--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+            <h2>Template "evolution-2.2" in ubuntu hoary package "evolution"</h2>
+  <BLANKLINE>
+  ...
+      <h1>Export Translations</h1>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+          <p>
+          Your export request has been received. The results should arrive by
+          email shortly.
+          </p>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  ...
+

@@ -2,7 +2,7 @@
 
 
   >>> print http(r"""
-  ... GET /people/foo/+newteam HTTP/1.1
+  ... GET /people/+newteam HTTP/1.1
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
   ... """)
   HTTP/1.1 200 Ok
@@ -14,7 +14,7 @@
 
 
   >>> print http(r"""
-  ... POST /people/foo/+newteam HTTP/1.1
+  ... POST /people/+newteam HTTP/1.1
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
   ... Content-Length: ...
   ... Content-Type: multipart/form-data; boundary=---------------------------1864281074215564721489467183
@@ -72,3 +72,11 @@
   ...Owner:...
   ...foobar...
   ...
+
+
+  The owner of a team is always added as an administrator of his team. Let's
+  make sure that's true.
+
+  >>> from canonical.launchpad.database import Person
+  >>> [a.name for a in Person.byName('myemail').administrators]
+  [u'foo']

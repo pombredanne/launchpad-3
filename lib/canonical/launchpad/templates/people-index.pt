@@ -3,14 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">Launchpad People</title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
   <body>
     <div metal:fill-slot="main">
       <tal:block define="bn view/searchPeopleBatchNavigator">
@@ -101,8 +93,8 @@
           <p> 
             Some accounts have been automatically created by Launchpad
             and may be duplicates.
-            If you find you have multiple accounts, please
-            <a href="+requestmerge">merge them</a>.
+            If you find you have more than one, please
+            <a href="+requestmerge">merge the accounts</a>.
           </p>
         </tal:block>
         <tal:block condition="bn">
@@ -140,7 +132,7 @@
               </thead>
               <tbody>
                 <tr tal:repeat="person python:list(bn.currentBatch())">      
-                  <td><a tal:content="person/displayname"
+                  <td><a tal:content="person/browsername"
             	    tal:attributes="href person/name"/>
                   </td>
                 </tr>    
@@ -151,7 +143,9 @@
       </tal:block>
       <ul>
         <li><a href="+peoplelist">List all people</a></li>
-        <li><a href="+teamlist">List all teams</a></li>
+        <li><a href="+teamlist">List all teams</a> 
+            [<a href="+newteam">Create a new team</a>]</li>
+        <li><a href="+ubuntitelist">List all ubuntites</a></li>
       </ul>
     </div>
   </body>

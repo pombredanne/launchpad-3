@@ -22,7 +22,7 @@ class SQLObjectAddView(AddView):
         # XXX: Brad Bollenbach, 2005-04-01: I'm doing the painful task of
         # copying and pasting this method directly from AddView, changing
         # only the event that is published. By doing this, I'm able to
-        # publish an ISQLObjectCreatedEvent that has the request as one of
+        # publish an ISQLObjectCreatedEvent that has the user as one of
         # its attributes (which is really important for things like, e.g.
         # bug notification emails.)
         #
@@ -57,7 +57,7 @@ class SQLObjectAddView(AddView):
         if errors:
             raise WidgetsError(*errors)
 
-        notify(SQLObjectCreatedEvent(content, self.request))
+        notify(SQLObjectCreatedEvent(content))
 
         content = self.add(content)
 

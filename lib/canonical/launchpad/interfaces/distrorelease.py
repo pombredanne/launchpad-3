@@ -48,10 +48,11 @@ class IDistroRelease(IHasOwner):
     binarycount = Attribute("Binary Packages Counter")
     potemplates = Attribute("The set of potemplates in the release")
     potemplatecount = Attribute("The number of potemplates for this release")
+    architecturecount = Attribute("The number of architectures in this "
+        "release.")
     architectures = Attribute("The Architecture-specific Releases")
-
-    def architecturecount():
-        """Return the number of architectures in this release."""
+    datelastlangpack = Attribute(
+        "The date of the last base language pack export for this release.")
 
     def getBugSourcePackages():
         """Get SourcePackages in a DistroRelease with BugTask"""

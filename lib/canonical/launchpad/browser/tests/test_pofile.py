@@ -16,6 +16,7 @@ class DummyLanguage:
     def __init__(self, code, pluralforms):
         self.code = code
         self.pluralforms = pluralforms
+        self.englishname = 'Gobbledegook'
 
 
 class DummyLanguageSet:
@@ -61,9 +62,9 @@ class DummyProductRelease:
     def potemplates(self):
         return [DummyPOTemplate()]
 
+    @property
     def product(self):
         return DummyProduct()
-    product = property(product)
 
 
 class DummyProductSeries:
@@ -93,9 +94,13 @@ class DummyPOFile:
         self.potemplate = template
         self.language = language
         self.pluralforms = language.pluralforms
+        self.header = ''
 
     def translatedCount(self):
         return 3
+
+    def translatedPercentage(self):
+        return 35.0
 
     def __getitem__(self, msgid_text):
         raise KeyError, msgid_text
@@ -103,8 +108,11 @@ class DummyPOFile:
     def getPOTMsgSetTranslated(self, current=True, slice=None):
         return [DummyPOTMsgSet(), DummyPOTMsgSet()]
 
-    def getPOTMsgSetUnTranslated(self, current=True, slice=None):
+    def getPOTMsgSetUntranslated(self, current=True, slice=None):
         return [DummyPOTMsgSet(), DummyPOTMsgSet()]
+
+    def canEditTranslations(self, user):
+        return True
 
 
 class DummyMsgID:
@@ -115,7 +123,8 @@ class DummyPOMsgSet:
     fuzzy = False
     commenttext = 'foo'
 
-    def translations(self):
+    @property
+    def active_texts(self):
         return ['bar']
 
 
@@ -165,11 +174,8 @@ class DummyPOTemplate:
     def hasPluralMessage(self):
         return True
 
-    def attachRawFileData(self, contents, importer=None):
+    def attachRawFileData(self, contents, published, importer=None):
         pass
-
-    def canEditTranslations(self, person):
-        return True
 
 
 class DummyResponse:
@@ -212,14 +218,14 @@ class DummyLaunchBag:
         self.user = user
 
 
-def test_POFileTranslateView_init():
-    """Test the __init__ method for POFileTranslateView.
+def test_POFileView_init():
+    """Test the __init__ method for POFileView.
 
     Some boilerplate to allow us to use utilities.
 
     >>> from zope.app.tests.placelesssetup import setUp, tearDown
     >>> from zope.app.tests import ztapi
-    >>> from canonical.launchpad.browser import POFileTranslateView
+    >>> from canonical.launchpad.browser import POFileView
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
@@ -234,8 +240,8 @@ def test_POFileTranslateView_init():
     >>> language_set = DummyLanguageSet()
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest()
-    >>> t = POFileTranslateView(context, request)
-    >>> t.processForm()
+    >>> t = POFileView(context, request)
+    >>> t.processTranslations()
 
     >>> context.language.code
     'es'
@@ -257,8 +263,8 @@ def test_POFileTranslateView_init():
     >>> language_set = DummyLanguageSet()
     >>> context = DummyPOFile(potemplate, language_set['cy'])
     >>> request = DummyRequest()
-    >>> t = POFileTranslateView(context, request)
-    >>> t.processForm()
+    >>> t = POFileView(context, request)
+    >>> t.processTranslations()
 
     >>> context.language.code
     'cy'
@@ -274,8 +280,8 @@ def test_POFileTranslateView_init():
     >>> language_set = DummyLanguageSet()
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest(offset=7, count=8)
-    >>> t = POFileTranslateView(context, request)
-    >>> t.processForm()
+    >>> t = POFileView(context, request)
+    >>> t.processTranslations()
 
     >>> t.offset
     7
@@ -289,8 +295,8 @@ def test_POFileTranslateView_init():
     >>> language_set = DummyLanguageSet()
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest(offset='foo', count='bar')
-    >>> t = POFileTranslateView(context, request)
-    >>> t.processForm()
+    >>> t = POFileView(context, request)
+    >>> t.processTranslations()
 
     >>> t.offset
     0
@@ -303,8 +309,8 @@ def test_POFileTranslateView_init():
     >>> language_set = DummyLanguageSet()
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest(show='translated')
-    >>> t = POFileTranslateView(context, request)
-    >>> t.processForm()
+    >>> t = POFileView(context, request)
+    >>> t.processTranslations()
 
     >>> t.show
     'translated'
@@ -312,12 +318,12 @@ def test_POFileTranslateView_init():
     >>> tearDown()
     """
 
-def test_POFileTranslateView_atBeginning_atEnd():
+def test_POFileView_atBeginning_atEnd():
     """Test atBeginning and atEnd.
 
     >>> from zope.app.tests.placelesssetup import setUp, tearDown
     >>> from zope.app.tests import ztapi
-    >>> from canonical.launchpad.browser import POFileTranslateView
+    >>> from canonical.launchpad.browser import POFileView
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
@@ -327,8 +333,8 @@ def test_POFileTranslateView_atBeginning_atEnd():
     >>> language_set = DummyLanguageSet()
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest()
-    >>> t = POFileTranslateView(context, request)
-    >>> t.processForm()
+    >>> t = POFileView(context, request)
+    >>> t.processTranslations()
 
     >>> t.atBeginning()
     True
@@ -339,8 +345,8 @@ def test_POFileTranslateView_atBeginning_atEnd():
     >>> language_set = DummyLanguageSet()
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest(offset=10)
-    >>> t = POFileTranslateView(context, request)
-    >>> t.processForm()
+    >>> t = POFileView(context, request)
+    >>> t.processTranslations()
 
     >>> t.atBeginning()
     False
@@ -351,8 +357,8 @@ def test_POFileTranslateView_atBeginning_atEnd():
     >>> language_set = DummyLanguageSet()
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest(offset=30)
-    >>> t = POFileTranslateView(context, request)
-    >>> t.processForm()
+    >>> t = POFileView(context, request)
+    >>> t.processTranslations()
 
     >>> t.atBeginning()
     False
@@ -362,12 +368,12 @@ def test_POFileTranslateView_atBeginning_atEnd():
     >>> tearDown()
     """
 
-def test_POFileTranslateView_URLs():
+def test_POFileView_URLs():
     """Test URL functions.
 
     >>> from zope.app.tests.placelesssetup import setUp, tearDown
     >>> from zope.app.tests import ztapi
-    >>> from canonical.launchpad.browser import POFileTranslateView
+    >>> from canonical.launchpad.browser import POFileView
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
@@ -379,8 +385,8 @@ def test_POFileTranslateView_URLs():
     >>> language_set = DummyLanguageSet()
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest()
-    >>> t = POFileTranslateView(context, request)
-    >>> t.processForm()
+    >>> t = POFileView(context, request)
+    >>> t.processTranslations()
 
     >>> t.createURL()
     'http://this.is.a/fake/url'
@@ -397,8 +403,8 @@ def test_POFileTranslateView_URLs():
     >>> language_set = DummyLanguageSet()
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest(offset=10)
-    >>> t = POFileTranslateView(context, request)
-    >>> t.processForm()
+    >>> t = POFileView(context, request)
+    >>> t.processTranslations()
 
     >>> t.beginningURL()
     'http://this.is.a/fake/url'
@@ -418,8 +424,8 @@ def test_POFileTranslateView_URLs():
     >>> language_set = DummyLanguageSet()
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest(offset=42, count=43)
-    >>> t = POFileTranslateView(context, request)
-    >>> t.processForm()
+    >>> t = POFileView(context, request)
+    >>> t.processTranslations()
 
     >>> t.createURL()
     'http://this.is.a/fake/url?count=43&offset=42'
@@ -433,8 +439,8 @@ def test_POFileTranslateView_URLs():
     >>> language_set = DummyLanguageSet()
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest(show='all')
-    >>> t = POFileTranslateView(context, request)
-    >>> t.processForm()
+    >>> t = POFileView(context, request)
+    >>> t.processTranslations()
 
     >>> t.createURL()
     'http://this.is.a/fake/url'
@@ -443,8 +449,8 @@ def test_POFileTranslateView_URLs():
     >>> language_set = DummyLanguageSet()
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest(show='translated')
-    >>> t = POFileTranslateView(context, request)
-    >>> t.processForm()
+    >>> t = POFileView(context, request)
+    >>> t.processTranslations()
 
     >>> t.createURL()
     'http://this.is.a/fake/url?show=translated'
@@ -452,12 +458,12 @@ def test_POFileTranslateView_URLs():
     >>> tearDown()
     """
 
-def test_POFileTranslateView_messageSets():
+def test_POFileView_messageSets():
     """Test messageSets values.
 
     >>> from zope.app.tests.placelesssetup import setUp, tearDown
     >>> from zope.app.tests import ztapi
-    >>> from canonical.launchpad.browser import POFileTranslateView
+    >>> from canonical.launchpad.browser import POFileView
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
@@ -467,8 +473,8 @@ def test_POFileTranslateView_messageSets():
     >>> language_set = DummyLanguageSet()
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest()
-    >>> t = POFileTranslateView(context, request)
-    >>> t.processForm()
+    >>> t = POFileView(context, request)
+    >>> t.processTranslations()
 
     >>> x = list(t.messageSets)[0]
     >>> x.id
@@ -491,12 +497,12 @@ def test_POFileTranslateView_messageSets():
     >>> tearDown()
     """
 
-def test_POFileTranslateView_makeTabIndex():
+def test_POFileView_makeTabIndex():
     """Test the tab index generator.
 
     >>> from zope.app.tests.placelesssetup import setUp, tearDown
     >>> from zope.app.tests import ztapi
-    >>> from canonical.launchpad.browser import POFileTranslateView
+    >>> from canonical.launchpad.browser import POFileView
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
@@ -506,7 +512,7 @@ def test_POFileTranslateView_makeTabIndex():
     >>> language_set = DummyLanguageSet()
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest()
-    >>> t = POFileTranslateView(context, request)
+    >>> t = POFileView(context, request)
     >>> t.makeTabIndex()
     1
     >>> t.makeTabIndex()

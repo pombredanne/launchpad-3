@@ -9,7 +9,9 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IRosettaApplication, \
-    IProductSet, IDistroReleaseSet
+    IProductSet, IDistroReleaseSet, ITranslationGroupSet
+from canonical.launchpad.database import POTemplate, POFile, Language, \
+    POMsgID, Person
 from canonical.publication import rootObject
 
 
@@ -22,17 +24,40 @@ class RosettaApplication:
         self.title = 'Rosetta: Translations in the Launchpad'
 
     def translatable_products(self, translationProject=None):
-        """This will give a list of the translatable products in the given
-        Translation Project. For the moment it just returns every
-        translatable product."""
+        """See IRosettaApplication."""
         products = getUtility(IProductSet)
         return products.translatables(translationProject)
 
     def translatable_distroreleases(self):
-        """This will give a list of the distroreleases in launchpad for
-        which translations can be done."""
+        """See IRosettaApplication."""
         distroreleases = getUtility(IDistroReleaseSet)
         return distroreleases.translatables()
 
+    def translation_groups(self):
+        """See IRosettaApplication."""
+        return getUtility(ITranslationGroupSet)
+
+    def potemplate_count(self):
+        """See IRosettaApplication."""
+        return POTemplate.select().count()
+
+    def pofile_count(self):
+        """See IRosettaApplication."""
+        return POFile.select().count()
+
+    def pomsgid_count(self):
+        """See IRosettaApplication."""
+        return POMsgID.select().count()
+
+    def translator_count(self):
+        """See IRosettaApplication."""
+        return Person.select("POSubmission.person=Person.id",
+            clauseTables=['POSubmission'], distinct=True).count()
+
+    def language_count(self):
+        """See IRosettaApplication."""
+        return Language.select("POFile.language=Language.id",
+            clauseTables=['POFile'], distinct=True).count()
+        
     name = 'Rosetta'
 

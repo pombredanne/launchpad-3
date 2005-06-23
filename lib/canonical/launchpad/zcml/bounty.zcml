@@ -5,13 +5,6 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <!-- This view registers 'bounties' as a suburl of RootObject. -->
-    <browser:suburl
-        for="canonical.publication.RootObject"
-        class="canonical.launchpad.database.BountySet"
-        name="bounties" />
-
-
     <!-- Bounty -->
     <content class="canonical.launchpad.database.Bounty">
         <allow interface="canonical.launchpad.interfaces.IBounty" />
@@ -32,6 +25,14 @@
             template="../templates/bounty.pt"
             name="+index"
             lp:url="/bounties/$Bounty.name/+index" />
+        <browser:page
+            template="../templates/portlet-bounty-relateds.pt"
+            name="+portlet-bounty-relateds"
+            lp:url="/bounties/$Bounty.name/+portlet-bounty-relateds" />
+        <browser:page
+            template="../templates/portlet-bounty-subscribers.pt"
+            name="+portlet-bounty-subscribers"
+            lp:url="/bounties/$Bounty.name/+portlet-bounty-subscribers" />
     </browser:pages>
 
     <browser:pages
@@ -64,6 +65,16 @@
         provides="canonical.launchpad.interfaces.IBountySet" >
         <allow interface="canonical.launchpad.interfaces.IBountySet" />
     </securedutility>
+
+    <browser:suburl
+        for="canonical.publication.RootObject"
+        utility="canonical.launchpad.interfaces.IBountySet"
+        name="bounties" />
+    <browser:url
+        for="canonical.launchpad.interfaces.IBountySet"
+        path_expression="string:bounties"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        />
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IBountySet"

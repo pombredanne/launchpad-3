@@ -1,0 +1,10 @@
+Tests that the Sample Person (testtesttest@canonical.com) user is not allowed
+to edit a POFile options from its edit form.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+edit HTTP/1.1
+  ... Accept-Language: en-gb,en;q=0.5
+  ... Authorization: Basic dGVzdHRlc3R0ZXN0QGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 403 Forbidden
+  ...

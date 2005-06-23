@@ -3,36 +3,27 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">
-        <span tal:replace="context/distrorelease/title" />
-        Source Packages</title>
-  <!-- Plone style sheet -->
-  <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Launchpad style sheet -->
-  <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/distribution/@@+portlet-details" /> <br />
+  <div tal:replace="structure context/distrorelease/@@+portlet-details" /> <br />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/distrorelease/@@+portlet-actions" />
+</metal:rightportlets>
 
 <div metal:fill-slot="main">
 
   <h1>Source Package Search</h1>
 
-  <p>Search for a source package in <span
-  tal:replace="context/distrorelease/displayname" />. Enter part of the
-  source package name in the space below and press "Search".</p>
+  <p> You can use full or part of the source package name on this search.</p>
 
   <form name="search" method="GET">
 
-    <fieldset>
-
-      <legend>Source Package Search</legend>
-
-      <input type="text" size="35" name="text" tal:attributes="value request/text|nothing" />
+      <input type="text" size="45" name="text" tal:attributes="value request/text|nothing" />
       <input type="submit" value="Search"/>
-
-    </fieldset>
 
   </form>
 

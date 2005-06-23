@@ -9,8 +9,8 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-__all__ = ['ILaunchpadApplication', 'IMaloneApplication',
-           'IRosettaApplication', 'IDOAPApplication',
+__all__ = ['ILaunchpadRoot', 'ILaunchpadApplication', 'IMaloneApplication',
+           'IRosettaApplication', 'IDOAPApplication', 'IBazaarApplication',
            'IFOAFApplication', 'IPasswordEncryptor',
            'IReadZODBAnnotation', 'IWriteZODBAnnotation',
            'IZODBAnnotation', 'IAuthorization',
@@ -18,14 +18,19 @@ __all__ = ['ILaunchpadApplication', 'IMaloneApplication',
            'IHasProductAndAssignee', 'IOpenLaunchBag',
            'IAging', 'IHasDateCreated',
            'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities',
-           'IBasicLink', 'ILink', 'ISelectionAwareLink',
-           'ITabList', 'IFacetList']
+           'ILink', 'IDefaultLink', 'IMenu', 'IMenuBase',
+           'IFacetMenu', 'IExtraFacetMenu',
+           'IApplicationMenu',
+           'ICanonicalUrlData', 'NoCanonicalUrl'
+           ]
 
 
 class ILaunchpadCelebrities(Interface):
 
     buttsource = Attribute("The 'buttsource' team.")
     admin = Attribute("The 'admins' team.")
+    ubuntu = Attribute("The ubuntu Distribution.")
+    rosetta_expert = Attribute("The Rosetta Experts team.")
 
 
 class ICrowd(Interface):
@@ -58,34 +63,77 @@ class ILaunchpadApplication(Interface):
     title = Attribute('Title')
 
 
+class ILaunchpadRoot(Interface):
+    """Marker interface for the root object of Launchpad."""
+
+
 class IMaloneApplication(ILaunchpadApplication):
     """Application root for malone."""
-
-    title = Attribute('Title')
 
 
 class IRosettaApplication(ILaunchpadApplication):
     """Application root for rosetta."""
 
-    def translatable_products():
-        """Return an iterator over the set of translatable Products which
-        are part of Ubuntu's translation project."""
+    def translatable_products(self, translationProject=None):
+        """Return a list of the translatable products in the given
+        Translation Project.
 
-    def translatable_distroreleases():
-        """Return an iterator over the set of distroreleases which contain
-        translatable apps in Rosetta."""
+        For the moment it just returns every translatable product.
+        """
+
+    def translatable_distroreleases(self):
+        """Return a list of the distroreleases in launchpad for which
+        translations can be done.
+        """
+
+    def translation_groups(self):
+        """Return a list of the translation groups in the system."""
+
+    def potemplate_count(self):
+        """Return the number of potemplates in the system."""
+
+    def pofile_count(self):
+        """Return the number of pofiles in the system."""
+
+    def pomsgid_count(self):
+        """Return the number of msgs in the system."""
+
+    def translator_count(self):
+        """Return the number of people who have given translations."""
+
+    def language_count(self):
+        """Return the number of languages Rosetta can translate into."""
+
+    def translation_groups():
+        """Return an iterator over the set of translation groups in
+        Rosetta."""
+
+    def potemplate_count():
+        """Return the number of potemplates in the system."""
+
+    def pofile_count():
+        """Return the number of pofiles in the system."""
+
+    def pomsgid_count():
+        """Return the number of PO MsgID's in the system."""
+
+    def translator_count():
+        """Return the number of translators in the system."""
+
+    def language_count():
+        """Return the number of languages in the system."""
 
 
 class IDOAPApplication(ILaunchpadApplication):
     """DOAP application root."""
 
-    title = Attribute('Title')
-
 
 class IFOAFApplication(ILaunchpadApplication):
     """FOAF application root."""
 
-    title = Attribute('Title')
+
+class IBazaarApplication(ILaunchpadApplication):
+    """Bazaar Application"""
 
 
 class IPasswordEncryptor(Interface):
@@ -190,6 +238,7 @@ class ILaunchBag(Interface):
     product = Attribute('Product, or None')
     distribution = Attribute('Distribution, or None')
     distrorelease = Attribute('DistroRelease, or None')
+    distroarchrelease = Attribute('DistroArchRelease, or None')
     sourcepackage = Attribute('Sourcepackage, or None')
     sourcepackagereleasepublishing = Attribute(
         'SourcepackageReleasePublishing, or None')
@@ -209,34 +258,70 @@ class IOpenLaunchBag(ILaunchBag):
         '''Set the login to the given value.'''
 
 
-class IBasicLink(Interface):
-    """A link."""
+class ILink(Interface):
 
-    id = Attribute('id')
-    href = Attribute('the relative href')
-    title = Attribute('text for the link')
-    summary = Attribute('summary for this facet')
+    name = Attribute(
+        'the name of this link, as declared in python for example')
 
+    target = Attribute('the relative path to the target of this link')
 
-class ILink(IBasicLink):
-    """A link, including whether or not it is disabled."""
-    enabled = Attribute('boolean, whether enabled')
+    url = Attribute('canonical url this link points to')
 
+    text = Attribute('the text of the link')
 
-class ISelectionAwareLink(ILink):
-    selected = Attribute('bool; is this facet the selected one?')
+    summary = Attribute('summary of the link, for example for a tooltip')
 
+    selected = Attribute('whether this link is selected or not')
 
-class IFacetList(Interface):
-    """A list of facets in various categories."""
-
-    links = Attribute("List of ILinks that are main links.")
-    overflow = Attribute("List of ILinks that overflow.")
+    linked = Attribute('whether this link should be available to traverse')
 
 
-class ITabList(Interface):
-    """A list of tabs in various categories."""
+class IDefaultLink(ILink):
+    """Link that is selected when other links are not."""
 
-    links = Attribute("List of ILinks that are main links.")
-    overflow = Attribute("List of ILinks that overflow.")
 
+class IMenu(Interface):
+    """Public interface for facets, menus, extra facets and extra menus."""
+
+    def __iter__():
+        """Iterate over the links in this menu."""
+
+
+class IMenuBase(IMenu):
+    """Common interface for facets, menus, extra facets and extra menus."""
+
+    context = Attribute('the object that has this menu')
+    request = Attribute('The web request.  May be None.')
+
+
+class IFacetMenu(IMenuBase):
+    """Main facet menu for an object."""
+
+
+class IExtraFacetMenu(IMenuBase):
+    """Extra facet menu for an object."""
+
+
+class IApplicationMenu(IMenuBase):
+    """Application menu for an object."""
+
+
+class ICanonicalUrlData(Interface):
+    """Tells you how to work out a canonical url for an object."""
+
+    inside = Attribute('The object this path is relative to.  None for root.')
+
+    path = Attribute('The path relative to "inside", not starting with a /.')
+
+
+class NoCanonicalUrl(TypeError):
+    """There was no canonical URL registered for an object.
+
+    Arguments are:
+      - The object for which a URL was sought
+      - The object that did not have ICanonicalUrlData
+    """
+    def __init__(self, object_url_requested_for, broken_link_in_chain):
+        TypeError.__init__(self, 'No url for %r because %r broke the chain.' %
+            (object_url_requested_for, broken_link_in_chain)
+            )

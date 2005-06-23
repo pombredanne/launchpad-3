@@ -9,7 +9,7 @@ class IBountySubscription(Interface):
 
     id = Int(title=_('ID'), readonly=True, required=True)
     person = Choice(
-            title=_('Person ID'), required=True, vocabulary='ValidPerson',
+            title=_('Person ID'), required=True, vocabulary='ValidPersonOrTeam',
             readonly=True,
             )
     bounty = Int(title=_('Bounty ID'), required=True, readonly=True)

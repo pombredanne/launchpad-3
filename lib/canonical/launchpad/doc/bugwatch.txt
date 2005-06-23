@@ -18,9 +18,6 @@ Retrieving Bug Watches
 
 Bug watches are accessed via a utility that provides IBugWatchSet.
 
-    >>> from canonical.launchpad.ftests import login
-    >>> login("launchpad.anonymous")
-
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IBugWatchSet
     >>> bugwatch = getUtility(IBugWatchSet).get(2)

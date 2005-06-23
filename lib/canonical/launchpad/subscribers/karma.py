@@ -19,7 +19,6 @@ def bug_comment_added(bugmessage, event):
 
 
 def bug_task_modified(task, event):
-    person = Person.get(event.principal.id)
     # XXX: Should we give Karma points to users who change priority
     # and severity too?
     fields = (("bugstatus", None),)
@@ -31,5 +30,5 @@ def bug_task_modified(task, event):
             if changes[field]["new"] == BugTaskStatus.FIXED:
                 # Can we assume that this is the user that really fixed
                 # the bug and give Karma points to him?
-                person.assignKarma(KarmaType.BUG_FIX)
+                event.user.assignKarma(KarmaType.BUG_FIX)
 

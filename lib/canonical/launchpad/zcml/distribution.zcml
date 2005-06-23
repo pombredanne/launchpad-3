@@ -9,10 +9,18 @@
     <content class="canonical.launchpad.database.Distribution">
         <allow interface="canonical.launchpad.interfaces.IDistribution"/>
         <require
-            permission="launchpad.Admin"
-            set_attributes="displayname title summary description members"
+            permission="launchpad.Edit"
+            set_attributes="displayname title summary description
+                            translationgroup translationpermission
+                            members owner"
             />
     </content>
+
+    <adapter
+        for="canonical.launchpad.interfaces.IDistribution"
+        provides="canonical.launchpad.interfaces.IBugTaskSubset"
+        factory="canonical.launchpad.components.distribution.DistributionToBugTaskSubsetAdapter"
+        permission="zope.Public" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
@@ -25,7 +33,13 @@
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IDistribution"
-        getter="traverse" />
+        function="canonical.launchpad.browser.traversers.traverse_distribution"
+        />
+    <browser:url
+        for="canonical.launchpad.interfaces.IDistroRelease"
+        path_expression="name"
+        attribute_to_parent="distribution"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"
@@ -33,11 +47,7 @@
         permission="zope.Public" >
         <browser:page
             name="+index"
-            template="../templates/distro-index.pt"
-            lp:url="/distros/$Distribution.name/" />
-        <browser:page
-            name="+bugs"
-            template="../templates/distribution-bugs.pt"
+            template="../templates/distribution.pt"
             lp:url="/distros/$Distribution.name/" />
         <browser:page
             name="+bounties"
@@ -45,8 +55,30 @@
             lp:url="/distros/$Distribution.name/+bounties/" />
         <browser:page
             name="+members"
-            template="../templates/distro-members.pt"
+            template="../templates/distribution-members.pt"
             lp:url="/distros/$Distribution.name/+members/" />
+        <browser:page
+            name="+portlet-actions"
+            template="../templates/portlet-distro-actions.pt"
+            lp:url="/distros/$Distribution.name/+portlet-actions/" />
+        <browser:page
+            name="+portlet-details"
+            template="../templates/portlet-distro-details.pt"
+            lp:url="/distros/$Distribution.name/+portlet-details/" />
+        <browser:page
+            name="+portlet-bounties"
+            template="../templates/portlet-related-bounties.pt"
+            lp:url="/distros/$Distribution.name/+portlet-bounties/" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IDistribution"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.ObjectReassignmentView">
+          <browser:page
+              name="+reassign"
+              template="../templates/object-reassignment.pt"
+              lp:url="/distros/$distro.id/+reassign" />
     </browser:pages>
 
     <browser:addform
@@ -74,7 +106,7 @@
 
     <browser:editform
         for="canonical.launchpad.interfaces.IDistribution"
-        permission="launchpad.Admin"
+        permission="launchpad.Edit"
         name="+edit"
         schema="canonical.launchpad.interfaces.IDistribution"
         fields="displayname title summary description"
@@ -82,14 +114,24 @@
         lp:url="/distros/$Distribution.name/+edit" />
 
     <browser:editform
-        for="canonical.launchpad.interfaces.IDistribution"
-        permission="launchpad.Edit"
         name="+selectmemberteam"
+        for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IDistribution"
-        label="Select A New Distribution Members Team"
         fields="members"
+        label="Select A New Distribution Members Team"
+        permission="launchpad.Edit"
         template="../templates/launchpad-editform.pt"
         lp:url="/distros/$Distribution.name/+selectmemberteam" />
+
+    <browser:editform
+        name="+changetranslators"
+        for="canonical.launchpad.interfaces.IDistribution"
+        schema="canonical.launchpad.interfaces.IDistribution"
+        fields="translationgroup translationpermission"
+        permission="launchpad.Edit"
+        label="Select A New Translation Group"
+        template="../templates/launchpad-editform.pt"
+        lp:url="/distros/$Distribution.name/+changetranslators" />
 
     <!-- DistributionSet -->
     <content class="canonical.launchpad.database.DistributionSet">
@@ -114,6 +156,11 @@
     <browser:traverse
         for="canonical.launchpad.interfaces.IDistributionSet"
         getter="__getitem__" />
+    <browser:url
+        for="canonical.launchpad.interfaces.IDistribution"
+        path_expression="name"
+        parent_utility="canonical.launchpad.interfaces.IDistributionSet"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IDistributionSet"
@@ -139,7 +186,7 @@
         for="canonical.launchpad.interfaces.IDistributionSet"
         permission="zope.Public"
             class="canonical.launchpad.browser.DistributionSetSearchView"
-            template="../templates/distro-search.pt"
+            template="../templates/distribution-search.pt"
             lp:url="Soyuz/distros/+search"
             name="+search"
         />
@@ -155,7 +202,9 @@
         permission="launchpad.Admin"
         template="../templates/launchpad-addform.pt"
         lp:url="soyuz/distros/+add">
-        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget
+            field="owner"
+            class="canonical.widgets.OwnerWidget" />
     </browser:addform>
 
 </configure>

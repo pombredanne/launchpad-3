@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 from zope.component import getUtility
+from zope.interface import implements
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from sqlobject import LIKE, AND
@@ -13,59 +14,19 @@ from canonical.lp.dbschema import BugTaskStatus
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad import helpers
 
-from canonical.launchpad.interfaces import IBugTaskSet, ILaunchBag
+from canonical.launchpad.interfaces import IBugTaskSet, ILaunchBag, \
+     IBugTaskSearchListingView
+from canonical.launchpad.browser.potemplate import POTemplateView
+from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 
-from canonical.launchpad.browser.potemplate import ViewPOTemplate
-
-BATCH_SIZE = 20
-
-class DistroReleaseView(object):
-
-    detailsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-distrorelease-details.pt')
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-distrorelease-actions.pt')
-
-    linksPortlet = ViewPageTemplateFile(
-        '../templates/portlet-distrorelease-links.pt')
-
-    translationsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-distrorelease-translations.pt')
-
-    statusLegend = ViewPageTemplateFile(
-        '../templates/portlet-rosetta-status-legend.pt')
-
-    prefLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-pref-langs.pt')
-
-    countryPortlet = ViewPageTemplateFile(
-        '../templates/portlet-country-langs.pt')
-
-    browserLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-browser-langs.pt')
+class DistroReleaseView:
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        bugtasks_to_show = getUtility(IBugTaskSet).search(
-            status = any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
-            distrorelease = self.context, orderby = "-id")
-        self.batch = Batch(
-            list(bugtasks_to_show), int(request.get('batch_start', 0)))
-        self.batchnav = BatchNavigator(self.batch, request)
-        self.is_maintainer = helpers.is_maintainer(self.context)
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(self.request)
-        self.status_message = None
-
-    def task_columns(self):
-        return [
-            "id", "package", "title", "status", "submittedby", "assignedto"]
-
-    def assign_to_milestones(self):
-        return []
 
     def requestCountry(self):
         return helpers.requestCountry(self.request)
@@ -74,11 +35,25 @@ class DistroReleaseView(object):
         return helpers.browserLanguages(self.request)
 
     def templateviews(self):
-        return [ViewPOTemplate(template, self.request)
+        return [POTemplateView(template, self.request)
                 for template in self.context.potemplates]
 
 
-class ReleasesAddView(object):
+class DistroReleaseBugsView(BugTaskSearchListingView):
+
+    implements(IBugTaskSearchListingView)
+
+    def __init__(self, context, request):
+        BugTaskSearchListingView.__init__(self, context, request)
+        self.milestone_widget = None
+        self.status_message = None
+
+    def task_columns(self):
+        """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
+        return [
+            "id", "package", "title", "status", "submittedby", "assignedto"]
+
+class ReleasesAddView:
 
     def __init__(self, context, request):
         self.context = context
@@ -112,7 +87,7 @@ class ReleasesAddView(object):
         d_util = getUtility(IDistroTools)
         return d_util.getDistroReleases()
 
-class ReleaseEditView(object):
+class ReleaseEditView:
 
     def __init__(self, context, request):
         self.context = context
@@ -137,7 +112,7 @@ class ReleaseEditView(object):
         self.context.release.version = version
         return True
 
-class ReleaseSearchView(object):
+class ReleaseSearchView:
     def __init__(self, context, request):
         self.context = context
         self.request = request

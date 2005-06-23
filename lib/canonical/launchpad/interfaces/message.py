@@ -58,9 +58,11 @@ class IMessage(Interface):
 class IMessageSet(Interface):
     """Set of IMessage"""
 
-    def get(rfc822msgid=None):
-        """Return a single IMessage matching the given criteria. Currently
-        the only search criterion supported is an rfc822msgid."""
+    def get(rfc822msgid):
+        """Return a single IMessage with the given rfc822msgid.
+
+        If no such messge exists, raise NotFoundError.
+        """
 
     def fromEmail(email_message, owner=None, filealias=None,
             parsed_message=None):

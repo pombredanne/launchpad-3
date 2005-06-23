@@ -83,9 +83,9 @@ class POMessage(object):
                     ))
             if len(kw['msgstrPlurals']) > kw['header'].nplurals:
                 warnings.warn(POSyntaxWarning(
-                    lno=kw['_lineno'],
-                    msg="Bad number of plural-forms in entry '%s' (line %d)."
-                        % (kw['msgid'], kw['_lineno'])
+                    lno=kw.get('_lineno'),
+                    msg="Bad number of plural-forms in entry '%s' (line %s)."
+                        % (kw['msgid'], str(kw.get('_lineno')))
                     ))
 
     def is_obsolete(self):

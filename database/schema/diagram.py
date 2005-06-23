@@ -8,7 +8,7 @@ from fti import quote_identifier
 from security import DbSchema, CursorWrapper
 from ConfigParser import SafeConfigParser, NoOptionError
 
-sys.path.append(os.path.join(
+sys.path.insert(0, os.path.join(
     os.path.dirname(__file__), os.pardir, os.pardir, 'lib'
     ))
 

@@ -17,7 +17,6 @@ from canonical.launchpad.database.bugattachment import *
 from canonical.launchpad.database.bugextref import *
 from canonical.launchpad.database.cveref import *
 from canonical.launchpad.database.bugtracker import *
-# from canonical.launchpad.database.sourcesource import *
 from canonical.launchpad.database.potemplatename import *
 from canonical.launchpad.database.pofile import *
 from canonical.launchpad.database.potemplate import *
@@ -26,7 +25,8 @@ from canonical.launchpad.database.pomsgid import *
 from canonical.launchpad.database.pomsgidsighting import *
 from canonical.launchpad.database.pomsgset import *
 from canonical.launchpad.database.potranslation import *
-from canonical.launchpad.database.potranslationsighting import *
+from canonical.launchpad.database.poselection import *
+from canonical.launchpad.database.posubmission import *
 from canonical.launchpad.database.archarchive import *
 from canonical.launchpad.database.archbranch import *
 from canonical.launchpad.database.archchangeset import *
@@ -48,6 +48,8 @@ from canonical.launchpad.database.person import *
 from canonical.launchpad.database.schema import *
 from canonical.launchpad.database.language import *
 from canonical.launchpad.database.translation_effort import *
+from canonical.launchpad.database.translationgroup import *
+from canonical.launchpad.database.translator import *
 from canonical.launchpad.database.processor import *
 from canonical.launchpad.database.manifest import *
 from canonical.launchpad.database.manifestentry import *
@@ -67,4 +69,5 @@ from canonical.launchpad.database.distrotool import *
 from canonical.launchpad.database.component import *
 from canonical.launchpad.database.section import *
 from canonical.launchpad.database.vpoexport import *
+from canonical.launchpad.database.poexportrequest import *
 

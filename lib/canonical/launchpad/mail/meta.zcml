@@ -4,6 +4,20 @@
 
   <meta:directive 
       namespace="http://namespaces.zope.org/mail"
+      name="testMailBox" 
+      schema=".meta.ITestMailBoxDirective"
+      handler=".meta.testMailBoxHandler"
+      />
+  
+  <meta:directive 
+      namespace="http://namespaces.zope.org/mail"
+      name="pop3MailBox" 
+      schema=".meta.IPOP3MailBoxDirective"
+      handler=".meta.pop3MailBoxHandler"
+      />
+
+  <meta:directive 
+      namespace="http://namespaces.zope.org/mail"
       name="stubMailer" 
       schema=".meta.IStubMailerDirective"
       handler=".meta.stubMailerHandler"

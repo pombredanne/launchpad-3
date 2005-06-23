@@ -30,6 +30,12 @@
             set_schema="canonical.launchpad.interfaces.IProductRelease" />
     </content>
 
+    <browser:url
+        for="canonical.launchpad.interfaces.IProductRelease"
+        path_expression="version"
+        attribute_to_parent="product"
+        />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProductRelease"
         name="+index" />
@@ -40,10 +46,57 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductRelease"
+        class="canonical.launchpad.browser.ProductReleaseView"
         permission="zope.Public">
         <browser:page
             name="+index"
             template="../templates/productrelease.pt" />
+        <browser:page
+            name="+translations"
+            template="../templates/productrelease-translations.pt"
+            lp:url="/products/evolution/2.1.6/+translations" />
+        <browser:page
+            name="+potlist"
+            template="../templates/object-pots.pt"
+            lp:url="/products/evolution/2.1.6/+potlist"
+            />
+        <!-- ProductReleases Portlets -->
+        <browser:page
+            name="+portlet-actions"
+            template="../templates/portlet-productrelease-actions.pt"
+            lp:url="/products/evolution/2.1.6/+portlet-actions"
+            />
+        <browser:page
+            name="+portlet-summary"
+            template="../templates/portlet-object-summary.pt"
+            lp:url="/products/evolution/2.1.6/+portlet-summary"
+            />
+        <browser:page
+            name="+portlet-details"
+            template="../templates/portlet-productrelease-details.pt"
+            lp:url="/products/evolution/2.1.6/+portlet-details"
+            />
+        <browser:page
+            name="+portlet-pref-langs"
+            template="../templates/portlet-pref-langs.pt"
+            lp:url="/products/evolution/2.1.6/+portlet-pref-langs"
+            />
+        <browser:page
+            name="+portlet-country"
+            template="../templates/portlet-country-langs.pt"
+            lp:url="/products/evolution/2.1.6/+portlet-country"
+            />
+        <browser:page
+            name="+portlet-browser-langs"
+            template="../templates/portlet-browser-langs.pt"
+            lp:url="/products/evolution/2.1.6/+portlet-browser-langs"
+            />
+        <browser:page
+            name="+portlet-status-legend"
+            template="../templates/portlet-rosetta-status-legend.pt"
+            lp:url="/products/evolution/2.1.6/+portlet-status-legend"
+            />
+
     </browser:pages>
 
     <browser:pages
@@ -64,16 +117,26 @@
         permission="launchpad.Admin"
         template="../templates/launchpad-editform.pt"
         lp:url="/products/$Product.name/$ProductRelease.name/+review">
+        <browser:widget
+            field="version"
+            class="zope.app.form.browser.TextWidget"
+            displayWidth="20" />
     </browser:editform>
 
-    <browser:pages
+    <browser:addform
+        name="+addpotemplate"
         for="canonical.launchpad.interfaces.IProductRelease"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.ProductReleaseView" >
-        <browser:page
-            name="+translations"
-            template="../templates/object-pots.pt"
-            lp:url="/products/$Product.name/$Series.name/$ProductRelease.version/+rosetta" />
-    </browser:pages>
+        schema="canonical.launchpad.interfaces.IPOTemplateWithContent"
+        class="canonical.launchpad.browser.POTemplateAddView"
+        label="Add a new template"
+        fields="potemplatename description iscurrent owner path filename
+                content"
+        arguments=""
+        keyword_arguments="potemplatename description iscurrent owner
+                           path filename content"
+        content_factory="canonical.launchpad.database.POTemplate"
+        permission="launchpad.Admin"
+        template="../templates/potemplate-add.pt" >
+    </browser:addform>
 
 </configure>

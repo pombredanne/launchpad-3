@@ -28,16 +28,17 @@ class IBuild(Interface):
 
 class IBuilder(Interface):
     processor = Attribute("The Builder Processor")
-    fqdn = Attribute("The FQDN")
+    url = Attribute("The URL to the builder")
     name = Attribute("The Builder Name")
     title = Attribute("The Builder Title")
     description = Attribute("The Builder Description")
     owner = Attribute("The Builder Owner")
     builderok = Attribute("Whether or not the builder is ok")
     failnotes = Attribute("The reason for a builder not being ok")
+    trusted = Attribute("Whether not the builder is trusted to build packages under security embargo.")
 
 class IBuildSet(Interface):
-    """Inteface sor IBuildSet"""
+    """Interface for BuildSet"""
     def getBuildBySRAndArchtag(sourcepackagereleaseID, archtag):
         """return a build for a SourcePackageRelease and an ArchTag"""
         
