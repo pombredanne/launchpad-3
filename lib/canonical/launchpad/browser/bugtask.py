@@ -67,9 +67,11 @@ class BugTasksReportView:
 
     # TODO: replace this with a smart vocabulary and widget
     def userSelector(self):
-        return '<input type="text" name="name" value="%s"/>\n' % (
-                self.user.name,
-                )
+        if self.user:
+            name = self.user.name
+        else:
+            name = ""
+        return '<input type="text" name="name" value="%s"/>\n' % (name,)
         # Don't do this - when you have 60000+ people it tends to kill
         # the production server.
         # html = '<select name="name">\n'
