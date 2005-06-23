@@ -46,7 +46,8 @@
 
   <browser:page
       for="canonical.launchpad.interfaces.ICalendarOwner"
-      page="+portlet-calendar"
+      name="+portlet-calendar"
+      permission="zope.Public"
       template="../templates/portlet-calendar-info.pt"
       class="canonical.launchpad.browser.CalendarInfoPortletView"
       lp:url="/$CalendarOwner/+portlet-calendar" />
