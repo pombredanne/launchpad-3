@@ -22,8 +22,11 @@ from zope.component import getUtility
 from zope.interface import implements, providedBy, directlyProvides
 from zope.interface.interfaces import IInterface
 from zope.security.interfaces import IParticipation
-from zope.security.management import newInteraction, endInteraction
+from zope.security.management import (
+    newInteraction, endInteraction, checkPermission as zcheckPermission)
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.app.security.permission import (
+    checkPermission as check_permission_is_registered)
 
 import canonical.base
 from canonical.database.constants import UTC_NOW
@@ -1139,6 +1142,19 @@ def read_test_message(filename):
     """
     return email.message_from_file(
         open(testmails_path + filename), _class=SignedMessage)
+
+
+def check_permission(permission_name, context):
+    """Like zope.security.management.checkPermission, but also ensures that
+    permission_name is real permission.
+
+    Raises ValueError if the permission doesn't exist.
+    """
+    # This will raise ValueError if the permission doesn't exist.
+    check_permission_is_registered(context, permission_name)
+    
+    # Now call Zope's checkPermission.
+    return zcheckPermission(permission_name, context)
 
 
 def filenameToContentType(fname):

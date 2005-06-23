@@ -17,7 +17,6 @@ from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.app.traversing.interfaces import ITraversable
 import zope.security.management
-import zope.app.security.permission
 from zope.exceptions import NotFoundError
 from canonical.launchpad.interfaces import (
     IPerson, ILink, IFacetList, ITabList, ISelectionAwareLink
@@ -25,7 +24,7 @@ from canonical.launchpad.interfaces import (
 import canonical.lp.dbschema
 from canonical.lp import decorates
 import canonical.launchpad.pagetitles
-from canonical.launchpad.helpers import canonical_url
+from canonical.launchpad.helpers import canonical_url, check_permission
 
 
 class TraversalError(NotFoundError):
@@ -486,6 +485,5 @@ class PermissionRequiredQuery:
             raise TraversalError(
                     "There should be no further path segments after "
                     "required:permission")
-        zope.app.security.permission.checkPermission(self.context, name)
-        return zope.security.management.checkPermission(name, self.context)
+        return check_permission(name, self.context)
 
