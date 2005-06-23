@@ -47,6 +47,18 @@
         provides="zope.app.traversing.browser.interfaces.IAbsoluteURL">
     </view>
 
+    <browser:url
+        for="canonical.launchpad.interfaces.IUpstreamBugTask"
+        path_expression="string:+bugs/${id}"
+        attribute_to_parent="product"
+        />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IDistroBugTask"
+        path_expression="string:+bugs/${id}"
+        attribute_to_parent="distribution"
+        />
+
     <!-- BugTaskSet -->
     <content class="canonical.launchpad.database.BugTaskSet">
         <allow interface="canonical.launchpad.interfaces.IBugTaskSet" />

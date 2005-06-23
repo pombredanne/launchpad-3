@@ -11,7 +11,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import (
 from zope.interface import implements
 
 from canonical.lp import dbschema, decorates, Passthrough
-from canonical.launchpad.helpers import canonical_url
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import (
     IPerson, ILaunchBag, IBugSet, IBugTaskSet, IDistributionSet, IBugAddForm,
     IBug)

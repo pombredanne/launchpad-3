@@ -30,6 +30,12 @@
             set_schema="canonical.launchpad.interfaces.IProductRelease" />
     </content>
 
+    <browser:url
+        for="canonical.launchpad.interfaces.IProductRelease"
+        path_expression="version"
+        attribute_to_parent="product"
+        />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProductRelease"
         name="+index" />

@@ -4,7 +4,6 @@
 
 __metaclass__ = type
 
-import sets
 import inspect
 from zope.interface import Interface, Attribute, implements
 from zope.interface.interfaces import IInterface
@@ -34,8 +33,8 @@ import zope.app.publisher.browser.metadirectives
 
 from canonical.launchpad.layers import setAdditionalLayer
 from canonical.launchpad.interfaces import (
-    IAuthorization, IOpenLaunchBag, IBasicLink, ILink, IFacetList, ITabList,
-    ICanonicalUrlData
+    IAuthorization, IOpenLaunchBag, ICanonicalUrlData,
+    IFacetMenu, IExtraFacetMenu, IApplicationMenu
     )
 
 try:
@@ -44,301 +43,6 @@ except ImportError:
     # This code can go once we've upgraded Zope.
     from zope.publisher.interfaces.browser import IBrowserRequest
     IDefaultBrowserLayer = IBrowserRequest
-
-
-class ILinkDirective(Interface):
-    """Define a link."""
-
-    id = PythonIdentifier(
-        title=u'Id',
-        description=u'Id as which this object will be known and used.',
-        required=True)
-
-    href = TextLine(
-        title=u'HREF',
-        description=u'Relative href for this facet.',
-        required=True)
-
-    title = TextLine(
-        title=u'Title',
-        description=u'Title, shown as the text of a link',
-        required=True)
-
-    summary = TextLine(
-        title=u'Summary',
-        description=u'Summary, shown as the tooltip of a link.',
-        required=False)
-
-
-class IFacetListDirective(Interface):
-    """Say what facets apply for a particular interface."""
-
-    for_ = GlobalObject(
-        title=u'the interface this facet list is for',
-        required=True)
-
-    links = Tokens(
-        title=u'Links',
-        description=u'Link ids that will be rendered as main links.'
-                     ' If this attribute is not given, one will be sought'
-                     ' from a more general interface.',
-        value_type=PythonIdentifier(),
-        required=False)
-
-    overflow = Tokens(
-        title=u'Overflow',
-        description=u'Link ids that will be rendered as overflow.',
-        value_type=PythonIdentifier(),
-        required=False)
-
-    disabled = Tokens(
-        title=u'disabled',
-        description=u'Link ids that will be rendered as disabled for this'
-                     ' kind of object, whether they are main links or'
-                     ' overflow.',
-        value_type=PythonIdentifier(),
-        required=False)
-
-class ITabListDirective(Interface):
-    """Say what tabs apply for a particular interface."""
-
-    for_ = GlobalObject(
-        title=u'the interface this tab list is for',
-        required=True)
-
-    links = Tokens(
-        title=u'Links',
-        description=u'Link ids that will be rendered as main links.'
-                     ' If this attribute is not given, one will be sought'
-                     ' from a more general interface.',
-        value_type=PythonIdentifier(),
-        required=False)
-
-    overflow = Tokens(
-        title=u'Overflow',
-        description=u'Link ids that will be rendered as overflow.',
-        value_type=PythonIdentifier(),
-        required=False)
-
-    disabled = Tokens(
-        title=u'disabled',
-        description=u'Link ids that will be rendered as disabled for this'
-                     ' kind of object, whether they are main links or'
-                     ' overflow.',
-        value_type=PythonIdentifier(),
-        required=False)
-
-    facet = PythonIdentifier(
-        title=u"The facet id that this set of tabs applies to",
-        required=True)
-
-
-class BasicLink:
-    implements(IBasicLink)
-    def __init__(self, id, href, title, summary):
-        self.id = id
-        self.href = href
-        self.title = title
-        self.summary = summary
-
-
-class Link:
-    implements(ILink)
-    def __init__(self, basiclink, enabled):
-        self.id = basiclink.id
-        self.href = basiclink.href
-        self.title = basiclink.title
-        self.summary = basiclink.summary
-        self.enabled = enabled
-
-
-class FacetList:
-    implements(IFacetList)
-
-    def __init__(self, links, overflow, disabled, lookuplinksfrom=None):
-        """Set up self.links and self.overflow.
-
-        links is a list of main link ids.
-        overflow is a list of overflow link ids.
-        disabled is a list of disabled link ids.
-
-        lookuplinksfrom is an interface to use to find main and overflow
-        'links' from its facet list, if links is not given.
-        """
-        # Check that disabled links actually exist.
-        [getUtility(IBasicLink, id) for id in disabled]
-        self._disabled = disabled
-        if lookuplinksfrom is not None:
-            class DummyClassToQueryRegistry:
-                implements(lookuplinksfrom)
-            dummyobject = DummyClassToQueryRegistry()
-        if links is None:
-            assert lookuplinksfrom is not None, (
-                "You must define 'links' on a more general interface"
-                " if you do not define 'links' explicitly.")
-            self.links = [
-                self._makelink(link.id)
-                for link in IFacetList(dummyobject).links
-                ]
-        else:
-            self.links = [self._makelink(id) for id in links]
-
-        if overflow is None:
-            assert lookuplinksfrom is not None, (
-                "You must define 'overflow' on a more general interface"
-                " if you do not define 'overflow' explicitly.")
-            self.overflow = [
-                self._makelink(link.id)
-                for link in IFacetList(dummyobject).overflow
-                ]
-        else:
-            self.overflow = [self._makelink(id) for id in overflow]
-
-    def _makelink(self, id):
-        basiclink = getUtility(IBasicLink, id)
-        enabled = id not in self._disabled
-        return Link(basiclink, enabled)
-
-
-class TabList:
-    implements(ITabList)
-
-    def __init__(self, facet, links, overflow, disabled, lookuplinksfrom=None):
-        """Set up self.links and self.overflow.
-
-        links is a list of main link ids.
-        overflow is a list of overflow link ids.
-        disabled is a list of disabled link ids.
-
-        lookuplinksfrom is an interface to use to find main and overflow
-        'links' from its facet list, if links is not given.
-        """
-        # Check that disabled links actually exist.
-        [getUtility(IBasicLink, id) for id in disabled]
-        self._disabled = disabled
-        self._facet = facet
-        if lookuplinksfrom is not None:
-            class DummyClassToQueryRegistry:
-                implements(lookuplinksfrom)
-            dummyobject = DummyClassToQueryRegistry()
-        if links is None:
-            assert lookuplinksfrom is not None, (
-                "You must define 'links' on a more general interface"
-                " if you do not define 'links' explicitly.")
-            self.links = [
-                self._makelink(link.id)
-                for link in getAdapter(dummyobject, ITabList, facet).links
-                ]
-        else:
-            self.links = [self._makelink(id) for id in links]
-
-        if overflow is None:
-            assert lookuplinksfrom is not None, (
-                "You must define 'overflow' on a more general interface"
-                " if you do not define 'overflow' explicitly.")
-            self.overflow = [
-                self._makelink(link.id)
-                for link in getAdapter(dummyobject, ITabList, facet).overflow
-                ]
-        else:
-            self.overflow = [self._makelink(id) for id in overflow]
-
-    def _makelink(self, id):
-        basiclink = getUtility(IBasicLink, id)
-        enabled = id not in self._disabled
-        return Link(basiclink, enabled)
-
-
-class DeferedZcmlFactory:
-    """Factory for an object we want to instantiate after the zcml actions
-    have been processed.
-    """
-    def __init__(self, factory, *args):
-        self.factory = factory
-        self.args = args
-
-    def __call__(self, context):
-        return self.factory(*self.args)
-
-def link(_context, id, href, title, summary):
-    """A link directive is registered as an IBasicLink utility named after
-    the id.
-    """
-    provides = IBasicLink
-    component = BasicLink(id, href, title, summary)
-    utility(_context, provides, component=component, name=id)
-
-
-class FacetAndTabConfigProcessor:
-    """Process configuration directives for facets and tabs."""
-    def __init__(
-        self, _context, for_, links=None, overflow=None, disabled=None):
-        """Save the state for config processing."""
-        if not IInterface.providedBy(for_):
-            raise TypeError("for attribute must be an interface: %r"
-                            % (for_, ))
-        if links is None or overflow is None:
-            iro = list(for_.__iro__)
-            if len(iro) < 2:
-                raise TypeError(
-                    "No parent interface for 'for' attribute: %r" % (for_, ))
-            self.lookuplinksfrom = iro[1]
-        else:
-            self.lookuplinksfrom = None
-
-        if disabled is None:
-            disabled = []
-        for_ = [for_]
-
-        self._context = _context
-        self.for_ = for_
-        self.links = links
-        self.overflow = overflow
-        self.disabled = disabled
-        self.name = ""
-
-    def facetFactory(self):
-        """Get a Facet ZCML Factory."""
-        return [DeferedZcmlFactory(
-            FacetList, self.links, self.overflow,
-            self.disabled, self.lookuplinksfrom)]
-
-    def tabFactory(self, name):
-        """Get a Tab ZCML Factory."""
-        self.name = name
-        return [DeferedZcmlFactory(
-            TabList, self.name,
-            self.links, self.overflow,
-            self.disabled, self.lookuplinksfrom)]
-
-    def makeAdapter(self, factory, provides):
-        """Register an adapter for the provided factory that provides provides.
-        """
-        adapter(self._context, factory, provides, self.for_, name=self.name)
-
-def facetlist(_context, for_, links=None, overflow=None, disabled=None):
-    """A facetlist directive is registered as an IFacetList adapter.
-
-    XXX: This really ought to be a view that provides IFacetList.
-         -- SteveAlexander, 2005-04-26
-    """
-    processor = FacetAndTabConfigProcessor(
-        _context, for_, links, overflow, disabled)
-    factory = processor.facetFactory()
-    provides = IFacetList
-    processor.makeAdapter(factory, provides)
-
-def tablist(_context, for_, facet, links=None, overflow=None, disabled=None):
-    """A tablist directive is registered as an ITabList adapter.
-
-    XXX: This really ought to be a view that provides ITabList.
-        -- SteveAlexander, 2005-04-26
-    """
-    processor = FacetAndTabConfigProcessor(
-        _context, for_, links, overflow, disabled)
-    factory = processor.tabFactory(facet)
-    provides = ITabList
-    processor.makeAdapter(factory, provides)
 
 
 class IAuthorizationsDirective(Interface):
@@ -548,10 +252,15 @@ class IURLDirective(Interface):
         required=True
         )
 
+    urldata = GlobalObject(
+        title=u"Adapter to ICanonicalUrlData for this object.",
+        required=False
+        )
+
     path_expression = TextLine(
         title=u"TALES expression that evaluates to the path"
                " relative to the parent object.",
-        required=True
+        required=False
         )
 
     attribute_to_parent = PythonIdentifier(
@@ -562,6 +271,21 @@ class IURLDirective(Interface):
     parent_utility = GlobalObject(
         title=u"Interface of the utility that is the parent of the object",
         required=False
+        )
+
+
+class IMenusDirective(Interface):
+    """Hook up facets and menus."""
+
+    module = GlobalObject(
+        title=u"Module in which menu classes are found.",
+        required=True
+        )
+
+    classes = Tokens(
+        value_type=PythonIdentifier(),
+        title=u"Space separated list of classes to be registered as menus.",
+        required=True
         )
 
 
@@ -598,7 +322,7 @@ class SubURLDispatcher:
 # The `for_` objects we have already seen, so we set their traverser to be
 # the SubURLTraverser once only.  If we set it more than once, we get
 # a configuration conflict error.
-suburl_traversers = sets.Set()
+suburl_traversers = set()
 
 def suburl(_context, for_, name, permission=None, utility=None, class_=None,
            adaptwith=None, newlayer=None):
@@ -717,6 +441,38 @@ class URLTraverseByFunction:
         return self.context, (view_name,)
 
 
+def menus(_context, module, classes):
+    """Handler for the IMenusDirective."""
+    if not inspect.ismodule(module):
+        raise TypeError("module attribute must be a module: %s, %s" %
+                        module, type(module))
+    menutypes = [IFacetMenu, IExtraFacetMenu, IApplicationMenu]
+    for menuname in classes:
+        menuclass = getattr(module, menuname)
+        implemented = None
+        for menutype in menutypes:
+            if menutype.implementedBy(menuclass):
+                assert implemented is None, (
+                    'The menu class %r implements more than one of %s' %
+                    (menuclass, menutypes))
+                provides = menutype
+                name = ''
+                if menutype is IApplicationMenu:
+                    name = getattr(menuclass, 'facet', None)
+                    if name is None:
+                        raise AssertionError(
+                            'The IApplicationMenu %r needs a "facet" attribute'
+                            ' saying what facet it is to be used for.'
+                            % menuclass)
+                break
+        else:
+            raise TypeError('class %r is not one of %s' %
+                (menuclass, menutypes))
+        for_ = [menuclass.usedfor]
+        factory = [menuclass]
+        adapter(_context, factory, provides, for_, name=name,
+                permission=PublicPermission)
+
 def traverse(_context, for_, getter=None, function=None, permission=None,
              adaptwith=None, layer=IDefaultBrowserLayer):
     if getter is not None and function is not None:
@@ -754,11 +510,18 @@ class InterfaceInstanceDispatcher:
         self.interface = interface
         self.instance = instance
 
-    def __getitem__(self, name):
+    def __getitem__(self, name, _marker=object()):
+        value = self.get(name, _marker)
+        if value is _marker:
+            raise KeyError(name)
+        else:
+            return value
+
+    def get(self, name, default=None):
         if name in self.interface:
             return getattr(self.instance, name)
         else:
-            raise KeyError(name)
+            return default
 
 
 class TALESContextForInterfaceInstance:
@@ -786,24 +549,24 @@ class CanonicalUrlDataBase:
     def path(self):
         return self._compiled_path_expression(self._expression_context)
 
-def url(_context, for_, path_expression, attribute_to_parent=None,
-        parent_utility=None):
+def url(_context, for_, path_expression=None, urldata=None,
+        attribute_to_parent=None, parent_utility=None):
     """browser:url directive handler."""
-    if not attribute_to_parent and not parent_utility:
+    if (not attribute_to_parent
+        and not parent_utility
+        and not urldata):
         raise TypeError(
-            'Must provide either attribute_to_parent or parent_utility.')
+            'Must provide attribute_to_parent, urldata or parent_utility.')
     if attribute_to_parent:
         if attribute_to_parent not in for_:
             raise AttributeError('The name "%s" is not in %s.%s'
                 % (attribute_to_parent, for_.__module__, for_.__name__))
-    else:
-        # Check that parent_utility can be looked up.
-        # can't do this, as the utility directive hasn't been processed yet
-        #getUtility(parent_utility)
-        pass
-    compiled_path_expression = Engine.compile(path_expression)
+    if path_expression is not None:
+        compiled_path_expression = Engine.compile(path_expression)
 
-    if attribute_to_parent:
+    if urldata:
+        CanonicalUrlData = urldata
+    elif attribute_to_parent:
         class CanonicalUrlData(CanonicalUrlDataBase):
             _for = for_
             _compiled_path_expression = compiled_path_expression

@@ -11,20 +11,20 @@ import sets
 import os.path
 import warnings
 from zope.interface import Interface, Attribute, implements
-from zope.component import getAdapter
+from zope.component import getAdapter, queryAdapter
 
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.app.traversing.interfaces import ITraversable
-import zope.security.management
 from zope.exceptions import NotFoundError
 from canonical.launchpad.interfaces import (
-    IPerson, ILink, IFacetList, ITabList, ISelectionAwareLink
-    )
+    IPerson, IFacetMenu, IExtraFacetMenu, IApplicationMenu)
 import canonical.lp.dbschema
 from canonical.lp import decorates
 import canonical.launchpad.pagetitles
-from canonical.launchpad.helpers import canonical_url, check_permission
+from canonical.launchpad.webapp import canonical_url, nearest_menu
+from canonical.launchpad.webapp.publisher import get_current_browser_request
+from canonical.launchpad.helpers import check_permission
 
 
 class TraversalError(NotFoundError):
@@ -32,124 +32,54 @@ class TraversalError(NotFoundError):
     # Steve Alexander, Tue Dec 14 13:07:38 UTC 2004
 
 
-def _get_request():
-    """Return the request, looked up from the interaction.
-
-    If there is no request, then return None.
-    """
-    interaction = zope.security.management.queryInteraction()
-    requests = [
-        participation
-        for participation in interaction.participations
-        if IBrowserApplicationRequest.providedBy(participation)
-        ]
-    if not requests:
-        return None
-    assert len(requests) == 1, (
-        "We expect only one IBrowserApplicationRequest in the interaction."
-        " Got %s." % len(requests))
-    return requests[0]
-
-
-class LinkDecorator:
-    implements(ISelectionAwareLink)
-    decorates(ILink)
-
-    def __init__(self, context):
-        self.context = context
-        request = _get_request()
-        assert request is not None
-        self.selected = self._is_selected_link(request)
-
-    def _is_selected_link(self, request):
-        """Returns True if the link is selected."""
-        # Simplistic way of saying whether this facet is selected.  We
-        # look at the request, and if this facet's link is in the request's
-        # path then this facet is selected.
-        # In the future, we'll probably need a component that manages this
-        # across all visible facets.
-        path_segments = clean_path_segments(request)
-        return self.href in path_segments
-
-
-class FacetListDecorator:
-    implements(IFacetList)
-    def __init__(self, facetlist):
-        self.facetlist = facetlist
-
-    def _decoratedLinks(self, links):
-        return [LinkDecorator(link) for link in links]
-
-    def links(self):
-        return self._decoratedLinks(self.facetlist.links)
-    links = property(links)
-
-    def overflow(self):
-        return self._decoratedLinks(self.facetlist.overflow)
-    overflow = property(overflow)
-
-
-class TabListDecorator:
-    implements(ITabList)
-    def __init__(self, tablist):
-        self.tablist = tablist
-
-    def _decoratedLinks(self, links):
-        return [LinkDecorator(link) for link in links]
-
-    def links(self):
-        return self._decoratedLinks(self.tablist.links)
-    links = property(links)
-
-    def overflow(self):
-        return self._decoratedLinks(self.tablist.overflow)
-    overflow = property(overflow)
-
-
 class MenuAPI:
-    """Get menus for objects.  Available as context/menu:menuname."""
-    implements(ITraversable)
+    """Namespace to give access to the facet menus.
+
+       thing/menu:facet       gives the facet menu of the nearest object
+                              along the canonical url chain that has an
+                              IFacetMenu adapter.
+
+       thing/menu:extrafacet  gives the facet menu of the nearest object
+                              along the canonical url chain that has an
+                              IFacetMenu adapter.
+    """
 
     def __init__(self, context):
-        self.context = context
+        self._context = context
 
-    def traverse(self, name, furtherPath):
-        if name == 'facet':
-            return self._get_facet_list()
-        elif name == 'tab':
-            facet = self._get_selected_facet()
-            return TabListDecorator(
-                getAdapter(self.context, ITabList, name=facet))
+    def facet(self):
+        menu = nearest_menu(self._context, IFacetMenu)
+        if menu is None:
+            return []
         else:
-            raise TraversalError(name)
+            menu.request = get_current_browser_request()
+            return menu
 
-    def _get_facet_list(self):
-        return FacetListDecorator(IFacetList(self.context))
-
-    def _get_selected_facet(self):
-        """Returns the selected facet link id.
-
-        If no facet is selected, return the first facet from the facet list
-        for this object.
-
-        If many facets are selected, return the first facet that is selected.
-        """
-        # XXX: The facetlist should decide which facet is selected, and
-        #      should ensure that exactly one is selected.
-        #      We also need a "default" facet.  This can simply be the first
-        #      one.
-        #      -- SteveAlexander, 2005-04-28
-        facetlist = self._get_facet_list()
-        facetlinks = list(facetlist.links) + list(facetlist.overflow)
-        selectedfacets = [facet for facet in facetlinks if facet.selected]
-        if len(selectedfacets) == 0:
-            return facetlinks[0].id
+    def extrafacet(self):
+        menu = nearest_menu(self._context, IExtraFacetMenu)
+        if menu is None:
+            return []
         else:
-            if len(selectedfacets) > 1:
-                warnings.warn("Many facets selected for %r: %s" %
-                    (self.context,
-                     ', '.join([facet.id for facet in selectedfacets])))
-            return selectedfacets[0].id
+            menu.request = get_current_browser_request()
+            return menu
+
+    def application(self):
+        # Get the selected link from the facet menu.
+        facetmenu = self.facet()
+        selectedfacetname = None
+        for link in facetmenu:
+            if link.selected:
+                selectedfacetname = link.name
+                break
+        else:
+            # No facet menu is selected.  So, return empty list.
+            return []
+        menu = queryAdapter(self._context, IApplicationMenu, selectedfacetname)
+        if menu is None:
+            return []
+        else:
+            menu.request = get_current_browser_request()
+            return menu
 
 
 class CountAPI:
@@ -300,7 +230,7 @@ class ObjectFormatterAPI:
         self._context = context
 
     def url(self):
-        request = _get_request()
+        request = get_current_browser_request()
         return canonical_url(self._context, request)
 
 

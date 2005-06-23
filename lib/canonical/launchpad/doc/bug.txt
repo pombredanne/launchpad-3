@@ -60,7 +60,7 @@ Absolute URLs
 For things like bug notification emails, it's handy to be able to
 include a URL to the bug inside the email.
 
-    >>> from canonical.launchpad.helpers import canonical_url
+    >>> from canonical.launchpad.webapp import canonical_url
     >>> print canonical_url(firefox_crashes)
     http://.../malone/bugs/6
 

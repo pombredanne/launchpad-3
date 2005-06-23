@@ -104,6 +104,11 @@
         provides="canonical.launchpad.interfaces.ISourcePackageSet">
         <allow interface="canonical.launchpad.interfaces.ISourcePackageSet" />
     </securedutility>
+    <browser:url
+        for="canonical.launchpad.interfaces.ISourcePackageSet"
+        path_expression="string:+sources"
+        attribute_to_parent="distrorelease"
+        />
 
     <browser:traverse
         for="canonical.launchpad.interfaces.ISourcePackageSet"

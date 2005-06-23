@@ -1,4 +1,10 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+"""Various functions and classes that are useful across different parts of
+launchpad.
+
+Do not simply dump stuff in here.  Think carefully as to whether it would
+be better as a method on an existing content object or IFooSet object.
+"""
 
 __metaclass__ = type
 
@@ -45,9 +51,6 @@ from canonical.launchpad.components.poparser import (
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.mail import SignedMessage
 from canonical.launchpad.mail.ftests import testmails_path
-
-# This import forms part of this module's API.
-from canonical.launchpad.webapp.publisher import canonical_url
 
 from canonical.launchpad.validators.gpg import valid_fingerprint
 
