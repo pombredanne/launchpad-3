@@ -123,8 +123,8 @@
         for="canonical.launchpad.interfaces.IEditableUpstreamBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
-        fields="product maintainer_displayname milestone
-                status priority severity assignee bugwatch statusexplanation"
+        fields="maintainer_displayname milestone status priority
+                severity assignee bugwatch statusexplanation"
         label="Edit Product Bug Task"
         permission="launchpad.Edit"
         template="../templates/bugtask-editform.pt"
@@ -140,8 +140,9 @@
         for="canonical.launchpad.interfaces.IReadOnlyUpstreamBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskDisplayView"
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
-        fields="product maintainer_displayname milestone
-                status priority severity assignee bugwatch statusexplanation"
+        fields="maintainer_displayname milestone
+                status priority severity assignee bugwatch
+                statusexplanation"
         label="Product Bug Task"
         permission="launchpad.View"
         template="../templates/bugtask-editform.pt"
@@ -172,7 +173,7 @@
         for="canonical.launchpad.interfaces.IEditableDistroBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename 
+        fields="sourcepackagename binarypackagename
                 status priority severity assignee bugwatch statusexplanation"
         label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"
@@ -189,7 +190,7 @@
         for="canonical.launchpad.interfaces.IReadOnlyDistroBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskDisplayView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename 
+        fields="sourcepackagename binarypackagename
                 status priority severity assignee bugwatch statusexplanation"
         label="Source Package Bug Task"
         permission="zope.Public"
@@ -218,7 +219,7 @@
         for="canonical.launchpad.interfaces.IEditableDistroReleaseBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename 
+        fields="sourcepackagename binarypackagename
                 status priority severity assignee bugwatch statusexplanation"
         label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"
@@ -235,7 +236,7 @@
         for="canonical.launchpad.interfaces.IReadOnlyDistroReleaseBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskDisplayView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename 
+        fields="sourcepackagename binarypackagename
                 status priority severity assignee bugwatch statusexplanation"
         label="Source Package Bug Task"
         permission="zope.Public"
