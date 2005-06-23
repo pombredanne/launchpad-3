@@ -50,23 +50,16 @@ def process_multi_object_request(person, potemplate, objects):
     archive = tarfile.open('', 'w:gz', filehandle)
 
     for object in objects:
-        try:
-            if IPOTemplate.providedBy(object):
-                filename = name + '.pot'
-                contents = getRawFileData(object)
-            elif IPOFile.providedBy(object):
-                filename = pofile_filename(object)
-                contents = object.export()
-            else:
-                raise TypeError("Can't export object", object)
+        if IPOTemplate.providedBy(object):
+            filename = name + '.pot'
+            contents = getRawFileData(object)
+        elif IPOFile.providedBy(object):
+            filename = pofile_filename(object)
+            contents = object.export()
+        else:
+            raise TypeError("Can't export object", object)
 
-            tar_add_file(archive, 'rosetta-%s/%s' % (name, filename), contents)
-        except UnicodeEncodeError:
-            # XXX
-            # This is a temporary workaround for export failures. A better
-            # error handling system will be implemented.
-            # -- Dafydd Harries 2005/06/23
-            pass
+        tar_add_file(archive, 'rosetta-%s/%s' % (name, filename), contents)
 
     archive.close()
     size = filehandle.tell()
@@ -129,6 +122,13 @@ def process_queue(transaction_manager):
             # Librarian will refuse to accept.
             # -- Dafydd Harries, 2005/06/16
             pass
+        except UnicodeEncodeError:
+            # XXX
+            # This is a temporary workaround for export failures. A better
+            # error handling system will be implemented.
+            # -- Dafydd Harries 2005/06/23
+            pass
+
 
         # This is here in case we need to process the same file twice in the
         # same queue run. If we try to do that all in one transaction, the
