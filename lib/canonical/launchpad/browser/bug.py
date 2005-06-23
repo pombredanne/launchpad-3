@@ -83,7 +83,7 @@ class BugView:
 class BugAbsoluteURL(BrowserView):
     """The view for an absolute URL of a bug."""
     def __str__(self):
-        return canonical_url(self.context, self.request)
+        return canonical_url(self.context)
 
 
 class BugEditView(BugView, SQLObjectEditView):
@@ -99,7 +99,7 @@ class BugAddView(SQLObjectAddView):
         return retval
 
     def nextURL(self):
-        return canonical_url(self.bugadded, self.request)
+        return canonical_url(self.bugadded)
 
 
 class BugAddingView(SQLObjectAddView):
