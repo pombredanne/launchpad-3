@@ -29,7 +29,7 @@ class IPerson(Interface):
                 "numbers, dots, hyphens, or plus signs.")
             )
     displayname = TextLine(
-            title=_('Display Name'), required=False, readonly=False,
+            title=_('Display Name'), required=True, readonly=False,
             description=_("Your name as you would like it displayed "
             "throughout Launchpad. Most people use their full name "
             "here.")
@@ -335,7 +335,7 @@ class IPersonSet(Interface):
         IPersonSet.createPerson().
         """
 
-    def createPerson(email, displayname=None, givenname=None, familyname=None,
+    def createPerson(email, displayname, givenname=None, familyname=None,
                      password=None):
         """Create a new Person and an EmailAddress for that Person.
 

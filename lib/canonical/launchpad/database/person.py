@@ -62,11 +62,11 @@ class Person(SQLBase):
 
     _defaultOrder = 'displayname'
 
-    name = StringCol(dbName='name', alternateID=True)
+    name = StringCol(dbName='name', alternateID=True, notNull=True)
     password = StringCol(dbName='password', default=None)
     givenname = StringCol(dbName='givenname', default=None)
     familyname = StringCol(dbName='familyname', default=None)
-    displayname = StringCol(dbName='displayname', default=None)
+    displayname = StringCol(dbName='displayname', default=None, notNull=True)
     teamdescription = StringCol(dbName='teamdescription', default=None)
 
     teamowner = ForeignKey(dbName='teamowner', foreignKey='Person',

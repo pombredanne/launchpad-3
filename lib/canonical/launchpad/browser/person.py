@@ -846,7 +846,9 @@ class ObjectReassignmentView:
                     "if that's what you want." % owner_name)
                 return None
 
-            owner = personset.newTeam(teamownerID=self.user.id, name=owner_name)
+            owner = personset.newTeam(
+                    teamownerID=self.user.id, name=owner_name,
+                    displayname=owner_name.capitalize())
 
         return owner
 
