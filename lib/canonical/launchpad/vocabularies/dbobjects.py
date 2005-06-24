@@ -340,7 +340,7 @@ class PersonAccountToMergeVocabulary(BasePersonVocabulary):
     accounts to merge. You *don't* want to use it.
     """
 
-    _basequery = 'teamowner is NULL'
+    _basequery = 'teamowner IS NULL AND merged IS NULL'
 
 
 class ValidPersonOrTeamVocabulary(BasePersonVocabulary):
