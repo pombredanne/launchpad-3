@@ -36,7 +36,9 @@ from zope.app.security.permission import (
 
 import canonical.base
 from canonical.database.constants import UTC_NOW
-from canonical.lp.dbschema import RosettaImportStatus, TranslationPermission
+from canonical.lp.dbschema import (RosettaImportStatus, TranslationPermission,
+                                   SourcePackageFileType, BinaryPackageFormat,
+                                   BinaryPackageFileType)
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed, DownloadFailed
     )
@@ -1198,3 +1200,24 @@ def get_filename_from_message_id(message_id):
     return '%s.msg' % (
             canonical.base.base(long(sha.new(message_id).hexdigest(), 16), 62))
 
+def getFileType(fname):
+    if fname.endswith(".deb"):
+        return BinaryPackageFileType.DEB
+    if fname.endswith(".udeb"):
+        return BinaryPackageFileType.DEB
+    if fname.endswith(".dsc"):
+        return SourcePackageFileType.DSC
+    if fname.endswith(".diff.gz"):
+        return SourcePackageFileType.DIFF
+    if fname.endswith(".orig.tar.gz"):
+        return SourcePackageFileType.ORIG
+    if fname.endswith(".tar.gz"):
+        return SourcePackageFileType.TARBALL
+
+def getBinaryPackageFormat(fname):
+    if fname.endswith(".deb"):
+        return BinaryPackageFormat.DEB
+    if fname.endswith(".udeb"):
+        return BinaryPackageFormat.UDEB
+    if fname.endswith(".rpm"):
+        return BinaryPackageFormat.RPM

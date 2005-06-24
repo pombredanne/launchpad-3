@@ -8,17 +8,17 @@ showing the "Log in / Register" link that appears on most pages.
     >>> from canonical.launchpad.browser import LoginStatus
     >>> class DummyRequest(dict):
     ...
-    ...     def __init__(self, url, path_info, query):
+    ...     def __init__(self, appurl, path_info, query):
     ...         self['PATH_INFO'] = path_info
     ...         self['QUERY_STRING'] = query
-    ...         self.url = url
+    ...         self.appurl = appurl
     ...
-    ...     def getURL(self):
-    ...         return self.url
+    ...     def getApplicationURL(self):
+    ...         return self.appurl
 
 Generic request without query args.
 
-    >>> request = DummyRequest('http://localhost/foo/bar', '/foo/bar', '')
+    >>> request = DummyRequest('http://localhost', '/foo/bar', '')
     >>> context = object()
     >>> status = LoginStatus(context, request)
     >>> status.logged_in
@@ -28,38 +28,39 @@ Generic request without query args.
     >>> status.login_url
     'http://localhost/foo/bar/+login'
 
-Generic request with implied index page.
+Virtual hosted request with a trailing slash.
 
     >>> request = DummyRequest(
-    ...     'http://localhost/foo/bar/+index', '/foo/bar', '')
+    ...     'https://staging.example.com',
+    ...     '/++vh++https:staging.example.com:433/++/foo/bar/', '')
     >>> context = object()
     >>> status = LoginStatus(context, request)
     >>> status.login_url
-    'http://localhost/foo/bar/+login'
+    'https://staging.example.com/foo/bar/+login'
 
-Generic request with implied index page and query parameters.
+Virtual hosted request with no trailing slash.
 
     >>> request = DummyRequest(
-    ...     'http://localhost/foo/bar/+index', '/foo/bar', 'x=1&y=2')
+    ...     'https://staging.example.com',
+    ...     '/++vh++https:staging.example.com:433/++/foo/bar', '')
+    >>> context = object()
+    >>> status = LoginStatus(context, request)
+    >>> status.login_url
+    'https://staging.example.com/foo/bar/+login'
+
+Generic request with trailing slash and query parameters.
+
+    >>> request = DummyRequest(
+    ...     'http://localhost', '/foo/bar/', 'x=1&y=2')
     >>> context = object()
     >>> status = LoginStatus(context, request)
     >>> status.login_url
     'http://localhost/foo/bar/+login?x=1&y=2'
 
-
-Generic request with trailing slash.
-
-    >>> request = DummyRequest(
-    ...     'http://localhost/foo/bar/+index', '/foo/bar/', '')
-    >>> context = object()
-    >>> status = LoginStatus(context, request)
-    >>> status.login_url
-    'http://localhost/foo/bar/+login'
-
 The login page.
 
     >>> request = DummyRequest(
-    ...     'http://localhost/foo/bar/+login', '/foo/bar/+login', '')
+    ...     'http://localhost', '/foo/bar/+login', '')
     >>> context = object()
     >>> status = LoginStatus(context, request)
     >>> status.logged_in
@@ -70,7 +71,7 @@ The login page.
 The logout page.
 
     >>> request = DummyRequest(
-    ...     'http://localhost/+logout', '/+logout', '')
+    ...     'http://localhost', '/+logout', '')
     >>> context = object()
     >>> status = LoginStatus(context, request)
     >>> status.logged_in
@@ -80,13 +81,11 @@ The logout page.
     >>> status.login_url
     'http://localhost/+login'
 
-
-
 Logging in.
 
     >>> login('foo.bar@canonical.com')
     >>> request = DummyRequest(
-    ...     'http://localhost/foo/bar', '/foo/bar', '')
+    ...     'http://localhost', '/foo/bar', '')
     >>> context = object()
     >>> status = LoginStatus(context, request)
     >>> status.logged_in

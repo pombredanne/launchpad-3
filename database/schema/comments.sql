@@ -546,18 +546,6 @@ COMMENT ON TABLE DistroBounty IS 'This table records a simple link between a bou
 
 COMMENT ON TABLE ProjectBounty IS 'This table records a simple link between a bounty and a project. This bounty will be listed on the project web page, and the project will be mentioned on the bounty web page.';
 
--- SourceSource
-COMMENT ON TABLE SourceSourceBackup IS 'The SourceSource table identifies
-upstream revision control systems that can be imported and re-published as
-bazaar (baz) archives. So, for example, there is an entry in this table for
-each upstream CVS or SVN branch that we want to sync-and-publish as a baz
-branch.';
-
-COMMENT ON COLUMN SourceSourceBackup.branchpoint IS 'The source specification for an import job to branch from.';
-COMMENT ON COLUMN SourceSourceBackup.datestarted IS 'The timestamp of the last time an import or sync was started on this sourcesource.';
-COMMENT ON COLUMN SourceSourceBackup.datefinished IS 'The timestamp of the last time an import or sync finished on this sourcesource.';
-
-
 -- Maintainership
 
 COMMENT ON TABLE Maintainership IS 'Stores the maintainer information for a

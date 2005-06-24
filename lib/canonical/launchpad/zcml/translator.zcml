@@ -5,6 +5,14 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+    <!-- TranslatorSet -->
+
+    <securedutility
+      class="canonical.launchpad.database.TranslatorSet"
+      provides="canonical.launchpad.interfaces.ITranslatorSet" >
+      <allow interface="canonical.launchpad.interfaces.ITranslatorSet" />
+    </securedutility>
+
     <!-- Translator -->
     <content class="canonical.launchpad.database.Translator">
         <allow interface="canonical.launchpad.interfaces.ITranslator" />

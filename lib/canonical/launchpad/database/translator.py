@@ -39,3 +39,9 @@ class TranslatorSet:
 
     title = 'Rosetta Translators'
 
+    def new(self, translationgroup, language, translator):
+        return Translator(
+            translationgroup=translationgroup,
+            language=language,
+            translator=translator)
+

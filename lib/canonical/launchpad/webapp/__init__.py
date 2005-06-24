@@ -5,10 +5,10 @@ This module also has an API for use by the application.
 """
 
 __all__ = ['Link', 'DefaultLink', 'FacetMenu', 'ExtraFacetMenu',
-           'nearest_menu', 'canonical_url', 'nearest']
+           'ExtraApplicationMenu', 'nearest_menu', 'canonical_url', 'nearest']
 
 from canonical.launchpad.webapp.menu import (
     Link, DefaultLink, FacetMenu, ExtraFacetMenu,
-    ApplicationMenu, nearest_menu)
+    ApplicationMenu, ExtraApplicationMenu, nearest_menu)
 
 from canonical.launchpad.webapp.publisher import canonical_url, nearest

@@ -20,7 +20,7 @@ __all__ = ['ILaunchpadRoot', 'ILaunchpadApplication', 'IMaloneApplication',
            'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities',
            'ILink', 'IDefaultLink', 'IMenu', 'IMenuBase',
            'IFacetMenu', 'IExtraFacetMenu',
-           'IApplicationMenu',
+           'IApplicationMenu', 'IExtraApplicationMenu',
            'ICanonicalUrlData', 'NoCanonicalUrl'
            ]
 
@@ -304,6 +304,10 @@ class IExtraFacetMenu(IMenuBase):
 
 class IApplicationMenu(IMenuBase):
     """Application menu for an object."""
+
+
+class IExtraApplicationMenu(IMenuBase):
+    """Extra application menu for an object."""
 
 
 class ICanonicalUrlData(Interface):
