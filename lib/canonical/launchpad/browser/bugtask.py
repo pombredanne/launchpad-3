@@ -4,9 +4,10 @@ __metaclass__ = type
 
 from xml.sax.saxutils import escape
 
-from zope.app.traversing.browser import absoluteurl
+from zope.app.traversing.browser.absoluteurl import absoluteURL
 from zope.interface import implements
 from zope.component import getUtility
+from zope.exceptions import NotFoundError
 from zope.app.publisher.browser import BrowserView
 from zope.app.form.utility import setUpWidgets, getWidgetsData
 from zope.app.form.interfaces import IInputWidget
@@ -194,8 +195,12 @@ class BugTaskSearchListingView:
         if searchtext:
             if searchtext.isdigit():
                 # The user wants to jump to a bug with a specific id.
-                bug = getUtility(IBugSet).get(int(searchtext))
-                self.request.response.redirect(absoluteurl(bug, self.request))
+                try:
+                    bug = getUtility(IBugSet).get(int(searchtext))
+                except NotFoundError:
+                    pass
+                else:
+                    self.request.response.redirect(absoluteURL(bug, self.request))
             else:
                 # The user wants to filter on certain text.
                 search_params["searchtext"] = searchtext
