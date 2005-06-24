@@ -88,4 +88,11 @@ class TranslationGroupSet:
         except SQLObjectNotFound:
             raise NotFoundError, name
 
+    def new(self, name, title, summary, owner):
+        """See ITranslationGroupSet."""
+        return TranslationGroup(
+            name=name,
+            title=title,
+            summary=summary,
+            owner=owner)
 
