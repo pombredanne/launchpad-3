@@ -774,6 +774,23 @@ class PersonSet:
             ''' % vars())
         skip.append(('posubscription', 'person'))
 
+        # Update only the POExportRequests that will not conflict
+        # and trash the rest
+        cur.execute('''
+            UPDATE POExportRequest
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND id NOT IN (
+                SELECT a.id FROM POExportRequest AS a, POExportRequest AS b
+                WHERE a.person = %(from_id)d AND b.person = %(to_id)d
+                AND a.potemplate = b.potemplate
+                AND a.pofile = b.pofile
+                )
+            ''' % vars())
+        cur.execute('''
+            DELETE FROM POExportRequest WHERE person=%(from_id)d
+            ''' % vars())
+        skip.append(('poexportrequest', 'person'))
+
         # Update the POSubmissions. They should not conflict since each of
         # them is independent
         cur.execute('''
@@ -782,19 +799,6 @@ class PersonSet:
             WHERE person=%(from_id)d
             ''' % vars())
         skip.append(('posubmission', 'person'))
-    
-        # We should still have the POTranslationSightingBackup. These might
-        # conflict since there is a complicated constraint to ensure there
-        # is only ever one sighting from one person. We'll just ignore that,
-        # try and slam it and see if it fails. Unlikely, since there are not
-        # likely to be many/any people translating files yet under two
-        # different accounts which they later decide to merge.
-        cur.execute('''
-            UPDATE POTranslationSightingBackup
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d
-            ''' % vars())
-        skip.append(('potranslationsightingbackup', 'person'))
     
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.
