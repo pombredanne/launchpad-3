@@ -36,7 +36,8 @@ from canonical.launchpad.interfaces import \
     ITeamMembershipSet, IEmailAddress, IWikiName, IIrcID, IArchUserID, \
     IJabberID, IIrcIDSet, IArchUserIDSet, ISSHKeySet, IJabberIDSet, \
     IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IKarma, IKarmaPointsManager, \
-    IMaintainershipSet, IEmailAddressSet, ISourcePackageReleaseSet
+    IMaintainershipSet, IEmailAddressSet, ISourcePackageReleaseSet, \
+    IPasswordEncryptor
 
 from canonical.launchpad.database.translation_effort import TranslationEffort
 from canonical.launchpad.database.bug import BugTask

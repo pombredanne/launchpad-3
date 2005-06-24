@@ -1,4 +1,8 @@
-# Gina's changelog parser and muncher for great justice
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
+"""Gina's changelog parser and muncher for great justice"""
 
 import re, sys
 

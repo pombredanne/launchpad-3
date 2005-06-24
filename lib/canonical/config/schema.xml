@@ -119,6 +119,15 @@
 	</key>
     </sectiontype>
 
+    <sectiontype name="gina">
+        <key name="dbuser" datatype="string" default="gina">
+            <description>
+                The database user wich will be used to make the
+                package imports.
+            </description>
+	</key>
+    </sectiontype>
+
     <sectiontype name="trebuchet_server">
         <!-- Not 'existing-directory' because the test runner needs to
         create it. Not 'existing-dirpath' because ZConfig will enforce it
@@ -161,6 +170,7 @@
         <section name="*" type="zopeless" attribute="zopeless" />
         <section name="*" type="gpghandler" attribute="gpghandler" />
         <section name="*" type="zeca" attribute="zeca" />
+        <section name="*" type="gina" attribute="gina" />
         <section name="*" type="trebuchet" attribute="trebuchet" />
     </sectiontype>
 

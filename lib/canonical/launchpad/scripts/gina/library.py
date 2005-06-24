@@ -1,7 +1,20 @@
-from canonical.librarian.client import FileUploadClient
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
+"""Library access methods to gina."""
+
 import os, sha
 
-librarian = None
+from canonical.librarian.client import LibrarianClient
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces import ILibraryFileAliasSet
+from canonical.launchpad.scripts import execute_zcml_for_scripts
+
+
+execute_zcml_for_scripts()
+librarian = getUtility(ILibraryFileAliasSet).create
 
 def _libType(fname):
     if fname.endswith(".dsc"):
@@ -17,11 +30,6 @@ def _libType(fname):
     return "application/octet-stream"
 
 
-def attachLibrarian(uploadhost, uploadport):
-    global librarian
-    librarian = FileUploadClient()
-    librarian.connect(uploadhost,uploadport)
-
 def getLibraryAlias(root, filename):
     global librarian
     if librarian is None:
@@ -29,10 +37,9 @@ def getLibraryAlias(root, filename):
     fname = "%s/%s"%(root,filename)
     fobj = open( fname, "rb" )
     size = os.stat(fname).st_size
-    digest = sha.sha(open(fname,'rb').read()).hexdigest()
-    id,alias = librarian.addFile(filename, size, fobj,
-                                 contentType=_libType(filename),
-                                 digest=digest)
+    alias = librarian(filename, size, fobj,
+                      contentType=_libType(filename))
+                                 
     fobj.close()
     return alias
 
