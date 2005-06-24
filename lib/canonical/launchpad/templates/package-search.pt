@@ -5,19 +5,32 @@
 
 <body>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="main" tal:define="distro_title view/launchbag/distribution/title">
 
-    <h1>Package search</h1>
+    <h1>Packages published in <span tal:replace="distro_title" /></h1>
 
-    <form method="POST" action=".">
-    <input type="text" name="text">
-    <input type="submit">
+    <form method="POST" action="." name="main">
+    Package: <input type="text" name="text">
+    <input type="submit" value="Search">
+    <script>
+    <!--
+        document.forms['main'].text.focus();
+    //-->
+    </script>
     </form>
 
     <div tal:condition="view/searchrequested"
          tal:omit-tag>
 
       <div tal:define="binpkgs view/searchresults">
+        <div tal:condition="view/request/form/text" tal:omit-tag>
+            <h2 tal:condition="not:binpkgs" tal:omit-tag>
+                No packages matching "<span
+                tal:replace="view/request/form/text" />" have been published
+                in <span tal:replace="distro_title" />.
+            </h2>
+        </div>
+
         <span tal:repeat="package binpkgs" tal:omit-tag>
             
             <h2 tal:content="package/name" />
