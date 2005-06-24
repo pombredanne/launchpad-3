@@ -18,6 +18,16 @@ Check that the link works when virtual hosting.
   ...<a href="https://staging.example.com:433/malone/+login">...
   ...
 
+Check virtual hosting with the root page too.
+
+  >>> print http(r"""
+  ... GET /++vh++https:staging.example.com:433/++/ HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...<a href="https://staging.example.com:433/+login">...
+  ...
+
 Check that a page in launchpad that is given query parameters has a login link
 that preserves those parameters.
 

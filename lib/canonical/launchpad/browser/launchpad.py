@@ -7,6 +7,7 @@ __all__ = ['LoginStatus']
 from zope.component import getUtility
 from canonical.launchpad.interfaces import ILaunchBag
 
+
 class LoginStatus:
 
     def __init__(self, context, request):
@@ -28,12 +29,23 @@ class LoginStatus:
         query_string = self.request.get('QUERY_STRING', '')
         if query_string:
             query_string = '?' + query_string
-        url = self.request.getURL()
+
+        # The approach we're taking is to combine the application url with
+        # the path_info, taking out path steps that are to do with virtual
+        # hosting.  This is not exactly correct, as the application url
+        # can have other path steps in it.  We're not using the feature of
+        # having other path steps in the application url, so this will work
+        # for us, assuming we don't need that in the future.
+
+        # The application_url is typically like 'http://thing:port'. No
+        # trailing slash.
+        application_url = self.request.getApplicationURL()
 
         # We're going to use PATH_INFO to remove any spurious '+index' at the
         # end of the URL.  But, PATH_INFO will contain virtual hosting
         # configuration, if there is any.
         path_info = self.request['PATH_INFO']
+
         # Remove any virtual hosting segments.
         path_steps = []
         in_virtual_hosting_section = False
@@ -47,9 +59,10 @@ class LoginStatus:
             if not in_virtual_hosting_section:
                 path_steps.append(step)
         path = '/'.join(path_steps)
+
         # Make the URL stop at the end of path_info so that we don't get
         # spurious '+index' at the end.
-        full_url = '%s%s' % (url[:url.find(path)], path)
+        full_url = '%s%s' % (application_url, path)
         if full_url.endswith('/'):
             full_url = full_url[:-1]
         logout_url_end = '/+logout'
