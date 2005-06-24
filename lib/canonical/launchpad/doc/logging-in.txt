@@ -37,6 +37,16 @@ Generic request with implied index page.
     >>> status.login_url
     'http://localhost/foo/bar/+login'
 
+Virtual hosted request with implied index page.
+
+    >>> request = DummyRequest(
+    ...     'http://localhost/foo/bar/+index',
+    ...     '/++vh++https:staging.example.com:433/++/foo/bar', '')
+    >>> context = object()
+    >>> status = LoginStatus(context, request)
+    >>> status.login_url
+    'http://localhost/foo/bar/+login'
+
 Generic request with implied index page and query parameters.
 
     >>> request = DummyRequest(
@@ -45,7 +55,6 @@ Generic request with implied index page and query parameters.
     >>> status = LoginStatus(context, request)
     >>> status.login_url
     'http://localhost/foo/bar/+login?x=1&y=2'
-
 
 Generic request with trailing slash.
 
@@ -79,8 +88,6 @@ The logout page.
     True
     >>> status.login_url
     'http://localhost/+login'
-
-
 
 Logging in.
 
