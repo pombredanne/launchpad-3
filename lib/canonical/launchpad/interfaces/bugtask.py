@@ -102,6 +102,7 @@ class IBugTask(IHasDateCreated):
     maintainer_displayname = TextLine(
         title=_("Maintainer"), required=True, readonly=True)
 
+    context = Attribute("What the task's location is")
     contextname = Attribute("Description of the task's location.")
     title = Attribute("The title used for a task's Web page.")
 

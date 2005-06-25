@@ -1,5 +1,5 @@
 <div class="portlet">
-  <h4>bug status:</h4>
+  <h4>Bug status:</h4>
 
   <div class="portletBody"
        tal:define="bug context/bug">
@@ -12,20 +12,21 @@
           <tal:block content="view/makeprivate_widget/label" />
       </tal:publicbug>
 -->
-      <b tal:content="string:Viewing status of bug #${context/bug/id} in:">
-        Viewing status of bug #42 in
-      </b><br />
-      <a href=""
+      <b>Viewing status of <a tal:attributes="href
+      context/bug/fmt:url" tal:content="string:bug #${context/bug/id}">
+        bug #42</a>
+      in</b><br />
+      <a href="#"
+         tal:attributes="href context/context/fmt:url"
          style="text-decoration: underline"
          tal:content="context/contextname">
-        Mozilla Firefox
+        Mozilla Bogosity
       </a>
       <br /><br />
 
       <b tal:content="string:Reported in ${context/contextname} on:">Reported in Mozilla Firefox on:</b><br />
       <tal:block content="context/datecreated/fmt:datetime" /><br />
-      by <a href="#"
-            tal:attributes="href string:/people/${context/owner/browsername}"
+      by <a tal:attributes="href context/owner/fmt:url"
             tal:content="context/owner/browsername"
             style="text-decoration: underline"></a>
     </div>

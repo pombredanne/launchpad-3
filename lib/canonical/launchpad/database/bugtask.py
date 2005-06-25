@@ -98,6 +98,28 @@ class BugTask(SQLBase):
             return None
 
     @property
+# XXX 2005-06-25 kiko: rename context and contextname to target or
+# location or whatever. context is overloaded.
+    def context(self):
+        distro = self.distribution
+        distrorelease = self.distrorelease
+        if distro or distrorelease:
+            parent = distrorelease or distro
+            return parent
+# XXX 2005-06-25 kiko: This needs API and fixages in Soyuz, but I don't
+# want to leave us with broken links meanwhile. Filed bugs XXX and XXX. 
+#             if self.sourcepackagename:
+#                 return parent.getSourcePackage(self.sourcepackagename)
+#             elif self.binarypackagename:
+#                 return parent.getBinaryPackageByName(self.binarypackagename)
+#             else:
+#                 return parent
+        elif self.product:
+            return self.product
+        else:
+            raise AssertionError
+
+    @property
     def contextname(self):
         """See canonical.launchpad.interfaces.IBugTask.
 
@@ -125,11 +147,12 @@ class BugTask(SQLBase):
             if self.distribution:
                 L.append(self.distribution.displayname)
             elif self.distrorelease:
+                L.append(self.distrorelease.distribution.displayname)
                 L.append(self.distrorelease.displayname)
             if self.sourcepackagename:
                 L.append(self.sourcepackagename.name)
             if (binarypackagename_name and
-            binarypackagename_name != sourcepackagename_name):
+                binarypackagename_name != sourcepackagename_name):
                 L.append(binarypackagename_name)
             return ' '.join(L)
         elif self.product:
