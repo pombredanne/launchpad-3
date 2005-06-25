@@ -66,9 +66,9 @@ class ResetPasswordView(object):
 
         self.email = self.request.form.get("email").strip()
         if self.email != self.context.email:
-            self.errormessage = ("The email address you provided didn't "
-                                 "match with the one you provided when you "
-                                 "requested the password reset.")
+            self.errormessage = (
+                "The email address you provided didn't match the address "
+                "you provided when requesting the password reset.")
             return
 
         password = self.request.form.get("password")
@@ -84,14 +84,14 @@ class ResetPasswordView(object):
         # Make sure this person has a preferred email address.
         emailset = getUtility(IEmailAddressSet)
         emailaddress = emailset.getByEmail(self.context.email)
-        emailaddress.status = EmailAddressStatus.VALIDATED
+        person = emailaddress.person
+        if person.preferredemail != emailaddress:
+            person.validateAndEnsurePreferredEmail(emailaddress)
 
         # Need to flush all changes we made, so subsequent queries we make
         # with this transaction will see this changes and thus they'll be
         # displayed on the page that calls this method.
         flush_database_updates()
-
-        person = emailaddress.person
 
         # XXX: Steve Alexander, 2005-03-18
         #      Local import, because I don't want this import copied elsewhere!
@@ -100,12 +100,6 @@ class ResetPasswordView(object):
         from zope.security.proxy import removeSecurityProxy
         naked_person = removeSecurityProxy(person)
         #      end of evil code.
-
-        if (person.preferredemail is None and 
-            len(person.validatedemails) == 1):
-            # This user have no preferred email set and this is the only
-            # validated email he owns. We must set it as the preferred one.
-            naked_person.preferredemail = emailaddress
 
         encryptor = getUtility(IPasswordEncryptor)
         password = encryptor.encrypt(password)
@@ -145,7 +139,7 @@ class ValidateEmailView(object):
     def validateTeamEmail(self):
         """Set the new email address as the team's contact email address."""
         requester = self.context.requester
-        email = self._registerEmail(self.context.email)
+        email = self._ensureEmail(self.context.email)
         if email is not None:
             if requester.preferredemail is not None:
                 requester.preferredemail.destroySelf()
@@ -159,11 +153,7 @@ class ValidateEmailView(object):
         logintokenset.deleteByEmailAndRequester(self.context.email, requester)
 
     def validatePersonEmail(self):
-        """Check the password and validate a person's email address.
-        
-        Also, if this is the first validated email for this user, we 
-        set it as the PREFERRED one for that user. 
-        """
+        """Check the password and validate a person's email address."""
         requester = self.context.requester
         password = self.request.form.get("password")
         encryptor = getUtility(IPasswordEncryptor)
@@ -171,16 +161,9 @@ class ValidateEmailView(object):
             self.errormessage = "Wrong password. Please check and try again."
             return 
 
-        status = EmailAddressStatus.VALIDATED
-        if not requester.preferredemail and not requester.validatedemails:
-            # This is the first VALIDATED email for this Person, and we
-            # need it to be the preferred one, to be able to communicate
-            # with the user.
-            status = EmailAddressStatus.PREFERRED
-
-        email = self._registerEmail(self.context.email)
+        email = self._ensureEmail(self.context.email)
         if email is not None:
-            email.status = status
+            requester.validateAndEnsurePreferredEmail(email)
 
         # At this point, either this email address is validated or it can't be
         # validated for this user because it's owned by someone else in
@@ -189,7 +172,6 @@ class ValidateEmailView(object):
         logintokenset = getUtility(ILoginTokenSet)
         logintokenset.deleteByEmailAndRequester(self.context.email, requester)
 
-  
     def validateGpgUid(self):
         """Check the password and validate a gpg key UID.
         Validate it as normal email account then insert the gpg key if
@@ -198,15 +180,10 @@ class ValidateEmailView(object):
         self.validatePersonEmail()
         self._ensureGPG()   
 
-
-    def _registerEmail(self, emailaddress):
-        """Register <emailaddress> with status VALIDATED and return it.
-
-        If <emailaddress> is already registered in Launchpad, we just set 
-        it as VALIDATED and then return.
-        """
+    def _ensureEmail(self, emailaddress):
+        """Make sure self.requester has <emailaddress> as one of its email
+        addresses with status NEW and return it."""
         validated = (EmailAddressStatus.VALIDATED, EmailAddressStatus.PREFERRED)
-        status = EmailAddressStatus.VALIDATED
         requester = self.context.requester
 
         emailset = getUtility(IEmailAddressSet)
@@ -234,7 +211,7 @@ class ValidateEmailView(object):
 
         # New email validated by the user. We must add it to our emailaddress
         # table.
-        email = emailset.new(emailaddress, status, requester.id)
+        email = emailset.new(emailaddress, requester.id)
         return email
 
     def _ensureGPG(self):
@@ -307,9 +284,9 @@ class NewAccountView(AddView):
         notify(ObjectCreatedEvent(person))
 
         emailset = getUtility(IEmailAddressSet)
-        preferred = EmailAddressStatus.PREFERRED
-        email = emailset.new(self.context.email, preferred, person.id)
+        email = emailset.new(self.context.email, person.id)
         notify(ObjectCreatedEvent(email))
+        person.validateAndEnsurePreferredEmail(email)
 
         self._nextURL = '/people/%s' % person.name
         self.context.destroySelf()
@@ -360,9 +337,10 @@ class MergePeopleView(object):
     def doMerge(self):
         # The user proved that he has access to this email address of the
         # dupe account, so we can assign it to him.
+        requester = self.context.requester
         email = getUtility(IEmailAddressSet).getByEmail(self.context.email)
-        email.person = self.context.requester.id
-        email.status = EmailAddressStatus.VALIDATED
+        email.person = requester.id
+        requester.validateAndEnsurePreferredEmail(email)
 
         # Need to flush all changes we made, so subsequent queries we make
         # with this transaction will see this changes and thus they'll be
@@ -377,6 +355,6 @@ class MergePeopleView(object):
 
         # Call Stuart's magic function which will reassign all of the dupe
         # account's stuff to the user account.
-        pset = getUtility(IPersonSet).merge(self.dupe, self.context.requester)
+        pset = getUtility(IPersonSet).merge(self.dupe, requester)
         self.mergeCompleted = True
 

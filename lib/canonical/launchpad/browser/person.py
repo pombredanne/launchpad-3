@@ -530,7 +530,7 @@ class PersonEditView(BasePersonView):
         logintokenset = getUtility(ILoginTokenSet)
         if email in [e.email for e in self.context.guessedemails]:
             emailaddress = emailset.getByEmail(email)
-            # These asserts will fail only if someone tries to poison the form.
+            # These asserts will fail only if someone poisons the form.
             assert emailaddress.person.id == self.context.id
             assert self.context.preferredemail.id != emailaddress.id
             emailaddress.destroySelf()
@@ -552,7 +552,13 @@ class PersonEditView(BasePersonView):
         emailaddress = emailset.getByEmail(email)
         # These asserts will fail only if someone poisons the form.
         assert emailaddress.person.id == self.context.id
-        assert self.context.preferredemail.id != emailaddress.id
+        assert self.context.preferredemail is not None
+        if self.context.preferredemail == emailaddress:
+            # This will happen only if a person is submitting a stale page.
+            self.message = (
+                "You can't remove %s because it's your contact email "
+                "address." % self.context.preferredemail.email)
+            return
         emailaddress.destroySelf()
         self.message = "The email address '%s' has been removed." % email
 

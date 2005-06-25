@@ -138,3 +138,11 @@ def process_queue(transaction_manager):
 
         transaction_manager.commit()
 
+        # This is here in case we need to process the same file twice in the
+        # same queue run. If we try to do that all in one transaction, the
+        # second time we get to the file we'll get a Librarian lookup error
+        # because files are not accessible in the same transaction as they're
+        # created.
+
+        transaction_manager.commit()
+

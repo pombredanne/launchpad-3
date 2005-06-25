@@ -334,13 +334,15 @@ class BasePersonVocabulary(SQLObjectVocabularyBase):
 
 
 class PersonAccountToMergeVocabulary(BasePersonVocabulary):
-    """The set of all persons, but not teams, in Launchpad. 
+    """The set of all non-merged people with at least one email address.
 
     This vocabulary is a very specialized one, meant to be used only to choose
     accounts to merge. You *don't* want to use it.
     """
 
-    _basequery = 'teamowner IS NULL AND merged IS NULL'
+    _basequery = ('Person.teamowner IS NULL AND Person.merged IS NULL AND '
+                  'Person.id = EmailAddress.person')
+    _clauseTables = ['EmailAddress']
 
 
 class ValidPersonOrTeamVocabulary(BasePersonVocabulary):

@@ -73,6 +73,13 @@ def traverse_distrorelease(distrorelease, request, name):
         return distrorelease[name]
 
 
+def traverseTeam(team, request, name):
+    if name == '+members':
+        return ITeamMembershipSubset(team)
+    
+    return None
+
+
 # XXX: Brad Bollenbach, 2005-06-23: From code review discussion with
 # salgado, we decided it would be a good idea to turn this
 # database-class using code into adapters from IBug to the appropriate
