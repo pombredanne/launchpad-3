@@ -53,13 +53,8 @@
             </p>
           </div>
 
-          <p tal:condition="context/bug/summary"
-             tal:content="context/bug/summary">
-             Bug summary goes here if it exists.
-          </p>
-          
           <h2>
-            Status of <a href="#" tal:attributes="href
+            <a href="#" tal:attributes="href
             context/bug/fmt:url">Bug #<span
             tal:replace="context/bug/id">132</span></a> in
             <a href="#" tal:attributes="href context/context/fmt:url">
@@ -67,8 +62,19 @@
             package/product</span></a>
           </h2>
 
+          <p tal:condition="context/bug/summary"
+             tal:content="context/bug/summary">
+             Bug summary goes here if it exists.
+          </p>
+          
+          <p class="boardCommentContent" 
+             tal:content="structure context/bug/description/fmt:nice_pre">
+             $Bug.description
+          </p>
+
+
           <div class="field">
-            <table style="width: 20%">
+            <table>
             <tr>
               <td>
                 <label tal:attributes="for view/status_widget/name"
@@ -147,12 +153,6 @@
               <tal:block replace="structure view/statusexplanation_widget" />
             </div>
           </div>
-
-          <p class="boardCommentContent" 
-             tal:content="structure context/bug/description/fmt:nice_pre">
-             $Bug.description
-          </p>
-
 
           <div class="actions" tal:condition="context/required:launchpad.Edit">
             <input
