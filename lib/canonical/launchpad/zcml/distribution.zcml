@@ -207,4 +207,9 @@
             class="canonical.widgets.OwnerWidget" />
     </browser:addform>
 
+    <browser:menus
+        module="canonical.launchpad.browser.distribution"
+        classes="DistributionFacets"
+        />
+
 </configure>

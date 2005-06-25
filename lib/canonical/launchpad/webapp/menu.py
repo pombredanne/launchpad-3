@@ -45,11 +45,19 @@ class Link:
         self.selected = False
         self.linked = True
         self.url = None
+        self._check_post_construction_state()
 
+    def _check_post_construction_state(self):
+        assert self.target, (
+            'A Link must have a target.  Use DefaultLink for an empty target.')
 
 class DefaultLink(Link):
     """Link that is selected when no other links are."""
     implements(IDefaultLink)
+
+    def _check_post_construction_state(self):
+        # Do not check that target is non-empty.
+        pass
 
 
 class MenuBase:
@@ -85,17 +93,19 @@ class MenuBase:
             method = getattr(self, linkname)
             link = method()
             link.name = linkname
-            link.url = '%s/%s' % (contexturlobj.without_query, link.target)
+            link.url = '%s%s%s' % (
+                contexturlobj.host, contexturlobj.pathslash, link.target)
+            isdefaultlink = IDefaultLink.providedBy(link)
             if requesturlobj is not None:
                 linkurlobj = Url(link.url)
-                if requesturlobj.is_inside(linkurlobj):
+                if not isdefaultlink and requesturlobj.is_inside(linkurlobj):
                     link.selected = True
                     assert selected_link is None, (
                         'There can be only one selected link')
                     selected_link = link
                 if requesturlobj == linkurlobj:
                     link.linked = False
-            if IDefaultLink.providedBy(link):
+            if isdefaultlink:
                 assert default_link is None, (
                     'There can be only one DefaultLink')
                 default_link = link
@@ -158,12 +168,9 @@ class Url:
         self.fragmentids = urlparts.next()
 
     @property
-    def without_query(self):
-        """Returns the URL including addressing scheme and path, but without
-        the query or other things.
-        """
-        return '%s://%s%s' % (
-            self.addressingscheme, self.networklocation, self.path)
+    def host(self):
+        """Returns the addressing scheme and network location."""
+        return '%s://%s' % (self.addressingscheme, self.networklocation)
 
     def __repr__(self):
         return '<Url %s>' % self.url

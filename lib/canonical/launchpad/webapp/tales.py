@@ -19,7 +19,7 @@ from zope.app.traversing.interfaces import ITraversable
 from zope.exceptions import NotFoundError
 from canonical.launchpad.interfaces import (
     IPerson, IFacetMenu, IExtraFacetMenu,
-    IApplicationMenu, IExtraApplicationMenu)
+    IApplicationMenu, IExtraApplicationMenu, NoCanonicalUrl)
 import canonical.lp.dbschema
 from canonical.lp import decorates
 import canonical.launchpad.pagetitles
@@ -48,21 +48,27 @@ class MenuAPI:
     def __init__(self, context):
         self._context = context
 
+    def _nearest_menu(self, menutype):
+        try:
+            return nearest_menu(self._context, menutype)
+        except NoCanonicalUrl:
+            return None
+
     def facet(self):
-        menu = nearest_menu(self._context, IFacetMenu)
+        menu = self._nearest_menu(IFacetMenu)
         if menu is None:
             return []
         else:
             menu.request = get_current_browser_request()
-            return menu
+            return list(menu)
 
     def extrafacet(self):
-        menu = nearest_menu(self._context, IExtraFacetMenu)
+        menu = self._nearest_menu(IExtraFacetMenu)
         if menu is None:
             return []
         else:
             menu.request = get_current_browser_request()
-            return menu
+            return list(menu)
 
     def _get_selected_facetname(self):
         """Returns the name of the selected facet, or None if there is no
@@ -85,7 +91,7 @@ class MenuAPI:
             return []
         else:
             menu.request = get_current_browser_request()
-            return menu
+            return list(menu)
 
     def extraapplication(self):
         selectedfacetname = self._get_selected_facetname()
@@ -98,7 +104,7 @@ class MenuAPI:
             return []
         else:
             menu.request = get_current_browser_request()
-            return menu
+            return list(menu)
 
 
 class CountAPI:
