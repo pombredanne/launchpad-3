@@ -3,7 +3,7 @@
      tal:define="bug_url string:/malone/bugs/${context/id}">
 
 <table class="listing"
-       style="width: 100%; margin-top: 2px;">
+       style="width: 100%; margin-bottom: 1px; margin-top: 2px; font-size: 90%;">
 
   <caption>Needs fixing in...</caption>
 
@@ -96,7 +96,7 @@
 
 </div>
 
-<div style="font-size: 75%; text-align: right; clear: both; text-decoration: none;">
+<div style="font-size: 90%; text-align: right; clear: both; margin-bottom:1em; text-decoration: none;">
   Indicate bug also exists: 
   <img src="/++resource++add.gif" alt="+" />
   <a href="+upstreamtask"
