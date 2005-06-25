@@ -59,9 +59,12 @@
           </p>
           
           <h2>
-            Status of Bug #<span tal:replace="context/bug/id">132</span> in
+            Status of <a href="#" tal:attributes="href
+            context/bug/fmt:url">Bug #<span
+            tal:replace="context/bug/id">132</span></a> in
+            <a href="#" tal:attributes="href context/context/fmt:url">
             <span tal:replace="context/contextname">some distro
-            package/product</span>
+            package/product</span></a>
           </h2>
 
           <div class="field">
@@ -120,7 +123,8 @@
               </td>
               <td colspan="2">
                 <label tal:attributes="for view/bugwatch_widget/name"
-                       tal:content="view/bugwatch_widget/label">
+                       tal:content="view/bugwatch_widget/label"
+                       style="white-space: nowrap">
                   Remote Watch
                 </label>
               </td>
