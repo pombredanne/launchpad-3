@@ -5,7 +5,46 @@ __metaclass__ = type
 __all__ = ['LoginStatus']
 
 from zope.component import getUtility
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces import (
+    ILaunchBag, ILaunchpadRoot, IRosettaApplication)
+from canonical.launchpad.webapp import (
+    StandardLaunchpadFacets, ApplicationMenu, DefaultLink, Link)
+
+
+class LaunchpadRootFacets(StandardLaunchpadFacets):
+    usedfor = ILaunchpadRoot
+    links = ['overview', 'translations', 'bugs']
+
+    def overview(self):
+        target = ''
+        text = 'Launchpad'
+        return DefaultLink(target, text)
+
+    def translations(self):
+        target = 'rosetta'
+        text = 'Translations'
+        return Link(target, text)
+
+    def bugs(self):
+        target = 'malone'
+        text = 'Bugs'
+        return Link(target, text)
+
+
+class RosettaAppMenus(ApplicationMenu):
+    usedfor = IRosettaApplication
+    facet = 'translations'
+    links = ['overview', 'about']
+
+    def overview(self):
+        target = ''
+        text = 'Overview'
+        return DefaultLink(target, text)
+
+    def about(self):
+        target = '+about'
+        text = 'About Rosetta'
+        return Link(target, text)
 
 
 class LoginStatus:

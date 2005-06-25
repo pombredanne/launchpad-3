@@ -50,40 +50,40 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IDistroRelease"
-	    class="canonical.launchpad.browser.DistroReleaseView"
-	    permission="zope.Public">
+        class="canonical.launchpad.browser.DistroReleaseView"
+        permission="zope.Public">
 
-	    <browser:page
-	        name="+index"
+        <browser:page
+            name="+index"
                 template="../templates/distrorelease-index.pt"
-	        lp:url="/distros/$Distribution.name/$Release.name/+index"
-	        />
-	    <browser:page
+            lp:url="/distros/$Distribution.name/$Release.name/+index"
+            />
+        <browser:page
                 name="+translations"
                 template="../templates/distrorelease-translations.pt"
-	        lp:url="/distros/ubuntu/hoary/+translations"
-	        />
-	    <browser:page
+            lp:url="/distros/ubuntu/hoary/+translations"
+            />
+        <browser:page
                 name="+potlist"
                 template="../templates/object-pots.pt"
-	        lp:url="/distros/ubuntu/hoary/+potlist"
-	        />
+            lp:url="/distros/ubuntu/hoary/+potlist"
+            />
 
-	    <browser:page
+        <browser:page
                 name="+portlet-details"
                 template="../templates/portlet-distrorelease-details.pt"
-	        lp:url="/distros/ubuntu/hoary/+portlet-details"
-	        />
-	    <browser:page
+            lp:url="/distros/ubuntu/hoary/+portlet-details"
+            />
+        <browser:page
                 name="+portlet-actions"
                 template="../templates/portlet-distrorelease-actions.pt"
-	        lp:url="/distros/ubuntu/hoary/+portlet-actions"
-	        />
-	    <browser:page
+            lp:url="/distros/ubuntu/hoary/+portlet-actions"
+            />
+        <browser:page
                 name="+portlet-translations"
                 template="../templates/portlet-distrorelease-translations.pt"
-	        lp:url="/distros/ubuntu/hoary/+portlet-translations"
-	        />
+            lp:url="/distros/ubuntu/hoary/+portlet-translations"
+            />
             <browser:page
                 name="+portlet-status-legend"
                 template="../templates/portlet-rosetta-status-legend.pt"
@@ -104,7 +104,7 @@
                 template="../templates/portlet-browser-langs.pt"
                 lp:url="/distros/ubuntu/hoary/+portlet-browser-langs"
                 />
-    </browser:pages>		
+    </browser:pages>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IDistroRelease"
@@ -116,13 +116,18 @@
               lp:url="/distros/$distro.id/$release.id/+reassign" />
     </browser:pages>
 
-	<browser:page
-            for="canonical.launchpad.interfaces.IDistroRelease"
-	    permission="zope.Public"
-	    class="canonical.launchpad.browser.ReleaseSearchView"
-	    name="+search"
-	    template="../templates/distrorelease-search.pt"
-	    lp:url="distros/$Distribution.name/$Release.name/+search"
-	    />
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistroRelease"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ReleaseSearchView"
+        name="+search"
+        template="../templates/distrorelease-search.pt"
+        lp:url="distros/$Distribution.name/$Release.name/+search"
+        />
+
+    <browser:menus
+        module="canonical.launchpad.browser.distrorelease"
+        classes="DistroReleaseFacets"
+        />
 
 </configure>

@@ -150,6 +150,13 @@ Link.linked, Link.selected and Link.url are set by the Menu when it gives its
 links for presentation.
 
 
+A Link target cannot be the empty string.
+
+    >>> Link('', 'empty target link')
+    Traceback (most recent call last):
+    ...
+    AssertionError: A Link must have a target.  Use DefaultLink for an empty target.
+
 == The FacetMenu class ==
 
     >>> from canonical.launchpad.webapp import FacetMenu
@@ -343,9 +350,9 @@ by another link in that same menu.
     >>> from canonical.launchpad.webapp import DefaultLink
 
 A DefaultLink works the same as a Link, but it provides the marker interface
-IDefaultLink.
+IDefaultLink, and it may have an empty string as its target.
 
-    >>> defaultlink = DefaultLink('target', 'text', 'summary')
+    >>> defaultlink = DefaultLink('', 'text', 'summary')
     >>> IDefaultLink.providedBy(defaultlink)
     True
 
@@ -443,6 +450,43 @@ using that hostname.
     ...     print link.url, link.selected
     http://mandrill.example.com:9999/sesamestreet/+foo True
     http://mandrill.example.com:9999/sesamestreet/+bar False
+    http://mandrill.example.com:9999/sesamestreet/+baz False
+
+We need to test the case when we have a default link with a blank target.  This
+will be the common case for default links.
+
+    >>> class BlankTargetTestFacets(Facets):
+    ...
+    ...     links = Facets.links + ['baz']
+    ...
+    ...     def foo(self):
+    ...         target = ''
+    ...         text = 'Foo'
+    ...         return DefaultLink(target, text)
+    ...
+    ...     def baz(self):
+    ...         target = '+baz'
+    ...         text = 'Baz'
+    ...         summary = (
+    ...             'More explanation about Baz of %s' % self.context.name)
+    ...         return Link(target, text, summary)
+
+    >>> request = DummyRequest(
+    ...     'http://mandrill.example.com:9999/sesamestreet/+barspoo')
+    >>> facets = BlankTargetTestFacets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.selected
+    http://mandrill.example.com:9999/sesamestreet/ True
+    http://mandrill.example.com:9999/sesamestreet/+bar False
+    http://mandrill.example.com:9999/sesamestreet/+baz False
+
+    >>> request = DummyRequest(
+    ...     'http://mandrill.example.com:9999/sesamestreet/+bar')
+    >>> facets = BlankTargetTestFacets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.selected
+    http://mandrill.example.com:9999/sesamestreet/ False
+    http://mandrill.example.com:9999/sesamestreet/+bar True
     http://mandrill.example.com:9999/sesamestreet/+baz False
 
 

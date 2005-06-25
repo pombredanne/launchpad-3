@@ -13,11 +13,18 @@ from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import BugTaskStatus
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad import helpers
+from canonical.launchpad.webapp import (
+    StandardLaunchpadFacets, DefaultLink, Link)
 
-from canonical.launchpad.interfaces import IBugTaskSet, ILaunchBag, \
-     IBugTaskSearchListingView
+from canonical.launchpad.interfaces import (
+    IBugTaskSet, ILaunchBag, IBugTaskSearchListingView, IDistroRelease)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
+
+
+class DistroReleaseFacets(StandardLaunchpadFacets):
+    usedfor = IDistroRelease
+
 
 class DistroReleaseView:
 

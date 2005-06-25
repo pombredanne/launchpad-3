@@ -37,6 +37,41 @@
 
     </div><!-- class="page-header"-->
 
+    <!-- Menus -->
+
+    <div style="clear: left; margin-bottom: 1em"
+            tal:define="
+                facetmenu context/menu:facet;
+                appmenu context/menu:application">
+        <ul tal:condition="facetmenu" class="app navigation"
+                style="margin-bottom: 0">
+            <li tal:repeat="link facetmenu">
+                <span tal:condition="link/selected">
+                    <strong tal:content="link/text">link text</strong>
+                </span>
+
+                <span tal:condition="not: link/selected">
+                    <a tal:attributes="href link/url" tal:content="link/text"
+                        >link text</a>
+                </span>
+            </li>
+        </ul>
+
+        <ul tal:condition="appmenu" class="app navigation"
+                style="margin-left: 3em">
+            <li tal:repeat="link appmenu">
+                <span tal:condition="link/selected">
+                    <strong tal:content="link/text">link text</strong>
+                </span>
+
+                <span tal:condition="not: link/selected">
+                    <a tal:attributes="href link/url" tal:content="link/text"
+                        >link text</a>
+                </span>
+            </li>
+        </ul>
+    </div>
+
     <div class="visualClear" id="body">
       <metal:block define-slot="body" tal:condition="nothing">
         Use this slot for pages that only have one column of
