@@ -33,10 +33,12 @@
   <div class="discreet">
 
     <tal:block condition="context/name">
-      Malone bug "<a href="" tal:content="context/name">$Bug.name</a>",
+      Malone <a href="#" tal:attributes="href context/fmt:url" 
+                         tal:content="context/name">bug "$Bug.name</a>",
     </tal:block>
     <tal:block condition="not: context/name">
-      Malone bug #<span tal:replace="context/id">33</span>,
+      Malone <a href="#" tal:attributes="href context/fmt:url">
+      bug #<span tal:replace="context/id">33</span></a>,
     </tal:block>
 
     submitted
@@ -82,8 +84,9 @@
     <div class="boardCommentDetails">
       <strong tal:content="message/title">$Bugmessage.title</strong>
 
-      Posted by <span tal:replace="message/owner/browsername|string:(none)">
-        $Person.browsername </span>
+      Posted by <a href="#" tal:attributes="href message/owner/fmt:url" 
+                            tal:content="message/owner/browsername|string:(none)">
+        $Person.browsername</a>
       at <span tal:replace="message/datecreated/fmt:datetime">Thursday 13:21</span>
     </div>
 
