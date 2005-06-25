@@ -98,23 +98,28 @@
 
 <div style="font-size: 90%; text-align: right; clear: both; margin-bottom:1em; text-decoration: none;">
   Indicate bug also exists: 
-  <img src="/++resource++add.gif" alt="+" />
-  <a href="+upstreamtask"
-     title="Mark this bug as occurring upstream">
-    Upstream...
-  </a>
+  <span style="white-space: nowrap">
+      <img src="/++resource++add.gif" alt="+" />
+      <a href="+upstreamtask"
+         title="Mark this bug as occurring upstream">
+        Upstream...
+      </a>
+  </span>
 
-  <img src="/++resource++add.gif" alt="+" />
-  <a href="+distrotask"
-     title="Mark this bug as occurring in a distro package">
-    In Distro...
-  </a>
-
-  <img src="/++resource++add.gif" alt="+" />
-  <a href="+distroreleasetask"
-     title="Target the fixing of this bug to a specific distro release">
-    In Distro Release...
-  </a>
+  <span style="white-space: nowrap">
+      <img src="/++resource++add.gif" alt="+" />
+      <a href="+distrotask"
+         title="Mark this bug as occurring in a distro package">
+        In Distro...
+      </a>
+  </span>
+  <span style="white-space: nowrap">
+      <img src="/++resource++add.gif" alt="+" />
+      <a href="+distroreleasetask"
+         title="Target the fixing of this bug to a specific distro release">
+        In Distro Release...
+      </a>
+  </span>
 
 </div>
 
