@@ -107,7 +107,7 @@ class BugTask(SQLBase):
             parent = distrorelease or distro
             return parent
 # XXX 2005-06-25 kiko: This needs API and fixages in Soyuz, but I don't
-# want to leave us with broken links meanwhile. Filed bugs XXX and XXX. 
+# want to leave us with broken links meanwhile. Filed bugs 1146 and 1147. 
 #             if self.sourcepackagename:
 #                 return parent.getSourcePackage(self.sourcepackagename)
 #             elif self.binarypackagename:
@@ -121,6 +121,8 @@ class BugTask(SQLBase):
 
     @property
     def contextname(self):
+# XXX 2005-06-25 kiko: if context actually works, we can probably nuke
+# this or simplify it significantly.
         """See canonical.launchpad.interfaces.IBugTask.
 
         Depending on whether the task has a distribution,
@@ -129,9 +131,11 @@ class BugTask(SQLBase):
         * distribution.displayname
         * distribution.displayname sourcepackagename.name
         * distribution.displayname sourcepackagename.name binarypackagename.name
-        * distrorelease.displayname
-        * distrorelease.displayname sourcepackagename.name
-        * distrorelease.displayname sourcepackagename.name binarypackagename.name
+        * distribution.displayname distrorelease.displayname
+        * distribution.displayname distrorelease.displayname 
+          sourcepackagename.name
+        * distribution.displayname distrorelease.displayname 
+          sourcepackagename.name binarypackagename.name
         * product.name
         """
         if self.distribution or self.distrorelease:
