@@ -30,20 +30,13 @@
 
         <h1>User unknown</h1>
 
-        The user specified is not registered in Launchpad.
+        The user "<span tal:replace="view/request/form/name" />" is not registered in Launchpad.
 
     </div>
     <div tal:condition="view/user">
 
-        <h1>Bugs Assigned to <span tal:replace="view/user/browsername">
-        Person</span></h1>
-
-        <p>This report shows bugs that are assigned to a specific person. In
-        Malone, a single bug can appear in multiple packages, so bugs can be
-        assigned to be fixed in multiple places. The "work status" shows the
-        state of that particular assignment. So even though the bug might be
-        fixed upstream, or in another package, you may still have to fix it in
-        yours.</p>
+        <h1>Bugs Assigned to <a tal:attributes="href view/user/fmt:url"><span tal:replace="view/user/browsername">
+        Person</span></a></h1>
 
         <div tal:condition="view/maintainedProductBugs">
 
@@ -203,22 +196,36 @@
 
         </div>
 
-        <p tal:condition="not:view/assignedBugs">
-        No bugs are currently assigned to <span
-        tal:replace="view/user/browsername">Person</span>. You can assign a bug by
-        clicking on the "File Against Upstream..." or "File Against Package..." links
-        near the top of the
-        main bug page, assigning the bug to an upstream product or package and then also
-        assigning it to a specific person for action.
-        </p>
+        <div tal:condition="not:view/assignedBugs" tal:omit-tag>
+        <h2>No bugs are currently assigned to <span
+        tal:replace="view/user/browsername">Person</span>.</h2>
+        
+            <hr>
+            <p>
+            You can assign a bug by visiting its bug page, choosing a
+            specific package or product it needs to be fixed in, and
+            then assigning it to a specific person for action.
+            </p>
 
-        <p tal:condition="view/assignedBugs">These are the bugs that are
-        in the work list for <span
-        tal:replace="view/user/browsername">the person</span>. These bugs
-        might occur in upstream products or distribution packages which <span
-        tal:replace="view/user/browsername">the person</span> maintains, or
-        they might have been explicitly assigned. Click on the bug to see more
-        detail.</p>
+        </div>
+
+        <div tal:condition="view/assignedBugs" tal:omit-tag>
+            <p >These are the bugs that are
+            in the work list for <span
+            tal:replace="view/user/browsername">the person</span>. These bugs
+            might occur in upstream products or distribution packages which <span
+            tal:replace="view/user/browsername">the person</span> maintains, or
+            they might have been explicitly assigned. Click on the bug to see more
+            detail.</p>
+
+            <p>In Malone, a single bug can appear in multiple
+            packages, so bugs can be assigned to be fixed in multiple
+            places. The "work status" shows the state of that particular
+            assignment. So even though the bug might be fixed upstream,
+            or in another package, the assignee may still have to do
+            work to fix it.</p>
+
+        </div>
 
     </div>
     
