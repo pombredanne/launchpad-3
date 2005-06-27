@@ -17,7 +17,8 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, DefaultLink, Link)
 
 from canonical.launchpad.interfaces import (
-    IBugTaskSet, ILaunchBag, IBugTaskSearchListingView, IDistroRelease)
+    IBugTaskSet, ILaunchBag, IBugTaskSearchListingView, IDistroRelease,
+    ICountry)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 
@@ -36,7 +37,7 @@ class DistroReleaseView:
         self.languages = helpers.request_languages(self.request)
 
     def requestCountry(self):
-        return helpers.requestCountry(self.request)
+        return ICountry(self.request, None)
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)

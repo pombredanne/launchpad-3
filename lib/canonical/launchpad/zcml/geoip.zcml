@@ -26,4 +26,9 @@
         factory="canonical.launchpad.utilities.RequestPreferredLanguages"
         provides="canonical.launchpad.interfaces.IRequestPreferredLanguages" />
 
+    <adapter
+        for="zope.publisher.interfaces.browser.IBrowserRequest"
+        factory="canonical.launchpad.components.request_country.request_country"
+        provides="canonical.launchpad.interfaces.ICountry" />
+
 </configure>

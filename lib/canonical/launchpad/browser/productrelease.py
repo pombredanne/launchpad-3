@@ -4,8 +4,8 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
 # launchpad
-from canonical.launchpad.interfaces import IPOTemplateSet
-from canonical.launchpad.interfaces import IProductReleaseSet
+from canonical.launchpad.interfaces import (
+    IPOTemplateSet, IProductReleaseSet, ICountry)
 
 from canonical.launchpad import helpers
 
@@ -83,7 +83,7 @@ class ProductReleaseView:
                 for template in self.context.potemplates]
 
     def requestCountry(self):
-        return helpers.requestCountry(self.request)
+        return ICountry(self.request, None)
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)

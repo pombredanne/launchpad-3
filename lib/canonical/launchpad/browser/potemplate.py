@@ -152,17 +152,17 @@ class POTemplateView:
                     'There was a problem uploading the file: %s.' % error)
 
         elif helpers.is_tar_filename(filename):
-            tarball = helpers.string_to_tarfile(file.read())
-            pot_paths, po_paths = helpers.examine_tarfile(tarball)
+            tarball = helpers.RosettaReadTarFile(stream=file)
+            pot_paths, po_paths = tarball.examine()
 
-            error = helpers.check_tar(tarball, pot_paths, po_paths)
+            error = tarball.check_for_import(pot_paths, po_paths)
 
             if error is not None:
                 self.status_message = error
                 return
 
             self.status_message = (
-                helpers.import_tar(self.context, owner, tarball, pot_paths, po_paths))
+                tarball.do_import(self.context, owner, pot_paths, po_paths))
         else:
             self.status_message = (
                 'The file you uploaded was not recognised as a file that '

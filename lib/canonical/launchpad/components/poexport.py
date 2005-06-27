@@ -31,7 +31,7 @@ from StringIO import StringIO
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.helpers import tar_add_file
+from canonical.launchpad.helpers import RosettaWriteTarFile
 
 from canonical.launchpad.interfaces import IPOTemplateExporter
 from canonical.launchpad.interfaces import IDistroReleasePOExporter
@@ -463,13 +463,15 @@ class DistroRelaseTarballPOFileOutput:
             'LC_MESSAGES',
             '%s.po' % domain
             )
-        tar_add_file(self.archive, path, contents)
+        self.archive.add_file(path, contents)
 
 def export_distrorelease_tarball(filehandle, release, date=None):
     """Export a tarball of translations for a distribution release."""
 
-    archive = tarfile.open('', 'w:gz', filehandle)
+    # Open the archive.
+    archive = RosettaWriteTarFile(filehandle)
 
+    # Do the export.
     pofiles = getUtility(IVPOExportSet).get_distrorelease_pofiles(
         release, date)
     pofile_output = DistroRelaseTarballPOFileOutput(release, archive)
@@ -481,11 +483,10 @@ def export_distrorelease_tarball(filehandle, release, date=None):
             variant=pofile.variant,
             contents=pofile.export())
 
+    # Add a timestamp file.
+    path = 'rosetta-%s/timestamp.txt' % release.name
     contents = datetime.datetime.utcnow().strftime('%Y%m%d\n')
-    fileinfo = tarfile.TarInfo('rosetta-%s/timestamp.txt' % release.name)
-    fileinfo.size = len(contents)
-    fileinfo.mtime = int(time.time())
-    archive.addfile(fileinfo, StringIO(contents))
+    archive.add_file(path, contents)
 
     archive.close()
 

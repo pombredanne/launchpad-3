@@ -6,10 +6,11 @@ import tempfile
 from zope.component import getUtility
 
 from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad.helpers import tar_add_file, getRawFileData, \
-    join_lines
-from canonical.launchpad.interfaces import IPOExportRequestSet, \
-    IPOTemplate, IPOFile, ILibraryFileAliasSet, ZeroLengthPOExportError
+from canonical.launchpad.helpers import (
+    getRawFileData, join_lines, RosettaWriteTarFile)
+from canonical.launchpad.interfaces import (
+    IPOExportRequestSet, IPOTemplate, IPOFile, ILibraryFileAliasSet,
+    ZeroLengthPOExportError)
 
 def get_object_name_and_url(person, potemplate, object):
     """Return the name and URL of the given object.
@@ -47,7 +48,7 @@ def process_multi_object_request(person, potemplate, objects):
 
     name = potemplate.potemplatename.name
     filehandle = tempfile.TemporaryFile()
-    archive = tarfile.open('', 'w:gz', filehandle)
+    archive = RosettaWriteTarFile(filehandle)
 
     for object in objects:
         if IPOTemplate.providedBy(object):
@@ -59,7 +60,7 @@ def process_multi_object_request(person, potemplate, objects):
         else:
             raise TypeError("Can't export object", object)
 
-        tar_add_file(archive, 'rosetta-%s/%s' % (name, filename), contents)
+        archive.add_file('rosetta-%s/%s' % (name, filename), contents)
 
     archive.close()
     size = filehandle.tell()

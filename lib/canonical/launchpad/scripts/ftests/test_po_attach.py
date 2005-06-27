@@ -5,7 +5,7 @@ from zope.testing.doctestunit import DocTestSuite
 
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts.rosetta import attach
-from canonical.launchpad.helpers import join_lines, make_tarball_string
+from canonical.launchpad.helpers import join_lines, RosettaWriteTarFile
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
 from canonical.librarian.ftests.harness import LibrarianTestSetup
@@ -30,7 +30,7 @@ files = {
         'Source: evolution',
         'Version: 2.4.0-0ubuntu1',
     ),
-    'translations.tar.gz': make_tarball_string({
+    'translations.tar.gz': RosettaWriteTarFile.files_to_string({
         'source/po/template.pot': 'foo',
         'source/po/es/po': 'bar',
     }),

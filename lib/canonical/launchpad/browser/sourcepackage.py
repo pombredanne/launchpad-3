@@ -12,7 +12,8 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import IPOTemplateSet, ILaunchBag
+from canonical.launchpad.interfaces import (
+    IPOTemplateSet, ILaunchBag, ICountry)
 from canonical.launchpad.browser.potemplate import POTemplateView
 
 from canonical.soyuz.generalapp import builddepsSet
@@ -207,7 +208,7 @@ class SourcePackageView:
             self.context.changelog, self.context.sourcepackagename.name)
 
     def requestCountry(self):
-        return helpers.requestCountry(self.request)
+        return ICountry(self.request, None)
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
