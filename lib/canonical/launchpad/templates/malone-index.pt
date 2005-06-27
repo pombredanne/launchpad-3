@@ -37,7 +37,7 @@
     <ul>
         <form method="get" action="products">
           <li>
-            <input type="hidden" name="exact" value="1">
+            <input type="hidden" name="exact_name" value="1">
             Jump to bugs in product: <input type="text" name="text" size="20">
           </li>
         </form>

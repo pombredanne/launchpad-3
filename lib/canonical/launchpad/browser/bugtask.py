@@ -4,7 +4,6 @@ __metaclass__ = type
 
 from xml.sax.saxutils import escape
 
-from zope.app.traversing.browser.absoluteurl import absoluteURL
 from zope.interface import implements
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
@@ -13,13 +12,14 @@ from zope.app.form.utility import setUpWidgets, getWidgetsData
 from zope.app.form.interfaces import IInputWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
+from canonical.lp import dbschema
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
     IPersonSet, ILaunchBag, IDistroBugTaskSearch, IUpstreamBugTaskSearch,
     IBugSet, IProduct, IDistribution, IDistroRelease, IUpstreamBugTask,
     IDistroBugTask, IDistroBugTask, IBugTask, IBugTaskSet)
-from canonical.lp import dbschema
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import IBugTaskSearchListingView
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
@@ -72,7 +72,7 @@ class BugTasksReportView:
             name = self.user.name
         else:
             name = ""
-        return '<input type="text" name="name" value="%s"/>\n' % (name,)
+        return '<input type="text" name="name" value="%s"/>\n' % name
         # Don't do this - when you have 60000+ people it tends to kill
         # the production server.
         # html = '<select name="name">\n'
@@ -200,7 +200,7 @@ class BugTaskSearchListingView:
                 except NotFoundError:
                     pass
                 else:
-                    self.request.response.redirect(absoluteURL(bug, self.request))
+                    self.request.response.redirect(canonical_url(bug))
             else:
                 # The user wants to filter on certain text.
                 search_params["searchtext"] = searchtext

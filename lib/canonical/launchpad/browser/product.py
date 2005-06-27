@@ -12,6 +12,7 @@ import zope.security.interfaces
 from zope.interface import implements
 from zope.component import getUtility, getAdapter
 from zope.event import notify
+from zope.exceptions import NotFoundError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.add import AddView
@@ -269,7 +270,6 @@ class ProductSetView:
         self.malone = form.get('malone')
         self.bazaar = form.get('bazaar')
         self.text = form.get('text')
-        self.exact = form.get('exact')
         self.matches = 0
         self.results = None
 
@@ -281,20 +281,17 @@ class ProductSetView:
             self.soyuz is not None):
             self.searchrequested = True
 
-        if self.exact:
-            # Exact matching redirects into the appropriate app
-            self.searchresults()
-            if self.matches:
-                # name is a primary key for product
-                assert self.matches == 1, self.matches
-                self.request.response.redirect(self.results[0].name)
-            else:
-                # If we didn't match an exact request, let the normal
-                # fti query happen
-                self.exact = None
-                self.results = None
-                self.matches = None
-                
+        if form.get('exact_name'):
+            # If exact_name is supplied, we try and locate this name in
+            # the ProductSet -- if we find it, bingo, redirect. This
+            # argument can be optionally supplied by callers.
+            try:
+                product = self.context[self.text]
+            except NotFoundError:
+                product = None
+            if product is not None:
+                self.request.response.redirect(product.name)
+
     def searchresults(self):
         """Use searchtext to find the list of Products that match
         and then present those as a list. Only do this the first
@@ -305,8 +302,7 @@ class ProductSetView:
                                                bazaar=self.bazaar,
                                                malone=self.malone, 
                                                rosetta=self.rosetta,
-                                               soyuz=self.soyuz, 
-                                               exact=self.exact)
+                                               soyuz=self.soyuz)
         self.matches = self.results.count()
         return self.results
 

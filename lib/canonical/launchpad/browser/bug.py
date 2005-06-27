@@ -81,9 +81,10 @@ class BugView:
 
 
 class BugSetView:
-    """
-    The default view for /malone/bugs. Essentially, this exists only to
-    allow forms to post IDs here and be redirected to the right place.
+    """The default view for /malone/bugs. 
+
+    Essentially, this exists only to allow forms to post IDs here and be
+    redirected to the right place.
     """
     def __init__(self, context, request):
         self.request = request
