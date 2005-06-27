@@ -69,6 +69,7 @@ class Product(SQLBase):
     autoupdate = BoolCol(dbName='autoupdate', notNull=True, default=False)
     freshmeatproject = StringCol(notNull=False, default=None)
     sourceforgeproject = StringCol(notNull=False, default=None)
+    releaseroot = StringCol(notNull=False, default=None)
     bugtasks = MultipleJoin('BugTask', joinColumn='product')
     branches = MultipleJoin('Branch', joinColumn='product')
     serieslist = MultipleJoin('ProductSeries', joinColumn='product')

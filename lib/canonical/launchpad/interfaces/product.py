@@ -151,6 +151,9 @@ class IProduct(IHasOwner):
         "that applies to translations in this product, based on the "
         "permissions that apply to the product as well as its project.")
 
+    releaseroot = Text(title=_("The URL of the root directory for the product "
+        "used when the series doesn't supply one."))
+
     def getPackage(distrorelease):
         """return a package in that distrorelease for this product."""
 
