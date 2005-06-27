@@ -8,9 +8,9 @@ from zope.component import getUtility
 from zope.exceptions import NotFoundError
 
 from canonical.launchpad.interfaces import (
-    IBugSet, IBugTaskSet, IBugTaskSubset, IBugTasksReport,
-    IDistributionSet, IProjectSet, IProductSet, ISourcePackageSet,
-    IBugTrackerSet, ILaunchBag, ITeamMembershipSubset)
+    IBugSet, IBugTaskSet, IBugTaskSubset, IBugTasksReport, IDistributionSet,
+    IProjectSet, IProductSet, ISourcePackageSet, IBugTrackerSet, ILaunchBag,
+    ITeamMembershipSubset)
 from canonical.launchpad.database import (
     BugAttachmentSet, BugExternalRefSet, BugSubscriptionSet,
     BugWatchSet, BugTasksReport, CVERefSet, BugProductInfestationSet,

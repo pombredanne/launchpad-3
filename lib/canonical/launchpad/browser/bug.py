@@ -20,42 +20,6 @@ from canonical.launchpad.database import Person, Bug
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
-# TODO: Steve will be hacking on a more general portlet mechanism today
-# (2004-12-09)
-class BoundPortlet(BoundPageTemplate):
-    def __call__(self, *args, **kw):
-        return BoundPageTemplate.__call__(self, *args, **kw)
-
-
-class ViewWithBugContext:
-    def __init__(self, view):
-        self.request = view.request
-        self.context = getUtility(ILaunchBag).bug
-
-    def getCCs(self):
-        return [s for s in self.context.subscriptions
-                if s.subscription==dbschema.BugSubscription.CC]
-
-    def getWatches(self):
-        return [s for s in self.context.subscriptions
-                if s.subscription==dbschema.BugSubscription.WATCH]
-
-    def getIgnores(self):
-        return [s for s in self.context.subscriptions
-                if s.subscription==dbschema.BugSubscription.IGNORE]
-
-
-class BugPortlet:
-    def __init__(self, template_filename):
-        self.template = ViewPageTemplateFile(template_filename)
-
-    def __call__(self, view, *args, **kw):
-        return self.template(ViewWithBugContext(view), *args, **kw)
-
-    def __get__(self, instance, type=None):
-        return BoundPortlet(self, instance)
-
-
 # TODO: It should be possible to specify all this via ZCML and not require
 # the BugView class with its ViewPageTemplateFile attributes
 # (I think the browser:view directive allows this already -- stub)

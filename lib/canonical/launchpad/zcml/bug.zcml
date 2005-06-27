@@ -219,22 +219,6 @@
         provides="canonical.launchpad.interfaces.IBugAddForm"
         />
 
-    <!-- BugSubset -->
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IBugTaskSubset"
-        getter="__getitem__" />
-
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IBugTaskSubset"
-        name="+index" />
-
-    <browser:page
-        name="+index"
-        for="canonical.launchpad.interfaces.IBugTaskSubset"
-        class="canonical.launchpad.browser.BugTaskSearchListingView"
-        permission="zope.Public"
-        template="../templates/bugs-for-context.pt" />
-
     <!-- BugDelta -->
     <content class="canonical.launchpad.database.bug.BugDelta">
         <allow interface="canonical.launchpad.interfaces.IBugDelta" />

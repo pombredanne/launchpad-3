@@ -1,7 +1,11 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+__all__ = ['IProduct', 'IProductSet']
 
 # Zope schema imports
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
+from zope.schema import (
+    Bool, Bytes, Choice, Datetime, Int, Text, TextLine, Password)
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -26,7 +30,7 @@ class IProduct(IHasOwner):
     project = Choice(title=_('Project'), required=False,
         vocabulary='Project', description=_("""Optional related Project.
         Used to group similar products in a coherent way."""))
-    
+
     owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
         description=_("""Product owner, it can either a valid Person or Team
         inside Launchpad context."""))
@@ -161,7 +165,7 @@ class IProduct(IHasOwner):
         """Returns an iterator over this product's PO templates."""
 
     def poTemplatesToImport():
-        """Returns all PO templates from this product that have a rawfile 
+        """Returns all PO templates from this product that have a rawfile
         pending of import into Rosetta."""
 
     def poTemplate(name):
@@ -213,7 +217,7 @@ class IProductSet(Interface):
 
     def get(productid):
         """Get a product by its id.
-        
+
         If the product can't be found a zope.exceptions.NotFoundError will be
         raised.
         """
@@ -224,7 +228,7 @@ class IProductSet(Interface):
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None):
         """Create and Return a brand new Product."""
-        
+
     def forReview():
         """Return an iterator over products that need to be reviewed."""
 
@@ -261,4 +265,3 @@ class IProductSet(Interface):
     def count_reviewed(self):
         """return a count of the number of products in the Launchpad that
         are both active and reviewed."""
-

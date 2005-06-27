@@ -15,9 +15,7 @@
     <div tal:replace="structure context/@@+portlet-actions" />
 </metal:rightportlets>
 
-
 <div metal:fill-slot="main">
-
    <h1><span tal:replace="context/title">TITLE</span>:
     Distribution Overview</h1>
 

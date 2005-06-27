@@ -6,17 +6,6 @@
                  task_batch_navigator view/search;
                  task_batch task_batch_navigator/batch;
                  mass_edit python: 'select' in listing_columns and view.is_maintainer">
-    <ul class="navigation">
-      <li>
-        <a tal:attributes="href string:${request/URL}?field.status%3Alist=New&field.status%3Alist=Accepted&field.status-empty-marker=1&field.severity-empty-marker=1&field.assignee=&field.unassigned.used=&field.unassigned=on&search=Search">Unassigned</a>
-      </li>
-      <li>
-        <a tal:attributes="href string:${request/URL}?field.status%3Alist=New&field.status%3Alist=Accepted&field.severity%3Alist=Critical&search=Search">Critical</a>
-      </li>
-      <li tal:condition="logged_in">
-        <a tal:attributes="href string:${request/URL}?field.status%3Alist=New&field.status%3Alist=Accepted&field.assignee=${request/lp:person/name}&search=Search">My to-do list</a>
-      </li>
-    </ul>
     <p>
       <label tal:content="view/searchtext_widget/label">
         Bug id or text:
@@ -32,7 +21,7 @@
     <input type="hidden"
         name="advanced" tal:attributes="value request/advanced|nothing" />
     </p>
-    <table class="listing rowNavigation data">
+    <table class="listing data" width="67%">
       <thead>
         <tr class="results">
           <td
@@ -79,78 +68,42 @@
         </tr>
 
     <tr>
-
-      <tal:block condition="nothing">
-        XXX 20050518 BradB/BjornT: Change this template code to
-        Python code that gives the "Report" cell the correct colspan
-        depending on what columns are present. Something like this:
-        colspan = 0
-        if mass_edit:
-            colspan += 1
-        if 'id' in listing_columns:
-            colspan += 1
-        if 'title' in listing_columns:
-            colspan += 1
-        Thanks. -- mpt
-      </tal:block>
-      <tal:block condition="mass_edit">
-        <tal:block condition="python: 'id' in listing_columns">
-          <th
-            tal:condition="python: 'title' in listing_columns"
-            colspan="3"
-          >Report</th>
-          <th
-            tal:condition="python: 'title' not in listing_columns"
-            colspan="2"
-          >Report</th>
-        </tal:block>
-        <tal:block condition="python: 'id' not in listing_columns">
-          <th tal:condition="python: 'title' in listing_columns"
-              colspan="2">
-            Report
-          </th>
-          <th tal:condition="python: 'title' not in listing_columns"
-              colspan="1">
-            Report
-          </th>
-        </tal:block>
-      </tal:block>
-      <tal:block condition="not: mass_edit">
-        <tal:block condition="python: 'id' in listing_columns">
-          <th
-            tal:condition="python: 'title' in listing_columns"
-            colspan="2"
-          >Report</th>
-          <th
-            tal:condition="python: 'title' not in listing_columns"
-            colspan="1"
-          >Report</th>
-        </tal:block>
-        <th
-          tal:condition="python: ('id' not in listing_columns)
-            and ('title' in listing_columns)
-          "
-          colspan="1">
-          Report
-        </th>
-      </tal:block>
-
-      <th tal:condition="python:'product' in listing_columns">Product</th>
-      <th tal:condition="python:'package' in listing_columns">Package</th>
-      <th tal:condition="python:'milestone' in listing_columns">Target</th>
-      <th tal:condition="python:'status' in listing_columns">Status</th>
-      <th tal:condition="python:'priority' in listing_columns">Priority</th>
-      <th tal:condition="python:'severity' in listing_columns">Severity</th>
-      <th tal:condition="python:'submittedon' in listing_columns">Reported</th>
-      <th tal:condition="python:'submittedby' in listing_columns">Reporter</th>
-      <th tal:condition="python:'assignedto' in listing_columns">Assignee</th>
-      <th tal:condition="python:'actions' in listing_columns and logged_in">Take Action</th>
+      <th tal:condition="python:'id' in listing_columns">
+        <a href="#" tal:attributes="href python:view.getSortLink('id')">ID</a>
+      </th>
+      <th tal:condition="python:'severity' in listing_columns">
+        <a href="#" tal:attributes="href python:view.getSortLink('severity')">Severity</a>
+      </th>
+      <th tal:condition="python:'priority' in listing_columns">
+        <a href="#" tal:attributes="href python:view.getSortLink('priority')">Priority</a>
+      </th>
+      <th tal:condition="python:'assignedto' in listing_columns">
+        <a href="#" tal:attributes="href python:view.getSortLink('assignee')">Assignee</a>
+      </th>
+      <th tal:condition="python:'package' in listing_columns">
+        <a href="#" tal:attributes="href python:view.getSortLink('sourcepackagename')">Package</a>
+      </th>
+      <th tal:condition="python:'status' in listing_columns">
+         <a href="#" tal:attributes="href python:view.getSortLink('status')">Status</a>
+      </th>
+      <th tal:condition="python:'title' in listing_columns">
+         <a href="#" tal:attributes="href python:view.getSortLink('title')">Title</a>
+      </th>
+      <th tal:condition="python:'milestone' in listing_columns">
+         <a href="#" tal:attributes="href python:view.getSortLink('milestone')">Target</a>
+      </th>
+      <th tal:condition="python:'submittedon' in listing_columns">
+        <a href="#" tal:attributes="href python:view.getSortLink('datecreated')">Reported</a>
+      </th>
+      <th tal:condition="python:'submittedby' in listing_columns">
+        <a href="#" tal:attributes="href python:view.getSortLink('owner')">Reporter</a>
+      </th>
     </tr>
 
       </thead>
       <tbody>
 
-    <tr tal:repeat="task task_batch" class="rowLinkified">
+    <tr tal:repeat="task task_batch">
       <span tal:omit-tag=""
             tal:define="bugid task/bug/id;
                         assid task/id;
@@ -170,52 +123,49 @@
             <input type="checkbox" name="task" value="" tal:attributes="value task/id" />
           </td>
           <td tal:condition="python:'id' in listing_columns">
-              <a tal:attributes="href bug_link" tal:content="bugid">42</a>
-          </td>
-          <td tal:condition="python:'title' in listing_columns">
               <a tal:attributes="href bug_link"
-                 tal:content="task/bug/title">title</a>
+                 tal:content="bugid"
+                 style="text-decoration: underline">42</a>
           </td>
-          <td tal:condition="python:('product' in listing_columns) and product_name">
-              <a tal:content="python: (project_name == product_name) and product_name or (project_name + ' ' + product_name)"
-                 tal:attributes="href bug_link">product</a>
+          <td tal:condition="python:'severity' in listing_columns"
+              tal:content="severity">
+              Medium
           </td>
-          <td tal:condition="python:product_name and ('product' in listing_columns)">
-              <a tal:attributes="href bug_link">-</a>
+          <td tal:condition="python:'priority' in listing_columns"
+              tal:content="priority">
+              High
           </td>
-          <td tal:condition="python:'package' in listing_columns">
-              <a tal:content="python:package_name and package_name or '-'"
-                 tal:attributes="href bug_link">-</a>
+          <td tal:condition="python:'assignedto' in listing_columns"
+               tal:content="task/assignee/browsername|string:-">
+              somebody
           </td>
-          <td tal:condition="python:'milestone' in listing_columns">
-              <a tal:attributes="href bug_link"
-                 tal:content="task/milestone/name|string:-">milestone</a>
+          <td tal:condition="python:('product' in listing_columns) and product_name"
+              tal:content="python: (project_name == product_name) and product_name or (project_name + ' ' + product_name)">
+              product
           </td>
-          <td tal:condition="python:'status' in listing_columns">
-              <a tal:content="status"
-                 tal:attributes="href bug_link;
-                                 id statusid">New</a>
+          <td tal:condition="python:'package' in listing_columns"
+               tal:content="python:package_name and package_name or '-'">
+               -
           </td>
-          <td tal:condition="python:'priority' in listing_columns">
-              <a tal:content="priority"
-                 tal:attributes="href bug_link">High</a>
+          <td tal:condition="python:'status' in listing_columns"
+               tal:content="status">
+               New
           </td>
-          <td tal:condition="python:'severity' in listing_columns">
-              <a tal:content="severity"
-                 tal:attributes="href bug_link">Medium</a>
+          <td tal:condition="python:'title' in listing_columns"
+               tal:content="task/bug/title">
+               title
           </td>
-          <td tal:condition="python:'submittedon' in listing_columns">
-              <a tal:content="python:task.datecreated.strftime('%d %b %y')"
-                 tal:attributes="href bug_link">date</a>
+          <td tal:condition="python:'milestone' in listing_columns"
+               tal:content="task/milestone/name|string:-">
+               milestone
           </td>
-          <td tal:condition="python:'submittedby' in listing_columns">
-              <a tal:content="task/owner/browsername|string:-"
-                 tal:attributes="href bug_link">name</a>
+          <td tal:condition="python:'submittedon' in listing_columns"
+               tal:content="task/datecreated/strftime/fmt:date">
+               date
           </td>
-          <td tal:condition="python:'assignedto' in listing_columns">
-              <a tal:content="task/assignee/browsername|string:-"
-                 tal:attributes="href bug_link;
-                                 id assigneeid;">somebody</a>
+          <td tal:condition="python:'submittedby' in listing_columns"
+               tal:content="task/owner/browsername|string:-">
+               name
           </td>
       </span>
     </tr>
@@ -238,11 +188,11 @@
   </tal:x>
 
     <tal:block condition="view/advanced">
-      <h2>Filter Criteria</h2>
+      <h2>Advanced Search Criteria</h2>
 
         <div class="row">
           <div class="field">
-            <table>
+            <table width="67%">
               <tr>
                 <td tal:condition="view/status_widget|nothing">
                   <label tal:attributes="for view/status_widget/name"
@@ -302,14 +252,14 @@
                 <td tal:condition="view/milestone_widget|nothing"
                     tal:content="structure view/milestone_widget" />
               </tr>
+              <tr>
+                <td>
+                <input type="submit" name="search" value="Search" />
+                </td>
+              </tr>
             </table>
           </div>
         </div>
-
-        <div class="form actions">
-            <input type="submit" name="search" value="Search" />
-        </div>
-
     </tal:block>
   </form>
 </metal:page>

@@ -73,11 +73,7 @@
     </div>
 
     <div class="visualClear" id="body">
-      <metal:block define-slot="body" tal:condition="nothing">
-        Use this slot for pages that only have one column of
-        portlets (using div class="sidebar"), so that the rest of
-        the page can expand into the width that would otherwise be
-        used by the other column.
+      <metal:block define-slot="body">
       </metal:block>
     </div>
 

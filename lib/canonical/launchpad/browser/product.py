@@ -213,16 +213,6 @@ class ProductEditView(ProductView, SQLObjectEditView):
             '../%s/+edit' % urlquote(self.context.name))
 
 
-class ProductBugsView(BugTaskSearchListingView):
-    implements(IBugTaskSearchListingView)
-
-    def task_columns(self):
-        """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
-        return [
-            "select", "id", "title", "milestone", "status",
-            "submittedby", "assignedto"]
-
-
 class ProductFileBugView(SQLObjectAddView):
 
     __used_for__ = IProduct
