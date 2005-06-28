@@ -2,13 +2,6 @@
       xml:lang="en" lang="en"
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
-  <head>
-    <title metal:fill-slot="title">
-      <span tal:replace="context/title">Calendar Title</span>
-    </title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-  </head>
 
   <body>
 

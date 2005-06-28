@@ -21,9 +21,20 @@
   </content>
 
   <content class="canonical.launchpad.components.cal.MergedCalendar">
-    <allow interface="canonical.launchpad.interfaces.ILaunchpadCalendar" />
-    <allow interface="canonical.launchpad.interfaces.ILaunchpadMergedCalendar" />
+    <require
+        permission="launchpad.AnyPerson"
+        interface="canonical.launchpad.interfaces.ILaunchpadMergedCalendar" />
+    <require
+        permission="launchpad.AnyPerson"
+        interface="canonical.launchpad.interfaces.ILaunchpadCalendar" />
   </content>
+
+  <securedutility
+      class="canonical.launchpad.database.CalendarSubscriptionSet"
+      provides="canonical.launchpad.interfaces.ICalendarSubscriptionSet">
+    <allow
+        interface="canonical.launchpad.interfaces.ICalendarSubscriptionSet" />
+  </securedutility>
 
   <adapter
       for="canonical.launchpad.interfaces.ICalendarOwner"
@@ -52,11 +63,12 @@
       class="canonical.launchpad.browser.CalendarInfoPortletView"
       lp:url="/$CalendarOwner/+portlet-calendar" />
 
-  <browser:page
+  <browser:suburl
       for="canonical.publication.RootObject"
+      class="canonical.launchpad.components.cal.MergedCalendar"
       name="calendar"
       permission="launchpad.AnyPerson"
-      class="canonical.launchpad.components.cal.MergedCalendarTraverser" />
+      lp:url="/calendar/" />
 
   <browser:defaultView
       for="schoolbell.interfaces.ICalendar"

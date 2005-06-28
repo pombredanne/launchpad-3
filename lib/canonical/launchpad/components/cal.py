@@ -4,66 +4,27 @@ Calendaring for Launchpad
 This package is a prototype of calendaring for launchpad.
 """
 
-import re
 import datetime
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 from zope.interface import implements
+from zope.component import getUtility
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.app import zapi
 from zope.publisher.interfaces import IPublishTraverse
 from zope.publisher.interfaces import NotFound
 
 from schoolbell.interfaces import ICalendar
-from canonical.launchpad.interfaces import IPerson, ILaunchpadCalendar
-from canonical.launchpad.interfaces import ILaunchpadMergedCalendar
-from canonical.launchpad.interfaces import ICalendarSubscriptionSet
-
-from canonical.launchpad.database import CalendarSubscription
+from canonical.launchpad.interfaces import (
+    ILaunchBag, ILaunchpadCalendar, ILaunchpadMergedCalendar,
+    ICalendarSubscriptionSet)
 
 from schoolbell.mixins import CalendarMixin, EditableCalendarMixin
 from schoolbell.icalendar import convert_calendar_to_ical
 
 __metaclass__ = type
-
-class MergedCalendarTraverser:
-    """View for finding the calendar of the authenticated user."""
-
-    implements(IBrowserPublisher)
-
-    name = 'calendar'
-
-    def __init__(self, context, request):
-        self.context = context
-
-    def _calendar(self, principal):
-        """Return the calendar of principal."""
-        person = IPerson(principal, None)
-        if person is None:
-            return None
-        return MergedCalendar(person)
-
-    def publishTraverse(self, request, name):
-        """See IPublishTraverse."""
-        calendar = self._calendar(request.principal)
-        if calendar is not None:
-            adapter = zapi.queryViewProviding(calendar, IPublishTraverse,
-                                              request, self)
-            if adapter is not self:
-                return adapter.publishTraverse(request, name)
-        raise NotFound(self.context, self.name, request)
-
-    def browserDefault(self, request):
-        """See IBrowserPublisher."""
-        calendar = self._calendar(request.principal)
-        if calendar is not None:
-            adapter = zapi.queryViewProviding(calendar, IBrowserPublisher,
-                                              request, self)
-            if adapter is not self:
-                return adapter.browserDefault(request)
-        raise NotFound(self.context, self.name, request)
 
 
 class CalendarAdapterTraverser:
@@ -107,81 +68,19 @@ def calendarFromCalendarOwner(calendarowner):
 
 ############# Merged Calendar #############
 
-class CalendarSubscriptionSet(object):
-    implements(ICalendarSubscriptionSet)
-
-    defaultColour = '#efefef'
-
-    def __init__(self, person):
-        self.owner = person
-    def __contains__(self, calendar):
-        # if calendar has no ID, then it is not a database calendar
-        if calendar.id is None:
-            return False
-        # if the person has no calendar, then they have no calendar
-        # subscriptions
-        owner_calendar = self.owner.calendar
-        if not owner_calendar:
-            return False
-
-        return bool(CalendarSubscription.selectBy(subjectID=owner_calendar.id,
-                                                  objectID=calendar.id))
-    def __iter__(self):
-        calendar = self.owner.calendar
-        if calendar:
-            for sub in CalendarSubscription.selectBy(subjectID=calendar.id):
-                yield sub.object
-    def subscribe(self, calendar):
-        if calendar.id is None:
-            raise ValueError('calendar has no identifier')
-        owner_calendar = self.owner.getOrCreateCalendar()
-        if calendar not in self:
-            CalendarSubscription(subjectID=owner_calendar.id,
-                                 objectID=calendar.id)
-    def unsubscribe(self, calendar):
-        if calendar.id is None:
-            raise ValueError('calendar has no identifier')
-        owner_calendar = self.owner.calendar
-        if not owner_calendar:
-            # no calendar for person => no subscription
-            return
-        for sub in CalendarSubscription.selectBy(subjectID=owner_calendar.id,
-                                                 objectID=calendar.id):
-            sub.destroySelf()
-
-    def getColour(self, calendar):
-        if calendar.id is None:
-            return self.defaultColour
-        owner_calendar = self.owner.calendar
-        if not owner_calendar:
-            return self.defaultColour
-        for sub in CalendarSubscription.selectBy(subjectID=owner_calendar.id,
-                                                 objectID=calendar.id):
-            return sub.colour
-        else:
-            return self.defaultColour
-    def setColour(self, calendar, colour):
-        if not re.match(r'#[0-9A-Fa-f]{6}', colour):
-            raise ValueError('invalid colour value "%s"' % colour)
-        if calendar.id is None:
-            return
-        owner_calendar = self.owner.calendar
-        if not owner_calendar:
-            return
-        for sub in CalendarSubscription.selectBy(subjectID=owner_calendar.id,
-                                                 objectID=calendar.id):
-            sub.colour = colour
 
 class MergedCalendar(CalendarMixin, EditableCalendarMixin):
     implements(ILaunchpadCalendar, ILaunchpadMergedCalendar)
 
-    def __init__(self, person):
+    def __init__(self):
         self.id = None
-        self.owner = person
-        self.person = person
-        self.subscriptions = CalendarSubscriptionSet(self.person)
         self.revision = 0
-        self.title = _('Merged Calendar for %s') % self.person.browsername
+        self.owner = getUtility(ILaunchBag).user
+        self.subscriptions = getUtility(ICalendarSubscriptionSet)
+        if self.owner:
+            self.title = _('Merged Calendar for %s') % self.owner.browsername
+        else:
+            self.title = _('Merged Calendar')
 
     def __iter__(self):
         for calendar in self.subscriptions:
@@ -194,24 +93,26 @@ class MergedCalendar(CalendarMixin, EditableCalendarMixin):
                 yield event
 
     def addEvent(self, event):
-        raise NotImplementedError
+        calendar = self.owner.getOrCreateCalendar()
+        calendar.addEvent(event)
+
     def removeEvent(self, event):
-        raise NotImplementedError
+        calendar = event.calendar
+        calendar.removeEvent(event)
 
 
 ############# iCalendar export ###################
 
-def ical_datetime(dt):
-    return dt.astimezone(_utc_tz).strftime('%Y%m%dT%H%M%SZ')
-    
 class ViewICalendar(object):
     """Publish an object implementing the ICalendar interface in
     the iCalendar format.  This allows desktop calendar clients to
     display the events."""
     __used_for__ = ICalendar
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
+
     def __call__(self):
         result = convert_calendar_to_ical(self.context)
         result = '\r\n'.join(result)

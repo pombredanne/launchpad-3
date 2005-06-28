@@ -23,7 +23,7 @@
         </tr>
       </table>
       <p tal:condition="view/canSubscribe">
-        <a href="calendar/+subscribe">Subscribe to this calendar</a>
+        <a href="+calendar/+subscribe">Subscribe to this calendar</a>
       </p>
     </div>
   </div>

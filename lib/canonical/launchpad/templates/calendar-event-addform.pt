@@ -3,10 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-    <title metal:fill-slot="title">
-      Add Event to Calendar &ldquo;<span tal:replace="context/title">Calendar</span>&rdquo;
-    </title>
-
   <body>
 
   <div metal:fill-slot="main">

@@ -4,10 +4,6 @@
       metal:use-macro="context/@@launchpad_template/master"
       i18n:domain="launchpad">
 
-    <title metal:fill-slot="title">
-      Edit Event &ldquo;<span tal:replace="context/title">Event</span>&rdquo;
-    </title>
-
   <body>
 
   <div metal:fill-slot="main">

@@ -23,10 +23,10 @@ from schoolbell.simple import SimpleCalendarEvent
 from canonical.launchpad.interfaces import (
      IPerson, ICalendarDay, ICalendarWeek, ICalendarOwner,
      ILaunchpadCalendar, ICalendarMonth, ICalendarYear,
-     ICalendarEventCollection, ILaunchBag)
+     ICalendarEventCollection, ICalendarSubscriptionSet,
+     ILaunchBag)
 
 from canonical.launchpad.database import Calendar, CalendarEvent
-from canonical.launchpad.components.cal import CalendarSubscriptionSet
 
 from schoolbell.utils import prev_month, next_month
 from schoolbell.utils import weeknum_bounds, check_weeknum
@@ -200,11 +200,7 @@ class CalendarViewBase:
         self.request = request
         self.datestring = datestring
         self.user_timezone = getUtility(ILaunchBag).timezone
-        user = getUtility(ILaunchBag).user
-        if user:
-            self.subscriptions = CalendarSubscriptionSet(user)
-        else:
-            self.subscriptions = None
+        self.subscriptions = getUtility(ICalendarSubscriptionSet)
 
     def _setViewURLs(self, date):
         """Computes the URLs used to switch calendar views."""
@@ -217,10 +213,7 @@ class CalendarViewBase:
         self.yearViewURL = '../%04d' % date.year
 
     def eventColour(self, event):
-        if self.subscriptions:
-            return self.subscriptions.getColour(event.calendar)
-        else:
-            return '#9db8d2'
+        return self.subscriptions.getColour(event.calendar)
 
     def eventStart(self, event):
         dtstart = event.dtstart.astimezone(self.user_timezone)
@@ -628,8 +621,7 @@ class ViewCalendarSubscriptions:
         self.context = context
         self.request = request
 
-        user = getUtility(ILaunchBag).user
-        self._subscriptions = CalendarSubscriptionSet(user)
+        self._subscriptions = getUtility(ICalendarSubscriptionSet)
 
     def subscriptions(self):
         # XXXX should make sure that calendars for person and teams they
@@ -671,8 +663,7 @@ class ViewCalendarSubscribe:
         self.context = ILaunchpadCalendar(context)
         self.request = request
 
-        user = getUtility(ILaunchBag).user
-        self._subscriptions = CalendarSubscriptionSet(user)
+        self._subscriptions = getUtility(ICalendarSubscriptionSet)
 
     def subscribed(self):
         return self.context in self._subscriptions

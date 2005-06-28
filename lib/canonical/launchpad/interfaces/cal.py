@@ -14,17 +14,17 @@ class ILaunchpadCalendar(IEditCalendar, IHasOwner):
     id = Int(title=_("ID"), required=False)
 
     title = Title(
-                  title=_('Calendar title'), required=True,
-                  description=_("""The title of the calendar is a short
-                  description of the calendar that can be used to
-                  identify a specific calendar.""")
-                  )
+        title=_('Calendar title'), required=True,
+        description=_("""The title of the calendar is a short
+        description of the calendar that can be used to
+        identify a specific calendar."""))
 
     revision = Int(
-                   title=_('Revision'), readonly=True,
-                   description=_("""The calendar revision is incremented
-                   each time the calendar is changed.""")
-                   )
+        title=_('Revision'), readonly=True,
+        description=_("""The calendar revision is incremented
+        each time the calendar is changed."""))
+
+    parent = Attribute(_("""The parent object that owns the calendar."""))
 
 class ILaunchpadMergedCalendar(Interface):
     """Marker interface to identify the user's merged calendar."""
