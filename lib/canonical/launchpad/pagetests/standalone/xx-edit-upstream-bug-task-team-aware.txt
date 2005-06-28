@@ -6,11 +6,7 @@ Foo Bar can't edit the bug:
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Referer: http://localhost:9000/malone/bugs/
   ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-            <h2>...in Mozilla Firefox...</h2>
+  HTTP/1.1 403 Forbidden
   ...
 
 Sample Person may edit the bug task:

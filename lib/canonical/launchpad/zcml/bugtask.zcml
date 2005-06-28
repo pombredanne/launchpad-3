@@ -114,6 +114,10 @@
 
         https://launchpad.ubuntu.com/malone/bugs/66
     -->
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IUpstreamBugTask"
+        name="+index" />
+
     <browser:addform
         name="+upstreamtask"
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
@@ -132,7 +136,7 @@
 
     <browser:editform
         name="+edit"
-        for="canonical.launchpad.interfaces.IEditableUpstreamBugTask"
+        for="canonical.launchpad.interfaces.IUpstreamBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         fields="maintainer_displayname milestone status priority
@@ -148,18 +152,21 @@
     </browser:editform>
 
     <browser:schemadisplay
-        name="+edit"
-        for="canonical.launchpad.interfaces.IReadOnlyUpstreamBugTask"
+        name="+index"
+        for="canonical.launchpad.interfaces.IUpstreamBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskDisplayView"
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
-        fields="maintainer_displayname milestone
-                status priority severity assignee bugwatch
-                statusexplanation"
+        fields="maintainer_displayname milestone status priority severity
+                assignee bugwatch statusexplanation"
         label="Product Bug Task"
         permission="launchpad.View"
         template="../templates/bugtask-editform.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
     </browser:schemadisplay>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistroBugTask"
+        name="+index" />
 
     <browser:addform
         name="+distrotask"
@@ -169,7 +176,6 @@
         label="Add SourcePackage Bug Task"
         fields="distribution sourcepackagename owner"
         content_factory="canonical.launchpad.database.BugTaskFactory"
-        arguments=""
         keyword_arguments="distribution sourcepackagename owner"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
@@ -182,7 +188,7 @@
 
     <browser:editform
         name="+edit"
-        for="canonical.launchpad.interfaces.IEditableDistroBugTask"
+        for="canonical.launchpad.interfaces.IDistroBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename binarypackagename
@@ -198,8 +204,8 @@
     </browser:editform>
 
     <browser:schemadisplay
-        name="+edit"
-        for="canonical.launchpad.interfaces.IReadOnlyDistroBugTask"
+        name="+index"
+        for="canonical.launchpad.interfaces.IDistroBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskDisplayView"
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename binarypackagename
@@ -209,6 +215,10 @@
         template="../templates/bugtask-editform.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
     </browser:schemadisplay>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
+        name="+index" />
 
     <browser:addform
         name="+distroreleasetask"
@@ -228,7 +238,7 @@
 
     <browser:editform
         name="+edit"
-        for="canonical.launchpad.interfaces.IEditableDistroReleaseBugTask"
+        for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename binarypackagename
@@ -244,12 +254,12 @@
     </browser:editform>
 
     <browser:schemadisplay
-        name="+edit"
-        for="canonical.launchpad.interfaces.IReadOnlyDistroReleaseBugTask"
+        name="+index"
+        for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskDisplayView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename
-                status priority severity assignee bugwatch statusexplanation"
+        fields="sourcepackagename binarypackagename status priority severity
+                assignee bugwatch statusexplanation"
         label="Source Package Bug Task"
         permission="zope.Public"
         template="../templates/bugtask-editform.pt"

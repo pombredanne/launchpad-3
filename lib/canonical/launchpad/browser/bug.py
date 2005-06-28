@@ -20,13 +20,7 @@ from canonical.launchpad.database import Person, Bug
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
-# TODO: It should be possible to specify all this via ZCML and not require
-# the BugView class with its ViewPageTemplateFile attributes
-# (I think the browser:view directive allows this already -- stub)
 class BugView:
-    # TODO
-    # The default path for the templates will be
-    # lib/canonical/launchpad/templates.
     def __init__(self, context, request):
         self.context = context
         self.request = request

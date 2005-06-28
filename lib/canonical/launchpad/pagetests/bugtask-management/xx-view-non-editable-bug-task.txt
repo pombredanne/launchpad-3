@@ -2,7 +2,7 @@ If someone views a bug task without logging in,
 they should see the task but not be able to edit it.
 
   >>> print http(r"""
-  ... GET /products/firefox/+bugs/6/+edit HTTP/1.1
+  ... GET /products/firefox/+bugs/6/+index HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... Cookie: launchpad=XfSbGHvfwhpFo2issQtxtVV3elQl845yIeZm-l96Yl4tqn5Sb0Faa0
   ... """)

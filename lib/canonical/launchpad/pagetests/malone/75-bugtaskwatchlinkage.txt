@@ -22,7 +22,7 @@ product, and this bug task is on the ubuntu product, we will be able to edit
 the task (we get a form instead of a plain rendition of it).
 
   >>> print http(r"""
-  ... GET /products/ubuntu/+bugs/1 HTTP/1.1
+  ... GET /products/ubuntu/+bugs/1/+edit HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

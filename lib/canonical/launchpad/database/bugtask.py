@@ -24,12 +24,9 @@ from canonical.launchpad.database.maintainership import Maintainership
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.helpers import shortlist
 
-from canonical.launchpad.interfaces import IBugTasksReport, \
-    IBugTaskSet, IEditableUpstreamBugTask, IReadOnlyUpstreamBugTask, \
-    IEditableDistroBugTask, IReadOnlyDistroBugTask, IUpstreamBugTask, \
-    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, IAuthorization, \
-    IEditableDistroReleaseBugTask, IReadOnlyDistroReleaseBugTask
-
+from canonical.launchpad.interfaces import (
+    IBugTasksReport, IBugTaskSet, IUpstreamBugTask, IDistroBugTask,
+    IDistroReleaseBugTask, ILaunchBag, IAuthorization)
 
 class BugTask(SQLBase):
     implements(IBugTask)
@@ -152,27 +149,15 @@ class BugTask(SQLBase):
 
         user = getUtility(ILaunchBag).user
         if self.product is not None:
-            # upstream task
+            # This is an upstream task.
             mark_task(self, IUpstreamBugTask)
             checker = getAdapter(self, IAuthorization, 'launchpad.Edit')
-            if user is not None and checker.checkAuthenticated(user):
-                mark_task(self, IEditableUpstreamBugTask)
-            else:
-                mark_task(self, IReadOnlyUpstreamBugTask)
         elif self.distrorelease is not None:
-            # distro release task
+            # This is a distro release task.
             mark_task(self, IDistroReleaseBugTask)
-            if user is not None:
-                mark_task(self, IEditableDistroReleaseBugTask)
-            else:
-                mark_task(self, IReadOnlyDistroReleaseBugTask)
         else:
-            # distro task
+            # This is a distro task.
             mark_task(self, IDistroBugTask)
-            if user is not None:
-                mark_task(self, IEditableDistroBugTask)
-            else:
-                mark_task(self, IReadOnlyDistroBugTask)
 
 
 class BugTaskSet:

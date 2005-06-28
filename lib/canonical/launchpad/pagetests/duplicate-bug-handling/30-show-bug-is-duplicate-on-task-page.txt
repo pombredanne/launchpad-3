@@ -15,7 +15,7 @@ will show such information in a prominent way.
 And just as well for anonymous users.
 
   >>> print http(r"""
-  ... GET /products/ubuntu/+bugs/2/+edit HTTP/1.1
+  ... GET /products/ubuntu/+bugs/2 HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... """)
   HTTP/1.1 200 Ok
