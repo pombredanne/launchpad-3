@@ -1,8 +1,8 @@
-<ul tal:define="team_url string:/people/${view/team/name}">
-  <li class="edit">
+<ul tal:define="team_url context/fmt:url">
+  <li class="edit" tal:condition="context/required:launchpad.Edit">
     <a tal:attributes="href string:${team_url}/+edit">Edit Team Details</a>
   </li>
-  <li class="info">
+  <li class="edit" tal:condition="context/required:launchpad.Edit">
     <a tal:attributes="href string:${team_url}/+editemail">Edit Contact Address</a>
   </li>
   <li class="info">
