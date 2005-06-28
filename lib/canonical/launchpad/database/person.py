@@ -110,7 +110,7 @@ class Person(SQLBase):
                           default=None, forceDBName=True)
     def getOrCreateCalendar(self):
         if not self.calendar:
-            self.calendar = Calendar(title=self.displayname,
+            self.calendar = Calendar(title=self.browsername,
                                      revision=0)
         return self.calendar
 

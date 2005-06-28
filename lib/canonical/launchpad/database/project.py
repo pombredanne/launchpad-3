@@ -67,8 +67,9 @@ class Project(SQLBase):
                           default=None, forceDBName=True)
     def getOrCreateCalendar(self):
         if not self.calendar:
-            self.calendar = Calendar(title='%s Project Calendar' % self.displayname,
-                                     revision=0)
+            self.calendar = Calendar(
+                title='%s Project Calendar' % self.displayname,
+                revision=0)
         return self.calendar
 
     def getProduct(self, name):

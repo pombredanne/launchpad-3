@@ -206,8 +206,7 @@
   <browser:page name="+index"
       for="schoolbell.interfaces.ICalendarEvent"
       permission="zope.Public"
-      class="canonical.launchpad.browser.ViewCalendarEvent"
-      attribute="__call__"
+      template="../templates/calendar-event-index.pt"
       lp:url="$obj/calendar/events/$Event.id/+index" />
 
   <browser:schemadisplay

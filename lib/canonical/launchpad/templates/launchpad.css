@@ -949,11 +949,11 @@ Calendar stuff.
 }
 
 #calendar-view-day .events {
-    position: absolute;
-    margin-left: 5em;
-    left: 0;
-    top: 0;
-    width: 100%;
+  position: absolute;
+  margin-left: 5em;
+  left: 0;
+  top: 0;
+  width: 100%;
 }
 
 #calendar-view-day .event {

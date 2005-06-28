@@ -15,7 +15,8 @@ from zope.app.form.interfaces import ConversionError, InputErrors
 
 from canonical.launchpad.interfaces import ILaunchBag
 
-_date_re = re.compile(r'^(\d\d\d\d)-(\d\d?)-(\d\d?)\ +(\d\d?):(\d\d)(?::(\d\d))?$')
+_date_re = re.compile(
+    r'^(\d\d\d\d)-(\d\d?)-(\d\d?)\ +(\d\d?):(\d\d)(?::(\d\d))?$')
 class LocalDateTimeWidget(TextWidget):
 
     implements(IText)
@@ -28,7 +29,8 @@ class LocalDateTimeWidget(TextWidget):
 
         match = _date_re.match(input)
         if not match:
-            raise ConversionError('Could not parse date (expected format "YYYY-mm-dd HH:MM[:SS])')
+            raise ConversionError('Could not parse date (expected '
+                                  'format "YYYY-mm-dd HH:MM[:SS])')
         year = int(match.group(1))
         month = int(match.group(2))
         day = int(match.group(3))
@@ -100,9 +102,9 @@ class TimeDurationWidget(SimpleInputWidget):
 
     def _getFormValue(self):
         """Returns a value suitable for use in an HTML form."""
-        # XXXX: I'm replicating this function so that the "except InputErrors"
+        # I'm replicating this function so that the "except InputErrors"
         # case returns the form value as _getFormInput() does.
-        #   -- James Henstridge
+        #   -- James Henstridge (2005-01-17)
         if not self._renderedValueSet():
             if self.hasInput():
                 try:
@@ -119,7 +121,7 @@ class TimeDurationWidget(SimpleInputWidget):
         return self._toFormValue(value)
 
     def __call__(self):
-        (count_val, unit_val) = self._getFormValue()
+        count_val, unit_val = self._getFormValue()
         render = []
         render.append(renderElement('input',
                                     type='text',
@@ -135,8 +137,9 @@ class TimeDurationWidget(SimpleInputWidget):
                                ('d', _('days')),
                                ('w', _('weeks')) ]:
             if unit == unit_val:
-                render.append(u'<option selected="selected" value="%s">%s</option>\n'
-                              % (unit, label))
+                render.append(
+                    u'<option selected="selected" value="%s">%s</option>\n'
+                    % (unit, label))
             else:
                 render.append(u'<option value="%s">%s</option>\n'
                               % (unit, label))
@@ -144,7 +147,7 @@ class TimeDurationWidget(SimpleInputWidget):
         return ''.join(render)
 
     def hidden(self):
-        (count_val, unit_val) = self._getFormValue()
+        count_val, unit_val = self._getFormValue()
         render = []
         render.append(renderElement('input',
                                     type='hidden',

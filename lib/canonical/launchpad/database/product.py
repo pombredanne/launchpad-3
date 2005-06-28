@@ -75,8 +75,9 @@ class Product(SQLBase):
                           default=None, forceDBName=True)
     def getOrCreateCalendar(self):
         if not self.calendar:
-            self.calendar = Calendar(title='%s Product Calendar' % self.displayname,
-                                     revision=0)
+            self.calendar = Calendar(
+                title='%s Product Calendar' % self.displayname,
+                revision=0)
         return self.calendar
 
     bugtasks = MultipleJoin('BugTask', joinColumn='product')
