@@ -265,12 +265,23 @@
         for="canonical.launchpad.interfaces.IBugTaskSubset"
         name="+index" />
 
-    <browser:page
-        name="+index"
+    <browser:pages
         for="canonical.launchpad.interfaces.IBugTaskSubset"
         class="canonical.launchpad.browser.bugtask.BugTaskSearchListingView"
-        permission="zope.Public"
-        template="../templates/bugs-for-context.pt" />
+        permission="zope.Public">
+        <browser:page
+            name="+index"
+            template="../templates/bugs-for-context.pt" />
+        <browser:page
+            name="+portlet-bugtask-listing-actions"
+            template="../templates/portlet-bugtask-listing-actions.pt" />
+        <browser:page
+            name="+portlet-bug-stats-for-context"
+            template="../templates/portlet-bug-stats-for-context.pt" />
+        <browser:page
+            name="+portlet-release-bugs"
+            template="../templates/portlet-release-bugs.pt" />
+    </browser:pages>
 
     <!-- BugTaskDelta -->
     <content class="canonical.launchpad.database.BugTaskDelta">
