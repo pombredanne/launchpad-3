@@ -12,6 +12,10 @@
         set_schema="canonical.launchpad.interfaces.ILaunchpadCalendar" />
   </content>
 
+  <content class="canonical.launchpad.browser.CalendarEventCollection">
+    <allow interface="canonical.launchpad.interfaces.ICalendarEventCollection" />
+  </content>
+
   <content class="canonical.launchpad.database.CalendarEvent">
     <allow interface="schoolbell.interfaces.ICalendarEvent" />
     <allow interface="canonical.launchpad.interfaces.IHasOwner" />
@@ -36,16 +40,13 @@
         interface="canonical.launchpad.interfaces.ICalendarSubscriptionSet" />
   </securedutility>
 
+
+  <!-- ICalendarOwner -->
+
   <adapter
       for="canonical.launchpad.interfaces.ICalendarOwner"
       provides="schoolbell.interfaces.ICalendar"
       factory="canonical.launchpad.components.cal.calendarFromCalendarOwner" />
-
-  <browser:page
-      for="canonical.launchpad.interfaces.ICalendarOwner"
-      name="+calendar"
-      permission="zope.Public"
-      class="canonical.launchpad.components.cal.CalendarAdapterTraverser" />
 
   <browser:page
       for="canonical.launchpad.interfaces.ICalendarOwner"
@@ -63,12 +64,8 @@
       class="canonical.launchpad.browser.CalendarInfoPortletView"
       lp:url="/$CalendarOwner/+portlet-calendar" />
 
-  <browser:suburl
-      for="canonical.publication.RootObject"
-      class="canonical.launchpad.components.cal.MergedCalendar"
-      name="calendar"
-      permission="launchpad.AnyPerson"
-      lp:url="/calendar/" />
+
+  <!-- ICalendar and associated view objects -->
 
   <browser:defaultView
       for="schoolbell.interfaces.ICalendar"
@@ -101,10 +98,6 @@
       template="../templates/calendar-subscribe.pt"
       lp:url="$obj/calendar/+subscribe" />
 
-
-  <content class="canonical.launchpad.browser.CalendarEventCollection">
-    <allow interface="canonical.launchpad.interfaces.ICalendarEventCollection" />
-  </content>
   <browser:traverse
       for="canonical.launchpad.interfaces.ICalendarEventCollection"
       getter="__getitem__" />
@@ -212,6 +205,9 @@
       />
   </browser:addform>
 
+
+  <!-- ICalendarEvent -->
+
   <browser:defaultView
       for="schoolbell.interfaces.ICalendarEvent"
       name="+index" />
@@ -257,6 +253,16 @@
         class="canonical.launchpad.browser.TimeDurationWidget"
       />
   </browser:editform>
+
+
+  <!-- MergedCalendar -->
+
+  <browser:suburl
+      for="canonical.publication.RootObject"
+      class="canonical.launchpad.components.cal.MergedCalendar"
+      name="calendar"
+      permission="launchpad.AnyPerson"
+      lp:url="/calendar/" />
 
   <browser:page
       name="+subscriptions"

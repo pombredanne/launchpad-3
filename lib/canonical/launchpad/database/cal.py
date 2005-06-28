@@ -17,7 +17,10 @@ from schoolbell.mixins import CalendarEventMixin
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces import (
-    ILaunchpadCalendar, IHasOwner, ICalendarSubscriptionSet, ILaunchBag)
+    ILaunchpadCalendar, IHasOwner, ICalendarSubscriptionSet, ILaunchBag,
+    IPerson, ITeam, IProject, IProduct)
+
+__metatype__ = type
 
 _utc_tz = pytz.timezone('UTC')
 
@@ -126,7 +129,7 @@ class CalendarSubscription(SQLBase):
                           foreignKey='Calendar')
     colour = StringCol(dbName='colour', notNull=True, default='#9db8d2')
 
-class CalendarSubscriptionSet(object):
+class CalendarSubscriptionSet:
     """The set of subscriptions for a particular user."""
     implements(ICalendarSubscriptionSet)
 

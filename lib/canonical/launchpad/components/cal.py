@@ -11,10 +11,6 @@ _ = MessageIDFactory('launchpad')
 
 from zope.interface import implements
 from zope.component import getUtility
-from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.app import zapi
-from zope.publisher.interfaces import IPublishTraverse
-from zope.publisher.interfaces import NotFound
 
 from schoolbell.interfaces import ICalendar
 from canonical.launchpad.interfaces import (
@@ -25,40 +21,6 @@ from schoolbell.mixins import CalendarMixin, EditableCalendarMixin
 from schoolbell.icalendar import convert_calendar_to_ical
 
 __metaclass__ = type
-
-
-class CalendarAdapterTraverser:
-    """View for finding the calendar of the context user.
-
-    context must be adaptable to ICalendar.
-    """
-
-    implements(IBrowserPublisher)
-
-    name = '+calendar'
-
-    def __init__(self, context, request):
-        self.context = context
-
-    def publishTraverse(self, request, name):
-        """See IPublishTraverse."""
-        calendar = ICalendar(self.context, None)
-        if calendar:
-            adapter = zapi.queryViewProviding(calendar, IPublishTraverse,
-                                              request, self)
-            if adapter is not self:
-                return adapter.publishTraverse(request, name)
-        raise NotFound(self.context, self.name, request)
-
-    def browserDefault(self, request):
-        """See IBrowserPublisher."""
-        calendar = ICalendar(self.context, None)
-        if calendar:
-            adapter = zapi.queryViewProviding(calendar, IBrowserPublisher,
-                                              request, self)
-            if adapter is not self:
-                return adapter.browserDefault(request)
-        raise NotFound(self.context, self.name, request)
 
 
 def calendarFromCalendarOwner(calendarowner):
@@ -103,7 +65,7 @@ class MergedCalendar(CalendarMixin, EditableCalendarMixin):
 
 ############# iCalendar export ###################
 
-class ViewICalendar(object):
+class ViewICalendar:
     """Publish an object implementing the ICalendar interface in
     the iCalendar format.  This allows desktop calendar clients to
     display the events."""

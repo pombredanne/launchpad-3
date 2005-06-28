@@ -17,7 +17,7 @@
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IProject"
-        getter="getProduct" />
+        function="canonical.launchpad.browser.traversers.traverse_project" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
