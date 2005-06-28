@@ -120,7 +120,7 @@
 <!-- Primary Index -->
 <p><br />
 <br />
-Dumped on 2005-05-26</p>
+Dumped on 2005-06-23</p>
 <h1><a name="index" id="index">Index of database -
 launchpad_dev</a></h1>
 <ul>
@@ -229,25 +229,32 @@ launchpad_dev</a></h1>
 <li><a href=
 "#public.table.packagepublishinghistory">packagepublishinghistory</a></li>
 <li><a href=
+"#public.view.packagepublishingpublichistory">packagepublishingpublichistory</a></li>
+<li><a href=
 "#public.table.packageselection">packageselection</a></li>
 <li><a href="#public.table.packaging">packaging</a></li>
 <li><a href="#public.table.person">person</a></li>
 <li><a href="#public.table.personlabel">personlabel</a></li>
 <li><a href="#public.table.personlanguage">personlanguage</a></li>
+<li><a href="#public.table.pocketchroot">pocketchroot</a></li>
 <li><a href="#public.table.pocomment">pocomment</a></li>
 <li><a href="#public.view.poexport">poexport</a></li>
+<li><a href=
+"#public.table.poexportrequest">poexportrequest</a></li>
 <li><a href="#public.table.pofile">pofile</a></li>
 <li><a href="#public.table.pomsgid">pomsgid</a></li>
 <li><a href=
 "#public.table.pomsgidsighting">pomsgidsighting</a></li>
 <li><a href="#public.table.pomsgset">pomsgset</a></li>
+<li><a href="#public.table.poselection">poselection</a></li>
+<li><a href="#public.table.posubmission">posubmission</a></li>
 <li><a href="#public.table.posubscription">posubscription</a></li>
 <li><a href="#public.table.potemplate">potemplate</a></li>
 <li><a href="#public.table.potemplatename">potemplatename</a></li>
 <li><a href="#public.table.potmsgset">potmsgset</a></li>
 <li><a href="#public.table.potranslation">potranslation</a></li>
 <li><a href=
-"#public.table.potranslationsighting">potranslationsighting</a></li>
+"#public.table.potranslationsightingbackup">potranslationsightingbackup</a></li>
 <li><a href="#public.table.processor">processor</a></li>
 <li><a href=
 "#public.table.processorfamily">processorfamily</a></li>
@@ -291,6 +298,8 @@ launchpad_dev</a></h1>
 <li><a href=
 "#public.table.sourcepackagepublishinghistory">sourcepackagepublishinghistory</a></li>
 <li><a href=
+"#public.view.sourcepackagepublishingpublichistory">sourcepackagepublishingpublichistory</a></li>
+<li><a href=
 "#public.view.sourcepackagepublishingview">sourcepackagepublishingview</a></li>
 <li><a href=
 "#public.table.sourcepackagerelease">sourcepackagerelease</a></li>
@@ -308,6 +317,9 @@ launchpad_dev</a></h1>
 <li><a href=
 "#public.table.translationeffortpotemplate">translationeffortpotemplate</a></li>
 <li><a href=
+"#public.table.translationgroup">translationgroup</a></li>
+<li><a href="#public.table.translator">translator</a></li>
+<li><a href=
 "#public.view.vsourcepackageindistro">vsourcepackageindistro</a></li>
 <li><a href=
 "#public.view.vsourcepackagereleasepublishing">vsourcepackagereleasepublishing</a></li>
@@ -316,9 +328,17 @@ launchpad_dev</a></h1>
 "#public.function.plpython-call-handler">plpython_call_handler(
 )</a></li>
 <li><a href="#public.function.sha1-text">sha1( text )</a></li>
+<li><a href=
+"#public.function.valid-absolute-url-text">valid_absolute_url( text
+)</a></li>
 <li><a href="#public.function.valid-bug-name-text">valid_bug_name(
 text )</a></li>
 <li><a href="#public.function.valid-cve-text">valid_cve( text
+)</a></li>
+<li><a href=
+"#public.function.valid-fingerprint-text">valid_fingerprint( text
+)</a></li>
+<li><a href="#public.function.valid-keyid-text">valid_keyid( text
 )</a></li>
 <li><a href="#public.function.valid-name-text">valid_name( text
 )</a></li>
@@ -5558,7 +5578,8 @@ product.</p>
 <td><i>PRIMARY KEY</i></td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.bug">public.bug.id</a></td>
+<td><a href="#public.table.bug">public.bug.id</a> <a href=
+"#public.table.bugwatch">public.bugwatch.bug#1</a></td>
 <td>bug</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
@@ -5679,6 +5700,32 @@ later.</td>
 <br />
 A way to mark a bug for grouping purposes, e.g. to say it needs to
 be fixed by version 1.2</td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.bugwatch">public.bugwatch.id#1</a></td>
+<td>bugwatch</td>
+<td>integer</td>
+<td><br />
+<br />
+This column allows us to link a bug task to a bug watch. In other
+words, we are connecting the state of the task to the state of the
+bug in a different bug tracking system. To the best of our ability
+we'll try and keep the bug task syncronised with the state of the
+remote bug watch.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>statusexplanation</td>
+<td>text</td>
+<td><br />
+<br />
+A place to store bug task specific information as free text</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>fti</td>
+<td>tsvector</td>
+<td></td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -6227,13 +6274,13 @@ public</a></p>
 <td></td>
 <td>id</td>
 <td>serial</td>
-<td><i>PRIMARY KEY</i></td>
+<td><i>UNIQUE#1 PRIMARY KEY</i></td>
 </tr>
 <tr class="tr1">
 <td><a href="#public.table.bug">public.bug.id</a></td>
 <td>bug</td>
 <td>integer</td>
-<td><i>NOT NULL</i></td>
+<td><i>UNIQUE#1 NOT NULL</i></td>
 </tr>
 <tr class="tr0">
 <td><a href=
@@ -6284,6 +6331,10 @@ with time zone)</i></td>
 </table>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href="#public.table.bugtask">public.bugtask</a></li>
+</ul>
 <!-- View Definition -->
 <!-- List off permissions -->
 <p> </p>
@@ -6631,41 +6682,35 @@ public</a></p>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>fqdn</td>
-<td>text</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
 <td>name</td>
 <td>text</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
+<td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>title</td>
 <td>text</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>description</td>
 <td>text</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>owner</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>speedindex</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>builderok</td>
 <td>boolean</td>
@@ -6675,7 +6720,7 @@ Should a builder fail for any reason, from out-of-disk-space to not
 responding to the buildd master, the builderok flag is set to false
 and the failnotes column is filled with a reason.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>failnotes</td>
 <td>text</td>
@@ -6686,8 +6731,40 @@ builder has failed. If the builderok column is true then the value
 in this column is irrelevant and should be treated as NULL or
 empty.</td>
 </tr>
+<tr class="tr1">
+<td></td>
+<td>trusted</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i><br />
+<br />
+Whether or not the builder is cleared to do SECURITY pocket builds.
+Such a builder will have firewall access to the embargo archives
+etc.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>url</td>
+<td>text</td>
+<td><i>UNIQUE NOT NULL</i><br />
+<br />
+The url to the build slave. There may be more than one build slave
+on a given host so this url includes the port number to use. The
+default port number for a build slave is 8221</td>
+</tr>
 </table>
 <!-- Constraint List -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.builder Constraints</caption>
+<tr>
+<th>Name</th>
+<th>Constraint</th>
+</tr>
+<tr class="tr0">
+<td>valid_absolute_url</td>
+<td>CHECK (valid_absolute_url(url))</td>
+</tr>
+</table>
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
 <ul>
@@ -7984,19 +8061,19 @@ public</a></p>
 <td></td>
 <td>iso3166code2</td>
 <td>character(2)</td>
-<td><i>NOT NULL</i></td>
+<td><i>UNIQUE NOT NULL</i></td>
 </tr>
 <tr class="tr0">
 <td></td>
 <td>iso3166code3</td>
 <td>character(3)</td>
-<td><i>NOT NULL</i></td>
+<td><i>UNIQUE NOT NULL</i></td>
 </tr>
 <tr class="tr1">
 <td></td>
 <td>name</td>
 <td>text</td>
-<td><i>NOT NULL</i></td>
+<td><i>UNIQUE NOT NULL</i></td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -8405,6 +8482,28 @@ Person or team with upload and commit priviledges relating to this
 distribution. Other rights may be assigned to this role in the
 future.</td>
 </tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.translationgroup">public.translationgroup.id</a></td>
+<td>translationgroup</td>
+<td>integer</td>
+<td><br />
+<br />
+The translation group that is responsible for all translation work
+in this distribution.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>translationpermission</td>
+<td>integer</td>
+<td><i>NOT NULL DEFAULT 1</i><br />
+<br />
+The level of openness of this distribution's translation process.
+The enum lists different approaches to translation, from the very
+open (anybody can edit any translation in any language) to the
+completely closed (only designated translators can make any changes
+at all).</td>
+</tr>
 </table>
 <!-- Constraint List -->
 <p> </p>
@@ -8630,17 +8729,6 @@ files... such as the "amd64" part of
 <td>integer</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr1">
-<td><a href=
-"#public.table.libraryfilealias">public.libraryfilealias.id</a></td>
-<td>chroot</td>
-<td>integer</td>
-<td><br />
-<br />
-The chroot tarball used to build packages for this
-distroarchrelease. Without this, the buildd master is unable to
-schedule builds for this distroarchrelease.</td>
-</tr>
 </table>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
@@ -8655,6 +8743,10 @@ schedule builds for this distroarchrelease.</td>
 <ul>
 <li><a href=
 "#public.table.packagepublishinghistory">public.packagepublishinghistory</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.pocketchroot">public.pocketchroot</a></li>
 </ul>
 <!-- View Definition -->
 <!-- List off permissions -->
@@ -9057,6 +9149,16 @@ particularly important to draw to the attention of users.</td>
 <td>displayname</td>
 <td>text</td>
 <td><i>NOT NULL</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>datelastlangpack</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The date we last generated a base language pack for this release.
+Language update packs for this release will only include
+translations added after that date.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -9862,6 +9964,18 @@ casesensitive way, but must be case insensitivly unique.</td>
 <td></td>
 </tr>
 <tr class="tr0">
+<td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -9891,6 +10005,7 @@ public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.gpgkey" id="public.table.gpgkey">gpgkey</a></h2>
+<p>A GPG key belonging to a Person</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.gpgkey Structure</caption>
 <tr>
@@ -9915,40 +10030,62 @@ public</a></p>
 <td></td>
 <td>keyid</td>
 <td>text</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+The 8 character GPG key id, uppercase and no whitespace</td>
 </tr>
 <tr class="tr1">
 <td></td>
 <td>fingerprint</td>
 <td>text</td>
-<td><i>UNIQUE NOT NULL</i></td>
+<td><i>UNIQUE NOT NULL</i><br />
+<br />
+The 40 character GPG fingerprint, uppercase and no whitespace</td>
 </tr>
 <tr class="tr0">
-<td></td>
-<td>pubkey</td>
-<td>text</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
 <td></td>
 <td>revoked</td>
 <td>boolean</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>algorithm</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+True if this key has been revoked</td>
 </tr>
 <tr class="tr1">
 <td></td>
+<td>algorithm</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The algorithm used to generate this key. Valid values defined in
+dbschema.GPGKeyAlgorithms</td>
+</tr>
+<tr class="tr0">
+<td></td>
 <td>keysize</td>
 <td>integer</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+Size of the key in bits, as reported by GPG. We may refuse to deal
+with keysizes &lt; 768 bits in the future.</td>
 </tr>
 </table>
 <!-- Constraint List -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.gpgkey Constraints</caption>
+<tr>
+<th>Name</th>
+<th>Constraint</th>
+</tr>
+<tr class="tr0">
+<td>valid_fingerprint</td>
+<td>CHECK (valid_fingerprint(fingerprint))</td>
+</tr>
+<tr class="tr1">
+<td>valid_keyid</td>
+<td>CHECK (valid_keyid(keyid))</td>
+</tr>
+</table>
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
 <ul>
@@ -10804,6 +10941,9 @@ NULL))))</td>
 <ul>
 <li><a href="#public.table.spokenin">public.spokenin</a></li>
 </ul>
+<ul>
+<li><a href="#public.table.translator">public.translator</a></li>
+</ul>
 <!-- View Definition -->
 <!-- List off permissions -->
 <p> </p>
@@ -11147,15 +11287,15 @@ The mime type of the file. E.g. "application/x-debian-package"</td>
 <li><a href="#public.table.build">public.build</a></li>
 </ul>
 <ul>
-<li><a href=
-"#public.table.distroarchrelease">public.distroarchrelease</a></li>
-</ul>
-<ul>
 <li><a href="#public.table.message">public.message</a></li>
 </ul>
 <ul>
 <li><a href=
 "#public.table.messagechunk">public.messagechunk</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.pocketchroot">public.pocketchroot</a></li>
 </ul>
 <ul>
 <li><a href="#public.table.pofile">public.pofile</a></li>
@@ -11266,6 +11406,20 @@ public.libraryfilealias</caption>
 <td></td>
 </tr>
 <tr class="tr0">
+<td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -11450,6 +11604,20 @@ public.libraryfilecontent</caption>
 <td></td>
 </tr>
 <tr class="tr0">
+<td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -11511,7 +11679,7 @@ public</a></p>
 </ul>
 <ul>
 <li><a href=
-"#public.table.potranslationsighting">public.potranslationsighting</a></li>
+"#public.table.potranslationsightingbackup">public.potranslationsightingbackup</a></li>
 </ul>
 <!-- View Definition -->
 <!-- List off permissions -->
@@ -11700,8 +11868,32 @@ The token (not the URL) emailed used to uniquely identify this
 request. This token will be used to generate a URL that when
 clicked on will continue a workflow.</td>
 </tr>
+<tr class="tr1">
+<td></td>
+<td>fingerprint</td>
+<td>text</td>
+<td><br />
+<br />
+The GPG key fingerprint to be validated on this transaction, it
+means that a new register will be created relating this given key
+with the requester in question. The requesteremail still passing
+for the same usual checks.</td>
+</tr>
 </table>
 <!-- Constraint List -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.logintoken Constraints</caption>
+<tr>
+<th>Name</th>
+<th>Constraint</th>
+</tr>
+<tr class="tr0">
+<td>valid_fingerprint</td>
+<td>CHECK (((fingerprint IS NULL) OR
+valid_fingerprint(fingerprint)))</td>
+</tr>
+</table>
 <!-- Foreign Key Discovery -->
 <!-- View Definition -->
 <!-- List off permissions -->
@@ -12186,7 +12378,7 @@ public</a></p>
 <td><i>PRIMARY KEY</i></td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.manifest">public.manifest.id#1</a></td>
+<td><a href="#public.table.manifest">public.manifest.id#2</a></td>
 <td>manifest</td>
 <td>integer</td>
 <td><i>UNIQUE#1 NOT NULL</i></td>
@@ -12198,14 +12390,15 @@ public</a></p>
 <td><i>UNIQUE#1 NOT NULL</i></td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.branch">public.branch.id#2</a></td>
+<td><a href="#public.table.branch">public.branch.id</a> <a href=
+"#public.table.changeset">public.changeset.branch#1</a></td>
 <td>branch</td>
 <td>integer</td>
 <td></td>
 </tr>
 <tr class="tr0">
-<td><a href=
-"#public.table.changeset">public.changeset.id#2</a></td>
+<td><a href="#public.table.changeset">public.changeset.id</a>
+<a href="#public.table.changeset">public.changeset.id#1</a></td>
 <td>changeset</td>
 <td>integer</td>
 <td></td>
@@ -12224,7 +12417,7 @@ public</a></p>
 </tr>
 <tr class="tr1">
 <td><a href=
-"#public.table.manifestentry">public.manifestentry.sequence#1</a></td>
+"#public.table.manifestentry">public.manifestentry.sequence#2</a></td>
 <td>patchon</td>
 <td>integer</td>
 <td></td>
@@ -14344,6 +14537,251 @@ public.packagepublishinghistory</caption>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
 <hr />
+<h2>View: <a href="#public.schema">public</a>.<a name=
+"public.view.packagepublishingpublichistory" id=
+"public.view.packagepublishingpublichistory">packagepublishingpublichistory</a></h2>
+<p>View on PackagePublishingHistory that restricts access to
+embargoed entries</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.packagepublishingpublichistory Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>binarypackage</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>distroarchrelease</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>status</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>component</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>section</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>priority</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>datecreated</td>
+<td>timestamp without time zone</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>datepublished</td>
+<td>timestamp without time zone</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>datesuperseded</td>
+<td>timestamp without time zone</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>supersededby</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>datemadepending</td>
+<td>timestamp without time zone</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>scheduleddeletiondate</td>
+<td>timestamp without time zone</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>dateremoved</td>
+<td>timestamp without time zone</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>pocket</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>embargo</td>
+<td>boolean</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>embargolifted</td>
+<td>timestamp without time zone</td>
+<td></td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<pre>
+SELECT packagepublishinghistory.id
+, packagepublishinghistory.binarypackage
+, packagepublishinghistory.distroarchrelease
+, packagepublishinghistory.status
+, packagepublishinghistory.component
+, packagepublishinghistory.section
+, packagepublishinghistory.priority
+, packagepublishinghistory.datecreated
+, packagepublishinghistory.datepublished
+, packagepublishinghistory.datesuperseded
+, packagepublishinghistory.supersededby
+, packagepublishinghistory.datemadepending
+, packagepublishinghistory.scheduleddeletiondate
+, packagepublishinghistory.dateremoved
+, packagepublishinghistory.pocket
+, packagepublishinghistory.embargo
+, packagepublishinghistory.embargolifted 
+FROM packagepublishinghistory 
+WHERE (packagepublishinghistory.embargo = false);
+</pre>
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.packagepublishingpublichistory</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.packageselection" id=
 "public.table.packageselection">packageselection</a></h2>
@@ -14852,6 +15290,13 @@ displayed in this language wherever possible.</td>
 <td>integer</td>
 <td></td>
 </tr>
+<tr class="tr0">
+<td></td>
+<td>datecreated</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text,
+('now'::text)::timestamp(6) with time zone)</i></td>
+</tr>
 </table>
 <!-- Constraint List -->
 <p> </p>
@@ -14990,7 +15435,15 @@ NULL))))</td>
 <li><a href="#public.table.pocomment">public.pocomment</a></li>
 </ul>
 <ul>
+<li><a href=
+"#public.table.poexportrequest">public.poexportrequest</a></li>
+</ul>
+<ul>
 <li><a href="#public.table.pofile">public.pofile</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.posubmission">public.posubmission</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -15001,7 +15454,7 @@ NULL))))</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.potranslationsighting">public.potranslationsighting</a></li>
+"#public.table.potranslationsightingbackup">public.potranslationsightingbackup</a></li>
 </ul>
 <ul>
 <li><a href="#public.table.processor">public.processor</a></li>
@@ -15051,6 +15504,13 @@ NULL))))</td>
 "#public.table.translationeffort">public.translationeffort</a></li>
 </ul>
 <ul>
+<li><a href=
+"#public.table.translationgroup">public.translationgroup</a></li>
+</ul>
+<ul>
+<li><a href="#public.table.translator">public.translator</a></li>
+</ul>
+<ul>
 <li><a href="#public.table.wikiname">public.wikiname</a></li>
 </ul>
 <!-- View Definition -->
@@ -15083,6 +15543,18 @@ NULL))))</td>
 </th>
 </tr>
 <tr class="tr0">
+<td>dyson</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -15106,7 +15578,7 @@ NULL))))</td>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -15118,7 +15590,7 @@ NULL))))</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -15129,6 +15601,18 @@ NULL))))</td>
 <td>
 <center>&diams;</center>
 </td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -15439,6 +15923,162 @@ this language.</td>
 <td></td>
 </tr>
 <tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.pocketchroot" id=
+"public.table.pocketchroot">pocketchroot</a></h2>
+<p>PocketChroots: Which chroot belongs to which pocket of which
+distroarchrelease. Any given pocket of any given distroarchrelease
+needs a specific chroot in order to be built. This table links it
+all together.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.pocketchroot Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.distroarchrelease">public.distroarchrelease.id</a></td>
+<td>distroarchrelease</td>
+<td>integer</td>
+<td><i>UNIQUE#1</i><br />
+<br />
+Which distroarchrelease this chroot applies to.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>pocket</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+Which pocket of the distroarchrelease this chroot applies to. Valid
+values are specified in dbschema.PackagePublishingPocket</td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.libraryfilealias">public.libraryfilealias.id</a></td>
+<td>chroot</td>
+<td>integer</td>
+<td><i>UNIQUE</i><br />
+<br />
+The chroot used by the pocket of the distroarchrelease.</td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.pocketchroot</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>fiera</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr0">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -15808,7 +16448,7 @@ public</a></p>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>fuzzy</td>
+<td>isfuzzy</td>
 <td>boolean</td>
 <td></td>
 </tr>
@@ -15832,8 +16472,8 @@ public</a></p>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>active</td>
-<td>boolean</td>
+<td>activesubmission</td>
+<td>integer</td>
 <td></td>
 </tr>
 <tr class="tr1">
@@ -15877,7 +16517,7 @@ SELECT (
            ) || '.'::text
      ) || COALESCE
      (
-           (potranslationsighting.id)::text
+           (poselection.id)::text
            ,'X'::text
      )
 ) AS id
@@ -15906,11 +16546,11 @@ SELECT (
 , pomsgset."sequence" AS posequence
 , pomsgset.iscomplete
 , pomsgset.obsolete
-, pomsgset.fuzzy
+, pomsgset.isfuzzy
 , pomsgset.commenttext AS pocommenttext
 , pomsgidsighting.pluralform AS msgidpluralform
-, potranslationsighting.pluralform AS translationpluralform
-, potranslationsighting.active
+, poselection.pluralform AS translationpluralform
+, poselection.activesubmission
 , pomsgid.msgid
 , potranslation.translation 
 FROM (
@@ -15920,50 +16560,55 @@ FROM (
                        (
                              (
                                    (
-                                         (pomsgid 
-                                            JOIN pomsgidsighting 
+                                         (
+                                               (pomsgid 
+                                                  JOIN pomsgidsighting 
+                                                    ON (
+                                                           (pomsgid.id = pomsgidsighting.pomsgid)
+                                                     )
+                                               )
+                                            JOIN potmsgset 
                                               ON (
-                                                     (pomsgid.id = pomsgidsighting.pomsgid)
+                                                     (potmsgset.id = pomsgidsighting.potmsgset)
                                                )
                                          )
-                                      JOIN potmsgset 
+                                      JOIN potemplate 
                                         ON (
-                                               (potmsgset.id = pomsgidsighting.potmsgset)
+                                               (potemplate.id = potmsgset.potemplate)
                                          )
                                    )
-                                JOIN potemplate 
+                                JOIN potemplatename 
                                   ON (
-                                         (potemplate.id = potmsgset.potemplate)
+                                         (potemplatename.id = potemplate.potemplatename)
                                    )
                              )
-                          JOIN potemplatename 
+                          JOIN pofile 
                             ON (
-                                   (potemplatename.id = potemplate.potemplatename)
+                                   (potemplate.id = pofile.potemplate)
                              )
                        )
-                    JOIN pofile 
+               LEFT JOIN pomsgset 
                       ON (
-                             (potemplate.id = pofile.potemplate)
+                             (
+                                   (potmsgset.id = pomsgset.potmsgset)
+                                 AND (pomsgset.pofile = pofile.id)
+                             )
                        )
                  )
-         LEFT JOIN pomsgset 
+         LEFT JOIN poselection 
                 ON (
-                       (potmsgset.id = pomsgset.potmsgset)
+                       (pomsgset.id = poselection.pomsgset)
                  )
            )
-   LEFT JOIN potranslationsighting 
+   LEFT JOIN posubmission 
           ON (
-                 (pomsgset.id = potranslationsighting.pomsgset)
+                 (posubmission.id = poselection.activesubmission)
            )
      )
 LEFT JOIN potranslation 
     ON (
-           (potranslation.id = potranslationsighting.potranslation)
+           (potranslation.id = posubmission.potranslation)
      )
-)
-WHERE (
-     (pomsgset.id IS NULL)
-    OR (pomsgset.pofile = pofile.id)
 );
 </pre>
 <!-- List off permissions -->
@@ -16083,6 +16728,179 @@ WHERE (
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.poexportrequest" id=
+"public.table.poexportrequest">poexportrequest</a></h2>
+<p>A request from a user that a PO template or a PO file be
+exported asynchronously.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.poexportrequest Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>person</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The person who made the request.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.potemplate">public.potemplate.id</a></td>
+<td>potemplate</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The PO template being requested.</td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.pofile">public.pofile.id</a></td>
+<td>pofile</td>
+<td>integer</td>
+<td><br />
+<br />
+The PO file being requested, or NULL.</td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.poexportrequest</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.pofile" id="public.table.pofile">pofile</a></h2>
 <p>This table stores a PO file for a given PO template.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
@@ -16114,95 +16932,89 @@ public</a></p>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>title</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
 <td>description</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>topcomment</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>header</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>fuzzyheader</td>
 <td>boolean</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>lasttranslator</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td><a href="#public.table.license">public.license.id</a></td>
 <td>license</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>currentcount</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>updatescount</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>rosettacount</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>lastparsed</td>
 <td>timestamp without time zone</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>owner</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>pluralforms</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>variant</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>filename</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>rawimporter</td>
 <td>integer</td>
@@ -16210,7 +17022,7 @@ public</a></p>
 <br />
 The person that attached the raw file.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>daterawimport</td>
 <td>timestamp without time zone</td>
@@ -16219,7 +17031,7 @@ with time zone)</i><br />
 <br />
 The date when the raw file was attached.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>rawimportstatus</td>
 <td>integer</td>
@@ -16227,7 +17039,7 @@ The date when the raw file was attached.</td>
 <br />
 The status of the import. See the RosettaImportStatus schema.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td><a href=
 "#public.table.libraryfilealias">public.libraryfilealias.id</a></td>
 <td>rawfile</td>
@@ -16236,7 +17048,7 @@ The status of the import. See the RosettaImportStatus schema.</td>
 <br />
 The Library file alias of the PO file as imported.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href=
 "#public.table.libraryfilealias">public.libraryfilealias.id</a></td>
 <td>exportfile</td>
@@ -16245,7 +17057,7 @@ The Library file alias of the PO file as imported.</td>
 <br />
 The Library file alias of an export of this PO file.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>exporttime</td>
 <td>timestamp without time zone</td>
@@ -16253,6 +17065,19 @@ The Library file alias of an export of this PO file.</td>
 <br />
 The time at which the file referenced by exportfile was
 generated.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>rawfilepublished</td>
+<td>boolean</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>datecreated</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text,
+('now'::text)::timestamp(6) with time zone)</i></td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -16268,9 +17093,17 @@ generated.</td>
 <td>CHECK ((((rawfile IS NULL) AND (rawimportstatus &lt;&gt; 2)) OR
 (rawfile IS NOT NULL)))</td>
 </tr>
+<tr class="tr1">
+<td>valid_variant</td>
+<td>CHECK ((variant &lt;&gt; ''::text))</td>
+</tr>
 </table>
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href=
+"#public.table.poexportrequest">public.poexportrequest</a></li>
+</ul>
 <ul>
 <li><a href="#public.table.pomsgset">public.pomsgset</a></li>
 </ul>
@@ -16361,7 +17194,9 @@ generated.</td>
 <center>&diams;</center>
 </td>
 <td></td>
-<td></td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -16739,7 +17574,10 @@ public</a></p>
 <td></td>
 <td>iscomplete</td>
 <td>boolean</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+This indicates if we believe that Rosetta has an active translation
+for every expected plural form of this message set.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -16749,9 +17587,13 @@ public</a></p>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>fuzzy</td>
+<td>isfuzzy</td>
 <td>boolean</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+This indicates if the msgset is currently fuzzy in Rosetta. The
+other indicator, publishedfuzzy, shows the same status for the last
+published pofile we pulled in.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -16765,19 +17607,470 @@ public</a></p>
 <td>integer</td>
 <td><i>UNIQUE#1 NOT NULL</i></td>
 </tr>
+<tr class="tr0">
+<td></td>
+<td>publishedfuzzy</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i><br />
+<br />
+This indicates that this POMsgSet was fuzzy when it was last
+imported from a published PO file. By comparing the current fuzzy
+state (in the "fuzzy" field) to that, we know if we have changed
+the fuzzy condition of the messageset in Rosetta.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>publishedcomplete</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i><br />
+<br />
+This indicates that this POMsgSet was complete when it was last
+imported from a published PO file. By "complete" we mean "has a
+translation for every expected plural form". We can compare the
+current completeness state (in the "iscomplete" field) to this, to
+know if we have changed the completeness of the messageset in
+Rosetta since it was imported.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>isupdated</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i></td>
+</tr>
 </table>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
 <ul>
+<li><a href="#public.table.poselection">public.poselection</a></li>
+</ul>
+<ul>
 <li><a href=
-"#public.table.potranslationsighting">public.potranslationsighting</a></li>
+"#public.table.posubmission">public.posubmission</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.potranslationsightingbackup">public.potranslationsightingbackup</a></li>
 </ul>
 <!-- View Definition -->
 <!-- List off permissions -->
 <p> </p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>Permissions which apply to public.pomsgset</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>group write</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.poselection" id=
+"public.table.poselection">poselection</a></h2>
+<p>This table captures the full set of all the translations ever
+submitted for a given pomsgset and pluralform. It also indicates
+which of those is currently active.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.poselection Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.pomsgset">public.pomsgset.id</a>
+<a href="#public.table.posubmission">public.posubmission.pomsgset#2</a>
+<a href=
+"#public.table.posubmission">public.posubmission.pomsgset#1</a></td>
+<td>pomsgset</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The messageset for which we are recording a selection.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.posubmission">public.posubmission.pluralform#2</a>
+<a href=
+"#public.table.posubmission">public.posubmission.pluralform#1</a></td>
+<td>pluralform</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The pluralform of this selected translation.</td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.posubmission">public.posubmission.id#2</a></td>
+<td>activesubmission</td>
+<td>integer</td>
+<td><br />
+<br />
+The submission which made this the active translation in rosetta
+for this pomsgset and pluralform.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.posubmission">public.posubmission.id#1</a></td>
+<td>publishedsubmission</td>
+<td>integer</td>
+<td><br />
+<br />
+The submission in which we noted this as the current translation
+published in revision control (or in the public po files for this
+translation template, in the package or tarball or branch which is
+considered the source of it).</td>
+</tr>
+</table>
+<!-- Constraint List -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.poselection Constraints</caption>
+<tr>
+<th>Name</th>
+<th>Constraint</th>
+</tr>
+<tr class="tr0">
+<td>poselection_valid_pluralform</td>
+<td>CHECK ((pluralform &gt;= 0))</td>
+</tr>
+</table>
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.poselection</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>group write</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.posubmission" id=
+"public.table.posubmission">posubmission</a></h2>
+<p>This table records the fact that we saw, or someone submitted, a
+particular translation for a particular msgset under a particular
+licence, at a specific time.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.posubmission Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>UNIQUE#1 PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.pomsgset">public.pomsgset.id</a></td>
+<td>pomsgset</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The message set for which the submission or sighting was made.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>pluralform</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The plural form of the submission which was made.</td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.potranslation">public.potranslation.id</a></td>
+<td>potranslation</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The translation that was submitted or sighted.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>origin</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The source of this translation. This indicates whether the
+translation was in a pofile that we parsed (probably one published
+in a package or branch or tarball), or was submitted through the
+web.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>datecreated</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text,
+('now'::text)::timestamp(6) with time zone)</i></td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>person</td>
+<td>integer</td>
+<td><br />
+<br />
+The person that made the submission through the web to rosetta, or
+the last-translator on the pofile that we are processing, or the
+person who uploaded that pofile to rosetta. In short, our best
+guess as to the person who is contributing that translation.</td>
+</tr>
+</table>
+<!-- Constraint List -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.posubmission Constraints</caption>
+<tr>
+<th>Name</th>
+<th>Constraint</th>
+</tr>
+<tr class="tr0">
+<td>posubmission_valid_pluralform</td>
+<td>CHECK ((pluralform &gt;= 0))</td>
+</tr>
+</table>
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href="#public.table.poselection">public.poselection</a></li>
+</ul>
+<!-- View Definition -->
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.posubmission</caption>
 <tr>
 <th>User</th>
 <th>
@@ -17080,60 +18373,54 @@ public</a></p>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>title</td>
-<td>text</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
 <td>description</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>copyright</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td><a href="#public.table.license">public.license.id</a></td>
 <td>license</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>datecreated</td>
 <td>timestamp without time zone</td>
 <td><i>NOT NULL DEFAULT timezone('UTC'::text,
 ('now'::text)::timestamp(6) with time zone)</i></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>path</td>
 <td>text</td>
 <td><i>UNIQUE#3</i></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>iscurrent</td>
 <td>boolean</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>messagecount</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>owner</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>rawimporter</td>
 <td>integer</td>
@@ -17141,7 +18428,7 @@ public</a></p>
 <br />
 The person that attached the rawfile.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>daterawimport</td>
 <td>timestamp without time zone</td>
@@ -17150,7 +18437,7 @@ The person that attached the rawfile.</td>
 <br />
 The date when the rawfile was attached.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>rawimportstatus</td>
 <td>integer</td>
@@ -17159,7 +18446,7 @@ The date when the rawfile was attached.</td>
 The status of the import: 0 pending import, 1 imported, 2
 failed.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href=
 "#public.table.sourcepackagename">public.sourcepackagename.id</a></td>
 <td>sourcepackagename</td>
@@ -17169,7 +18456,7 @@ failed.</td>
 A reference to a sourcepackage name from where this POTemplate
 comes.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td><a href=
 "#public.table.distrorelease">public.distrorelease.id</a></td>
 <td>distrorelease</td>
@@ -17179,7 +18466,7 @@ comes.</td>
 A reference to the distribution from where this POTemplate
 comes.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>sourcepackageversion</td>
 <td>text</td>
@@ -17188,7 +18475,7 @@ comes.</td>
 The sourcepackage version string from where this potemplate was
 imported last time with our buildd &lt;-&gt; Rosetta gateway.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>header</td>
 <td>text</td>
@@ -17197,7 +18484,7 @@ imported last time with our buildd &lt;-&gt; Rosetta gateway.</td>
 The header of a .pot file when we import it. Most important info
 from it is POT-Creation-Date and custom headers.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href=
 "#public.table.potemplatename">public.potemplatename.id</a></td>
 <td>potemplatename</td>
@@ -17207,7 +18494,7 @@ from it is POT-Creation-Date and custom headers.</td>
 A reference to a POTemplateName row that tells us the name/domain
 for this POTemplate.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td><a href=
 "#public.table.productrelease">public.productrelease.id</a></td>
 <td>productrelease</td>
@@ -17217,26 +18504,26 @@ for this POTemplate.</td>
 A reference to a ProductRelease from where this POTemplate
 comes.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href=
 "#public.table.binarypackagename">public.binarypackagename.id</a></td>
 <td>binarypackagename</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>languagepack</td>
 <td>boolean</td>
 <td><i>NOT NULL DEFAULT false</i></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>filename</td>
 <td>text</td>
 <td><i>UNIQUE#3</i></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td><a href=
 "#public.table.libraryfilealias">public.libraryfilealias.id</a></td>
 <td>rawfile</td>
@@ -17265,6 +18552,10 @@ NULL))))</td>
 <p>Tables referencing this one via Foreign Key Constraints:</p>
 <ul>
 <li><a href="#public.table.pocomment">public.pocomment</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.poexportrequest">public.poexportrequest</a></li>
 </ul>
 <ul>
 <li><a href="#public.table.pofile">public.pofile</a></li>
@@ -17824,7 +19115,11 @@ public</a></p>
 </ul>
 <ul>
 <li><a href=
-"#public.table.potranslationsighting">public.potranslationsighting</a></li>
+"#public.table.posubmission">public.posubmission</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.potranslationsightingbackup">public.potranslationsightingbackup</a></li>
 </ul>
 <!-- View Definition -->
 <!-- List off permissions -->
@@ -17936,10 +19231,10 @@ public</a></p>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.potranslationsighting" id=
-"public.table.potranslationsighting">potranslationsighting</a></h2>
+"public.table.potranslationsightingbackup" id=
+"public.table.potranslationsightingbackup">potranslationsightingbackup</a></h2>
 <table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.potranslationsighting Structure</caption>
+<caption>public.potranslationsightingbackup Structure</caption>
 <tr>
 <th>F-Key</th>
 <th>Name</th>
@@ -18017,7 +19312,7 @@ public</a></p>
 <!-- Constraint List -->
 <p> </p>
 <table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.potranslationsighting Constraints</caption>
+<caption>public.potranslationsightingbackup Constraints</caption>
 <tr>
 <th>Name</th>
 <th>Constraint</th>
@@ -18033,7 +19328,7 @@ public</a></p>
 <p> </p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>Permissions which apply to
-public.potranslationsighting</caption>
+public.potranslationsightingbackup</caption>
 <tr>
 <th>User</th>
 <th>
@@ -18709,6 +20004,37 @@ Whether or not this product should be considered active.</td>
 <td>boolean</td>
 <td><i>NOT NULL DEFAULT false</i></td>
 </tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.translationgroup">public.translationgroup.id</a></td>
+<td>translationgroup</td>
+<td>integer</td>
+<td><br />
+<br />
+The TranslationGroup that is responsible for translations for this
+product. Note that the Product may be part of a Project which also
+has a TranslationGroup, in which case the translators from both the
+product and project translation group have permission to edit the
+translations of this product.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>translationpermission</td>
+<td>integer</td>
+<td><i>NOT NULL DEFAULT 1</i><br />
+<br />
+The level of openness of this product's translation process. The
+enum lists different approaches to translation, from the very open
+(anybody can edit any translation in any language) to the
+completely closed (only designated translators can make any changes
+at all).</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>releaseroot</td>
+<td>text</td>
+<td></td>
+</tr>
 </table>
 <!-- Constraint List -->
 <p> </p>
@@ -18792,6 +20118,18 @@ Whether or not this product should be considered active.</td>
 </th>
 </tr>
 <tr class="tr0">
+<td>dyson</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -18815,7 +20153,7 @@ Whether or not this product should be considered active.</td>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -18827,7 +20165,7 @@ Whether or not this product should be considered active.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -18843,7 +20181,7 @@ Whether or not this product should be considered active.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -18867,7 +20205,7 @@ Whether or not this product should be considered active.</td>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>sourcerer</td>
 <td>
 <center>&diams;</center>
@@ -19716,6 +21054,13 @@ in time.</td>
 <td>integer</td>
 <td></td>
 </tr>
+<tr class="tr0">
+<td></td>
+<td>datecreated</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text,
+('now'::text)::timestamp(6) with time zone)</i></td>
+</tr>
 </table>
 <!-- Constraint List -->
 <p> </p>
@@ -19776,6 +21121,20 @@ in time.</td>
 </th>
 </tr>
 <tr class="tr0">
+<td>dyson</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -19799,7 +21158,7 @@ in time.</td>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -19811,7 +21170,7 @@ in time.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -19827,7 +21186,7 @@ in time.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -19851,7 +21210,7 @@ in time.</td>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>sourcerer</td>
 <td>
 <center>&diams;</center>
@@ -19941,6 +21300,20 @@ public.productreleasefile</caption>
 </th>
 </tr>
 <tr class="tr0">
+<td>dyson</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -19964,7 +21337,7 @@ public.productreleasefile</caption>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -19976,7 +21349,7 @@ public.productreleasefile</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -19992,7 +21365,7 @@ public.productreleasefile</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -20293,6 +21666,13 @@ The timestamp when we last completed an import test or sync of this
 upstream repository. If this is NULL and datestarted is NOT NULL,
 then there is a sync in progress.</td>
 </tr>
+<tr class="tr0">
+<td></td>
+<td>datecreated</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text,
+('now'::text)::timestamp(6) with time zone)</i></td>
+</tr>
 </table>
 <!-- Constraint List -->
 <p> </p>
@@ -20324,6 +21704,10 @@ NULL))))</td>
 ''::text)) AND (bkrepository &lt;&gt; ''::text)))</td>
 </tr>
 <tr class="tr1">
+<td>valid_importseries</td>
+<td>CHECK (((importstatus IS NULL) OR (rcstype IS NOT NULL)))</td>
+</tr>
+<tr class="tr0">
 <td>valid_name</td>
 <td>CHECK (valid_name(name))</td>
 </tr>
@@ -20367,6 +21751,18 @@ NULL))))</td>
 </th>
 </tr>
 <tr class="tr0">
+<td>dyson</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -20390,7 +21786,7 @@ NULL))))</td>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -20402,7 +21798,7 @@ NULL))))</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -20418,7 +21814,7 @@ NULL))))</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -20442,7 +21838,7 @@ NULL))))</td>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>sourcerer</td>
 <td>
 <center>&diams;</center>
@@ -20766,6 +22162,31 @@ Whether or not this project should be considered active.</td>
 <td>fti</td>
 <td>tsvector</td>
 <td></td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.translationgroup">public.translationgroup.id</a></td>
+<td>translationgroup</td>
+<td>integer</td>
+<td><br />
+<br />
+The translation group that has permission to edit translations
+across all products in this project. Note that individual products
+may have their own translationgroup, in which case those
+translators will also have permission to edit translations for that
+product.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>translationpermission</td>
+<td>integer</td>
+<td><i>NOT NULL DEFAULT 1</i><br />
+<br />
+The level of openness of this project's translation process. The
+enum lists different approaches to translation, from the very open
+(anybody can edit any translation in any language) to the
+completely closed (only designated translators can make any changes
+at all).</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -23468,6 +24889,245 @@ public.sourcepackagepublishinghistory</caption>
 public</a></p>
 <hr />
 <h2>View: <a href="#public.schema">public</a>.<a name=
+"public.view.sourcepackagepublishingpublichistory" id=
+"public.view.sourcepackagepublishingpublichistory">sourcepackagepublishingpublichistory</a></h2>
+<p>A view on SourcePackagePublishingHistory that restricts access
+to embargoed entries</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.sourcepackagepublishingpublichistory
+Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>sourcepackagerelease</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>distrorelease</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>status</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>component</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>section</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>datecreated</td>
+<td>timestamp without time zone</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>datepublished</td>
+<td>timestamp without time zone</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>datesuperseded</td>
+<td>timestamp without time zone</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>supersededby</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>datemadepending</td>
+<td>timestamp without time zone</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>scheduleddeletiondate</td>
+<td>timestamp without time zone</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>dateremoved</td>
+<td>timestamp without time zone</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>pocket</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>embargo</td>
+<td>boolean</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>embargolifted</td>
+<td>timestamp without time zone</td>
+<td></td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<pre>
+SELECT sourcepackagepublishinghistory.id
+, sourcepackagepublishinghistory.sourcepackagerelease
+, sourcepackagepublishinghistory.distrorelease
+, sourcepackagepublishinghistory.status
+, sourcepackagepublishinghistory.component
+, sourcepackagepublishinghistory.section
+, sourcepackagepublishinghistory.datecreated
+, sourcepackagepublishinghistory.datepublished
+, sourcepackagepublishinghistory.datesuperseded
+, sourcepackagepublishinghistory.supersededby
+, sourcepackagepublishinghistory.datemadepending
+, sourcepackagepublishinghistory.scheduleddeletiondate
+, sourcepackagepublishinghistory.dateremoved
+, sourcepackagepublishinghistory.pocket
+, sourcepackagepublishinghistory.embargo
+, sourcepackagepublishinghistory.embargolifted 
+FROM sourcepackagepublishinghistory 
+WHERE (sourcepackagepublishinghistory.embargo = false);
+</pre>
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.sourcepackagepublishingpublichistory</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>View: <a href="#public.schema">public</a>.<a name=
 "public.view.sourcepackagepublishingview" id=
 "public.view.sourcepackagepublishingview">sourcepackagepublishingview</a></h2>
 <p>This view is used mostly by Lucille while performing
@@ -25443,6 +27103,359 @@ public.translationeffortpotemplate</caption>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
 <hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.translationgroup" id=
+"public.table.translationgroup">translationgroup</a></h2>
+<p>This represents an organised translation group that spans
+multiple languages. Effectively it consists of a list of people
+(pointers to Person), and each Person is associated with a
+Language. So, for each TranslationGroup we can ask the question "in
+this TranslationGroup, who is responsible for translating into
+Arabic?", for example.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.translationgroup Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>name</td>
+<td>text</td>
+<td><i>UNIQUE NOT NULL</i></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>title</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>summary</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>datecreated</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text,
+('now'::text)::timestamp(6) with time zone)</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>owner</td>
+<td>integer</td>
+<td><i>NOT NULL</i></td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href=
+"#public.table.distribution">public.distribution</a></li>
+</ul>
+<ul>
+<li><a href="#public.table.product">public.product</a></li>
+</ul>
+<ul>
+<li><a href="#public.table.project">public.project</a></li>
+</ul>
+<ul>
+<li><a href="#public.table.translator">public.translator</a></li>
+</ul>
+<!-- View Definition -->
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.translationgroup</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.translator" id=
+"public.table.translator">translator</a></h2>
+<p>A translator is a person in a TranslationGroup who is
+responsible for a particular language. At the moment, there can
+only be one person in a TranslationGroup who is the Translator for
+a particular language. If you want multiple people, then create a
+launchpad team and assign that team to the language.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.translator Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.translationgroup">public.translationgroup.id</a></td>
+<td>translationgroup</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The TranslationGroup for which this Translator is working.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.language">public.language.id</a></td>
+<td>language</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The language for which this Translator is responsible in this
+TranslationGroup. Note that the same person may be responsible for
+multiple languages, but any given language can only have one
+Translator within the TranslationGroup.</td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>translator</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The Person who is responsible for this language in this translation
+group.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>datecreated</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text,
+('now'::text)::timestamp(6) with time zone)</i></td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.translator</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
 <h2>View: <a href="#public.schema">public</a>.<a name=
 "public.view.vsourcepackageindistro" id=
 "public.view.vsourcepackageindistro">vsourcepackageindistro</a></h2>
@@ -26153,6 +28166,22 @@ digits</p>
 </pre>
 <hr />
 <h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.valid-absolute-url-text" id=
+"public.function.valid-absolute-url-text">valid_absolute_url( text
+)</a></h2>
+<h3>Returns: boolean</h3>
+<h3>Language: PLPYTHONU</h3>
+<p>Ensure the given test is a valid absolute URL, containing both
+protocol and network location</p>
+<pre>
+    from urlparse import urlparse
+    (scheme, netloc, path, params, query, fragment) = urlparse(args[0])
+    if not (scheme and netloc):
+        return 0
+    return 1
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
 "public.function.valid-bug-name-text" id=
 "public.function.valid-bug-name-text">valid_bug_name( text
 )</a></h2>
@@ -26183,6 +28212,40 @@ www.cve.mitre.org</p>
     if re.match(pat, name):
         return 1
     return 0
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.valid-fingerprint-text" id=
+"public.function.valid-fingerprint-text">valid_fingerprint( text
+)</a></h2>
+<h3>Returns: boolean</h3>
+<h3>Language: PLPYTHONU</h3>
+<p>Returns true if passed a valid GPG fingerprint. Valid GPG
+fingerprints are a 40 character long hexadecimal number in
+uppercase.</p>
+<pre>
+    import re
+    if re.match(r"[\dA-F]{40}", args[0]) is not None:
+        return 1
+    else:
+        return 0
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.valid-keyid-text" id=
+"public.function.valid-keyid-text">valid_keyid( text )</a></h2>
+<h3>Returns: boolean</h3>
+<h3>Language: PLPYTHONU</h3>
+<p>Returns true if passed a valid GPG keyid. Valid GPG keyids are
+an 8 character long hexadecimal number in uppercase (in reality,
+they are 16 characters long but we are using the 'common'
+definition.</p>
+<pre>
+    import re
+    if re.match(r"[\dA-F]{8}", args[0]) is not None:
+        return 1
+    else:
+        return 0
 </pre>
 <hr />
 <h2>Function: <a href="#public.schema">public</a>.<a name=

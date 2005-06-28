@@ -1,17 +1,18 @@
 <div class="portlet">
 
-    <h4>Release Details:</h4>
+    <h4>Details for <span tal:replace="context/architecturetag">ARCHITECTURE NAME</span>:</h4>
 
     <div class="portletBody">
         <div class="portletContent even">
 
-            <b>Distribution:</b><br />
-            <a tal:attributes="href string:/distros/${context/distrorelease/distribution/name}/">
-            <span tal:replace="context/distrorelease/distribution/displayname" /></a><br />
+            <b>Architecture Tag:</b><br />
+            <a tal:attributes="href string:/distros/${context/distrorelease/distribution/name}/${context/distrorelease/name}/${context/architecturetag}"
+               tal:content="context/architecturetag" >
+            ARCHTAG
+            </a><br />
 
-            <b>Release:</b><br />
-            <a tal:attributes="href string:/distros/${context/distrorelease/distribution/name}/${context/distrorelease/name}/">
-            <span tal:replace="context/distrorelease/displayname" /></a><br />
+            <b>Processor Family:</b><br />
+            <span tal:replace="context/processorfamily/title" /><br />
 
             <b>Porting Lead:</b><br />
             <img src="/++resource++user.gif">

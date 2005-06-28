@@ -179,6 +179,17 @@ class BugTaskSet:
 
     implements(IBugTaskSet)
 
+    _ORDERBY_COLUMN = {
+        "id" : "Bug.id",
+        "severity" : "BugTask.severity",
+        "priority" : "BugTask.priority",
+        "assignee": "BugTask.assignee",
+        "sourcepackagename" : "SourcePackageName.name",
+        "status" : "BugTask.status",
+        "title" : "Bug.title",
+        "milestone" : "BugTask.milestone",
+        "datecreated" : "BugTask.datecreated"}
+
     def __init__(self, bug=None):
         self.title = 'A Set of Bug Tasks'
 
@@ -292,9 +303,33 @@ class BugTaskSet:
                           cc=dbschema.BugSubscription.CC,
                           watch=dbschema.BugSubscription.WATCH))
 
-        bugtasks = BugTask.select(query, clauseTables=["Bug", "BugTask"])
-        if orderby:
-            bugtasks = bugtasks.orderBy(orderby)
+        if orderby is None:
+            # There is no results ordering to be done.
+            bugtasks = BugTask.select(
+                query, clauseTables=["Bug", "BugTask"])
+        else:
+            # There is results ordering to be done.
+            if isinstance(orderby, (list, tuple)):
+                # There is more than one ordering column.
+                orderby_arg = []
+                for orderby_col in orderby:
+                    if orderby_col.startswith("-"):
+                        orderby_col = orderby_col[1:]
+                        orderby_arg.append(
+                            "-" + self._ORDERBY_COLUMN[orderby_col])
+                    else:
+                        orderby_col.append(self._ORDERBY_COLUMN[orderby_col])
+            else:
+                # There is one ordering column.
+                if orderby.startswith("-"):
+                    orderby_col = orderby[1:]
+                    orderby_arg = "-" + self._ORDERBY_COLUMN[orderby_col]
+                else:
+                    orderby_arg = self._ORDERBY_COLUMN[orderby]
+
+            bugtasks = BugTask.select(
+                query, clauseTables=["Bug", "BugTask"],
+                orderBy=orderby_arg)
 
         return bugtasks
 

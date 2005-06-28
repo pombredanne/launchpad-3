@@ -14,60 +14,24 @@
     <h2>My Languages</h2>
 
     <p class="formHelp">
-    Add or remove languages in your language list by double clicking the
-    entries or using the labeled buttons. Use <code>Ctrl</code> to select
-    multiple elements.
+    Select languages in the list below to tell Rosetta which ones you're
+    interested in translating into.
     </p>
 
     <form action="prefs" method="post"
-    onSubmit="javascript:selectAllWords();return true;"
-    tal:define="languages view/languages; selectedLanguages view/selectedLanguages" >
-
-        <div style="float: left;">
-            <label>Available languages</label>
-            <br />
-            <!-- These are the available languages. -->
-            <select id="prefs-available-languages"
-                    name="availablelanguages"
-                    size="10"
-                    style="width: 20em;"
-                    multiple="multiple"
-                    ondblclick="javascript:addSelectedKeywords('prefs-available-languages','prefs-selected-languages');return false;">
-
-                    <option tal:repeat="language languages"
-                            tal:content="language/englishname"
-                            tal:attributes="name language/code" />
-
-            </select>
-            <br />
-            <input type="submit"
-                   name="add"
-                   value="Add to my languages &raquo;"
-                   onclick="javascript:addSelectedKeywords('prefs-available-languages','prefs-selected-languages');return false;"
-                   />
-        </div>
-
-        <div style="float: left;">
-              <label>My languages</label>
-              <br />
-              <!--  These are the selected languages. -->
-              <select id="prefs-selected-languages"
-                      name="selectedlanguages"
-                      size="10"
-                      style="width: 20em;"
-                      multiple="multiple"
-                      ondblclick="javascript:removeWords('prefs-selected-languages');return false;">
-
-                      <option tal:repeat="language selectedLanguages"
-                      tal:content="language/englishname"
-                  tal:attributes="name language/code" />
-
-              </select>
-              <br />
-              <input type="submit"
-                     name="remove"
-                     value="&laquo; Remove selected languages"
-                     onclick="javascript:removeWords('prefs-selected-languages');return false;">
+            tal:define="languages view/languages;" >
+        <div class="multi_select" style="margin: 1em 0">
+            <div tal:repeat="language view/languages">
+                <label>
+                    <input type="checkbox"
+                        tal:attributes="
+                            name language/code;
+                            checked language/checked;"
+                        />
+                    <span tal:replace="language/englishname"
+                        >Spanish</span>
+                </label>
+            </div>
         </div>
 
         <div class="formControls" style="clear: left">

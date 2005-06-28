@@ -232,15 +232,8 @@ class Job:
         import JobStrategy
         if not os.path.isdir(dir):
              os.makedirs(dir)
-        try:
-            strategy = JobStrategy.get(self.RCS, self.TYPE)
-            strategy(self, dir, logger)
-        except KeyError,e :
-            # FIXME: Catch a more specific exception here, and display failure
-            # in a way that's visible on the buildbot GUI. Now, the job will
-            # appear to succeed and the error will not be detected by the
-            # operator. -- David Allouche 2005-04-02
-            logger.critical("KeyError in runJob: %s", e)
+        strategy = JobStrategy.get(self.RCS, self.TYPE)
+        strategy(self, dir, logger)
 
     def setJobTrigger(self, trigger):
         """Set the callable to use for triggering jobs on the botmaster.

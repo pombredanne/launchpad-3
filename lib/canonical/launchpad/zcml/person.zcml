@@ -68,6 +68,17 @@
           name="+bounties"
           template="../templates/person-bounties.pt"
           lp:url="/people/$Person.name/+bounties" />
+
+      <browser:page
+          name="+portlet-views"
+          template="../templates/portlet-person-views.pt"
+          lp:url="/people/$Person.name/+portlet-views" />
+      <browser:page
+          name="+portlet-actions"
+          template="../templates/portlet-person-actions.pt"
+          lp:url="/people/$Person.name/+portlet-actions" />
+
+
   </browser:pages>
 
   <browser:page
@@ -136,6 +147,13 @@
           name="+bounties"
           template="../templates/person-bounties.pt"
           lp:url="/people/$Person.name/+bounties" />
+
+      <!-- Team Portlets -->
+      <browser:page
+          name="+portlet-actions"
+          template="../templates/portlet-team-actions.pt"
+          lp:url="/people/$Person.name/+portlet-actions" />
+
   </browser:pages>
 
   <browser:pages
@@ -146,6 +164,12 @@
             name="+editemail"
             template="../templates/team-editemail.pt"
             lp:url="/people/$team.id/+editemail" />
+  </browser:pages>
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.ITeam"
+      permission="launchpad.Edit"
+      class="canonical.launchpad.browser.TeamEditView">
   </browser:pages>
 
   <browser:editform

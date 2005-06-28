@@ -249,6 +249,23 @@ class BrowserPublication(BrowserPub):
         """ We don't want to call _maybePlacefullyAuthenticate as does
         zopepublication but we do want to send an AfterTraverseEvent """
         notify(AfterTraverseEvent(ob, request))
+        
+        # Debugging code. Please leave. -- StuartBishop 20050622
+        # Set 'threads 1' in launchpad.conf if you are using this.
+        # from canonical.mem import printCounts, mostRefs, memory
+        # from datetime import datetime
+        # mem = memory()
+        # try:
+        #     delta = mem - self._debug_mem
+        # except AttributeError:
+        #     print '= Startup memory %d bytes' % mem
+        #     delta = 0
+        # self._debug_mem = mem
+        # now = datetime.now().strftime('%H:%M:%S')
+        # print '== %s (%.1f MB/%+d bytes) %s' % (
+        #         now, mem/(1024*1024), delta, str(request.URL))
+        # print str(request.URL)
+        # printCounts(mostRefs(4))
 
     def _maybePlacefullyAuthenticate(self, request, ob):
         """ This should never be called because we've excised it in

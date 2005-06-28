@@ -43,6 +43,33 @@
             name="+potlist"
             template="../templates/object-pots.pt"
             lp:url="/distros/ubuntu/hoary/+sources/evolution/+potlist" />
+
+    <!-- SourcePackage Portlets -->
+        <browser:page
+            name="+portlet-status-legend"
+            template="../templates/portlet-rosetta-status-legend.pt"
+            lp:url="/distros/ubuntu/hoary/+sources/evolution/+portlet-status-legend" />
+        <browser:page
+            name="+portlet-actions"
+            template="../templates/portlet-sourcepackage-actions.pt"
+        />
+        <browser:page
+            name="+portlet-translations"
+            template="../templates/portlet-sourcepackage-translations.pt"
+        />
+        <browser:page
+            name="+portlet-pref-langs"
+            template="../templates/portlet-pref-langs.pt"
+        />
+        <browser:page
+            name="+portlet-country-langs"
+            template="../templates/portlet-country-langs.pt"
+        />
+        <browser:page
+            name="+portlet-browser-langs"
+            template="../templates/portlet-browser-langs.pt"
+        />
+
     </browser:pages>
 
     <browser:pages
@@ -77,6 +104,11 @@
         provides="canonical.launchpad.interfaces.ISourcePackageSet">
         <allow interface="canonical.launchpad.interfaces.ISourcePackageSet" />
     </securedutility>
+    <browser:url
+        for="canonical.launchpad.interfaces.ISourcePackageSet"
+        path_expression="string:+sources"
+        attribute_to_parent="distrorelease"
+        />
 
     <browser:traverse
         for="canonical.launchpad.interfaces.ISourcePackageSet"

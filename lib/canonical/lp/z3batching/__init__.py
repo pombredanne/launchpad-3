@@ -10,6 +10,8 @@
 # WARRANTIES OF TITLE, MERCHANTABILITY, AGAINST INFRINGEMENT, AND FITNESS
 # FOR A PARTICULAR PURPOSE.
 #
+# Some parts Copyright 2005 Canonical Ltd.
+#
 ##############################################################################
 """Batching Support
 
@@ -21,17 +23,27 @@ from interfaces import IBatch
 class Batch(object):
     implements(IBatch)
 
-    def __init__(self, list, start=0, size=20):
+    def __init__(self, list, start=0, size=20, _listlength=None):
         self.list = list
         self.start = start
-        if len(list) == 0:
+        # We only check the length of the list once, because if the list is a
+        # SelectResults from SQLObject, len(list) hits the database each time.
+        # Ideally SQLObject would be smart enough to cache it for us, but for
+        # now we take the easy route.
+        #   -- Andrew Bennetts, 2005-06-22
+        if _listlength is None:
+            listlength = len(list)
+        else:
+            listlength = _listlength
+        self.listlength = listlength
+        if listlength == 0:
             self.start = -1
-        elif start >= len(list):
+        elif start >= listlength:
             raise IndexError, 'start index key out of range'
         self.size = size
         self.trueSize = size
-        if start+size >= len(list):
-            self.trueSize = len(list)-start
+        if start+size >= listlength:
+            self.trueSize = listlength-start
         self.end = start+self.trueSize-1
 
     def __len__(self):
@@ -53,15 +65,15 @@ class Batch(object):
 
     def nextBatch(self):
         start = self.start + self.size
-        if start >= len(self.list):
+        if start >= self.listlength:
             return None
-        return Batch(self.list, start, self.size)
+        return Batch(self.list, start, self.size, _listlength=self.listlength)
     
     def prevBatch(self):
         start = self.start - self.size
         if start < 0:
             return None
-        return Batch(self.list, start, self.size)
+        return Batch(self.list, start, self.size, _listlength=self.listlength)
 
     def first(self):
         return self.list[self.start]
@@ -70,7 +82,7 @@ class Batch(object):
         return self.list[self.end]
 
     def total(self):
-        return len(self.list)
+        return self.listlength
 
     def startNumber(self):
         return self.start+1

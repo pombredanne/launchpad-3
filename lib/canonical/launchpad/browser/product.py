@@ -32,8 +32,8 @@ from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary, \
 from canonical.launchpad.database import (
     Product, BugFactory, Milestone, Person)
 from canonical.launchpad.interfaces import (
-    IPerson, IProduct, IProductSet, IBugTaskSet, IAging, ILaunchBag, IProductRelease,
-    ISourcePackage, IBugTaskSearchListingView)
+    IPerson, IProduct, IProductSet, IBugTaskSet, IAging, ILaunchBag,
+    IProductRelease, ISourcePackage, IBugTaskSearchListingView, ICountry)
 from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad import helpers
@@ -46,51 +46,6 @@ from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 class ProductView:
 
     __used_for__ = IProduct
-
-    summaryPortlet = ViewPageTemplateFile(
-        '../templates/portlet-object-summary.pt')
-
-    translationsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-translations.pt')
-
-    translatablesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-translatables.pt')
-
-    latestBugPortlet = ViewPageTemplateFile(
-        '../templates/portlet-latest-bugs.pt')
-
-    relatedBountiesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-related-bounties.pt')
-
-    branchesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-branches.pt')
-
-    detailsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-details.pt')
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-actions.pt')
-
-    projectPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-project.pt')
-
-    milestonePortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-milestones.pt')
-
-    packagesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-packages.pt')
-
-    prefLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-pref-langs.pt')
-
-    countryPortlet = ViewPageTemplateFile(
-        '../templates/portlet-country-langs.pt')
-
-    browserLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-browser-langs.pt')
-
-    statusLegend = ViewPageTemplateFile(
-        '../templates/portlet-rosetta-status-legend.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -157,7 +112,7 @@ class ProductView:
                 for template in self.context.potemplates()]
 
     def requestCountry(self):
-        return helpers.requestCountry(self.request)
+        return ICountry(self.request, None)
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
@@ -258,16 +213,6 @@ class ProductEditView(ProductView, SQLObjectEditView):
             '../%s/+edit' % urlquote(self.context.name))
 
 
-class ProductBugsView(BugTaskSearchListingView):
-    implements(IBugTaskSearchListingView)
-
-    def task_columns(self):
-        """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
-        return [
-            "select", "id", "title", "milestone", "status",
-            "submittedby", "assignedto"]
-
-
 class ProductFileBugView(SQLObjectAddView):
 
     __used_for__ = IProduct
@@ -303,9 +248,6 @@ class ProductFileBugView(SQLObjectAddView):
 class ProductSetView:
 
     __used_for__ = IProductSet
-
-    detailsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-productset-details.pt')
 
     def __init__(self, context, request):
 

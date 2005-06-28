@@ -22,7 +22,8 @@ from canonical.lp.dbschema import (
     BugTaskStatus, BugPriority, BugSeverity, BugInfestationStatus,
     BugExternalReferenceType, BugSubscription)
 from canonical.launchpad.vocabularies import BugTrackerVocabulary
-from canonical.launchpad.helpers import contactEmailAddresses, canonical_url
+from canonical.launchpad.helpers import contactEmailAddresses
+from canonical.launchpad.webapp import canonical_url
 
 GLOBAL_NOTIFICATION_EMAIL_ADDRS = ("dilys@muse.19inch.net",)
 CC = "CC"

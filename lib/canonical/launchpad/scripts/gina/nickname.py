@@ -1,1 +1,0 @@
-../../../foaf/nickname.py

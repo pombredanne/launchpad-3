@@ -18,7 +18,7 @@
     <adapter
         for="canonical.launchpad.interfaces.IProduct"
         provides="canonical.launchpad.interfaces.IBugTaskSubset"
-        factory="canonical.launchpad.components.product.ProductToBugTaskSubsetAdapter" 
+        factory="canonical.launchpad.components.bugtask.ContextToBugTaskSubsetAdapter"
         permission="zope.Public" />
 
     <browser:defaultView
@@ -57,6 +57,51 @@
             name="+translations"
             template="../templates/product-translations.pt"
             lp:url="/products/evolution/+translations" />
+	<!-- Products Portlets -->
+        <browser:page
+            name="+portlet-details"
+            template="../templates/portlet-product-details.pt"
+            lp:url="/products/evolution/+portlet-details" />
+        <browser:page
+            name="+portlet-translations"
+            template="../templates/portlet-product-translations.pt"
+            lp:url="/products/evolution/+portlet-translations" />
+        <browser:page
+            name="+portlet-milestones"
+            template="../templates/portlet-product-milestones.pt"
+            lp:url="/products/evolution/+portlet-milestones" />
+        <browser:page
+            name="+portlet-project"
+            template="../templates/portlet-product-project.pt"
+            lp:url="/products/evolution/+portlet-project" />
+        <browser:page
+            name="+portlet-actions"
+            template="../templates/portlet-product-actions.pt"
+            lp:url="/products/evolution/+portlet-actions" />
+        <browser:page
+            name="+portlet-latest-bugs"
+            template="../templates/portlet-latest-bugs.pt"
+            lp:url="/products/evolution/+portlet-latest-bugs" />
+        <browser:page
+            name="+portlet-related-bounties"
+            template="../templates/portlet-related-bounties.pt"
+            lp:url="/products/evolution/+portlet-related-bounties" />
+        <browser:page
+            name="+portlet-packages"
+            template="../templates/portlet-product-packages.pt"
+            lp:url="/products/evolution/+portlet-packages" />
+        <browser:page
+            name="+portlet-summary"
+            template="../templates/portlet-object-summary.pt"
+            lp:url="/products/evolution/+portlet-summary" />
+        <browser:page
+            name="+portlet-pref-lang"
+            template="../templates/portlet-pref-langs.pt"
+            lp:url="/products/evolution/+portlet-pref-langs" />
+        <browser:page
+            name="+portlet-translatables"
+            template="../templates/portlet-product-translatables.pt"
+            lp:url="/products/evolution/+portlet-translatables" />
     </browser:pages>
 
     <browser:pages
@@ -229,6 +274,10 @@
             name="+all"
             template="../templates/doap-listall.pt"
             lp:url="/products/+all" />
+        <browser:page
+            name="+portlet-details"
+            template="../templates/portlet-productset-details.pt"
+            lp:url="/products/+portlet-details" />
     </browser:pages>
 
     <browser:pages

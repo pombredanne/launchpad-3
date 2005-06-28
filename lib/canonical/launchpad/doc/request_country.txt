@@ -1,0 +1,34 @@
+
+Adapting Requests to Countries
+------------------------------
+
+Adapting a request to a country allows you to see where the request came from.
+
+    >>> from canonical.launchpad.ftests.harness import (
+    ...     LaunchpadFunctionalTestSetup)
+    >>> LaunchpadFunctionalTestSetup().setUp()
+
+Here's a dummy request.
+
+    >>> from zope.interface import directlyProvides
+    >>> from zope.publisher.browser import TestRequest
+
+    >>> request = TestRequest(environ={'REMOTE_ADDR': '127.0.0.1'})
+
+Here's us converting it to a country.
+
+    >>> from canonical.launchpad.interfaces import ICountry
+    >>> country = ICountry(request)
+    >>> country.name
+    u'South Africa'
+
+Sometimes we don't know where the request came from.
+
+    >>> request = TestRequest(environ={'REMOTE_ADDR': '255.255.255.255'})
+    >>> ICountry(request)
+    Traceback (most recent call last):
+    ...
+    TypeError: ('Could not adapt', ...
+
+    >>> LaunchpadFunctionalTestSetup().tearDown()
+

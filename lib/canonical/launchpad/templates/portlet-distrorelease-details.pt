@@ -5,14 +5,21 @@
     <div class="portletBody">
         <div class="portletContent even">
 
-            <b>Distribution:</b><br />
-            <a tal:attributes="href string:/distros/${context/distribution/name}/">
-            <span tal:replace="context/distribution/displayname" /></a><br />
+            <b>Release:</b><br />
+            <a tal:attributes="href string:/distros/${context/distribution/name}/${context/name}/">
+            <span tal:replace="context/displayname" /></a><br />
 
             <b>Admin:</b><br />
             <img src="/++resource++user.gif">
             <a tal:attributes="href string:/people/${context/owner/name}"
-               tal:content="context/owner/browsername">owner name</a><br /> 
+               tal:content="context/owner/browsername">owner name</a>
+              <tal:block condition="context/required:launchpad.Edit">
+                <a tal:attributes="href string:${context/fmt:url}/+reassign">
+                  <img alt="(Change admin)"
+                       src="/++resource++edit.gif" title="Change the admin" />
+                </a>
+              </tal:block>
+              <br />
 
             <b>Status:</b><br />
             <span tal:replace="context/releasestatus/title">Status</span><br />
@@ -32,6 +39,19 @@
               string:/distros/${context/parentrelease/distribution/name}/${context/parentrelease/name}">
               <span tal:replace="context/parentrelease/distribution/name" />
               <span tal:replace="context/parentrelease/name" /></a>
+            </span>
+            <br />
+
+            <span tal:condition="context/architectures" tal:omit-tag>
+              <b>Architecture Releases:</b><br />
+                <ul>
+                  <li tal:repeat="arch context/architectures"
+                    class="architecture"
+                  ><a tal:content="arch/architecturetag"
+                    tal:attributes="href
+string:/distros/${context/distribution/name}/${context/name}/${arch/architecturetag}"
+                  /></li>
+                </ul>
             </span>
            
         </div>

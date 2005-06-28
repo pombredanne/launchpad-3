@@ -25,6 +25,14 @@
             template="../templates/bounty.pt"
             name="+index"
             lp:url="/bounties/$Bounty.name/+index" />
+        <browser:page
+            template="../templates/portlet-bounty-relateds.pt"
+            name="+portlet-bounty-relateds"
+            lp:url="/bounties/$Bounty.name/+portlet-bounty-relateds" />
+        <browser:page
+            template="../templates/portlet-bounty-subscribers.pt"
+            name="+portlet-bounty-subscribers"
+            lp:url="/bounties/$Bounty.name/+portlet-bounty-subscribers" />
     </browser:pages>
 
     <browser:pages

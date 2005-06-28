@@ -1,0 +1,932 @@
+= Facets and menus =
+
+An object has a facetmenu if it can be adapted to IFacetMenu.
+
+=== Construct an example url hierarchy ===
+
+    >>> from canonical.launchpad.webapp import nearest_menu, canonical_url
+    >>> from canonical.launchpad.interfaces import (
+    ...     ICanonicalUrlData, IFacetMenu, IExtraFacetMenu,
+    ...     IApplicationMenu, IExtraApplicationMenu,
+    ...     ILink, IDefaultLink,
+    ...     )
+    >>> from zope.interface import implements, directlyProvides, Interface
+    >>> from zope.component import queryAdapter
+
+    >>> class ObjectThatHasUrl:
+    ...     implements(ICanonicalUrlData)
+    ...     def __init__(self, name, parent):
+    ...         self.name = name  # Used in examples later.
+    ...         self.path = name  # See ICanonicalUrlData.
+    ...         self.inside = parent  # See ICanonicalUrlData.
+
+Here's a useful class that we can use to effectively register adapters for
+an object, without actually using adapter registries.  This comes from
+PEP-246.
+
+    >>> class Conformable:
+    ...     adapt_to = None
+    ...     def setAdapter(self, interface, object):
+    ...         self.adapt_to = (interface, object)
+    ...     def __conform__(self, protocol):
+    ...         if self.adapt_to is not None:
+    ...             interface, object = self.adapt_to
+    ...             if interface.extends(protocol, strict=False):
+    ...                 return object(self)
+    ...         return None
+
+    >>> class ExampleContentObject(ObjectThatHasUrl, Conformable):
+    ...     pass
+
+Let's make three objects that together make a url hierarchy:
+
+  (the root)/sesamestreet/number73
+
+    >>> root = ExampleContentObject('', None)
+    >>> street = ExampleContentObject('sesamestreet', root)
+    >>> house = ExampleContentObject('number73', street)
+    >>> canonical_url(house)
+    'http://localhost:8086/sesamestreet/number73'
+
+
+=== Test nearest_menu ===
+
+Right now, none of our example objects have a facet menu.
+
+    >>> nearest_menu(root, IFacetMenu) is None
+    True
+    >>> nearest_menu(street, IFacetMenu) is None
+    True
+    >>> nearest_menu(house, IFacetMenu) is None
+    True
+
+We'll make the 'street' object be conformable to IFacetMenu.  Making an object
+be conformable to IFacetMenu is one way of making the object adaptable to
+IFacetMenu.  Another way would be to provide an adapter.
+
+    >>> class ExampleFacetMenu(list):
+    ...     implements(IFacetMenu)
+    ...     def __init__(self, context):
+    ...         list.__init__(self, ['foo', 'bar', 'baz'])
+    ...         self.context = context
+
+    >>> street.setAdapter(IFacetMenu, ExampleFacetMenu)
+    >>> IFacetMenu(street).__class__ is ExampleFacetMenu
+    True
+    >>> nearest_menu(root, IFacetMenu) is None
+    True
+    >>> nearest_menu(street, IFacetMenu).__class__ is ExampleFacetMenu
+    True
+    >>> nearest_menu(house, IFacetMenu).__class__ is ExampleFacetMenu
+    True
+
+
+== The Link class ==
+
+When you define a menu using class based on FacetMenu, you return Link objects
+from its methods.  The Link class is very simple.  You provide it with a
+target, some text and a summary, and it makes these available as attributes.
+The summary is optional, and defaults to None.
+
+    >>> from canonical.launchpad.webapp import Link
+    >>> link = Link('target', 'text', 'summary')
+    >>> ILink.providedBy(link)
+    True
+    >>> link.target
+    'target'
+    >>> link.text
+    'text'
+    >>> link.summary
+    'summary'
+
+    >>> no_summary_link = Link('target', 'text')
+    >>> no_summary_link.summary is None
+    True
+
+There are three more attributes that Link provides.  These can be both read
+and set.
+
+The attribute `link.name` is the method name that returned the link.  As it
+is set by the menu class's iterator, it defaults to None when we use the link
+directly.
+
+    >>> link.name is None
+    True
+
+The attribute `link.selected` says whether the link is the selected one from
+a set.  Links default to being unselected.
+
+    >>> link.selected
+    False
+
+The attribute `link.linked` says whether the link ought to be available as
+a clickable hyperlink.  Links default to being linked.
+
+    >>> link.linked
+    True
+
+The attribute `link.url` gives the canonical url to the link's target.  It
+defaults to None, and is set by the facetmenu.
+
+    >>> link.url is None
+    True
+
+Let's check we can set these attributes.
+
+    >>> link.name = 'foo'
+    >>> link.name
+    'foo'
+    >>> link.selected = True
+    >>> link.selected
+    True
+    >>> link.linked = False
+    >>> link.linked
+    False
+    >>> link.url = 'http://mandrill.orangutang.example.org/'
+    >>> link.url
+    'http://mandrill.orangutang.example.org/'
+
+Link.linked, Link.selected and Link.url are set by the Menu when it gives its
+links for presentation.
+
+
+A Link target cannot be the empty string.
+
+    >>> Link('', 'empty target link')
+    Traceback (most recent call last):
+    ...
+    AssertionError: A Link must have a target.  Use DefaultLink for an empty target.
+
+== The FacetMenu class ==
+
+    >>> from canonical.launchpad.webapp import FacetMenu
+
+FacetMenu is meant to be used as a base-class for writing your own IFacetMenu
+classes.  Here's what happens when you use it on its own.
+
+    >>> bad_idea_menu = FacetMenu(object())
+    >>> for link in bad_idea_menu:
+    ...     pass
+    Traceback (most recent call last):
+    ...
+    AssertionError: Subclasses of FacetMenu must provide self.links
+
+So, we must test FacetMenu by making our own menu subclass.  We'll just call
+our menu 'Facets'.  One thing missing from this class is the 'usedfor'
+declaration.  We need to use this in practice because we need to know how to
+register our menu as an adapter.  For this part of the test, we won't worry
+about that.
+
+    >>> class Facets(FacetMenu):
+    ...
+    ...     links = ['foo', 'bar']
+    ...
+    ...     def foo(self):
+    ...         target = '+foo'
+    ...         text = 'Foo'
+    ...         return Link(target, text)
+    ...
+    ...     def bar(self):
+    ...         target = '+bar'
+    ...         text = 'Bar'
+    ...         summary = (
+    ...             'More explanation about Bar of %s' % self.context.name)
+    ...         return Link(target, text, summary)
+
+Now, we can make an instance of this Facets class, with a contextobject to
+show that its methods can access `self.context`.
+
+    >>> facetmenu = Facets(street)
+
+We can go through each attribute of each of the links, checking that they
+are as we expect.
+
+    >>> for link in facetmenu:
+    ...     print '--- link %s ---' % link.name
+    ...     for attrname in sorted(ILink.names()):
+    ...         print '%s: %s' % (attrname, getattr(link, attrname))
+    --- link foo ---
+    linked: True
+    name: foo
+    selected: False
+    summary: None
+    target: +foo
+    text: Foo
+    url: http://localhost:8086/sesamestreet/+foo
+    --- link bar ---
+    linked: True
+    name: bar
+    selected: False
+    summary: More explanation about Bar of sesamestreet
+    target: +bar
+    text: Bar
+    url: http://localhost:8086/sesamestreet/+bar
+
+
+== How do we tell which link from a facetmenu is the selected one? ==
+
+A link that is selected will have its target appear right after the
+canonical_url of its menu's context.
+
+To test this, we need a dummy request object that provides `getURL()`.
+
+    >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
+    >>> class DummyRequest:
+    ...     implements(IHTTPApplicationRequest)
+    ...     def __init__(self, url):
+    ...         self.url = url
+    ...     def getURL(self):
+    ...         return self.url
+    ...     def getApplicationURL(self):
+    ...         # Just the http://place:port part, so stop at the 3rd slash.
+    ...         return '/'.join(self.url.split('/', 3)[:3])
+
+Let's remind ourselves of the canonical url for the example object `street`.
+
+    >>> canonical_url(street)
+    'http://localhost:8086/sesamestreet'
+
+The following request is for a url outside of the street.  So, we will have no
+links selected.
+
+    >>> request = DummyRequest('http://localhost:8086/+foo')
+    >>> facets = Facets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.selected
+    http://localhost:8086/sesamestreet/+foo False
+    http://localhost:8086/sesamestreet/+bar False
+
+This next request is for the street itself.  Still, nothing will be selected.
+This will change once we have OverviewLinks.
+
+    >>> request = DummyRequest('http://localhost:8086/sesamestreet')
+    >>> facets = Facets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.selected
+    http://localhost:8086/sesamestreet/+foo False
+    http://localhost:8086/sesamestreet/+bar False
+
+Now, we'll try the target 'bar'.
+
+    >>> request = DummyRequest('http://localhost:8086/sesamestreet/+bar')
+    >>> facets = Facets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.selected
+    http://localhost:8086/sesamestreet/+foo False
+    http://localhost:8086/sesamestreet/+bar True
+
+Now, we'll try something inside the target 'bar'.
+
+    >>> request = DummyRequest(
+    ...     'http://localhost:8086/sesamestreet/+bar/spoo')
+    >>> facets = Facets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.selected
+    http://localhost:8086/sesamestreet/+foo False
+    http://localhost:8086/sesamestreet/+bar True
+
+Now, we'll try something that might appear to be inside the target 'bar', but
+isn't really.
+
+    >>> request = DummyRequest(
+    ...     'http://localhost:8086/sesamestreet/+barspoo')
+    >>> facets = Facets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.selected
+    http://localhost:8086/sesamestreet/+foo False
+    http://localhost:8086/sesamestreet/+bar False
+
+
+== How do we tell whether a link from a facetmenu is linked? ==
+
+A link is linked if its link's target differs from the current URL.
+
+The following request is for a url that is different from all of the facet
+menu links for 'sesamestreet'.  So, all links will be linked.
+
+    >>> request = DummyRequest('http://localhost:8086/sesamestreet/+xxx')
+    >>> facets = Facets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.linked
+    http://localhost:8086/sesamestreet/+foo True
+    http://localhost:8086/sesamestreet/+bar True
+
+This next request is for +foo, but with a query string.  So, both links will
+still be linked.
+
+    >>> request = DummyRequest('http://localhost:8086/sesamestreet/+foo?123')
+    >>> facets = Facets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.linked
+    http://localhost:8086/sesamestreet/+foo True
+    http://localhost:8086/sesamestreet/+bar True
+
+Next, we'll use the link +bar.  The +bar link will not be linked.
+
+    >>> request = DummyRequest('http://localhost:8086/sesamestreet/+bar')
+    >>> facets = Facets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.linked
+    http://localhost:8086/sesamestreet/+foo True
+    http://localhost:8086/sesamestreet/+bar False
+
+Now, we use +bar with a trailing slash.  The +bar link will still be not
+linked.
+
+    >>> request = DummyRequest('http://localhost:8086/sesamestreet/+bar/')
+    >>> facets = Facets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.linked
+    http://localhost:8086/sesamestreet/+foo True
+    http://localhost:8086/sesamestreet/+bar False
+
+
+== DefaultLink ==
+
+Use a DefaultLink instead of a Link when you want it to be selected for any
+request's URL that is inside the context object's URL, but isn't claimed
+by another link in that same menu.
+
+    >>> from canonical.launchpad.webapp import DefaultLink
+
+A DefaultLink works the same as a Link, but it provides the marker interface
+IDefaultLink, and it may have an empty string as its target.
+
+    >>> defaultlink = DefaultLink('', 'text', 'summary')
+    >>> IDefaultLink.providedBy(defaultlink)
+    True
+
+Now, to test DefaultLink, let's make a new facet menu by subclassing the
+one we made already.  We'll make 'foo' the DefaultLink, and add 'baz' as
+another link.
+
+    >>> class MoreFacets(Facets):
+    ...
+    ...     links = Facets.links + ['baz']
+    ...
+    ...     def foo(self):
+    ...         target = '+foo'
+    ...         text = 'Foo'
+    ...         return DefaultLink(target, text)
+    ...
+    ...     def baz(self):
+    ...         target = '+baz'
+    ...         text = 'Baz'
+    ...         summary = (
+    ...             'More explanation about Baz of %s' % self.context.name)
+    ...         return Link(target, text, summary)
+
+Now, we can check that selection of links works properly for 
+Let's remind ourselves of the canonical url for the example object `street`.
+
+    >>> canonical_url(street)
+    'http://localhost:8086/sesamestreet'
+
+The following request is for a url outside of the street.  So, we will have no
+links selected.
+
+    >>> request = DummyRequest('http://localhost:8086/+foo')
+    >>> facets = MoreFacets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.selected
+    http://localhost:8086/sesamestreet/+foo False
+    http://localhost:8086/sesamestreet/+bar False
+    http://localhost:8086/sesamestreet/+baz False
+
+This next request is for the street itself.  As nothing else is selected,
+this time the DefaultLink 'foo' will be selected.
+
+In the future, we may hook this behaviour into the default views registered
+for the facet's context for that kind of request.
+
+    >>> request = DummyRequest('http://localhost:8086/sesamestreet')
+    >>> facets = MoreFacets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.selected
+    http://localhost:8086/sesamestreet/+foo True
+    http://localhost:8086/sesamestreet/+bar False
+    http://localhost:8086/sesamestreet/+baz False
+
+Now, we'll try the target 'bar'.
+
+    >>> request = DummyRequest('http://localhost:8086/sesamestreet/+bar')
+    >>> facets = MoreFacets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.selected
+    http://localhost:8086/sesamestreet/+foo False
+    http://localhost:8086/sesamestreet/+bar True
+    http://localhost:8086/sesamestreet/+baz False
+
+Now, we'll try something inside the target 'bar'.
+
+    >>> request = DummyRequest(
+    ...     'http://localhost:8086/sesamestreet/+bar/spoo')
+    >>> facets = MoreFacets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.selected
+    http://localhost:8086/sesamestreet/+foo False
+    http://localhost:8086/sesamestreet/+bar True
+    http://localhost:8086/sesamestreet/+baz False
+
+Now, we'll try something that might appear to be inside the target 'bar', but
+isn't really.  The link 'foo' is selected, becuase it is the DefaultLink.
+
+    >>> request = DummyRequest(
+    ...     'http://localhost:8086/sesamestreet/+barspoo')
+    >>> facets = MoreFacets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.selected
+    http://localhost:8086/sesamestreet/+foo True
+    http://localhost:8086/sesamestreet/+bar False
+    http://localhost:8086/sesamestreet/+baz False
+
+If we pass in a request that has a different hostname, then we should be
+using that hostname.
+
+    >>> request = DummyRequest(
+    ...     'http://mandrill.example.com:9999/sesamestreet/+barspoo')
+    >>> facets = MoreFacets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.selected
+    http://mandrill.example.com:9999/sesamestreet/+foo True
+    http://mandrill.example.com:9999/sesamestreet/+bar False
+    http://mandrill.example.com:9999/sesamestreet/+baz False
+
+We need to test the case when we have a default link with a blank target.  This
+will be the common case for default links.
+
+    >>> class BlankTargetTestFacets(Facets):
+    ...
+    ...     links = Facets.links + ['baz']
+    ...
+    ...     def foo(self):
+    ...         target = ''
+    ...         text = 'Foo'
+    ...         return DefaultLink(target, text)
+    ...
+    ...     def baz(self):
+    ...         target = '+baz'
+    ...         text = 'Baz'
+    ...         summary = (
+    ...             'More explanation about Baz of %s' % self.context.name)
+    ...         return Link(target, text, summary)
+
+    >>> request = DummyRequest(
+    ...     'http://mandrill.example.com:9999/sesamestreet/+barspoo')
+    >>> facets = BlankTargetTestFacets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.selected
+    http://mandrill.example.com:9999/sesamestreet/ True
+    http://mandrill.example.com:9999/sesamestreet/+bar False
+    http://mandrill.example.com:9999/sesamestreet/+baz False
+
+    >>> request = DummyRequest(
+    ...     'http://mandrill.example.com:9999/sesamestreet/+bar')
+    >>> facets = BlankTargetTestFacets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.selected
+    http://mandrill.example.com:9999/sesamestreet/ False
+    http://mandrill.example.com:9999/sesamestreet/+bar True
+    http://mandrill.example.com:9999/sesamestreet/+baz False
+
+
+We may want to add some special behaviour to DefaultLink in the future.  That
+is, to have a special kind of DefaultLink for facet menus that makes its
+target the target of the first menu item for that facet's menu.  However,
+we'll keep DefaultLink with an explicit target for now, and see how it goes.
+
+
+== Extra facets ==
+
+As well as defining a FacetMenu, we can define an ExtraFacetMenu.  This works
+just the same as a FacetMenu, but has a different marker interface.
+
+    >>> from canonical.launchpad.webapp import ExtraFacetMenu
+
+ExtraFacetMenu is meant to be used as a base-class for writing your own
+IExtraFacetMenu classes.  Here's what happens when you use it on its own.
+
+    >>> bad_idea_menu = ExtraFacetMenu(object())
+    >>> for link in bad_idea_menu:
+    ...     pass
+    Traceback (most recent call last):
+    ...
+    AssertionError: Subclasses of ExtraFacetMenu must provide self.links
+
+So, we must test ExtraFacetMenu by making our own menu subclass.  We'll
+just call our menu 'ExtraFacets'.  One thing missing from this class is the
+'usedfor' declaration.  We need to use this in practice because we need to
+know how to register our menu as an adapter.  For this part of the test, we
+won't worry about that.
+
+    >>> class ExtraFacets(ExtraFacetMenu):
+    ...
+    ...     links = ['extrafoo']
+    ...
+    ...     def extrafoo(self):
+    ...         target = '+extrafoo'
+    ...         text = 'Extra Foo'
+    ...         return Link(target, text)
+
+Now, we can make an instance of this ExtraFacets class, with a contextobject to
+show that its methods can access `self.context`.
+
+    >>> extrafacetmenu = ExtraFacets(street)
+
+We can go through each attribute of each of the links, checking that they
+are as we expect.
+
+    >>> for link in extrafacetmenu:
+    ...     print '--- link %s ---' % link.name
+    ...     for attrname in sorted(ILink.names()):
+    ...         print '%s: %s' % (attrname, getattr(link, attrname))
+    --- link extrafoo ---
+    linked: True
+    name: extrafoo
+    selected: False
+    summary: None
+    target: +extrafoo
+    text: Extra Foo
+    url: http://localhost:8086/sesamestreet/+extrafoo
+
+
+== Application Menus ==
+
+Application menus are defined for a context object for a particular named
+Facet menu item.  The name of the facet menu item used is whichever facet
+is selected from the nearest context object that has an IFacetMenu adapter.
+
+Defining an ApplicationMenu works like defining a FacetMenu, except we
+also need to say what facet menu item it is for.
+
+    >>> from canonical.launchpad.webapp import ApplicationMenu
+
+ApplicationMenu is meant to be used as a base-class for writing your own
+IApplicationMenu classes.  Here's what happens when you use it on its own.
+
+    >>> bad_idea_menu = ApplicationMenu(object())
+    >>> for link in bad_idea_menu:
+    ...     pass
+    Traceback (most recent call last):
+    ...
+    AssertionError: Subclasses of ApplicationMenu must provide self.links
+
+So, we must test ApplicationMenu by making our own menu subclass.  We'll
+just call our menu 'FooApplicationMenu' as we intend it to be used when the
+'foo' facet is selected.  Two things missing from this class are the 'usedfor'
+declaration and the 'facet' declaration.  We need to use these in practice
+because we need to know how to register our menu as an adapter.  For this
+part of the test, we won't worry about that.
+
+    >>> class FooApplicationMenu(ApplicationMenu):
+    ...
+    ...     links = ['first']
+    ...     facet = 'foo'
+    ...
+    ...     def first(self):
+    ...         target = '+first'
+    ...         text = 'First menu'
+    ...         return Link(target, text)
+
+Now, we can make an instance of this FooApplicationMenu class.  We should
+really be using some link text that shows that its methods can access
+`self.context`. That's a minor TODO item.
+
+    >>> housefooappmenu = FooApplicationMenu(house)
+
+We can go through each attribute of each of the links, checking that they
+are as we expect.
+
+    >>> for link in housefooappmenu:
+    ...     print '--- link %s ---' % link.name
+    ...     for attrname in sorted(ILink.names()):
+    ...         print '%s: %s' % (attrname, getattr(link, attrname))
+    --- link first ---
+    linked: True
+    name: first
+    selected: False
+    summary: None
+    target: +first
+    text: First menu
+    url: http://localhost:8086/sesamestreet/number73/+first
+
+
+== Extra Application Menus ==
+
+Extra application menus are like application menus, but meant to be displayed
+in a portlet box rather than as tabs.
+
+    >>> from canonical.launchpad.webapp import ExtraApplicationMenu
+
+ExtraApplicationMenu is meant to be used as a base-class for writing your own
+IExtraApplicationMenu classes.  Here's what happens when you use it on its own.
+
+    >>> bad_idea_menu = ExtraApplicationMenu(object())
+    >>> for link in bad_idea_menu:
+    ...     pass
+    Traceback (most recent call last):
+    ...
+    AssertionError: Subclasses of ExtraApplicationMenu must provide self.links
+
+So, we must test ExtraApplicationMenu by making our own menu subclass.  We'll
+just call our menu 'FooExtraApplicationMenu' as we intend it to be used when
+the 'foo' facet is selected.  The same things about 'usedfor' and 'facet' apply
+as for the ApplicationMenu subclass.
+
+    >>> class FooExtraApplicationMenu(ExtraApplicationMenu):
+    ...
+    ...     links = ['extrafirst']
+    ...     facet = 'foo'
+    ...
+    ...     def extrafirst(self):
+    ...         target = '+extrafirst'
+    ...         text = 'Extra first menu'
+    ...         return Link(target, text)
+
+Now, we can make an instance of this FooExtraApplicationMenu class.  As with
+FooApplicationMenu, we should really use link text that shows it can access
+self.context.  That's a minor TODO item.
+
+    >>> housefooextraappmenu = FooExtraApplicationMenu(house)
+
+We can go through each attribute of each of the links, checking that they
+are as we expect.
+
+    >>> for link in housefooextraappmenu:
+    ...     print '--- link %s ---' % link.name
+    ...     for attrname in sorted(ILink.names()):
+    ...         print '%s: %s' % (attrname, getattr(link, attrname))
+    --- link extrafirst ---
+    linked: True
+    name: extrafirst
+    selected: False
+    summary: None
+    target: +extrafirst
+    text: Extra first menu
+    url: http://localhost:8086/sesamestreet/number73/+extrafirst
+
+
+== Registering menus in ZCML ==
+
+First, we define a couple of interfaces, and put them in the
+canonical.launchpad.ftests module.
+
+    >>> class IThingHavingFacets(Interface):
+    ...     pass
+    >>> import canonical.launchpad.ftests
+    >>> getattr(canonical.launchpad.ftests, 'IThingHavingFacets', None) is None
+    True
+    >>> canonical.launchpad.ftests.IThingHavingFacets = IThingHavingFacets
+    >>> IThingHavingFacets.__module__ = 'canonical.launchpad.ftests'
+
+    >>> class IThingHavingApplicationMenus(Interface):
+    ...     pass
+    >>> import canonical.launchpad.ftests
+    >>> getattr(canonical.launchpad.ftests, 'IThingHavingApplicationMenus',
+    ...         None) is None
+    True
+    >>> canonical.launchpad.ftests.IThingHavingApplicationMenus = \
+    ...     IThingHavingApplicationMenus
+    >>> IThingHavingApplicationMenus.__module__ = 'canonical.launchpad.ftests'
+
+Next, we define a FacetMenu subclass to be used for IThingHavingFacets, using a
+usedfor class attribute to say what interface it is to be registered for, and
+put it too in the canonical.launchpad.ftests module.
+
+    >>> class FacetsForThing(MoreFacets):
+    ...     usedfor = IThingHavingFacets
+
+    >>> getattr(canonical.launchpad.ftests, 'FacetsForThing', None) is None
+    True
+    >>> canonical.launchpad.ftests.FacetsForThing = FacetsForThing
+
+We'll do the same for some extra facets.
+
+    >>> class ExtraFacetsForThing(ExtraFacets):
+    ...     usedfor = IThingHavingFacets
+
+    >>> getattr(
+    ...     canonical.launchpad.ftests, 'ExtraFacetsForThing', None) is None
+    True
+    >>> canonical.launchpad.ftests.ExtraFacetsForThing = ExtraFacetsForThing
+
+And likewise for an application menu registered for
+IThingHavingApplicationMenus.
+
+    >>> class FooMenuForThing(FooApplicationMenu):
+    ...     usedfor = IThingHavingApplicationMenus
+    ...     facet = 'foo'
+
+    >>> getattr(canonical.launchpad.ftests, 'FooMenuForThing', None) is None
+    True
+    >>> canonical.launchpad.ftests.FooMenuForThing = FooMenuForThing
+
+And for an extra application menu for IThingHavingApplicationMenus.
+
+    >>> class FooExtraMenuForThing(FooExtraApplicationMenu):
+    ...     usedfor = IThingHavingApplicationMenus
+    ...     facet = 'foo'
+
+    >>> getattr(
+    ...     canonical.launchpad.ftests, 'FooExtraMenuForThing', None) is None
+    True
+    >>> canonical.launchpad.ftests.FooExtraMenuForThing = FooExtraMenuForThing
+
+Now, check that we have no IFacetMenu adapter and no IExtraFacetMenu adapter
+for an IThingHavingFacets object.
+
+    >>> class SomeThing:
+    ...     implements(IThingHavingFacets)
+    >>> something_with_facets = SomeThing()
+    >>> IFacetMenu(something_with_facets, None) is None
+    True
+    >>> IExtraFacetMenu(something_with_facets, None) is None
+    True
+
+We also need to check that we have no IApplicationMenu adapter named 'foo' for
+an IThingHavingApplicationMenus object, and the same for IExtraApplicationMenu.
+
+    >>> class SomeOtherThing:
+    ...     implements(IThingHavingApplicationMenus)
+    >>> something_with_appmenus = SomeOtherThing()
+    >>> queryAdapter(something_with_appmenus, IApplicationMenu, 'foo') is None
+    True
+    >>> queryAdapter(
+    ...     something_with_appmenus, IExtraApplicationMenu, 'foo') is None
+    True
+
+    >>> from zope.configuration import xmlconfig
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure xmlns:browser="http://namespaces.zope.org/browser">
+    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
+    ...   <browser:menus
+    ...       module="canonical.launchpad.ftests"
+    ...       classes="FacetsForThing ExtraFacetsForThing
+    ...                FooMenuForThing FooExtraMenuForThing"
+    ...       />
+    ... </configure>
+    ... """)
+
+    >>> menu = IFacetMenu(something_with_facets)
+    >>> menu.context = something_with_facets
+    >>> menu.__class__ is FacetsForThing
+    True
+    >>> menu = IExtraFacetMenu(something_with_facets)
+    >>> menu.context = something_with_facets
+    >>> menu.__class__ is ExtraFacetsForThing
+    True
+    >>> menu = queryAdapter(something_with_appmenus, IApplicationMenu, 'foo')
+    >>> menu.context = something_with_appmenus
+    >>> menu.__class__ is FooMenuForThing
+    True
+    >>> menu = queryAdapter(
+    ...     something_with_appmenus, IExtraApplicationMenu, 'foo')
+    >>> menu.context = something_with_appmenus
+    >>> menu.__class__ is FooExtraMenuForThing
+    True
+
+The browser:menus directive also makes security declarations for the adapters.
+
+
+== Using menus in page templates ==
+
+We use menus in page templates by using the `thing/menu:typeofmenu`
+TALES namespace.
+
+First, let's look at `thing/menu:facet`.  What this does is to look up
+nearest_menu(thing, IFacetMenu), getting an IFacetMenu adapter from it.
+Then, it sets the request attribute from the interaction, and returns the
+adapter.
+
+    >>> from zope.app.pagetemplate.engine import Engine
+    >>> class Context:
+    ...     def __init__(self, **kw):
+    ...         self.vars = kw
+    ...
+    >>> def test_tales(expression, **kw):
+    ...     compiled_tales = Engine.compile(expression)
+    ...     return compiled_tales(Context(**kw))
+    ...
+
+    >>> participation = DummyRequest(
+    ...     'http://localhost:8086/sesamestreet/+bar')
+    >>> participation.interaction = None
+    >>> login(ANONYMOUS, participation)
+
+    >>> street.adapt_to = None
+    >>> directlyProvides(street, IThingHavingFacets)
+    >>> house.adapt_to = None
+    >>> directlyProvides(house, IThingHavingApplicationMenus)
+    >>> menu = test_tales('house/menu:facet', house=house)
+    >>> for link in menu:
+    ...     print link.url, link.selected
+    http://localhost:8086/sesamestreet/+foo False
+    http://localhost:8086/sesamestreet/+bar True
+    http://localhost:8086/sesamestreet/+baz False
+
+The `thing/menu:extrafacet` works in a similar way.
+
+    >>> menu = test_tales('house/menu:extrafacet', house=house)
+    >>> for link in menu:
+    ...     print link.url, link.selected
+    http://localhost:8086/sesamestreet/+extrafoo False
+
+The result of `house/menu:application` will be empty at the moment, because
+we registered only one application menu for a house, against 'foo'.  The
+'bar' facet is the one selected, so we don't get any application menu.
+
+    >>> menu = test_tales('house/menu:application', house=house)
+    >>> list(menu)
+    []
+
+The same goes for the menu:extraapplication menu.
+
+    >>> menu = test_tales('house/menu:extraapplication', house=house)
+    >>> list(menu)
+    []
+
+Now, if we change the request so that the 'foo' facet is selected, we get
+a couple of menus.
+
+    >>> participation = DummyRequest(
+    ...     'http://localhost:8086/sesamestreet/+foo')
+    >>> participation.interaction = None
+    >>> login(ANONYMOUS, participation)
+
+    >>> menu = test_tales('house/menu:application', house=house)
+    >>> for link in menu:
+    ...     print link.url, link.selected
+    http://localhost:8086/sesamestreet/number73/+first False
+
+    >>> menu = test_tales('house/menu:extraapplication', house=house)
+    >>> for link in menu:
+    ...     print link.url, link.selected
+    http://localhost:8086/sesamestreet/number73/+extrafirst False
+
+When there is no menu for a thing, we get an empty iterator.
+
+    >>> menu = test_tales('thing/menu:facet', thing=root)
+    >>> list(menu)
+    []
+    >>> menu = test_tales('thing/menu:extrafacet', thing=root)
+    >>> list(menu)
+    []
+    >>> menu = test_tales('thing/menu:application', thing=root)
+    >>> list(menu)
+    []
+    >>> menu = test_tales('thing/menu:extraapplication', thing=root)
+    >>> list(menu)
+    []
+
+
+== Cleaning up ==
+
+We're done testing the zcml, so we can clean up the canonical.launchpad.ftests
+module.
+
+    >>> del canonical.launchpad.ftests.FacetsForThing
+    >>> del canonical.launchpad.ftests.ExtraFacetsForThing
+    >>> del canonical.launchpad.ftests.FooMenuForThing
+    >>> del canonical.launchpad.ftests.FooExtraMenuForThing
+    >>> del canonical.launchpad.ftests.IThingHavingFacets
+    >>> del canonical.launchpad.ftests.IThingHavingApplicationMenus
+
+
+== The Url class ==
+
+    >>> from canonical.launchpad.webapp.menu import Url
+    >>> url1 = Url('http://localhost/foo/bar?123')
+    >>> url2 = Url('http://localhost/foo/bar/baz')
+    >>> url2.is_inside(url1)
+    True
+
+These next two are equivalent, so the answer should be True, even through
+the "outside" one is shorter than the "inside" one.
+
+    >>> url1 = Url('http://localhost/foo/bar/')
+    >>> url2 = Url('http://localhost/foo/bar')
+    >>> url2.is_inside(url1)
+    True
+
+The next two are exactly the same.  We consider a url to be inside itself.
+
+    >>> url1 = Url('http://localhost/foo/bar/')
+    >>> url2 = Url('http://localhost/foo/bar/')
+    >>> url2.is_inside(url1)
+    True
+
+In the next case, the string of url2 starts with the string of url1.  But,
+because url2 continues within the same path step, url2 is not inside url1.
+
+    >>> url1 = Url('http://localhost/foo/ba')
+    >>> url2 = Url('http://localhost/foo/bar')
+    >>> url2.is_inside(url1)
+    False
+
+Here, url2 is url1 plus an extra path step.  So, url2 is inside url1.
+
+    >>> url1 = Url('http://localhost/foo/bar/')
+    >>> url2 = Url('http://localhost/foo/bar/baz')
+    >>> url2.is_inside(url1)
+    True
+

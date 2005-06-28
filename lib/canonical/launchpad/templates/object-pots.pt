@@ -82,7 +82,7 @@
 
       </div>
 
-      <div tal:replace="structure view/statusLegend" />
+      <div tal:replace="structure context/@@+portlet-status-legend" />
 
     </tal:block> <!-- the detailed template+language listing -->
 

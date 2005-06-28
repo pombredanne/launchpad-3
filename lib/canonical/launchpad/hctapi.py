@@ -153,6 +153,20 @@ def get_ztm():
     else:
         return ZopelessTransactionManager._installed
 
+def begin_transaction():
+    """Begin transaction and return ZopelessTransactionManager."""
+    ztm = get_ztm()
+    ztm.begin()
+    return ztm
+
+def end_transaction(commit=False):
+    """End current transaction."""
+    ztm = get_ztm()
+    if commit:
+        ztm.commit()
+    else:
+        ztm.abort()
+
 def get_object(url, resolve=False):
     """Return database object at the given URL.
 
@@ -168,8 +182,6 @@ def get_object(url, resolve=False):
     parts = split_path(url_path)
     if not len(parts):
         raise LaunchpadError("Malformed URL, path expected: '%s'" % url)
-
-    get_ztm()
 
     obj = None
     while len(parts):
@@ -515,43 +527,51 @@ def get_manifest_from(obj):
 
 def get_manifest(url):
     """Retrieve the manifest with the URL given."""
-    obj = get_object(url, resolve=True)
-    manifest = get_manifest_from(obj.manifest)
-    if manifest is None:
-        raise LaunchpadError("No manifest at URL: '%s'" % url)
+    begin_transaction()
+    try:
+        obj = get_object(url, resolve=True)
+        manifest = get_manifest_from(obj.manifest)
+        if manifest is None:
+            raise LaunchpadError("No manifest at URL: '%s'" % url)
 
-    return manifest
+        return manifest
+    finally:
+        end_transaction()
 
 def get_release(url, release):
     """Return the URL of the release of the product or package given.
 
     If the release does not exist, this function returns None.
     """
-    obj = get_object(url)
-    if isinstance(obj, Product):
-        try:
-            rel = obj.getRelease(release)
-        except IndexError:
-            return None
-    elif isinstance(obj, ProductSeries):
-        try:
-            rel = obj.getRelease(release)
-        except KeyError:
-            return None
-    elif isinstance(obj, SourcePackage):
-        # FIXME more intelligence for version parsing (using sourcerer.deb)
-        # and this should use SourcePackageHistory
-        rels = [ _r for _r in obj.releases
-                 if (_r.version == release
-                     or _r.version.startswith("%s-" % release)) ]
-        if not len(rels):
-            return None
+    begin_transaction()
+    try:
+        obj = get_object(url)
+        if isinstance(obj, Product):
+            try:
+                rel = obj.getRelease(release)
+            except IndexError:
+                return None
+        elif isinstance(obj, ProductSeries):
+            try:
+                rel = obj.getRelease(release)
+            except KeyError:
+                return None
+        elif isinstance(obj, SourcePackage):
+            # FIXME more intelligence for version parsing (using sourcerer.deb)
+            # and this should use SourcePackageHistory
+            rels = [ _r for _r in obj.releases
+                     if (_r.version == release
+                         or _r.version.startswith("%s-" % release)) ]
+            if not len(rels):
+                return None
 
-        rel = SourcePackageReleaseInDistroRelease(rels[-1], obj.distrorelease)
-    else:
-        raise LaunchpadError("Unable to determine release for object: %r" % obj)
+            rel = SourcePackageReleaseInDistroRelease(rels[-1], obj.distrorelease)
+        else:
+            raise LaunchpadError("Unable to determine release for object: %r" % obj)
 
-    return where_am_i(rel)
+        return where_am_i(rel)
+    finally:
+        end_transaction()
 
 def get_package(url, distro_url=None):
     """Return the URL of the package in the given distro.
@@ -563,60 +583,64 @@ def get_package(url, distro_url=None):
 
     Returns URL of equivalent package.
     """
-    obj = get_object(url)
-    version = None
-    productseries = None
+    begin_transaction()
+    try:
+        obj = get_object(url)
+        version = None
+        productseries = None
 
-    # Locate the productseries
-    if isinstance(obj, ProductRelease):
-        version = obj.version
-        productseries = obj.productseries
+        # Locate the productseries
+        if isinstance(obj, ProductRelease):
+            version = obj.version
+            productseries = obj.productseries
 
-    if isinstance(obj, ProductSeries):
-        productseries = obj
+        if isinstance(obj, ProductSeries):
+            productseries = obj
 
-    if isinstance(obj, SourcePackageReleaseInDistroRelease):
-        version = obj.sourcepackagerelease.version
-        obj = obj.sourcepackage
+        if isinstance(obj, SourcePackageReleaseInDistroRelease):
+            version = obj.sourcepackagerelease.version
+            obj = obj.sourcepackage
 
-    if isinstance(obj, SourcePackageRelease):
-        version = obj.version
-        obj = SourcePackage(obj.sourcepackagename, obj.uploaddistrorelease)
+        if isinstance(obj, SourcePackageRelease):
+            version = obj.version
+            obj = SourcePackage(obj.sourcepackagename, obj.uploaddistrorelease)
 
-    if isinstance(obj, SourcePackage):
-        productseries = obj.productseries
+        if isinstance(obj, SourcePackage):
+            productseries = obj.productseries
 
-    if productseries is None:
-        raise LaunchpadError("Unable to resolve URL to product series: '%s'" % url)
+        if productseries is None:
+            raise LaunchpadError("Unable to resolve URL to product series: '%s'" % url)
 
 
-    # Return the productseries if no distro was passed
-    if distro_url is None:
-        return where_am_i(productseries)
+        # Return the productseries if no distro was passed
+        if distro_url is None:
+            return where_am_i(productseries)
 
-    # Locate the distribution
-    distro = get_object(distro_url)
+        # Locate the distribution
+        distro = get_object(distro_url)
 
-    # Find the sourcepackage in the given distrorelease
-    if isinstance(distro, DistroRelease):
-        package = productseries.getPackage(distro)
-        if not package.currentrelease:
-            raise LaunchpadError("Source package '%s' not published in '%s'"
-                                 % (url, distro_url))
-        return where_am_i(SourcePackageReleaseInDistroRelease(
-            package.currentrelease, distro))
+        # Find the sourcepackage in the given distrorelease
+        if isinstance(distro, DistroRelease):
+            package = productseries.getPackage(distro)
+            if not package.currentrelease:
+                raise LaunchpadError("Source package '%s' not published in '%s'"
+                                     % (url, distro_url))
+            return where_am_i(SourcePackageReleaseInDistroRelease(
+                package.currentrelease, distro))
 
-    # Or in the distribution
-    elif isinstance(distro, Distribution):
-        package = productseries.getPackage(distro.currentrelease)
-        if version is not None:
-            return get_release(where_am_i(package), version)
+        # Or in the distribution
+        elif isinstance(distro, Distribution):
+            package = productseries.getPackage(distro.currentrelease)
+            if version is not None:
+                return get_release(where_am_i(package), version)
+            else:
+                return where_am_i(package)
+
         else:
-            return where_am_i(package)
-
-    else:
-        raise LaunchpadError("Not a distribution or distro release: '%s'"
-                             % distro_url)
+            raise LaunchpadError("Not a distribution or distro release: '%s'"
+                                 % distro_url)
+    finally:
+        end_transaction()
 
 def get_branch(url):
     """Return branch associated with URL given.
@@ -624,11 +648,15 @@ def get_branch(url):
     Returns a Branch object or None if no branch associated. Note that the
     url should be for a productseries
     """
-    obj = get_object(get_package(url))
-    if obj.branch is not None:
-        return get_branch_from(obj.branch)
-    else:
-        return None
+    begin_transaction()
+    try:
+        obj = get_object(get_package(url))
+        if obj.branch is not None:
+            return get_branch_from(obj.branch)
+        else:
+            return None
+    finally:
+        end_transaction()
 
 def identify_file(ref_url, size, digest, upstream=False):
     """Return URLs and Manifests for a file with the details given.
@@ -640,125 +668,131 @@ def identify_file(ref_url, size, digest, upstream=False):
     If upstream is True, only 'upstream' products with a manifest will
     be returned.
     """
-    get_ztm()
+    begin_transaction()
+    try:
+        library = Library()
+        file_ids = library.lookupBySHA1(digest)
+        if not len(file_ids):
+            raise LaunchpadError("File not found: '%s' (%d)" % (digest, size))
 
-    library = Library()
-    file_ids = library.lookupBySHA1(digest)
-    if not len(file_ids):
-        raise LaunchpadError("File not found: '%s' (%d)" % (digest, size))
+        results = []
+        for file_id in file_ids:
+            for alias_id, filename, mime_type in library.getAliases(file_id):
+                alias = library.getByAlias(alias_id)
 
-    results = []
-    for file_id in file_ids:
-        for alias_id, filename, mime_type in library.getAliases(file_id):
-            alias = library.getByAlias(alias_id)
+                results.extend([ obj for obj in alias.products ])
+                if not upstream:
+                    results.extend([ obj for obj in alias.sourcepackages ])
 
-            results.extend([ obj for obj in alias.products ])
-            if not upstream:
-                results.extend([ obj for obj in alias.sourcepackages ])
+        results = [ (where_am_i(obj), get_manifest_from(obj.manifest))
+                    for obj in results if (not upstream
+                                           or obj.manifest is not None) ]
+        if not len(results):
+            raise LaunchpadError("No source for file found: '%s' (%d)"
+                                 % (digest, size))
 
-    results = [ (where_am_i(obj), get_manifest_from(obj.manifest))
-                for obj in results if (not upstream
-                                       or obj.manifest is not None) ]
-    if not len(results):
-        raise LaunchpadError("No source for file found: '%s' (%d)"
-                             % (digest, size))
-
-    return results
+        return results
+    finally:
+        end_transaction()
 
 
 def put_manifest(url, manifest):
     """Add new manifest under the URL given."""
-    obj = get_object(url)
-    if isinstance(obj, SourcePackageReleaseInDistroRelease):
-        obj = obj.sourcepackagerelease
-    if not (isinstance(obj, ProductRelease)
-            or isinstance(obj, SourcePackageRelease)):
-        raise LaunchpadError("Unable to associate a manifest with: '%s'" % url)
+    success = False
+    begin_transaction()
+    try:
+        obj = get_object(url)
+        if isinstance(obj, SourcePackageReleaseInDistroRelease):
+            obj = obj.sourcepackagerelease
+        if not (isinstance(obj, ProductRelease)
+                or isinstance(obj, SourcePackageRelease)):
+            raise LaunchpadError("Unable to associate a manifest with: '%s'" % url)
 
-    sequence = 0
-    sequence_map = {}
-    patch_on_map = []
+        sequence = 0
+        sequence_map = {}
+        patch_on_map = []
 
-    obj.manifest = Manifest(uuid=manifest.id)
-    for entry in manifest:
-        type_map = dict([ (_t, _v) for _v, _t in MANIFEST_ENTRY_TYPE_MAP ])
-        if entry.typeName() not in type_map:
-            raise LaunchpadError("Unknown manifest entry type from import: %s"
-                                 % entry.typeName())
+        obj.manifest = Manifest(uuid=manifest.id)
+        for entry in manifest:
+            type_map = dict([ (_t, _v) for _v, _t in MANIFEST_ENTRY_TYPE_MAP ])
+            if entry.typeName() not in type_map:
+                raise LaunchpadError("Unknown manifest entry type from import: %s"
+                                     % entry.typeName())
 
-        sequence += 1
-        obj_entry = ManifestEntry(manifestID=obj.manifest.id,
-                                  sequence=sequence,
-                                  entrytype=type_map[entry.typeName()],
-                                  path=entry.path,
-                                  branchID=None,
-                                  changesetID=None,
-                                  patchon=None,
-                                  dirname=entry.dirname)
+            sequence += 1
+            obj_entry = ManifestEntry(manifestID=obj.manifest.id,
+                                      sequence=sequence,
+                                      entrytype=type_map[entry.typeName()],
+                                      path=entry.path,
+                                      branchID=None,
+                                      changesetID=None,
+                                      patchon=None,
+                                      dirname=entry.dirname)
 
-        # FIXME this is the "hard" way
-        # a lot of the heavy lifting here belongs in Launchpad interfaces
-        if entry.branch is not None:
-            np = NameParser(entry.branch)
+            # FIXME this is the "hard" way
+            # a lot of the heavy lifting here belongs in Launchpad interfaces
+            if entry.branch is not None:
+                np = NameParser(entry.branch)
 
-            # Archive table entry
-            objs = Archive.selectBy(name=np.get_archive())
-            if objs.count():
-                archive = objs[0]
-            else:
-                archive = Archive(name=np.get_archive(), visible=True,
-                                  title="", description="")
+                # Archive table entry
+                objs = Archive.selectBy(name=np.get_archive())
+                if objs.count():
+                    archive = objs[0]
+                else:
+                    archive = Archive(name=np.get_archive(), visible=True,
+                                      title="", description="")
 
-            # ArchNamespace table entry
-            objs = ArchNamespace.selectBy(archiveID=archive.id,
-                                          category=np.get_category(),
-                                          branch=np.get_branch(),
-                                          version=np.get_version())
-            if objs.count():
-                namespace = objs[0]
-            else:
-                namespace = ArchNamespace(archiveID=archive.id, visible=True,
-                                          category=np.get_category(),
-                                          branch=np.get_branch(),
-                                          version=np.get_version())
+                # ArchNamespace table entry
+                objs = ArchNamespace.selectBy(archiveID=archive.id,
+                                              category=np.get_category(),
+                                              branch=np.get_branch(),
+                                              version=np.get_version())
+                if objs.count():
+                    namespace = objs[0]
+                else:
+                    namespace = ArchNamespace(archiveID=archive.id, visible=True,
+                                              category=np.get_category(),
+                                              branch=np.get_branch(),
+                                              version=np.get_version())
 
-            # Branch table entry
-            objs = Branch.selectBy(archnamespaceID=namespace.id)
-            if objs.count():
-                branch = objs[0]
-            else:
-                branch = Branch(archnamespaceID=namespace.id,
-                                title="", description="")
+                # Branch table entry
+                objs = Branch.selectBy(archnamespaceID=namespace.id)
+                if objs.count():
+                    branch = objs[0]
+                else:
+                    branch = Branch(archnamespaceID=namespace.id,
+                                    title="", description="")
 
-            obj_entry.branch = branch
+                obj_entry.branch = branch
 
-        if entry.changeset is not None:
-            np = NameParser(entry.changeset)
+            if entry.changeset is not None:
+                np = NameParser(entry.changeset)
 
-            objs = Changeset.selectBy(branchID=branch.id,
-                                      name=np.get_patchlevel())
-            if objs.count():
-                changeset = objs[0]
-            else:
-                changeset = Changeset(branchID=branch.id,
-                                      name=np.get_patchlevel(),
-                                      datecreated=UTC_NOW,
-                                      logmessage="")
+                objs = Changeset.selectBy(branchID=branch.id,
+                                          name=np.get_patchlevel())
+                if objs.count():
+                    changeset = objs[0]
+                else:
+                    changeset = Changeset(branchID=branch.id,
+                                          name=np.get_patchlevel(),
+                                          datecreated=UTC_NOW,
+                                          logmessage="")
 
-            obj_entry.changeset = changeset
+                obj_entry.changeset = changeset
 
-        # Keep track of sequence numbers and patchon settings
-        sequence_map[entry] = sequence
-        if hasattr(entry, "patch_on") and entry.patch_on is not None:
-            patch_on_map.append((entry.patch_on, obj_entry))
+            # Keep track of sequence numbers and patchon settings
+            sequence_map[entry] = sequence
+            if hasattr(entry, "patch_on") and entry.patch_on is not None:
+                patch_on_map.append((entry.patch_on, obj_entry))
 
-    # Map patch_on to sequence numbers
-    for patch_on, obj_entry in patch_on_map:
-        if patch_on not in sequence_map:
-            raise LaunchpadError("Manifest entry parent not in sequence: '%s'"
-                                 % obj_entry.path)
+        # Map patch_on to sequence numbers
+        for patch_on, obj_entry in patch_on_map:
+            if patch_on not in sequence_map:
+                raise LaunchpadError("Manifest entry parent not in sequence: '%s'"
+                                     % obj_entry.path)
 
-        obj_entry.patchon = sequence_map[patch_on]
+            obj_entry.patchon = sequence_map[patch_on]
 
-    get_ztm().commit()
-    return
+        success = True
+    finally:
+        end_transaction(commit=success)

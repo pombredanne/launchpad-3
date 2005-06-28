@@ -42,14 +42,41 @@ class LanguageSet:
     implements(ILanguageSet)
 
     def __iter__(self):
+        """See ILanguageSet."""
         return iter(Language.select(orderBy='englishname'))
 
     def __getitem__(self, code):
+        """See ILanguageSet."""
+
         try:
             return Language.byCode(code)
         except SQLObjectNotFound:
             raise NotFoundError, code
 
     def keys(self):
+        """See ILanguageSet."""
         return [language.code for language in Language.select()]
+
+    def canonicalise_language_code(self, code):
+        """See ILanguageSet."""
+
+        if '-' in code:
+            language, country = code.split('-', 1)
+
+            return "%s_%s" % (language, country.upper())
+        else:
+            return code
+
+    def codes_to_languages(self, codes):
+        """See ILanguageSet."""
+
+        languages = []
+
+        for code in [self.canonicalise_language_code(code) for code in codes]:
+            try:
+                languages.append(self[code])
+            except KeyError:
+                pass
+
+        return languages
 

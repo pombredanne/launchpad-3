@@ -19,7 +19,7 @@ class ContextToBugTaskSubsetAdapter:
 
     def __init__(self, context):
         self.context = context
-        self.context_title = context.title
+        self.title = context.title
 
     def __getitem__(self, item):
         """See canonical.launchpad.interfaces.IBugTaskSubset."""

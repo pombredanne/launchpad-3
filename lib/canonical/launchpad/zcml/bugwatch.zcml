@@ -54,6 +54,12 @@
           interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
     </content>
 
+    <browser:url
+        for="canonical.launchpad.interfaces.IBugWatchSet"
+        path_expression="string:watches"
+        attribute_to_parent="bug"
+        />
+
     <securedutility
         class="canonical.launchpad.database.BugWatchSet"
         provides="canonical.launchpad.interfaces.IBugWatchSet">

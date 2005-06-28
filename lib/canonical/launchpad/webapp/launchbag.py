@@ -15,7 +15,7 @@ from zope.app.session.interfaces import ISession
 from canonical.launchpad.interfaces import \
         IOpenLaunchBag, ILaunchBag, \
         ILaunchpadApplication, IPerson, IProject, IProduct, IDistribution, \
-        IDistroRelease, ISourcePackage, IBug, \
+        IDistroRelease, ISourcePackage, IBug, IDistroArchRelease, \
         ISourcePackageReleasePublishing, IBugTask
 from canonical.launchpad.webapp.interfaces import ILoggedInEvent
 
@@ -30,7 +30,8 @@ class LaunchBag(object):
         IProject: 'project',
         IProduct: 'product',
         IDistribution: 'distribution',
-        IDistroRelease: 'distrorelease',
+        IDistroRelease: 'distrorelease', 
+        IDistroArchRelease: 'distroarchrelease', 
         ISourcePackage: 'sourcepackage',
         ISourcePackageReleasePublishing: 'sourcepackagereleasepublishing',
         IBug: 'bug',
@@ -108,6 +109,10 @@ class LaunchBag(object):
     def distrorelease(self):
         return self._store.distrorelease
     distrorelease = property(distrorelease)
+
+    def distroarchrelease(self):
+        return self._store.distroarchrelease
+    distroarchrelease = property(distroarchrelease)
 
     def sourcepackage(self):
         return self._store.sourcepackage

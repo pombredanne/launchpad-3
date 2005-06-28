@@ -71,6 +71,25 @@ Because we modified the PO file, the cache should now no longer be valid.
     >>> pofile.validExportCache()
     False
 
->>> LibrarianTestSetup().tearDown()
->>> LaunchpadFunctionalTestSetup().tearDown()
+This is a regression test: PO files with no submissions.
+
+This tests two specific things:
+
+ - That a PO file with no translations can be exported.
+ - The situation where there is a cached export for a file with no
+   translations, and there is no submission which we can use to check the
+   cache's validity.
+
+    >>> empty_pofile = pofile.potemplate.getOrCreatePOFile('cy')
+    >>> empty_pofile.latest_submission is None
+    True
+    >>> empty_pofile.validExportCache()
+    False
+    >>> len(empty_pofile.export()) > 0
+    True
+    >>> empty_pofile.validExportCache()
+    True
+
+    >>> LibrarianTestSetup().tearDown()
+    >>> LaunchpadFunctionalTestSetup().tearDown()
 

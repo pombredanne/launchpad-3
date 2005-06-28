@@ -4,8 +4,8 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
 # launchpad
-from canonical.launchpad.interfaces import IPOTemplateSet
-from canonical.launchpad.interfaces import IProductReleaseSet
+from canonical.launchpad.interfaces import (
+    IPOTemplateSet, IProductReleaseSet, ICountry)
 
 from canonical.launchpad import helpers
 
@@ -52,27 +52,6 @@ def newProductRelease(form, product, owner, series=None):
 class ProductReleaseView:
     """A View class for ProductRelease objects"""
 
-    summaryPortlet = ViewPageTemplateFile(
-        '../templates/portlet-object-summary.pt')
-
-    detailsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-productrelease-details.pt')
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-productrelease-actions.pt')
-
-    statusLegend = ViewPageTemplateFile(
-        '../templates/portlet-rosetta-status-legend.pt')
-
-    prefLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-pref-langs.pt')
-
-    countryPortlet = ViewPageTemplateFile(
-        '../templates/portlet-country-langs.pt')
-
-    browserLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-browser-langs.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -104,7 +83,7 @@ class ProductReleaseView:
                 for template in self.context.potemplates]
 
     def requestCountry(self):
-        return helpers.requestCountry(self.request)
+        return ICountry(self.request, None)
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)

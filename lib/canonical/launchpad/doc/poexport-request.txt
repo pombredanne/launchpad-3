@@ -31,8 +31,12 @@ And here's them making the request.
 
 Now we request that the queue be processed.
 
+  >>> class MockTransactionManager:
+  ...     def commit(self):
+  ...         pass
+
   >>> from canonical.launchpad.scripts.po_export_queue import process_queue
-  >>> process_queue()
+  >>> process_queue(MockTransactionManager())
 
 We need to make sure the Librarian data has settled into place.
 

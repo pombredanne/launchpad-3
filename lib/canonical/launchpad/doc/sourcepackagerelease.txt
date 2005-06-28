@@ -1,0 +1,46 @@
+Source Package Release
+======================
+
+The SourcePackageRelease table represents a particular release of a
+SourcePackageName, but isn't tied to any particular DistroRelease
+as the same release can appear in many.
+
+Let's get one from the database:
+
+   >>> from canonical.launchpad.database import SourcePackageRelease
+   >>> spr = SourcePackageRelease.get(14)
+   >>> print spr.name
+   mozilla-firefox
+   >>> print spr.version
+   0.9
+
+We can use the magic productrelease property to map this to a ProductRelease:
+
+   >>> pr = spr.productrelease
+   >>> print pr.product.name
+   firefox
+   >>> print pr.productseries.name
+   milestones
+   >>> print pr.version
+   0.9
+
+It should also work when the version has a dash and packaging revision
+after it:
+
+   >>> spr = SourcePackageRelease.get(16)
+   >>> print spr.name
+   netapplet
+   >>> print spr.version
+   1.0-1
+   >>> pr = spr.productrelease
+   >>> print pr.product.name
+   netapplet
+   >>> print pr.productseries.name
+   releases
+   >>> print pr.version
+   1.0
+
+If there isn't one, that should return None.
+
+   >>> print SourcePackageRelease.get(20).productrelease
+   None

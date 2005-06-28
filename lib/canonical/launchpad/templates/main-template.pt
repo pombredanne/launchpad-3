@@ -20,26 +20,8 @@
 
 <body>
     <div class="page-header">
-        <div class="page-header-ribbon"
-            tal:define="path_info request/PATH_INFO">
-            <div class="user" tal:condition="not: request/lp:person ">
-              <div tal:condition="python:'+login' not in path_info">
-                <a tal:attributes="href string:${request/getURL}/+login">
-                  Log in / Register
-                </a>
-              </div>
-            </div>
-            <div class="user" tal:condition="request/lp:person">
-                Welcome,
-                <a
-                  tal:attributes="href string:/people/${request/lp:person/name}"
-                  tal:content="request/lp:person/browsername"
-                >
-                  [An error has occurred in Launchpad. Please report the address of this page to a Launchpad admin.]
-                </a>
-                &ndash;
-                <a href="/+logout">Log out</a>
-            </div>
+        <div class="page-header-ribbon">
+            <div tal:replace="structure context/@@login_status" />
             <address>
                <span tal:replace="structure request/fmt:breadcrumbs" />
             </address>
@@ -55,12 +37,43 @@
 
     </div><!-- class="page-header"-->
 
+    <!-- Menus -->
+
+    <div style="clear: left; margin-bottom: 1em"
+            tal:define="
+                facetmenu context/menu:facet;
+                appmenu context/menu:application">
+        <ul tal:condition="facetmenu" class="app navigation"
+                style="margin-bottom: 0">
+            <li tal:repeat="link facetmenu">
+                <span tal:condition="link/selected">
+                    <strong tal:content="link/text">link text</strong>
+                </span>
+
+                <span tal:condition="not: link/selected">
+                    <a tal:attributes="href link/url" tal:content="link/text"
+                        >link text</a>
+                </span>
+            </li>
+        </ul>
+
+        <ul tal:condition="appmenu" class="app navigation"
+                style="margin-left: 3em">
+            <li tal:repeat="link appmenu">
+                <span tal:condition="link/selected">
+                    <strong tal:content="link/text">link text</strong>
+                </span>
+
+                <span tal:condition="not: link/selected">
+                    <a tal:attributes="href link/url" tal:content="link/text"
+                        >link text</a>
+                </span>
+            </li>
+        </ul>
+    </div>
+
     <div class="visualClear" id="body">
-      <metal:block define-slot="body" tal:condition="nothing">
-        Use this slot for pages that only have one column of
-        portlets (using div class="sidebar"), so that the rest of
-        the page can expand into the width that would otherwise be
-        used by the other column.
+      <metal:block define-slot="body">
       </metal:block>
     </div>
 

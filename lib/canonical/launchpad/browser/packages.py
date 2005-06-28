@@ -5,11 +5,12 @@ from apt_pkg import ParseDepends
 from urllib import quote as urlquote
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.component import getUtility
 
 from canonical.lp.dbschema import BugSeverity
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
-from canonical.launchpad.interfaces import IPerson
+from canonical.launchpad.interfaces import IPerson, ILaunchBag
 
 # XXX: Daniel Debonzi
 # Importing stuff from Soyuz directory
@@ -94,13 +95,6 @@ class DistroReleaseSourcesView:
 #
 
 class DistroReleaseSourceView:
-    translationPortlet = ViewPageTemplateFile(
-        '../templates/portlet-translations-sourcepackage.pt')
-    watchPortlet = ViewPageTemplateFile(
-        '../templates/portlet-distroreleasesource-watch.pt')
-    bugPortlet = ViewPageTemplateFile(
-        '../templates/portlet-sourcepackage-bugcounter.pt')
-
 
     def __init__(self, context, request):
         self.context = context
@@ -165,12 +159,10 @@ class SourcePackageBugsView:
 class BinaryPackageView(object):
     """View class for BinaryPackage"""
 
-    lastversionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-binarypackage-lastversions.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self.launchbag = getUtility(ILaunchBag)
 
     def _buildList(self, packages):
         blist = []

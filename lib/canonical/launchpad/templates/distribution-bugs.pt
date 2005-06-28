@@ -5,27 +5,15 @@
 
 <body>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="body">
 
-  <h1>Bugs in <span tal:replace="context/title">Title</span></h1>
+  <h1>Bug in <span tal:replace="context/title">Title</span></h1>
 
   <div metal:use-macro="context/@@bugtask_search_listing/buglisting" />
 
-  <div>
-    <small>release bugs:
-    <tal:block repeat="distrorelease context/releases">
-      <a href="#"
-
-         tal:content="string:${distrorelease/name}(${distrorelease/bugtasks/count:len})"
-         tal:attributes="href distrorelease/name"/>
-    </tal:block>
-    </small>
-  </div>
-    <p><img src="/++resource++add.gif" alt="+">
-    <a href="+filebug" tal:content="string:File a bug on ${context/title}"></a><br />
-    </p>
-  <div>
- </div>
+  <p><img src="/++resource++add.gif" alt="+">
+  <a href="+filebug" tal:content="string:File a bug on ${context/title}"></a><br />
+  </p>
 </div>
 
 </body>

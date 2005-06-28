@@ -1,0 +1,130 @@
+Batch Navigation
+================
+
+Batch navigation provides a way to navigate batch results in a web
+page by providing URL links to the next, previous and numbered pages
+of results.
+
+Imports:
+
+  >>> from canonical.lp.z3batching import Batch
+  >>> from canonical.lp.batching import BatchNavigator
+
+A dummy request object:
+
+  >>> class DummyRequest:
+  ...     URL = "http://www.example.com/foo"
+  ...     def __init__(self, query_string):
+  ...         self.environment = {'QUERY_STRING': query_string}
+
+Some sample data.
+
+  >>> reindeer = ['Dasher', 'Dancer', 'Prancer', 'Vixen', 'Comet',
+  ...     'Cupid', 'Donner', 'Blitzen', 'Rudolph']
+
+You can create a batch and a batch navigator like so:
+
+  >>> reindeer_batch = Batch(list=reindeer, size=3)
+  >>> reindeer_batch_navigator = BatchNavigator(
+  ...     batch=reindeer_batch, request=DummyRequest(''))
+
+You can ask the navigator for the chunk of results currently being shown (e.g.
+to iterate over them for rendering in ZPT):
+
+  >>> list(reindeer_batch_navigator.currentBatch())
+  ['Dasher', 'Dancer', 'Prancer']
+
+You can ask for the previous and next results' links:
+
+  >>> reindeer_batch_navigator.prevBatchURL()
+  ''
+  >>> reindeer_batch_navigator.nextBatchURL()
+  'http://www.example.com/foo?batch_start=3&batch_end=6'
+
+The next link will be empty when there are no further results:
+
+  >>> last_reindeer_batch = reindeer_batch.nextBatch().nextBatch()
+  >>> last_reindeer_batch_navigator = BatchNavigator(
+  ...     batch=last_reindeer_batch, request=DummyRequest(''))
+  >>> last_reindeer_batch_navigator.nextBatchURL()
+  ''
+
+This all works with query strings in the URLs, too:
+
+  >>> request = DummyRequest('fnorb=bar')
+  >>> reindeer_batch_navigator_with_qs = BatchNavigator(
+  ...     batch=reindeer_batch.nextBatch(), request=request)
+  >>> reindeer_batch_navigator_with_qs.prevBatchURL()
+  'http://www.example.com/foo?fnorb=bar&batch_start=0&batch_end=3'
+  >>> reindeer_batch_navigator_with_qs.nextBatchURL()
+  'http://www.example.com/foo?fnorb=bar&batch_start=6&batch_end=9'
+
+If the batch_start and batch_end is already in the query string, it will use
+those values:
+
+  >>> request = DummyRequest('fnorb=bar&batch_start=3&batch_end=6')
+  >>> reindeer_batch_navigator_with_qs_after_next = BatchNavigator(
+  ...     batch=reindeer_batch.nextBatch(), request=request)
+  >>> reindeer_batch_navigator_with_qs_after_next.prevBatchURL()
+  'http://www.example.com/foo?fnorb=bar&batch_start=0&batch_end=3'
+
+Finally, you can ask for the links for each of the result pages:
+
+  >>> links = reindeer_batch_navigator.batchPageURLs()
+  >>> for link in links:
+  ...     label, url = link.items()[0]
+  ...     print label, url
+  [1] http://www.example.com/foo?batch_start=0&batch_end=3
+  2 http://www.example.com/foo?batch_start=3&batch_end=6
+  3 http://www.example.com/foo?batch_start=6&batch_end=9
+  _last_ http://www.example.com/foo?batch_start=6&batch_end=9
+
+
+TODO:
+
+  - orphans
+  - overlap
+
+Performance with SQLObject
+--------------------------
+
+This section demonstrates that batching generates sensible SQL queries when used
+with SQLObject, i.e. that it puts appropriate LIMIT clauses on queries.
+
+Imports and database setup:
+
+  >>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+  >>> from canonical.launchpad.database import EmailAddress
+  >>> from canonical.ftests.pgsql import CursorWrapper
+  >>> LaunchpadTestSetup().setUp()
+  >>> CursorWrapper.record_sql = True
+
+Prepare a query, and create a batch of the results:
+
+  >>> select_results = EmailAddress.select(orderBy='id')
+  >>> email_batch = Batch(list=select_results, size=10)
+  >>> batch_items = list(email_batch)
+
+Because we're only looking at the first batch, the database is only asked for
+the number of rows, and the first 10 rows:
+
+  >>> len(CursorWrapper.last_executed_sql)
+  2
+  >>> print CursorWrapper.last_executed_sql[0]
+  SELECT COUNT(*) FROM EmailAddress WHERE 1 = 1
+  >>> CursorWrapper.last_executed_sql[1].endswith('LIMIT 10')
+  True
+
+Get the next 10.  The database is only asked for the next 10 rows -- no further
+COUNTs are issued:
+
+  >>> CursorWrapper.last_executed_sql = []
+  >>> email_batch2 = email_batch.nextBatch()
+  >>> batch_items = list(email_batch2)
+  >>> len(CursorWrapper.last_executed_sql)
+  1
+  >>> CursorWrapper.last_executed_sql[0].endswith('LIMIT 10 OFFSET 10')
+  True
+
+  >>> LaunchpadTestSetup().tearDown()
+

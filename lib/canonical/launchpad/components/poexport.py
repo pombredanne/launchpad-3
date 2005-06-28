@@ -31,7 +31,7 @@ from StringIO import StringIO
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.helpers import tar_add_file
+from canonical.launchpad.helpers import RosettaWriteTarFile
 
 from canonical.launchpad.interfaces import IPOTemplateExporter
 from canonical.launchpad.interfaces import IDistroReleasePOExporter
@@ -159,6 +159,34 @@ class OutputMsgSet:
 
         return unicode(message).encode(self.pofile.header.charset)
 
+def last_translator_text(person):
+    """Calculate a value for a Last-Translator field for a person.
+
+    The preferred email address is used for preference, otherwise the first
+    validated email address, otherwise any email address associated with the
+    person. Hence the address returned should not be used for sending mail.
+    """
+
+    if person.preferredemail:
+        # The translator has a preferred email address set.
+        email = person.preferredemail.email
+    elif person.guessedemails:
+        # Fall back to using one of the guessed email addresses.
+        email = person.guessedemails[0].email
+    elif person.merged is not None:
+        # If we reach this point, it means that the people merge account is
+        # broken because only merged accounts can have no email addresses at
+        # all, but also they can't have anything assigned to them.
+        raise RuntimeError(
+            "Got merged person %r as translator." % person.name)
+    else:
+        # We should never reach this point because we are supposed to have an
+        # email address for every non-merged person.
+        raise RuntimeError(
+            "Non-merged person %r has no email addresses!" % person.name)
+
+    return '%s <%s>' % (person.browsername, email)
+
 def export_rows(rows, pofile_output):
     """Convert a list of PO file export view rows to a set of PO files.
 
@@ -256,6 +284,22 @@ def export_rows(rows, pofile_output):
                 header.flags.add('fuzzy')
 
             header.finish()
+
+            # Update header fields. This part is optional in order to make it
+            # easier to fake data for testing.
+
+            if row.pofile:
+                # Update the last translator field.
+
+                submission = row.pofile.latest_submission
+                assert not submission.person.isTeam(), submission.person.name
+                header['Last-Translator'] = (
+                    last_translator_text(submission.person))
+
+                # Update the revision date field.
+
+                header['PO-Revision-Date'] = (
+                    submission.datecreated.strftime('%F %R%z'))
 
             # Create the new PO file.
 
@@ -419,13 +463,15 @@ class DistroRelaseTarballPOFileOutput:
             'LC_MESSAGES',
             '%s.po' % domain
             )
-        tar_add_file(self.archive, path, contents)
+        self.archive.add_file(path, contents)
 
 def export_distrorelease_tarball(filehandle, release, date=None):
     """Export a tarball of translations for a distribution release."""
 
-    archive = tarfile.open('', 'w:gz', filehandle)
+    # Open the archive.
+    archive = RosettaWriteTarFile(filehandle)
 
+    # Do the export.
     pofiles = getUtility(IVPOExportSet).get_distrorelease_pofiles(
         release, date)
     pofile_output = DistroRelaseTarballPOFileOutput(release, archive)
@@ -437,11 +483,10 @@ def export_distrorelease_tarball(filehandle, release, date=None):
             variant=pofile.variant,
             contents=pofile.export())
 
+    # Add a timestamp file.
+    path = 'rosetta-%s/timestamp.txt' % release.name
     contents = datetime.datetime.utcnow().strftime('%Y%m%d\n')
-    fileinfo = tarfile.TarInfo('rosetta-%s/timestamp.txt' % release.name)
-    fileinfo.size = len(contents)
-    fileinfo.mtime = int(time.time())
-    archive.addfile(fileinfo, StringIO(contents))
+    archive.add_file(path, contents)
 
     archive.close()
 

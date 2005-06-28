@@ -67,6 +67,7 @@ COMMENT ON COLUMN Product.reviewed IS 'Whether or not someone at Canonical has r
 COMMENT ON COLUMN Product.active IS 'Whether or not this product should be considered active.';
 COMMENT ON COLUMN Product.translationgroup IS 'The TranslationGroup that is responsible for translations for this product. Note that the Product may be part of a Project which also has a TranslationGroup, in which case the translators from both the product and project translation group have permission to edit the translations of this product.';
 COMMENT ON COLUMN Product.translationpermission IS 'The level of openness of this product\'s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
+COMMENT ON COLUMN Product.releaseroot IS 'The URL to the directory which holds upstream releases for this product. This allows us to monitor the upstream site and detect new upstream release tarballs.  This URL is used when the associated ProductSeries does not have a URL to use. It is also used to find files outside of any registered series.';
 
 
 
@@ -545,18 +546,6 @@ COMMENT ON TABLE ProductBounty IS 'This table records a simple link between a bo
 COMMENT ON TABLE DistroBounty IS 'This table records a simple link between a bounty and a distribution. This bounty will be listed on the distribution web page, and the distribution will be mentioned on the bounty web page.';
 
 COMMENT ON TABLE ProjectBounty IS 'This table records a simple link between a bounty and a project. This bounty will be listed on the project web page, and the project will be mentioned on the bounty web page.';
-
--- SourceSource
-COMMENT ON TABLE SourceSourceBackup IS 'The SourceSource table identifies
-upstream revision control systems that can be imported and re-published as
-bazaar (baz) archives. So, for example, there is an entry in this table for
-each upstream CVS or SVN branch that we want to sync-and-publish as a baz
-branch.';
-
-COMMENT ON COLUMN SourceSourceBackup.branchpoint IS 'The source specification for an import job to branch from.';
-COMMENT ON COLUMN SourceSourceBackup.datestarted IS 'The timestamp of the last time an import or sync was started on this sourcesource.';
-COMMENT ON COLUMN SourceSourceBackup.datefinished IS 'The timestamp of the last time an import or sync finished on this sourcesource.';
-
 
 -- Maintainership
 

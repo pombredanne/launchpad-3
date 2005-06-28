@@ -6,6 +6,8 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
+from canonical.lp.dbschema import UpstreamFileType
+
 class IProductReleaseSet(Interface):
     """Auxiliar class for ProductRelease handling.""" 
 
@@ -38,3 +40,5 @@ class IProductRelease(Interface):
     potemplatecount = Attribute(_("The number of POTemplates for this "
                         "ProductRelease."))
 
+    def addFileAlias(alias_id, file_type=UpstreamFileType.CODETARBALL):
+        """Add a link between this product and a library file alias."""

@@ -48,6 +48,10 @@
             name="+index"
             template="../templates/bazaar-index.pt"
             lp:url="bazaar/+index" />
+        <browser:page
+            name="+portlet-imports"
+            template="../templates/portlet-upstream-imports.pt"
+            lp:url="bazaar/+portlet-imports" />
     </browser:pages>
 
 </configure>
