@@ -67,6 +67,11 @@
 
   <!-- ICalendar and associated view objects -->
 
+  <browser:url
+      for="canonical.launchpad.interfaces.ILaunchpadCalendar"
+      path_expression="string:+calendar"
+      attribute_to_parent="parent" />
+
   <browser:defaultView
       for="schoolbell.interfaces.ICalendar"
       name="+index" />
@@ -106,6 +111,11 @@
     <allow interface="canonical.launchpad.interfaces.ICalendarDay" />
   </content>
 
+  <browser:url
+      for="canonical.launchpad.interfaces.ICalendarDay"
+      path_expression="name"
+      attribute_to_parent="calendar" />
+
   <browser:defaultView
       for="canonical.launchpad.interfaces.ICalendarDay"
       name="+index" />
@@ -122,6 +132,11 @@
   <content class="canonical.launchpad.browser.CalendarWeek">
     <allow interface="canonical.launchpad.interfaces.ICalendarWeek" />
   </content>
+
+  <browser:url
+      for="canonical.launchpad.interfaces.ICalendarWeek"
+      path_expression="name"
+      attribute_to_parent="calendar" />
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.ICalendarWeek"
@@ -140,6 +155,11 @@
     <allow interface="canonical.launchpad.interfaces.ICalendarMonth" />
   </content>
 
+  <browser:url
+      for="canonical.launchpad.interfaces.ICalendarMonth"
+      path_expression="name"
+      attribute_to_parent="calendar" />
+
   <browser:defaultView
       for="canonical.launchpad.interfaces.ICalendarMonth"
       name="+index" />
@@ -156,6 +176,11 @@
   <content class="canonical.launchpad.browser.CalendarYear">
     <allow interface="canonical.launchpad.interfaces.ICalendarYear" />
   </content>
+
+  <browser:url
+      for="canonical.launchpad.interfaces.ICalendarYear"
+      path_expression="name"
+      attribute_to_parent="calendar" />
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.ICalendarYear"
@@ -208,6 +233,11 @@
 
   <!-- ICalendarEvent -->
 
+  <browser:url
+      for="schoolbell.interfaces.ICalendarEvent"
+      path_expression="string:events/${id}"
+      attribute_to_parent="calendar" />
+
   <browser:defaultView
       for="schoolbell.interfaces.ICalendarEvent"
       name="+index" />
@@ -217,11 +247,15 @@
       template="../templates/calendar-event-index.pt"
       lp:url="$obj/calendar/events/$Event.id/+index" />
 
+  <!-- XXX: displaying the duration causes an exception due to
+       zope.app.form.DisplayView assuming that the value is a
+       string.  Should not be a problem with newer Zope
+         James Henstridge (2005-06-29) -->
   <browser:schemadisplay
       name="+display"
       for="schoolbell.interfaces.ICalendarEvent"
       schema="schoolbell.interfaces.ICalendarEvent"
-      fields="title description location dtstart duration"
+      fields="title description location dtstart"
       label="Calendar Event"
       permission="zope.Public"
       template="../templates/calendar-event-display.pt"
@@ -264,6 +298,11 @@
       permission="launchpad.AnyPerson"
       lp:url="/calendar/" />
 
+  <browser:url
+      for="canonical.launchpad.components.cal.MergedCalendar"
+      path_expression="string:calendar"
+      parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot" />
+
   <browser:page
       name="+subscriptions"
       for="canonical.launchpad.interfaces.ILaunchpadMergedCalendar"
@@ -271,5 +310,19 @@
       class="canonical.launchpad.browser.ViewCalendarSubscriptions"
       template="../templates/calendar-subscriptions.pt"
       lp:url="/calendar/+subscripitions" />
+
+
+  <!-- XXX: register IDisplayViews so that the schemadisplay doesn't
+       give an error on the non-string fields.  Should not be
+       necessary once Zope gets updated.
+        James Henstridge (2005-06-28) -->
+
+  <view
+      type="zope.publisher.interfaces.browser.IBrowserRequest"
+      for="zope.schema.interfaces.IDatetime"
+      provides="zope.app.form.interfaces.IDisplayWidget"
+      factory="canonical.launchpad.browser.LocalDateTimeDisplayWidget"
+      permission="zope.Public"
+      />
 
 </configure>

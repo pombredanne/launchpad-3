@@ -155,6 +155,7 @@ class CalendarDay:
         # this will raise an error for invalid dates ...
         date(year, month, day)
         self.calendar = calendar
+        self.name = '%04d-%02d-%02d' % (year, month, day)
         self.year = year
         self.month = month
         self.day = day
@@ -168,6 +169,7 @@ class CalendarWeek:
         if not check_weeknum(year, week):
             raise ValueError, 'invalid week number'
         self.calendar = calendar
+        self.name = '%04d-W%02d' % (year, week)
         self.year = year
         self.week = week
 
@@ -179,6 +181,7 @@ class CalendarMonth:
         # this will raise an error for invalid dates ...
         date(year, month, 1)
         self.calendar = calendar
+        self.name = '%04d-%02d' % (year, month)
         self.year = year
         self.month = month
 
@@ -190,6 +193,7 @@ class CalendarYear:
         # this will raise an error for invalid dates ...
         date(year, 1, 1)
         self.calendar = calendar
+        self.name = '%04d' % year
         self.year = year
 
 

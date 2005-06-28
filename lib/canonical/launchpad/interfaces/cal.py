@@ -63,6 +63,9 @@ class ICalendarDay(Interface):
         title=_('Calendar'),
         schema=ILaunchpadCalendar,
         description=_("""The calendar"""))
+    name = TextLine(
+        title=_('Name'), required=True, readonly=True,
+        description=_("""A string describing the day"""))
     year = Int(
         title=_('Year'), required=True, readonly=True,
         description=_("""The year to display."""))
@@ -79,6 +82,9 @@ class ICalendarWeek(Interface):
         title=_('Calendar'),
         schema=ILaunchpadCalendar,
         description=_("""The calendar"""))
+    name = TextLine(
+        title=_('Name'), required=True, readonly=True,
+        description=_("""A string describing the week"""))
     year = Int(
         title=_('Year'), required=True, readonly=True,
         description=_("""The year to display."""))
@@ -92,6 +98,9 @@ class ICalendarMonth(Interface):
         title=_('Calendar'),
         schema=ILaunchpadCalendar,
         description=_("""The calendar"""))
+    name = TextLine(
+        title=_('Name'), required=True, readonly=True,
+        description=_("""A string describing the month"""))
     year = Int(
         title=_('Year'), required=True, readonly=True,
         description=_("""The year to display."""))
@@ -105,6 +114,9 @@ class ICalendarYear(Interface):
         title=_('Calendar'),
         schema=ILaunchpadCalendar,
         description=_("""The calendar"""))
+    name = TextLine(
+        title=_('Name'), required=True, readonly=True,
+        description=_("""A string describing the year"""))
     year = Int(
         title=_('Year'), required=True, readonly=True,
         description=_("""The year to display."""))

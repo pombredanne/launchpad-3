@@ -10,7 +10,8 @@ from zope.component import getUtility
 from zope.schema.interfaces import IText
 from zope.app.form import InputWidget
 from zope.app.form.browser import TextAreaWidget, TextWidget
-from zope.app.form.browser.widget import SimpleInputWidget, renderElement
+from zope.app.form.browser.widget import (
+    DisplayWidget, SimpleInputWidget, renderElement)
 from zope.app.form.interfaces import ConversionError, InputErrors
 
 from canonical.launchpad.interfaces import ILaunchBag
@@ -57,6 +58,21 @@ class LocalDateTimeWidget(TextWidget):
             user_timezone = getUtility(ILaunchBag).timezone
             value = value.astimezone(user_timezone)
             return value.strftime('%Y-%m-%d %H:%M:%S')
+
+class LocalDateTimeDisplayWidget(DisplayWidget):
+
+    def __call__(self):
+        if self._renderedValueSet():
+            value = self._data
+        else:
+            value = self.context.default
+
+        if value is None:
+            return ""
+
+        user_timezone = getUtility(ILaunchBag).timezone
+        value = value.astimezone(user_timezone)
+        return value.strftime('%Y-%m-%d %H:%M:%S %Z')
 
 class TimeDurationWidget(SimpleInputWidget):
     """A widget for entering a time duration."""
@@ -164,3 +180,24 @@ class TimeDurationWidget(SimpleInputWidget):
                                     cssClass=self.cssClass,
                                     extra=self.extra))
         return ''.join(render)
+
+class TimeDurationDisplayWidget(DisplayWidget):
+
+    def __call__(self):
+        if self._renderedValueSet():
+            value = self._data
+        else:
+            value = self.context.default
+
+        if value is None:
+            return ""
+
+        # pick an appropriate unit
+        if value.seconds % 3600 != 0:
+            return '%g minutes' % (value.seconds / 60.0)
+        elif value.seconds % 86400 != 0:
+            return '%g hours' % (value.seconds / 3600.0)
+        elif value.seconds % 604800 != 0:
+            return '%g days' % (value.seconds / 86400.0)
+        else:
+            return '%g weeks' % (value.seconds / 604800.0)
