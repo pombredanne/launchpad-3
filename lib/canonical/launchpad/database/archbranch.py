@@ -3,20 +3,23 @@
 __metaclass__ = type
 __all__ = ['Branch', 'CategoryMapper', 'BranchMapper', 'VersionMapper']
 
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-from sqlobject import StringCol, ForeignKey, MultipleJoin
-
-from canonical.launchpad.interfaces import \
-    ArchiveNotRegistered, VersionNotRegistered, VersionAlreadyRegistered, \
-    BranchAlreadyRegistered, CategoryAlreadyRegistered
+import pybaz
 
 from zope.interface import implements
+from sqlobject import StringCol, ForeignKey, MultipleJoin
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
+
+from canonical.launchpad.interfaces import ArchiveNotRegistered
+from canonical.launchpad.interfaces import VersionNotRegistered
+from canonical.launchpad.interfaces import VersionAlreadyRegistered
+from canonical.launchpad.interfaces import BranchAlreadyRegistered
+from canonical.launchpad.interfaces import CategoryAlreadyRegistered
+
 from canonical.launchpad.interfaces import IBranch
 
-from canonical.launchpad.database.archarchive import \
-        ArchiveMapper, ArchNamespace, ArchArchive
-
-import pybaz
+from canonical.launchpad.database.archarchive import ArchiveMapper
+from canonical.launchpad.database.archarchive import ArchNamespace
+from canonical.launchpad.database.archarchive import ArchArchive
 
 
 class Branch(SQLBase):
@@ -129,23 +132,18 @@ class VersionMapper:
 
     def findByName(self, name):
         parser = pybaz.NameParser(name)
-        archive = ArchArchive.selectOne(
-            'name = ' + quote(parser.get_archive()))
-        if archive is None:
-            return broker.MissingVersion(name)
+        archive = ArchArchive.selectOneBy(name= parser.get_archive())
+        assert archive is not None
         id = archive.id
         version = ArchNamespace.selectOneBy(
             archiveID=id, category=parser.get_category(),
             branch=parser.get_branch(), version=parser.get_version()
             )
-        from canonical.arch import broker
-        if version is None:
-            return broker.MissingVersion(name)
-        else:
-            result = Branch.selectOneBy(archnamespaceID=version.id)
-            if result is None:
-                raise VersionNotRegistered(version.fullname)
-            return result
+        assert version is not None
+        branch = Branch.selectOneBy(archnamespaceID=version.id)
+        if branch is None:
+            raise VersionNotRegistered(version.fullname)
+        return branch
 
     def insert(self, version):
         """insert a version into the database"""
