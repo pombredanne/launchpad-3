@@ -27,16 +27,12 @@ class TrebuchetServer(XMLRPC):
         self.backend = backend or default_backend
 
         self.log = get_logger("trebuchet", parent_log)
-        self.log.info("Trebuchet XML-RPC Server %s started", __version__)
+        self.log.info("Trebuchet XML-RPC Server started")
         self.log.info("Serving backend %s", self.backend.__name__)
 
     def xmlrpc_echo(self, *args):
         """Return all arguments unchanged."""
         return args
-
-    def xmlrpc_version(self):
-        """Return the version."""
-        return __version__
 
     def xmlrpc_get_manifest(self, url):
         """Retrieve the manifest with the URL given."""

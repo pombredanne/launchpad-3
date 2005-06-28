@@ -19,7 +19,7 @@
     <adapter
         for="canonical.launchpad.interfaces.IDistribution"
         provides="canonical.launchpad.interfaces.IBugTaskSubset"
-        factory="canonical.launchpad.components.distribution.DistributionToBugTaskSubsetAdapter"
+        factory="canonical.launchpad.components.bugtask.ContextToBugTaskSubsetAdapter"
         permission="zope.Public" />
 
     <browser:defaultView
@@ -206,5 +206,10 @@
             field="owner"
             class="canonical.widgets.OwnerWidget" />
     </browser:addform>
+
+    <browser:menus
+        module="canonical.launchpad.browser.distribution"
+        classes="DistributionFacets"
+        />
 
 </configure>

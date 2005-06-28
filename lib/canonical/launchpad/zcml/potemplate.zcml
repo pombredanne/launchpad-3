@@ -144,13 +144,6 @@
     </view>
 
     <!-- POTemplateSet -->
-    <content class="canonical.launchpad.database.POTemplateSet">
-        <require
-            permission="zope.Public"
-            interface="canonical.launchpad.interfaces.IPOTemplateSet"
-            />
-    </content>
-
     <securedutility
         class="canonical.launchpad.database.POTemplateSet"
         provides="canonical.launchpad.interfaces.IPOTemplateSet">
@@ -169,6 +162,14 @@
             set_attributes="sourcepackagename distrorelease"
             />
     </content>
+    <browser:url
+        for="canonical.launchpad.interfaces.IPOTemplateSubset"
+        urldata="canonical.launchpad.browser.POTemplateSubsetUrl"
+        />
+    <browser:url
+        for="canonical.launchpad.interfaces.IPOTemplate"
+        urldata="canonical.launchpad.browser.POTemplateUrl"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IPOTemplateSubset"

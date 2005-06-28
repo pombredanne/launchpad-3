@@ -5,18 +5,18 @@
 
 <body>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="body">
+  <h1>Bugs in <span tal:replace="context/title">Title</span></h1>
 
-  <h1>Bugs in <span tal:replace="context/context_title">Title</span></h1>
+  <div class="sidebar">
+    <tal:block content="structure view/bugtaskListingActionsPortlet" />
+    <br />
+    <tal:block content="structure view/bugStatsPortlet" />
+    <br />
+    <tal:block content="structure view/releaseBugsPortlet" />
+  </div>
 
   <div metal:use-macro="context/@@bugtask_search_listing/buglisting" />
-    <p><img src="/++resource++add.gif" alt="+">
-    <a href="#"
-       tal:content="string:File a bug on ${context/context_title}"
-       tal:attributes="href string:${context/context/fmt:url}/+filebug"></a><br />
-    </p>
-  <div>
- </div>
 </div>
 
 </body>

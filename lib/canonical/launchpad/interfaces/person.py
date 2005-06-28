@@ -6,7 +6,8 @@ from zope.component import getUtility
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-from canonical.lp.dbschema import TeamSubscriptionPolicy, TeamMembershipStatus
+from canonical.lp.dbschema import (
+    TeamSubscriptionPolicy, TeamMembershipStatus, EmailAddressStatus)
 
 
 def _valid_person_name(name):
@@ -29,7 +30,7 @@ class IPerson(Interface):
                 "numbers, dots, hyphens, or plus signs.")
             )
     displayname = TextLine(
-            title=_('Display Name'), required=False, readonly=False,
+            title=_('Display Name'), required=True, readonly=False,
             description=_("Your name as you would like it displayed "
             "throughout Launchpad. Most people use their full name "
             "here.")
@@ -206,6 +207,22 @@ class IPerson(Interface):
         a member of himself (i.e. person1.inTeam(person1)).
         """
 
+    def validateAndEnsurePreferredEmail(self, email):
+        """Ensure this person has a preferred email.
+
+        If this person doesn't have a preferred email, <email> will be set as
+        this person's preferred one. Otherwise it'll be set as VALIDATED and
+        this person will keep its old preferred email. This is why this method
+        can't be called with person's preferred email as argument.
+
+        This method is meant to be the only one to change the status of an
+        email address, but as we all know the real world is far from ideal and
+        we have to deal with this in one more place, which is the case when
+        people explicitly want to change their preferred email address. On
+        that case, though, all we have to do is assign the new preferred email
+        to person.preferredemail.
+        """
+
     def hasMembershipEntryFor(team):
         """Tell if this person is a direct member of the given team."""
 
@@ -333,6 +350,23 @@ class IPersonSet(Interface):
         SQLBase class and will do all the checks needed before inserting
         anything in the database. Please refer to the Person implementation
         to see what keyword arguments are allowed.
+
+        If you want an automatic way to create a Person and an EmailAddress
+        based only on an email address, have a look at
+        IPersonSet.createPerson().
+        """
+
+    def createPerson(email, displayname, givenname=None, familyname=None,
+                     password=None):
+        """Create a new Person and an EmailAddress for that Person.
+
+        Return the newly created Person if everything went fine or None.
+
+        Generate a unique nickname from the email address provided, create a
+        Person with that nickname and then create an EmailAddress (with status
+        NEW) for the new Person. This feature is provided mainly for nicole, 
+        debsync and POFile raw importer, which generally have only the email 
+        and displayname to create a new Person.
         """
 
     def newTeam(**kwargs):
@@ -457,10 +491,11 @@ class IEmailAddress(Interface):
 class IEmailAddressSet(Interface):
     """The set of EmailAddresses."""
 
-    def new(email, status, personID):
+    def new(email, personID, status=EmailAddressStatus.NEW):
         """Create a new EmailAddress with the given email, pointing to person.
 
-        Also make sure that the given status is in dbschema.
+        Also make sure that the given status is an item of
+        dbschema.EmailAddressStatus.
         """
 
     def __getitem__(emailid):

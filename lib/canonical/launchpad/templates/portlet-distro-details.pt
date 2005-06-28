@@ -12,7 +12,14 @@
       <b>Admin:</b><br />
       <img src="/++resource++user.gif">
       <a tal:attributes="href string:/people/${context/owner/name}/"
-         tal:content="context/owner/browsername">owner name</a><br /> 
+         tal:content="context/owner/browsername">owner name</a>
+      <tal:block condition="context/required:launchpad.Edit">
+        <a tal:attributes="href string:${context/fmt:url}/+reassign">
+          <img alt="(Change admin)"
+               src="/++resource++edit.gif" title="Change the admin" />
+        </a>
+      </tal:block>
+      <br />
 
       <b>Members:</b><br />
       <img src="/++resource++user.gif">

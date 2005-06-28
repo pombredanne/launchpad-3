@@ -573,12 +573,8 @@ class POFile(SQLBase, RosettaStats):
                         familyname = " ".join(items[1:])
 
                     # We create a new user without a password.
-                    try:
-                        person = createPerson(email, name, givenname,
-                                              familyname, password=None)
-                    except:
-                        # We had a problem creating the person...
-                        person = None
+                    person = getUtility(IPersonSet).createPerson(
+                            email, name, givenname, familyname, password=None)
 
                     if person is None:
                         # XXX: Carlos Perello Marin 20/12/2004 We have already
@@ -620,16 +616,11 @@ class POFile(SQLBase, RosettaStats):
         if self.exportfile is None:
             return False
 
-        if self.exporttime == UTC_NOW:
-            # XXX
-            # This is a workaround for the fact that UTC_NOW can't be compared
-            # against datetime values.
-            # -- Dafydd Harries, 2005/06/21
-
+        if not self.latest_submission:
             return True
-        else:
-            change_time = self.latest_submission.datecreated
-            return change_time < self.exporttime
+
+        change_time = self.latest_submission.datecreated
+        return change_time < self.exporttime
 
     def updateExportCache(self, contents):
         """See IPOFile."""
@@ -644,15 +635,19 @@ class POFile(SQLBase, RosettaStats):
         size = len(contents)
         file = StringIO.StringIO(contents)
 
-        # Note that UTC_NOW is resolved at the time at the beginning of the
-        # transaction, rather than when the transaction is committed. This is
-        # significant because translations could be added to the database
-        # while the export transaction is in progress, and the export would
-        # not include those translations.
+        # Note that UTC_NOW is resolved to the time at the beginning of the
+        # transaction. This is significant because translations could be added
+        # to the database while the export transaction is in progress, and the
+        # export would not include those translations. However, we want to be
+        # able to compare the export time to other datetime object within the
+        # same transaction -- e.g. in a call to validExportCache(). This is
+        # why we call .sync() -- it turns the UTC_NOW reference into an
+        # equivalent datetime object.
 
         self.exportfile = client.addFile(filename, size, file,
             'appliction/x-po')
         self.exporttime = UTC_NOW
+        self.sync()
 
     def fetchExportCache(self):
         """Return the cached export file, if it exists, or None otherwise."""

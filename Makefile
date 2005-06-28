@@ -108,7 +108,7 @@ start: inplace stop
 # so killing them after is a race condition.
 stop:
 	@ LPCONFIG=${LPCONFIG} ${PYTHON} \
-	    utilities/killservice.py librarian launchpad
+	    utilities/killservice.py librarian trebuchet launchpad
 
 debug:
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \

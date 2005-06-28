@@ -8,7 +8,9 @@ vocabulary is a list of terms that a widget (normally a selection style widget)
 This document is about some of the vocabularies found in Launchpad.
 
     >>> from canonical.launchpad.ftests import login
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
+    >>> from canonical.lp.dbschema import EmailAddressStatus
+    >>> from canonical.database.sqlbase import flush_database_updates
     >>> login('foo.bar@canonical.com')
 
 Values, Tokens, and Titles
@@ -114,7 +116,7 @@ o ProductVocabulary - the list of selectable products. Results are
     >>> arch.title 
     u'Arch archive mirrors'
 
-o PersonAccountToMergeVocabulary - all people (but no teams). This vocabularay
+o PersonAccountToMergeVocabulary - all non-merged people. This vocabulary
   is meant to be used only in the people merge form.
 
     >>> vocab = vocabulary_registry.get(None, "PersonAccountToMerge")
@@ -137,6 +139,27 @@ o PersonAccountToMergeVocabulary - all people (but no teams). This vocabularay
     preferred email.
     >>> [t.token for t in vocab.search('foo')]
     ['foo.bar@canonical.com']
+
+    Any person without a single email address is not part of the vocabulary.
+    >>> fooperson = getUtility(IPersonSet).newPerson(
+    ...     name='foobaz', displayname='foo baz')
+    >>> fooperson in vocab
+    False
+
+    Adding an email address to this person will make him part of the
+    vocabulary.
+    >>> email = getUtility(IEmailAddressSet).new('foo@bar.com', fooperson.id)
+    >>> flush_database_updates()
+    >>> fooperson in vocab
+    True
+
+    Any person that's already merged is not part of this vocabulary:
+    # XXX: Here we cheat because IPerson.merged is a readonly attribute.
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(fooperson).merged = 1
+    >>> flush_database_updates()
+    >>> fooperson in vocab
+    False
 
 o ValidPersonOrTeam - all 'valid' persons or teams. This is currently defined
   as people with a password, a preferred email address and not merged

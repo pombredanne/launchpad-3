@@ -2,9 +2,10 @@
 
 __metaclass__ = type
 
+import urllib
+
 from xml.sax.saxutils import escape
 
-from zope.app.traversing.browser import absoluteurl
 from zope.interface import implements
 from zope.component import getUtility
 from zope.app.publisher.browser import BrowserView
@@ -12,21 +13,22 @@ from zope.app.form.utility import setUpWidgets, getWidgetsData
 from zope.app.form.interfaces import IInputWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
+from canonical.launchpad.webapp import canonical_url
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
     IPersonSet, ILaunchBag, IDistroBugTaskSearch, IUpstreamBugTaskSearch,
     IBugSet, IProduct, IDistribution, IDistroRelease, IUpstreamBugTask,
-    IDistroBugTask, IDistroBugTask, IBugTask, IBugTaskSet)
+    IDistroBugTask, IBugTask, IBugTaskSet, IDistroReleaseSet)
 from canonical.lp import dbschema
 from canonical.launchpad.interfaces import IBugTaskSearchListingView
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.bug import BoundPortlet
 
-# Bug Reports
 class BugTasksReportView:
+    """The view class for the assigned bugs report."""
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -119,7 +121,7 @@ class BugTasksReportView:
     def allPeople(self):
         # XXX: We should be using None, not NULL outside of database code.
         #      -- Steve Alexander, 2005-04-22
-        return getUtility(IPersonSet).search(password = NULL)
+        return getUtility(IPersonSet).search(password=NULL)
 
 
 class ViewWithBugTaskContext:
@@ -153,8 +155,10 @@ class ViewWithBugTaskContext:
             s for s in self.context.bug.subscriptions
                 if s.subscription==dbschema.BugSubscription.IGNORE]
 
+
 class BugTaskViewBase:
     """The base class for IBugTask view classes."""
+
 
 class BugTaskEditView(SQLObjectEditView, BugTaskViewBase):
     pass
@@ -167,6 +171,13 @@ class BugTaskDisplayView(BugTaskViewBase):
 class BugTaskSearchListingView:
 
     implements(IBugTaskSearchListingView)
+
+    bugtaskListingActionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-bugtask-listing-actions.pt')
+    bugStatsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-bug-stats-for-context.pt')
+    releaseBugsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-release-bugs.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -184,7 +195,8 @@ class BugTaskSearchListingView:
 
     def search(self):
         """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
-        search_params = {}
+        orderby = self.request.get("orderby", ["-severity", "-priority"])
+        search_params = {'orderby' : orderby}
 
         form_params = getWidgetsData(self, self.search_form_schema)
 
@@ -193,7 +205,7 @@ class BugTaskSearchListingView:
             if searchtext.isdigit():
                 # The user wants to jump to a bug with a specific id.
                 bug = getUtility(IBugSet).get(int(searchtext))
-                self.request.response.redirect(absoluteurl(bug, self.request))
+                self.request.response.redirect(canonical_url(bug))
             else:
                 # The user wants to filter on certain text.
                 search_params["searchtext"] = searchtext
@@ -202,11 +214,12 @@ class BugTaskSearchListingView:
         if statuses:
             search_params["status"] = any(*statuses)
         else:
-            # The user is likely coming into the form by clicking on a
-            # URL (vs. having submitted it with POSTed search
-            # criteria), so show NEW and ACCEPTED bugs by default.
-            search_params["status"] = any(
-                dbschema.BugTaskStatus.NEW, dbschema.BugTaskStatus.ACCEPTED)
+            if not self.request.form.get("search"):
+                # The user is likely coming into the form by clicking
+                # on a URL (vs. having submitted a GET search query),
+                # so show NEW and ACCEPTED bugs by default.
+                search_params["status"] = any(
+                    dbschema.BugTaskStatus.NEW, dbschema.BugTaskStatus.ACCEPTED)
 
         severities = form_params.get("severity")
         if severities:
@@ -267,9 +280,19 @@ class BugTaskSearchListingView:
 
     def task_columns(self):
         """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
-        return [
-            "select", "id", "title", "package", "milestone", "status",
-            "submittedby", "assignedto"]
+        bugtask_subset = self.context
+        upstream_context = IProduct(bugtask_subset.context, None)
+        distribution_context = IDistribution(bugtask_subset.context, None)
+        distrorelease_context = IDistroRelease(bugtask_subset.context, None)
+
+        if upstream_context:
+            return [
+                "select", "id", "title", "milestone", "status", "severity",
+                "priority", "assignedto"]
+        elif distribution_context or distrorelease_context:
+            return [
+                "id", "title", "package", "status", "severity", "priority",
+                "assignedto"]
 
     def advanced(self):
         """Should the form be rendered in advanced search mode?"""
@@ -283,6 +306,225 @@ class BugTaskSearchListingView:
             return True
         return False
     advanced = property(advanced)
+
+    @property
+    def critical_count(self):
+        """Return the number of critical bugs filed in a context.
+
+        The count only considers bugs that the user would actually be
+        able to see in a listing.
+        """
+        bugtask_subset = self.context
+
+        status_new = dbschema.BugTaskStatus.NEW
+        status_accepted = dbschema.BugTaskStatus.ACCEPTED
+
+        critical_tasks = bugtask_subset.search(
+            severity=dbschema.BugSeverity.CRITICAL,
+            status=any(status_new, status_accepted))
+
+        return critical_tasks.count()
+
+    @property
+    def critical_count_filter_url(self):
+        """Construct and return the URL for all critical bugs.
+
+        The URL is context-aware.
+        """
+        return (
+            str(self.request.URL) +
+            "?field.status%3Alist=New&field.status%3Alist=Accepted&" +
+            "field.severity%3Alist=Critical&search=Search")
+
+    @property
+    def assigned_to_me_count(self):
+        """Return the number of bugs assigned to the user in this context.
+
+        The count only considers bugs that the user would actually be
+        able to see in a listing.
+        """
+        bugtask_subset = self.context
+        status_new = dbschema.BugTaskStatus.NEW
+        status_accepted = dbschema.BugTaskStatus.ACCEPTED
+
+        tasks_assigned_to_user = bugtask_subset.search(
+            assignee=getUtility(ILaunchBag).user,
+            status=any(status_new, status_accepted))
+
+        return tasks_assigned_to_user.count()
+
+    @property
+    def assigned_to_me_count_filter_url(self):
+        """Construct and return the URL that shows just bugs assigned to me.
+
+        The URL is context-aware.
+        """
+        user = getUtility(ILaunchBag).user
+        return (
+            str(self.request.URL) +
+            "?field.status%3Alist=New&field.status%3Alist=Accepted&" +
+            "field.assignee=" + user.name + "&search=Search")
+
+    @property
+    def untriaged_count(self):
+        """Return the number of untriaged bugs in this context.
+
+        'Untriaged' simply means IBugTask.status == NEW.
+
+        The count only considers bugs that the user would actually be
+        able to see in a listing.
+        """
+        bugtask_subset = self.context
+
+        untriaged_tasks = bugtask_subset.search(
+            status=dbschema.BugTaskStatus.NEW)
+
+        return untriaged_tasks.count()
+
+    @property
+    def untriaged_count_filter_url(self):
+        """Construct and return the URL that shows just untriaged bugs.
+
+        The URL is context-aware.
+        """
+        return str(self.request.URL) + "?field.status%3Alist=New&search=Search"
+
+    @property
+    def unassigned_count(self):
+        """Return the unassigned bugs filed in this context.
+
+        The count only considers bugs that the user would actually be
+        able to see in a listing.
+        """
+        bugtask_subset = self.context
+        status_new = dbschema.BugTaskStatus.NEW
+        status_accepted = dbschema.BugTaskStatus.ACCEPTED
+
+        unassigned_tasks = bugtask_subset.search(
+            assignee=NULL, status=any(status_new, status_accepted))
+
+        return unassigned_tasks.count()
+
+    @property
+    def unassigned_count_filter_url(self):
+        """Construct and return the URL that shows just the unassigned tasks.
+
+        The URL is context-aware.
+        """
+        return (
+            str(self.request.URL) +
+            "?field.status%3Alist=New&field.status%3Alist=Accepted&" +
+            "field.status-empty-marker=1&field.severity-empty-marker=1&" +
+            "field.assignee=&field.unassigned.used=&field.unassigned=on&search=Search")
+
+    @property
+    def total_count(self):
+        """Return the total number of bugs filed in this context.
+
+        The count only considers bugs that the user would actually be
+        able to see in a listing.
+        """
+        bugtask_subset = self.context
+
+        total_bugs = bugtask_subset.search()
+
+        return total_bugs.count()
+
+    @property
+    def total_count_filter_url(self):
+        """Construct and return the URL that shows all bugs.
+
+        The URL is context-aware.
+        """
+        return str(self.request.URL) + "?search=Search"
+
+    @property
+    def release_bug_counts(self):
+        """Return a list of release bug counts.
+
+        Each list element is a dict of the form:
+
+        {"releasename" : releasename, "bugcount" : bugcount, "url" : url}
+
+        The list is sorted newest release to oldest.
+
+        The count only considers bugs that the user would actually be
+        able to see in a listing.
+        """
+        bugtask_subset = self.context
+        distribution_context = IDistribution(bugtask_subset.context, None)
+        distrorelease_context = IDistroRelease(bugtask_subset.context, None)
+
+        releases = []
+
+        if distribution_context:
+            releases = getUtility(IDistroReleaseSet).search(
+                distribution=distribution_context,
+                isreleased=True, orderBy="-datereleased")
+        elif distrorelease_context:
+            releases = getUtility(IDistroReleaseSet).search(
+                distribution=distrorelease_context.distribution,
+                isreleased=True, orderBy="-datereleased")
+
+        release_bugs = []
+        for release in releases:
+            open_release_bugs = getUtility(IBugTaskSet).search(
+                distrorelease=release,
+                status=any(
+                    dbschema.BugTaskStatus.NEW,
+                    dbschema.BugTaskStatus.ACCEPTED))
+            release_bugs.append({
+                "releasename" : release.name,
+                "bugcount" : open_release_bugs.count(),
+                "url" : canonical_url(release) + '/+bugs'})
+
+        return release_bugs
+
+    def getSortLink(self, colname):
+        """Return a link that can be used to sort the search results by colname.
+        """
+        form = self.request.form
+        sortlink = ""
+        if form.get("search") is None:
+            # There is no search criteria to preserve.
+            sortlink = "%s?search=Search&orderby=%s" % (
+                str(self.request.URL), colname)
+        else:
+            # There is search criteria to preserve.
+            sortlink = str(self.request.URL) + "?"
+            for fieldname in form:
+                fieldvalue = form.get(fieldname)
+                if isinstance(fieldvalue, (list, tuple)):
+                    fieldvalue = [value.encode("utf-8") for value in fieldvalue]
+                else:
+                    fieldvalue = fieldvalue.encode("utf-8")
+
+                if fieldname != "orderby":
+                    sortlink += "%s&" % urllib.urlencode(
+                        {fieldname : fieldvalue}, doseq=True)
+
+            sortcol = colname
+            current_sort_column = form.get("orderby")
+            if current_sort_column is not None:
+                # The listing was already sorted by some column. If it
+                # was the column for which we're generating the sort
+                # link, generate a sort link that inverts the current
+                # sort ordering of the column.
+                if current_sort_column.startswith("-"):
+                    current_sort_column = current_sort_column[1:]
+                    generate_ascending_sort_link = True
+                else:
+                    generate_ascending_sort_link = False
+
+                if current_sort_column == colname:
+                    if generate_ascending_sort_link:
+                        sortcol = colname
+                    else:
+                        sortcol = "-" + colname
+
+            sortlink += "orderby=%s" % sortcol
+
+        return sortlink
 
     def _upstreamContext(self):
         """Is this page being viewed in an upstream context?
@@ -304,6 +546,7 @@ class BugTaskSearchListingView:
         Return the IDistroRelease if yes, otherwise return None.
         """
         return IDistroRelease(self.context.context, None)
+
 
 class BugTaskAbsoluteURL(BrowserView):
     """The view for an absolute URL of a bug task."""

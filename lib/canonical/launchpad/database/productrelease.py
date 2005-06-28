@@ -15,6 +15,8 @@ from canonical.launchpad.interfaces import IProductRelease
 from canonical.launchpad.interfaces import IProductReleaseSet
 from canonical.launchpad.database.potemplate import POTemplate
 
+from canonical.lp.dbschema import EnumCol, UpstreamFileType
+
 class ProductRelease(SQLBase):
     """A release of a product."""
     implements(IProductRelease)
@@ -110,6 +112,12 @@ class ProductRelease(SQLBase):
             count += t.rosettaCount(language)
         return count
 
+    def addFileAlias(self, alias_id, file_type=UpstreamFileType.CODETARBALL):
+        """See IProductRelease."""
+        return ProductReleaseFile(productreleaseID=self.id,
+                                  libraryfileID=alias_id,
+                                  filetype=file_type)
+
 
 class ProductReleaseFile(SQLBase):
     """A file of a product release."""
@@ -121,10 +129,8 @@ class ProductReleaseFile(SQLBase):
     libraryfile = ForeignKey(dbName='libraryfile',
                              foreignKey='LibraryFileAlias', notNull=True)
 
-    # XXX: DanielDebonzi 2005-03-23
-    # This should be changes to EnumCol but seems to do
-    # not have an schema defined yet.
-    filetype = IntCol(notNull=True)
+    filetype = EnumCol(dbName='filetype', schema=UpstreamFileType,
+                       notNull=True, default=UpstreamFileType.CODETARBALL)
 
 
 class ProductReleaseSet(object):

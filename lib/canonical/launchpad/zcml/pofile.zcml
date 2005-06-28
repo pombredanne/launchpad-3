@@ -18,6 +18,12 @@
             />
     </content>
 
+    <browser:url
+        for="canonical.launchpad.interfaces.IPOFile"
+        path_expression="language/code"
+        attribute_to_parent="potemplate"
+        />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IPOFile"
         name="+index"

@@ -32,8 +32,8 @@ from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary, \
 from canonical.launchpad.database import (
     Product, BugFactory, Milestone, Person)
 from canonical.launchpad.interfaces import (
-    IPerson, IProduct, IProductSet, IBugTaskSet, IAging, ILaunchBag, IProductRelease,
-    ISourcePackage, IBugTaskSearchListingView)
+    IPerson, IProduct, IProductSet, IBugTaskSet, IAging, ILaunchBag,
+    IProductRelease, ISourcePackage, IBugTaskSearchListingView, ICountry)
 from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad import helpers
@@ -112,7 +112,7 @@ class ProductView:
                 for template in self.context.potemplates()]
 
     def requestCountry(self):
-        return helpers.requestCountry(self.request)
+        return ICountry(self.request, None)
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
@@ -211,16 +211,6 @@ class ProductEditView(ProductView, SQLObjectEditView):
         # If the name changed then the URL changed, so redirect:
         self.request.response.redirect(
             '../%s/+edit' % urlquote(self.context.name))
-
-
-class ProductBugsView(BugTaskSearchListingView):
-    implements(IBugTaskSearchListingView)
-
-    def task_columns(self):
-        """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
-        return [
-            "select", "id", "title", "milestone", "status",
-            "submittedby", "assignedto"]
 
 
 class ProductFileBugView(SQLObjectAddView):

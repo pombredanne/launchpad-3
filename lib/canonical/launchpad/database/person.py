@@ -2,12 +2,11 @@
 
 __metaclass__ = type
 __all__ = [
-    'Person', 'PersonSet', 'createPerson', 'personFromPrincipal',
-    'EmailAddress', 'EmailAddressSet', 'GPGKey', 'GPGKeySet',
-    'SSHKey', 'SSHKeySet', 'ArchUserID', 'ArchUserIDSet',
-    'WikiName', 'WikiNameSet', 'JabberID', 'JabberIDSet',
-    'IrcID', 'IrcIDSet', 'TeamMembership', 'TeamMembershipSet',
-    'TeamParticipation', 'Karma'
+    'Person', 'PersonSet', 'EmailAddress', 'EmailAddressSet',
+    'GPGKey', 'GPGKeySet', 'SSHKey', 'SSHKeySet', 'ArchUserID',
+    'ArchUserIDSet', 'WikiName', 'WikiNameSet', 'JabberID',
+    'JabberIDSet', 'IrcID', 'IrcIDSet', 'TeamMembership',
+    'TeamMembershipSet', 'TeamParticipation', 'Karma'
     ]
 
 import itertools
@@ -18,7 +17,7 @@ import sha
 
 # Zope interfaces
 from zope.interface import implements, directlyProvides, directlyProvidedBy
-from zope.component import ComponentLookupError, getUtility
+from zope.component import getUtility
 
 # SQL imports
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
@@ -38,7 +37,7 @@ from canonical.launchpad.interfaces import \
     IJabberID, IIrcIDSet, IArchUserIDSet, ISSHKeySet, IJabberIDSet, \
     IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IKarma, IKarmaPointsManager, \
     IMaintainershipSet, IEmailAddressSet, ISourcePackageReleaseSet, \
-    ICalendarOwner
+    IPasswordEncryptor, ICalendarOwner
 
 from canonical.launchpad.database.translation_effort import TranslationEffort
 from canonical.launchpad.database.bug import BugTask
@@ -65,11 +64,11 @@ class Person(SQLBase):
 
     _defaultOrder = 'displayname'
 
-    name = StringCol(dbName='name', alternateID=True)
+    name = StringCol(dbName='name', alternateID=True, notNull=True)
     password = StringCol(dbName='password', default=None)
     givenname = StringCol(dbName='givenname', default=None)
     familyname = StringCol(dbName='familyname', default=None)
-    displayname = StringCol(dbName='displayname', default=None)
+    displayname = StringCol(dbName='displayname', notNull=True)
     teamdescription = StringCol(dbName='teamdescription', default=None)
 
     teamowner = ForeignKey(dbName='teamowner', foreignKey='Person',
@@ -447,13 +446,29 @@ class Person(SQLBase):
             return None
     defaultrenewedexpirationdate = property(defaultrenewedexpirationdate)
 
-    def _setPreferredemail(self, email):
+    def validateAndEnsurePreferredEmail(self, email):
+        """See IPerson."""
         if not IEmailAddress.providedBy(email):
-            raise TypeError, ("Any person's email address must provide "
-                              "the IEmailAddress interface. %s doesn't."
-                              % email)
-        # XXX: Should this be an assert?
-        #      -- SteveAlexander, 2005-04-23
+            raise TypeError, (
+                "Any person's email address must provide the IEmailAddress "
+                "interface. %s doesn't." % email)
+        assert email.person == self
+        assert self.preferredemail != email
+
+        if self.preferredemail is None:
+            # This branch will be executed only in the first time a person
+            # uses Launchpad. Either when creating a new account or when
+            # resetting the password of an automatically created one.
+            self.preferredemail = email
+        else:
+            email.status = EmailAddressStatus.VALIDATED
+
+    def _setPreferredemail(self, email):
+        """See IPerson."""
+        if not IEmailAddress.providedBy(email):
+            raise TypeError, (
+                "Any person's email address must provide the IEmailAddress "
+                "interface. %s doesn't." % email)
         assert email.person.id == self.id
         preferredemail = self.preferredemail
         if preferredemail is not None:
@@ -787,6 +802,23 @@ class PersonSet:
             ''' % vars())
         skip.append(('posubscription', 'person'))
 
+        # Update only the POExportRequests that will not conflict
+        # and trash the rest
+        cur.execute('''
+            UPDATE POExportRequest
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND id NOT IN (
+                SELECT a.id FROM POExportRequest AS a, POExportRequest AS b
+                WHERE a.person = %(from_id)d AND b.person = %(to_id)d
+                AND a.potemplate = b.potemplate
+                AND a.pofile = b.pofile
+                )
+            ''' % vars())
+        cur.execute('''
+            DELETE FROM POExportRequest WHERE person=%(from_id)d
+            ''' % vars())
+        skip.append(('poexportrequest', 'person'))
+
         # Update the POSubmissions. They should not conflict since each of
         # them is independent
         cur.execute('''
@@ -795,19 +827,6 @@ class PersonSet:
             WHERE person=%(from_id)d
             ''' % vars())
         skip.append(('posubmission', 'person'))
-    
-        # We should still have the POTranslationSightingBackup. These might
-        # conflict since there is a complicated constraint to ensure there
-        # is only ever one sighting from one person. We'll just ignore that,
-        # try and slam it and see if it fails. Unlikely, since there are not
-        # likely to be many/any people translating files yet under two
-        # different accounts which they later decide to merge.
-        cur.execute('''
-            UPDATE POTranslationSightingBackup
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d
-            ''' % vars())
-        skip.append(('potranslationsightingbackup', 'person'))
     
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.
@@ -835,57 +854,21 @@ class PersonSet:
             UPDATE Person SET merged=%(to_id)d WHERE id=%(from_id)d
             ''' % vars())
 
-def createPerson(email, displayname=None, givenname=None, familyname=None,
-                 password=None):
-    """Create a new Person and an EmailAddress for that Person.
+    def createPerson(self, email, displayname=None, givenname=None,
+                     familyname=None, password=None):
+        """See IPersonSet."""
+        try:
+            name = nickname.generate_nick(email)
+        except NicknameGenerationError:
+            return None
 
-    Generate a unique nickname from the email address provided, create a
-    Person with that nickname and then create the EmailAddress for the new
-    Person. This function is provided mainly for nicole, debsync and POFile raw
-    importer, which generally have only the email and displayname to create a
-    new Person.
-    """
-    kw = {}
-    try:
-        kw['name'] = nickname.generate_nick(email)
-    except NicknameGenerationError:
-        return None
+        password = getUtility(IPasswordEncryptor).encrypt(password)
+        person = self.newPerson(name=name, displayname=displayname,
+                                givenname=givenname, familyname=familyname,
+                                password=password)
 
-    kw['displayname'] = displayname
-    kw['givenname'] = givenname
-    kw['familyname'] = familyname
-    # XXX: Carlos Perello Marin 22/12/2004 We cannot use getUtility
-    # from initZopeless scripts and Rosetta's import_daemon.py
-    # calls indirectly to this function :-(
-    # encryptor = getUtility(IPasswordEncryptor)
-    encryptor = SSHADigestEncryptor()
-    kw['password'] = encryptor.encrypt(password)
-
-    person = PersonSet().newPerson(**kw)
-
-    new = EmailAddressStatus.NEW
-    EmailAddress(person=person.id, email=email.lower(), status=new)
-
-    return person
-
-
-def personFromPrincipal(principal):
-    """Adapt canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal
-   to IPerson.
-    """
-    # XXX: Make this use getUtility(IPersonSet), and put it in components.
-    #      -- SteveAlexander, 2005-04-23
-    if ILaunchpadPrincipal.providedBy(principal):
-        return Person.get(principal.id)
-    else:
-        # This is not actually necessary when this is used as an adapter
-        # from ILaunchpadPrincipal, as we know we always have an
-        # ILaunchpadPrincipal.
-        #
-        # When Zope3 interfaces allow returning None for "cannot adapt"
-        # we can return None here.
-        ##return None
-        raise ComponentLookupError
+        getUtility(IEmailAddressSet).new(email, person.id)
+        return person
 
 
 class EmailAddress(SQLBase):
@@ -929,7 +912,7 @@ class EmailAddressSet:
         except SQLObjectNotFound:
             return default
 
-    def new(self, email, status, personID):
+    def new(self, email, personID, status=EmailAddressStatus.NEW):
         email = email.strip()
         assert status in EmailAddressStatus.items
         return EmailAddress(email=email, status=status, person=personID)

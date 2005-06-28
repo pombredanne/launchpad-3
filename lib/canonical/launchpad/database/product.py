@@ -11,26 +11,26 @@ from zope.interface import implements
 from zope.exceptions import NotFoundError
 from zope.component import getUtility
 
-from sqlobject import \
-    ForeignKey, StringCol, BoolCol, MultipleJoin, RelatedJoin, \
-    SQLObjectNotFound, AND
+from sqlobject import (
+    ForeignKey, StringCol, BoolCol, MultipleJoin, RelatedJoin,
+    SQLObjectNotFound, AND)
 
 import canonical.sourcerer.deb.version
-
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.lp.dbschema import EnumCol, TranslationPermission, \
-    BugSeverity, BugTaskStatus, RosettaImportStatus
-
+from canonical.lp.dbschema import (
+    EnumCol, TranslationPermission, BugSeverity, BugTaskStatus,
+    RosettaImportStatus)
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.cal import Calendar
-from canonical.launchpad.interfaces import IProduct, IProductSet, \
-    IDistribution, ILaunchpadCelebrities, ICalendarOwner
+from canonical.launchpad.interfaces import (
+    IProduct, IProductSet, IDistribution, ILaunchpadCelebrities,
+    ICalendarOwner)
 
 
 class Product(SQLBase):
@@ -70,6 +70,7 @@ class Product(SQLBase):
     autoupdate = BoolCol(dbName='autoupdate', notNull=True, default=False)
     freshmeatproject = StringCol(notNull=False, default=None)
     sourceforgeproject = StringCol(notNull=False, default=None)
+    releaseroot = StringCol(notNull=False, default=None)
 
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)

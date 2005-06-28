@@ -8,6 +8,7 @@ from StringIO import StringIO
 from datetime import datetime
 
 from zope.component import getUtility
+from zope.interface import implements
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.i18n import ZopeMessageIDFactory as _
 from zope.publisher.browser import FileUpload
@@ -16,8 +17,9 @@ from zope.app.publisher.browser import BrowserView
 
 from canonical.launchpad import helpers
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces import ILaunchBag, IPOTemplateSet, \
-    IPOTemplateNameSet, IPersonSet, RawFileAttachFailed, IPOExportRequestSet
+from canonical.launchpad.interfaces import (
+    ILaunchBag, IPOTemplateSet, IPOTemplateNameSet, IPersonSet,
+    RawFileAttachFailed, IPOExportRequestSet, ICanonicalUrlData)
 from canonical.launchpad.components.poexport import POExport
 from canonical.launchpad.browser.pofile import POFileView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -150,17 +152,17 @@ class POTemplateView:
                     'There was a problem uploading the file: %s.' % error)
 
         elif helpers.is_tar_filename(filename):
-            tarball = helpers.string_to_tarfile(file.read())
-            pot_paths, po_paths = helpers.examine_tarfile(tarball)
+            tarball = helpers.RosettaReadTarFile(stream=file)
+            pot_paths, po_paths = tarball.examine()
 
-            error = helpers.check_tar(tarball, pot_paths, po_paths)
+            error = tarball.check_for_import(pot_paths, po_paths)
 
             if error is not None:
                 self.status_message = error
                 return
 
             self.status_message = (
-                helpers.import_tar(self.context, owner, tarball, pot_paths, po_paths))
+                tarball.do_import(self.context, owner, pot_paths, po_paths))
         else:
             self.status_message = (
                 'The file you uploaded was not recognised as a file that '
@@ -432,4 +434,58 @@ class POTemplateAbsoluteURL(BrowserView):
                 self.context.sourcepackagename.name,
                 self.context.potemplatename.name)
 
+class POTemplateSubsetUrl:
+    implements(ICanonicalUrlData)
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def path(self):
+        potemplatesubset = self.context
+        if potemplatesubset.distrorelease is not None:
+            assert potemplatesubset.productrelease is None
+            assert potemplatesubset.sourcepackagename is not None
+            return '+sources/%s/+pots' % (
+                potemplatesubset.sourcepackagename.name)
+        else:
+            assert potemplatesubset.productrelease is not None
+            return '+pots'
+
+    @property
+    def inside(self):
+        potemplatesubset = self.context
+        if potemplatesubset.distrorelease is not None:
+            assert potemplatesubset.productrelease is None
+            return potemplatesubset.distrorelease
+        else:
+            assert potemplatesubset.productrelease is not None
+            return potemplatesubset.productrelease
+
+
+class POTemplateUrl:
+    implements(ICanonicalUrlData)
+
+    def __init__(self, context):
+        self.context = context
+        potemplate = self.context
+        potemplateset = getUtility(IPOTemplateSet)
+        if potemplate.distrorelease is not None:
+            assert potemplate.productrelease is None
+            self.potemplatesubset = potemplateset.getSubset(
+                distrorelease=potemplate.distrorelease,
+                sourcepackagename=potemplate.sourcepackagename)
+        else:
+            assert potemplate.productrelease is not None
+            self.potemplatesubset = potemplateset.getSubset(
+                productrelease=potemplate.productrelease)
+
+    @property
+    def path(self):
+        potemplate = self.context
+        return potemplate.name
+
+    @property
+    def inside(self):
+        return self.potemplatesubset
 

@@ -6,10 +6,11 @@ import tempfile
 from zope.component import getUtility
 
 from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad.helpers import tar_add_file, getRawFileData, \
-    join_lines
-from canonical.launchpad.interfaces import IPOExportRequestSet, \
-    IPOTemplate, IPOFile, ILibraryFileAliasSet, ZeroLengthPOExportError
+from canonical.launchpad.helpers import (
+    getRawFileData, join_lines, RosettaWriteTarFile)
+from canonical.launchpad.interfaces import (
+    IPOExportRequestSet, IPOTemplate, IPOFile, ILibraryFileAliasSet,
+    ZeroLengthPOExportError)
 
 def get_object_name_and_url(person, potemplate, object):
     """Return the name and URL of the given object.
@@ -47,7 +48,7 @@ def process_multi_object_request(person, potemplate, objects):
 
     name = potemplate.potemplatename.name
     filehandle = tempfile.TemporaryFile()
-    archive = tarfile.open('', 'w:gz', filehandle)
+    archive = RosettaWriteTarFile(filehandle)
 
     for object in objects:
         if IPOTemplate.providedBy(object):
@@ -59,7 +60,7 @@ def process_multi_object_request(person, potemplate, objects):
         else:
             raise TypeError("Can't export object", object)
 
-        tar_add_file(archive, 'rosetta-%s/%s' % (name, filename), contents)
+        archive.add_file('rosetta-%s/%s' % (name, filename), contents)
 
     archive.close()
     size = filehandle.tell()
@@ -122,6 +123,21 @@ def process_queue(transaction_manager):
             # Librarian will refuse to accept.
             # -- Dafydd Harries, 2005/06/16
             pass
+        except UnicodeEncodeError:
+            # XXX
+            # This is a temporary workaround for export failures. A better
+            # error handling system will be implemented.
+            # -- Dafydd Harries 2005/06/23
+            pass
+
+
+        # This is here in case we need to process the same file twice in the
+        # same queue run. If we try to do that all in one transaction, the
+        # second time we get to the file we'll get a Librarian lookup error
+        # because files are not accessible in the same transaction as they're
+        # created.
+
+        transaction_manager.commit()
 
         # This is here in case we need to process the same file twice in the
         # same queue run. If we try to do that all in one transaction, the

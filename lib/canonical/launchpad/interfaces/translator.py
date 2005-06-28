@@ -43,3 +43,5 @@ class ITranslatorSet(IAddFormCustomization):
 
     title = Attribute('Title')
 
+    def new(translationgroup, language, translator):
+        """Create a new translator for a group."""

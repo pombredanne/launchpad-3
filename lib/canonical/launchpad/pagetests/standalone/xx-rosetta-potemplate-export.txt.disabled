@@ -52,7 +52,7 @@ If we GET the page while logged in, we should get a confirmation form.
   <BLANKLINE>
               <h2>Select Files for Exporting</h2>
   <BLANKLINE>
-              <form action="" method="POST" enctype="multipart/form-data">
+              <form action="" method="POST">
   ...
 
 If we POST the page, it should add the request to the queue.

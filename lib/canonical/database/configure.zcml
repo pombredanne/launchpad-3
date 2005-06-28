@@ -2,6 +2,6 @@
 
     <adapter for="canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal"
         provides="canonical.launchpad.interfaces.IPerson"
-        factory="canonical.launchpad.database.personFromPrincipal" />
+        factory="canonical.launchpad.components.person.personFromPrincipal" />
 
 </configure>
