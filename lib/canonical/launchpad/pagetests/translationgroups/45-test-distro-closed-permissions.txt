@@ -46,6 +46,9 @@ switch to editing previously-translated strings.
               <option value="untranslated">
                 untranslated items
               </option>
+              <option value="need-review">
+                need review items
+              </option>
               <option value="translated">
                 translated items
               </option>

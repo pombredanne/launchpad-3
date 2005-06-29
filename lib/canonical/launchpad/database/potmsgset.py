@@ -198,11 +198,6 @@ class POTMsgSet(SQLBase):
     def makeMessageIDSighting(self, text, pluralForm, update=False):
         """Create a new message ID sighting for this message set."""
 
-        # This method used to accept 'text' parameters being string objects,
-        # but this is depracated.
-        if not isinstance(text, unicode):
-            raise TypeError("Message ID text must be unicode.")
-
         try:
             messageID = POMsgID.byMsgid(text)
         except SQLObjectNotFound:

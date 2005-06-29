@@ -1,4 +1,3 @@
-
 PO Imports
 ----------
 
@@ -21,6 +20,12 @@ We need this for the Librarian to work properly.
 
     >>> import transaction
 
+Then, let's get a handle to our mailer. This is the thing we'll examine to show
+what email has been sent, to whom, and what the body of the message contains:
+
+    >>> import email
+    >>> from canonical.launchpad.mail import stub
+
 Here's a fake logger to capture any errors that happen.
 
     >>> class FakeLogger:
@@ -37,13 +42,27 @@ Here's a fake logger to capture any errors that happen.
     ...
     ...     warning = log
 
+Now, is time to create the new potemplate
+
+    >>> from canonical.launchpad.database import ProductRelease
+    >>> release = ProductRelease.get(3)
+    >>> release.productseries.product.name
+    u'firefox'
+
+    >>> from canonical.launchpad.database import POTemplateNameSet
+    >>> ptn = POTemplateNameSet().new('firefox', 'Whatever')
+
+    >>> from canonical.launchpad.database import POTemplateSubset
+    >>> subset = POTemplateSubset(productrelease=release)
+
 Here's the person who'll be doing the import.
 
     >>> person = Person.get(1)
 
-Here's the PO template that'll get imported.
-
-    >>> potemplate = POTemplate.get(1)
+    >>> potemplate = subset.new(
+    ...     potemplatename=ptn,
+    ...     contents='# Not much.',
+    ...     owner=person)
 
 And this is the file that'll get imported.
 
@@ -51,6 +70,7 @@ And this is the file that'll get imported.
     ... msgid ""
     ... msgstr ""
     ... "Content-Type: text/plain; charset=UTF-8\n"
+    ... "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
     ...
     ... msgid "foo"
     ... msgstr ""
@@ -58,8 +78,19 @@ And this is the file that'll get imported.
     ... msgid "bar"
     ... msgstr ""
     ...
+    ... #: test.c:13
     ... msgid "baz"
     ... msgstr ""
+    ...
+    ... #, c-format
+    ... msgid "Foo %s"
+    ... msgstr ""
+    ...
+    ... #, c-format
+    ... msgid "Singular %d"
+    ... msgid_plural "Plural %d"
+    ... msgstr[0] ""
+    ... msgstr[1] ""
     ... '''
 
 Importing happens in two steps. First, we attach the file data to the
@@ -78,9 +109,14 @@ Second, we tell the PO template to import from the file data it has.
 
 Once we've done this, the correct message IDs should show up in the template.
 
-    >>> messageSets = list(potemplate.getPOTMsgSets())
-    >>> [messageSet.primemsgid_.msgid for messageSet in messageSets]
-    [u'foo', u'bar', u'baz']
+    >>> potmsgsets = list(potemplate.getPOTMsgSets())
+    >>> [potmsgset.primemsgid_.msgid for potmsgset in potmsgsets]
+    [u'foo', u'bar', u'baz', u'Foo %s', u'Singular %d']
+
+The file references field should be there
+
+    >>> potmsgsets[2].filereferences
+    u'test.c:13'
 
 Now let's get a PO file to import.
 
@@ -98,6 +134,7 @@ Here are the contents of the file we'll be importing.
     ... msgstr ""
     ... "PO-Revision-Date: 2005-06-03 19:41+0100\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
+    ... "Plural-Forms: nplurals=4; plural=n==1) ? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
     ...
     ... msgid "foo"
     ... msgstr "blah"
@@ -108,7 +145,22 @@ Here are the contents of the file we'll be importing.
     ...
     ... msgid "balloon"
     ... msgstr "blah"
+    ...
+    ... #, c-format
+    ... msgid "Foo %s"
+    ... msgstr "blah %i"
+    ...
+    ... #, c-format
+    ... msgid "Singular %d"
+    ... msgid_plural "Plural %d"
+    ... msgstr[0] "Foos"
+    ... msgstr[1] "Bars"
+    ... msgstr[2] "Welsh power!"
+    ... msgstr[3] "We have four!"
     ... '''
+
+This is the dbschema that controls the validation of a translation.
+    >>> from canonical.lp.dbschema import TranslationValidationStatus
 
 The process of importing a PO file is much like that of importing a PO
 template. Remember, we need to tell the system that this po file is a
@@ -117,7 +169,6 @@ template. Remember, we need to tell the system that this po file is a
     >>> pofile.attachRawFileData(pofile_contents, True, person)
     >>> transaction.commit()
     >>> pofile.doRawImport(FakeLogger())
-    log> There is a problem with the dates importing cy language for template Template for evolution in hoary. New: 2005-06-03 19:41+0100, old YEAR-MO-DA HO:MI+ZONE
 
 Here's a current message set: i.e. it has a corresponding current message set
 in the PO template. It should not be publishedfuzzy.
@@ -127,6 +178,12 @@ in the PO template. It should not be publishedfuzzy.
     u'foo'
     >>> messageSets[0].publishedfuzzy
     False
+
+And should be accepted by our validator.
+
+    >>> published = messageSets[0].publishedSubmission(0)
+    >>> published.validationstatus == TranslationValidationStatus.OK
+    True
 
 And here's a non-current message set. It shouldn't be fuzzy either.
 
@@ -141,6 +198,57 @@ This message set should be fuzzy, however.
     >>> messageSet = pofile.messageSet(u'bar')
     >>> messageSet.publishedfuzzy
     True
+
+And this one should have the validation status with an error.
+
+    >>> messageSet = pofile.messageSet(u'Foo %s')
+    >>> published = messageSet.publishedSubmission(0)
+    >>> published.validationstatus == TranslationValidationStatus.UNKNOWNERROR
+    True
+
+Check that the plural form was imported correctly.
+
+    >>> messageSet = pofile.messageSet(u'Singular %d')
+    >>> published = messageSet.publishedSubmission(0)
+    >>> published.validationstatus == TranslationValidationStatus.OK
+    True
+    >>> messageSet.published_texts
+    [u'Foos', u'Bars', u'Welsh power!', u'We have four!']
+
+
+Now, is time to check the notification email.
+
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    1
+
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> to_addrs
+    ['mark@hbd.com']
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["Subject"]
+    'Translation problems - Welsh (cy) - firefox in Mozilla Firefox 0.9'
+    >>> print msg.get_payload(decode=True)
+    Hello Mark Shuttleworth,
+    <BLANKLINE>
+    On ... (just requested), you uploaded 5
+    Welsh (cy) translations for firefox in Mozilla Firefox 0.9 in Rosetta.
+    <BLANKLINE>
+    There were problems with 1 of these translations.
+    <BLANKLINE>
+    4.  [msg 4]
+    "format specifications in 'msgid' and 'msgstr' for argument 1 are not the same":
+    <BLANKLINE>
+    #, c-format
+    msgid "Foo %s"
+    msgstr "blah %i"
+    <BLANKLINE>
+    <BLANKLINE>
+    <BLANKLINE>
+    The other 4 translations have been accepted.
+    <BLANKLINE>
+    ...
 
     >>> LibrarianTestSetup().tearDown()
     >>> LaunchpadFunctionalTestSetup().tearDown()

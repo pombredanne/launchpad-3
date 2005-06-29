@@ -183,7 +183,8 @@ class POFileView:
         #  count:
         #    The number of messages being translated.
         #  show:
-        #    Which messages to show: 'translated', 'untranslated' or 'all'.
+        #    Which messages to show: 'translated', 'need-review',
+        #    'untranslated', 'errors' or 'all'.
         #
         assert self.user is not None, 'This view is for logged-in users only.'
 
@@ -251,7 +252,8 @@ class POFileView:
         # Get message display settings.
         self.show = form.get('show')
 
-        if self.show not in ('translated', 'untranslated', 'all'):
+        if self.show not in ('translated', 'need-review', 'untranslated',
+                             'errors', 'all'):
             self.show = self.DEFAULT_SHOW
 
         # Get the message sets.
@@ -293,9 +295,15 @@ class POFileView:
             elif self.show == 'translated':
                 filtered_potmsgsets = \
                     pofile.getPOTMsgSetTranslated(slice=slice_arg)
+            elif self.show == 'need-review':
+                filtered_potmsgsets = \
+                    pofile.getPOTMsgSetFuzzy(slice=slice_arg)
             elif self.show == 'untranslated':
                 filtered_potmsgsets = \
                     pofile.getPOTMsgSetUntranslated(slice=slice_arg)
+            elif self.show == 'errors':
+                filtered_potmsgsets = \
+                    pofile.getPOTMsgSetWithErrors(slice=slice_arg)
             else:
                 raise AssertionError('show = "%s"' % self.show)
 
@@ -442,33 +450,6 @@ class POFileView:
             new_translations = messageSet['translations']
             fuzzy = messageSet['fuzzy']
 
-            has_translations = False
-            for new_translation_key in new_translations.keys():
-                if new_translations[new_translation_key] != '':
-                    has_translations = True
-                    break
-
-            if has_translations and not fuzzy:
-                # The submit has translations to validate and are not set as
-                # fuzzy.
-
-                msgids_text = [messageid.msgid
-                               for messageid in list(pot_set.messageIDs())]
-
-                # Validate the translation we got from the translation form
-                # to know if gettext is unhappy with the input.
-                try:
-                    helpers.validate_translation(msgids_text,
-                                                 new_translations,
-                                                 pot_set.flags())
-                except gettextpo.error, e:
-                    # Save the error message gettext gave us to show it to the
-                    # user and jump to the next entry so this messageSet is
-                    # not stored into the database.
-                    messageSet['error'] = str(e)
-                    number_errors += 1
-                    continue
-
             # Get hold of an appropriate message set in the PO file,
             # creating it if necessary.
             try:
@@ -476,12 +457,18 @@ class POFileView:
             except NotFoundError:
                 po_set = pofile.createMessageSetFromText(msgid_text)
 
-            po_set.updateTranslationSet(
-                person=self.user,
-                new_translations=new_translations,
-                fuzzy=fuzzy,
-                published=False,
-                is_editor=self.is_editor)
+            try:
+                po_set.updateTranslationSet(
+                    person=self.user,
+                    new_translations=new_translations,
+                    fuzzy=fuzzy,
+                    published=False,
+                    is_editor=self.is_editor)
+            except gettextpo.error, e:
+                # Save the error message gettext gave us to show it to the
+                # user.
+                messageSet['error'] = str(e)
+                number_errors += 1
 
         # update the statistis for this po file
         pofile.updateStatistics()

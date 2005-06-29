@@ -35,3 +35,72 @@ Get the set of POTMsgSets that are untranslated.
 >>> potmsgsets = list(pofile.getPOTMsgSetUntranslated())
 >>> len(potmsgsets)
 14
+
+Test that the header is updated.
+
+>>> from canonical.launchpad.components.poparser import POHeader
+
+This is the comment
+
+>>> comment = ' This is the top comment.'
+
+This is the new header.
+
+>>> msgstr = '''Project-Id-Version: es
+... POT-Creation-Date: 2004-08-18 11:10+0200
+... PO-Revision-Date: 2005-08-18 13:22+0000
+... Last-Translator: Carlos Perelló Marín <carlos@canonical.com>
+... Language-Team: Spanish <traductores@es.gnome.org>
+... MIME-Version: 1.0
+... Content-Type: text/plain; charset=UTF-8
+... Content-Transfer-Encoding: 8bit
+... Report-Msgid-Bugs-To: serrador@hispalinux.es
+... X-Generator: Rosetta (http://launchpad.ubuntu.com/rosetta/)
+... Plural-Forms: nplurals=2; plural=n != 1;'''
+
+Now, get a POHeader object with that information.
+
+>>> new_header = POHeader(commentText=comment, msgstr=msgstr)
+>>> new_header.finish()
+
+To be sure the new header is being applied, here we have the old values:
+
+>>> print pofile.topcomment.encode('utf-8')
+traducción de es.po al Spanish
+translation of es.po to Spanish
+...
+
+>>> print pofile.header.encode('utf-8')
+Project-Id-Version: es
+POT-Creation-Date: 2004-08-17 11:10+0200
+PO-Revision-Date: 2005-04-07 13:22+0000
+...
+Plural-Forms: nplurals=2; plural=(n != 1);
+
+>>> pofile.fuzzyheader
+True
+
+>>> pofile.pluralforms
+2
+
+Now, is time to change the old header with the new one.
+
+>>> pofile.updateHeader(new_header)
+
+And the new values:
+
+>>> pofile.topcomment
+u' This is the top comment.'
+
+>>> print pofile.header.encode('utf-8')
+Project-Id-Version: es
+POT-Creation-Date: 2004-08-18 11:10+0200
+PO-Revision-Date: 2005-08-18 13:22+0000
+...
+Plural-Forms: nplurals=2; plural=n != 1;
+
+>>> pofile.fuzzyheader
+False
+
+>>> pofile.pluralforms
+2
