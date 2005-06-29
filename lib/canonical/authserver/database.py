@@ -12,6 +12,7 @@ from twisted.enterprise import adbapi
 #from canonical.authserver import adbapi
 
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
+from canonical.launchpad.interfaces import UBUNTU_WIKI_URL
 from canonical.database.sqlbase import quote
 from canonical.lp import dbschema
 
@@ -19,6 +20,10 @@ from canonical.authserver.interfaces import IUserDetailsStorage
 from canonical.authserver.interfaces import IUserDetailsStorageV2
 
 from canonical.foaf import nickname
+
+
+def utf8quote(string):
+    return quote(string).encode('utf-8')
 
 
 class UserDetailsStorageMixin(object):
@@ -43,7 +48,7 @@ class UserDetailsStorageMixin(object):
         transaction.execute(
             "INSERT INTO EmailAddress (person, email, status) "
             "VALUES (%d, %s, %d)" % (
-                personID, quote(emailAddresses[0]),
+                personID, utf8quote(emailAddresses[0]),
                 dbschema.EmailAddressStatus.PREFERRED.value
                 )
             )
@@ -51,7 +56,7 @@ class UserDetailsStorageMixin(object):
             transaction.execute(
                 "INSERT INTO EmailAddress (person, email, status) "
                 "VALUES (%d, %s, %d)"
-                % (personID, quote(emailAddress),
+                % (personID, utf8quote(emailAddress),
                    dbschema.EmailAddressStatus.VALIDATED.value)
             )
 
@@ -67,7 +72,7 @@ class UserDetailsStorageMixin(object):
             "FROM SSHKey "
             "JOIN PushMirrorAccess ON SSHKey.person = PushMirrorAccess.person "
             "WHERE PushMirrorAccess.name = %s"
-            % (quote(archiveName),)
+            % (utf8quote(archiveName),)
         )
         authorisedKeys = transaction.fetchall()
         
@@ -84,7 +89,7 @@ class UserDetailsStorageMixin(object):
             "JOIN EmailAddress ON SSHKey.person = EmailAddress.person "
             "WHERE EmailAddress.email = %s "
             "AND EmailAddress.status in (%d, %d)"
-            % (quote(email), dbschema.EmailAddressStatus.VALIDATED.value,
+            % (utf8quote(email), dbschema.EmailAddressStatus.VALIDATED.value,
                 dbschema.EmailAddressStatus.PREFERRED.value)
         )
         authorisedKeys.extend(transaction.fetchall())
@@ -92,6 +97,83 @@ class UserDetailsStorageMixin(object):
         authorisedKeys = [(dbschema.SSHKeyType.items[keytype].title, keytext)
                           for keytype, keytext in authorisedKeys]
         return authorisedKeys
+
+    def _wikinameExists(self, transaction, wikiname):
+        """Is a wikiname already taken?"""
+        transaction.execute(
+            "SELECT count(*) FROM Wikiname WHERE wikiname = %s"
+            % (utf8quote(wikiname),)
+        )
+        return bool(transaction.fetchone()[0])
+
+    def _getPerson(self, transaction, loginID):
+        # We go through some contortions with assembling the SQL to ensure that
+        # the OUTER JOIN happens after the INNER JOIN.  This should allow
+        # postgres to optimise the query as much as possible (approx 10x faster
+        # according to my tests with EXPLAIN on the production database).
+        select = (
+            "SELECT Person.id, Person.displayname, Person.password, "
+            "    Wikiname.wikiname "
+            "FROM Person ")
+
+        wikiJoin = (
+            "LEFT OUTER JOIN Wikiname ON Wikiname.person = Person.id "
+            "AND Wikiname.wiki = %s"
+            % (utf8quote(UBUNTU_WIKI_URL),))
+
+        # First, try to look the person up by using loginID as an email 
+        # address
+        try:
+            if not isinstance(loginID, unicode):
+                # Refuse to guess encoding, so we decode as 'ascii'
+                loginID = str(loginID).decode('ascii')
+        except UnicodeDecodeError:
+            row = None
+        else:
+            transaction.execute(
+                select + 
+                "INNER JOIN EmailAddress ON EmailAddress.person = Person.id " +
+                wikiJoin +
+                "WHERE lower(EmailAddress.email) = %s "
+                % (utf8quote(loginID.lower()),)
+            )
+
+            row = transaction.fetchone()
+
+        if row is None:
+            # Fallback: try looking up by id, rather than by email
+            try:
+                personID = int(loginID)
+            except ValueError:
+                pass
+            else:
+                transaction.execute(
+                    select + wikiJoin +
+                    "WHERE Person.id = %d " % (personID,)
+                )
+                row = transaction.fetchone()
+        if row is None:
+            # Fallback #2: try treating loginID as a nickname
+            transaction.execute(
+                select + wikiJoin +
+                "WHERE Person.name = %s " 
+                % (utf8quote(loginID),)
+            )
+            row = transaction.fetchone()
+        if row is None:
+            # Fallback #3: give up!
+            return None
+
+        row = list(row)
+        assert isinstance(row[1], unicode)
+
+        passwordDigest = row[2]
+        if passwordDigest:
+            salt = saltFromDigest(passwordDigest)
+        else:
+            salt = ''
+
+        return row + [salt]
 
 
 class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
@@ -116,17 +198,22 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
     def _getUserInteraction(self, transaction, loginID):
         row = self._getPerson(transaction, loginID)
         try:
-            personID, displayname, passwordDigest, salt = row
+            personID, displayname, passwordDigest, wikiname, salt = row
         except TypeError:
             # No-one found
             return {}
         
         emailaddresses = self._getEmailAddresses(transaction, personID)
 
+        if wikiname is None:
+            # None/nil isn't standard XML-RPC
+            wikiname = ''
+
         return {
             'id': personID,
             'displayname': displayname,
             'emailaddresses': emailaddresses,
+            'wikiname': wikiname,
             'salt': salt,
         }
 
@@ -138,7 +225,7 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
     def _authUserInteraction(self, transaction, loginID, sshaDigestedPassword):
         row = self._getPerson(transaction, loginID)
         try:
-            personID, displayname, passwordDigest, salt = row
+            personID, displayname, passwordDigest, wikiname, salt = row
         except TypeError:
             # No-one found
             return {}
@@ -153,10 +240,15 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
         
         emailaddresses = self._getEmailAddresses(transaction, personID)
 
+        if wikiname is None:
+            # None/nil isn't standard XML-RPC
+            wikiname = ''
+
         return {
             'id': personID,
             'displayname': displayname,
             'emailaddresses': emailaddresses,
+            'wikiname': wikiname,
             'salt': salt,
         }
 
@@ -211,8 +303,19 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
         transaction.execute(
             "INSERT INTO Person (id, name, displayname, password) "
             "VALUES (%d, %s, %s, %s)"
-            % (personID, quote(name), quote(displayname).encode('utf-8'),
-               quote(sshaDigestedPassword))
+            % (personID, utf8quote(name), utf8quote(displayname),
+               utf8quote(sshaDigestedPassword))
+        )
+        
+        # Create a wikiname
+        wikiname = nickname.generate_wikiname(
+                displayname, 
+                registered=lambda x: self._wikinameExists(transaction, x)
+        )
+        transaction.execute(
+            "INSERT INTO Wikiname (person, wiki, wikiname) "
+            "VALUES (%d, %s, %s)"
+            % (personID, utf8quote(UBUNTU_WIKI_URL), utf8quote(wikiname))
         )
 
         self._addEmailAddresses(transaction, emailAddresses, personID)
@@ -221,6 +324,7 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
             'id': personID,
             'displayname': displayname,
             'emailaddresses': list(emailAddresses),
+            'wikiname': wikiname,
             'salt': saltFromDigest(sshaDigestedPassword),
         }
                 
@@ -245,57 +349,11 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
             "UPDATE Person "
             "SET password = %s "
             "WHERE Person.id = %d "
-            % (quote(str(newSshaDigestedPassword)), personID)
+            % (utf8quote(str(newSshaDigestedPassword)), personID)
         )
         
         userDict['salt'] = saltFromDigest(newSshaDigestedPassword)
         return userDict
-
-    def _getPerson(self, transaction, loginID):
-        query = (
-            "SELECT Person.id, Person.displayname, Person.password "
-            "FROM Person "
-        )
-        transaction.execute(
-            query +
-            "INNER JOIN EmailAddress ON EmailAddress.person = Person.id "
-            "WHERE lower(EmailAddress.email) = %s"
-            % (quote(str(loginID).lower()),)
-        )
-        
-        row = transaction.fetchone()
-        if row is None:
-            # Fallback: try looking up by id, rather than by email
-            try:
-                personID = int(loginID)
-            except ValueError:
-                pass
-            else:
-                transaction.execute(
-                    query +
-                    "WHERE Person.id = %d" % (personID,)
-                )
-                row = transaction.fetchone()
-        if row is None:
-            # Fallback #2: try treating loginID as a nickname
-            transaction.execute(
-                query +
-                "WHERE Person.name = %s" 
-                % (quote(str(loginID)),)
-            )
-            row = transaction.fetchone()
-        if row is None:
-            # Fallback #3: give up!
-            return None
-
-        row = list(row)
-        passwordDigest = row[2]
-        if passwordDigest:
-            salt = saltFromDigest(passwordDigest)
-        else:
-            salt = ''
-
-        return row + [salt]
 
     def _getEmailAddresses(self, transaction, personID):
         transaction.execute(
@@ -338,17 +396,22 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     def _getUserInteraction(self, transaction, loginID):
         row = self._getPerson(transaction, loginID)
         try:
-            personID, displayname, passwordDigest = row
+            personID, displayname, passwordDigest, wikiname = row
         except TypeError:
             # No-one found
             return {}
         
         emailaddresses = self._getEmailAddresses(transaction, personID)
 
+        if wikiname is None:
+            # None/nil isn't standard XML-RPC
+            wikiname = ''
+
         return {
             'id': personID,
             'displayname': displayname,
             'emailaddresses': emailaddresses,
+            'wikiname': wikiname,
         }
 
     def _getPerson(self, transaction, loginID):
@@ -357,52 +420,15 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         The loginID will be first tried as an email address, then as a numeric
         ID, then finally as a nickname.
 
-        :returns: a tuple of (person ID, display name, password) or None if not
-            found.
+        :returns: a tuple of (person ID, display name, password, wikiname) or
+            None if not found.
         """
-        query = (
-            "SELECT Person.id, Person.displayname, Person.password "
-            "FROM Person "
-            "INNER JOIN EmailAddress ON EmailAddress.person = Person.id "
-        )
-
-        # First, try to look the person up by using loginID as an email 
-        # address
-        transaction.execute(
-            query + 
-            "WHERE lower(EmailAddress.email) = %s "
-            % (quote(str(loginID).lower()),)
-        )
-        
-        row = transaction.fetchone()
+        row = UserDetailsStorageMixin._getPerson(self, transaction, loginID)
         if row is None:
-            # Fallback: try looking up by id, rather than by email
-            try:
-                personID = int(loginID)
-            except ValueError:
-                pass
-            else:
-                transaction.execute(
-                    query +
-                    "WHERE Person.id = '%d'" % (personID,)
-                )
-                row = transaction.fetchone()
-        if row is None:
-            # Fallback #2: try treating loginID as a nickname
-            transaction.execute(
-                query +
-                "WHERE Person.name = %s" 
-                % (quote(str(loginID)),)
-            )
-            row = transaction.fetchone()
-        if row is None:
-            # Fallback #3: give up
             return None
-
-        row = list(row)
-        assert isinstance(row[1], unicode)
-
-        return row
+        else:
+            # Remove the salt from the result; the v2 API doesn't include it.
+            return row[:-1]
 
     def authUser(self, loginID, password):
         ri = self.connectionPool.runInteraction
@@ -411,7 +437,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     def _authUserInteraction(self, transaction, loginID, password):
         row = self._getPerson(transaction, loginID)
         try:
-            personID, displayname, passwordDigest = row
+            personID, displayname, passwordDigest, wikiname = row
         except TypeError:
             # No-one found
             return {}
@@ -422,10 +448,15 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         
         emailaddresses = self._getEmailAddresses(transaction, personID)
 
+        if wikiname is None:
+            # None/nil isn't standard XML-RPC
+            wikiname = ''
+
         return {
             'id': personID,
             'displayname': displayname,
             'emailaddresses': emailaddresses,
+            'wikiname': wikiname,
         }
 
     def createUser(self, preferredEmail, password, displayname, emailAddresses):
@@ -469,8 +500,19 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         transaction.execute(
             "INSERT INTO Person (id, name, displayname, password) "
             "VALUES (%d, %s, %s, %s)"
-            % (personID, quote(name), quote(displayname).encode('utf-8'),
-               quote(passwordDigest))
+            % (personID, utf8quote(name), utf8quote(displayname),
+               utf8quote(passwordDigest))
+        )
+        
+        # Create a wikiname
+        wikiname = nickname.generate_wikiname(
+                displayname, 
+                registered=lambda x: self._wikinameExists(transaction, x)
+        )
+        transaction.execute(
+            "INSERT INTO Wikiname (person, wiki, wikiname) "
+            "VALUES (%d, %s, %s)"
+            % (personID, utf8quote(UBUNTU_WIKI_URL), utf8quote(wikiname))
         )
 
         self._addEmailAddresses(transaction, emailAddresses, personID)
@@ -479,6 +521,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             'id': personID,
             'displayname': displayname,
             'emailaddresses': list(emailAddresses),
+            'wikiname': wikiname,
         }
                 
     def changePassword(self, loginID, oldPassword, newPassword):
