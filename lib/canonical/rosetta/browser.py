@@ -65,10 +65,11 @@ class ViewPreferences:
         user_languages = list(self.person.languages)
 
         for language in getUtility(ILanguageSet):
-            yield BrowserLanguage(
-                code=language.code,
-                englishname=language.englishname,
-                is_checked=language in user_languages)
+            if language.visible:
+                yield BrowserLanguage(
+                    code=language.code,
+                    englishname=language.englishname,
+                    is_checked=language in user_languages)
 
     def submit(self):
         '''Process a POST request to one of the Rosetta preferences forms.'''
