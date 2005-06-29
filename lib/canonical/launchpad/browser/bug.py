@@ -16,7 +16,6 @@ from canonical.launchpad.interfaces import (
     IPerson, ILaunchBag, IBugSet, IBugTaskSet, IDistributionSet, IBugAddForm,
     IBug)
 from canonical.lp import dbschema
-from canonical.launchpad.database import Person, Bug
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
@@ -91,28 +90,3 @@ class BugAddForm:
         self.bug = bug
         self.bugtask = bug.bugtasks[0]
         self.comment = bug.messages[0]
-
-
-class BugsCreatedByView:
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def getAllPeople(self):
-        return Person.select()
-
-    def _getBugsForOwner(self, owner):
-        bugs_created_by_owner = []
-        if owner:
-            persons = Person.select(Person.q.name == owner)
-            if persons:
-                person = persons[0]
-                bugs_created_by_owner = Bug.select(Bug.q.ownerID == person.id)
-        else:
-            bugs_created_by_owner = Bug.select()
-
-        return bugs_created_by_owner
-
-    def getBugs(self):
-        bugs_created_by_owner = self._getBugsForOwner(self.request.get("owner", ""))
-        return bugs_created_by_owner
