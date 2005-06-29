@@ -11,39 +11,40 @@ This tests the basic functionality of the calendar database classes
 
 First we need to import the relevant database classes and interfaces
 
+  >>> from zope.component import getUtility
   >>> from schoolbell.interfaces import ICalendar, ICalendarEvent
   >>> from canonical.launchpad.interfaces import ILaunchpadCalendar
-  >>> from canonical.launchpad.database import (Person, Product,
-  ...     Project, Calendar, CalendarEvent)
+  >>> from canonical.launchpad.database import (Calendar, CalendarEvent,
+  ...     PersonSet, ProjectSet)
 
-Get hold of some objects.
+Get hold of some objects without calendars.
 
-  >>> person = Person.get(1)
-  >>> product = Product.get(1)
-  >>> project = Project.get(1)
+  >>> person = PersonSet().getByName('sabdfl')
+  >>> project = ProjectSet()['mozilla']
+  >>> product = project.getProduct('firefox')
 
 These objects do not initially have calendars:
 
   >>> print person.calendar
   None
-  >>> print product.calendar
-  None
   >>> print project.calendar
+  None
+  >>> print product.calendar
   None
 
 The calendar can be created with the getOrCreateCalendar() method:
 
   >>> person_calendar = cal = person.getOrCreateCalendar()
-  >>> product_calendar = product.getOrCreateCalendar()
   >>> project_calendar = project.getOrCreateCalendar()
+  >>> product_calendar = product.getOrCreateCalendar()
   >>> person.sync()
-  >>> product.sync()
   >>> project.sync()
+  >>> product.sync()
   >>> person_calendar == person.calendar
   True
-  >>> product_calendar == product.calendar
-  True
   >>> project_calendar == project.calendar
+  True
+  >>> product_calendar == product.calendar
   True
 
 Calendars can be attached to multiple types of objects (people,
@@ -54,18 +55,18 @@ by the "parent" descriptor of the calendar:
 
   >>> person_calendar.parent == person
   True
-  >>> product_calendar.parent == product
-  True
   >>> project_calendar.parent == project
+  True
+  >>> product_calendar.parent == product
   True
 
 The owner of the calendar is taken from the parent object:
 
   >>> person_calendar.owner == person
   True
-  >>> product_calendar.owner == product.owner
-  True
   >>> project_calendar.owner == project.owner
+  True
+  >>> product_calendar.owner == product.owner
   True
 
 
@@ -87,7 +88,6 @@ though:
 
 Let us actually create some events so iteration becomes more interesting.
 
-  >>> from canonical.launchpad.database import CalendarEvent
   >>> e1 = CalendarEvent(unique_id="e1", calendar=cal, title="Hack",
   ...                    dtstart=datetime(2004, 12, 15, 0, 35, tzinfo=UTC),
   ...                    duration=timedelta(minutes=1))
