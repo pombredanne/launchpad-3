@@ -113,4 +113,16 @@
     permission="zope.Public"
     />
 
+  <!-- RDF downloadable documents -->
+  <browser:page
+    for="canonical.publication.RootObject"
+    name="rdf"
+    template="templates/rdf-index.pt"
+    permission="zope.Public"
+    />
+
+  <browser:resourceDirectory
+    name="rdf"
+    directory="rdfspec" />
+
 </configure>
