@@ -91,20 +91,35 @@
         class="canonical.launchpad.browser.POFileView"
         />
 
+    <!--
+    XXX
+    These two views are for backwards compatibility. They should be
+    removed after a month or two.
+     - Dafydd Harries 2005/06/24
+    -->
+
     <browser:page
         name="+po"
         for="canonical.launchpad.interfaces.IPOFile"
         permission="launchpad.AnyPerson"
-        template="../templates/pofile-export.pt"
-        class="canonical.launchpad.browser.ViewPOExport"
+        class="canonical.launchpad.browser.ExportCompatibilityView"
+        attribute="__call__"
         />
 
     <browser:page
         name="+mo"
         for="canonical.launchpad.interfaces.IPOFile"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.POFileMOExportView"
+        permission="launchpad.AnyPerson"
+        class="canonical.launchpad.browser.ExportCompatibilityView"
         attribute="__call__"
+        />
+
+    <browser:page
+        name="+export"
+        for="canonical.launchpad.interfaces.IPOFile"
+        permission="launchpad.AnyPerson"
+        template="../templates/pofile-export.pt"
+        class="canonical.launchpad.browser.POExportView"
         />
 
     <!-- Dummy PO File -->

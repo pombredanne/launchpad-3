@@ -1,6 +1,10 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""Browser code for PO files."""
+
 __metaclass__ = type
+
+__all__ = ['POFileView', 'ExportCompatibilityView', 'POExportView']
 
 import popen2
 import os
@@ -11,16 +15,33 @@ from datetime import datetime
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 from zope.exceptions import NotFoundError
-from zope.security.interfaces import Unauthorized
 
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad.interfaces import (ILaunchBag, ILanguageSet,
     RawFileAttachFailed, IPOExportRequestSet)
-from canonical.launchpad.components.poexport import POExport
 from canonical.launchpad.components.poparser import POHeader
 from canonical.launchpad import helpers
-from canonical.launchpad.helpers import TranslationConstants
 from canonical.launchpad.browser.pomsgset import POMsgSetView
+#from canonical.launchpad.browser.potemplate import BaseExportView
+
+class BaseExportView:
+    """Base class for PO export views."""
+
+    def formats(self):
+        """Return a list of formats available for translation exports."""
+
+        class BrowserFormat:
+            def __init__(self, title, value):
+                self.title = title
+                self.value = value
+
+        formats = [
+            RosettaFileFormat.PO,
+            RosettaFileFormat.MO,
+        ]
+
+        for format in formats:
+            yield BrowserFormat(format.title, format.name)
 
 
 class POFileView:
@@ -474,8 +495,13 @@ class POFileView:
 
         return messageSets
 
+class ExportCompatibilityView:
+    """View class for old export URLs which redirects to new export URLs."""
 
-class ViewPOExport:
+    def __call__(self):
+        return self.request.response.redirect('+export')
+
+class POExportView(BaseExportView):
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -486,45 +512,15 @@ class ViewPOExport:
         if self.request.method != 'POST':
             return
 
+        format_name = self.request.form.get('format')
+
+        try:
+            format = RosettaFileFormat.items[format_name]
+        except KeyError:
+            raise RuntimeError("Unsupported format")
+
         request_set = getUtility(IPOExportRequestSet)
-        request_set.addRequest(self.user, pofiles=[self.context])
+        request_set.addRequest(
+            self.user, pofiles=[self.context], format=format)
         self.formProcessed = True
-
-
-class POFileMOExportView:
-    def __call__(self):
-        pofile = self.context
-        poExport = POExport(pofile.potemplate)
-        languageCode = pofile.language.code
-        exportedFile = poExport.export(languageCode)
-
-        # XXX: It's ok to hardcode the msgfmt path?
-        msgfmt = popen2.Popen3('/usr/bin/msgfmt -o - -', True)
-
-        # We feed the command with our .po file from the stdin
-        msgfmt.tochild.write(exportedFile)
-        msgfmt.tochild.close()
-
-        # Now we wait until the command ends
-        status = msgfmt.wait()
-
-        if os.WIFEXITED(status):
-            if os.WEXITSTATUS(status) == 0:
-                # The command worked
-                output = msgfmt.fromchild.read()
-
-                self.request.response.setHeader('Content-Type',
-                    'application/x-gmo')
-                self.request.response.setHeader('Content-Length',
-                    len(output))
-                self.request.response.setHeader('Content-disposition',
-                    'attachment; filename="%s.mo"' % languageCode)
-                return output
-            else:
-                # XXX: Perhaps we should be more "polite" if it fails
-                return msgfmt.childerr.read()
-        else:
-            # XXX: Perhaps we should be more "polite" if it fails
-            return "ERROR exporting the .mo!!"
-
 

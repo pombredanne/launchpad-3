@@ -908,6 +908,8 @@ COMMENT ON COLUMN POExportRequest.potemplate IS
 'The PO template being requested.';
 COMMENT ON COLUMN POExportRequest.pofile IS
 'The PO file being requested, or NULL.';
+COMMENT ON COLUMN POExportRequest.format IS
+'The format the user would like the export to be in. See the RosettaFileFormat DB schema for possible values.';
 
 -- GPGKey
 COMMENT ON TABLE GPGKey IS 'A GPG key belonging to a Person';

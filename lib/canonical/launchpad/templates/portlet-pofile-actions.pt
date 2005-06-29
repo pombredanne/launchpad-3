@@ -24,10 +24,7 @@
           <a href="../">View Template</a>
         </li>
         <li class="download">
-          <a href="+po">Export as PO file</a>
-        </li>
-        <li class="download">
-          <a href="+mo">Export as MO file</a>
+          <a href="+export">Export this file</a>
         </li>
       </ul>
 
