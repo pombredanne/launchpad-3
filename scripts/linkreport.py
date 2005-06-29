@@ -102,14 +102,21 @@ def main(csvfile, log):
             - '1 day 12 hours'::interval
         """, orderBy=["recursionlevel", "parentname", "url"])
 
-    rep = report("New Arrivals", new_broken_links, total)
+    rep = report("New Arrivals", new_broken_links, total, since=False)
 
     old_broken_links = BrokenLink.select("""
         since <= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
             - '1 day 12 hours'::interval
+        AND since > CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - '14 days'::interval
         """, orderBy=["recursionlevel", "parentname", "url"])
 
-    rep += report("Old Favorites", old_broken_links, total)
+    rep += report("Old Favorites", old_broken_links, total, since=True)
+
+    antique_broken_links = BrokenLink.select("""
+        since <= CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - '14 days'::interval
+        """, orderBy=["since", "recursionlevel", "parentname", "url"])
+
+    rep += report("Hall of Shame", antique_broken_links, total, since=True)
 
     if not options.email:
         # Print to stdout in system encoding - might raise UnicodeError on
@@ -124,7 +131,7 @@ def main(csvfile, log):
                 rep, {'Keywords': 'LinkChecker', 'X-Fnord': 'Fnord'}
                 )
 
-def report(title, links, total):
+def report(title, links, total, since=True):
 
     out = StringIO()
 
@@ -139,6 +146,8 @@ def report(title, links, total):
         print_row("Parent", link.parentname)
         print_row("Link", link.url)
         print_row("Result", link.result)
+        if since:
+            print_row("Since", link.since.strftime('%A %d %B %Y'))
         print >> out
     print >> out
 
