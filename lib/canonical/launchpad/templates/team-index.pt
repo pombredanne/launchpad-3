@@ -19,7 +19,14 @@
           <tr>
             <th>Owner:</th>
             <td><a tal:attributes="href string:../${context/teamowner/name}"
-                   tal:content="context/teamowner/browsername"></a></td>
+                   tal:content="context/teamowner/browsername"></a>
+                <tal:block condition="context/required:launchpad.Admin">
+                  <a tal:attributes="href string:${context/fmt:url}/+reassign">
+                    <img alt="(Change owner)" src="/++resource++edit.gif"
+                         title="Change the owner" />
+                  </a>
+                </tal:block>
+            </td>
           </tr>
           <tr>
             <th>Members:</th>
