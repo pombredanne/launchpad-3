@@ -89,7 +89,6 @@ def execute_zcml_for_scripts(use_web_security=False):
     else:
         setSecurityPolicy(PermissiveSecurityPolicy)
 
-
     # Register atexit handler to kill off mail delivery daemon threads, and
     # thus avoid spew at exit.  See:
     # http://mail.python.org/pipermail/python-list/2003-October/192044.html
@@ -112,10 +111,9 @@ def execute_zcml_for_scripts(use_web_security=False):
     from canonical.launchpad.ftests import login
     login('launchpad.anonymous')
 
-
 def logger_options(parser, default=logging.INFO):
     """Add the --verbose and --quiet options to an optparse.OptionParser.
-   
+
     The requested loglevel will end up in the option's loglevel attribute.
 
     >>> from optparse import OptionParser
@@ -130,7 +128,7 @@ def logger_options(parser, default=logging.INFO):
     True
 
     """
-    
+
     # Raise an exception if the constants have changed. If they change we
     # will need to fix the arithmetic
     assert logging.DEBUG == 10
@@ -143,7 +141,7 @@ def logger_options(parser, default=logging.INFO):
         parser.values.loglevel = (
                 getattr(parser.values, 'loglevel', default) + inc
                 )
-        
+
     parser.add_option(
             "-v", "--verbose", dest="loglevel", default=default,
             action="callback", callback=counter, callback_args=(-10, ),
@@ -160,7 +158,7 @@ def logger(options=None, name=None):
 
     If options is not passed, the command line is parsed for the standard
     options specified by logger_options().
-    
+
     >>> from optparse import OptionParser
     >>> parser = OptionParser()
     >>> logger_options(parser)
