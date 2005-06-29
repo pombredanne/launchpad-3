@@ -628,6 +628,10 @@ class ViewCalendarSubscriptions:
         self._subscriptions = getUtility(ICalendarSubscriptionSet)
 
     def subscriptions(self):
+        """Returns information about all the user's calendar
+        subscriptions.  This is used to build the list of calendars
+        for the user to subscribe or unsubscribe from.
+        """
         # XXXX should make sure that calendars for person and teams they
         # are a member of are always in the subscription list.
         #  - jamesh 2005-01-25

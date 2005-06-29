@@ -917,3 +917,20 @@ COMMENT ON COLUMN GPGKey.revoked IS 'True if this key has been revoked';
 COMMENT ON COLUMN GPGKey.algorithm IS 'The algorithm used to generate this key. Valid values defined in dbschema.GPGKeyAlgorithms';
 COMMENT ON COLUMN GPGKey.keysize IS 'Size of the key in bits, as reported by GPG. We may refuse to deal with keysizes < 768 bits in the future.';
 
+-- Calendar
+COMMENT ON TABLE Calendar IS 'A Calendar attached to some other Launchpad object (currently People, Projects or Products)';
+COMMENT ON COLUMN Calendar.title IS 'The title of the Calendar';
+
+COMMENT ON TABLE CalendarSubscription IS 'A subscription relationship between two calendars';
+COMMENT ON COLUMN CalendarSubscription.subject IS 'The subject of the subscription relationship';
+COMMENT ON COLUMN CalendarSubscription.object IS 'The object of the subscription relationship';
+COMMENT ON COLUMN CalendarSubscription.colour IS 'The colour used to display events from calendar \'object\' when in the context of calendar \'subject\'';
+
+COMMENT ON TABLE CalendarEvent IS 'Events belonging to calendars';
+COMMENT ON COLUMN CalendarEvent.unique_id IS 'A globally unique identifier for the event.  This identifier should be preserved through when importing events from a desktop calendar application';
+COMMENT ON COLUMN CalendarEvent.calendar IS 'The calendar this event belongs to';
+COMMENT ON COLUMN CalendarEvent.dtstart IS 'The start time for the event in UTC';
+COMMENT ON COLUMN CalendarEvent.duration IS 'The duration of the event';
+COMMENT ON COLUMN CalendarEvent.title IS 'A one line description of the event';
+COMMENT ON COLUMN CalendarEvent.description IS 'A multiline description of the event';
+COMMENT ON COLUMN CalendarEvent.location IS 'A location associated with the event';

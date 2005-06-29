@@ -84,15 +84,18 @@ class Calendar(SQLBase, CalendarMixin, EditableCalendarMixin):
     _eventsJoin = MultipleJoin('CalendarEvent', joinColumn='calendar')
 
     def __iter__(self):
+        """See ICalendar"""
         return iter(self._eventsJoin)
 
     def find(self, unique_id):
+        """See ICalendar"""
         try:
             return CalendarEvent.byUniqueID(unique_id)
         except SQLObjectNotFound:
             raise KeyError(unique_id)
 
     def expand(self, first, last):
+        """See ICalendar"""
         first = first.astimezone(_utc_tz)
         last = last.astimezone(_utc_tz)
         return iter(CalendarEvent.select(AND(
@@ -102,6 +105,7 @@ class Calendar(SQLBase, CalendarMixin, EditableCalendarMixin):
                                          orderBy='dtstart'))
 
     def addEvent(self, event):
+        """See ICalendar"""
         # TODO: support recurring events
         try:
             self.find(event.unique_id)
@@ -115,6 +119,7 @@ class Calendar(SQLBase, CalendarMixin, EditableCalendarMixin):
             raise ValueError('event %r already in calendar' % event.unique_id)
 
     def removeEvent(self, event):
+        """See ICalendar"""
         try:
             self.find(event.unique_id).destroySelf()
         except KeyError:
