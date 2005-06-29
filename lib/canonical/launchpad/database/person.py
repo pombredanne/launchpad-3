@@ -851,6 +851,7 @@ class PersonSet:
         except NicknameGenerationError:
             return None
 
+        displayname = displayname or name.capitalize()
         password = getUtility(IPasswordEncryptor).encrypt(password)
         person = self.newPerson(name=name, displayname=displayname,
                                 givenname=givenname, familyname=familyname,
