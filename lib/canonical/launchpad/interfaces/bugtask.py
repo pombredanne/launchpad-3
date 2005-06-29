@@ -19,42 +19,6 @@ from canonical.launchpad.interfaces import (
     IHasProductAndAssignee, IHasDateCreated)
 from canonical.launchpad.validators.bug import non_duplicate_bug
 
-class IEditableUpstreamBugTask(IHasProductAndAssignee):
-    """A bug assigned to upstream, which is editable by the current
-    user."""
-    title = Attribute('Title')
-
-
-class IReadOnlyUpstreamBugTask(IHasProductAndAssignee):
-    """A bug assigned to upstream, which is read-only by the current
-    user."""
-    title = Attribute('Title')
-
-
-class IEditableDistroBugTask(Interface):
-    """A bug assigned to a distro package, which is editable by
-    the current user."""
-    title = Attribute('Title')
-
-
-class IReadOnlyDistroBugTask(Interface):
-    """A bug assigned to a distro package, which is read-only by the
-    current user."""
-    title = Attribute('Title')
-
-
-class IEditableDistroReleaseBugTask(Interface):
-    """A bug in a distro release package, which is editable by
-    the current user."""
-    title = Attribute('Title')
-
-
-class IReadOnlyDistroReleaseBugTask(Interface):
-    """A bug in a distro release package, which is read-only by the
-    current user."""
-    title = Attribute('Title')
-
-
 class IBugTask(IHasDateCreated):
     """A description of a bug needing fixing in a particular product
     or package."""

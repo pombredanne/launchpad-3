@@ -172,13 +172,6 @@ class BugTaskSearchListingView:
 
     implements(IBugTaskSearchListingView)
 
-    bugtaskListingActionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-bugtask-listing-actions.pt')
-    bugStatsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-bug-stats-for-context.pt')
-    releaseBugsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-release-bugs.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request

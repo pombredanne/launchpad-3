@@ -11,11 +11,39 @@ from zope.interface import implements
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import IPOExportRequestSet, \
     IPOExportRequest
+from canonical.lp.dbschema import EnumCol, RosettaFileFormat
 
 class POExportRequestSet:
     implements(IPOExportRequestSet)
 
-    def addRequest(self, person, potemplate=None, pofiles=[]):
+    def _addRequestEntry(self, person, potemplate, pofile, format):
+        """Add a request entry to the queue.
+
+        Duplicate requests are silently ignored.
+        """
+
+        if pofile:
+            pofileID = pofile.id
+        else:
+            pofileID = None
+
+        request = POExportRequest.selectOneBy(
+            personID=person.id,
+            potemplateID=potemplate.id,
+            pofileID=pofileID,
+            format=format)
+
+        if request is not None:
+            return
+
+        POExportRequest(
+            person=person,
+            potemplate=potemplate,
+            pofile=pofile,
+            format=format)
+
+    def addRequest(self, person, potemplate=None, pofiles=[],
+            format=RosettaFileFormat.PO):
         """See IPOExportRequestSet."""
 
         if not (potemplate or pofiles):
@@ -23,16 +51,10 @@ class POExportRequestSet:
                 "Can't add a request with no PO template and no PO files")
 
         if potemplate:
-            POExportRequest(
-                person=person,
-                potemplate=potemplate,
-                pofile=None)
+            self._addRequestEntry(person, potemplate, None, format)
 
         for pofile in pofiles:
-            POExportRequest(
-                person=person,
-                potemplate=pofile.potemplate,
-                pofile=pofile)
+            self._addRequestEntry(person, pofile.potemplate, pofile, format)
 
     def popRequest(self):
         """See IPOExportRequestSet."""
@@ -49,6 +71,7 @@ class POExportRequestSet:
             personID=request.person.id, potemplateID=request.potemplate.id))
         person = requests[0].person
         potemplate = requests[0].potemplate
+        format = requests[0].format
         objects = []
 
         for request in requests:
@@ -59,7 +82,7 @@ class POExportRequestSet:
 
             POExportRequest.delete(request.id)
 
-        return person, potemplate, objects
+        return person, potemplate, objects, format
 
 class POExportRequest(SQLBase):
     implements(IPOExportRequest)
@@ -70,4 +93,6 @@ class POExportRequest(SQLBase):
     potemplate = ForeignKey(dbName='potemplate', foreignKey='POTemplate',
         notNull=True)
     pofile = ForeignKey(dbName='pofile', foreignKey='POFile')
+    format = EnumCol(dbName='format', schema=RosettaFileFormat,
+        default=RosettaFileFormat.PO, notNull=True)
 

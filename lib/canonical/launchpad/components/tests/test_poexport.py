@@ -2,6 +2,7 @@
 
 __metaclass__ = type
 
+import pytz
 import unittest
 from datetime import datetime
 
@@ -311,7 +312,8 @@ class HeaderUpdateTest(ExportTest):
             isTeam=lambda: False)
         mock_submission = Mock(
             person=mock_person,
-            datecreated = datetime.fromtimestamp(1000000000))
+            datecreated = datetime.fromtimestamp(
+                1000000000, pytz.timezone('UTC')))
         mock_pofile = Mock(
             latest_submission=mock_submission)
 
@@ -341,7 +343,7 @@ class HeaderUpdateTest(ExportTest):
             '"Project-Id-Version: foo\\n"',
             '"Content-Type: text/plain; charset=UTF-8\\n"',
             '"Last-Translator: Kubla Kahn <kk@pleasure-dome.com>\\n"',
-            '"PO-Revision-Date: 2001-09-09 02:46\\n"',
+            '"PO-Revision-Date: 2001-09-09 01:46+0000\\n"',
             '"Language-Team: Spanish <es@li.org>\\n"',
             '',
             'msgid "foo"',

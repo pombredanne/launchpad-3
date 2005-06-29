@@ -8,7 +8,7 @@
     <div metal:fill-slot="body">
       <div
         class="sidebar"
-        tal:content="structure context/@@+portlet-actions"
+        tal:content="structure context/team/@@+portlet-actions"
       />
     <tal:block tal:define="activeMembersCount view/activeMembersCount;
                            inactiveMembersCount view/inactiveMembersCount;
