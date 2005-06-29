@@ -11,11 +11,9 @@ from canonical.launchpad.interfaces import (
     IAuthorization, IHasOwner, IPerson, ITeam, ITeamMembershipSubset,
     ITeamMembership, IProductSeriesSource, IProductSeriesSourceAdmin,
     IMilestone, IBug, IBugTask, IUpstreamBugTask, IDistroBugTask,
-    IDistroReleaseBugTask, IReadOnlyUpstreamBugTask, ITranslator,
-    IProduct, IProductRelease, IPOTemplate, IPOFile,
-    IPOTemplateName, IPOTemplateNameSet, ISourcePackage,
+    IDistroReleaseBugTask, ITranslator, IProduct, IProductRelease,
+    IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet, ISourcePackage,
     ILaunchpadCelebrities, IDistroRelease)
-
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -60,9 +58,9 @@ class EditDistroReleaseByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
-        return (user.inTeam(self.obj.owner) or 
+        return (user.inTeam(self.obj.owner) or
                 user.inTeam(self.obj.distribution.owner) or
-                user.inTeam(admins)) 
+                user.inTeam(admins))
 
 
 class AdminSeriesSourceByButtSource(AuthorizationBase):
@@ -227,11 +225,6 @@ class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
     def checkUnauthenticated(self):
         """Allow anonymous users to see non-private bugs only."""
         return not self.obj.bug.private
-
-
-class PublicToAllOrPrivateToExplicitSubscribersForROBugTask(
-    PublicToAllOrPrivateToExplicitSubscribersForBugTask):
-    usedfor = IReadOnlyUpstreamBugTask
 
 
 class EditPublicByLoggedInUserAndPrivateByExplicitSubscribers(

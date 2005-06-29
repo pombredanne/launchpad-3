@@ -183,7 +183,7 @@ def get_test_tarball():
     uberfrob/usr/share/locales/es/LC_MESSAGES/uber.mo
     """
 
-    return helpers.make_tarball({
+    return helpers.RosettaWriteTarFile.files_to_tarfile({
         'uberfrob/usr/share/locales/cy/LC_MESSAGES/uber.mo':
             'whatever',
         'uberfrob/usr/share/locales/es/LC_MESSAGES/uber.mo':

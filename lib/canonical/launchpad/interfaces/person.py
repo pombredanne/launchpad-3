@@ -6,7 +6,8 @@ from zope.component import getUtility
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-from canonical.lp.dbschema import TeamSubscriptionPolicy, TeamMembershipStatus
+from canonical.lp.dbschema import (
+    TeamSubscriptionPolicy, TeamMembershipStatus, EmailAddressStatus)
 
 
 def _valid_person_name(name):
@@ -200,6 +201,22 @@ class IPerson(Interface):
         This method is meant to be called by objects which implement either
         IPerson or ITeam, and it will return True when you ask if a Person is
         a member of himself (i.e. person1.inTeam(person1)).
+        """
+
+    def validateAndEnsurePreferredEmail(self, email):
+        """Ensure this person has a preferred email.
+
+        If this person doesn't have a preferred email, <email> will be set as
+        this person's preferred one. Otherwise it'll be set as VALIDATED and
+        this person will keep its old preferred email. This is why this method
+        can't be called with person's preferred email as argument.
+
+        This method is meant to be the only one to change the status of an
+        email address, but as we all know the real world is far from ideal and
+        we have to deal with this in one more place, which is the case when
+        people explicitly want to change their preferred email address. On
+        that case, though, all we have to do is assign the new preferred email
+        to person.preferredemail.
         """
 
     def hasMembershipEntryFor(team):
@@ -470,10 +487,11 @@ class IEmailAddress(Interface):
 class IEmailAddressSet(Interface):
     """The set of EmailAddresses."""
 
-    def new(email, status, personID):
+    def new(email, personID, status=EmailAddressStatus.NEW):
         """Create a new EmailAddress with the given email, pointing to person.
 
-        Also make sure that the given status is in dbschema.
+        Also make sure that the given status is an item of
+        dbschema.EmailAddressStatus.
         """
 
     def __getitem__(emailid):

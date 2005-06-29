@@ -114,15 +114,7 @@
         for="canonical.launchpad.interfaces.IPOTemplate"
         permission="launchpad.AnyPerson"
         template="../templates/potemplate-export.pt"
-        class="canonical.launchpad.browser.POTemplateExport"
-        />
-
-    <browser:page
-        name="+tar-export"
-        for="canonical.launchpad.interfaces.IPOTemplate"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.POTemplateTarExport"
-        attribute="__call__"
+        class="canonical.launchpad.browser.POTemplateExportView"
         />
 
     <!-- needed for @@absolute_url to work -->
@@ -164,11 +156,11 @@
     </content>
     <browser:url
         for="canonical.launchpad.interfaces.IPOTemplateSubset"
-        urldata="canonical.launchpad.browser.POTemplateSubsetUrl"
+        urldata="canonical.launchpad.browser.POTemplateSubsetURL"
         />
     <browser:url
         for="canonical.launchpad.interfaces.IPOTemplate"
-        urldata="canonical.launchpad.browser.POTemplateUrl"
+        urldata="canonical.launchpad.browser.POTemplateURL"
         />
 
     <browser:defaultView

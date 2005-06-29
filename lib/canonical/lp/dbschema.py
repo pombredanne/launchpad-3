@@ -2132,6 +2132,55 @@ class MirrorFreshness(DBSchema):
         The Freshness was never verified and is unknown.
         """)
 
+class RosettaFileFormat(DBSchema):
+    """Rosetta File Format
+
+    This is an enumeration of the different sorts of file that Rosetta can
+    export.
+    """
+
+    PO = Item(1, """
+        PO format
+
+        Gettext's standard text file format.
+        """)
+
+    MO = Item(2, """
+        MO format
+
+        Gettext's standard binary file format.
+        """)
+
+    XLIFF = Item(3, """
+        XLIFF
+
+        OASIS's XML Localisation Interchange File Format.
+        """)
+
+    CSHARP_DLL = Item(4, """
+        .NET DLL
+
+        The dynamic link library format as used by programs that use the .NET
+        framework.
+        """)
+
+    CSHARP_RESOURCES = Item(5, """
+        .NET resource file
+
+        The resource file format used by programs that use the .NET framework.
+        """)
+
+    TCL = Item(6, """
+        TCL format
+
+        The .msg format as used by TCL/msgcat.
+        """)
+
+    QT = Item(7, """
+        QT format
+
+        The .qm format as used by programs using the QT toolkit.
+        """)
 
 class TranslationValidationStatus(DBSchema):
     """Translation Validation Status
@@ -2158,3 +2207,4 @@ class TranslationValidationStatus(DBSchema):
 
         This translation has an unknown error.
         """)
+

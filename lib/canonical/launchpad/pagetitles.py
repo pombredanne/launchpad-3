@@ -123,8 +123,7 @@ def bugs_assigned(context, view):
 
 bugs_createdby_index = 'Malone Bug Report by Creator'
 
-def bugs_for_context(context, view):
-    return "Bugs in %s" % context.context_title
+bugs_for_context = ContextTitle('Bugs in %s')
 
 bugs_index = 'Malone Master Bug List'
 
@@ -132,13 +131,11 @@ bugsubscription_edit = 'Modify Your Bug Subscription'
 
 def bugtask_display(context, view):
     return 'Bug #%s in %s: %s' % (
-      context.bug.id, context.contextname, context.bug.title
-    )
+      context.bug.id, context.contextname, context.bug.title)
 
 def bugtask_editform(context, view):
     return 'Editing bug #%s in %s: %s' % (
-      context.bug.id, context.contextname, context.bug.title
-    )
+      context.bug.id, context.contextname, context.bug.title)
 
 # bugtask_search_listing contains only macros
 # bugtasks_index is a redirect

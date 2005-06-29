@@ -19,7 +19,7 @@
     <adapter
         for="canonical.launchpad.interfaces.IDistribution"
         provides="canonical.launchpad.interfaces.IBugTaskSubset"
-        factory="canonical.launchpad.components.distribution.DistributionToBugTaskSubsetAdapter"
+        factory="canonical.launchpad.components.bugtask.ContextToBugTaskSubsetAdapter"
         permission="zope.Public" />
 
     <browser:defaultView

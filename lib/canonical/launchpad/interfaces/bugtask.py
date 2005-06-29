@@ -19,42 +19,6 @@ from canonical.launchpad.interfaces import (
     IHasProductAndAssignee, IHasDateCreated)
 from canonical.launchpad.validators.bug import non_duplicate_bug
 
-class IEditableUpstreamBugTask(IHasProductAndAssignee):
-    """A bug assigned to upstream, which is editable by the current
-    user."""
-    title = Attribute('Title')
-
-
-class IReadOnlyUpstreamBugTask(IHasProductAndAssignee):
-    """A bug assigned to upstream, which is read-only by the current
-    user."""
-    title = Attribute('Title')
-
-
-class IEditableDistroBugTask(Interface):
-    """A bug assigned to a distro package, which is editable by
-    the current user."""
-    title = Attribute('Title')
-
-
-class IReadOnlyDistroBugTask(Interface):
-    """A bug assigned to a distro package, which is read-only by the
-    current user."""
-    title = Attribute('Title')
-
-
-class IEditableDistroReleaseBugTask(Interface):
-    """A bug in a distro release package, which is editable by
-    the current user."""
-    title = Attribute('Title')
-
-
-class IReadOnlyDistroReleaseBugTask(Interface):
-    """A bug in a distro release package, which is read-only by the
-    current user."""
-    title = Attribute('Title')
-
-
 class IBugTask(IHasDateCreated):
     """A description of a bug needing fixing in a particular product
     or package."""
@@ -116,7 +80,7 @@ class IBugTaskSearch(Interface):
     for status to be a List field on a search form, where more than
     one value can be selected.)
     """
-    searchtext = TextLine(title=_("Bug ID or Text"), required=False)
+    searchtext = TextLine(title=_("Bug ID or Keywords"), required=False)
     status = List(
         title=_('Bug Status'),
         value_type=IBugTask['status'],
@@ -346,7 +310,7 @@ class IBugTaskSet(Interface):
 
 
 class IBugTaskSubset(Interface):
-    """A subset of bugs.
+    """A subset of IBugTasks.
 
     Generally speaking the 'subset' refers to the bugs reported on a
     specific upstream, distribution, or distrorelease.
@@ -354,7 +318,7 @@ class IBugTaskSubset(Interface):
 
     context = Attribute(
         "The IDistribution, IDistroRelease or IProduct.")
-    context_title = TextLine(title=_("Bugs reported in"))
+    title = TextLine(title=_("Bugs reported in"))
 
     def __getitem__(item):
         """Get an IBugTask.
@@ -369,7 +333,7 @@ class IBugTaskSubset(Interface):
         """Return a set of IBugTasks that satisfy the query arguments.
 
         The search results are filtered to include matches within the
-        current context.
+        current context (i.e. the .context attribute.)
 
         Keyword arguments should always be used. The argument passing
         semantics are as follows:

@@ -67,6 +67,7 @@ COMMENT ON COLUMN Product.reviewed IS 'Whether or not someone at Canonical has r
 COMMENT ON COLUMN Product.active IS 'Whether or not this product should be considered active.';
 COMMENT ON COLUMN Product.translationgroup IS 'The TranslationGroup that is responsible for translations for this product. Note that the Product may be part of a Project which also has a TranslationGroup, in which case the translators from both the product and project translation group have permission to edit the translations of this product.';
 COMMENT ON COLUMN Product.translationpermission IS 'The level of openness of this product\'s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
+COMMENT ON COLUMN Product.releaseroot IS 'The URL to the directory which holds upstream releases for this product. This allows us to monitor the upstream site and detect new upstream release tarballs.  This URL is used when the associated ProductSeries does not have a URL to use. It is also used to find files outside of any registered series.';
 
 
 
@@ -907,6 +908,8 @@ COMMENT ON COLUMN POExportRequest.potemplate IS
 'The PO template being requested.';
 COMMENT ON COLUMN POExportRequest.pofile IS
 'The PO file being requested, or NULL.';
+COMMENT ON COLUMN POExportRequest.format IS
+'The format the user would like the export to be in. See the RosettaFileFormat DB schema for possible values.';
 
 -- GPGKey
 COMMENT ON TABLE GPGKey IS 'A GPG key belonging to a Person';

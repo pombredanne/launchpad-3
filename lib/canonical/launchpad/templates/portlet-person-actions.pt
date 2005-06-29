@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" tal:condition="context/required:launchpad.Edit">
 
     <h4>Actions:</h4>
 

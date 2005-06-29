@@ -36,7 +36,7 @@ Now, it's time to start testing things:
 
 A case with only Debconf translations.
 
-    >>> tarball = helpers.make_tarball({
+    >>> tarball = helpers.RosettaWriteTarFile.files_to_tarfile({
     ...     'source/debian/po/templates.pot': 'whatever',
     ...     'source/debian/po/cy.po': 'whatever',
     ...     'source/debian/po/es.po': 'whatever2',
@@ -64,7 +64,7 @@ A case with only Debconf translations.
 
 We have only one translation domain, a .pot file and a set of .po files.
 
-    >>> tarball = helpers.make_tarball({
+    >>> tarball = helpers.RosettaWriteTarFile.files_to_tarfile({
     ...     'uberfrob-package/usr/share/locale/cy/LC_MESSAGES/uberfrob.mo':
     ...         'binary content for cy translation of uberfrob',
     ...     'uberfrob-package/usr/share/locale/es/LC_MESSAGES/uberfrob.mo':
@@ -132,7 +132,7 @@ want.
     ...
     ...         return subset
     ...
-    >>> tarball = helpers.make_tarball({
+    >>> tarball = helpers.RosettaWriteTarFile.files_to_tarfile({
     ...     'uberfrob-package/usr/share/locale/cy/LC_MESSAGES/uberfrob.mo':
     ...         'binary content for cy translation of uberfrob domain',
     ...     'uberfrob-package/usr/share/locale/es/LC_MESSAGES/uberfrob.mo':
@@ -183,7 +183,7 @@ We have multiple domains and the filenames of the PO templates in the
 source match the names of the MO files in the binary packages. Note that
 there are no existing PO templates in this case which could be used.
 
-    >>> tarball = helpers.make_tarball({
+    >>> tarball = helpers.RosettaWriteTarFile.files_to_tarfile({
     ...     'uberfrob-package/usr/share/locale/cy/LC_MESSAGES/uberfrob.mo':
     ...         'binary content for cy translation of uberfrob domain',
     ...     'uberfrob-package/usr/share/locale/es/LC_MESSAGES/uberfrob.mo':
@@ -245,7 +245,7 @@ The fallback case, when we can't match a PO template to a domain in the
 tarball, or an existing PO template from the database, and it's not a
 Debconf template.
 
-    >>> tarball = helpers.make_tarball({
+    >>> tarball = helpers.RosettaWriteTarFile.files_to_tarfile({
     ...     'uberfrob-package/usr/share/locale/cy/LC_MESSAGES/uberfrob.mo':
     ...         'binary content for cy translation of uberfrob',
     ...     'uberfrob-package/usr/share/locale/es/LC_MESSAGES/uberfrob.mo':
@@ -280,7 +280,7 @@ Debconf template.
 This is a combination case, when we have a Debconf template and also two
 unidentifiable templates.
 
-    >>> tarball = helpers.make_tarball({
+    >>> tarball = helpers.RosettaWriteTarFile.files_to_tarfile({
     ...     'uberfrob-package/usr/share/locale/cy/LC_MESSAGES/uberfrob.mo':
     ...         'binary content for cy translation of uberfrob',
     ...     'uberfrob-package/usr/share/locale/es/LC_MESSAGES/uberfrob.mo':

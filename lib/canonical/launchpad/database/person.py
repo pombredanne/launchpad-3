@@ -31,13 +31,13 @@ from canonical.database import postgresql
 # canonical imports
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 
-from canonical.launchpad.interfaces import \
-    IPerson, ITeam, IPersonSet, ITeamMembership, ITeamParticipation, \
-    ITeamMembershipSet, IEmailAddress, IWikiName, IIrcID, IArchUserID, \
-    IJabberID, IIrcIDSet, IArchUserIDSet, ISSHKeySet, IJabberIDSet, \
-    IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IKarma, IKarmaPointsManager, \
-    IMaintainershipSet, IEmailAddressSet, ISourcePackageReleaseSet, \
-    IPasswordEncryptor
+from canonical.launchpad.interfaces import (
+    IPerson, ITeam, IPersonSet, ITeamMembership, ITeamParticipation,
+    ITeamMembershipSet, IEmailAddress, IWikiName, IIrcID, IArchUserID,
+    IJabberID, IIrcIDSet, IArchUserIDSet, ISSHKeySet, IJabberIDSet,
+    IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IKarma, IKarmaPointsManager,
+    IMaintainershipSet, IEmailAddressSet, ISourcePackageReleaseSet,
+    IPasswordEncryptor, UBUNTU_WIKI_URL)
 
 from canonical.launchpad.database.translation_effort import TranslationEffort
 from canonical.launchpad.database.bug import BugTask
@@ -67,7 +67,7 @@ class Person(SQLBase):
     password = StringCol(dbName='password', default=None)
     givenname = StringCol(dbName='givenname', default=None)
     familyname = StringCol(dbName='familyname', default=None)
-    displayname = StringCol(dbName='displayname', default=None, notNull=True)
+    displayname = StringCol(dbName='displayname', notNull=True)
     teamdescription = StringCol(dbName='teamdescription', default=None)
 
     teamowner = ForeignKey(dbName='teamowner', foreignKey='Person',
@@ -435,13 +435,29 @@ class Person(SQLBase):
             return None
     defaultrenewedexpirationdate = property(defaultrenewedexpirationdate)
 
-    def _setPreferredemail(self, email):
+    def validateAndEnsurePreferredEmail(self, email):
+        """See IPerson."""
         if not IEmailAddress.providedBy(email):
-            raise TypeError, ("Any person's email address must provide "
-                              "the IEmailAddress interface. %s doesn't."
-                              % email)
-        # XXX: Should this be an assert?
-        #      -- SteveAlexander, 2005-04-23
+            raise TypeError, (
+                "Any person's email address must provide the IEmailAddress "
+                "interface. %s doesn't." % email)
+        assert email.person == self
+        assert self.preferredemail != email
+
+        if self.preferredemail is None:
+            # This branch will be executed only in the first time a person
+            # uses Launchpad. Either when creating a new account or when
+            # resetting the password of an automatically created one.
+            self.preferredemail = email
+        else:
+            email.status = EmailAddressStatus.VALIDATED
+
+    def _setPreferredemail(self, email):
+        """See IPerson."""
+        if not IEmailAddress.providedBy(email):
+            raise TypeError, (
+                "Any person's email address must provide the IEmailAddress "
+                "interface. %s doesn't." % email)
         assert email.person.id == self.id
         preferredemail = self.preferredemail
         if preferredemail is not None:
@@ -835,13 +851,16 @@ class PersonSet:
         except NicknameGenerationError:
             return None
 
+        displayname = displayname or name.capitalize()
         password = getUtility(IPasswordEncryptor).encrypt(password)
         person = self.newPerson(name=name, displayname=displayname,
                                 givenname=givenname, familyname=familyname,
                                 password=password)
 
-        getUtility(IEmailAddressSet).new(
-            email, EmailAddressStatus.NEW, person.id)
+        getUtility(IEmailAddressSet).new(email, person.id)
+
+        wikiname = nickname.generate_wikiname(displayname, WikiNameSet().exists)
+        WikiName(person=person.id, wiki=UBUNTU_WIKI_URL, wikiname=wikiname)
 
         return person
 
@@ -887,7 +906,7 @@ class EmailAddressSet:
         except SQLObjectNotFound:
             return default
 
-    def new(self, email, status, personID):
+    def new(self, email, personID, status=EmailAddressStatus.NEW):
         email = email.strip()
         assert status in EmailAddressStatus.items
         return EmailAddress(email=email, status=status, person=personID)
@@ -1009,7 +1028,12 @@ class WikiNameSet:
     implements(IWikiNameSet)
 
     def new(self, personID, wiki, wikiname):
+        """See IWikiNameSet."""
         return WikiName(personID=personID, wiki=wiki, wikiname=wikiname)
+
+    def exists(self, wikiname, wiki=UBUNTU_WIKI_URL):
+        """See IWikiNameSet."""
+        return WikiName.selectOneBy(wiki=wiki, wikiname=wikiname) is not None
 
 
 class JabberID(SQLBase):

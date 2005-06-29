@@ -8,9 +8,9 @@ from zope.component import getUtility
 from zope.exceptions import NotFoundError
 
 from canonical.launchpad.interfaces import (
-    IBugSet, IBugTaskSet, IBugTaskSubset, IBugTasksReport,
-    IDistributionSet, IProjectSet, IProductSet, ISourcePackageSet,
-    IBugTrackerSet, ILaunchBag, ITeamMembershipSubset)
+    IBugSet, IBugTaskSet, IBugTaskSubset, IBugTasksReport, IDistributionSet,
+    IProjectSet, IProductSet, ISourcePackageSet, IBugTrackerSet, ILaunchBag,
+    ITeamMembershipSubset)
 from canonical.launchpad.database import (
     BugAttachmentSet, BugExternalRefSet, BugSubscriptionSet,
     BugWatchSet, BugTasksReport, CVERefSet, BugProductInfestationSet,
@@ -71,6 +71,13 @@ def traverse_distrorelease(distrorelease, request, name):
         return IBugTaskSubset(distrorelease)
     else:
         return distrorelease[name]
+
+
+def traverseTeam(team, request, name):
+    if name == '+members':
+        return ITeamMembershipSubset(team)
+    
+    return None
 
 
 # XXX: Brad Bollenbach, 2005-06-23: From code review discussion with

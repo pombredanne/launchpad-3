@@ -16,53 +16,10 @@ from canonical.launchpad.interfaces import (
     IPerson, ILaunchBag, IBugSet, IBugTaskSet, IDistributionSet, IBugAddForm,
     IBug)
 from canonical.lp import dbschema
-from canonical.launchpad.database import Person, Bug
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
-# TODO: Steve will be hacking on a more general portlet mechanism today
-# (2004-12-09)
-class BoundPortlet(BoundPageTemplate):
-    def __call__(self, *args, **kw):
-        return BoundPageTemplate.__call__(self, *args, **kw)
-
-
-class ViewWithBugContext:
-    def __init__(self, view):
-        self.request = view.request
-        self.context = getUtility(ILaunchBag).bug
-
-    def getCCs(self):
-        return [s for s in self.context.subscriptions
-                if s.subscription==dbschema.BugSubscription.CC]
-
-    def getWatches(self):
-        return [s for s in self.context.subscriptions
-                if s.subscription==dbschema.BugSubscription.WATCH]
-
-    def getIgnores(self):
-        return [s for s in self.context.subscriptions
-                if s.subscription==dbschema.BugSubscription.IGNORE]
-
-
-class BugPortlet:
-    def __init__(self, template_filename):
-        self.template = ViewPageTemplateFile(template_filename)
-
-    def __call__(self, view, *args, **kw):
-        return self.template(ViewWithBugContext(view), *args, **kw)
-
-    def __get__(self, instance, type=None):
-        return BoundPortlet(self, instance)
-
-
-# TODO: It should be possible to specify all this via ZCML and not require
-# the BugView class with its ViewPageTemplateFile attributes
-# (I think the browser:view directive allows this already -- stub)
 class BugView:
-    # TODO
-    # The default path for the templates will be
-    # lib/canonical/launchpad/templates.
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -148,28 +105,3 @@ class BugAddForm:
         self.bug = bug
         self.bugtask = bug.bugtasks[0]
         self.comment = bug.messages[0]
-
-
-class BugsCreatedByView:
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def getAllPeople(self):
-        return Person.select()
-
-    def _getBugsForOwner(self, owner):
-        bugs_created_by_owner = []
-        if owner:
-            persons = Person.select(Person.q.name == owner)
-            if persons:
-                person = persons[0]
-                bugs_created_by_owner = Bug.select(Bug.q.ownerID == person.id)
-        else:
-            bugs_created_by_owner = Bug.select()
-
-        return bugs_created_by_owner
-
-    def getBugs(self):
-        bugs_created_by_owner = self._getBugsForOwner(self.request.get("owner", ""))
-        return bugs_created_by_owner

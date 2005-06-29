@@ -29,7 +29,8 @@ from canonical.launchpad.interfaces import (
     ISSHKeySet, IBugTaskSet, IPersonSet, IEmailAddressSet, IWikiNameSet,
     IJabberIDSet, IIrcIDSet, IArchUserIDSet, ILaunchBag, ILoginTokenSet,
     IPasswordEncryptor, ISignedCodeOfConduct, ISignedCodeOfConductSet, 
-    IObjectReassignment, ITeamReassignment, IGPGKeySet, IGpgHandler, IPymeKey)
+    IObjectReassignment, ITeamReassignment, IGPGKeySet, IGpgHandler, IPymeKey,
+    UBUNTU_WIKI_URL)
 
 from canonical.launchpad.helpers import (
         obfuscateEmail, convertToHtmlCode, shortlist, sanitiseFingerprint)
@@ -432,7 +433,10 @@ class PersonEditView(BasePersonView):
         person.givenname = request.form.get("givenname")
         person.familyname = request.form.get("familyname")
 
-        wiki = request.form.get("wiki")
+        # XXX: wiki is hard-coded for Launchpad 1.0
+        #      - Andrew Bennetts, 2005-06-14
+        #wiki = request.form.get("wiki")
+        wiki = UBUNTU_WIKI_URL
         wikiname = request.form.get("wikiname")
         network = request.form.get("network")
         nickname = request.form.get("nickname")
@@ -440,11 +444,15 @@ class PersonEditView(BasePersonView):
         archuserid = request.form.get("archuserid")
 
         #WikiName
-        if person.wiki:
-            person.wiki.wiki = wiki
+        # Assertions that should be true at least until 1.0
+        assert person.wiki, 'People should always have wikinames'
+        if person.wiki.wikiname != wikiname:
+            if getUtility(IWikiNameSet).exists(wikiname):
+                self.errormessage = (
+                    'The wikiname %s for %s is already taken' 
+                    % (wikiname, UBUNTU_WIKI_URL,))
+                return False
             person.wiki.wikiname = wikiname
-        elif wiki and wikiname:
-            getUtility(IWikiNameSet).new(person.id, wiki, wikiname)
 
         #IrcID
         if person.irc:
@@ -530,7 +538,7 @@ class PersonEditView(BasePersonView):
         logintokenset = getUtility(ILoginTokenSet)
         if email in [e.email for e in self.context.guessedemails]:
             emailaddress = emailset.getByEmail(email)
-            # These asserts will fail only if someone tries to poison the form.
+            # These asserts will fail only if someone poisons the form.
             assert emailaddress.person.id == self.context.id
             assert self.context.preferredemail.id != emailaddress.id
             emailaddress.destroySelf()
@@ -552,7 +560,13 @@ class PersonEditView(BasePersonView):
         emailaddress = emailset.getByEmail(email)
         # These asserts will fail only if someone poisons the form.
         assert emailaddress.person.id == self.context.id
-        assert self.context.preferredemail.id != emailaddress.id
+        assert self.context.preferredemail is not None
+        if self.context.preferredemail == emailaddress:
+            # This will happen only if a person is submitting a stale page.
+            self.message = (
+                "You can't remove %s because it's your contact email "
+                "address." % self.context.preferredemail.email)
+            return
         emailaddress.destroySelf()
         self.message = "The email address '%s' has been removed." % email
 

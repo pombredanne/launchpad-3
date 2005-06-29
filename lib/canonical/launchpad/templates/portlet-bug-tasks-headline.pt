@@ -23,41 +23,20 @@
     <!-- Upstream Tasks -->
     <tr tal:repeat="bugtask context/bugtasks">
       <td>
-        <a href="#"
-           tal:condition="bugtask/product"
-           tal:attributes="href bugtask/@@absolute_url">
-          upstream <span tal:replace="bugtask/product/name">$Product.name</span>
-        </a>
-        <a href="#"
-           tal:condition="python: bugtask.distribution and bugtask.sourcepackagename"
-           tal:attributes="href bugtask/@@absolute_url">
-          <span tal:replace="bugtask/distribution/name">distro</span>
-          <span tal:replace="bugtask/sourcepackagename/name">
-            sourcepackagename
-          </span>
-        </a>
-        <a href="#"
-           tal:condition="python: bugtask.distribution and not bugtask.sourcepackagename"
-           tal:attributes="href bugtask/@@absolute_url">
-          <span tal:replace="bugtask/distribution/name">distro</span>
-        </a>
-        <a href="#"
-           tal:condition="python: bugtask.distrorelease and bugtask.sourcepackagename"
-           tal:attributes="href bugtask/@@absolute_url">
-          <span tal:replace="string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
-            distro distrorelease
-          </span>
-          <span tal:replace="bugtask/sourcepackagename/name">
-            sourcepackagename
-          </span>
-        </a>
-        <a href="#"
-           tal:condition="python: bugtask.distrorelease and not bugtask.sourcepackagename"
-           tal:attributes="href bugtask/@@absolute_url">
-          <span tal:replace="string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
-            distro distrorelease
-          </span>
-        </a>
+        <tal:editabletask condition="bugtask/required:launchpad.Edit">
+          <a href="#"
+             tal:content="bugtask/contextname"
+             tal:attributes="href string:${bugtask/@@absolute_url}/+edit">
+          </a>
+        </tal:editabletask>
+
+        <tal:readonlytask condition="not: bugtask/required:launchpad.Edit">
+          <a href="#"
+             tal:content="bugtask/contextname"
+             tal:attributes="href bugtask/@@absolute_url">
+          </a>
+        </tal:readonlytask>
+
         <!--indicate if there is a linked watch -->
         <img tal:condition="bugtask/bugwatch"
              src="/++resource++lock_icon.gif"
@@ -97,6 +76,7 @@
 </div>
 
 <div style="font-size: 90%; text-align: right; clear: both; margin-bottom:1em; text-decoration: none;">
+
   Indicate bug also exists: 
   <span style="white-space: nowrap">
       <img src="/++resource++add.gif" alt="+" />
@@ -122,4 +102,3 @@
   </span>
 
 </div>
-

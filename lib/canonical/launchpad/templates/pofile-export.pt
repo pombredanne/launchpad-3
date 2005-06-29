@@ -26,6 +26,18 @@
           </p>
 
           <form action="" method="POST">
+              <div class="field">
+                  <label>
+                  Format:
+                      <select name="format">
+                          <option
+                              tal:repeat="format view/formats"
+                              tal:content="format/title"
+                              tal:attributes="value format/value">PO format</option>
+                      </select>
+                  </label>
+              </div>
+
               <div class="formControls">
                   <input type="submit" value="Confirm Export" />
               </div>

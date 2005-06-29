@@ -9,7 +9,7 @@ from zope.component import getUtility
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
-    ILanguageSet, ILaunchBag, IGeoIP, IRequestPreferredLanguages
+    ILanguageSet, ILaunchBag, IGeoIP, IRequestPreferredLanguages, ICountry
     )
 from canonical.launchpad import helpers
 
@@ -37,13 +37,7 @@ class RosettaApplicationView:
         self.languages = helpers.request_languages(self.request)
 
     def requestCountry(self):
-        ip = self.request.get('HTTP_X_FORWARDED_FOR', None)
-        if ip is None:
-            ip = self.request.get('REMOTE_ADDR', None)
-        if ip is None:
-            return None
-        gi = getUtility(IGeoIP)
-        return gi.country_by_addr(ip)
+        return ICountry(self.request, None)
 
     def browserLanguages(self):
         return IRequestPreferredLanguages(self.request).getPreferredLanguages()
@@ -71,10 +65,11 @@ class ViewPreferences:
         user_languages = list(self.person.languages)
 
         for language in getUtility(ILanguageSet):
-            yield BrowserLanguage(
-                code=language.code,
-                englishname=language.englishname,
-                is_checked=language in user_languages)
+            if language.visible:
+                yield BrowserLanguage(
+                    code=language.code,
+                    englishname=language.englishname,
+                    is_checked=language in user_languages)
 
     def submit(self):
         '''Process a POST request to one of the Rosetta preferences forms.'''
