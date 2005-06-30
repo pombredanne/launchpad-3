@@ -33,6 +33,7 @@ BugRefVocabulary = vocab_factory(dbschema.BugExternalReferenceType)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
 PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
 TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)
+KarmaActionCategoryVocabulary = vocab_factory(dbschema.KarmaActionCategory)
 TeamSubscriptionPolicyVocabulary = vocab_factory(
         dbschema.TeamSubscriptionPolicy)
 GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)

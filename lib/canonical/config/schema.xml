@@ -141,6 +141,15 @@
 	</key>
     </sectiontype>
 
+    <sectiontype name="karmacacheupdater">
+        <key name="dbuser" datatype="string" default="karma">
+            <description>
+                The database user wich will be used to update the karmacache
+                table.
+            </description>
+	</key>
+    </sectiontype>
+
     <sectiontype name="trebuchet_server">
         <!-- Not 'existing-directory' because the test runner needs to
         create it. Not 'existing-dirpath' because ZConfig will enforce it
@@ -185,6 +194,8 @@
         <section name="*" type="dyson" attribute="dyson" />
         <section name="*" type="gina" attribute="gina" />
         <section name="*" type="trebuchet" attribute="trebuchet" />
+        <section name="*" type="karmacacheupdater"
+            attribute="karmacacheupdater" />
     </sectiontype>
 
     <!-- Now specify where the section types may be rooted in the config file
