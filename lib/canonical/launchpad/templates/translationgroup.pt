@@ -50,7 +50,12 @@
       <td tal:content="translator/lang" />
       <td><a tal:content="translator/person/browsername"
              tal:attributes="href
-             string:/people/${translator/person/name}/+translations" />
+             string:/people/${translator/person/name}" />
+        <tal:comment condition="nothing">
+          XXX mpt 20050627: Change this to
+          string:/people/${translator/person/name}/+translations
+          once +translations is implemented (bug 1154)
+        </tal:comment>
       </td>
       <td><a tal:attributes="href translator/code"><img
              src="/++resource++edit.gif" alt="Change"

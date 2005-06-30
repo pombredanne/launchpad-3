@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg
+   width="16.000000pt"
+   height="16.000000pt"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:cc="http://web.resource.org/cc/"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   id="svg1"
+   sodipodi:version="0.32"
+   inkscape:version="0.40"
+   sodipodi:docbase="/home/mpt/ubuntu/launchpad/lib/canonical/launchpad/images"
+   sodipodi:docname="rosetta-icon.svg">
+  <defs
+     id="defs3" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="21.937500"
+     inkscape:cx="9.3242454"
+     inkscape:cy="7.5490577"
+     inkscape:current-layer="layer1"
+     gridspacingy="1.0000000pt"
+     gridspacingx="1.0000000pt"
+     gridoriginy="0.0000000pt"
+     gridoriginx="0.0000000pt"
+     showgrid="true"
+     inkscape:grid-bbox="true"
+     showguides="false"
+     inkscape:guide-bbox="false"
+     inkscape:window-width="443"
+     inkscape:window-height="541"
+     inkscape:window-x="471"
+     inkscape:window-y="49" />
+  <metadata
+     id="metadata4">
+    <rdf:RDF
+       id="RDF5">
+      <cc:Work
+         rdf:about=""
+         id="Work6">
+        <dc:format
+           id="format7">image/svg+xml</dc:format>
+        <dc:type
+           id="type9"
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       style="fill:#ac9176;fill-opacity:1.0000000;fill-rule:evenodd;stroke:#806c58;stroke-width:0.25943351pt;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1.0000000;"
+       d="M 12.962854,-0.0058959424 C 8.3035474,0.17307468 6.9991196,1.3538471 3.6503541,3.6191041 L 3.5566041,4.8378541 L 16.087854,4.8378541 C 14.192267,0.035294328 14.007790,2.1884084 12.962854,-0.0058959424 z "
+       id="path1061" />
+    <path
+       style="fill:#937c65;fill-opacity:1.0000000;fill-rule:evenodd;stroke:#806c58;stroke-width:0.25943351pt;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1.0000000;"
+       d="M 3.2246459,12.662146 L 2.6621459,20.162146 C 2.6621459,20.162146 11.412147,20.162146 13.912146,20.162146 C 16.127246,19.303086 17.434225,17.290650 18.912146,16.005896 C 18.804080,14.978734 18.731567,13.803938 18.662146,12.662146 L 3.2246459,12.662146 z "
+       id="path2932" />
+    <path
+       style="fill:#806c58;fill-opacity:1.0000000;fill-rule:evenodd;stroke:#806c58;stroke-width:0.25943351pt;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1.0000000;"
+       d="M 3.6816040,4.8378540 L 3.1503540,12.337854 L 18.587854,12.337854 C 18.435367,9.8298341 18.169481,7.3336515 16.681604,5.9941040 C 16.478076,5.4302313 16.384581,5.2729332 16.212854,4.8378540 L 3.6816040,4.8378540 z "
+       id="path2935" />
+  </g>
+</svg>

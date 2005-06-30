@@ -119,9 +119,9 @@ Now we should see both of those appointments on the polyglot page:
     link to change or remove them.</p>
   ...
         <td>Abkhazian</td>
-        <td><a href="/people/name21/+translations">Hoary Gnome Team</a>
+        <td><a href="/people/name21">Hoary Gnome Team</a>
   ...
         <td>Afrikaans</td>
-        <td><a href="/people/name16/+translations">Foo Bar</a>
+        <td><a href="/people/name16">Foo Bar</a>
   ...
 
