@@ -1,0 +1,23 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <h1>Launchpad RDF</h1>
+
+    <p class="documentDescription">Launchpad provides RDF exports of
+    Project, Product, Branch and Release metadata.</p>
+
+  <h2>OWL Ontology</h2>
+
+    <p>The OWL Ontology defining the RDF specification for Launchpad
+    can be downloaded <a href="/@@/rdf/launchpad.owl">here</a>.</p>
+
+</div>
+
+</body>
+</html>

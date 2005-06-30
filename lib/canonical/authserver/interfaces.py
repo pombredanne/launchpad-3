@@ -20,6 +20,8 @@ class IUserDetailsStorage(Interface):
         :id:             person id (integer, doesn't change ever)
         :displayname:    full name, for display
         :emailaddresses: list of email addresses
+        :wikiname:       the wikiname of this user on
+                         http://www.ubuntulinux.com/wiki/
         :salt:           salt of a SSHA digest, base64-encoded.
     """
 
@@ -78,6 +80,8 @@ class IUserDetailsStorageV2(Interface):
         :id:             person id (integer, doesn't change ever)
         :displayname:    full name, for display
         :emailaddresses: list of email addresses
+        :wikiname:       the wikiname of this user on
+                         http://www.ubuntulinux.com/wiki/
 
     Differences from version 1 (IUserDetailsStorage):
         - no salts in user dicts

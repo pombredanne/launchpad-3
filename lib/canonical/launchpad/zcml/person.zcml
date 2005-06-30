@@ -193,7 +193,7 @@
 
   <browser:pages
       for="canonical.launchpad.interfaces.ITeam"
-      permission="launchpad.Edit"
+      permission="launchpad.Admin"
       class="canonical.launchpad.browser.TeamReassignmentView">
         <browser:page
             name="+reassign"

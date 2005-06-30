@@ -5,10 +5,14 @@ from zope.interface import Interface
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
+__all__ = ['UBUNTU_WIKI_URL', 'IWikiName', 'IWikiNameSet']
 
 #
 # Wiki Interfaces
 #
+
+UBUNTU_WIKI_URL = 'http://www.ubuntulinux.com/wiki/'
+
 
 class IWikiName(Interface):
     """Wiki for Users"""
@@ -23,4 +27,7 @@ class IWikiNameSet(Interface):
 
     def new(personID, wiki, wikiname):
         """Create a new WikiName pointing to the given Person."""
+
+    def exists(wikiname, wiki=UBUNTU_WIKI_URL):
+        """Does a given wikiname & wiki pair already exist?"""
 

@@ -12,7 +12,8 @@ from canonical.launchpad.interfaces import IPOSubmission
 from canonical.lp.dbschema import EnumCol
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.lp.dbschema import RosettaTranslationOrigin
+from canonical.lp.dbschema import (RosettaTranslationOrigin,
+    TranslationValidationStatus)
 
 
 class POSubmission(SQLBase):
@@ -30,6 +31,8 @@ class POSubmission(SQLBase):
     origin = EnumCol(dbName='origin', notNull=True,
         schema=RosettaTranslationOrigin)
     person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
+    validationstatus = EnumCol(dbName='validationstatus', notNull=True,
+        schema=TranslationValidationStatus)
 
 # XXX do we want to indicate the difference between a from-scratch
 # submission and an editorial decision (for example, when someone is

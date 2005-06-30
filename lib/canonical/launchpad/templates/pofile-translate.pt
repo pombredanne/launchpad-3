@@ -79,7 +79,8 @@
             else:
                 return None
 
-            Where 'literalvalue' is 'all', 'untranslated' or 'translated'.
+            Where 'literalvalue' is 'all', 'untranslated' 'need-review' or
+            'translated'.
           </tal:comment>
 
           <select name="show">
@@ -94,6 +95,12 @@
               request/htmlform:show/selected/untranslated"
               >
               untranslated items
+            </option>
+            <option value="need-review"
+              tal:attributes="selected
+              request/htmlform:show/selected/need-review"
+              >
+              need review items
             </option>
             <option value="translated"
               tal:attributes="selected

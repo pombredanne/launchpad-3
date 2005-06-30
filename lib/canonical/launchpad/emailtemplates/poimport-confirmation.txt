@@ -1,0 +1,11 @@
+Hello %(importer)s,
+
+On %(dateimport)s (%(elapsedtime)s), you uploaded %(numberofmessages)d
+%(language)s translations for %(template) in Rosetta.
+
+This mail is a notification that all translations are now imported into
+Rosetta.
+
+Thanks for using Rosetta.
+
+The Rosetta SWAT Team

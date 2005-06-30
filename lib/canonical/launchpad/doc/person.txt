@@ -27,6 +27,12 @@ attribute in IPerson.
 Access to people (Persons or Teams) is done through the IPersonSet
 utility:
 
+You can create a new person using the createPerson method of IPersonSet. All
+you need for that is a valid email address.
+>>> p = personset.createPerson('randomuser@randomhost.com')
+>>> p.teamowner is None
+True
+
 >>> buttsource = personset.getByName('buttsource')
 >>> buttsource.teamowner is None
 False
@@ -54,8 +60,8 @@ If a Person is a Team then the Person will provide the ITeam interface.
 >>> ITeam.providedBy(buttsource)
 True
 
-If a team don't have a contact email address, all notifications we send to the
-team will go to the preferred email of each member.
+If a team doesn't have a contact email address, all notifications we send to
+the team will go to the preferred email of each member.
 
 >>> contactEmailAddresses(buttsource)
 set([u'david.allouche@canonical.com', u'robertc@robertcollins.net', u'foo.bar@canonical.com'])
@@ -144,4 +150,4 @@ Passing no args would return all people:
 
 >>> all_people = personset.search()
 >>> all_people.count()
-52
+53

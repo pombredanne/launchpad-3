@@ -31,13 +31,13 @@ from canonical.database import postgresql
 # canonical imports
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 
-from canonical.launchpad.interfaces import \
-    IPerson, ITeam, IPersonSet, ITeamMembership, ITeamParticipation, \
-    ITeamMembershipSet, IEmailAddress, IWikiName, IIrcID, IArchUserID, \
-    IJabberID, IIrcIDSet, IArchUserIDSet, ISSHKeySet, IJabberIDSet, \
-    IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IKarma, IKarmaPointsManager, \
-    IMaintainershipSet, IEmailAddressSet, ISourcePackageReleaseSet, \
-    IPasswordEncryptor, ICalendarOwner
+from canonical.launchpad.interfaces import (
+    IPerson, ITeam, IPersonSet, ITeamMembership, ITeamParticipation,
+    ITeamMembershipSet, IEmailAddress, IWikiName, IIrcID, IArchUserID,
+    IJabberID, IIrcIDSet, IArchUserIDSet, ISSHKeySet, IJabberIDSet,
+    IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IKarma, IKarmaPointsManager,
+    IMaintainershipSet, IEmailAddressSet, ISourcePackageReleaseSet,
+    IPasswordEncryptor, ICalendarOwner, UBUNTU_WIKI_URL)
 
 from canonical.launchpad.database.translation_effort import TranslationEffort
 from canonical.launchpad.database.bug import BugTask
@@ -862,12 +862,17 @@ class PersonSet:
         except NicknameGenerationError:
             return None
 
+        displayname = displayname or name.capitalize()
         password = getUtility(IPasswordEncryptor).encrypt(password)
         person = self.newPerson(name=name, displayname=displayname,
                                 givenname=givenname, familyname=familyname,
                                 password=password)
 
         getUtility(IEmailAddressSet).new(email, person.id)
+
+        wikiname = nickname.generate_wikiname(displayname, WikiNameSet().exists)
+        WikiName(person=person.id, wiki=UBUNTU_WIKI_URL, wikiname=wikiname)
+
         return person
 
 
@@ -1034,7 +1039,12 @@ class WikiNameSet:
     implements(IWikiNameSet)
 
     def new(self, personID, wiki, wikiname):
+        """See IWikiNameSet."""
         return WikiName(personID=personID, wiki=wiki, wikiname=wikiname)
+
+    def exists(self, wikiname, wiki=UBUNTU_WIKI_URL):
+        """See IWikiNameSet."""
+        return WikiName.selectOneBy(wiki=wiki, wikiname=wikiname) is not None
 
 
 class JabberID(SQLBase):

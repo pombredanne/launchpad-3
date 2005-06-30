@@ -77,3 +77,38 @@ def generate_nick(email_addr, registered=_nick_registered,
             x += 1
 
     return generated_nick
+
+
+def generate_wikiname(displayname, registered):
+    """Generate a LaunchPad wikiname from the displayname provided.
+    
+    e.g.:
+    
+        >>> generate_wikiname('Andrew Bennetts', lambda x: False)
+        'AndrewBennetts'
+        >>> generate_wikiname('andrew bennetts', lambda x: False)
+        'AndrewBennetts'
+        >>> generate_wikiname('Jean-Paul Example', lambda x: False)
+        'JeanPaulExample'
+        >>> generate_wikiname('Foo Bar', lambda x: x == 'FooBar')
+        'FooBar2'
+        >>> generate_wikiname(u'Andr\xe9 Lu\xeds Lopes', lambda x: False)
+        u'Andr\\xe9Lu\\xedsLopes'
+        
+    """
+    # First, just try smooshing the displayname together (stripping punctuation
+    # and the like), and see if that's free.
+    #       -- Andrew Bennetts, 2005-06-14
+    wikinameparts = re.split(r'(?u)\W+', displayname)
+    wikiname = ''.join([part.capitalize() for part in wikinameparts])
+    if not registered(wikiname):
+        return wikiname
+
+    # Append a number to uniquify, and keep incrementing it until we succeed.
+    counter = 2
+    while True:
+        candidate = wikiname + str(counter)
+        if not registered(candidate):
+            return candidate
+        counter += 1
+

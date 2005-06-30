@@ -66,6 +66,7 @@ __all__ = (
 'TeamSubscriptionPolicy',
 'TranslationPriority',
 'TranslationPermission',
+'TranslationValidationStatus',
 'DistroReleaseQueueStatus',
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
