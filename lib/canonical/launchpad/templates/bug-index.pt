@@ -21,12 +21,12 @@
 
 <div metal:fill-slot="main">
 
-    <div tal:condition="context/duplicateof">
+    <div tal:condition="context/duplicateof" style="margin-bottom: 1em">
       <p class="portalMessage">
         This bug is a duplicate of
         <a href="#"
            tal:attributes="href context/duplicateof/@@absolute_url"
-           tal:content="string:bug ${context/duplicateof/id}">bug 42</a>
+           tal:content="string:bug #${context/duplicateof/id}">bug 42</a>
       </p>
     </div>
 

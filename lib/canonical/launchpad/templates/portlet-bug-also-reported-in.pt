@@ -22,7 +22,7 @@
           </tr>
           <tr tal:repeat="task other_occurrences">
             <td><a href=""
-                   tal:attributes="href task/context/fmt:url"
+                   tal:attributes="href task/fmt:url"
                    tal:content="task/contextname"
                    style="text-decoration: underline">Upstream Firefox</a>
             </td>

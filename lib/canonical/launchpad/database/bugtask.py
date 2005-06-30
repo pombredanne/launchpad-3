@@ -94,32 +94,33 @@ class BugTask(SQLBase):
         else:
             return None
 
+    # XXX 2005-06-25 kiko: rename context and contextname to target or
+    # location or whatever. context is overloaded.
     @property
-# XXX 2005-06-25 kiko: rename context and contextname to target or
-# location or whatever. context is overloaded.
     def context(self):
         distro = self.distribution
         distrorelease = self.distrorelease
         if distro or distrorelease:
             parent = distrorelease or distro
+            # XXX 2005-06-25 kiko: This needs API and fixages in Soyuz,
+            # but I don't want to leave us with broken links meanwhile.
+            # Filed bugs 1146 and 1147. 
             return parent
-# XXX 2005-06-25 kiko: This needs API and fixages in Soyuz, but I don't
-# want to leave us with broken links meanwhile. Filed bugs 1146 and 1147. 
-#             if self.sourcepackagename:
-#                 return parent.getSourcePackage(self.sourcepackagename)
-#             elif self.binarypackagename:
-#                 return parent.getBinaryPackageByName(self.binarypackagename)
-#             else:
-#                 return parent
+            # if self.sourcepackagename:
+            #     return parent.getSourcePackage(self.sourcepackagename)
+            # elif self.binarypackagename:
+            #     return parent.getBinaryPackageByName(self.binarypackagename)
+            # else:
+            #     return parent
         elif self.product:
             return self.product
         else:
             raise AssertionError
 
+    # XXX 2005-06-25 kiko: if context actually works, we can probably
+    # nuke this or simplify it significantly.
     @property
     def contextname(self):
-# XXX 2005-06-25 kiko: if context actually works, we can probably nuke
-# this or simplify it significantly.
         """See canonical.launchpad.interfaces.IBugTask.
 
         Depending on whether the task has a distribution,

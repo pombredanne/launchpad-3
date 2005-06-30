@@ -21,8 +21,8 @@
          class="portalMessage">
         This bug is a duplicate of
         <a href="#"
-           tal:attributes="href context/bug/duplicateof/@@absolute_url"
-           tal:content="context/bug/duplicateof/id">42</a>
+           tal:attributes="href context/bug/duplicateof/@@absolute_url">bug
+             #<span tal:replace="context/bug/duplicateof/id">42</span></a>
       </p>
 
       <div metal:define-macro="editform">
@@ -54,12 +54,12 @@
           </div>
 
           <h2>
-            <a href="#" tal:attributes="href
-            context/bug/fmt:url">Bug #<span
-            tal:replace="context/bug/id">132</span></a> in
+            <a href="#" tal:attributes="href context/bug/fmt:url">Bug 
+              #<span tal:replace="context/bug/id">132</span></a>
+            in
             <a href="#" tal:attributes="href context/context/fmt:url">
-            <span tal:replace="context/contextname">some distro
-            package/product</span></a>
+              <span tal:replace="context/contextname">some 
+                package/product</span></a>
           </h2>
 
           <p tal:condition="context/bug/summary"
