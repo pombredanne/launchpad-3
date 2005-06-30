@@ -54,8 +54,7 @@ def main(csvfile, log):
 
     # Suck in the csv file, updating the database and adding to the broken set
     reader = csv.DictReader(
-            (line.decode("UTF-8") for line in csvfile
-                if not line.startswith('#'))
+            (line for line in csvfile if not line.startswith('#'))
             )
     for row in reader:
         # Get the result code
