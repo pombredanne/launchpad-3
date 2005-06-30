@@ -18,10 +18,9 @@
     interested in translating into.
     </p>
 
-    <form action="prefs" method="post"
-            tal:define="languages view/languages;" >
+    <form action="prefs" method="post">
         <div class="multi_select" style="margin: 1em 0">
-            <div tal:repeat="language view/languages">
+            <div tal:repeat="language view/visible_languages">
                 <label>
                     <input type="checkbox"
                         tal:attributes="

@@ -44,7 +44,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IRosettaApplication"
         permission="zope.Public"
-        class="canonical.rosetta.browser.RosettaApplicationView"
+        class="canonical.launchpad.browser.RosettaApplicationView"
         lp:url="Rosetta">
         <browser:page
             name="+index"
@@ -69,7 +69,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IRosettaApplication"
         permission="launchpad.AnyPerson"
-        class="canonical.rosetta.browser.ViewPreferences" >
+        class="canonical.launchpad.browser.RosettaPreferencesView" >
         <browser:page
             name="prefs"
             template="../templates/rosetta-preferences.pt"

@@ -16,7 +16,7 @@ lib/canonical/archivepublisher/tests/test_signedfiles.py f815ad2f-cd34-4399-81a1
 lib/canonical/archivepublisher/tests/test_tagfiles.py 52e0c871-49a3-4186-beb8-9817d02d5465
 lib/canonical/archivepublisher/tests/test_utils.py 90e6eb79-83a2-47e8-9f8b-3c687079c923
 lib/canonical/archivepublisher/utils.py fbcb5758-d345-4610-8e57-8cc664a376bc
-lib/canonical/rosetta/browser.py db407517-732d-47e3-a4c1-c1f8f9dece3a
+lib/canonical/launchpad/browser/rosetta.py db407517-732d-47e3-a4c1-c1f8f9dece3a
 lib/canonical/sourcerer/ChangeLog automatic-ChangeLog--scott@canonical.com--2004/sourcerer--devel--0
 lib/canonical/sourcerer/Makefile 466ae877-4a82-4f7b-8361-6530b8100b6e
 lib/canonical/sourcerer/__init__.py 94fb5329-b775-4368-a26a-e6b1345a709a
