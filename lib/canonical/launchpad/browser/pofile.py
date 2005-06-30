@@ -142,9 +142,12 @@ class POFileView:
                 'can be imported.')
             return
 
-        # make sure we have an idea if it was published
-        published_value = self.form.get('published', None)
-        published = published_value is None
+        # We only set the 'published' flag if the upload is marked as an
+        # upstream upload.
+        if self.form.get('upload_type') == 'upstream':
+            published = True
+        else:
+            published = False
 
         pofile = file.read()
         try:
