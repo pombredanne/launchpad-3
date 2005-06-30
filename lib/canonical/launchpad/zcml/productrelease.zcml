@@ -99,10 +99,18 @@
 
     </browser:pages>
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductRelease"
+        class="canonical.launchpad.browser.ProductReleaseRdfView"
+        permission="zope.Public"
+        name="+rdf"
+        lp:url="/projects/$Product.name/$ProductRelease.name/+rdf"
+        template="../templates/productrelease-rdf.pt" />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IProductRelease"
         class="canonical.launchpad.browser.ProductReleaseView"
-        permission="launchpad.AnyPerson">
+        permission="launchpad.Edit">
         <browser:page
             name="+edit"
             template="../templates/productrelease-edit.pt" />

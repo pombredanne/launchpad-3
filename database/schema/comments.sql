@@ -517,17 +517,26 @@ COMMENT ON COLUMN Person.familyname IS 'Component of a person''s full name used 
 COMMENT ON COLUMN Person.password IS 'SSHA digest encrypted password.';
 COMMENT ON COLUMN Person.teamowner IS 'id of the team owner. Team owners will have authority to add or remove people from the team.';
 COMMENT ON COLUMN Person.teamdescription IS 'Informative description of the team. Format and restrictions are as yet undefined.';
-COMMENT ON COLUMN Person.karma IS 'Numeric score attempting to indicate how useful, helpful or generally cool a person is. It is currently unknown if teams have karma.';
-COMMENT ON COLUMN Person.karmatimestamp IS 'Last time this person''s karma scrore was calculated and updated.';
 COMMENT ON COLUMN Person.name IS 'Short mneumonic name uniquely identifying this person or team. Useful for url traversal or in places where we need to unambiguously refer to a person or team (as displayname is not unique).';
 COMMENT ON COLUMN Person.language IS 'Preferred language for this person (unset for teams). UI should be displayed in this language wherever possible.';
 
 -- Karma
 COMMENT ON TABLE Karma IS 'Used to quantify all the ''operations'' a user performs inside the system, which maybe reporting and fixing bugs, uploading packages, end-user support, wiki editting, etc.';
-COMMENT ON COLUMN Karma.KarmaType IS 'Type of the performed ''operation''. Possible values are in dbschema.KarmaType.';
+COMMENT ON COLUMN Karma.action IS 'A foreign key to the KarmaAction table.';
 COMMENT ON COLUMN Karma.datecreated IS 'A timestamp for the assignment of this Karma.';
 COMMENT ON COLUMN Karma.Person IS 'The Person for wich this Karma was assigned.';
-COMMENT ON COLUMN Karma.Points IS 'The ''weight'' of this Karma. Two Karmas of the same KarmaType may have different Points, meaning that we may give higher weights for hard-to-fix bugs, for example.';
+
+-- KarmaAction
+COMMENT ON TABLE KarmaAction IS 'Stores all the actions that would give karma to the user which performed it.';
+COMMENT ON COLUMN KarmaAction.name IS 'The unique name of this action.';
+COMMENT ON COLUMN KarmaAction.category IS 'A dbschema value used to group actions together.';
+COMMENT ON COLUMN KarmaAction.points IS 'The number of points this action is worth of.';
+
+-- KarmaCache
+COMMENT ON TABLE KarmaCache IS 'Stores a cached value of a person\'s karma points, grouped by the action category.';
+COMMENT ON COLUMN KarmaCache.Person IS 'The person which performed the actions of this category, and thus got the karma.';
+COMMENT ON COLUMN KarmaCache.Category IS 'The category of the actions.';
+COMMENT ON COLUMN KarmaCache.KarmaValue IS 'The karma points of all actions of this category performed by this person.';
 
 -- Bounty
 COMMENT ON TABLE Bounty IS 'A set of bounties for work to be done by the open source community. These bounties will initially be offered only by Canonical, but later we will create the ability for people to offer the bounties themselves, using us as a clearing house.';

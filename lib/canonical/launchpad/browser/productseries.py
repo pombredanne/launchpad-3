@@ -24,7 +24,7 @@ from canonical.launchpad.browser.productrelease import newProductRelease
 from urllib import quote as urlquote
 
 __all__ = ['traverseProductSeries', 'ProductSeriesView',
-           'ProductSeriesSourceSetView']
+           'ProductSeriesRdfView', 'ProductSeriesSourceSetView']
 
 def traverseProductSeries(series, request, name):
     return series.getRelease(name)
@@ -322,6 +322,18 @@ class ProductSeriesView(object):
             self.request.response.redirect(pr.version)
 
 
+class ProductSeriesRdfView(object):
+    """A view that sets its mime-type to application/rdf+xml"""
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        request.response.setHeader('Content-Type', 'application/rdf+xml')
+        request.response.setHeader('Content-Disposition',
+                                   'attachment; filename=' +
+                                   self.context.product.name + '-' +
+                                   self.context.name + '.rdf')
+
+
 class ProductSeriesSourceSetView:
     """This is a view class that supports a page listing all the
     productseries upstream code imports. This used to be the SourceSource
@@ -388,6 +400,4 @@ class ProductSeriesSourceSetView:
         if self.importstatus == 'STOPPED':
             html += ' selected'
         html += '>Stopped</option>\n'
-
-
 

@@ -33,7 +33,13 @@
     <ul class="people" tal:condition="context/contributors">
       <li tal:repeat="contributor context/contributors">
         <a tal:content="contributor/browsername"
-           tal:attributes="href string:/people/${contributor/name}/+translations">owner</a>
+           tal:attributes="href
+           string:/people/${contributor/name}" />
+        <tal:comment condition="nothing">
+          XXX mpt 20050627: Change this to
+          string:/people/${contributor/name}/+translations
+          once +translations is implemented (bug 1154)
+        </tal:comment>
       </li>
     </ul>
 

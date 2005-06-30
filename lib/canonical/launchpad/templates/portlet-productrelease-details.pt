@@ -13,6 +13,12 @@
             <b>Release Version:</b><br />
             <span tal:replace="context/version" /><br />
 
+            <b>Lead Maintainer:</b><br />
+            <img src="/++resource++user.gif">
+            <a tal:attributes="href string:/people/${context/owner/name}"
+               tal:content="context/owner/browsername"
+               class="link">ownername</a><br />
+
             <b>Translation Group(s):</b><br />
             <tal:block repeat="group context/product/translationgroups">
               <img src="/++resource++languages.gif" />

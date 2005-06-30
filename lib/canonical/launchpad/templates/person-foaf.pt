@@ -1,10 +1,27 @@
 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:foaf="http://xmlns.com/foaf/0.1/">
-    <foaf:Person>
+    <foaf:Person tal:condition="not:context/isTeam">
         <foaf:name tal:content="context/displayname">Display Name</foaf:name>
         <foaf:mbox_sha1sum
             tal:condition="context/preferredemail"
             tal:content="context/preferredemail_sha1"
             >0BEEC7B5EA3f0FDBC95D0DD47F3C5BC275DA8A33</foaf:mbox_sha1sum>
     </foaf:Person>
+    <foaf:Group tal:condition="context/isTeam">
+        <foaf:name tal:content="context/displayname">
+            Team Display Name
+        </foaf:name>
+        <foaf:member>
+            <foaf:Person tal:repeat="member context/allmembers">
+                <foaf:name tal:content="member/displayname">
+                    Display Name
+                </foaf:name>
+                <foaf:mbox_sha1sum
+                    tal:condition="member/preferredemail"
+                    tal:content="member/preferredemail_sha1"
+                    >0BEEC7B5EA3f0FDBC95D0DD47F3C5BC275DA8A33
+                </foaf:mbox_sha1sum>
+            </foaf:Person>
+        </foaf:member>
+    </foaf:Group>
 </rdf:RDF>

@@ -104,6 +104,14 @@
             lp:url="/products/evolution/+portlet-translatables" />
     </browser:pages>
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IProduct"
+        class="canonical.launchpad.browser.ProductRdfView"
+        permission="zope.Public"
+        name="+rdf"
+        lp:url="/projects/$Product.name/+rdf"
+        template="../templates/product-rdf.pt" />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"
         permission="launchpad.Edit"

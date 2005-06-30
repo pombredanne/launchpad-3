@@ -88,3 +88,15 @@ class ProductReleaseView:
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
 
+
+class ProductReleaseRdfView(object):
+    """A view that sets its mime-type to application/rdf+xml"""
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        request.response.setHeader('Content-Type', 'application/rdf+xml')
+        request.response.setHeader('Content-Disposition',
+                                   'attachment; filename=' +
+                                   self.context.product.name + '-' +
+                                   self.context.productseries.name + '-' +
+                                   self.context.version + '.rdf')

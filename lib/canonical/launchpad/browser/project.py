@@ -268,3 +268,14 @@ class ProjectSetView(object):
         # now redirect to the page to view it
         self.request.response.redirect(name)
 
+
+class ProjectRdfView(object):
+    """A view that sets its mime-type to application/rdf+xml"""
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        request.response.setHeader('Content-Type', 'application/rdf+xml')
+        request.response.setHeader('Content-Disposition',
+                                   'attachment; filename=' +
+                                   self.context.name + '-project.rdf')
+

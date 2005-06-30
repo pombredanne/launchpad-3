@@ -1,21 +1,15 @@
-<div class="portlet" tal:condition="context/required:launchpad.Edit">
-
-    <h4>Actions:</h4>
-
-    <div class="portletBody">
-
-        <div class="portletContent">
-
-        <img src="/++resource++edit.gif">
-        <a href="+edit">Edit Details</a><br />
-        <img src="/++resource++edit.gif">
-        <a href="+emails">Edit Email Addresses</a><br />
-        <img src="/++resource++edit.gif">
-        <a href="+editsshkey">Edit SSH Keys</a><br />
-        <img src="/++resource++edit.gif">
-        <a href="+editgpgkey">Edit GPG Keys</a><br />
-        <img src="/++resource++edit.gif">
-        <a href="+codesofconduct">Edit Signed CoCs</a><br />
-        </div>
-    </div>
+<div
+  class="portlet"
+  tal:condition="context/required:launchpad.Edit"
+>
+  <h4>Actions:</h4>
+  <div class="portletBody portletContent">
+    <ul>
+    <li class="edit"><a href="+edit">Edit Details</a></li>
+    <li class="mail"><a href="+emails">E-mail Addresses</a></li>
+    <li class="edit"><a href="+editsshkey">SSH Keys</a></li>
+    <li class="edit"><a href="+editgpgkey">GPG Keys</a></li>
+    <li class="edit"><a href="+codesofconduct">Code of Conduct signatures</a></li>
+    </ul>
+  </div>
 </div>

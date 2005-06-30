@@ -50,14 +50,6 @@ class IPerson(Interface):
             description=_("The password you will use to access "
                 "Launchpad services. ")
             )
-    # TODO: This should be required in the DB, defaulting to something
-    karma = Int(
-            title=_('Karma'), required=False, readonly=True,
-            )
-    # TODO: This should be required in the DB, defaulting to something
-    karmatimestamp = Datetime(
-            title=_('Karma Timestamp'), required=False, readonly=True,
-            )
     languages = Attribute(_('List of languages known by this person'))
 
     # this is not a date of birth, it is the date the person record was
@@ -74,6 +66,7 @@ class IPerson(Interface):
     sshkeys = Attribute(_('List of SSH keys'))
 
     # Properties of the Person object.
+    karma = Attribute("The cached karma for this person.")
     ubuntite = Attribute("Ubuntite Flag")
     gpgkeys = Attribute("List of GPGkeys")
     irc = Attribute("IRC")
@@ -176,24 +169,18 @@ class IPerson(Interface):
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
-    def browsername():
-        """Return a textual name suitable for display in a browser."""
+    browsername = Attribute(
+        'Return a textual name suitable for display in a browser.')
 
     def isTeam():
         """True if this Person is actually a Team, otherwise False."""
 
-    def assignKarma(karmatype, points=None):
-        """Assign <points> worth of karma to this Person.
+    def assignKarma(action_name):
+        """Assign karma for the action named <action_name> to this person."""
 
-        If <points> is None, then get the default number of points from the
-        given karmatype.
-        """
-
-    def addLanguage(language):
-        """Add a new language to the list of know languages."""
-
-    def removeLanguage(language):
-        """Removed the language from the list of know languages."""
+    def getKarmaPointsByCategory(category):
+        """Return the cached karma of this person for all actions of the given 
+        category s(he) performed."""
 
     def inTeam(team):
         """Return True if this person is a member or the owner of <team>.
@@ -392,22 +379,6 @@ class IPersonSet(Interface):
         Return the default value if there is no such person.
         """
 
-    def search(password=None):
-        # The search API is minimal for the moment, to solve an
-        # immediate problem. It will gradually be filled out with
-        # more parameters as necessary.
-        """Return a set of IPersons that satisfy the query arguments.
-
-        Keyword arguments should always be used. The argument passing
-        semantics are as follows:
-
-        * personset.search(arg = 'foo'): Match all IPersons where
-          IPerson.arg == 'foo'.
-
-        * personset.search(arg = NULL): Match all the IPersons where
-          IPerson.arg IS NULL.
-        """
-
     def getAllTeams(orderBy=None):
         """Return all Teams.
         
@@ -420,6 +391,17 @@ class IPersonSet(Interface):
     def getAllPersons(orderBy=None):
         """Return all Persons, ignoring the merged ones.
         
+        If you want the results ordered, you have to explicitly specify an
+        <orderBy>. Otherwise the order used is not predictable.
+        <orderBy> can be either a string with the column name you want to sort
+        or a list of column names as strings.
+        """
+
+    def getAllValidPersons(orderBy=None):
+        """Return all valid persons, but not teams.
+
+        A valid person is any person with a preferred email address.
+
         If you want the results ordered, you have to explicitly specify an
         <orderBy>. Otherwise the order used is not predictable.
         <orderBy> can be either a string with the column name you want to sort

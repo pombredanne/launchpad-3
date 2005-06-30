@@ -76,6 +76,11 @@
         />
 
     <vocabulary
+        name="KarmaActionCategory"
+        factory="canonical.launchpad.vocabularies.KarmaActionCategoryVocabulary"
+        />
+
+    <vocabulary
         name="Product"
         factory="canonical.launchpad.vocabularies.ProductVocabulary"
         />

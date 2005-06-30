@@ -271,9 +271,7 @@ class BasePersonVocabulary(SQLObjectVocabularyBase):
 
     def __contains__(self, obj):
         extraquery = 'person.id = %d' % obj.id
-        # XXX: salgado, 2005-05-09: Soon we'll be able to say: "obj in
-        # self._table.select(query)" and I'll fix this method.
-        return bool(self._select(extraquery).count())
+        return obj in self._select(extraquery)
 
     def _select(self, extraquery):
         if self._basequery:

@@ -20,7 +20,8 @@ from zope.component import getUtility
 
 # lp imports
 from canonical.lp.dbschema import (
-    LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus)
+    LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
+    KarmaActionCategory)
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
@@ -28,12 +29,12 @@ from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
     ISSHKeySet, IBugTaskSet, IPersonSet, IEmailAddressSet, IWikiNameSet,
     IJabberIDSet, IIrcIDSet, IArchUserIDSet, ILaunchBag, ILoginTokenSet,
-    IPasswordEncryptor, ISignedCodeOfConduct, ISignedCodeOfConductSet, 
-    IObjectReassignment, ITeamReassignment, IGPGKeySet, IGpgHandler, IPymeKey,
-    UBUNTU_WIKI_URL)
+    IPasswordEncryptor, ISignedCodeOfConductSet, IObjectReassignment,
+    ITeamReassignment, IGPGKeySet, IGpgHandler, IPymeKey, IKarmaActionSet,
+    IKarmaSet, UBUNTU_WIKI_URL)
 
 from canonical.launchpad.helpers import (
-        obfuscateEmail, convertToHtmlCode, shortlist, sanitiseFingerprint)
+        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
@@ -141,6 +142,9 @@ class PersonRdfView(object):
         self.context = context
         self.request = request
         request.response.setHeader('content-type', 'application/rdf+xml')
+        request.response.setHeader('Content-Disposition',
+                                   'attachment; filename=' + 
+                                   self.context.name + '.rdf')
 
 
 class BasePersonView:
@@ -158,6 +162,20 @@ class PersonView(BasePersonView):
         self.request = request
         self.message = None
         self.user = getUtility(ILaunchBag).user
+
+    def actionCategories(self):
+        return KarmaActionCategory.items
+
+    def actions(self, actionCategory):
+        """Return a list of actions of the given category performed by 
+        this person."""
+        kas = getUtility(IKarmaActionSet)
+        return kas.selectByCategoryAndPerson(actionCategory, self.context)
+
+    def actionsCount(self, action):
+        """Return the number of times this person performed this action."""
+        karmaset = getUtility(IKarmaSet)
+        return len(karmaset.selectByPersonAndAction(self.context, action))
 
     def assignedBugsToShow(self):
         """Return True if there's any bug assigned to this person that match
@@ -722,9 +740,7 @@ class RequestPeopleMergeMultipleEmailsView:
             dupe = self.request.get('dupe')
         self.dupe = getUtility(IPersonSet).get(int(dupe))
         emailaddrset = getUtility(IEmailAddressSet)
-        # XXX: salgado, 2005-05-06: As soon as we have a __contains__ method
-        # in SelectResults we'll not need to listify self.dupeemails anymore.
-        self.dupeemails = shortlist(emailaddrset.getByPerson(self.dupe.id))
+        self.dupeemails = emailaddrset.getByPerson(self.dupe.id)
 
     def processForm(self):
         if self.request.method != "POST":

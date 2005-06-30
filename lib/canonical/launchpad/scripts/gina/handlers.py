@@ -23,7 +23,6 @@ from zope.component import getUtility
 from canonical.launchpad.scripts.gina.library import getLibraryAlias
 
 from canonical.lp import initZopeless
-from canonical.foaf.nickname import generate_nick
 from canonical.launchpad.database import (Distribution, DistroRelease,
     DistroArchRelease,Processor, SourcePackageName, SourcePackageRelease,
     Build, BinaryPackage, BinaryPackageName, Person, EmailAddress, GPGKey, 

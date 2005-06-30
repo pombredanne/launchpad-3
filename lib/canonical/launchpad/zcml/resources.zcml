@@ -42,6 +42,7 @@
 
     <resource name="languages.gif" file="../images/languages.gif" />
     <resource name="add.gif" file="../images/add.gif" />
+    <resource name="discussionitem_icon.gif" file="../images/discussionitem_icon.gif" />
     <resource name="edit.gif" file="../images/edit.gif" />
     <resource name="user.gif" file="../images/user.gif" />
     <resource name="lock_icon.gif" file="../images/lock_icon.gif" />
@@ -54,7 +55,7 @@
     <resource name="mail_icon.gif" file="../images/mail_icon.gif" />
     <resource name="linkOpaque.gif" file="../images/linkOpaque.gif" />
     <resource name="topic_icon.gif" file="../images/topic_icon.gif" />
-    <resource name="discussionitem_icon.gif" file="../images/discussionitem_icon.gif" />
+    <resource name="translations" file="../images/rosetta-icon.png" />
     <resource name="document_icon.gif" file="../images/document_icon.gif" />
     <resource name="ubuntu.gif" file="../images/ubuntu.gif" />
 

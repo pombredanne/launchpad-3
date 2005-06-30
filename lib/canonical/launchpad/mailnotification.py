@@ -832,14 +832,7 @@ def notify_bug_cveref_edited(edited_cveref, event):
 
 def notify_join_request(event):
     """Notify team administrators that a new membership is pending approval."""
-    # XXX: salgado, 2005-05-06: I have an implementation of __contains__ for
-    # SelectResults, and as soon as it's merged we'll be able to replace this
-    # uggly for/else block by an
-    # "if not event.user in event.team.proposedmembers: return".
-    for member in event.team.proposedmembers:
-        if member == event.user:
-            break
-    else:
+    if not event.user in event.team.proposedmembers:
         return
 
     user = event.user
