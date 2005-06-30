@@ -49,13 +49,13 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
-        path_expression="string:+bugs/${id}"
+        path_expression="string:+bugs/${bug/id}"
         attribute_to_parent="product"
         />
 
     <browser:url
         for="canonical.launchpad.interfaces.IDistroBugTask"
-        path_expression="string:+bugs/${id}"
+        path_expression="string:+bugs/${bug/id}"
         attribute_to_parent="distribution"
         />
 

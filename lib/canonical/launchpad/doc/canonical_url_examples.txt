@@ -167,12 +167,12 @@ An IBug.
 An IUpstreamBugTask.
 
     >>> canonical_url(getUtility(IBugTaskSet).get(2))
-    u'http://localhost:8086/products/firefox/+bugs/2'
+    u'http://localhost:8086/products/firefox/+bugs/1'
 
 An IDistroBugTask.
 
     >>> canonical_url(getUtility(IBugTaskSet).get(4))
-    u'http://localhost:8086/distros/debian/+bugs/4'
+    u'http://localhost:8086/distros/debian/+bugs/1'
 
 An IDistroReleaseBugTask.
 
