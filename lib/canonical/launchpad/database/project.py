@@ -41,6 +41,10 @@ class Project(SQLBase):
         default=UTC_NOW)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
     wikiurl = StringCol(dbName='wikiurl', notNull=False, default=None)
+    sourceforgeproject = StringCol(dbName='sourceforgeproject', notNull=False,
+        default=None)
+    freshmeatproject = StringCol(dbName='freshmeatproject', notNull=False,
+        default=None)
     lastdoap = StringCol(dbName='lastdoap', notNull=False, default=None)
     translationgroup = ForeignKey(dbName='translationgroup',
         foreignKey='TranslationGroup', notNull=False, default=None)

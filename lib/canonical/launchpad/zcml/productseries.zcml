@@ -51,6 +51,14 @@
 
     </browser:pages>
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductSeries"
+        class="canonical.launchpad.browser.ProductSeriesRdfView"
+        permission="zope.Public"
+        name="+rdf"
+        lp:url="/products/$Product.name/+series/$ProductSeries.name/+rdf"
+        template="../templates/productseries-rdf.pt" />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeries"
         class="canonical.launchpad.browser.ProductSeriesView"

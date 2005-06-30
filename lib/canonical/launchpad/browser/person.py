@@ -142,6 +142,9 @@ class PersonRdfView(object):
         self.context = context
         self.request = request
         request.response.setHeader('content-type', 'application/rdf+xml')
+        request.response.setHeader('Content-Disposition',
+                                   'attachment; filename=' + 
+                                   self.context.name + '.rdf')
 
 
 class BasePersonView:

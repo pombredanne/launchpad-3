@@ -30,6 +30,8 @@ class IProductRelease(Interface):
     summary = Text(title=_("Summary"), required=False)
     description = Text(title=_("Description"), required=False)
     changelog = Text(title=_('Changelog'), required=False)
+    datecreated = TextLine(title=_('Date Created'), description=_("""The
+        date this productrelease was created in Launchpad."""))
 
     displayname = Attribute(_('Constructed displayname for a productrelease.'))
     manifest = Attribute(_('Manifest Information.'))
