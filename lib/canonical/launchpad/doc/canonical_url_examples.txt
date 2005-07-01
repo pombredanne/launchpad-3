@@ -107,6 +107,11 @@ using a database class in browser code, as below.
     >>> canonical_url(hoary_sourcepackages)
     u'http://localhost:8086/distros/ubuntu/hoary/+sources'
 
+An ISourcePackage.
+
+    >>> canonical_url(hoary_sourcepackages['evolution'])
+    u'http://localhost:8086/distros/ubuntu/hoary/+sources/evolution'
+
 
 == Projects and products ==
 
