@@ -81,6 +81,14 @@
 
     </browser:pages>
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.ProjectRdfView"
+        permission="zope.Public"
+        name="+rdf"
+        lp:url="/projects/$Project.name/+rdf"
+        template="../templates/project-rdf.pt" />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IProject"
         permission="launchpad.Edit"

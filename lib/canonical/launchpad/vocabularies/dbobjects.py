@@ -175,7 +175,8 @@ class ProductVocabulary(SQLObjectVocabularyBase):
             like_query = "'%%' || %s || '%%'" % quote_like(query)
             fti_query = quote(query)
             sql = "fti @@ ftq(%s)" % fti_query
-            return [self._toTerm(r) for r in self._table.select(sql, orderBy=self._orderBy)]
+            return [self._toTerm(r)
+                for r in self._table.select(sql, orderBy=self._orderBy)]
 
         return []
 
@@ -271,9 +272,7 @@ class BasePersonVocabulary(SQLObjectVocabularyBase):
 
     def __contains__(self, obj):
         extraquery = 'person.id = %d' % obj.id
-        # XXX: salgado, 2005-05-09: Soon we'll be able to say: "obj in
-        # self._table.select(query)" and I'll fix this method.
-        return bool(self._select(extraquery).count())
+        return obj in self._select(extraquery)
 
     def _select(self, extraquery):
         if self._basequery:

@@ -3,6 +3,8 @@
 
 __metaclass__ = type
 
+__all__ = ['RosettaApplicationView', 'RosettaPreferencesView']
+
 from sets import Set
 
 from zope.component import getUtility
@@ -17,19 +19,19 @@ from canonical.launchpad import helpers
 class RosettaApplicationView:
 
     translationGroupsPortlet = ViewPageTemplateFile(
-            '../launchpad/templates/portlet-rosetta-groups.pt')
+        '../templates/portlet-rosetta-groups.pt')
 
     prefLangPortlet = ViewPageTemplateFile(
-            '../launchpad/templates/portlet-pref-langs.pt')
+        '../templates/portlet-pref-langs.pt')
 
     countryPortlet = ViewPageTemplateFile(
-        '../launchpad/templates/portlet-country-langs.pt')
+        '../templates/portlet-country-langs.pt')
 
     browserLangPortlet = ViewPageTemplateFile(
-        '../launchpad/templates/portlet-browser-langs.pt')
+        '../templates/portlet-browser-langs.pt')
 
     statsPortlet = ViewPageTemplateFile(
-        '../launchpad/templates/portlet-rosetta-stats.pt')
+        '../templates/portlet-rosetta-stats.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -43,7 +45,7 @@ class RosettaApplicationView:
         return IRequestPreferredLanguages(self.request).getPreferredLanguages()
 
 
-class ViewPreferences:
+class RosettaPreferencesView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -51,7 +53,7 @@ class ViewPreferences:
         self.error_msg = None
         self.person = getUtility(ILaunchBag).user
 
-    def languages(self):
+    def visible_languages(self):
         class BrowserLanguage:
             def __init__(self, code, englishname, is_checked):
                 self.code = code
@@ -65,10 +67,11 @@ class ViewPreferences:
         user_languages = list(self.person.languages)
 
         for language in getUtility(ILanguageSet):
-            yield BrowserLanguage(
-                code=language.code,
-                englishname=language.englishname,
-                is_checked=language in user_languages)
+            if language.visible:
+                yield BrowserLanguage(
+                    code=language.code,
+                    englishname=language.englishname,
+                    is_checked=language in user_languages)
 
     def submit(self):
         '''Process a POST request to one of the Rosetta preferences forms.'''

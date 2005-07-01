@@ -5,17 +5,17 @@ Exporting Single PO Files through the Web
 If we haven't logged in yet, we should be prompted to.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+po HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+export HTTP/1.1
   ... """)
   HTTP/1.1 303 See Other
   Content-Length: 0
   Content-Type: text/plain;charset=utf-8
-  Location: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+po/+login
+  Location: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+export/+login
 
 If we GET the page while logged in, we should get a confirmation form.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+po HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+export HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
@@ -39,19 +39,17 @@ If we GET the page while logged in, we should get a confirmation form.
               <strong>carlos@canonical.com</strong>.
               </p>
   <BLANKLINE>
-              <form action="" method="POST">
-                  <div class="formControls">
-                      <input type="submit" value="Confirm Export" />
-                  </div>
-              </form>
   ...
 
 If we POST the page, it should add the request to the queue.
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+po HTTP/1.1
+  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+export HTTP/1.1
+  ... Content-Length: 9
+  ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
+  ... 
+  ... format=PO""")
   HTTP/1.1 200 Ok
   ...
   Content-Type: text/html;charset=utf-8

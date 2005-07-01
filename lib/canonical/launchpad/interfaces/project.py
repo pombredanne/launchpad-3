@@ -53,6 +53,9 @@ class IProject(IHasOwner):
         the project to current organisational structure, goals and release
         strategy."""))
 
+    datecreated = TextLine(title=_('Date Created'), description=_("""The
+        date this project was created in Launchpad."""))
+
     homepageurl = TextLine(title=_('Homepage URL'), description=_("""The
         project home page."""))
 

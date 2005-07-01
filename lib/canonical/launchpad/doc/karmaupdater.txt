@@ -1,0 +1,18 @@
+Karma Updater
+=============
+
+In Launchpad, everytime a user performs an action, we give him some karma
+points. These karma points are stored in the KarmaAction table and the
+assignment to a user is made in the Karma table. The method used to calculate
+a users karma is time-dependent, because we want to give more karma points for
+actions performed recently. This method is described in 
+https://wiki.launchpad.canonical.com/KarmaImplementation.
+
+It would be a problem if every time we wanted to see a user's total karma we
+had to calculate it, so we decided to cache this total and update it
+periodically. This cache is stored in the KarmaCache table and is updated by
+the foaf-update-karma-cache.py cronscript.
+
+>>> import subprocess
+>>> subprocess.call('cronscripts/foaf-update-karma-cache.py', shell=True)
+0

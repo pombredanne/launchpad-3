@@ -247,9 +247,10 @@ class RosettaReadTarFile:
         # safe. # We don't support other kinds of tarballs and before calling
         # this function we did already the needed tests to be sure that
         # pot_paths follows our requirements.
-        potemplate.attachRawFileData(tarfile.extractfile(pot_paths[0]).read(),
-                                     True, # the "published" flag
-                                     importer)
+        potemplate.attachRawFileData(
+            contents=self.tarfile.extractfile(pot_paths[0]).read(),
+            published=True,
+            importer=importer)
         pot_base_dir = os.path.dirname(pot_paths[0])
 
         # List of .pot and .po files that were not able to be imported.
@@ -262,7 +263,7 @@ class RosettaReadTarFile:
                 errors.append(path)
                 continue
 
-            contents = tarfile.extractfile(path).read()
+            contents = self.tarfile.extractfile(path).read()
 
             basename = os.path.basename(path)
             root, extension = os.path.splitext(basename)

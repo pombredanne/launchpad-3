@@ -17,23 +17,30 @@
       <table>
         <tbody>
           <tr>
-            <th>Owner:</th>
+            <th><label>Owner:</label></th>
             <td><a tal:attributes="href string:../${context/teamowner/name}"
-                   tal:content="context/teamowner/browsername"></a></td>
+                   tal:content="context/teamowner/browsername"></a>
+                <tal:block condition="context/required:launchpad.Admin">
+                  <a tal:attributes="href string:${context/fmt:url}/+reassign">
+                    <img alt="(Change owner)" src="/++resource++edit.gif"
+                         title="Change the owner" />
+                  </a>
+                </tal:block>
+            </td>
           </tr>
           <tr>
-            <th>Members:</th>
+            <th><label>Members:</label></th>
             <td>
               <span tal:content="view/activeMembersCount" />
               active
             </td>
           </tr>
           <tr>
-            <th>Membership policy:</th>
+            <th><label>Membership policy:</label></th>
             <td tal:content="context/subscriptionPolicyDesc">123</td>
           </tr>
           <tr>
-            <th>Contact address:</th>
+            <th><label>Contact address:</label></th>
             <td
               tal:condition="context/preferredemail"
               tal:content="context/preferredemail/email"
@@ -52,6 +59,40 @@
           </tr>
         </tbody>
       </table>
+      <h2>Your involvement</h2>
+      <p tal:condition="not: request/lp:person">
+        You must <a href="+login">log in</a>
+        before you can join or leave this team.
+      </p>
+      <tal:block condition="request/lp:person">
+        <tal:block condition="view/userIsOwner">
+          <p tal:condition="view/userIsActiveMember">
+            You are the owner of this team.
+          </p>
+          <p tal:condition="not: view/userIsActiveMember">
+            You are the owner of this team,
+            but not currently an active member.
+          </p>
+        </tal:block>
+        <tal:block condition="not: view/userIsOwner">
+          <p tal:condition="view/userIsActiveMember">
+            You are a member of this team.
+          </p>
+          <p tal:condition="not: view/userIsActiveMember">
+            You are not a member of this team.
+          </p>
+        </tal:block>
+        <ul>
+          <li
+            tal:condition="view/userIsActiveMember"
+            class="remove"
+          ><a href="+leave"><strong>Leave&#8230;</strong></a></li>
+          <li
+            tal:condition="not: view/userIsActiveMember"
+            class="add"
+          ><a href="+join"><strong>Join the team&#8230;</strong></a></li>
+        </ul>
+      </tal:block>
       <h2>Relationship to other teams</h2>
       <tal:block define="
         subteams context/getSubTeams;
@@ -96,36 +137,6 @@
             </li>
           </ul>
         </tal:block>
-      </tal:block>
-      <tal:block condition="request/lp:person">
-        <h2>Your involvement</h2>
-        <tal:block condition="view/userIsOwner">
-          <p tal:condition="view/userIsActiveMember">
-            You are the owner of this team.
-          </p>
-          <p tal:condition="not: view/userIsActiveMember">
-            You are the owner of this team,
-            but not currently an active member.
-          </p>
-        </tal:block>
-        <tal:block condition="not: view/userIsOwner">
-          <p tal:condition="view/userIsActiveMember">
-            You are a member of this team.
-          </p>
-          <p tal:condition="not: view/userIsActiveMember">
-            You are not a member of this team.
-          </p>
-        </tal:block>
-        <ul>
-          <li
-            tal:condition="view/userIsActiveMember"
-            class="remove"
-          ><a href="+leave">Leave&#8230;</a></li>
-          <li
-            tal:condition="not: view/userIsActiveMember"
-            class="add"
-          ><a href="+join">Join&#8230;</a></li>
-        </ul>
       </tal:block>
     </div>
   </body>

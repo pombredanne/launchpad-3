@@ -56,6 +56,9 @@ class IProduct(IHasOwner):
         product description, may be several paragraphs of text, giving the
         product highlights and details."""))
 
+    datecreated = TextLine(title=_('Date Created'), description=_("""The
+        date this product was created in Launchpad."""))
+
     homepageurl = TextLine(title=_('Homepage URL'), required=False)
 
     wikiurl = TextLine(title=_('Wiki URL'), required=False)

@@ -30,6 +30,9 @@
                     tal:condition="context/required:launchpad.Edit">
                   <a href="+milestone">Add Milestone</a>
                 </li>
+                <li class="download">
+                  <a href="+rdf">Download RDF Metadata</a>
+                </li>
             </ul>
         </div>
     </div>

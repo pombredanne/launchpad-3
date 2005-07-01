@@ -43,7 +43,7 @@ __all__ = (
 'EmailAddressStatus',
 'HashAlgorithm',
 'ImportTestStatus',
-'KarmaType',
+'KarmaActionCategory',
 'LoginTokenType',
 'ManifestEntryType',
 'PackagePublishingPriority',
@@ -66,6 +66,7 @@ __all__ = (
 'TeamSubscriptionPolicy',
 'TranslationPriority',
 'TranslationPermission',
+'TranslationValidationStatus',
 'DistroReleaseQueueStatus',
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
@@ -1949,52 +1950,101 @@ class RosettaImportStatus(DBSchema):
         """)
 
 
-class KarmaType(DBSchema):
-    # If you add a new Item here, please remember to add it to 
-    # canonical.launchpad.database.person.KARMA_POINTS too. 
-    # XXX: This KarmaType is a good candidate for leaving dbschema and
-    # get into the database.
-    """Karma Field
+class KarmaActionName(DBSchema):
+    """The name of an action that gives karma to a user."""
 
-    This schema documents the different kinds of Karma that can be
-    assigned to a person. A person have a list of assigned Karmas and
-    each of these Karmas have a KarmaType.
+    BUGCREATED = Item(1, """
+        New Bug Created
+
+        New Bug Created.
+        """)
+
+    BUGCOMMENTADDED = Item(2, """
+        New Comment
+     
+        New Comment
+        """)
+
+    BUGTITLECHANGED = Item(3, """
+        Bug Title Changed
+      
+        Bug Title Changed
+        """)
+
+    BUGSUMMARYCHANGED = Item(4, """
+        Bug Summary Changed
+       
+        Bug Summary Changed
+        """)
+
+    BUGDESCRIPTIONCHANGED = Item(5, """
+        Bug Description Changed
+        
+        Bug Description Changed
+        """)
+
+    BUGEXTREFCHANGED = Item(6, """
+        Bug External Reference Changed
+  
+        Bug External Reference Changed
+        """)
+
+    BUGCVEREFCHANGED = Item(7, """
+        Bug CVE Reference Changed
+   
+        Bug CVE Reference Changed
+        """)
+
+    BUGFIXED = Item(8, """
+        Bug Status Changed to FIXED
+    
+        Bug Status Changed to FIXED
+        """)
+
+    BUGTASKCREATED = Item(9, """
+        New Bug Task Created
+     
+        New Bug Task Created
+        """)
+
+
+class KarmaActionCategory(DBSchema):
+    """The class of an action that gives karma to a user.
+
+    This schema documents the different classes of actions that can result
+    in Karma assigned to a person. A person have a list of assigned Karmas,
+    each of these Karma entries have a KarmaAction and each of these actions
+    have a Class, which is represented by one of the following items.
     """
 
-    WIKI_EDIT = Item(1, """
-        Wiki Page Edited
+    MISC = Item(1, """
+        Miscellaneous
 
-        User edited a Wiki page.
+        Any action that doesn't fit into any other class.
     """)
 
-    WIKI_CREATE = Item(2, """
-        New Wiki Page
+    BUGS = Item(2, """
+        Bugs
 
-        User created a new page in the Wiki.
+        All actions related to bugs.
     """)
 
-    BUG_COMMENT = Item(3, """
-        New Comment on Bug
+    TRANSLATIONS = Item(3, """
+        Translations
 
-        User posted a comment on the bug's discussion forum.
+        All actions related to translations.
     """)
 
-    BUG_REPORT = Item(4, """
-        Bug Report
+    BOUNTIES = Item(4, """
+        Bounties
 
-        User reported a new bug.
+        All actions related to bounties.
     """)
 
-    BUG_FIX = Item(5, """
-        Bug Fix
+    HATCHERY = Item(5, """
+        Hatchery
 
-        User provided a patch to fix a bug.
-    """)
-
-    PACKAGE_UPLOAD = Item(6, """
-        Package Uploaded
-
-        User uploaded a new package to the system.
+        All actions related to the Hatchery.
     """)
 
 
@@ -2132,6 +2182,55 @@ class MirrorFreshness(DBSchema):
         The Freshness was never verified and is unknown.
         """)
 
+class RosettaFileFormat(DBSchema):
+    """Rosetta File Format
+
+    This is an enumeration of the different sorts of file that Rosetta can
+    export.
+    """
+
+    PO = Item(1, """
+        PO format
+
+        Gettext's standard text file format.
+        """)
+
+    MO = Item(2, """
+        MO format
+
+        Gettext's standard binary file format.
+        """)
+
+    XLIFF = Item(3, """
+        XLIFF
+
+        OASIS's XML Localisation Interchange File Format.
+        """)
+
+    CSHARP_DLL = Item(4, """
+        .NET DLL
+
+        The dynamic link library format as used by programs that use the .NET
+        framework.
+        """)
+
+    CSHARP_RESOURCES = Item(5, """
+        .NET resource file
+
+        The resource file format used by programs that use the .NET framework.
+        """)
+
+    TCL = Item(6, """
+        TCL format
+
+        The .msg format as used by TCL/msgcat.
+        """)
+
+    QT = Item(7, """
+        QT format
+
+        The .qm format as used by programs using the QT toolkit.
+        """)
 
 class TranslationValidationStatus(DBSchema):
     """Translation Validation Status
@@ -2158,3 +2257,4 @@ class TranslationValidationStatus(DBSchema):
 
         This translation has an unknown error.
         """)
+

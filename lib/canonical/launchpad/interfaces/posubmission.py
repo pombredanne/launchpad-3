@@ -14,4 +14,6 @@ class IPOSubmission(Interface):
     datecreated = Attribute("The date we saw this submission.")
     origin = Attribute("Where the submission originally came from.")
     person = Attribute("The owner of this submission, if we have one.")
+    validationstatus = Attribute(
+        "The status of the validation of the translation.")
 

@@ -1,6 +1,14 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""Browser code for PO templates."""
+
 __metaclass__ = type
+
+__all__ = [
+    'POTemplateSubsetView', 'POTemplateView', 'POTemplateEditView',
+    'POTemplateAdminView', 'POTemplateAddView', 'BaseExportView',
+    'POTemplateExportView', 'POTemplateTranslateView',
+    'POTemplateAbsoluteURL', 'POTemplateSubsetURL', 'POTemplateURL']
 
 import tarfile
 from sets import Set
@@ -15,13 +23,14 @@ from zope.publisher.browser import FileUpload
 from zope.app.form.browser.add import AddView
 from zope.app.publisher.browser import BrowserView
 
+from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     ILaunchBag, IPOTemplateSet, IPOTemplateNameSet, IPersonSet,
     RawFileAttachFailed, IPOExportRequestSet, ICanonicalUrlData)
-from canonical.launchpad.components.poexport import POExport
 from canonical.launchpad.browser.pofile import POFileView
+from canonical.launchpad.browser.pofile import BaseExportView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 class POTemplateSubsetView:
@@ -161,8 +170,8 @@ class POTemplateView:
                 self.status_message = error
                 return
 
-            self.status_message = (
-                tarball.do_import(self.context, owner, pot_paths, po_paths))
+            self.status_message = tarball.do_import(
+                self.context, self.user, pot_paths, po_paths)
         else:
             self.status_message = (
                 'The file you uploaded was not recognised as a file that '
@@ -231,8 +240,7 @@ class POTemplateAddView(AddView):
     def nextURL(self):
         return self._nextURL
 
-
-class POTemplateExport:
+class POTemplateExportView(BaseExportView):
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -241,6 +249,8 @@ class POTemplateExport:
         self.errorMessage = None
 
     def processForm(self):
+        """Process a form submission requesting a translation export."""
+
         if self.request.method != 'POST':
             return
 
@@ -273,16 +283,25 @@ class POTemplateExport:
                 'of them.')
             return
 
+        format_name = self.request.form.get('format')
+
+        try:
+            format = RosettaFileFormat.items[format_name]
+        except KeyError:
+            raise RuntimeError("Unsupported format.")
+
         request_set = getUtility(IPOExportRequestSet)
 
         if export_potemplate:
-            request_set.addRequest(self.user, self.context, pofiles)
+            request_set.addRequest(self.user, self.context, pofiles, format)
         else:
-            request_set.addRequest(self.user, None, pofiles)
+            request_set.addRequest(self.user, None, pofiles, format)
 
         self.formProcessed = True
 
     def pofiles(self):
+        """Return a list of PO files available for export."""
+
         class BrowserPOFile:
             def __init__(self, value, browsername):
                 self.value = value
@@ -303,76 +322,6 @@ class POTemplateExport:
 
             yield BrowserPOFile(value, browsername)
 
-class POTemplateTarExport:
-    '''View class for exporting a tarball of translations.'''
-
-    def make_tar_gz(self, poExporter):
-        '''Generate a gzipped tar file for the context PO template. The export
-        method of the given poExporter object is used to generate PO files.
-        The contents of the tar file as a string is returned.
-        '''
-
-        # Create a new StringIO-backed gzipped tarfile.
-        outputbuffer = StringIO()
-        archive = tarfile.open('', 'w:gz', outputbuffer)
-
-        # XXX
-        # POTemplate.name and Language.code are unicode objects, declared
-        # using SQLObject's StringCol. The name/code being unicode means that
-        # the filename given to the tarfile module is unicode, and the
-        # filename is unicode means that tarfile writes unicode objects to the
-        # backing StringIO object, which causes a UnicodeDecodeError later on
-        # when StringIO attempts to join together its buffers. The .encode()s
-        # are a workaround. When SQLObject has UnicodeCol, we should be able
-        # to fix this properly.
-        # -- Dafydd Harries, 2005/01/20
-
-        # Create the directory the PO files will be put in.
-        directory = 'rosetta-%s' % self.context.name.encode('utf-8')
-        dirinfo = tarfile.TarInfo(directory)
-        dirinfo.type = tarfile.DIRTYPE
-        archive.addfile(dirinfo)
-
-        # Put a file in the archive for each PO file this template has.
-        for pofile in self.context.pofiles:
-            if pofile.variant is not None:
-                raise RuntimeError("PO files with variants are not supported.")
-
-            code = pofile.language.code.encode('utf-8')
-            name = '%s.po' % code
-
-            # Export the PO file.
-            contents = poExporter.export(code)
-
-            # Put it in the archive.
-            fileinfo = tarfile.TarInfo("%s/%s" % (directory, name))
-            fileinfo.size = len(contents)
-            archive.addfile(fileinfo, StringIO(contents))
-
-        archive.close()
-
-        return outputbuffer.getvalue()
-
-    def __call__(self):
-        '''Generates a tarball for the context PO template, sets up the
-        response (status, content length, etc.) and returns the PO template
-        generated so that it can be returned as the body of the request.
-        '''
-
-        # This exports PO files for us from the context template.
-        poExporter = POExport(self.context)
-
-        # Generate the tarball.
-        body = self.make_tar_gz(poExporter)
-
-        self.request.response.setStatus(200)
-        self.request.response.setHeader('Content-Type', 'application/x-tar')
-        self.request.response.setHeader('Content-Length', len(body))
-        self.request.response.setHeader('Content-Disposition',
-            'attachment; filename="%s.tar.gz"' % self.context.name)
-
-        return body
-
 
 # This class is only a compatibility one so the old URL to translate with
 # Rosetta redirects the user to the new URL and we don't break external links.
@@ -383,10 +332,6 @@ class POTemplateTarExport:
 # The other arguments are preserved.
 class POTemplateTranslateView:
     """View class to forward users from old translation URL to the new one."""
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
 
     def __call__(self):
         parameters = {}
@@ -418,7 +363,8 @@ class POTemplateTranslateView:
 
 
 class POTemplateAbsoluteURL(BrowserView):
-    """The view for an absolute URL of a bug task."""
+    """The view for an absolute URL of a PO template."""
+
     def __str__(self):
         if self.context.productrelease:
             return "%s/products/%s/%s/+pots/%s/" % (
@@ -434,7 +380,7 @@ class POTemplateAbsoluteURL(BrowserView):
                 self.context.sourcepackagename.name,
                 self.context.potemplatename.name)
 
-class POTemplateSubsetUrl:
+class POTemplateSubsetURL:
     implements(ICanonicalUrlData)
 
     def __init__(self, context):
@@ -463,7 +409,7 @@ class POTemplateSubsetUrl:
             return potemplatesubset.productrelease
 
 
-class POTemplateUrl:
+class POTemplateURL:
     implements(ICanonicalUrlData)
 
     def __init__(self, context):

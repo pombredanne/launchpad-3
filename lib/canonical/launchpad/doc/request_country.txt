@@ -10,9 +10,7 @@ Adapting a request to a country allows you to see where the request came from.
 
 Here's a dummy request.
 
-    >>> from zope.interface import directlyProvides
     >>> from zope.publisher.browser import TestRequest
-
     >>> request = TestRequest(environ={'REMOTE_ADDR': '127.0.0.1'})
 
 Here's us converting it to a country.

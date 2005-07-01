@@ -24,6 +24,7 @@ __metaclass__ = type
 
 import datetime
 import os
+import subprocess
 import tarfile
 import time
 from StringIO import StringIO
@@ -288,7 +289,7 @@ def export_rows(rows, pofile_output):
             # Update header fields. This part is optional in order to make it
             # easier to fake data for testing.
 
-            if row.pofile:
+            if row.pofile and row.pofile.latest_submission:
                 # Update the last translator field.
 
                 submission = row.pofile.latest_submission
@@ -538,6 +539,30 @@ class DistroReleasePOExporter:
     def export_tarball_to_file(self, filehandle, date=None):
         """See IDistroReleasePOExporter."""
         export_distrorelease_tarball(filehandle, self.release, date)
+
+
+class MOCompilationError(Exception):
+    pass
+
+class MOCompiler:
+    """Compile PO files to MO files."""
+
+    MSGFMT = '/usr/bin/msgfmt'
+
+    def compile(self, pofile):
+        """Return a MO version of the given PO file."""
+
+        msgfmt = subprocess.Popen(
+            args=[MOCompiler.MSGFMT, '-v', '-o', '-', '-'],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
+        stdout, stderr = msgfmt.communicate(pofile)
+
+        if msgfmt.returncode != 0:
+            raise MOCompilationError("PO file compilation failed:\n" + stdout)
+
+        return stdout
 
 
 # XXX Carlos Perello Marin 2005-04-14: Code that implements the old

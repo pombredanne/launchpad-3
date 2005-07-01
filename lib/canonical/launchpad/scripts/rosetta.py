@@ -24,56 +24,9 @@ from zope.component import getUtility
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import IDistributionSet, IPersonSet, \
     ISourcePackageNameSet, IPOTemplateSet, IPOTemplateNameSet, \
-    IBinaryPackageNameSet
+    IBinaryPackageNameSet, IPOFileSet
 from canonical.launchpad.database import LanguageNotFound
 from canonical.sourcerer.deb.version import Version
-
-def create_logger(name, loglevel):
-    """Create a logger.
-
-    The logger will send log messages to standard error.
-    """
-
-    logger = logging.getLogger(name)
-    handler = logging.StreamHandler(strm=sys.stderr)
-    handler.setFormatter(
-        logging.Formatter(fmt='%(asctime)s : %(levelname)-8s : %(message)s'))
-    logger.addHandler(handler)
-    logger.setLevel(loglevel)
-    return logger
-
-def calculate_loglevel(quietness, verbosity):
-    """Calculate a logging level based upon quietness and verbosity option
-    counts.
-
-    >>> calculate_loglevel(0, 0) == logging.WARN
-    True
-    >>> calculate_loglevel(1, 0) == logging.ERROR
-    True
-    >>> calculate_loglevel(0, 1) == logging.INFO
-    True
-    >>> calculate_loglevel(0, 10) == logging.DEBUG
-    True
-    """
-
-    # The logging levels are: CRITICAL, ERROR, WARN, INFO, DEBUG
-    # Relative to the defalut: -2, -1, 0, 1, 2
-    # Hence, absolute: 0, 1, 2, 3, 4
-
-    verbosity = verbosity - quietness + 2
-
-    if verbosity < 0:
-        verbosity = 0
-    elif verbosity > 4:
-        verbosity = 4
-
-    return [
-        logging.CRITICAL,
-        logging.ERROR,
-        logging.WARN,
-        logging.INFO,
-        logging.DEBUG,
-        ][verbosity]
 
 class URLOpenerError(Exception):
     pass
@@ -686,6 +639,68 @@ def attach(urlopener, archive_uri, ztm, logger):
         process = AttachTranslationCatalog(
             urlopener, base_uri, catalog, ztm, logger)
         process.run()
+
+
+class ImportProcess:
+    """Import .po and .pot files attached to Rosetta."""
+
+    def __init__(self, ztm, logger):
+        """Initialize the ImportProcess object.
+
+        Get two arguments, the Zope Transaction Manager and a logger for the
+        warning/errors messages.
+        """
+        self.ztm = ztm
+        self.logger = logger
+        self.potemplateset = getUtility(IPOTemplateSet)
+        self.pofileset = getUtility(IPOFileSet)
+
+    def getPendingImports(self):
+        """Iterate over all templates and PO files which are waiting to be
+        imported.
+        """
+
+        for template in self.potemplateset.getTemplatesPendingImport():
+            logger.info('Importing the template: %s' % template.title)
+            yield template
+
+        for pofile in self.pofileset.getPOFilesPendingImport():
+            logger.info('Importing the %s translation of %s' % (
+                pofile.language.englishname, pofile.potemplate.title))
+            yield pofile
+
+    def run(self):
+        for object in self.getPendingImports():
+            # object could be a POTemplate or a POFile but both
+            # objects implement the doRawImport method so we don't
+            # need to care about it here.
+            try:
+                object.doRawImport(logger)
+            except KeyboardInterrupt:
+                self.ztm.abort()
+                raise
+            except:
+                # If we have any exception, we log it and abort the
+                # transaction.
+                logger.error('We got an unexpected exception while importing',
+                             exc_info=1)
+                self.ztm.abort()
+                continue
+
+            # As soon as the import is done, we commit the transaction
+            # so it's not lost.
+            try:
+                self.ztm.commit()
+            except KeyboardInterrupt:
+                self.ztm.abort()
+                raise
+            except:
+                # If we have any exception, we log it and abort the
+                # transaction.
+                logger.error('We got an unexpected exception while committing'
+                             'the transaction', exc_info=1)
+                self.ztm.abort()
+
 
 if __name__ == '__main__':
     doctest.testmod()

@@ -20,7 +20,8 @@ from zope.component import getUtility
 
 # lp imports
 from canonical.lp.dbschema import (
-    LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus)
+    LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
+    KarmaActionCategory)
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
@@ -28,11 +29,12 @@ from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
     ISSHKeySet, IBugTaskSet, IPersonSet, IEmailAddressSet, IWikiNameSet,
     IJabberIDSet, IIrcIDSet, IArchUserIDSet, ILaunchBag, ILoginTokenSet,
-    IPasswordEncryptor, ISignedCodeOfConduct, ISignedCodeOfConductSet, 
-    IObjectReassignment, ITeamReassignment, IGPGKeySet, IGpgHandler, IPymeKey)
+    IPasswordEncryptor, ISignedCodeOfConductSet, IObjectReassignment,
+    ITeamReassignment, IGPGKeySet, IGpgHandler, IPymeKey, IKarmaActionSet,
+    IKarmaSet, UBUNTU_WIKI_URL)
 
 from canonical.launchpad.helpers import (
-        obfuscateEmail, convertToHtmlCode, shortlist, sanitiseFingerprint)
+        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
@@ -140,6 +142,9 @@ class PersonRdfView(object):
         self.context = context
         self.request = request
         request.response.setHeader('content-type', 'application/rdf+xml')
+        request.response.setHeader('Content-Disposition',
+                                   'attachment; filename=' + 
+                                   self.context.name + '.rdf')
 
 
 class BasePersonView:
@@ -157,6 +162,20 @@ class PersonView(BasePersonView):
         self.request = request
         self.message = None
         self.user = getUtility(ILaunchBag).user
+
+    def actionCategories(self):
+        return KarmaActionCategory.items
+
+    def actions(self, actionCategory):
+        """Return a list of actions of the given category performed by 
+        this person."""
+        kas = getUtility(IKarmaActionSet)
+        return kas.selectByCategoryAndPerson(actionCategory, self.context)
+
+    def actionsCount(self, action):
+        """Return the number of times this person performed this action."""
+        karmaset = getUtility(IKarmaSet)
+        return len(karmaset.selectByPersonAndAction(self.context, action))
 
     def assignedBugsToShow(self):
         """Return True if there's any bug assigned to this person that match
@@ -432,7 +451,10 @@ class PersonEditView(BasePersonView):
         person.givenname = request.form.get("givenname")
         person.familyname = request.form.get("familyname")
 
-        wiki = request.form.get("wiki")
+        # XXX: wiki is hard-coded for Launchpad 1.0
+        #      - Andrew Bennetts, 2005-06-14
+        #wiki = request.form.get("wiki")
+        wiki = UBUNTU_WIKI_URL
         wikiname = request.form.get("wikiname")
         network = request.form.get("network")
         nickname = request.form.get("nickname")
@@ -440,11 +462,15 @@ class PersonEditView(BasePersonView):
         archuserid = request.form.get("archuserid")
 
         #WikiName
-        if person.wiki:
-            person.wiki.wiki = wiki
+        # Assertions that should be true at least until 1.0
+        assert person.wiki, 'People should always have wikinames'
+        if person.wiki.wikiname != wikiname:
+            if getUtility(IWikiNameSet).exists(wikiname):
+                self.errormessage = (
+                    'The wikiname %s for %s is already taken' 
+                    % (wikiname, UBUNTU_WIKI_URL,))
+                return False
             person.wiki.wikiname = wikiname
-        elif wiki and wikiname:
-            getUtility(IWikiNameSet).new(person.id, wiki, wikiname)
 
         #IrcID
         if person.irc:
@@ -714,9 +740,7 @@ class RequestPeopleMergeMultipleEmailsView:
             dupe = self.request.get('dupe')
         self.dupe = getUtility(IPersonSet).get(int(dupe))
         emailaddrset = getUtility(IEmailAddressSet)
-        # XXX: salgado, 2005-05-06: As soon as we have a __contains__ method
-        # in SelectResults we'll not need to listify self.dupeemails anymore.
-        self.dupeemails = shortlist(emailaddrset.getByPerson(self.dupe.id))
+        self.dupeemails = emailaddrset.getByPerson(self.dupe.id)
 
     def processForm(self):
         if self.request.method != "POST":

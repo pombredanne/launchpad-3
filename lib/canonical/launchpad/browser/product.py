@@ -245,6 +245,17 @@ class ProductFileBugView(SQLObjectAddView):
         return absoluteURL(self.addedBug, self.request)
 
 
+class ProductRdfView(object):
+    """A view that sets its mime-type to application/rdf+xml"""
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        request.response.setHeader('Content-Type', 'application/rdf+xml')
+        request.response.setHeader('Content-Disposition',
+                                   'attachment; filename=' +
+                                   self.context.name + '.rdf')
+
+
 class ProductSetView:
 
     __used_for__ = IProductSet

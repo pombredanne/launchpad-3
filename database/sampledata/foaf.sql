@@ -204,6 +204,11 @@ INSERT INTO WikiName (person, wiki, wikiname) VALUES
 	'http://www.ubuntulinux.com/wiki/',
 	'JeffWaugh');
 
+INSERT INTO WikiName (person, wiki, wikiname) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Foo Bar'),
+	'http://www.ubuntulinux.com/wiki/',
+	'FooBar');
+
 -- JabberID
 INSERT INTO JabberID (person, jabberid) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),

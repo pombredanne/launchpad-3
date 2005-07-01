@@ -12,15 +12,14 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.lp.dbschema import EmailAddressStatus, LoginTokenType
 from canonical.lp.dbschema import GPGKeyAlgorithm
 
-from canonical.foaf.nickname import generate_nick
+from canonical.foaf.nickname import generate_nick, generate_wikiname
 
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logInPerson
 
-from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
-from canonical.launchpad.interfaces import IPasswordEncryptor, IEmailAddressSet
-from canonical.launchpad.interfaces import ILoginTokenSet, IGPGKeySet
-from canonical.launchpad.interfaces import IGpgHandler
+from canonical.launchpad.interfaces import (IPersonSet, IEmailAddressSet,
+    IPasswordEncryptor, IEmailAddressSet, ILoginTokenSet, IGPGKeySet,
+    IGpgHandler, IWikiNameSet, UBUNTU_WIKI_URL)
 
 
 class LoginTokenView(object):
@@ -283,10 +282,18 @@ class NewAccountView(AddView):
         person = getUtility(IPersonSet).newPerson(**kw)
         notify(ObjectCreatedEvent(person))
 
+        # XXX: duplication of canonical.launchpad.database.person.createPerson!
+        #       -- Andrew Bennetts, 2005-06-14
         emailset = getUtility(IEmailAddressSet)
         email = emailset.new(self.context.email, person.id)
         notify(ObjectCreatedEvent(email))
         person.validateAndEnsurePreferredEmail(email)
+
+        # XXX: duplication of canonical.launchpad.database.person.createPerson!
+        #       -- Andrew Bennetts, 2005-06-14
+        wikinameset = getUtility(IWikiNameSet)
+        wikiname = generate_wikiname(kw['displayname'], wikinameset.exists)
+        wikinameset.new(person.id, UBUNTU_WIKI_URL, wikiname)
 
         self._nextURL = '/people/%s' % person.name
         self.context.destroySelf()

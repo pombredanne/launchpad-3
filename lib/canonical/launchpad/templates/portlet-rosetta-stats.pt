@@ -16,6 +16,11 @@
       <img src="/++resource++info_icon.gif">
       <span tal:replace="context/translator_count">5</span> Translators<br />
 
+      <p>
+        Statistics are updated daily, and may understate the scale of
+        Rosetta.
+      </p>
+
     </div>
   </div>
 </div>

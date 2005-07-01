@@ -16,12 +16,12 @@
             </tr>
         </table>
 
+        <ul><li class="info">
         <a href="+bounties"
-            style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
             title="More bounties...">
-            <img src="/++resource++add.gif" alt="+" />
             More...
-        </a><br />
+        </a>
+        </li></ul>
 
         </div>
                 

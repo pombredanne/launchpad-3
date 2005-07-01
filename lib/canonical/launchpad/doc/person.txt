@@ -16,16 +16,21 @@ privileges to do what we're going to demonstrate.
 >>> personset = getUtility(IPersonSet)
 
 
-Verify that foobar (a Person object) correctly implements IPerson. This
-will be commented out until UDU, when we'll get rid of the password2 
-attribute in IPerson.
+Verify that foobar (a Person object) correctly implements IPerson.
 
-#>>> foobar = personset.getByName('name16')
-#>>> verifyObject(IPerson, foobar)
+>>> foobar = personset.getByName('name16')
+>>> verifyObject(IPerson, foobar)
+True
 
 
 Access to people (Persons or Teams) is done through the IPersonSet
 utility:
+
+You can create a new person using the createPerson method of IPersonSet. All
+you need for that is a valid email address.
+>>> p = personset.createPerson('randomuser@randomhost.com')
+>>> p.teamowner is None
+True
 
 >>> buttsource = personset.getByName('buttsource')
 >>> buttsource.teamowner is None
@@ -54,8 +59,8 @@ If a Person is a Team then the Person will provide the ITeam interface.
 >>> ITeam.providedBy(buttsource)
 True
 
-If a team don't have a contact email address, all notifications we send to the
-team will go to the preferred email of each member.
+If a team doesn't have a contact email address, all notifications we send to
+the team will go to the preferred email of each member.
 
 >>> contactEmailAddresses(buttsource)
 set([u'david.allouche@canonical.com', u'robertc@robertcollins.net', u'foo.bar@canonical.com'])
@@ -79,8 +84,6 @@ should only be used by the one true account merge workflow.
 >>> foo = personset.getByName('name16')
 >>> sample = personset.getByName('name12')
 >>> admins = personset.getByName('admins')
-
-XXX: Need to sort out permissions on PersonSet.merge
 
 We can't merge teams
 
@@ -129,19 +132,25 @@ merged accounts from lists etc.
 True
 
 
-Searching for People
-====================
+People can have karma in Launchpad
+==================================
 
-If you want to do a more complex query to find people, use
-IPersonSet.search.
+Depending on the action a given person performs in Launchpad, that person can
+earn some karma points. This is useful to know how active a user is in
+Launchpad.
 
->>> from canonical.launchpad.searchbuilder import NULL
->>> valid_people = personset.search(password = NULL)
->>> valid_people.count()
-22
+Salgado wrote the karma framework. Let's give him some karma points.
 
-Passing no args would return all people:
+>>> from canonical.lp.dbschema import KarmaActionName
+>>> salgado = personset.getByName('salgado')
+>>> salgado.assignKarma(KarmaActionName.BUGFIXED)
+>>> salgado.karma
+0
 
->>> all_people = personset.search()
->>> all_people.count()
-52
+The value that you get through IPerson.karma is a cached value that's
+calculated daily. That's why it still 0. To calculate the karma of a given
+person at runtime we have to use IKarmaSet:
+
+>>> from canonical.launchpad.interfaces import IKarmaSet
+>>> getUtility(IKarmaSet).getSumByPerson(salgado)
+10

@@ -25,6 +25,6 @@ versionOneAPI = UserDetailsResource(DatabaseUserDetailsStorage(dbpool))
 versionTwoAPI = UserDetailsResourceV2(DatabaseUserDetailsStorageV2(dbpool))
 root.putChild('', versionOneAPI)
 root.putChild('v2', versionTwoAPI)
-site = server.Site(root, debug=True)
+site = server.Site(root)
 internet.TCPServer(8999, site).setServiceParent(application)
 

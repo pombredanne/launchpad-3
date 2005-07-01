@@ -68,6 +68,14 @@ those values:
   >>> reindeer_batch_navigator_with_qs_after_next.prevBatchURL()
   'http://www.example.com/foo?fnorb=bar&batch_start=0&batch_end=3'
 
+This works regardless of how the parts of the query string are ordered:
+
+  >>> request = DummyRequest('batch_start=3&fnorb=bar&batch_end=6')
+  >>> reindeer_batch_navigator_with_qs_after_next = BatchNavigator(
+  ...     batch=reindeer_batch.nextBatch(), request=request)
+  >>> reindeer_batch_navigator_with_qs_after_next.prevBatchURL()
+  'http://www.example.com/foo?fnorb=bar&batch_start=0&batch_end=3'
+
 Finally, you can ask for the links for each of the result pages:
 
   >>> links = reindeer_batch_navigator.batchPageURLs()
