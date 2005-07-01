@@ -1,0 +1,41 @@
+Going to /malone/bugs redirects to the front page.
+
+  >>> print http(r"""
+  ... GET /malone/bugs HTTP/1.1
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: /malone
+  ...
+
+
+If we pass id to /malone/bugs we get redirected to the bug with the
+corresponding id.
+
+  >>> print http(r"""
+  ... GET /malone/bugs?id=2 HTTP/1.1
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/malone/bugs/2
+  ...
+
+
+If we pass an id that doesn't exist, we still get directed to the bug
+page, which will produce a not found page.
+
+  >>> print http(r"""
+  ... GET /malone/bugs?id=42 HTTP/1.1
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/malone/bugs/42
+  ...
+
+  >>> print http(r"""
+  ... GET /malone/bugs/42 HTTP/1.1
+  ... """)
+  HTTP/1.1 404 Not Found
+  ...
+
+

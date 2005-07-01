@@ -204,20 +204,21 @@ Reset the state of our bugtask.
 Just a distrorelease.
 
     >>> bugtask.distrorelease = NamedThing('distrorelease')
+    >>> bugtask.distrorelease.distribution = NamedThing('distribution')
     >>> bugtask.contextname()
-    '[distrorelease.displayname]'
+    '[distribution.displayname] [distrorelease.displayname]'
 
 Distrorelease and sourcepackagename.
 
     >>> bugtask.sourcepackagename = NamedThing('spn')
     >>> bugtask.contextname()
-    '[distrorelease.displayname] [spn.name]'
+    '[distribution.displayname] [distrorelease.displayname] [spn.name]'
 
 Distrorelease, sourcepackagename and binarypackagename.
 
     >>> bugtask.binarypackagename = NamedThing('bpn')
     >>> bugtask.contextname()
-    '[distrorelease.displayname] [spn.name] [bpn.name]'
+    '[distribution.displayname] [distrorelease.displayname] [spn.name] [bpn.name]'
 
 Note that we haven't tested any combinations that shouldn't occur, except
 for the case when everything is None.
