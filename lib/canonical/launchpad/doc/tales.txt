@@ -143,7 +143,13 @@ Make a mock-up IBrowserRequest, and use this as the interaction.
     'https://mandrill.example.org:23/bonobo/saki'
 
 
-Test the 'fmt:' namespace where the context is None.
+Test the 'fmt:' namespace where the context is None. In general, these
+will return an empty string.  They are provided for ease of handling
+NULL values from the database, which become None values for attributes
+in content classes.
+
+Everything you can do with 'something/fmt:foo', you should be able to
+do with 'None/fmt:foo'.
 
     >>> test_tales('foo/fmt:shorten', foo=None)
     Traceback (most recent call last):
@@ -167,6 +173,8 @@ Test the 'fmt:' namespace where the context is None.
     >>> test_tales('foo/fmt:pagetitle', foo=None)
     ''
     >>> test_tales('foo/fmt:url', foo=None)
+    ''
+    >>> test_tales('foo/fmt:exactduration', foo=None)
     ''
 
 Test the 'required:' namespace.  We're already logged in as the anonymous user,
