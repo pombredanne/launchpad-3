@@ -2,7 +2,7 @@
     <h4>Related People:</h4>
 
     <div class="portletBody"
-         tal:define="bug_url string:{context/bug/@@absolute_url}">
+         tal:define="bug_url context/bug/@@absolute_url">
         <div class="portletContent even"
              tal:define="subscriptions context/bug/subscriptions;
                          bugtasks context/bug/bugtasks">
@@ -41,7 +41,8 @@
                     <a href="#"
                        tal:content="sub/person/browsername"
                        style="text-decoration: underline"
-                       tal:attributes="href python:bug_url + '/people/'+str(sub.id)+'/+edit'">Dafydd</a>
+                       tal:attributes="href python:str(bug_url) + '/people/' +
+                                            str(sub.id)+'/+edit'">Dafydd</a>
                   </li>
               </ul>
               <br />
@@ -54,7 +55,8 @@
                     <a href="#"
                        tal:content="sub/person/browsername"
                        style="text-decoration: underline"
-                       tal:attributes="href python:bug_url + '/people/'+str(sub.id)+'/+edit'">Vincenzo</a>
+                       tal:attributes="href python:str(bug_url) + '/people/' +
+                                            str(sub.id)+'/+edit'">Vincenzo</a>
                   </li>
               </ul>
               <br />
@@ -67,8 +69,8 @@
                     <a href="#"
                        tal:content="sub/person/browsername"
                        style="text-decoration: underline"
-                       tal:attributes="href
-                       python:bug_url + '/people/'+str(sub.id)+'/+edit'">Jake</a>
+                       tal:attributes="href python:str(bug_url) + '/people/' +
+                                            str(sub.id)+'/+edit'">Jake</a>
                   </li>
               </ul>
             </tal:ignore>

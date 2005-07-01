@@ -54,7 +54,7 @@ from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
     TeamMembershipStatus, GPGKeyAlgorithm)
 
-from canonical.foaf import nickname, NicknameGenerationError
+from canonical.foaf import nickname
 
 
 class Person(SQLBase):
