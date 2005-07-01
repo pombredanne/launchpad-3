@@ -16,6 +16,7 @@
         name="rosetta"
         newlayer="canonical.launchpad.layers.RosettaLayer"
         />
+
     <browser:url
         for="canonical.launchpad.interfaces.IRosettaApplication"
         path_expression="string:rosetta"

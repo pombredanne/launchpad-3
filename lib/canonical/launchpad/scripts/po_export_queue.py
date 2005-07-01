@@ -2,7 +2,6 @@
 
 __metaclass__ = type
 
-import tarfile
 import tempfile
 from StringIO import StringIO
 
@@ -12,11 +11,9 @@ from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.helpers import (
     getRawFileData, join_lines, RosettaWriteTarFile)
-from canonical.launchpad.components.poexport import (
-    MOCompiler, MOCompilationError)
+from canonical.launchpad.components.poexport import MOCompiler
 from canonical.launchpad.interfaces import (
-    IPOExportRequestSet, IPOTemplate, IPOFile, ILibraryFileAliasSet,
-    ZeroLengthPOExportError)
+    IPOExportRequestSet, IPOTemplate, IPOFile, ILibraryFileAliasSet)
 
 def is_potemplate(obj):
     """Return True if the object is a PO template."""
@@ -56,7 +53,7 @@ class POFormatHandler(Handler):
         """Return a filename for the file being exported."""
 
         if is_potemplate(self.obj):
-            return potemplate_name(self.obj) + '.pot'
+            return self.obj.potemplatename.name + '.pot'
         else:
             return pofile_filename(self.obj)
 
@@ -64,7 +61,7 @@ class POFormatHandler(Handler):
         """Return the contents of the exported file."""
 
         if is_potemplate(self.obj):
-            return getRawFileData(obj)
+            return getRawFileData(self.obj)
         else:
             return self.obj.export()
 
@@ -74,7 +71,7 @@ class POFormatHandler(Handler):
         """
 
         if is_potemplate(self.obj):
-            return obj.rawfile.url
+            return self.obj.rawfile.url
         else:
             self.obj.export()
             return self.obj.exportfile.url

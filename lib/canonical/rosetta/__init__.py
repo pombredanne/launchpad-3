@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+from datetime import datetime, timedelta
+
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -22,6 +24,25 @@ class RosettaApplication:
 
     def __init__(self):
         self.title = 'Rosetta: Translations in the Launchpad'
+        self._statsdate = None
+
+    def _update_stats(self):
+        now = datetime.now()
+        aday = timedelta(1)
+        if self._statsdate is not None and self._statsdate + aday > now:
+            return
+        self._potemplate_count = POTemplate.select().count()
+        self._pofile_count = POFile.select().count()
+        self._pomsgid_count = POMsgID.select().count()
+        self._translator_count = Person.select(
+                    "POSubmission.person=Person.id",
+                    clauseTables=['POSubmission'],
+                    distinct=True).count()
+        self._language_count = Language.select(
+                    "POFile.language=Language.id",
+                    clauseTables=['POFile'],
+                    distinct=True).count()
+        self._statsdate = datetime.now()
 
     def translatable_products(self, translationProject=None):
         """See IRosettaApplication."""
@@ -39,25 +60,28 @@ class RosettaApplication:
 
     def potemplate_count(self):
         """See IRosettaApplication."""
-        return POTemplate.select().count()
+        self._update_stats()
+        return self._potemplate_count
 
     def pofile_count(self):
         """See IRosettaApplication."""
-        return POFile.select().count()
+        self._update_stats()
+        return self._pofile_count
 
     def pomsgid_count(self):
         """See IRosettaApplication."""
-        return POMsgID.select().count()
+        self._update_stats()
+        return self._pomsgid_count
 
     def translator_count(self):
         """See IRosettaApplication."""
-        return Person.select("POSubmission.person=Person.id",
-            clauseTables=['POSubmission'], distinct=True).count()
+        self._update_stats()
+        return self._translator_count
 
     def language_count(self):
         """See IRosettaApplication."""
-        return Language.select("POFile.language=Language.id",
-            clauseTables=['POFile'], distinct=True).count()
+        self._update_stats()
+        return self._language_count
         
     name = 'Rosetta'
 

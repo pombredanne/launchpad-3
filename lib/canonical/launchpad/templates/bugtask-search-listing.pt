@@ -173,13 +173,12 @@
       </tbody>
     </table>
 
-  <fieldset tal:condition="mass_edit">
-    <legend>Batch Edit</legend>
+  <div tal:condition="mass_edit">
     <tal:milestone condition="context/context/milestones|nothing">
       <tal:block content="structure view/milestone_assignment_widget" />
       <input type="submit" name="assign_to_milestone" value="Assign to Milestone" />
     </tal:milestone>
-  </fieldset>
+  </div>
 
   <tal:x condition="not:view/advanced">
       <input type="hidden" name="status" value="10" />

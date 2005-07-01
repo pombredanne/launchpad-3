@@ -23,7 +23,7 @@
         Distribution Summary
     </p>
 
-    <table width="100%" style="font-size: 80%;" class="listing rowNavigation">
+    <table width="100%" class="listing rowNavigation">
       <thead>
         <tr>
             <th>Release</th>

@@ -175,7 +175,8 @@ class ProductVocabulary(SQLObjectVocabularyBase):
             like_query = "'%%' || %s || '%%'" % quote_like(query)
             fti_query = quote(query)
             sql = "fti @@ ftq(%s)" % fti_query
-            return [self._toTerm(r) for r in self._table.select(sql, orderBy=self._orderBy)]
+            return [self._toTerm(r)
+                for r in self._table.select(sql, orderBy=self._orderBy)]
 
         return []
 

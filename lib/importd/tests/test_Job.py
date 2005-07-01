@@ -22,6 +22,9 @@ pybaz.backend.spawning_strategy = pybaz.backends.forkexec.PyArchSpawningStrategy
 
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 
+from importd.tests import TestUtil
+
+
 class JobCreationTestCase(unittest.TestCase):
     def testConstruct(self):
         """Test creation of Job"""
@@ -299,7 +302,7 @@ class ArchiveRollbackTestCase(ArchiveTestCase):
         job.archversion = parser.get_version()
         job.branchto = parser.get_branch()
         return job
-    
+
     def testRollackFailIfRevlib(self):
         """rollbackToMirror fails with RuntimeError is a revlib is present"""
         import pybaz as arch
@@ -319,7 +322,7 @@ class ArchiveRollbackTestCase(ArchiveTestCase):
         self.assertEqual(expected, list(version.iter_revisions()))
         self.baz_archive.mirror(limit=[self.version_fullname])
         self.makeJob().RollbackToMirror(version)
-        self.assertEqual(expected, list(version.iter_revisions()))        
+        self.assertEqual(expected, list(version.iter_revisions()))
 
     def testRollbackOneRevision(self):
         """rollbackToMirror can remove the latest revision"""
@@ -366,7 +369,7 @@ class ArchiveRollbackTestCase(ArchiveTestCase):
         self.makeJob().RollbackToMirror(version)
         expected = []
         self.assertEqual(expected, list(version.iter_revisions()))
-        
+
     def testRollbackToNonExistent(self):
         """rollbackToMirror works when reverting to a non existent version"""
         import pybaz as arch
@@ -459,7 +462,7 @@ class CVSStrategyTestCase(ArchiveTestCase):
         shutil.rmtree(sourcedir, ignore_errors=True)
         os.mkdir(sourcedir)
         aFile=open(sourcedir + "/file1", "w")
-        print >> aFile, "import" 
+        print >> aFile, "import"
         aFile.close()
         repo.Import(module="test", log="import", vendor="vendor", release=['release'],dir=sourcedir)
         shutil.rmtree(sourcedir, ignore_errors=True)
@@ -496,13 +499,16 @@ class CVSStrategyTestCase(ArchiveTestCase):
     def testGetWorkingDir(self):
         """test that the working dir is calculated & created correctly"""
         from importd.JobStrategy import CVSStrategy
-        foo=CVSStrategy()
+        foo = CVSStrategy()
         try:
-            assert(foo.getWorkingDir(makeTestJob(),".") == os.path.abspath("./test@importd.example.com/test--HEAD--0"))
-            assert(os.access("./test@importd.example.com/test--HEAD--0", os.F_OK))
+            self.assertEqual(
+                foo.getWorkingDir(makeTestJob(),".") ,
+                os.path.abspath("./test@importd.example.com/test--HEAD--0"))
+            self.assert_(
+                os.access("./test@importd.example.com/test--HEAD--0", os.F_OK))
         finally:
             shutil.rmtree("test@importd.example.com", ignore_errors=True)
-    
+
     def testGetCVSDir(self):
         """test ensuring we have an updated CVS dir with a cscvs cache in it"""
         from importd.JobStrategy import CVSStrategy
@@ -633,7 +639,7 @@ class TestRepoType(unittest.TestCase):
 
 
 class TestArchStrategy(ArchiveTestCase):
-    
+
     version_fullname = "jo@example.com/foo-bar--devel--0"
     baz_mirror_location = ",,temp-archive2"
 
@@ -685,10 +691,10 @@ def test_file(basename):
     test_dir = os.path.dirname(__file__)
     relpath = os.path.join(test_dir, basename)
     return os.path.abspath(relpath)
-    
+
 
 class TestArchStrategySigned(TestArchStrategy):
-    
+
     def setUp(self):
         TestArchStrategy.setUp(self, signed=True)
 
@@ -717,7 +723,6 @@ class TestArchStrategySigned(TestArchStrategy):
         os.mkdir(gpgdir)
         for name in ("john.doe@snakeoil.gpg", "john.doe@snakeoil.pub"):
             shutil.copyfile(test_file(name), os.path.join(gpgdir, name))
-        
 
     def tearDown(self):
        rule = self.signing_rule_file
@@ -734,19 +739,8 @@ class TestArchStrategySigned(TestArchStrategy):
             self.baz_mirror_location,
             '=meta-info', 'signed-archive')))
 
-# def threadTest(aTest):
-#     """Run a test in a thread to work around Twisted insanity.
-#
-#     That is intended to prevent "interrupted system call" errors
-#     occuring in cscvs and PyArch because of some obscure voodoo
-#     interactions with the Twisted environment.
-#     """
-#     from twisted.internet import threads
-#     from twisted.trial.util import deferredResult
-#     return deferredResult(threads.deferToThread(aTest))
 
 class sampleData:
-
     package_import_id = 15
     package_import_distrorelease_id = 3 # ubuntu hoary
     package_job_name = 'pkg-ubuntu-hoary-evolution-1.0'
@@ -754,6 +748,7 @@ class sampleData:
     cvs_job_name = 'gnome-evolution-main'
     product_id = 5
     product_name = 'evolution'
+
 
 class ZopelessTestCase(unittest.TestCase):
     """Base class for test cases that need database access."""
@@ -774,7 +769,7 @@ class TestGetJob(ZopelessTestCase):
         from canonical.lp.dbschema import ImportStatus
         jobs = importd.util.jobsFromDB("slave_home",
                                        "archive_mirror_dir",
-                                       [ImportStatus.PROCESSING])
+                                       autotest = False)
         self.assertEqual(len(jobs), 1)
         builders = importd.util.jobsBuilders(jobs, ["slavename"], autotest=False)
         self.assertEqual(len(builders), 1)
@@ -817,6 +812,41 @@ class TestGetJob(ZopelessTestCase):
         job = CopyJob().from_series(series)
         day_seconds = 24 * 60 * 60
         self.assertEqual(job.frequency, day_seconds)
+
+    def testGetJobTarget(self):
+        """get the arch target details for a job from the db"""
+        from canonical.launchpad.database import ProductSeries
+        from importd.Job import CopyJob
+        series = ProductSeries.get(sampleData.cvs_job_id)
+        series.targetarcharchive = 'joe@example.org'
+        series.targetarchcategory = 'foo'
+        series.targetarchbranch = 'bar'
+        series.targetarchversion = '4.2'
+        job = CopyJob().from_series(series)
+        self.assertEqual(job.archivename, 'joe@example.org')
+        self.assertEqual(job.category, 'foo')
+        self.assertEqual(job.branchto, 'bar')
+        self.assertEqual(job.archversion, '4.2')
+
+    def testGetJobTargetNull(self):
+        """get automatic target for a job without arch details in the db"""
+        from canonical.launchpad.database import ProductSeries
+        from canonical.lp.dbschema import ImportStatus
+        from importd.Job import CopyJob
+        series = ProductSeries.get(sampleData.cvs_job_id)
+        series.importstatus = ImportStatus.TESTING
+        series.product.name = 'foo'
+        series.name = 'bar'
+        series.targetarcharchive = None
+        series.targetarchcategory = None
+        series.targetarchbranch = None
+        series.targetarchversion = None
+        job = CopyJob().from_series(series)
+        self.assertEqual(job.archivename, 'foo@autotest.bazaar.ubuntu.com')
+        self.assertEqual(job.category, 'foo')
+        self.assertEqual(job.branchto, 'bar-TEST-DO-NOT-USE')
+        self.assertEqual(job.archversion, '0')
+
 
 class MockJob(object):
     pass
@@ -892,7 +922,7 @@ class TestInterlockDB(ZopelessTestCase):
         pkgjob = CopyJob().from_sourcepackagerelease(spr, dr)
         jobs = importd.util.jobsFromDB("slave_home",
                                        "archive_mirror_dir",
-                                       [ImportStatus.PROCESSING])
+                                       autotest = False)
         jobs.append(pkgjob)
         builders = []
         interlocks = importd.util.jobsInterlocks(jobs)
@@ -913,6 +943,8 @@ class TestImpordDBuild(ZopelessTestCase):
     def setUp(self):
         ZopelessTestCase.setUp(self)
         self._impl = None
+        self._refreshedBuilder = False
+        self._refreshBuilderRerun = None
 
     def tearDown(self):
         from canonical.lp.dbschema import ImportStatus
@@ -933,7 +965,12 @@ class TestImpordDBuild(ZopelessTestCase):
         if self._impl is None:
             build = self.mockBuild()
             self._impl = importd.util.ImportDBImplementor(build)
+            self._impl.refreshBuilder = self._refreshBuilder
         return self._impl
+
+    def _refreshBuilder(self, rerun):
+        self._refreshedBuilder = True
+        self._refreshBuilderRerun = rerun
 
     def series(self):
         return self.implementor().getSeries()
@@ -959,16 +996,44 @@ class TestImpordDBuild(ZopelessTestCase):
         from canonical.lp.dbschema import ImportStatus
         self.series().dateautotested = None
         self.implementor().setAutotested(True)
-        self.assert_(self.series().dateautotested is not None)
+        self.series().sync() # turn dateautotested into a datetime object
         self.assertEqual(self.series().importstatus, ImportStatus.AUTOTESTED)
+        self.assertNotEqual(self.series().dateautotested, None)
+        self.failUnless(self._refreshedBuilder)
+        self.assertEqual(self._refreshBuilderRerun, False)
 
     def testSetAutotestedFailure(self):
         """ImportDBImplementor.setAutotested works on failure."""
         from canonical.lp.dbschema import ImportStatus
         self.series().dateautotested = None
         self.implementor().setAutotested(False)
-        self.assert_(self.series().dateautotested is None)
         self.assertEqual(self.series().importstatus, ImportStatus.TESTFAILED)
+        self.assertEqual(self.series().dateautotested, None)
+        self.failUnless(self._refreshedBuilder)
+        self.assertEqual(self._refreshBuilderRerun, False)
+
+    def testProcessingCompleteSuccess(self):
+        """ImportDBImplementor.processingComplete works on success."""
+        from canonical.lp.dbschema import ImportStatus
+        self.series().importstatus = ImportStatus.PROCESSING
+        self.series().datesyncapproved = None
+        self.series().syncinterval = datetime.timedelta(1)
+        self.implementor().processingComplete(True)
+        self.series().sync() # turn datesyncapproved into a datetime object
+        self.assertEqual(self.series().importstatus, ImportStatus.SYNCING)
+        self.assertNotEqual(self.series().datesyncapproved, None)
+        self.failUnless(self._refreshedBuilder)
+        self.assertEqual(self._refreshBuilderRerun, True)
+
+    def testProcessingCompleteFailure(self):
+        """ImportDBImplementor.processingComplete works on failure."""
+        from canonical.lp.dbschema import ImportStatus
+        self.series().importstatus = ImportStatus.PROCESSING
+        self.series().datesyncapproved = None
+        self.assertEqual(self.series().importstatus, ImportStatus.PROCESSING)
+        self.implementor().processingComplete(False)
+        self.assertEqual(self.series().datesyncapproved, None)
+        self.failIf(self._refreshedBuilder)
 
     def testStartBuild(self):
         """ImportDBImplementor.startBuild sets series and commits."""
@@ -1000,23 +1065,4 @@ class TestImpordDBuild(ZopelessTestCase):
         self.assertEqual(self.series().importstatus, ImportStatus.AUTOTESTED)
 
 
-
-def test_suite():
-    '''return all the tests in this module'''
-    import unittest
-    from tests.TestUtil import TestSuite
-    loader=unittest.TestLoader()
-    loader.suiteClass=TestSuite
-    return loader.loadTestsFromName(__name__)
-
-def main(argv):
-    suite = unittest.TestLoader().loadTestsFromName(__name__)
-    runner=unittest.TextTestRunner(verbosity=2)
-    #threadTest(lambda: runner.run(suite))
-    #if not runner.wasSuccessful(): return 1
-    result = runner.run(suite)
-    if not result.wasSuccessful(): return 1
-    return 0
- 
-if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+TestUtil.register(__name__)

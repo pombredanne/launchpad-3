@@ -17,12 +17,12 @@
             </tr>
         </table>
 
+        <ul><li class="add">
         <a href="+newbugtracker"
-            style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
             title="Add a project bugtracker">
-            <img src="/++resource++add.gif" alt="+" />
             Add a bug tracker...
-        </a><br />
+        </a>
+        </li></ul>
 
         </div>
                 

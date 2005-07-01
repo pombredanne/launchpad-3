@@ -4,6 +4,7 @@
 
 CREATE OR REPLACE FUNCTION generate_wikinames() RETURNS integer AS '
     import re
+    from sets import Set as set
 
     existing_wikinames = set(
         [row["wikiname"].decode("utf-8")

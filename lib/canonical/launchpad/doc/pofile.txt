@@ -40,7 +40,7 @@ Test that the header is updated.
 
 >>> from canonical.launchpad.components.poparser import POHeader
 
-This is the comment
+This is the comment.
 
 >>> comment = ' This is the top comment.'
 

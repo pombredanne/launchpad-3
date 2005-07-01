@@ -28,8 +28,8 @@ def getLastTranslator(parser):
 
     if email == 'EMAIL@ADDRESS' or not '@' in email:
         # Gettext (and Rosetta) sets by default the email address to
-        # EMAIL@ADDRESS unless we know the real addres, thus, we know this is
-        # not  a real account and we use the person that imported the file
+        # EMAIL@ADDRESS unless we know the real address, thus, we know this
+        # isn't a real account and we use the person that imported the file
         # as the owner.
         return None
     else:
