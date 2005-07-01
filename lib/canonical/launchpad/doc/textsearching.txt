@@ -1,0 +1,237 @@
+Text Searching
+==============
+
+Introduction
+------------
+We are currently using tsearch2 to provide full text searching
+capabilities inside the PostgreSQL database. 
+
+Although in a lot of cases simple substring searches using LIKE would be
+fine or even preferred, the disadvantage of using LIKE is that PostgreSQL
+cannot use any indexes to do the substring search. This does not scale
+when we need to search tens of thousands of entries (packages) or hundreds
+of thousands of entries (people) or millions of entries (translations).
+
+Installation
+------------
+tsearch2 is part of the `postgresql-contrib` package. This is installed
+into the launchpad database using the script `database/schema/fti.py`,
+which is run automatically during database creation.
+
+This script does the following:
+
+    * Hooks `tsearch2` into the launchpad database, installing it into
+      the ts2 schema.
+
+    * Creates all the full text indexes. These are in the form of a new
+      column called `fti` on a number of tables. Which tables and
+      which columns are indexed is defined inside the fti.py script.
+
+    * Creates the `ftq(text)` stored procedure. This procedure makes
+      queries against the indexes simpler and consistant throughout
+      our applications.
+
+It is the Database Administrator's responsibility to rerun `fti.py` as
+part of the production rollouts if this script has been modified. It does
+not need to be rerun if the script has not changed. Rebuilding the indexes
+currently takes several minutes on production, during which time the
+production database is unavailable.
+
+Querying
+--------
+
+The examples use the following helper function to execute SQL commands
+against the database and display the results:
+
+    >>> from canonical.database.sqlbase import cursor
+    >>> def runsql(query, *args):
+    ...     '''Run an SQL query and return the results as text'''
+    ...     colsize = 25
+    ...     cur = cursor() # Get a cursor
+    ...     cur.execute(query, args)
+    ...     for row in cur.fetchall():
+    ...         line = ''
+    ...         for col in row:
+    ...             col = col.encode('ascii', 'replace')
+    ...             if len(col) > colsize:
+    ...                 line += '%s... ' % col[:colsize-3]
+    ...             else:
+    ...                 fmt = '%%-%ds ' % colsize
+    ...                 line += fmt % col
+    ...         line = line.rstrip()
+    ...         print line
+
+
+All queries against the full text indexes use the following basic syntax:
+
+    >>> runsql("SELECT displayname FROM Person WHERE fti @@ ftq('Mark')")
+    Mark Shuttleworth
+
+Queries are all case insensitive:
+
+    >>> runsql("""SELECT displayname FROM Person WHERE fti @@ ftq('cArlos')
+    ...               ORDER BY displayname""")
+    Carlos Perell? Mar?n
+    Carlos Valdivia Yag?e
+
+If a query contains multiple words, an AND query is performed:
+
+    >>> runsql("""SELECT displayname FROM Person
+    ...               WHERE fti @@ ftq('Carlos Valdivia')""")
+    Carlos Valdivia Yag?e
+
+This can also be explicity performed by joining the words with 'and':
+
+    >>> runsql("""
+    ...     SELECT displayname FROM Person
+    ...         WHERE fti @@ ftq('carlos AND valdivia') ORDER BY displayname
+    ...     """)
+    Carlos Valdivia Yag?e
+
+Unlike Google, our boolean operators are case insensitive:
+
+    >>> runsql("""
+    ...     SELECT displayname FROM Person
+    ...         WHERE fti @@ ftq('carlos aNd valdivia') ORDER BY displayname
+    ...     """)
+    Carlos Valdivia Yag?e
+
+We also support 'or' as a boolean operation:
+
+    >>> runsql("""
+    ...     SELECT displayname FROM Person
+    ...         WHERE fti @@ ftq('valdivia or mark') ORDER BY displayname
+    ...     """)
+    Carlos Valdivia Yag?e
+    Mark Shuttleworth
+
+
+ftq(text) & _ftq(text)
+----------------------
+
+To help debug the `ftq(text)` helper, a similar function exists sharing
+the same code that returns a string rather than the compiled version. This
+allows us to check the 'query munging' algorithms we are using and debug
+any syntax error exceptions being generated.
+
+The following examples show the text version of the query using
+`_ftq(text)`, and the compiled version returned by `ftq(text)`
+
+    >>> def ftq(query):
+    ...     cur = cursor()
+    ...     cur.execute("SELECT _ftq(%s), ftq(%s)", (query, query))
+    ...     uncompiled, compiled = cur.fetchone()
+    ...     uncompiled = uncompiled.replace(' ','')
+    ...     print '%s <=> %s' % (uncompiled, compiled)
+
+
+Queries are lowercased
+
+    >>> ftq('Hello')
+    hello <=> 'hello'
+
+
+Boolean operations are allowed
+
+    >>> ftq('hi aNd mom')
+    hi&mom <=> 'hi' & 'mom'
+
+
+Brackets are allowed to specify precidence
+
+    >>> ftq('(HI OR HELLO) and mom')
+    (hi|hello)&mom <=> ( 'hi' | 'hello' ) & 'mom'
+
+
+Implicit boolean operation is AND
+
+    >>> ftq('Hi Mom')
+    hi&mom <=> 'hi' & 'mom'
+
+    >>> ftq('Hi not mom')
+    hi&!mom <=> 'hi' & !'mom'
+
+    >>> ftq('hi (mom or mum)')
+    hi&(mom|mum) <=> 'hi' & ( 'mom' | 'mum' )
+    
+    >>> ftq('(hi or hello) mom')
+    (hi|hello)&mom <=> ( 'hi' | 'hello' ) & 'mom'
+
+    >>> ftq('(hi or hello) not mom')
+    (hi|hello)&!mom <=> ( 'hi' | 'hello' ) & !'mom'
+
+    >>> ftq('(hi ho or hoe) work go')
+    (hi&ho|hoe)&work&go <=> ( 'hi' & 'ho' | 'hoe' ) & 'work' & 'go'
+
+
+|, & and ! characters are converted to whitespace, because they have
+special meaning to tsearch2. Other punctuation is just passed through to
+let the tsearch2 internals deal with it appropriatly.
+
+    >>> ftq('hi & or mom')
+    hi|mom <=> 'hi' | 'mom'
+
+    >>> ftq('hi | mom')
+    hi&mom <=> 'hi' & 'mom'
+
+    >>> ftq('cool!')
+    cool <=> 'cool'
+
+    >>> ftq('100%')
+    100% <=> '100'
+
+
+Stop words (words deemed too common in English to search on) are removed
+from queries by tsearch2. 
+
+    >>> ftq("Don't do it harder!")
+    don't&do&it&harder <=> 'harder'
+
+
+Note that some queries will return None after compilation, because they
+contained nothing but stop words.
+
+    >>> ftq("don't do it!")
+    don't&do&it <=> None
+
+
+Words are also stemmed by tsearch2 (using the English stemmer).
+
+    >>> ftq("administrators")
+    administrators <=> 'administr'
+
+    >>> ftq("administrate")
+    administrate <=> 'administr'
+
+
+Dud queries are 'repaired', such as doubled operators, trailing operators
+or invalid leading operators
+
+    >>> ftq('(hi or or hello) and mom')
+    (hi|hello)&mom <=> ( 'hi' | 'hello' ) & 'mom'
+
+    >>> ftq('(hi or and hello) and mom')
+    (hi|hello)&mom <=> ( 'hi' | 'hello' ) & 'mom'
+
+    >>> ftq('(hi or not and hello) and mom')
+    (hi|!hello)&mom <=> ( 'hi' | !'hello' ) & 'mom'
+
+    >>> ftq('hi and mom and')
+    hi&mom <=> 'hi' & 'mom'
+
+    >>> ftq('and hi and mom')
+    hi&mom <=> 'hi' & 'mom'
+
+    >>> ftq('(and hi or hello) and mom')
+    (hi|hello)&mom <=> ( 'hi' | 'hello' ) & 'mom'
+
+
+Phrase Searching
+----------------
+We do not support searching for quoted phrases. This is technically
+possible, but not trivial. The database side of implementing this would
+simply be to make `ftq(text)` convert "a b" to (a&b). However, we then
+need to filter the returned results and that filter needs to be aware of
+what rows are being indexed.
+
+
