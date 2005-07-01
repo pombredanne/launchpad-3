@@ -51,14 +51,12 @@
             </ul>
 
           </tal:subscriptions>
-        <a  href="#"
-            style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+        <ul>
+          <li class="add"><a
             title="Subscribe"
             tal:attributes="href string:$bounty_url/+subscribe">
-            <img src="/++resource++add.gif" alt="+" />
             Subscribe
-        </a><br />
-        </div>
-
+          </a></li>
+        </ul>
     </div>
 </div>
