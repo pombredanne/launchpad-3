@@ -1,3 +1,4 @@
+import psycopg
 import sys
 import logging
 import os.path
@@ -65,15 +66,15 @@ def getTxnManager():
     else:
         return ZopelessTransactionManager._installed
 
-def jobsFromDB(slave_home, archive_mirror_dir, importstatus):
+def jobsFromDB(slave_home, archive_mirror_dir, autotest):
 
-    # make sure we have been passed a useful importstatus for jobs to be
-    # done
-    for status in importstatus:
-        assert (status in [ImportStatus.TESTING,
-                      ImportStatus.PROCESSING,
-                      ImportStatus.SYNCING],
-                "Tried to get import jobs with status %r" % importstatus)
+    if autotest:
+        importstatus = [ImportStatus.TESTING,
+                        ImportStatus.TESTFAILED,
+                        ImportStatus.AUTOTESTED]
+    else:
+        importstatus = [ImportStatus.PROCESSING,
+                        ImportStatus.SYNCING]
 
     # get a new transaction
     # spiv who is reviewing this suggested this XXX abstraction
@@ -103,8 +104,6 @@ def jobsBuilders(jobs, slavenames, runner_path=None, autotest=False):
     for job in jobs:
         factory = ImportDShellBuildFactory(job, job.slave_home,
                                            runner_path, autotest)
-        if autotest:
-            job.frequency = 60 # autobuild this
         builders.append({
             'name': job.name, 
             'slavename': slavenames[hash(job.name) % len(slavenames)],
@@ -203,7 +202,12 @@ class ImportDBuild(ConfigurableBuild):
         try:
             ImportDBImplementor(self).startBuild()
         except:
-            return self.buildException(Failure(), "startBuild")
+            f = Failure()
+            try:
+                getTxnManager().abort()
+            except psycopg.Error:
+                pass
+            return self.buildException(f, "startBuild")
         return ConfigurableBuild.startBuild(self, remote, progress)
 
     def buildFinished(self, event, successful=1):
@@ -213,8 +217,13 @@ class ImportDBuild(ConfigurableBuild):
             try:
                 ImportDBImplementor(self).buildFinished(successful)
             except:
+                f = Failure()
+                try:
+                    getTxnManager().abort()
+                except psycopg.Error:
+                    pass
                 # that will cause buildFinished to be called recursively
-                self.buildException(Failure(), "buildFinished")
+                self.buildException(f, "buildFinished")
         ConfigurableBuild.buildFinished(self, event, successful)
 
 
@@ -244,11 +253,13 @@ class ImportDBImplementor(object):
 
     def setDateStarted(self):
         self.getSeries().datestarted = UTC_NOW
-        
+
     def buildFinished(self, successful):
         getTxnManager().begin()
         self.setDateFinished()
-        if self.getSeries().importstatus == ImportStatus.TESTING:
+        if self.getSeries().importstatus in [ImportStatus.TESTING,
+                                             ImportStatus.AUTOTESTED,
+                                             ImportStatus.TESTFAILED]:
             self.setAutotested(successful)
         elif self.getSeries().importstatus == ImportStatus.PROCESSING:
             self.processingComplete(successful)
@@ -258,32 +269,45 @@ class ImportDBImplementor(object):
         self.getSeries().datefinished = UTC_NOW
 
     def setAutotested(self, successful):
+        """Autotest run is complete, update database and buildbot.
+
+        Update importstatus according to success or failure, and do not rerun
+        the job.
+        """
         series = self.getSeries()
+        self.build.importDJob.frequency = 0
         if successful:
             series.dateautotested = UTC_NOW
             series.importstatus = ImportStatus.AUTOTESTED
         else:
             series.importstatus = ImportStatus.TESTFAILED
+        self.refreshBuilder(rerun = False)
 
     def processingComplete(self, successful):
-        """process is complete. moving to SYNCING if it passed"""
+        """Impot or sync run is complete, update database and buildbot.
+
+        If the job was an import, make it a sync and rerun it immediately.
+        """
         series = self.getSeries()
-        if successful:
+        if series.importstatus == ImportStatus.PROCESSING and successful:
             series.enableAutoSync()
             self.build.importDJob.TYPE = 'sync'
             self.build.importDJob.frequency = _interval_to_seconds(
                 self.getSeries().syncinterval)
-            self.build.builder.stopPeriodicBuildTimer()
-            # change the builder and run it again after the buildFinished 
-            # process finishes.
-            # XXX: This should not be needed. It is needed because we are
-            # in a deep call stack which will call into
-            # self.build.builder.expectations which is currently coupled
-            # to the value of self.build.builder.steps.
-            # If this is fixed, we can simply call self.refreshBuilder().
-            reactor.callLater(1, self.refreshBuilder)
+            self.refreshBuilder(rerun = True)
 
-    def refreshBuilder(self):
+    def refreshBuilder(self, rerun):
+        self.build.builder.stopPeriodicBuildTimer()
+        # change the builder and run it again after the buildFinished 
+        # process finishes.
+        # XXX: This should not be needed. It is needed because we are
+        # in a deep call stack which will call into
+        # self.build.builder.expectations which is currently coupled
+        # to the value of self.build.builder.steps.
+        # If this is fixed, we can simply call self.refreshBuilder().
+        reactor.callLater(1, self.refreshBuilderDelayed, rerun)
+
+    def refreshBuilderDelayed(self, rerun):
         """refresh the builder and then force a build"""
         job=self.build.importDJob
         # This might be better as a helper function in the module, but that
@@ -298,8 +322,9 @@ class ImportDBImplementor(object):
             self.build.builder.expectations = Expectations(p)
         self.build.builder.periodicBuildTime = self.build.importDJob.frequency
         self.build.builder.startPeriodicBuildTimer()
-        self.build.builder.forceBuild("botmaster", "import completed", 
-            periodic=False)
+        if rerun:
+            self.build.builder.forceBuild("botmaster", "import completed",
+                                          periodic=False)
 
 
 class ImportDBuildFactory(ConfigurableBuildFactory):
