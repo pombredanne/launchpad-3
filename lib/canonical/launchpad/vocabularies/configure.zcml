@@ -66,6 +66,11 @@
         />
 
     <vocabulary
+        name="ValidTeamMember"
+        factory="canonical.launchpad.vocabularies.ValidTeamMemberVocabulary"
+        />
+
+    <vocabulary
         name="ValidTeamOwner"
         factory="canonical.launchpad.vocabularies.ValidTeamOwnerVocabulary"
         />
