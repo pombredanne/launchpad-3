@@ -33,8 +33,11 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
         layer="canonical.launchpad.layers.RosettaLayer"
-        name="+translations"
-        />
+        name="+translations" />
+
+    <browser:menus
+        module="canonical.launchpad.browser.product"
+        classes="ProductFacets" />
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IProduct"

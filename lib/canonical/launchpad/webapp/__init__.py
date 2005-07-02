@@ -20,7 +20,7 @@ class StandardLaunchpadFacets(FacetMenu):
     # provide your own 'usedfor' in subclasses.
     #   usedfor = IWhatever
 
-    links = ['overview', 'translations', 'bugs']
+    links = ['overview', 'bugs', 'translations']
 
     def overview(self):
         target = ''
