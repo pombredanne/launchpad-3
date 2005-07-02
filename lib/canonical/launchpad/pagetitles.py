@@ -71,15 +71,14 @@ attachment_index = ContextTitle('Malone Bug Attachment: %s')
 
 attachments_index = 'Malone Bug Attachments'
 
-auth_index = 'Launchpad Password Reminder'
-
 bazaar_index = 'The Launchpad Bazaar'
 
-bazaar_sync_review = 'The Bazaar Upstream-Sync Review'
+bazaar_sync_review = 'Review upstream repositories for Launchpad Bazaar syncing'
 
 binary_index = 'Binary Packages'
 
-binarypackage_index = 'Binary Package Details'
+def binarypackage_index (context, view):
+    return "%s binary package in Launchpad" % context.title
 
 binarypackage_search = 'Search Binary Package Database'
 

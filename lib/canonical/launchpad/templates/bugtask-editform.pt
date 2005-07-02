@@ -158,6 +158,12 @@
               i18n:attributes="value submit-button" />
           </div>
         </form>
+        <p tal:condition="context/product">
+          <a href=""
+              tal:attributes="href string:/malone/products/${context/product/name}"
+              tal:content="string:More ${context/product/displayname} bugs"
+          >More Mozilla Firefox bugs</a>
+        </p>
       </div>
     </div>
   </body>
