@@ -242,7 +242,7 @@
                     <label
                         tal:attributes="for view/statusexplanation_widget/name"
                         tal:content="view/statusexplanation_widget/label">
-                      Explanation of Status:
+                      Status notes:
                     </label>
                     <br />
                     <tal:block content="structure view/statusexplanation_widget" />
