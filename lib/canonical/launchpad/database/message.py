@@ -9,7 +9,6 @@ _ = MessageIDFactory('launchpad')
 import email
 from email.Utils import parseaddr
 from cStringIO import StringIO as cStringIO
-import sha
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -19,6 +18,7 @@ from zope.exceptions import NotFoundError
 from sqlobject import ForeignKey, StringCol, IntCol
 from sqlobject import MultipleJoin, RelatedJoin
 
+from canonical.launchpad.helpers import get_filename_from_message_id
 from canonical.launchpad.interfaces import \
     IMessage, IMessageSet, IMessageChunk, IPersonSet, \
     ILibraryFileAliasSet, UnknownSender, MissingSubject, \
@@ -27,7 +27,6 @@ from canonical.launchpad.interfaces import \
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC
 from canonical.database.datetimecol import UtcDateTimeCol
-import canonical.base
 
 class Message(SQLBase):
     """A message. This is an RFC822-style message, typically it would be
@@ -72,12 +71,39 @@ class Message(SQLBase):
     contents = property(contents)
 
 
+def get_parent_msgid(parsed_message):
+    """Returns the message id the mail was a reply to.
+
+    If it can't be identified, None is returned.
+
+        >>> get_parent_msgid({'In-Reply-To': '<msgid1>'})
+        '<msgid1>'
+
+        >>> get_parent_msgid({'References': '<msgid1> <msgid2>'})
+        '<msgid2>'
+
+        >>> get_parent_msgid({'In-Reply-To': '<msgid1> <msgid2>'})
+        '<msgid2>'
+
+        >>> get_parent_msgid({'In-Reply-To': '', 'References': ''}) is None
+        True
+
+        >>> get_parent_msgid({}) is None
+        True
+    """
+    for name in ['In-Reply-To', 'References']:
+        if parsed_message.has_key(name):
+            msgids = parsed_message[name].split()
+            if len(msgids) > 0:
+                return parsed_message.get(name).split()[-1]
+
+    return None
+
+
 class MessageSet:
     implements(IMessageSet)
 
-    def get(self, rfc822msgid=None):
-        if not rfc822msgid:
-            raise KeyError, 'Need to search on at least an rfc822msgid'
+    def get(self, rfc822msgid):
         message = Message.selectOneBy(rfc822msgid=rfc822msgid)
         if message is None:
             raise NotFoundError(rfc822msgid)
@@ -132,11 +158,8 @@ class MessageSet:
             # We generate a filename to avoid people guessing the URL.
             # We don't want URLs to private bug messages to be guessable
             # for example.
-            raw_filename = '%s.msg' % (
-                    canonical.base.base(long(
-                        sha.new(parsed_message['message-id']).hexdigest(), 16
-                        ), 62)
-                    )
+            raw_filename = get_filename_from_message_id(
+                parsed_message['message-id'])
             raw_email_message = file_alias_set.create(
                     raw_filename, len(email_message),
                     cStringIO(email_message), 'message/rfc822'
@@ -170,10 +193,20 @@ class MessageSet:
             if owner is None:
                 raise UnknownSender(from_addrs[0])
 
+        parent_msgid = get_parent_msgid(parsed_message)
+        if parent_msgid is None:
+            parent = None
+        else:
+            try:
+                parent = self.get(parent_msgid)
+            except NotFoundError:
+                parent = None
+
         message = Message(
             title=title,
             ownerID=owner.id,
             rfc822msgid=rfc822msgid,
+            parent=parent,
             rawID=raw_email_message.id
             )
 

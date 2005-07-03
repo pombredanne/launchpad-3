@@ -3,33 +3,51 @@
 """ karma.py -- handles all karma assignments done in the launchpad 
 application."""
 
-from canonical.launchpad.database import Person
-from canonical.launchpad.mailnotification import get_changes
-from canonical.lp.dbschema import KarmaType, BugTaskStatus
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces import IPersonSet
+from canonical.launchpad.mailnotification import get_bug_delta, get_task_delta
+from canonical.lp.dbschema import BugTaskStatus, KarmaActionName
 
 
-def bug_added(bug, event):
-    owner = getattr(bug, 'owner', None)
-    if owner:
-        owner.assignKarma(KarmaType.BUG_REPORT)
+def bug_created(bug, event):
+    """Assign karma to the user which created <bug>."""
+    bug.owner.assignKarma(KarmaActionName.BUGCREATED)
+
+
+def bugtask_created(bug, event):
+    """Assign karma to the user which created <bugtask>."""
+    bug.owner.assignKarma(KarmaActionName.BUGTASKCREATED)
 
 
 def bug_comment_added(bugmessage, event):
-    bugmessage.message.owner.assignKarma(KarmaType.BUG_COMMENT)
+    """Assign karma to the user which added <bugmessage>."""
+    bugmessage.message.owner.assignKarma(KarmaActionName.BUGCOMMENTADDED)
 
 
-def bug_task_modified(task, event):
-    person = Person.get(event.principal.id)
-    # XXX: Should we give Karma points to users who change priority
-    # and severity too?
-    fields = (("bugstatus", None),)
-    changes = get_changes(before=event.object_before_modification,
-                          after=event.object, fields=fields)
+def bug_modified(bug, event):
+    """Check changes made to <bug> and assign karma to user if needed."""
+    user = event.user
+    bug_delta = get_bug_delta(
+        event.object_before_modification, event.object, user)
 
-    for field in changes:
-        if field == "bugstatus":
-            if changes[field]["new"] == BugTaskStatus.FIXED:
-                # Can we assume that this is the user that really fixed
-                # the bug and give Karma points to him?
-                person.assignKarma(KarmaType.BUG_FIX)
+    attrs_actionnames = {'title': KarmaActionName.BUGTITLECHANGED,
+                         'summary': KarmaActionName.BUGSUMMARYCHANGED,
+                         'description': KarmaActionName.BUGDESCRIPTIONCHANGED,
+                         'external_reference': KarmaActionName.BUGEXTREFCHANGED,
+                         'cveref': KarmaActionName.BUGCVEREFCHANGED}
+
+    for attr, actionname in attrs_actionnames.items():
+        if getattr(bug_delta, attr) is not None:
+            user.assignKarma(actionname)
+
+
+def bugtask_modified(bugtask, event):
+    """Check changes made to <bugtask> and assign karma to user if needed."""
+    user = event.user
+    task_delta = get_task_delta(event.object_before_modification, event.object)
+
+    if (task_delta.status is not None and 
+        task_delta.status['new'] == BugTaskStatus.FIXED):
+        user.assignKarma(KarmaActionName.BUGFIXED)
 

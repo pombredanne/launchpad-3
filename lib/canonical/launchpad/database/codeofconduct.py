@@ -9,10 +9,6 @@ __all__ = ['CodeOfConduct', 'CodeOfConductSet', 'CodeOfConductConf',
            'SignedCodeOfConduct', 'SignedCodeOfConductSet',
            'sendAdvertisementEmail']
 
-import os
-from datetime import datetime
-from sha import sha
-
 from zope.interface import implements
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
@@ -24,10 +20,18 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
-from canonical.launchpad.interfaces import \
-    ICodeOfConduct, ICodeOfConductSet, ICodeOfConductConf, \
-    ISignedCodeOfConduct, ISignedCodeOfConductSet, IGpgHandler
+from canonical.launchpad.interfaces import ICodeOfConduct, ICodeOfConductSet
+from canonical.launchpad.interfaces import ICodeOfConductConf
+from canonical.launchpad.interfaces import ISignedCodeOfConduct
+from canonical.launchpad.interfaces import ISignedCodeOfConductSet, IGpgHandler
+from canonical.launchpad.interfaces import IPersonSet
+from canonical.launchpad.interfaces import IGPGKeySet
+from canonical.launchpad.interfaces import IGpgHandler
 
+# Python
+import os
+from datetime import datetime
+from sha import sha
 
 class CodeOfConduct:
     """CoC class model.
@@ -217,19 +221,22 @@ class SignedCodeOfConductSet:
 
         # use a utility to perform the GPG operations
         gpghandler = getUtility(IGpgHandler)
-        fingerprint, plain = gpghandler.verifySignature(signedcode)
 
-        if not fingerprint:
+        sig = gpghandler.verifySignature(signedcode)
+
+        if not sig.fingerprint:
             return 'Failed to verify the signature'
 
-        # XXX cprov 20050328
-        # Do not support multiple keys
-        gpg = user.gpgkeys[0]
+        gpgkeyset = getUtility(IGPGKeySet)
 
-        if fingerprint != gpg.fingerprint:
-            return ('User and Signature do not match.\n'
-                    'Sig %s != User %s' % (fingerprint, gpg.fingerprint))
+        gpg = gpgkeyset.getByFingerprint(sig.fingerprint)
 
+        if not gpg:
+            return 'Not valid key: %s' % sig.fingerprint
+
+        if gpg.owner.id != user.id:
+            return 'Signature Onwer and User mismatch'
+        
         if gpg.revoked:
             return  'Signed with a revoked Key.'
 
@@ -238,7 +245,7 @@ class SignedCodeOfConductSet:
         current = coc.content
 
         # calculate text digest 
-        plain_dig = sha(plain).hexdigest()
+        plain_dig = sha(sig.plain_data).hexdigest()
         current_dig = sha(current).hexdigest()
 
         if plain_dig != current_dig:
@@ -250,7 +257,7 @@ class SignedCodeOfConductSet:
                    '----- Signed Code Of Conduct -----\n'
                    '%s\n'
                    '-------------- End ---------------\n'
-                   % (fingerprint, plain))
+                   % (sig.fingerprint, sig.plain_data))
         # Send Advertisement Email
         sendAdvertisementEmail(user, subject, content)
 

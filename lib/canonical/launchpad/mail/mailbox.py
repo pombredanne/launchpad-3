@@ -48,7 +48,7 @@ class TestMailBox:
         """See IMailBox."""
         # Clean up test_emails
         stub.test_emails = [item for item in stub.test_emails
-                            if stub.test_emails is not None]
+                            if item is not None]
         self._lock.release()
 
 
@@ -56,15 +56,19 @@ class POP3MailBox:
     """Mail box which talks to a POP3 server."""
     implements(IMailBox)
 
-    def __init__(self, host, user, password):
+    def __init__(self, host, user, password, ssl=False):
         self._host = host
         self._user = user
         self._password = password
+        self._ssl = ssl
 
     def open(self):
         """See IMailBox."""
         try:
-            popbox = poplib.POP3(self._host)
+            if self._ssl:
+                popbox = poplib.POP3_SSL(self._host)
+            else:
+                popbox = poplib.POP3(self._host)
         except socket.error, e:
             raise MailBoxError(str(e))
         try:
@@ -98,4 +102,3 @@ class POP3MailBox:
     def close(self):
         """See IMailBox."""
         self._popbox.quit()
-

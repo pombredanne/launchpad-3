@@ -11,21 +11,19 @@ from sqlobject import StringCol, ForeignKey, MultipleJoin
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.lp.dbschema import \
-    PackagePublishingStatus, BugTaskStatus, EnumCol, DistributionReleaseStatus
+from canonical.lp.dbschema import (
+    PackagePublishingStatus, BugTaskStatus, EnumCol, DistributionReleaseStatus)
 
-from canonical.launchpad.interfaces import \
-    IDistroRelease, IDistroReleaseSet, ISourcePackageName
+from canonical.launchpad.interfaces import (
+    IDistroRelease, IDistroReleaseSet, ISourcePackageName)
 
-from canonical.launchpad.database.sourcepackageindistro \
-        import SourcePackageInDistro
+from canonical.launchpad.database.sourcepackageindistro import (
+    SourcePackageInDistro)
 from canonical.launchpad.database.publishedpackage import PublishedPackageSet
-from canonical.launchpad.database.publishing \
-        import PackagePublishing, SourcePackagePublishing
-
+from canonical.launchpad.database.publishing import (
+    PackagePublishing, SourcePackagePublishing)
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 from canonical.launchpad.database.potemplate import POTemplate
-
 from canonical.launchpad.helpers import shortlist
 
 
@@ -56,6 +54,8 @@ class DistroRelease(SQLBase):
     lucilleconfig = StringCol(notNull=False)
     architectures = MultipleJoin(
         'DistroArchRelease', joinColumn='distrorelease')
+    datelastlangpack = UtcDateTimeCol(dbName='datelastlangpack', notNull=False,
+                                   default=None)
 
     @property
     def parent(self):
@@ -121,17 +121,6 @@ class DistroRelease(SQLBase):
         srcset = getUtility(ISourcePackageSet)
         return srcset.findByNameInDistroRelease(self.id, pattern)
 
-    def traverse(self, name):
-        """Get SourcePackages in a DistroRelease with BugTask"""
-        if name == '+sources':
-            from canonical.launchpad.database.sourcepackage import \
-                SourcePackageSet
-            return SourcePackageSet(distrorelease=self)
-        elif name  == '+packages':
-            return PublishedPackageSet()
-        else:
-            return self.__getitem__(name)
-
     def __getitem__(self, arch):
         """Get SourcePackages in a DistroRelease with BugTask"""
         item = DistroArchRelease.selectOneBy(
@@ -164,17 +153,44 @@ class DistroReleaseSet:
     implements(IDistroReleaseSet)
 
     def get(self, distroreleaseid):
+        """See canonical.launchpad.interfaces.IDistroReleaseSet."""
         return DistroRelease.get(distroreleaseid)
 
     def translatables(self):
+        """See canonical.launchpad.interfaces.IDistroReleaseSet."""
         return DistroRelease.select(
             "POTemplate.distrorelease=DistroRelease.id",
             clauseTables=['POTemplate'], distinct=True)
 
     def findByName(self, name):
-        """See IDistroReleaseSet."""
+        """See canonical.launchpad.interfaces.IDistroReleaseSet."""
         return DistroRelease.selectBy(name=name)
 
     def findByVersion(self, version):
-        """See IDistroReleaseSet."""
+        """See canonical.launchpad.interfaces.IDistroReleaseSet."""
         return DistroRelease.selectBy(version=version)
+
+    def search(self, distribution=None, isreleased=None, orderBy=None):
+        """See canonical.launchpad.interfaces.IDistroReleaseSet."""
+        where_clause = ""
+        order_by_param = None
+        if distribution is not None:
+            where_clause += "distribution = %s" % sqlvalues(distribution.id)
+        if isreleased is not None:
+            if where_clause:
+                where_clause += " AND "
+            if isreleased:
+                # The query is filtered on released releases.
+                where_clause += "releasestatus in (%s, %s)" % sqlvalues(
+                    DistributionReleaseStatus.CURRENT,
+                    DistributionReleaseStatus.SUPPORTED)
+            else:
+                # The query is filtered on unreleased releases.
+                where_clause += "releasestatus in (%s, %s, %s)" % sqlvalues(
+                    DistributionReleaseStatus.EXPERIMENTAL,
+                    DistributionReleaseStatus.DEVELOPMENT,
+                    DistributionReleaseStatus.FROZEN)
+        if orderBy is not None:
+            return DistroRelease.select(where_clause, orderBy=orderBy)
+        else:
+            return DistroRelease.select(where_clause)

@@ -1,142 +1,71 @@
 #!/usr/bin/env python
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
-import logging, sys
+import sys
 
 from optparse import OptionParser
 
 from canonical.lp import initZopeless
-from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.launchpad.scripts import (execute_zcml_for_scripts,
+    logger_options, logger)
 from canonical.launchpad.scripts.lockfile import LockFile
-from canonical.launchpad.database import POTemplateSet, POFileSet
+from canonical.launchpad.scripts.rosetta import ImportProcess
 
-_default_lock_file = '/var/lock/launchpad-poimport.lock'
-
-class ImportProcess:
-    def __init__(self):
-        self._tm = initZopeless()
-        self.po_templates = POTemplateSet()
-        self.po_files = POFileSet()
-
-    def commit(self):
-        self._tm.commit()
-
-    def abort(self):
-        self._tm.abort()
-
-    def getPendingImports(self):
-        '''Iterate over all PO templates and PO files which are waiting to be
-        imported.
-        '''
-
-        for template in self.po_templates.getTemplatesPendingImport():
-            logger.info('Importing the template: %s' % template.title)
-            yield template
-
-        for pofile in self.po_files.getPOFilesPendingImport():
-            logger.info('Importing the %s translation of %s' % (
-                pofile.language.englishname, pofile.potemplate.title))
-            yield pofile
-
-    def run(self):
-        for object in self.getPendingImports():
-            # object could be a POTemplate or a POFile but both
-            # objects implement the doRawImport method so we don't
-            # need to care about it here.
-            try:
-                object.doRawImport(logger)
-            except KeyboardInterrupt:
-                self.abort()
-                raise
-            except:
-                # If we have any exception, we log it before terminating
-                # the process.
-                logger.error('We got an unexpected exception while importing',
-                             exc_info = 1)
-                self.abort()
-                continue
-
-            # As soon as the import is done, we commit the transaction
-            # so it's not lost.
-            try:
-                self.commit()
-            except KeyboardInterrupt:
-                self.abort()
-                raise
-            except:
-                # If we have any exception, we log it before terminating
-                # the process.
-                logger.error('We got an unexpected exception while committing'
-                             'the transaction', exc_info = 1)
-                self.abort()
+default_lock_file = '/var/lock/launchpad-poimport.lock'
 
 def parse_options():
+    """Parse a set of command line options.
+
+    Return an optparse.Values object.
+    """
     parser = OptionParser()
-    parser.add_option("-v", "--verbose", dest="verbose",
-        default=0, action="count",
-        help="Displays extra information.")
-    parser.add_option("-q", "--quiet", dest="quiet",
-        default=0, action="count",
-        help="Display less information.")
     parser.add_option("-l", "--lockfile", dest="lockfilename",
-        default=_default_lock_file,
+        default=default_lock_file,
         help="The file the script should use to lock the process.")
+
+    # Add the verbose/quiet options.
+    logger_options(parser)
 
     (options, args) = parser.parse_args()
 
     return options
 
-def main():
-    # Do the import of all pending files from the queue.
-    process = ImportProcess()
-    logger.debug('Starting the import process')
-    process.run()
-    logger.debug('Finished the import process')
-
-def setUpLogger():
-    loglevel = logging.WARN
-
-    for i in range(options.verbose):
-        if loglevel == logging.INFO:
-            loglevel = logging.DEBUG
-        elif loglevel == logging.WARN:
-            loglevel = logging.INFO
-    for i in range(options.quiet):
-        if loglevel == logging.WARN:
-            loglevel = logging.ERROR
-        elif loglevel == logging.ERROR:
-            loglevel = logging.CRITICAL
-
-    hdlr = logging.StreamHandler(strm=sys.stderr)
-    hdlr.setFormatter(logging.Formatter(
-        fmt='%(asctime)s %(levelname)s %(message)s'
-        ))
-    logger.addHandler(hdlr)
-    logger.setLevel(loglevel)
-
-if __name__ == '__main__':
-    execute_zcml_for_scripts()
-
-    options = parse_options()
+def main(argv):
+    options = parse_options(argv[1:])
 
     # Get the global logger for this task.
-    logger = logging.getLogger("poimport")
-    # customized the logger output.
-    setUpLogger()
+    logger_object = logger(options, 'rosetta-poimport')
 
     # Create a lock file so we don't have two daemons running at the same time.
-    lockfile = LockFile(options.lockfilename, logger=logger)
-
+    lockfile = LockFile(options.lockfilename, logger=logger_object)
     try:
         lockfile.acquire()
     except OSError:
-        logger.info("lockfile %s already exists, exiting",
-                    options.lockfilename)
-        sys.exit(0)
+        logger_object.info("lockfile %s already exists, exiting",
+                           options.lockfilename)
+        return 0
+
+    # Setup zcml machinery to be able to use getUtility
+    execute_zcml_for_scripts()
+    ztm = initZopeless()
+
+    # Bare except clause: so that the lockfile is reliably deleted.
 
     try:
-        main()
-    finally:
-        # Release the lock so next planned task can be executed.
+        # Do the import of all pending files from the queue.
+        process = ImportProcess(ztm, logger_object)
+        logger_object.debug('Starting the import process')
+        process.run()
+        logger_object.debug('Finished the import process')
+    except:
+        # Release the lock for the next invocation.
+        logger_object.error('An unexpected exception ocurred', exc_info = 1)
         lockfile.release()
+        return 1
 
+    # Release the lock for the next invocation.
+    lockfile.release()
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))

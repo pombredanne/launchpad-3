@@ -18,94 +18,96 @@
     <metal:block define-slot="head_epilogue"></metal:block>
 </head>
 
-<body>
-    <div class="page-header">
-        <div class="page-header-ribbon"
-            tal:define="path_info request/PATH_INFO">
-            <div class="user" tal:condition="not: request/lp:person ">
-              <div tal:condition="python:'+login' not in path_info">
-                <a href="/+login">Log in / Register</a>
-              </div>
-            </div>
-            <div class="user" tal:condition="request/lp:person">
-                Welcome,
+  <body>
+    <img
+      style="position: relative; float: left; left: -12px; top: 1em;"
+      src="/@@/launchpad.png"
+      alt=""
+    />
+    <div class="header">
+      <div
+        class="login"
+        tal:replace="structure context/@@login_status"
+      >
+        Logged in or logged out
+      </div>
+      <div
+        class="hierarchy"
+        tal:content="structure request/fmt:breadcrumbs"
+      />
+      <ul
+        class="facets"
+        tal:define="facetmenu context/menu:facet"
+      >
+        <tal:block condition="facetmenu">
+          <tal:block repeat="link facetmenu">
+            <li
+              tal:condition="link/selected"
+              class="current"
+            >
+              <strong tal:condition="link/linked">
                 <a
-                  tal:attributes="href string:/people/${request/lp:person/name}"
-                  tal:content="request/lp:person/browsername"
-                >
-                  [An error has occurred in Launchpad. Please report the address of this page to a Launchpad admin.]
-                </a>
-                &ndash;
-                <a href="/+logout">Log out</a>
-            </div>
-            <address>
-               <span tal:replace="structure request/fmt:breadcrumbs" /><br />
-            </address>
-        </div>
-        <div class="clear-everything-hackishly" style="clear: both;">
-            <a href="/">
-                <img src="/@@/launchpad.png" alt="Launchpad Home" />
-            </a>
-
-            <tal:block condition="nothing">
-                Commented out until this actually works. Broken templates
-                rolled out to production are embarassing and unprofessional!
-
-                <table class="launchpad-apps" tal:define="path_info request/PATH_INFO">
-                <tr>
-                    <td class="plain">
-                        <a href=".">Overview</a>
-                    </td>
-
-              <td class="selected" tal:condition="python:'+bug' in path_info or '+malone' in path_info">
-                <a href="+bugs">Bugs</a>
-              </td>
-              <td class="plain"
-                tal:condition="python:'+bug' not in path_info or '+malone' in path_info">
-                <a href="+bugs">Bugs</a>
-              </td>
-
-              <td class="selected"
-                tal:condition="python:'+transl' in path_info or '+roset' in path_info">
-                <a href="+translations">Translations</a>
-              </td>
-              <td class="plain"
-                tal:condition="python:'+transl' not in path_info or '+roset' in path_info">
-                <a href="+translations">Translations</a>
-              </td>
-              <td rowspan="2">
-                <img src="/@@/launchpad.png" alt="Launchpad Home" />
-              </td>
-            </tr><tr>
-              <td class="selected"
-                tal:condition="python:'/+bount' in path_info">
-                <a href="+bounties">Bounties</a>
-              </td>
-              <td class="plain"
-                tal:condition="python:'+bount' not in path_info">
-                <a href="+bounties">Bounties</a>
-              </td>
-            </tr>
-            </table>
+                  tal:attributes="href link/url"
+                  tal:content="link/text"
+                >abc</a>
+              </strong>
+              <strong
+                tal:condition="not: link/linked"
+                tal:content="link/text"
+              >def</strong>
+            </li>
+            <li tal:condition="not: link/selected">
+              <a
+                tal:attributes="href link/url"
+                tal:content="link/text"
+              >ghi</a>
+            </li>
+          </tal:block>
         </tal:block>
+      </ul>
+    </div>
+    <h2><metal:block
+        define-slot="titleheader"
+        tal:content="context/title | default"
+    >Launchpad</metal:block></h2>
+    <ul
+      tal:define="appmenu context/menu:application"
+      tal:condition="appmenu"
+      class="app"
+    >
+      <tal:block repeat="link appmenu">
+        <li
+          tal:condition="link/selected"
+          class="current"
+        >
+          <tal:block condition="link/linked">
+            <strong>
+              <a 
+                tal:attributes="href link/url"
+                tal:content="link/text"
+              >link text</a>
+            </strong>
+          </tal:block>
+          <tal:block condition="not: link/linked">
+            <strong tal:content="link/text">link text</strong>
+          </tal:block>
+        </li>
+        <li tal:condition="not: link/selected">
+          <a
+            tal:attributes="href link/url"
+            tal:content="link/text"
+          >link text</a>
+        </li>
+      </tal:block>
+    </ul>
 
-          <h2 tal:content="context/title | default">The Launchpad</h2>
+    <!-- Menus -->
 
-        </div>
 
-        <tal:block condition="nothing">
-            Commented out until this actually works. Broken templates
-            rolled out to production are embarassing and unprofessional!
-        <div id="portal-personaltools"
-             style="text-align: left;"
-             tal:define="path_info request/PATH_INFO">
-           &nbsp;
-        </div>
-        </tal:block>
-
-    </div><!-- class="page-header"-->
-
-    <div class="visualClear"></div>
+    <div class="visualClear" id="body">
+      <metal:block define-slot="body">
+      </metal:block>
+    </div>
 
     <table id="portal-columns">
         <tbody>
@@ -114,18 +116,15 @@
                 <!-- start of the left (by default at least) column -->
                 <td id="portal-column-one"
                     metal:define-slot="column_one">
-                <div class="visualPadding">
                     <metal:portlets define-slot="portlets_one">
 
                     </metal:portlets>
-                    &nbsp;
-                </div>
                 </td>
                 <!-- end of the left (by default at least) column -->
 
                 <td id="portal-column-content">
                 <div id="region-content">
-                    <metal:main define-slot="main">
+                    <metal:main define-slot="main" tal:condition="nothing">
                         <p>Main content area.</p>
                     </metal:main>
                 </div>
@@ -133,12 +132,9 @@
 
                 <!-- start of right (by default at least) column -->
                 <td id="portal-column-two" metal:define-slot="column_two">
-                    <div class="visualPadding">
                         <metal:portlets define-slot="portlets_two">
 
                         </metal:portlets>
-                        &nbsp;
-                    </div>
                 </td>
                 <!-- end of the right (by default at least) column -->
 
@@ -149,7 +145,7 @@
 
     <div class="visualClear">&nbsp;</div>
 
-    <div id="portal-footer">
+    <div class="footer">
         Copyright 2004-2005 Canonical Ltd. &ndash;  <a href="/legal">Legalese</a>
     </div>
 </body>

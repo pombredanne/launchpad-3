@@ -87,3 +87,6 @@ class ITranslationGroupSet(IAddFormCustomization):
     def __iter__():
         """Iterate through the translation groups in this set."""
 
+    def new(name, title, summary, owner):
+        """Create a new translation group."""
+

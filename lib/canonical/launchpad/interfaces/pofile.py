@@ -6,7 +6,12 @@ from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 
 __metaclass__ = type
 
-__all__ = ('IPOFileSet', 'IPOFile', 'IEditPOFile')
+__all__ = ('ZeroLengthPOExportError', 'IPOFileSet', 'IPOFile', 'IEditPOFile')
+
+
+class ZeroLengthPOExportError(Exception):
+    """An exception raised when a PO file export generated an empty file."""
+
 
 class IPOFileSet(Interface):
     """A set of POFile."""
@@ -24,7 +29,7 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
 
     language = Attribute("Language of this PO file.")
 
-    title = Attribute("The PO file's title.")
+    title = Attribute("A title for this PO file.")
 
     description = Attribute("PO file description.")
 
@@ -146,8 +151,22 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
         Return the message sets using 'slice' or all of them if slice is None.
         """
 
-    def getPOTMsgSetUnTranslated(slice=None):
+    def getPOTMsgSetFuzzy(slice=None):
+        """Get pot message sets that have POMsgSet.fuzzy set in this PO file.
+
+        'slice' is a slice object that selects a subset of POTMsgSets.
+        Return the message sets using 'slice' or all of them if slice is None.
+        """
+
+    def getPOTMsgSetUntranslated(slice=None):
         """Get pot message sets that are untranslated in this PO file.
+
+        'slice' is a slice object that selects a subset of POTMsgSets.
+        Return the message sets using 'slice' or all of them if slice is None.
+        """
+
+    def getPOTMsgSetWithErrors(slice=None):
+        """Get pot message sets that have translations published with errors.
 
         'slice' is a slice object that selects a subset of POTMsgSets.
         Return the message sets using 'slice' or all of them if slice is None.
@@ -168,6 +187,9 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
 
     def export():
         """Export this PO file as a string."""
+
+    def invalidateCache():
+        """Invalidate the cached export."""
 
 
 class IEditPOFile(IPOFile):
@@ -201,4 +223,10 @@ class IEditPOFile(IPOFile):
         (unicode or string) rather than a POT message Set.
 
         Returns the newly created message set.
+        """
+
+    def updateHeader(new_header):
+        """Update the header information.
+
+        new_header is a POHeader object.
         """

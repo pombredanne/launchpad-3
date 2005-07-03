@@ -14,51 +14,13 @@ Team, which is one of the maintainers on this bug.
       <div class="portletBody">
           <div class="portletContent even">
   <BLANKLINE>
-              <h5>submitter:</h5>
-              <ul class="people">
-                  <li><a href="/people/name12">Sample Person</a></li>
-              </ul>
-  <BLANKLINE>
-              <h5>maintainers:</h5>
-  <BLANKLINE>
-              <ul class="people">
-                  <li>
-                  <a href="/people/name17">Ubuntu Team</a>
-                  </li>
-              </ul>
-              <ul class="people">
-                  <li>
-                  <a href="/people/sabdfl">Mark Shuttleworth</a>
-                  </li>
-              </ul>
-  <BLANKLINE>
-  <BLANKLINE>
-              <h5>cc:</h5>
-              <ul class="people">
-                  <li>
-                    <a href="/malone/bugs/2/people/5/+edit">Steve Alexander</a>
-                  </li>
-              </ul>
-  <BLANKLINE>
-  <BLANKLINE>
-              <ul class="people">
-              </ul>
-  <BLANKLINE>
-  <BLANKLINE>
-              <ul class="people">
-              </ul>
-  <BLANKLINE>
-  <BLANKLINE>
-          <a href="/malone/bugs/2/people/+new"
-             style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
-             title="Add a subscriber to this bug.">
-              <img src="/++resource++add.gif" alt="+" />
-              Subscribe
-          </a><br />
-          </div>
-  <BLANKLINE>
-      </div>
-      </div>
+              ...First reported by:...
+                  ...Sample Person...
+              ...Maintainers:...
+                  ...Ubuntu Team...
+                  ...Mark Shuttleworth...
+              ...Cc:...
+                  ...Steve Alexander...
   ...
 
 Foo Bar sets the bug private, and all implicit subscriptions are thus
@@ -111,57 +73,14 @@ is a member.
       <div class="portletBody">
           <div class="portletContent even">
   <BLANKLINE>
-              <h5>submitter:</h5>
-              <ul class="people">
-                  <li><a href="/people/name12">Sample Person</a></li>
-              </ul>
-  <BLANKLINE>
-              <h5>maintainers:</h5>
-  <BLANKLINE>
-              <ul class="people">
-                  <li>
-                  <a href="/people/name17">Ubuntu Team</a>
-                  </li>
-              </ul>
-              <ul class="people">
-                  <li>
-                  <a href="/people/sabdfl">Mark Shuttleworth</a>
-                  </li>
-              </ul>
-  <BLANKLINE>
-  <BLANKLINE>
-              <h5>cc:</h5>
-              <ul class="people">
-                  <li>
-                    <a href="/malone/bugs/2/people/5/+edit">Steve Alexander</a>
-                  </li>
-                  <li>
-                    <a href="/malone/bugs/2/people/6/+edit">Sample Person</a>
-                  </li>
-                  <li>
-                    <a href="/malone/bugs/2/people/7/+edit">Ubuntu Team</a>
-                  </li>
-                  <li>
-                    <a href="/malone/bugs/2/people/8/+edit">Mark Shuttleworth</a>
-                  </li>
-              </ul>
-  <BLANKLINE>
-  <BLANKLINE>
-              <ul class="people">
-              </ul>
-  <BLANKLINE>
-  <BLANKLINE>
-              <ul class="people">
-              </ul>
-  <BLANKLINE>
-  <BLANKLINE>
-          <a href="/malone/bugs/2/people/+new"
-             style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
-             title="Add a subscriber to this bug.">
-              <img src="/++resource++add.gif" alt="+" />
-              Subscribe
-          </a><br />
-          </div>
-  <BLANKLINE>
-      </div>
+              ...First reported by:...
+                  ...Sample Person...
+              ...Maintainers:...
+                  ...Ubuntu Team...
+                  ...Mark Shuttleworth...
+              ...Cc:...
+                  ...Steve Alexander...
+                  ...Sample Person...
+                  ...Ubuntu Team...
+                  ...Mark Shuttleworth...
   ...

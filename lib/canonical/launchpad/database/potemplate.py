@@ -31,9 +31,11 @@ from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.lp.dbschema import RosettaImportStatus
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.launchpad.components.rosettastats import RosettaStats
+from canonical.launchpad.components.poimport import import_po
 from canonical.launchpad import helpers
 
-from canonical.launchpad.components.pofile_adapters import TemplateImporter
+from canonical.launchpad.components.poparser import (POSyntaxError,
+    POInvalidInputError)
 
 standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
  Copyright (c) %(copyright)s %(year)s
@@ -102,7 +104,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     def __getitem__(self, key):
         """See IPOTemplate."""
-        return self.messageSet(key, onlyCurrent=True)
+        return self.getPOTMsgSetByMsgIDText(key, onlyCurrent=True)
 
     # properties
     @property
@@ -245,33 +247,34 @@ class POTemplate(SQLBase, RosettaStats):
             distinct=True).count()
 
 
-    def messageSet(self, key, onlyCurrent=False):
-        query = 'potemplate = %d' % self.id
+    def getPOTMsgSetByMsgIDText(self, key, onlyCurrent=False):
+        """See IPOTemplate."""
+        query = 'potemplate = %s' % sqlvalues(self.id)
         if onlyCurrent:
             query += ' AND sequence > 0'
 
-        if isinstance(key, slice):
-            return POTMsgSet.select(query, orderBy='sequence')[key]
-
-        if not isinstance(key, unicode):
-            raise TypeError(
-                "Can't index with type %s. (Must be slice or unicode.)"
-                % type(key))
-
         # Find a message ID with the given text.
         try:
-            messageID = POMsgID.byMsgid(key)
+            pomsgid = POMsgID.byMsgid(key)
         except SQLObjectNotFound:
-            raise KeyError, key
+            raise NotFoundError(key)
 
         # Find a message set with the given message ID.
 
         result = POTMsgSet.selectOne(query +
-            (' AND primemsgid = %d' % messageID.id))
+            (' AND primemsgid = %s' % sqlvalues(pomsgid.id)))
 
         if result is None:
-            raise KeyError, key
+            raise NotFoundError(key)
         return result
+
+    def getPOTMsgSetBySequence(self, key, onlyCurrent=False):
+        """See IPOTemplate."""
+        query = 'potemplate = %s' % sqlvalues(self.id)
+        if onlyCurrent:
+            query += ' AND sequence > 0'
+
+        return POTMsgSet.select(query, orderBy='sequence')[key]
 
     def getPOTMsgSets(self, current=True, slice=None):
         """See IPOTemplate."""
@@ -445,8 +448,6 @@ class POTemplate(SQLBase, RosettaStats):
 
         return POFile(potemplate=self,
                       language=language,
-                      title='Rosetta %(languagename)s translation of %(origin)s'
-                            % data,
                       topcomment=standardPOFileTopComment % data,
                       header=standardPOFileHeader % data,
                       fuzzyheader=True,
@@ -506,6 +507,11 @@ class POTemplate(SQLBase, RosettaStats):
 
         return self.createMessageSetFromMessageID(messageID)
 
+    def invalidateCache(self):
+        """See IPOTemplate."""
+        for pofile in self.pofiles:
+            pofile.invalidateCache()
+
     # ICanAttachRawFileData implementation
 
     def attachRawFileData(self, contents, published, importer=None):
@@ -537,41 +543,36 @@ class POTemplate(SQLBase, RosettaStats):
 
     def doRawImport(self, logger=None):
         """See IRawFileData."""
-
-        # The owner of the import is the person who imported it.
-        # Also, a potemplate is always published, and the importer is always
-        # an editor
-        importer = TemplateImporter(self, self.rawimporter, True, True)
-
         rawdata = helpers.getRawFileData(self)
 
         file = StringIO.StringIO(rawdata)
 
         try:
-            importer.doImport(file)
-
-            # The import has been done, we mark it that way.
-            self.rawimportstatus = RosettaImportStatus.IMPORTED
-
-            # Ask for a sqlobject sync before reusing the data we just
-            # updated.
-            flush_database_updates()
-
-            # We update the cached value that tells us the number of msgsets
-            # this .pot file has
-            self.messagecount = self.getPOTMsgSetsCount()
-
-            # And now, we should update the statistics for all po files this
-            # .pot file has because msgsets will have changed.
-            for pofile in self.pofiles:
-                pofile.updateStatistics()
-        except:
+            import_po(self, file)
+        except (POSyntaxError, POInvalidInputError):
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.
             self.rawimportstatus = RosettaImportStatus.FAILED
             if logger:
-                logger.warning('We got an error importing %s',
-                    self.potemplatename.name, exc_info=1)
+                logger.warning(
+                    'We got an error importing %s', self.title, exc_info=1)
+            return
+
+        # The import has been done, we mark it that way.
+        self.rawimportstatus = RosettaImportStatus.IMPORTED
+
+        # Ask for a sqlobject sync before reusing the data we just
+        # updated.
+        flush_database_updates()
+
+        # We update the cached value that tells us the number of msgsets
+        # this .pot file has
+        self.messagecount = self.getPOTMsgSetsCount()
+
+        # And now, we should update the statistics for all po files this
+        # .pot file has because msgsets will have changed.
+        for pofile in self.pofiles:
+            pofile.updateStatistics()
 
 
 class POTemplateSubset:

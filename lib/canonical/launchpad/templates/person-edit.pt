@@ -6,11 +6,11 @@
 <body>
 
   <metal:leftportlets fill-slot="portlets_one">
-      <div tal:replace="structure view/viewsPortlet" />
+      <div tal:replace="structure context/@@+portlet-views" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure view/actionsPortlet" />
+      <div tal:replace="structure context/@@+portlet-actions" />
   </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -83,7 +83,11 @@
 	    <div class="formHelp">
 	    Enter the Wiki
             </div>
-	    <input type="text" name="wiki" size="40"
+	    <tal:comment tal:condition="nothing">
+	        The wiki is disable="true" because the wiki url is hard-coded for
+	        Launchpad 1.0.
+	    </tal:comment>
+	    <input type="text" name="wiki" size="40" disabled="true"
 	    tal:attributes="value context/wiki/wiki|nothing"/>
 	</div>
 	</td><td>

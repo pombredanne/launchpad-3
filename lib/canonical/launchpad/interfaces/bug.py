@@ -1,4 +1,10 @@
 __metaclass__ = object
+__all__ = ['BugCreationConstraintsError',
+           'IBug',
+           'IBugSet',
+           'IBugDelta',
+           'IBugAddForm']
+
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -12,6 +18,14 @@ from canonical.lp import dbschema
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.bug import non_duplicate_bug
 from canonical.launchpad.fields import Title, Summary
+
+
+class BugCreationConstraintsError(Exception):
+    """Raised when a bug is created with not all constraints satisfied.
+
+    Currently the only constraint is that it should have at least one
+    bug task.
+    """
 
 
 class IBug(Interface):
@@ -163,7 +177,7 @@ class IBugAddForm(IBug):
             title=_("Binary Package"), required=False,
             vocabulary="BinaryPackage")
     owner = Int(title=_("Owner"), required=True)
-    comment = Text(title=_('Comment'), required=True,
+    comment = Text(title=_('Description'), required=True,
             description=_("""A detailed description of the problem you are
             seeing."""))
     private = Bool(
@@ -177,18 +191,22 @@ class IBugAddForm(IBug):
 
 # Interfaces for set
 class IBugSet(IAddFormCustomization):
-    """A set for bugs."""
+    """A set of bugs."""
 
     title = Attribute('Title')
 
-    def __getitem__(key):
+    def __getitem__(bugid):
         """Get a Bug."""
 
     def __iter__():
         """Iterate through Bugs."""
 
     def get(bugid):
-        """Get a specific bug by its ID."""
+        """Get a specific bug by its ID.
+
+        If it can't be found, a zope.exceptions.NotFoundError will be
+        raised.
+        """
 
     def search(duplicateof=None):
         """Find bugs matching the search criteria provided."""

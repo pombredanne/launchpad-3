@@ -3,6 +3,27 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     i18n_domain="canonical.launchpad">
 
+    <!-- links -->
+    <content class="canonical.launchpad.webapp.menu.Link">
+      <allow interface="canonical.launchpad.interfaces.ILink" />
+    </content>
+
+    <content class="canonical.launchpad.webapp.menu.DefaultLink">
+      <allow interface="canonical.launchpad.interfaces.IDefaultLink" />
+    </content>
+
+    <!-- urls -->
+    <utility
+        provides="canonical.launchpad.interfaces.ILaunchpadRoot"
+        component="canonical.publication.rootObject"
+        />
+
+    <adapter
+        provides="canonical.launchpad.interfaces.ICanonicalUrlData"
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        factory="canonical.launchpad.webapp.publisher.LaunchpadRootUrlData"
+        />
+
     <!-- Annotations -->
 
     <content class="canonical.launchpad.webapp.annotation.SQLObjectAnnotation">
@@ -32,36 +53,18 @@
     <!-- TALES namespaces. -->
 
     <adapter
-        for="zope.interface.Interface"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.MenuAPI"
-        name="menu"
-        />
-    <class class="canonical.launchpad.webapp.tales.FacetListDecorator">
-      <allow interface="canonical.launchpad.interfaces.IFacetList" />
-    </class>
-    <class class="canonical.launchpad.webapp.metazcml.FacetList">
-      <allow interface="canonical.launchpad.interfaces.IFacetList" />
-    </class>
-    <class class="canonical.launchpad.webapp.tales.TabListDecorator">
-      <allow interface="canonical.launchpad.interfaces.ITabList" />
-    </class>
-    <class class="canonical.launchpad.webapp.metazcml.TabList">
-      <allow interface="canonical.launchpad.interfaces.ITabList" />
-    </class>
-    <class class="canonical.launchpad.webapp.metazcml.Link">
-      <allow interface="canonical.launchpad.interfaces.ILink" />
-    </class>
-    <class class="canonical.launchpad.webapp.tales.LinkDecorator">
-      <allow
-        interface="canonical.launchpad.interfaces.ISelectionAwareLink" />
-    </class>
-
-    <adapter
         for="zope.publisher.interfaces.IApplicationRequest"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.RequestAPI"
         name="lp"
+        />
+
+    <!-- TALES menu: namespace -->
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.MenuAPI"
+        name="menu"
         />
 
     <!-- TALES count: namespace -->
@@ -118,6 +121,13 @@
         />
 
     <adapter
+        for="datetime.timedelta"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.DurationFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="basestring"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.FormattersAPI"
@@ -128,6 +138,13 @@
         for="types.NoneType"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.NoneFormatter"
+        name="fmt"
+        />
+
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.ObjectFormatterAPI"
         name="fmt"
         />
 
@@ -243,6 +260,15 @@
         class="zope.app.publisher.browser.resources.Resources"
         permission="zope.Public"
         allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+        />
+
+    <!-- RDF page template macros -->
+    <browser:page
+        for="*"
+        name="rdf_macros"
+        layer="canonical.launchpad.layers.LaunchpadLayer"
+        permission="zope.Public"
+        template="../templates/rdf-macros.pt"
         />
 
 </configure>

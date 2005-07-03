@@ -15,7 +15,7 @@ messages for this POFile).
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Referer: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=10
-  ... 
+  ...
   ... %s""" % data.read())
   HTTP/1.1 200 Ok
   ...
@@ -45,5 +45,4 @@ messages for this POFile).
   <BLANKLINE>
                           <input type="text"
       name="set_142_translation_es_0" value="Migrando «%i»:"
-      tabindex="5" />
   ...

@@ -6,6 +6,11 @@
         />
 
     <vocabulary
+        name="BugWatch"
+        factory="canonical.launchpad.vocabularies.BugWatchVocabulary"
+        />
+
+    <vocabulary
         name="SourcePackageName"
         factory="canonical.launchpad.vocabularies.SourcePackageNameVocabulary"
         />
@@ -31,8 +36,13 @@
         />
 
     <vocabulary
-        name="Person"
-        factory="canonical.launchpad.vocabularies.PersonVocabulary"
+        name="GPGKeyAlgorithm"
+        factory="canonical.launchpad.vocabularies.GPGKeyAlgorithmVocabulary"
+        />
+
+    <vocabulary
+        name="PersonAccountToMerge"
+        factory="canonical.launchpad.vocabularies.PersonAccountToMergeVocabulary"
         />
 
     <vocabulary
@@ -56,6 +66,11 @@
         />
 
     <vocabulary
+        name="ValidTeamMember"
+        factory="canonical.launchpad.vocabularies.ValidTeamMemberVocabulary"
+        />
+
+    <vocabulary
         name="ValidTeamOwner"
         factory="canonical.launchpad.vocabularies.ValidTeamOwnerVocabulary"
         />
@@ -63,6 +78,11 @@
     <vocabulary
         name="TeamSubscriptionPolicy"
         factory="canonical.launchpad.vocabularies.TeamSubscriptionPolicyVocabulary"
+        />
+
+    <vocabulary
+        name="KarmaActionCategory"
+        factory="canonical.launchpad.vocabularies.KarmaActionCategoryVocabulary"
         />
 
     <vocabulary
@@ -133,11 +153,6 @@
     <vocabulary
         name="PackagingType"
         factory="canonical.launchpad.vocabularies.PackagingTypeVocabulary"
-        />
-
-    <vocabulary
-        name="ValidGPGKey"
-        factory="canonical.launchpad.vocabularies.ValidGPGKeyVocabulary"
         />
 
     <vocabulary

@@ -25,6 +25,7 @@
         keyword_arguments="subscription person"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
+        class="canonical.launchpad.browser.addview.SQLObjectAddView"
         lp:url="malone/bugs/$Bug.id/people/+new" />
 
     <browser:editform
@@ -51,6 +52,12 @@
         <allow interface="canonical.launchpad.interfaces.IBugSubscriptionSet"
         />
     </securedutility>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IBugSubscriptionSet"
+        path_expression="string:people"
+        attribute_to_parent="bug"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugSubscriptionSet"

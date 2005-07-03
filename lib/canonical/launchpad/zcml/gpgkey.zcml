@@ -9,16 +9,6 @@
         <allow interface="canonical.launchpad.interfaces.IGPGKey"/>
     </content>
 
-    <browser:pages
-        for="canonical.launchpad.interfaces.IPerson"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.GPGKeyView">
-        <browser:page
-            name="+showgpg"
-            attribute="show"
-            lp:url="foaf/people/$person.id/+showgpg" />
-    </browser:pages>
-
     <!-- GPGKeySet -->
     <content class="canonical.launchpad.database.GPGKeySet">
         <allow interface="canonical.launchpad.interfaces.IGPGKeySet" />
@@ -29,6 +19,5 @@
         provides="canonical.launchpad.interfaces.IGPGKeySet">
         <allow interface="canonical.launchpad.interfaces.IGPGKeySet" />
     </securedutility>
-
 
 </configure>

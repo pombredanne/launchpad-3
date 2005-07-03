@@ -8,6 +8,7 @@ import sets
 from warnings import warn
 
 from zope.interface import implements
+from zope.exceptions import NotFoundError
 
 from sqlobject import ForeignKey, StringCol, MultipleJoin, DateTimeCol
 from canonical.database.constants import UTC_NOW
@@ -34,6 +35,8 @@ class ProductSeries(SQLBase):
     name = StringCol(notNull=True)
     displayname = StringCol(notNull=True)
     summary = StringCol(notNull=True)
+    datecreated =  UtcDateTimeCol(
+        dbName='datecreated', notNull=True, default=UTC_NOW)
     branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
                            schema=ImportStatus, default=None)
@@ -88,7 +91,7 @@ class ProductSeries(SQLBase):
         for release in self.releases:
             if release.version==version:
                 return release
-        raise KeyError, version
+        raise NotFoundError(version)
 
     def getPackage(self, distrorelease):
         for pkg in self.sourcepackages:
@@ -116,6 +119,9 @@ class ProductSeries(SQLBase):
         self.datesyncapproved = UTC_NOW
         self.importstatus = ImportStatus.SYNCING
 
+    def autoTestFailed(self):
+        """Has the series source failed automatic testing by roomba?"""
+        return self.importstatus == ImportStatus.TESTFAILED
 
 class ProductSeriesSet:
 

@@ -46,6 +46,7 @@ ZDOptions.schemafile = os.path.abspath(os.path.join(
 def start_librarian():
     # Imported here as path is not set fully on module load
     from canonical.config import config
+    from canonical.pidfile import make_pidfile, pidfile_path
 
     # Don't run the Librarian if it wasn't asked for. We only want it
     # started up developer boxes really, as the production Librarian
@@ -56,7 +57,8 @@ def start_librarian():
     if not os.path.isdir(config.librarian.server.root):
         os.makedirs(config.librarian.server.root, 0700)
 
-    pidfile = os.path.join(config.librarian.server.root, 'librarian.pid')
+    pidfile = pidfile_path('librarian')
+    logfile =config.librarian.server.logfile
     tacfile = os.path.abspath(os.path.join(
         os.path.dirname(__file__), 'daemons', 'librarian.tac'
         ))
@@ -68,13 +70,18 @@ def start_librarian():
         "--nodaemon",
         "--python", tacfile,
         "--pidfile", pidfile,
-        "--logfile", "-",
         "--prefix", "Librarian",
+        "--logfile", logfile,
         ]
 
     if config.librarian.server.spew:
         args.append("--spew")
 
+    # Note that startup tracebacks and evil programmers using 'print'
+    # will cause output to our stdout. However, we don't want to have
+    # twisted log to stdout and redirect it ourselves because we then
+    # lose the ability to cycle the log files by sending a signal to the
+    # twisted process.
     librarian_process = subprocess.Popen(args, stdin=subprocess.PIPE)
     librarian_process.stdin.close()
     # I've left this off - we still check at termination and we can
@@ -88,30 +95,62 @@ def start_librarian():
         if librarian_process.poll() is None:
             os.kill(librarian_process.pid, signal.SIGTERM)
             librarian_process.wait()
-        else:
-            print >> sys.stderr, "*** ERROR: Librarian died prematurely!"
-            print >> sys.stderr, "***        Return code was %d" % (
-                    librarian_process.returncode,
-                    )
     atexit.register(stop_librarian)
 
 
-def make_pidfile():
-    """Create a pidfile so we can be killed easily.
+def start_trebuchet():
+    # Imported here as path is not set fully on module load
+    from canonical.config import config
+    from canonical.pidfile import make_pidfile, pidfile_path
 
-    Registers an atexit callback to remove the file on termination.
-    """
-    pidfile = os.path.join(os.path.dirname(__file__), 'launchpad.pid')
-    def nukepidfile():
-        if os.path.exists(pidfile):
-            os.unlink(pidfile)
-    atexit.register(nukepidfile)
-    f = open(pidfile, 'w')
-    print >> f, str(os.getpid())
-    f.close()
+    # Don't run the Trebuchet if it wasn't asked for.
+    if not config.trebuchet.server.launch:
+        return
+
+    if not os.path.isdir(config.trebuchet.server.root):
+        os.makedirs(config.trebuchet.server.root, 0700)
+
+    pidfile = pidfile_path('trebuchet')
+    logfile = config.trebuchet.server.logfile
+    tacfile = os.path.abspath(os.path.join(
+        os.path.dirname(__file__), 'daemons', 'trebuchet.tac'
+        ))
+
+    ver = '%d.%d' % sys.version_info[:2]
+    args = [
+        "twistd%s" % ver,
+        "--no_save",
+        "--nodaemon",
+        "--python", tacfile,
+        "--pidfile", pidfile,
+        "--prefix", "Trebuchet",
+        "--logfile", logfile,
+        ]
+
+    if config.trebuchet.server.spew:
+        args.append("--spew")
+
+    trebuchet_process = subprocess.Popen(args, stdin=subprocess.PIPE)
+    trebuchet_process.stdin.close()
+    # I've left this off - we still check at termination and we can
+    # avoid the startup delay. -- StuartBishop 20050525
+    #time.sleep(1)
+    #if trebuchet_process.poll() != None:
+    #    raise RuntimeError(
+    #            "Trebuchet did not start: %d" % trebuchet_process.returncode
+    #            )
+    def stop_trebuchet():
+        if trebuchet_process.poll() is None:
+            os.kill(trebuchet_process.pid, signal.SIGTERM)
+            trebuchet_process.wait()
+        else:
+            print >> sys.stderr, "*** ERROR: Trebuchet died prematurely!"
+            print >> sys.stderr, "***        Return code was %d" % (
+                    trebuchet_process.returncode,
+                    )
+    atexit.register(stop_trebuchet)
 
 
- 
 def run(argv=list(sys.argv)):
 
     # Sort ZCML overrides for our current config
@@ -125,12 +164,16 @@ def run(argv=list(sys.argv)):
     srcdir = os.path.join(here, src)
     sys.path = [srcdir, here] + basepath
 
+    # Import canonical modules here, after path munging
+    from canonical.pidfile import make_pidfile, pidfile_path
+
     # We really want to replace this with a generic startup harness.
     # However, this should last us until this is developed
     start_librarian()
+    start_trebuchet()
 
     # Store our process id somewhere
-    make_pidfile()
+    make_pidfile('launchpad')
 
     main(argv[1:])
         

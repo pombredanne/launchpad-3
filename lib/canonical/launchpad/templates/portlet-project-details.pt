@@ -16,7 +16,14 @@
             <img src="/++resource++user.gif">
             <a tal:content="context/owner/browsername"
                tal:attributes="href string:/people/${context/owner/name}/"
-               >ownername</a><br />
+               >ownername</a>
+            <tal:block condition="context/required:launchpad.Edit">
+              <a tal:attributes="href string:${context/fmt:url}/+reassign">
+                <img alt="(Change maintainer)"
+                     src="/++resource++edit.gif" title="Change the maintainer" />
+              </a>
+            </tal:block>
+            <br />
 
             <b>Translation Group:</b><br />
             <img src="/++resource++languages.gif">

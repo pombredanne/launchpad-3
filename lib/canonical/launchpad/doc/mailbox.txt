@@ -9,6 +9,11 @@ configured in ZCML with:
 
     <mail:pop3MailBox host="somehost" user="someuser" password="secret" />
 
+It also supports POP3 over ssl:
+
+    <mail:pop3MailBox
+        host="somehost" user="someuser" password="secret" ssl="true" />
+
 Let's look at the one we use in tests:
 
     >>> from canonical.launchpad.interfaces import IMailBox

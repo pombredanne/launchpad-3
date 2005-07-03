@@ -1,10 +1,11 @@
 # Zope schema imports
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
-from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces import IHasOwner
+from zope.schema import (
+    Bool, Bytes, Choice, Datetime, Int, Text, TextLine, Password)
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
+
+from canonical.launchpad.fields import Title, Summary, Description
+from canonical.launchpad.interfaces import IHasOwner
 _ = MessageIDFactory('launchpad')
 
 class IDistribution(IHasOwner):
@@ -59,7 +60,7 @@ class IDistribution(IHasOwner):
     members = Choice(
         title=_("Members"),
         description=_("The distro's members team."), required=True,
-        vocabulary='Person')
+        vocabulary='ValidPersonOrTeam')
     releases = Attribute("DistroReleases inside this Distributions")
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugtasks = Attribute("The bug tasks filed in this distro.")
@@ -116,6 +117,7 @@ class IDistributionSet(Interface):
 
     def getByName(distroname):
         """Return the IDistribution with the given name."""
+
 
 class IDistroPackageFinder(Interface):
     """A tool to find packages in a distribution."""

@@ -1,6 +1,6 @@
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
 
-__all__ = ['IGpgHandler']
+__all__ = ['IGpgHandler', 'IPymeSignature', 'IPymeKey']
 
 class IGpgHandler(Interface):
     """Handler to perform GPG operations."""
@@ -20,27 +20,56 @@ class IGpgHandler(Interface):
         :param signature: The signature (or None if content is clearsigned)
         :param key: The key to verify against (or None to search launchpad)
         
-        :returns: True if content is correctly signed, False if it isn't
-        Also returns the fingerprint of the key in question.
+        :returns: a PymeSignature object containing the signature information
+        See IPymeSignature for further info.
         """
 
-    def importPubKey(pubkey, keyring=None):
-        """Import the given public key.
-
-        if keyring is None, we assume it as the default keyring.
+    def importPubKey(pubkey):
+        """Import the given public key. We assume it as the default keyring.
 
         :param pubkey: public key content
-        :param keyring: specific keyring name
-
-        :returns: The key ID
-        """
         
-    def getKeyInfo(fingerprint):
-        """Return additonal Key Info.
+        :returns: a PymeKey instance
+        """
 
-        Return None if not able to retrive the info
+    def getKeyIndex(fingerprint):
+        """Retrieve Key Index Information from the KeyServer.
+
+        It user urllib to retrive the key information page
+        from 'pks' application, parse the content and instantiate
+        a respective PymeKey object.
+
+        Return None if not able to retrive the information
 
         :param fingerprint: key fingerprint (no spaces)
 
-        :returns: keysize, algorithm, revoked
+        :returns: info as [(size, type, id)] and uids as sorted list
         """
+
+    def getPubKey(fingerprint):
+        """Retrieve GPG public key ASCII armored
+
+        It also uses urllib to retrive a public key from PKS systems
+
+        return None if not able to get the public key
+
+        :param fingerprint: key fingerprint (no spaces)
+        """
+
+
+class IPymeSignature(Interface):
+    """pyME signature container."""
+
+    fingerprint = Attribute("Signer Fingerprint.")
+    plain_data = Attribute("Plain Signed Text.")
+    
+
+class IPymeKey(Interface):
+    """pyME key model.""" 
+
+    fingerprint = Attribute("Key Fingerprint")
+    algorithm = Attribute("Key Algorithm")
+    revoked = Attribute("Key Revoked")
+    keysize = Attribute("Key Size")
+    keyid = Attribute("Pseudo Key ID (fpr last 8 digits)")
+    uids = Attribute("List containing only well formed and non-revoked UIDs")

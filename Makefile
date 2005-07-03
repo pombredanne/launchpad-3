@@ -27,7 +27,7 @@ check_merge: build importdcheck
 	# database.
 	env PYTHONPATH=$(PYTHONPATH) \
 	    ${PYTHON} -t ./test_on_merge.py -vv \
-		--dir hct --dir sourcerer --dir banzai
+		--dir hct --dir sourcerer
 	    $(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION}
 
@@ -91,9 +91,24 @@ ftest_inplace: inplace
 
 #ftest: ftest_inplace
 
-run: inplace
+run: inplace stop
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
 		 $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE)
+
+# Run as a daemon - hack using nohup until we move back to using zdaemon
+# properly. We also should really wait until services are running before 
+# exiting, as running 'make stop' too soon after running 'make start'
+# will not work as expected.
+start: inplace stop
+	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
+		 nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
+		 > ${LPCONFIG}-nohup.out 2>&1 &
+
+# Kill launchpad last - other services will probably shutdown with it,
+# so killing them after is a race condition.
+stop:
+	@ LPCONFIG=${LPCONFIG} ${PYTHON} \
+	    utilities/killservice.py librarian trebuchet launchpad
 
 debug:
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \

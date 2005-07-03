@@ -1,0 +1,23 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<div metal:fill-slot="body">
+  <h1>Bugs in <span tal:replace="context/title">Title</span></h1>
+
+  <div class="sidebar">
+    <tal:block content="structure context/@@+portlet-bugtask-listing-actions" />
+    <br />
+    <tal:block content="structure context/@@+portlet-bug-stats-for-context" />
+    <br />
+    <tal:block content="structure context/@@+portlet-release-bugs" />
+  </div>
+
+  <div metal:use-macro="context/@@bugtask_search_listing/buglisting" />
+</div>
+
+</body>
+</html>

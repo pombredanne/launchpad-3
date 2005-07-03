@@ -1,0 +1,60 @@
+  Change the owner of the mozilla firefox product.
+
+
+  Logged in as no-priv@canonical.com we can't do that, because he's not the
+  owner of the product nor a member of admins.
+
+  >>> print http(r"""
+  ... GET /projects/mozilla/firefox/+reassign HTTP/1.1
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 403 Forbidden
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+
+
+  Now we're logged in as mark@hbd.com and he's the owner of the admins team,
+  so he can do everything.
+
+  >>> print http(r"""
+  ... GET /projects/mozilla/firefox/+reassign HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...Current owner:...
+  ...
+  ...Change to:...
+  ...
+
+
+  Here he changes the owner to himself.
+
+  >>> print http(r"""
+  ... POST /projects/mozilla/firefox/+reassign HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... 
+  ... field.owner=sabdfl&existing=existing&CHANGE_OWNER=Change+Owner""")
+  HTTP/1.1 303 See Other
+  ... 
+  Location: .
+  ...
+
+
+  Here we see the new owner: Mark Shuttleworth
+
+  >>> print http(r"""
+  ... GET /projects/mozilla/firefox/ HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...Lead Maintainer:...
+  ...
+  ...Mark Shuttleworth...
+  ...

@@ -3,15 +3,16 @@
     metal:use-macro="context/@@launchpad_template/master"
     i18n:domain="doap">
 <body>
-
+  <metal:block fill-slot="titleheader">
+  The DOAP System in Launchpad
+  </metal:block>
   <div metal:fill-slot="main">
 
-    <h1>Welcome to Launchpad's DOAP Registry!</h1>
+    <h1>Welcome to the Launchpad Registry!</h1>
 
-    <p>This is the Description of a Project web service, where we catalogue
-    all the open source projects registered in The Launchpad. You can read
-    more about the "Description Of A Project" framework
-    <a href="+about">here</a>. We urge you to register your open source
+    <p>This is where we catalogue
+    all the open source projects registered in The Launchpad.
+    We urge you to register your open source
     project with The Launchpad.</p>
 
     <h2>Open Source Products</h2>
@@ -37,7 +38,7 @@
 
     <h2>Open Source Projects</h2>
 
-    <p>The DOAP system also knows about broader open source projects which
+    <p>The Registry also knows about broader open source projects which
     might be responsible for multiple products. For example, the Mozilla
     Project publishes several open source products, such as Thunderbird and
     Firefox and Sunbird, not to mention Gecko and other libraries. A Project

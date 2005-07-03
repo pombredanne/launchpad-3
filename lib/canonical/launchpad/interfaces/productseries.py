@@ -23,6 +23,8 @@ class IProductSeries(Interface):
     title = Attribute('Title')
     displayname = TextLine( title=_('Display Name'), required=True)
     summary = Text(title=_("Summary"), required=True)
+    datecreated = TextLine(title=_('Date Created'), description=_("""The
+        date this productseries was created in Launchpad."""))
     # convenient joins
     releases = Attribute("An iterator over the releases in this "
         "Series, sorted with latest release first.")
@@ -106,6 +108,9 @@ class IProductSeriesSource(Interface):
 
     def autoSyncEnabled():
         """is the series source enabled for automatic syncronisation?"""
+
+    def autoTestFailed():
+        """has the series source failed automatic testing by roomba?"""
     
     def namesReviewed():
         """Return True if the product and project details have been reviewed

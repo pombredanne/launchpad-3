@@ -7,12 +7,6 @@ BATCH_SIZE = 40
 
 class DistroArchReleaseView:
 
-    detailsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-distroarchrelease-details.pt')
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-distroarchrelease-actions.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request

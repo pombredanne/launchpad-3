@@ -1,0 +1,80 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com">
+
+    <securedutility
+        class="canonical.rosetta.RosettaApplication"
+        provides="canonical.launchpad.interfaces.IRosettaApplication">
+        <allow
+            interface="canonical.launchpad.interfaces.IRosettaApplication" />
+    </securedutility>
+
+    <browser:suburl
+        for="canonical.publication.RootObject"
+        utility="canonical.launchpad.interfaces.IRosettaApplication"
+        name="rosetta"
+        newlayer="canonical.launchpad.layers.RosettaLayer"
+        />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IRosettaApplication"
+        path_expression="string:rosetta"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IRosettaApplication"
+        name="+index"
+        />
+
+    <!-- This suburl of projectset under rosettaapp is deprecated. -->
+    <browser:suburl
+        for="canonical.launchpad.interfaces.IRosettaApplication"
+        utility="canonical.launchpad.interfaces.IProjectSet"
+        name="projects"
+        />
+
+    <!-- This suburl of productset under rosettaapp is deprecated. -->
+    <browser:suburl
+        for="canonical.launchpad.interfaces.IRosettaApplication"
+        utility="canonical.launchpad.interfaces.IProductSet"
+        name="products"
+        />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IRosettaApplication"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.RosettaApplicationView"
+        lp:url="Rosetta">
+        <browser:page
+            name="+index"
+            template="../templates/rosetta-index.pt"
+            lp:url="Rosetta/+index" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IRosettaApplication"
+        permission="zope.Public"
+        lp:url="Rosetta">
+        <browser:page
+            name="+about"
+            template="../templates/rosetta-about.pt"
+            lp:url="Rosetta/+about" />
+        <browser:page
+            name="+interest"
+            template="../templates/project-interest.pt"
+            lp:url="Rosetta/project/+interest" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IRosettaApplication"
+        permission="launchpad.AnyPerson"
+        class="canonical.launchpad.browser.RosettaPreferencesView" >
+        <browser:page
+            name="prefs"
+            template="../templates/rosetta-preferences.pt"
+            lp:url="Rosetta/prefs" />
+    </browser:pages>
+
+</configure>

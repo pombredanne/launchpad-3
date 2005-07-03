@@ -1,0 +1,231 @@
+
+Rosetta Translation Objects
+===========================
+
+This test demonstrates the complete hierarchy of Rosetta translation objects,
+from POTemplateName down to POTranslation.
+
+Get a PO template name. A PO template name groups together different PO
+templates which are translating the same resource.
+
+    >>> from canonical.launchpad.database import POTemplateName
+    >>> ptn = POTemplateName.byName('evolution-2.2')
+
+Get a PO template, and check its PO template name is the same as the one we
+got just now.
+
+    >>> from canonical.launchpad.database import POTemplate
+    >>> template = POTemplate.get(1)
+    >>> template.potemplatename == ptn
+    True
+
+Check that the import status of the PO template. It should be marked as
+already imported.
+
+    >>> template.rawimportstatus
+    <Item IMPORTED (3) from <class 'canonical.lp.dbschema.RosettaImportStatus'>>
+
+Check that the PO template has a certain message ID.
+
+    >>> from canonical.launchpad.database import POMsgID
+    >>> pomsgid = POMsgID.byMsgid('evolution addressbook')
+    >>> template.hasMessageID(pomsgid)
+    True
+
+Get a Spanish PO file for this PO template, and check its import status. It
+should be marked as awaiting import.
+
+    >>> pofile = template.getPOFileByLang('es')
+    >>> pofile.rawimportstatus
+    <Item PENDING (2) from <class 'canonical.lp.dbschema.RosettaImportStatus'>>
+
+Get a PO message set for a particular message and check it has a translation.
+
+    >>> pomsgset = pofile[u'evolution addressbook']
+    >>> pomsgset.active_texts
+    [u'libreta de direcciones de Evolution']
+
+Get a person to create a translation with.
+
+    >>> from canonical.launchpad.database import Person
+    >>> person = Person.get(1)
+
+Add a translation.
+
+    >>> translations = { 0: u'foo' }
+    >>> pomsgset.updateTranslationSet(person, translations, fuzzy=False,
+    ...                               published=False, is_editor=True)
+
+Check that this submission is now the active one for this msgset/pluralform
+
+    >>> submission = pomsgset.activeSubmission(0)
+    >>> submission.potranslation.translation == u'foo'
+    True
+
+Check that this submission is not the published one
+
+    >>> pomsgset.publishedSubmission(0) == submission
+    False
+
+Test the origin enum column.
+
+    >>> from canonical.lp.dbschema import RosettaTranslationOrigin
+    >>> submission.origin == RosettaTranslationOrigin.ROSETTAWEB
+    True
+
+Get a list of the translations again to check the new one has been added.
+
+    >>> pomsgset.active_texts
+    [u'foo']
+
+Now we want to test the interaction of the "published" translations with the
+"active translations". There are several things we want to be able to test.
+First, let's setup some useful variables.
+
+    >>> Pa = Person.get(50)
+    >>> Pb = Person.get(46)
+    >>> Pc = Person.get(16)
+
+Pa, Pb and Pc are three useful Person's.
+
+Let's pretend we've seen a new translation in the published PO files for
+this project from Pa.
+
+    >>> translations = { 0: u'bar' }
+    >>> pomsgset.updateTranslationSet(Pa, translations, fuzzy=False,
+    ...                               published=True, is_editor=True)
+    >>> submission = pomsgset.activeSubmission(0)
+
+Make sure that the new submission is in fact from Pa.
+
+    >>> submission.person == Pa
+    True
+
+Now let's test that this has become both active and published
+
+    >>> submission.potranslation.translation == u'bar'
+    True
+
+    >>> pomsgset.publishedSubmission(0) == submission
+    True
+
+Excellent. This shows that the code to make a new published translation
+active as soon as we see it is working.
+
+Now, let's add a translation from Pb, through the web.
+
+    >>> translations = { 0: u'baz' }
+    >>> pomsgset.updateTranslationSet(Pb, translations, fuzzy=False,
+    ...                               published=False, is_editor=True)
+    >>> web_submission = pomsgset.activeSubmission(0)
+
+Make sure the new submission is from Pb.
+
+    >>> web_submission.person == Pb
+    True
+
+This submission should now be active, but not published. When we get a new
+translation through the web, this updates the active selection but not the
+published selection.
+
+    >>> web_submission.potranslation.translation == u'baz'
+    True
+
+    >>> pomsgset.publishedSubmission(0) == web_submission
+    False
+
+In fact, the published submission should still be the original one, from Pa:
+
+    >>> pomsgset.publishedSubmission(0) == submission
+    True
+
+Now, let's see what happens if Pc submits exactly the same translation that
+Pb just did. We don't want to record this, because we have decided not to
+record a new submission of the EXISTING active or published record. In other
+words, if the current active translation is 'baz', and someone else comes
+along and says it's 'baz', we don't record anything new.
+
+    >>> translations = { 0: u'baz' }
+    >>> pomsgset.updateTranslationSet(Pc, translations, fuzzy=False,
+    ...                               published=False, is_editor=True)
+    >>> repeat_submission = pomsgset.activeSubmission(0)
+
+Since that is exactly what Pb already said, let's see that the submission we
+got back was the one from Pb not a new one for Pc:
+
+    >>> repeat_submission.person == Pb
+    True
+
+Now, let's test the NonEditorTranslations. These are translations submitted by
+people who do not have editorial rights on the pofile. We generally accept
+these but don't make them active.
+
+Here is our NonEditor:
+
+    >>> Pn = Person.get(51)
+    >>> Pn.name
+    u'kreutzm'
+
+Testing NoneEditorTranslations
+
+Let's see if there are any suggestions for this pomsgset. We are not
+expecting any.
+
+    >>> list(pomsgset.getSuggestedSubmissions(0))
+    []
+
+Let's make a submission from Pn  without editorial permissions, to the same
+msgset and plural form as above. First we will try and make it a published
+submission, and we expect to get an assertion error because we expect never
+to see a non-editor published submission.
+
+    >>> translations = { 0: u'bong' }
+    >>> pomsgset.updateTranslationSet(Pn, translations, fuzzy=False,
+    ...                               published=True, is_editor=False)
+    Traceback (most recent call last):
+    ...
+    AssertionError: published translations are ALWAYS is_editor
+
+Now let's try again, this time through the web:
+
+    >>> noneditor_submission = pomsgset.makeSubmission(
+    ...    Pn, u'bong', 0, published=False, is_editor=False)
+
+This submission should come from the new non-editor person:
+
+    >>> noneditor_submission.person == Pn
+    True
+
+And now we need to cheat, just a little bit. We need to
+pretend that the noneditor submission was made a few seconds AFTER the other
+one. Since both use the DEFAULT datecreated, which is NOW, and both are
+inside the same transaction, they APPEAR to have happened simultaneously.
+We need to nudge that, so we bump up the noneditor_submission.datecreated by
+a whole 2 seconds.
+
+    >>> import datetime
+    >>> noneditor_submission.datecreated += datetime.timedelta(0,2,0)
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
+Let's make sure:
+
+    >>> noneditor_submission.datecreated > pomsgset.activeSubmission(0).datecreated
+    True
+
+This new submission should not be active:
+
+    >>> pomsgset.activeSubmission(0) == noneditor_submission
+    False
+
+And it should definitely not be published:
+
+    >>> pomsgset.publishedSubmission(0) == noneditor_submission
+    False
+
+However, given NonEditorTranslations, this should be available as
+a suggested translation.
+
+    >>> pomsgset.getSuggestedSubmissions(0).count()
+    1
+

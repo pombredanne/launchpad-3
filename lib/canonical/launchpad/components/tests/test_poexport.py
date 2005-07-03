@@ -1,5 +1,10 @@
+# Copyright 2004-2005 Canonical Ltd. All rights reserved.
 
+__metaclass__ = type
+
+import pytz
 import unittest
+from datetime import datetime
 
 from canonical.launchpad.components.poexport import export_rows
 from canonical.launchpad.helpers import test_diff
@@ -9,6 +14,7 @@ class TestRow:
 
     def __init__(self, **kw):
         self.columns = {
+            'pofile': None,
             'variant': None,
             'isfuzzy': False,
             'poheader': 'Content-Type: text/plain; charset=UTF-8\n',
@@ -59,6 +65,8 @@ class ExportTest(unittest.TestCase):
                 test_diff(expected_pofiles[i], lines))
 
 class BasicExportTest(ExportTest):
+    """Test exporting various basic cases."""
+
     def runTest(self):
         prototype1 = TestRow(potemplate=1, language='es')
 
@@ -97,12 +105,12 @@ class BasicExportTest(ExportTest):
             prototype2.clone(potsequence=0, posequence=3, msgidpluralform=0,
                 translationpluralform=0, msgid='zot', translation='zat'),
 
-            # a c-format message
+            # A c-format message.
             prototype2.clone(potsequence=4, posequence=4, msgidpluralform=0,
                 translationpluralform=0, msgid='zip', translation='zap',
                 flagscomment=', c-format'),
 
-            # a message with various commenty things
+            # A message with various commenty things.
             prototype2.clone(potsequence=5, posequence=5, msgidpluralform=0,
                 translationpluralform=0, msgid='zog', translation='zug',
                 pocommenttext='tove\n', sourcecomment='borogove\n',
@@ -155,7 +163,11 @@ class BasicExportTest(ExportTest):
         self.test_export(rows, expected_pofiles)
 
 class EncodingExportTest(ExportTest):
+    """Test that PO headers specifying character sets are respected."""
+
     def runTest(self):
+        # This is the word 'Japanese' in Japanese, in Unicode.
+
         nihongo_unicode = u'\u65e5\u672c\u8a9e'
 
         # Rows representing the same PO file three times. Each is identical
@@ -206,6 +218,10 @@ class EncodingExportTest(ExportTest):
         self.test_export(rows, expected_pofiles)
 
 class IncompletePluralMessageTest(ExportTest):
+    """Test that plural message sets which are missing some translations are
+    correctly exported.
+    """
+
     def runTest(self):
         prototype = TestRow(
             potemplate=1,
@@ -241,11 +257,108 @@ class IncompletePluralMessageTest(ExportTest):
 
         self.test_export(rows, expected_pofiles)
 
+class InactiveTranslationTest(ExportTest):
+    """Test that inactive translations do not get exported."""
+
+    def runTest(self):
+        prototype = TestRow(
+            potemplate=1,
+            language='es',
+            msgidpluralform=0,
+            translationpluralform=0)
+
+        rows = [
+            prototype.clone(potsequence=1, posequence=1, msgid="one",
+                translation="uno"),
+            prototype.clone(potsequence=2, posequence=2, msgid="two",
+                translation="dos", activesubmission=None),
+            prototype.clone(potsequence=3, posequence=3, msgid="three",
+                translation="tres"),
+        ]
+
+        expected_pofiles = [[
+            'msgid ""',
+            'msgstr ""',
+            '"Content-Type: text/plain; charset=UTF-8\\n"',
+            '',
+            'msgid "one"',
+            'msgstr "uno"',
+            '',
+            'msgid "two"',
+            'msgstr ""',
+            '',
+            'msgid "three"',
+            'msgstr "tres"',
+        ]]
+
+        self.test_export(rows, expected_pofiles)
+
+class HeaderUpdateTest(ExportTest):
+    """Test that headers get updated properly."""
+
+    def runTest(self):
+        # Create a mock PO file with a mock last submission with a mock person
+        # with a mock email address.
+
+        class Mock:
+            def __init__(self, **kw):
+                self.__dict__.update(kw)
+
+        mock_email = Mock(
+            email='kk@pleasure-dome.com')
+        mock_person = Mock(
+            browsername='Kubla Kahn',
+            preferredemail=mock_email,
+            isTeam=lambda: False)
+        mock_submission = Mock(
+            person=mock_person,
+            datecreated = datetime.fromtimestamp(
+                1000000000, pytz.timezone('UTC')))
+        mock_pofile = Mock(
+            latest_submission=mock_submission)
+
+        # The existing header has both fields that should be preserved and
+        # fields that need updating.
+
+        test_row = TestRow(
+            potemplate=1,
+            potsequence=1,
+            posequence=1,
+            language='es',
+            msgid='foo',
+            translation='bar',
+            msgidpluralform=0,
+            translationpluralform=0,
+            pofile=mock_pofile,
+            poheader=(
+                'Project-Id-Version: foo\n'
+                'Content-Type: text/plain; charset=UTF-8\n'
+                'Last-Translator: Aleister Crowley <crowley@golden-dawn.org>\n'
+                'PO-Revision-Date: 1947-12-01 20:21+0100\n'
+                'Language-Team: Spanish <es@li.org>\n'))
+
+        expected_pofiles = [[
+            'msgid ""',
+            'msgstr ""',
+            '"Project-Id-Version: foo\\n"',
+            '"Content-Type: text/plain; charset=UTF-8\\n"',
+            '"Last-Translator: Kubla Kahn <kk@pleasure-dome.com>\\n"',
+            '"PO-Revision-Date: 2001-09-09 01:46+0000\\n"',
+            '"Language-Team: Spanish <es@li.org>\\n"',
+            '',
+            'msgid "foo"',
+            'msgstr "bar"',
+        ]]
+
+        self.test_export([test_row], expected_pofiles)
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(BasicExportTest())
     suite.addTest(EncodingExportTest())
     suite.addTest(IncompletePluralMessageTest())
+    suite.addTest(InactiveTranslationTest())
+    suite.addTest(HeaderUpdateTest())
     return suite
 
 if __name__ == '__main__':

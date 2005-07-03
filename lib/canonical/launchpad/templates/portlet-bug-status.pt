@@ -1,0 +1,33 @@
+<div class="portlet">
+  <h4>bug status:</h4>
+
+  <div class="portletBody"
+       tal:define="bug context/bug">
+    <div class="portletContent odd">
+<!-- XXX: Brad Bollenbach, 2005-06-01: Remove this, says the sabdfl
+    <b>Visibility:</b><br />
+      <tal:publicbug tal:condition="not:bug/private">
+          Public<br />
+          <tal:block content="structure view/makeprivate_widget" />
+          <tal:block content="view/makeprivate_widget/label" />
+      </tal:publicbug>
+-->
+      <b tal:content="string:Viewing status of bug #${context/bug/id} in:">
+        Viewing status of bug #42 in
+      </b><br />
+      <a href=""
+         style="text-decoration: underline"
+         tal:content="context/contextname">
+        Mozilla Firefox
+      </a>
+      <br /><br />
+
+      <b tal:content="string:Reported in ${context/contextname} on:">Reported in Mozilla Firefox on:</b><br />
+      <tal:block content="context/datecreated/fmt:datetime" /><br />
+      by <a href="#"
+            tal:attributes="href string:/people/${context/owner/browsername}"
+            tal:content="context/owner/browsername"
+            style="text-decoration: underline"></a>
+    </div>
+  </div>
+</div>

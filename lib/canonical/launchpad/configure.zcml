@@ -7,7 +7,6 @@
   <include file="links.zcml" />
   <include package="canonical.launchpad.zcml" />
   <authorizations module="canonical.launchpad.security" />
-  <include file="robots.zcml" />
 
   <browser:suburl
     for="canonical.publication.RootObject"
@@ -15,12 +14,22 @@
     utility="canonical.launchpad.interfaces.IProductSet"
     permission="zope.Public"
     />
+  <browser:url
+    for="canonical.launchpad.interfaces.IProductSet"
+    path_expression="string:products"
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    />
 
   <browser:suburl
     for="canonical.publication.RootObject"
     name="people"
     utility="canonical.launchpad.interfaces.IPersonSet"
     permission="zope.Public"
+    />
+  <browser:url
+    for="canonical.launchpad.interfaces.IPersonSet"
+    path_expression="string:people"
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
   <browser:suburl
@@ -30,12 +39,22 @@
     utility="canonical.launchpad.interfaces.IDistributionSet"
     permission="zope.Public"
     />
+  <browser:url
+    for="canonical.launchpad.interfaces.IDistributionSet"
+    path_expression="string:distros"
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    />
 
   <browser:suburl
     for="canonical.publication.RootObject"
     name="sourcepackagenames"
     utility="canonical.launchpad.interfaces.ISourcePackageNameSet"
     permission="zope.Public"
+    />
+  <browser:url
+    for="canonical.launchpad.interfaces.ISourcePackageNameSet"
+    path_expression="string:sourcepackagenames"
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
   <browser:suburl
@@ -44,12 +63,22 @@
     utility="canonical.launchpad.interfaces.IBinaryPackageNameSet"
     permission="zope.Public"
     />
+  <browser:url
+    for="canonical.launchpad.interfaces.IBinaryPackageNameSet"
+    path_expression="string:binarypackagenames"
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    />
 
   <browser:suburl
     for="canonical.publication.RootObject"
     name="projects"
     utility="canonical.launchpad.interfaces.IProjectSet"
     permission="zope.Public"
+    />
+  <browser:url
+    for="canonical.launchpad.interfaces.IProjectSet"
+    path_expression="string:projects"
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
   <browser:suburl
@@ -58,12 +87,29 @@
     utility="canonical.launchpad.interfaces.ILoginTokenSet"
     permission="zope.Public"
     />
+  <browser:url
+    for="canonical.launchpad.interfaces.ILoginTokenSet"
+    path_expression="string:token"
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    />
+
+  <browser:suburl
+    for="canonical.publication.RootObject"
+    name="karmaaction"
+    utility="canonical.launchpad.interfaces.IKarmaActionSet"
+    permission="launchpad.Admin"
+    />
 
   <browser:suburl
     for="canonical.publication.RootObject"
     name="potemplatenames"
     utility="canonical.launchpad.interfaces.IPOTemplateNameSet"
     permission="launchpad.Edit"
+    />
+  <browser:url
+    for="canonical.launchpad.interfaces.IPOTemplateNameSet"
+    path_expression="string:potemplatenames"
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
   <!-- legal link -->
@@ -73,5 +119,17 @@
     template="templates/launchpad-legal.pt"
     permission="zope.Public"
     />
+
+  <!-- RDF downloadable documents -->
+  <browser:page
+    for="canonical.publication.RootObject"
+    name="rdf"
+    template="templates/rdf-index.pt"
+    permission="zope.Public"
+    />
+
+  <browser:resourceDirectory
+    name="rdf"
+    directory="rdfspec" />
 
 </configure>

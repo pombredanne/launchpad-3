@@ -3,11 +3,9 @@ allowed to view the task page because he is explicitly subscribed to
 the bug.
 
   >>> print http(r"""
-  ... GET /malone/tasks/16/+edit HTTP/1.1
+  ... GET /products/firefox/+bugs/7/+edit HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...
-  <h1>this is a private bug</h1>
   ...

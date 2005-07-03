@@ -1,0 +1,323 @@
+Malone's Email Interface
+========================
+
+You may interface with Malone via email. All mail sent have to be GPG
+signed, so that the user can be authenticated.
+
+For a description of all the commands, please see
+https://wiki.launchpad.canonical.com/MaloneCommandInterface.
+
+Not all commands are yet implemented. Currently the following commands
+are available:
+   
+   bug $bugid-- Indicate which bug you want to edit.
+   private yes|no -- Make the bug private/public
+   subscribe [$name|$email] [CC/Watch/Ignore] -- Subscribe to the bug.
+   affects $path [assignee $name|$email] [status $status]
+
+All the commands have to be indented to differ them from the comment,
+and each command has to be on a single line, except for the 'affects'
+command, which can be split on several lines.
+
+XXX: Add tests for non-ascii mails.
+     -- Bjorn Tillenius, 2005-05-20
+
+Submit a new bug on a product
+-----------------------------
+
+You can send an email to submit@bugs.launchpad.ubuntu.com in order to
+submit a new bug. The email has to contain one or more commands
+describing the bug. The only mandatory command is 'affects', which
+specifies in which distribution or product the bug occurs in.
+
+For example, to submit a bug on Firefox, an email like this would be
+sent:
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: new@bugs.launchpad.ubuntu.com
+    ... Subject: A bug in Firefox
+    ... 
+    ... There is a bug in Firefox.
+    ...
+    ...  affects /products/firefox"""
+
+Now, in order to really submit the bug, this email would have to be PGP
+signed, so that the system can verify the sender. But to avoid having
+to sign each email, we'll create a class which fakes a signed email:
+
+    >>> import email
+    >>> import email.Utils
+    >>> class SignedMessage(email.Message.Message):
+    ...     def signedMessage(self):
+    ...         return self
+    ...     signedMessage = property(signedMessage) 
+        
+And since we'll pass the email directly to the correct handler,
+we'll have to authenticate the user manually:
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login('test@canonical.com')
+
+Now if we pass the message to the Malone handler, we can see that the
+bug got submitted correctly:
+
+    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+    >>> from canonical.launchpad.mail.handlers import MaloneHandler
+    >>> handler = MaloneHandler()
+    >>> def process_email(raw_mail): 
+    ...     msg = email.message_from_string(raw_mail, _class=SignedMessage)
+    ...     if not msg.has_key('Message-Id'):
+    ...         msg['Message-Id'] = email.Utils.make_msgid()
+    ...     handler.process(msg, msg['To'])
+    >>> LibrarianTestSetup().setUp()
+
+    >>> process_email(submit_mail)
+
+    >>> import transaction
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from canonical.launchpad.mail import stub
+    >>> def get_latest_added_bug():
+    ...     transaction.commit() # Need to commit for the email to be sent.
+    ...     from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    ...     msg = email.message_from_string(raw_message)
+    ...     bug_nr = int(msg['Subject'].split()[1][:-1])
+    ...     return getUtility(IBugSet).get(bug_nr)
+    >>> bug = get_latest_added_bug() 
+
+    >>> print bug.title
+    A bug in Firefox
+    >>> print bug.description
+    There is a bug in Firefox.
+    <BLANKLINE>
+     affects /products/firefox
+
+Also, an upstream bug task was added to it:
+
+    >>> len(bug.bugtasks)
+    1
+    >>> upstream_task = bug.bugtasks[0]
+    >>> print upstream_task.product.name
+    firefox
+
+And the entire body of the email was added as a comment:
+
+    >>> len(bug.messages)
+    1
+    >>> comment = bug.messages[0]
+    >>> print comment.title
+    A bug in Firefox
+    >>> print comment.contents
+    There is a bug in Firefox.
+    <BLANKLINE>
+     affects /products/firefox
+
+The owner of the bug was set to the submitter:
+
+    >>> print bug.owner.displayname
+    Sample Person
+
+You can also make some modifications to the added bug by give some
+additional commands when submitting the bug. To assign someone to the
+upstream task and to make the bug private, you would send the following
+email:
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: new@bugs.canonical.com
+    ... Subject: A bug in Firefox, Foo Bar will fix it
+    ...
+    ...  private yes
+    ...
+    ... There's a bug in Firefox, which Foo Bar will take care of.
+    ...
+    ...  affects /products/firefox assignee name16 
+    ...  """
+    >>> process_email(submit_mail)
+    >>> bug = get_latest_added_bug()
+    >>> print bug.title
+    A bug in Firefox, Foo Bar will fix it
+    >>> bug.private
+    True
+    >>> upstream_task = bug.bugtasks[0]
+    >>> print upstream_task.assignee.name
+    name16
+
+
+In order to submit a bug on a distribution, we do exactly the same as
+above, specifying a path to a distribution instead of a product. Here
+we also specify a source package directly:
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: new@bugs.canonical.com
+    ... Subject: A bug in Debian's Evolution package
+    ... 
+    ... There's a bug in Debian.
+    ...  affects /distros/debian/evolution
+    ... """
+    >>> process_email(submit_mail)
+    >>> bug = get_latest_added_bug() 
+
+    >>> print bug.title
+    A bug in Debian's Evolution package
+
+    >>> distrotask = bug.bugtasks[0]
+    >>> print distrotask.distribution.name
+    debian
+    >>> print distrotask.sourcepackagename.name
+    evolution
+
+
+Add a comment
+-------------
+
+After a bug has been submitted a notification is sent out. The reply-to
+address is set to the bug address, $bugid@bugs.launchpad.ubuntu.com. We
+can send emails to this address in order to add new comments to the
+bug. If the In-Reply-To or References header is set to the
+notification's message id, the new comment will properly be threaded as
+a reply to the notification.
+
+    >>> from canonical.launchpad.interfaces import IBugSet, IMessageSet
+    >>> bugset = getUtility(IBugSet)
+    >>> bug = bugset.get(1)
+    >>> bug_message = bug.messages[0]
+    >>> comment_mail = """From: test@canonical.com
+    ... To: 1@malone
+    ... In-Reply-To: %s
+    ... Message-Id: <test1>
+    ... Subject: New comment to bug 1
+    ...
+    ... This is a reply to an existing comment.
+    ... """ % str(bug_message.rfc822msgid)
+
+    >>> process_email(comment_mail)
+    >>> transaction.commit()
+    >>> added_message = getUtility(IMessageSet).get('<test1>')
+
+    >>> added_message in bug.messages
+    True
+    >>> added_message.parent == bug_message
+    True
+
+
+XXX: Write explanation and fix this test when BugNotificationsThreading
+     has been completed. -- Bjorn Tilllenius, 2005-05-31
+    
+    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    >>> notification = email.message_from_string(raw_message)
+
+    >>> notification_reply = """From: test@canonical.com
+    ... To: 1@malone
+    ... In-Reply-To: %s
+    ... Message-Id: <test2>
+    ... Subject: Reply to previous comment
+    ...
+    ... > This is a reply to an existing comment.
+    ... This is a reply to the comment above.
+    ... """ % notification['Message-Id']
+
+    >>> process_email(notification_reply)
+    >>> transaction.commit()
+    >>> added_message_reply = getUtility(IMessageSet).get('<test2>')
+
+    XXX: The following test should pass. I'll fix it after
+         BugAddNotifications.
+         --- Bjorn Tillenius, 2005-05-24
+    XXX added_message_reply.parent == added_message
+    True
+
+As when submitting bugs, we can also include commands in the comment.
+Note that we can edit more than one bug in the same email, by using the
+'bug' command to switch bug context:
+
+    >>> comment_edit = """From: test@canonical.com
+    ... To: 4@malone
+    ... Subject: Don't tell anyone about his bug.
+    ...
+    ...   private yes
+    ...   subscribe name16 watch
+    ...   subscribe name12 watch
+    ...   affects /products/firefox
+    ...   status accepted
+    ...  """
+
+    >>> process_email(comment_edit)
+    >>> transaction.commit()
+
+    >>> bug_four = bugset.get(4)
+    >>> bug_four.private
+    True
+
+    >>> subscriptions = [(subscription.person.name,
+    ...                   subscription.subscription.name)
+    ...                  for subscription in bug_four.subscriptions]
+    >>> subscriptions.sort()
+    >>> subscriptions
+    [(u'name12', 'WATCH'), (u'name16', 'WATCH')]
+
+    >>> len(bug_four.bugtasks)
+    1
+    >>> bug_task = bug_four.bugtasks[0]
+    >>> print bug_task.status.name
+    ACCEPTED
+    
+
+Error Handling
+--------------
+
+If an error is encountered, an email is sent to the sender informing
+him about the error. Let's start by trying to submit a bug without
+including an 'affects' command:
+
+    >>> submit_mail_no_bugtask = """From: test@canonical.com
+    ... To: new@malone
+    ... Subject: A bug without a product or distribution
+    ...
+    ... There's a nasty bug in Evolution."""
+    >>> process_email(submit_mail_no_bugtask)
+
+No bug was created, instead an error mail was sent to the submitter:
+
+    >>> transaction.commit()
+    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    >>> error_mail = email.message_from_string(raw_message)
+    >>> print error_mail['Subject']
+    Submit Request Failure
+
+    >>> print to_addrs
+    ['test@canonical.com']
+
+    >>> print error_mail.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    An error...
+    ...
+    Error message:
+    ...
+    The bug has to affect at least one product or distribution.
+    ...
+
+Now we try to submit a bug on a distribution that doesn't exist:
+   
+    >>> submit_mail_distro_not_found = """From: test@canonical.com
+    ... To: new@malone
+    ... Subject: A bug with a non existing distribution
+    ...
+    ... There's a nasty bug in Foo.
+    ...  affects /distros/foo"""
+    >>> process_email(submit_mail_distro_not_found)
+   
+Again no bug was filed, and an error mail was sent:
+
+    >>> transaction.commit()
+    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    >>> error_mail = email.message_from_string(raw_message)
+   
+    >>> print error_mail.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    An error...
+    ...
+    Error message:
+    ...
+    'foo' couldn't be found in command 'affects /distros/foo'
+    ...
+   
+    >>> LibrarianTestSetup().tearDown()
+
+

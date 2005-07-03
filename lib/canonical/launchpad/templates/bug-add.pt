@@ -5,8 +5,6 @@
 
   <body>
 
-  <!-- This page uses the launchpad-addform.pt METAL -->
-
   <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
@@ -17,8 +15,7 @@
 
         <div metal:fill-slot="extra_info" class="formHelp">
             Bug reports provide valuable information to developers who maintain
-            and improve software. Before you report a bug, please ensure that it
-            hasn't <a href="/malone/bugs">already been reported</a>.
+            and improve software.
         <br />
         <br />
         </div>

@@ -43,3 +43,12 @@ class ILanguageSet(Interface):
 
     def keys():
         """Return an iterator over the language codes."""
+
+    def canonicalise_language_code(code):
+        """Convert a language code to standard xx_YY form."""
+
+    def codes_to_languages(codes):
+        """Convert a list of ISO language codes to language objects.
+
+        Unrecognised language codes are ignored.
+        """

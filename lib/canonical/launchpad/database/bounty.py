@@ -61,7 +61,7 @@ class Bounty(SQLBase):
         # first see if a relevant subscription exists, and if so, update it
         for sub in self.subscriptions:
             if sub.person.id == person.id:
-                sub.subscription = int(subscription)
+                sub.subscription = subscription
                 return sub
         # since no previous subscription existed, create a new one
         return BountySubscription(

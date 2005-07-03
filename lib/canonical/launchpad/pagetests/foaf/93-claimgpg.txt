@@ -1,0 +1,113 @@
+ Setup the stub KeyServer
+
+  >>> from canonical.zeca.ftests.harness import ZecaTestSetup
+  >>> z = ZecaTestSetup()
+  >>> z.setUp()
+  
+ Clean page
+
+  >>> print http(r"""
+  ... GET /foaf/people/cprov/+editgpgkey HTTP/1.1
+  ... Authorization: Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206emVjYQ==
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+    <head>
+      <title>Celso Providelo GPG Keys</title>
+  ...
+
+  Claim GPG Key
+
+  attempt to the elide between the UIDs, it's there because the 
+  http://sks.keyserver.penguin.de:11371 keyserver insists in show my
+  revoked UID (cprov@terra.com) what isn't true in the Zeca or other 
+  servers (mostly because they have a "revoked" argument)
+
+  >>> print http(r"""
+  ... POST /people/cprov/+editgpgkey HTTP/1.1
+  ... Authorization: Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206emVjYQ==
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... action=claim_gpg&fingerprint=C85826521A6EF6A6037BB3F79FF2583E681B6469""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...Key 1024D/681B6469 was claimed, sending email to : cprov@async.com.br cprov@canonical.com cprov@gnusp.org cprov@gwyddion.com...cprov@ubuntu.com...
+  ...  
+
+  Recover Token URL
+
+  >>> import email, re
+  >>> from canonical.launchpad.mail import stub
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> msg = email.message_from_string(raw_msg)
+  >>> body = msg.get_payload()
+  >>> link = re.findall(r'http.*/token/.*', body)[0]
+  >>> token = re.sub(r'.*token/', '', link)
+  >>> base_path = '/token/%s' % token
+
+
+  Go to the link sent by email, to validate the email address.
+
+  >>> print http(r"""
+  ... GET %s HTTP/1.1
+  ... Authorization: Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206emVjYQ==
+  ... """ % base_path)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...<h1>You're being redirected</h1>
+  ...
+
+  Get Redirected
+
+  >>> path = '%s/+validateuid' % base_path
+  >>> print http(r"""
+  ... GET %s HTTP/1.1
+  ... Authorization: Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206emVjYQ==
+  ... """ % path)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+
+  Validate UID and consequently import the Key.
+
+  >>> print http(r"""
+  ... POST %s HTTP/1.1
+  ... Authorization: Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206emVjYQ==
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... password=zeca&SUBMIT_CHANGES=Submit""" % path)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...GPG key C85826521A6EF6A6037BB3F79FF2583E681B6469 successfully imported...
+  ...
+
+ Certify the key is imported
+
+  >>> print http(r"""
+  ... GET /foaf/people/cprov/+editgpgkey HTTP/1.1
+  ... Authorization: Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206emVjYQ==
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+    <head>
+      <title>Celso Providelo GPG Keys</title>
+  ...
+  ...1024D/681B6469...
+
+
+  Kill stub KeyServer
+  
+  >>> z.tearDown()

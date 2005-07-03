@@ -41,16 +41,16 @@ __all__ = (
 'CodereleaseRelationships',
 'DistributionReleaseStatus',
 'EmailAddressStatus',
-'HashAlgorithms',
+'HashAlgorithm',
 'ImportTestStatus',
-'KarmaType',
+'KarmaActionCategory',
 'LoginTokenType',
 'ManifestEntryType',
 'PackagePublishingPriority',
 'PackagePublishingStatus',
 'PackagePublishingPocket',
 'PackagingType',
-'GPGKeyAlgorithms',
+'GPGKeyAlgorithm',
 'ProjectRelationship',
 'ProjectStatus',
 'RevisionControlSystems',
@@ -66,6 +66,7 @@ __all__ = (
 'TeamSubscriptionPolicy',
 'TranslationPriority',
 'TranslationPermission',
+'TranslationValidationStatus',
 'DistroReleaseQueueStatus',
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
@@ -450,7 +451,7 @@ class PackagingType(DBSchema):
 ##XXX: (gpg+dbschema) cprov 20041004
 ## the data structure should be rearranged to support 4 field
 ## needed: keynumber(1,16,17,20), keyalias(R,g,D,G), title and description
-class GPGKeyAlgorithms(DBSchema):
+class GPGKeyAlgorithm(DBSchema):
     """
     GPG Compilant Key Algorithms Types:
 
@@ -690,7 +691,7 @@ class TeamSubscriptionPolicy(DBSchema):
         """)
 
 
-class HashAlgorithms(DBSchema):
+class HashAlgorithm(DBSchema):
     """Hash Algorithms
 
     We use "hash" or "digest" cryptographic algorithms in a number of
@@ -1387,32 +1388,32 @@ class BinaryPackagePriority(DBSchema):
     specific priority. This schema documents the priorities that Launchpad
     knows about.  """
 
-    REQUIRED = Item(1, """
+    REQUIRED = Item(10, """
         Required Package
 
         This package is required for the distribution to operate normally.
         Usually these are critical core packages that are essential for the
         correct operation of the operating system.  """)
 
-    IMPORTANT = Item(2, """
+    IMPORTANT = Item(20, """
         Important
 
         This package is important, and should be installed under normal
         circumstances.  """)
 
-    STANDARD = Item(3, """
+    STANDARD = Item(30, """
         Standard
 
         The typical install of this distribution should include this
         package.  """)
 
-    OPTIONAL = Item(4, """
+    OPTIONAL = Item(40, """
         Optional
 
         This is an optional package in this distribution.
         """)
 
-    EXTRA = Item(5, """
+    EXTRA = Item(50, """
         Extra
 
         This is an extra package in this distribution. An "extra" package
@@ -1949,52 +1950,101 @@ class RosettaImportStatus(DBSchema):
         """)
 
 
-class KarmaType(DBSchema):
-    # If you add a new Item here, please remember to add it to 
-    # canonical.launchpad.database.person.KARMA_POINTS too. 
-    # XXX: This KarmaType is a good candidate for leaving dbschema and
-    # get into the database.
-    """Karma Field
+class KarmaActionName(DBSchema):
+    """The name of an action that gives karma to a user."""
 
-    This schema documents the different kinds of Karma that can be
-    assigned to a person. A person have a list of assigned Karmas and
-    each of these Karmas have a KarmaType.
+    BUGCREATED = Item(1, """
+        New Bug Created
+
+        New Bug Created.
+        """)
+
+    BUGCOMMENTADDED = Item(2, """
+        New Comment
+     
+        New Comment
+        """)
+
+    BUGTITLECHANGED = Item(3, """
+        Bug Title Changed
+      
+        Bug Title Changed
+        """)
+
+    BUGSUMMARYCHANGED = Item(4, """
+        Bug Summary Changed
+       
+        Bug Summary Changed
+        """)
+
+    BUGDESCRIPTIONCHANGED = Item(5, """
+        Bug Description Changed
+        
+        Bug Description Changed
+        """)
+
+    BUGEXTREFCHANGED = Item(6, """
+        Bug External Reference Changed
+  
+        Bug External Reference Changed
+        """)
+
+    BUGCVEREFCHANGED = Item(7, """
+        Bug CVE Reference Changed
+   
+        Bug CVE Reference Changed
+        """)
+
+    BUGFIXED = Item(8, """
+        Bug Status Changed to FIXED
+    
+        Bug Status Changed to FIXED
+        """)
+
+    BUGTASKCREATED = Item(9, """
+        New Bug Task Created
+     
+        New Bug Task Created
+        """)
+
+
+class KarmaActionCategory(DBSchema):
+    """The class of an action that gives karma to a user.
+
+    This schema documents the different classes of actions that can result
+    in Karma assigned to a person. A person have a list of assigned Karmas,
+    each of these Karma entries have a KarmaAction and each of these actions
+    have a Class, which is represented by one of the following items.
     """
 
-    WIKI_EDIT = Item(1, """
-        Wiki Page Edited
+    MISC = Item(1, """
+        Miscellaneous
 
-        User edited a Wiki page.
+        Any action that doesn't fit into any other class.
     """)
 
-    WIKI_CREATE = Item(2, """
-        New Wiki Page
+    BUGS = Item(2, """
+        Bugs
 
-        User created a new page in the Wiki.
+        All actions related to bugs.
     """)
 
-    BUG_COMMENT = Item(3, """
-        New Comment on Bug
+    TRANSLATIONS = Item(3, """
+        Translations
 
-        User posted a comment on the bug's discussion forum.
+        All actions related to translations.
     """)
 
-    BUG_REPORT = Item(4, """
-        Bug Report
+    BOUNTIES = Item(4, """
+        Bounties
 
-        User reported a new bug.
+        All actions related to bounties.
     """)
 
-    BUG_FIX = Item(5, """
-        Bug Fix
+    HATCHERY = Item(5, """
+        Hatchery
 
-        User provided a patch to fix a bug.
-    """)
-
-    PACKAGE_UPLOAD = Item(6, """
-        Package Uploaded
-
-        User uploaded a new package to the system.
+        All actions related to the Hatchery.
     """)
 
 
@@ -2061,6 +2111,13 @@ class LoginTokenType(DBSchema):
         address for the team, but this address need to be validated first.
         """)
 
+    VALIDATEGPGUID = Item(6, """
+        Validate GPG key User ID
+
+        A user has submited a new GPG key and , consequently, its User.ids
+        as new email addresses to his account and they need to be validated.
+        """)
+
 
 class BuildStatus(DBSchema):
     """Build status type
@@ -2124,3 +2181,80 @@ class MirrorFreshness(DBSchema):
 
         The Freshness was never verified and is unknown.
         """)
+
+class RosettaFileFormat(DBSchema):
+    """Rosetta File Format
+
+    This is an enumeration of the different sorts of file that Rosetta can
+    export.
+    """
+
+    PO = Item(1, """
+        PO format
+
+        Gettext's standard text file format.
+        """)
+
+    MO = Item(2, """
+        MO format
+
+        Gettext's standard binary file format.
+        """)
+
+    XLIFF = Item(3, """
+        XLIFF
+
+        OASIS's XML Localisation Interchange File Format.
+        """)
+
+    CSHARP_DLL = Item(4, """
+        .NET DLL
+
+        The dynamic link library format as used by programs that use the .NET
+        framework.
+        """)
+
+    CSHARP_RESOURCES = Item(5, """
+        .NET resource file
+
+        The resource file format used by programs that use the .NET framework.
+        """)
+
+    TCL = Item(6, """
+        TCL format
+
+        The .msg format as used by TCL/msgcat.
+        """)
+
+    QT = Item(7, """
+        QT format
+
+        The .qm format as used by programs using the QT toolkit.
+        """)
+
+class TranslationValidationStatus(DBSchema):
+    """Translation Validation Status
+
+    Every time a translation is added to Rosetta we should checked that
+    follows all rules to be a valid translation inside a .po file.
+    This schema documents the status of that validation.
+    """
+
+    UNKNOWN = Item(0, """
+        Unknown
+
+        This translation has not been validated yet.
+        """)
+
+    OK = Item(1, """
+        Ok
+
+        This translation has been validated and no errors were discovered.
+        """)
+
+    UNKNOWNERROR = Item(2, """
+        Unknown Error
+
+        This translation has an unknown error.
+        """)
+

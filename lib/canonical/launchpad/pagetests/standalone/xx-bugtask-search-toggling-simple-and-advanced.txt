@@ -1,0 +1,74 @@
+When viewing the distribution bug tasks page, you see a button named
+"Advanced".
+
+  >>> print http(r"""
+  ... GET /distros/debian/+bugs HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+      <input type="submit" name="advanced" value="Advanced" />
+  ...
+
+Clicking "Advanced" will render the advanced search form, and the
+button that was labelled "Advanced" now changes to "Simple".
+
+  >>> print http(r"""
+  ... GET /distros/debian/+bugs?field.searchtext=&advanced=Advanced&advanced=&status=10&status=20&assignee=all HTTP/1.1
+  ... Referer: http://localhost:9000/distros/debian/+bugs
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+      <input type="submit" name="simple_submit" value="Simple" />
+  ...
+  ...Advanced Search Criteria...
+  ...
+
+Clicking "Simple" will remove the advanced search form, and change the
+button labelled "Simple" back to "Advanced".
+
+  >>> print http(r"""
+  ... GET /distros/debian/+bugs?field.searchtext=&simple_submit=Simple&advanced=%5Bu%27Advanced%27%2C+u%27%27%5D&field.status%3Alist=New&field.status%3Alist=Accepted&field.status-empty-marker=1&field.severity-empty-marker=1&field.assignee=&field.unassigned.used= HTTP/1.1
+  ... Referer: http://localhost:9000/distros/debian/+bugs?field.searchtext=&advanced=Advanced&advanced=&status=10&status=20&assignee=all
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+      <input type="submit" name="advanced" value="Advanced" />
+  ...
+
+The same is true, of course, for the upstream context.
+
+Initially the button is labelled "Advanced".
+
+  >>> print http(r"""
+  ... GET /products/firefox/+bugs HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+      <input type="submit" name="advanced" value="Advanced" />
+  ...
+
+Click it and it turns to "Simple" while showing the advanced search
+form.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+bugs?field.searchtext=&advanced=Advanced&advanced=&status=10&status=20&assignee=all HTTP/1.1
+  ... Referer: http://localhost:9000/distros/debian/+bugs
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+      <input type="submit" name="simple_submit" value="Simple" />
+  ...
+  ...Advanced Search Criteria...
+  ...
+
+Click "Simple" and the advanced search form goes away. The "Simple"
+button turns back into an "Advanced" button.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+bugs?field.searchtext=&simple_submit=Simple&advanced=%5Bu%27Advanced%27%2C+u%27%27%5D&field.status%3Alist=New&field.status%3Alist=Accepted&field.status-empty-marker=1&field.severity-empty-marker=1&field.assignee=&field.unassigned.used= HTTP/1.1
+  ... Referer: http://localhost:9000/distros/debian/+bugs?field.searchtext=&advanced=Advanced&advanced=&status=10&status=20&assignee=all
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+      <input type="submit" name="advanced" value="Advanced" />
+  ...

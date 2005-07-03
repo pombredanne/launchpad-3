@@ -13,7 +13,6 @@ from canonical.database.sqlbase import quote
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.database import Product
 from importd.Job import Job
-from canonical.lp import initZopeless
 import canonical
 
 import pybaz
@@ -32,7 +31,6 @@ class Doer(object):
         handler=logging.StreamHandler()
         handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
         self.logger.addHandler(handler)
-        initZopeless()
 
     def makeJob(self, productName, seriesName):
         """Create the Job object from the source source name (packagename)."""

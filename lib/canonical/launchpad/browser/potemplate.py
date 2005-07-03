@@ -1,6 +1,14 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""Browser code for PO templates."""
+
 __metaclass__ = type
+
+__all__ = [
+    'POTemplateSubsetView', 'POTemplateView', 'POTemplateEditView',
+    'POTemplateAdminView', 'POTemplateAddView', 'BaseExportView',
+    'POTemplateExportView', 'POTemplateTranslateView',
+    'POTemplateAbsoluteURL', 'POTemplateSubsetURL', 'POTemplateURL']
 
 import tarfile
 from sets import Set
@@ -8,18 +16,21 @@ from StringIO import StringIO
 from datetime import datetime
 
 from zope.component import getUtility
+from zope.interface import implements
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.i18n import ZopeMessageIDFactory as _
 from zope.publisher.browser import FileUpload
 from zope.app.form.browser.add import AddView
 from zope.app.publisher.browser import BrowserView
 
+from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces import ILaunchBag, IPOTemplateSet, \
-    IPOTemplateNameSet, IPersonSet, RawFileAttachFailed
-from canonical.launchpad.components.poexport import POExport
+from canonical.launchpad.interfaces import (
+    ILaunchBag, IPOTemplateSet, IPOTemplateNameSet, IPersonSet,
+    RawFileAttachFailed, IPOExportRequestSet, ICanonicalUrlData)
 from canonical.launchpad.browser.pofile import POFileView
+from canonical.launchpad.browser.pofile import BaseExportView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 class POTemplateSubsetView:
@@ -35,26 +46,12 @@ class POTemplateSubsetView:
 
 class POTemplateView:
 
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-potemplate-actions.pt')
-
-    detailsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-potemplate-details.pt')
-
-    forPortlet = ViewPageTemplateFile(
-        '../templates/portlet-potemplate-for.pt')
-
-    relativesPortlet = ViewPageTemplateFile(
-        '../templates/potemplate-portlet-relateds.pt')
-
-    statusLegend = ViewPageTemplateFile(
-        '../templates/portlet-rosetta-status-legend.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.request_languages = helpers.request_languages(self.request)
         self.description = self.context.potemplatename.description
+        self.user = getUtility(ILaunchBag).user
         # XXX carlos 01/05/05 please fix up when we have the
         # MagicURLBox
 
@@ -127,13 +124,8 @@ class POTemplateView:
             if 'UPLOAD' in self.request.form:
                 self.upload()
 
-        return ''
-
     def upload(self):
         """Handle a form submission to change the contents of the template."""
-
-        # Get the launchpad Person who is doing the upload.
-        owner = getUtility(ILaunchBag).user
 
         file = self.request.form['file']
 
@@ -159,7 +151,7 @@ class POTemplateView:
 
             try:
                 # a potemplate is always "published" so published=True
-                self.context.attachRawFileData(potfile, True, owner)
+                self.context.attachRawFileData(potfile, True, self.user)
                 self.status_message = (
                     'Thank you for your upload. The template content will'
                     ' appear in Rosetta in a few minutes.')
@@ -169,17 +161,17 @@ class POTemplateView:
                     'There was a problem uploading the file: %s.' % error)
 
         elif helpers.is_tar_filename(filename):
-            tarball = helpers.string_to_tarfile(file.read())
-            pot_paths, po_paths = helpers.examine_tarfile(tarball)
+            tarball = helpers.RosettaReadTarFile(stream=file)
+            pot_paths, po_paths = tarball.examine()
 
-            error = helpers.check_tar(tarball, pot_paths, po_paths)
+            error = tarball.check_for_import(pot_paths, po_paths)
 
             if error is not None:
                 self.status_message = error
                 return
 
-            self.status_message = (
-                helpers.import_tar(self.context, owner, tarball, pot_paths, po_paths))
+            self.status_message = tarball.do_import(
+                self.context, self.user, pot_paths, po_paths)
         else:
             self.status_message = (
                 'The file you uploaded was not recognised as a file that '
@@ -248,76 +240,87 @@ class POTemplateAddView(AddView):
     def nextURL(self):
         return self._nextURL
 
+class POTemplateExportView(BaseExportView):
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.user = getUtility(ILaunchBag).user
+        self.formProcessed = False
+        self.errorMessage = None
 
-class POTemplateTarExport:
-    '''View class for exporting a tarball of translations.'''
+    def processForm(self):
+        """Process a form submission requesting a translation export."""
 
-    def make_tar_gz(self, poExporter):
-        '''Generate a gzipped tar file for the context PO template. The export
-        method of the given poExporter object is used to generate PO files.
-        The contents of the tar file as a string is returned.
-        '''
+        if self.request.method != 'POST':
+            return
 
-        # Create a new StringIO-backed gzipped tarfile.
-        outputbuffer = StringIO()
-        archive = tarfile.open('', 'w:gz', outputbuffer)
+        pofiles = []
+        what = self.request.form.get('what')
 
-        # XXX
-        # POTemplate.name and Language.code are unicode objects, declared
-        # using SQLObject's StringCol. The name/code being unicode means that
-        # the filename given to the tarfile module is unicode, and the
-        # filename is unicode means that tarfile writes unicode objects to the
-        # backing StringIO object, which causes a UnicodeDecodeError later on
-        # when StringIO attempts to join together its buffers. The .encode()s
-        # are a workaround. When SQLObject has UnicodeCol, we should be able
-        # to fix this properly.
-        # -- Dafydd Harries, 2005/01/20
+        if what == 'all':
+            export_potemplate = True
 
-        # Create the directory the PO files will be put in.
-        directory = 'rosetta-%s' % self.context.name.encode('utf-8')
-        dirinfo = tarfile.TarInfo(directory)
-        dirinfo.type = tarfile.DIRTYPE
-        archive.addfile(dirinfo)
+            pofiles =  self.context.pofiles
+        elif what == 'some':
+            export_potemplate = 'potemplate' in self.request.form
 
-        # Put a file in the archive for each PO file this template has.
-        for pofile in self.context.pofiles:
-            if pofile.variant is not None:
-                raise RuntimeError("PO files with variants are not supported.")
+            for key in self.request.form:
+                if '@' in key:
+                    code, variant = key.split('@', 1)
+                else:
+                    code = key
+                    variant = None
 
-            code = pofile.language.code.encode('utf-8')
-            name = '%s.po' % code
+                try:
+                    pofile = self.context.getPOFileByLang(code, variant)
+                except KeyError:
+                    pass
+                else:
+                    pofiles.append(pofile)
+        else:
+            self.errorMessage = (
+                'Please choose whether you would like all files or only some '
+                'of them.')
+            return
 
-            # Export the PO file.
-            contents = poExporter.export(code)
+        format_name = self.request.form.get('format')
 
-            # Put it in the archive.
-            fileinfo = tarfile.TarInfo("%s/%s" % (directory, name))
-            fileinfo.size = len(contents)
-            archive.addfile(fileinfo, StringIO(contents))
+        try:
+            format = RosettaFileFormat.items[format_name]
+        except KeyError:
+            raise RuntimeError("Unsupported format.")
 
-        archive.close()
+        request_set = getUtility(IPOExportRequestSet)
 
-        return outputbuffer.getvalue()
+        if export_potemplate:
+            request_set.addRequest(self.user, self.context, pofiles, format)
+        else:
+            request_set.addRequest(self.user, None, pofiles, format)
 
-    def __call__(self):
-        '''Generates a tarball for the context PO template, sets up the
-        response (status, content length, etc.) and returns the PO template
-        generated so that it can be returned as the body of the request.
-        '''
+        self.formProcessed = True
 
-        # This exports PO files for us from the context template.
-        poExporter = POExport(self.context)
+    def pofiles(self):
+        """Return a list of PO files available for export."""
 
-        # Generate the tarball.
-        body = self.make_tar_gz(poExporter)
+        class BrowserPOFile:
+            def __init__(self, value, browsername):
+                self.value = value
+                self.browsername = browsername
 
-        self.request.response.setStatus(200)
-        self.request.response.setHeader('Content-Type', 'application/x-tar')
-        self.request.response.setHeader('Content-Length', len(body))
-        self.request.response.setHeader('Content-Disposition',
-            'attachment; filename="%s.tar.gz"' % self.context.name)
+        def pofile_sort_key(pofile):
+            return pofile.language.englishname
 
-        return body
+        for pofile in sorted(self.context.pofiles, key=pofile_sort_key):
+            if pofile.variant:
+                variant = pofile.variant.encode('UTF-8')
+                value = '%s@%s' % (pofile.language.code, variant)
+                browsername = '%s ("%s" variant)' % (
+                    pofile.language.englishname, variant)
+            else:
+                value = pofile.language.code
+                browsername = pofile.language.englishname
+
+            yield BrowserPOFile(value, browsername)
 
 
 # This class is only a compatibility one so the old URL to translate with
@@ -329,10 +332,6 @@ class POTemplateTarExport:
 # The other arguments are preserved.
 class POTemplateTranslateView:
     """View class to forward users from old translation URL to the new one."""
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
 
     def __call__(self):
         parameters = {}
@@ -364,7 +363,8 @@ class POTemplateTranslateView:
 
 
 class POTemplateAbsoluteURL(BrowserView):
-    """The view for an absolute URL of a bug task."""
+    """The view for an absolute URL of a PO template."""
+
     def __str__(self):
         if self.context.productrelease:
             return "%s/products/%s/%s/+pots/%s/" % (
@@ -380,4 +380,58 @@ class POTemplateAbsoluteURL(BrowserView):
                 self.context.sourcepackagename.name,
                 self.context.potemplatename.name)
 
+class POTemplateSubsetURL:
+    implements(ICanonicalUrlData)
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def path(self):
+        potemplatesubset = self.context
+        if potemplatesubset.distrorelease is not None:
+            assert potemplatesubset.productrelease is None
+            assert potemplatesubset.sourcepackagename is not None
+            return '+sources/%s/+pots' % (
+                potemplatesubset.sourcepackagename.name)
+        else:
+            assert potemplatesubset.productrelease is not None
+            return '+pots'
+
+    @property
+    def inside(self):
+        potemplatesubset = self.context
+        if potemplatesubset.distrorelease is not None:
+            assert potemplatesubset.productrelease is None
+            return potemplatesubset.distrorelease
+        else:
+            assert potemplatesubset.productrelease is not None
+            return potemplatesubset.productrelease
+
+
+class POTemplateURL:
+    implements(ICanonicalUrlData)
+
+    def __init__(self, context):
+        self.context = context
+        potemplate = self.context
+        potemplateset = getUtility(IPOTemplateSet)
+        if potemplate.distrorelease is not None:
+            assert potemplate.productrelease is None
+            self.potemplatesubset = potemplateset.getSubset(
+                distrorelease=potemplate.distrorelease,
+                sourcepackagename=potemplate.sourcepackagename)
+        else:
+            assert potemplate.productrelease is not None
+            self.potemplatesubset = potemplateset.getSubset(
+                productrelease=potemplate.productrelease)
+
+    @property
+    def path(self):
+        potemplate = self.context
+        return potemplate.name
+
+    @property
+    def inside(self):
+        return self.potemplatesubset
 

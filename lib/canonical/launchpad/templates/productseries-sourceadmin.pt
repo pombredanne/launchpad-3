@@ -67,7 +67,7 @@
       <div class="formHelp">
       Address for the SVN repository, either in svn:// or http(s):// form.
       </div>
-    <input type="text" name="svnrepository" size="30"
+    <input type="text" name="svnrepository" size="70"
        tal:attributes="value view/svnrepository" />
   </div>
 
@@ -163,6 +163,15 @@
     </div>
   </div>
 
+  </fieldset>
+
+  <fieldset tal:condition="context/autoTestFailed">
+    <legend>Failed Import Control</legend>
+    <div class="field">
+      <label>Retest</label>
+      <div class="formHelp">Retest this series in roomba?</div>
+      <input type="checkbox" name="resetToAutotest" />
+    </div>
   </fieldset>
 
   <fieldset>

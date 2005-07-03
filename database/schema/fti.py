@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-'''
+"""
 Add full text indexes to the launchpad database
-'''
+"""
 
 import _pythonpath
 
@@ -20,18 +20,66 @@ PATCH_SQL = os.path.join(
         os.path.dirname(__file__), 'regprocedure_update.sql'
         )
 
+A, B, C, D = 'ABCD' # tsearch2 ranking constants
+
+# This data structure defines all of our bull text indexes.
+# Each tuple in the top level list creates a 'fti' column in the
+# specified table.
 ALL_FTI = [
-    ('bug', ['name', 'title', 'summary', 'description']),
-    ('message', ['title']),
-    ('messagechunk', ['content']),
-    ('person', ['givenname', 'familyname', 'displayname']),
-    ('product', ['name', 'displayname', 'title', 'summary', 'description']),
-    ('project', ['name', 'displayname', 'title', 'summary', 'description']),
-    ('binarypackage', ['summary', 'description']),
+    ('bug', [
+            ('name', A),
+            ('title', B),
+            ('summary', C),
+            ('description', D),
+            ]),
+
+    ('bugtask', [
+            ('statusexplanation', C),
+            ]),
+
+    ('message', [
+            ('title', B),
+            ]),
+
+    ('messagechunk', [
+            ('content', C),
+            ]),
+
+    ('person', [
+            ('name', A),
+            ('displayname', B),
+            ('givenname', C),
+            ('familyname', C),
+            ]),
+
+    ('product', [
+            ('name', A),
+            ('displayname', A),
+            ('title', B),
+            ('summary', C),
+            ('description', D),
+            ]),
+
+    ('project', [
+            ('name', A),
+            ('displayname', A),
+            ('title', B),
+            ('summary', C),
+            ('description', D),
+            ]),
     ]
 
+
+def quote(s):
+    """SQL quoted string"""
+    if s is not None:
+        return psycopg.QuotedString(s)
+    else:
+        return 'NULL'
+
+
 def quote_identifier(identifier):
-    '''Quote an identifier like a table name or column name'''
+    """Quote an identifier like a table name or column name"""
     quote_dict = {'\"': '""', "\\": "\\\\"}
     for dkey in quote_dict.keys():
         if identifier.find(dkey) >= 0:
@@ -51,11 +99,14 @@ def execute(con, sql, results=False):
 
 
 def fti(con, table, columns, configuration=DEFAULT_CONFIG):
-    '''Setup full text indexing for a table'''
+    """Setup full text indexing for a table"""
 
     index = quote_identifier("%s_fti" % table)
     table = quote_identifier(table)
-    columns = [quote_identifier(c) for c in columns]
+    # Quote the columns
+    columns = [
+        (quote_identifier(column), weight) for column, weight in columns
+        ]
 
     # Drop the trigger if it exists
     try:
@@ -78,24 +129,26 @@ def fti(con, table, columns, configuration=DEFAULT_CONFIG):
         con.rollback()
         execute(con, "ALTER TABLE %s ADD COLUMN fti tsvector" % table)
 
-    # Rebuild the fti column, as its columns or configuration may have changed
-    coalesces = " || ' ' || ".join(["coalesce(%s,'')" % c for c in columns])
-    sql = "UPDATE %s SET fti=to_tsvector(%s,%s)" % (
-            table, psycopg.QuotedString(configuration), coalesces
-            )
-    execute(con, sql)
-
     # Create the fti index
     execute(con, "CREATE INDEX %s ON %s USING gist(fti)" % (
         index, table
         ))
 
     # Create the trigger
+    columns_and_weights = []
+    for column, weight in columns:
+        columns_and_weights.extend( (column, weight) )
+
     sql = """
         CREATE TRIGGER tsvectorupdate BEFORE UPDATE OR INSERT ON %s
-        FOR EACH ROW EXECUTE PROCEDURE tsearch2(fti, %s)
-        """ % (table, ', '.join(columns))
+        FOR EACH ROW EXECUTE PROCEDURE ftiupdate(%s)
+        """ % (table, ','.join(columns_and_weights))
     execute(con, sql)
+
+    # Rebuild the fti column, as the information it contains may be out
+    # of date with recent configuration updates.
+    execute(con, r"""UPDATE %s SET fti=NULL""" % table)
+
     con.commit()
 
 
@@ -134,26 +187,109 @@ def setup(con, configuration=DEFAULT_CONFIG):
             log.debug(p.fromchild.read())
             sys.exit(rv)
 
-    # Create ftq helper
+    # Create ftq helper and its sibling _ftq.
+    # ftq(text) returns a tsquery, suitable for use querying the full text
+    # indexes. _ftq(text) returns the string that would be parsed by
+    # to_tsquery and is used to debug the query we generate.
+    shared_func = r"""
+        import re
+
+        # Convert to Unicode and lowercase everything
+        query = args[0].decode('utf8').lower()
+
+        # Convert &, | and ! symbols to whitespace since they have
+        # special meaning to tsearch2
+        query = re.sub(r"[\&\|\!]+", " ", query)
+
+        # Convert AND, OR and NOT to tsearch2 punctuation
+        query = re.sub(r"\band\b", "&", query)
+        query = re.sub(r"\bor\b", "|", query)
+        query = re.sub(r"\bnot\b", "!", query)
+
+        # Insert & between tokens without an existing boolean operator
+        # Whitespace not proceded by (|&! not followed by &|
+        query = re.sub(r"(?<![\(\|\&\!\s])\s+(?![\&\|\s])", "&", query)
+
+        # Detect and repair syntax errors - we are lenient because
+        # this input is generally from users.
+
+        # An &,| or ! followed by another boolean.
+        query = re.sub(r"\s*([\&\|\!])\s*[\&\|]+", r"\1", query)
+
+        # An & or | following a (
+        query = re.sub(r"(?<=\()[\&\|\s]+", "", query)
+
+        # Leading & or |
+        query = re.sub(r"^[\s\&\|]+", "", query)
+
+        # Trailing &, | or !
+        query = re.sub(r"[\&\|\!\s]+$", "", query)
+
+        # Convert back to UTF-8
+        query = query.encode('utf8')
+        """
+    text_func = shared_func + """
+        return query or None
+        """
+    tsquery_func = shared_func + """
+        p = plpy.prepare("SELECT to_tsquery('%s', $1) AS x", ["text"])
+        query = plpy.execute(p, [query], 1)[0]["x"]
+        return query or None
+        """  % configuration
     execute(con, r"""
-        CREATE OR REPLACE FUNCTION ts2.ftq(text) RETURNS tsquery AS '
-            import re
-            q = args[0].lower()
-            q = re.subn("[\|\&]", " ", q)
-            q = "|".join(args[0].lower().split())
-            p = plpy.prepare("SELECT to_tsquery(\'%s\', $1) AS x", ["text"])
-            q = plpy.execute(p, [q], 1)[0]["x"]
-            return q or None
-        ' LANGUAGE plpythonu IMMUTABLE
-        """ % configuration)
+        CREATE OR REPLACE FUNCTION ts2._ftq(text) RETURNS text AS %s
+        LANGUAGE plpythonu IMMUTABLE
+        """ % quote(text_func))
+    #print psycopg.QuotedString(text_func)
+    execute(con, r"""
+        CREATE OR REPLACE FUNCTION ts2.ftq(text) RETURNS tsquery AS %s
+        LANGUAGE plpythonu IMMUTABLE
+        """ % quote(tsquery_func))
 
     execute(con,
             r"COMMENT ON FUNCTION ftq(text) IS '"
             r"Convert a string to a tsearch2 query using the preferred "
             r"configuration. eg. "
             r""""SELECT * FROM Bug WHERE fti @@ ftq(''fatal crash'')". """
-            r"The query is lowercased, and multiple words searched using OR.'"
+            r"The query is lowercased, and multiple words searched using AND.'"
             )
+    execute(con,
+            r"COMMENT ON FUNCTION ftq(text) IS '"
+            r"Convert a string to an unparsed tsearch2 query'"
+            )
+
+    # Create our trigger function. The default one that ships with tsearch2
+    # doesn't support weighting so we need our own. We remove safety belts
+    # since we know we will be calling it correctly.
+    execute(con, r"""
+        CREATE OR REPLACE FUNCTION ftiupdate() RETURNS trigger AS '
+            new = TD["new"]
+            args = TD["args"][:]
+
+            # Generate an SQL statement that turns the requested
+            # column values into a weighted tsvector
+            sql = []
+            for i in range(0, len(args), 2):
+                sql.append(
+                        "setweight(to_tsvector(''default'', "
+                        "coalesce($%d, '''')), $%d)" % (i+1,i+2))
+                args[i] = new[args[i]]
+
+            sql = "SELECT %s AS fti" % "||".join(sql)
+
+            # Execute and store in the fti column
+            plan = plpy.prepare(sql, ["text", "char"] * (len(args)/2))
+            new["fti"] = plpy.execute(plan, args, 1)[0]["fti"]
+
+            # Tell PostgreSQL we have modified the data
+            return "MODIFY"
+        ' LANGUAGE plpythonu
+        """)
+        
+    execute(con,
+        r"COMMENT ON FUNCTION ftiupdate() IS 'Trigger function that keeps "
+        r"the fti tsvector column up to date.'"
+        )
 
     con.commit()
 

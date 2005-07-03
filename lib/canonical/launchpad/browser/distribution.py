@@ -4,6 +4,7 @@ __metaclass__ = type
 
 from zope.interface import implements
 from zope.component import getUtility
+from zope.app.traversing.browser.absoluteurl import absoluteURL
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form.browser.add import AddView
 from zope.app.form.browser import SequenceWidget, ObjectWidget
@@ -18,27 +19,28 @@ from canonical.launchpad.database import Distribution, BugFactory
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import BugTaskStatus
-from canonical.launchpad.interfaces import IDistribution, \
-        IDistributionSet, IPerson, IBugTaskSet, ILaunchBag, \
-        IBugTaskSearchListingView
+from canonical.launchpad.interfaces import (
+    IDistribution, IDistributionSet, IPerson, IBugTaskSet, ILaunchBag,
+    IBugTaskSearchListingView)
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.helpers import is_maintainer
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser import BugTaskSearchListingView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
+from canonical.launchpad.webapp import StandardLaunchpadFacets
 
-class DistributionView(BugTaskSearchListingView):
+
+class DistributionFacets(StandardLaunchpadFacets):
+    usedfor = IDistribution
+
+
+class DistributionView:
+    """Default Distribution view class."""
+
+
+class DistributionBugsView(BugTaskSearchListingView):
 
     implements(IBugTaskSearchListingView)
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-distro-actions.pt')
-
-    detailsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-distro-details.pt')
-
-    relatedBountiesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-related-bounties.pt')
 
     def __init__(self, context, request):
         BugTaskSearchListingView.__init__(self, context, request)
@@ -76,12 +78,13 @@ class DistributionFileBugView(SQLObjectAddView):
             title = kw['title'], comment = kw['comment'],
             private = kw['private'], owner = kw['owner'])
 
-        notify(SQLObjectCreatedEvent(bug, self.request))
+        notify(SQLObjectCreatedEvent(bug))
 
+        self.addedBug = bug 
         return bug
 
     def nextURL(self):
-        return '.'
+        return absoluteURL(self.addedBug, self.request)
 
 
 class DistributionSetView:

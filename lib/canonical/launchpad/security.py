@@ -7,22 +7,13 @@ __metaclass__ = type
 from zope.interface import implements, Interface
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IAuthorization, IHasOwner
-from canonical.launchpad.interfaces import IPerson, ITeam
-from canonical.launchpad.interfaces import ITeamMembershipSubset
-from canonical.launchpad.interfaces import ITeamMembership
-from canonical.launchpad.interfaces import IProductSeriesSource
-from canonical.launchpad.interfaces import IProductSeriesSourceAdmin
-from canonical.launchpad.interfaces import IMilestone, IBug, IBugTask
-from canonical.launchpad.interfaces import IUpstreamBugTask, IDistroBugTask, \
-     IDistroReleaseBugTask
-from canonical.launchpad.interfaces import IReadOnlyUpstreamBugTask
-from canonical.launchpad.interfaces import ITranslator
-from canonical.launchpad.interfaces import IProduct, IProductRelease
-from canonical.launchpad.interfaces import IPOTemplate, IPOFile, \
-    IPOTemplateName, IPOTemplateNameSet, ISourcePackage
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
-
+from canonical.launchpad.interfaces import (
+    IAuthorization, IHasOwner, IPerson, ITeam, ITeamMembershipSubset,
+    ITeamMembership, IProductSeriesSource, IProductSeriesSourceAdmin,
+    IMilestone, IBug, IBugTask, IUpstreamBugTask, IDistroBugTask,
+    IDistroReleaseBugTask, ITranslator, IProduct, IProductRelease,
+    IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet, ISourcePackage,
+    ILaunchpadCelebrities, IDistroRelease)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -59,6 +50,17 @@ class EditByOwnersOrAdmins(AuthorizationBase):
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.obj.owner) or user.inTeam(admins)
+
+
+class EditDistroReleaseByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IDistroRelease
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.owner) or
+                user.inTeam(self.obj.distribution.owner) or
+                user.inTeam(admins))
 
 
 class AdminSeriesSourceByButtSource(AuthorizationBase):
@@ -225,11 +227,6 @@ class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
         return not self.obj.bug.private
 
 
-class PublicToAllOrPrivateToExplicitSubscribersForROBugTask(
-    PublicToAllOrPrivateToExplicitSubscribersForBugTask):
-    usedfor = IReadOnlyUpstreamBugTask
-
-
 class EditPublicByLoggedInUserAndPrivateByExplicitSubscribers(
     AuthorizationBase):
     permission = 'launchpad.Edit'
@@ -303,24 +300,21 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
     usedfor = IPOTemplate
 
 
-class EditPOTemplateDetails(AuthorizationBase):
-    permission = 'launchpad.Edit'
+class EditPOTemplateDetails(EditByOwnersOrAdmins):
     usedfor = IPOTemplate
 
     def checkAuthenticated(self, user):
-        """Allow the owner of the POTemplate if it's not in a product release.
-
-        Also, Admins and Rosetta experts are allowed.
+        """Allow product/sourcepackage/potemplate owner, experts and admis.
         """
-        if self.obj.productrelease is not None:
-            # It's a PO file from a product, it has no restrictions.
+        if (self.obj.productrelease is not None and
+            user.inTeam(self.obj.productrelease.productseries.product.owner)):
+            # The user is the owner of the product.
             return True
-        else:
-            admins = getUtility(ILaunchpadCelebrities).admin
-            rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
-            return (user.inTeam(self.obj.owner) or
-                    user.inTeam(admins) or
-                    user.inTeam(rosetta_experts))
+
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+
+        return (EditByOwnersOrAdmins.checkAuthenticated(self, user) or
+                user.inTeam(rosetta_experts))
 
 
 # XXX: Carlos Perello Marin 2005-05-24: This should be using
@@ -335,13 +329,13 @@ class EditPOFileDetails(EditByOwnersOrAdmins):
     usedfor = IPOFile
 
     def checkAuthenticated(self, user):
-        """Allow the owner of the POFile if it's not in a product release.
+        """Allow anyone that can edit translations, owner, experts and admis.
         """
-        if self.obj.potemplate.productrelease is None:
-            return EditByOwnersOrAdmins.checkAuthenticated(self, user)
-        else:
-            # It's a PO file from a product, it has no restrictions.
-            return True
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+
+        return (EditByOwnersOrAdmins.checkAuthenticated(self, user) or
+                self.obj.canEditTranslations(user) or
+                user.inTeam(rosetta_experts))
 
 
 class ChangeTranslatorInGroup(OnlyRosettaExpertsAndAdmins):

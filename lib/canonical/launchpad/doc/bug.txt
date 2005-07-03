@@ -20,6 +20,14 @@ To retrieve a specific Bug, use IBugSet.get:
     >>> print firefox_crashes.title
     Firefox crashes when Save As dialog for a nonexistent window is closed
 
+If the bug can't be found, a zope.exceptions.NotFoundError will be
+raised:
+
+    >>> bugset.get(123456)
+    Traceback (most recent call last):
+      ...
+    NotFoundError: 'Unable to locate bug with ID 123456'
+
 Searching for Bugs
 ------------------
 
@@ -50,15 +58,11 @@ Absolute URLs
 -------------
 
 For things like bug notification emails, it's handy to be able to
-include a URL to the bug inside the email. In Launchpad, the absolute
-URL of a bug is found by using zapi.absoluteURL.
+include a URL to the bug inside the email.
 
-    >>> from zope.app import zapi
-    >>> from zope.publisher.browser import TestRequest
-    >>> request = TestRequest()
-
-    >>> zapi.absoluteURL(firefox_crashes, request)
-    'http://127.0.0.1/malone/bugs/6'
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> print canonical_url(firefox_crashes)
+    http://.../malone/bugs/6
 
 Bug Privacy
 ===========
@@ -94,8 +98,9 @@ private bugs is that only explicit subscribers can view the bug after it's been
 marked private. So, when we mark bug #15 private:
 
     >>> from zope.event import notify
-    >>> from canonical.launchpad.event.sqlobjectevent import \
-    ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent
+    >>> from canonical.launchpad.event import (
+    ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent,
+    ...     SQLObjectCreatedEvent)
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> new_values = {"private" : True}
     >>> bug_will_be_set_private = SQLObjectToBeModifiedEvent(
@@ -115,9 +120,7 @@ marked private. So, when we mark bug #15 private:
     >>> firefox_crashes.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     firefox_crashes, old_state,
-    ...     ["id", "title", "private"],
-    ...     getUtility(IPersonSet).get(12),
-    ...     request)
+    ...     ["id", "title", "private"])
 
     >>> notify(bug_set_private)
 
@@ -176,9 +179,7 @@ And again, let's fake setting the bug private:
     >>> blackhole_trash_folder.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     blackhole_trash_folder, old_state,
-    ...     ["id", "title", "private"],
-    ...     getUtility(IPersonSet).get(16),
-    ...     request)
+    ...     ["id", "title", "private"])
 
     >>> notify(bug_set_private)
 
@@ -212,7 +213,6 @@ Let's log back in as Foo Bar to continue our examples:
 
 When a public bug is filed:
 
->>> from zope.app.event.objectevent import ObjectCreatedEvent
 >>> from canonical.launchpad.database.bug import BugFactory
 >>> from canonical.launchpad.interfaces import IProductSet
 >>> from canonical.launchpad.interfaces import IPersonSet
@@ -226,7 +226,7 @@ When a public bug is filed:
 >>> added_bug = BugFactory(
 ...     product = firefox, title = "test firefox bug",
 ...     comment = "blah blah blah", owner = foobar)
->>> notify(ObjectCreatedEvent(added_bug))
+>>> notify(SQLObjectCreatedEvent(added_bug))
 >>> public_bug = bugset.get(added_bug.id)
 
 the submitter is explicitly subscribed. The maintainer is considered implicitly
@@ -243,10 +243,10 @@ u'blah blah blah'
 
 The bug description can also be accessed through the task:
 
->>> public_bug.bugtasks[0].bugdescription
+>>> public_bug.bugtasks[0].bug.description
 u'blah blah blah'
 >>> public_bug.description = 'a new description'
->>> public_bug.bugtasks[0].bugdescription
+>>> public_bug.bugtasks[0].bug.description
 u'a new description'
 
 When a private bug is filed:
@@ -255,7 +255,7 @@ When a private bug is filed:
 ...     product = firefox, title = "test firefox bug",
 ...     comment = "blah blah blah", owner = foobar,
 ...     private = True)
->>> notify(ObjectCreatedEvent(added_bug))
+>>> notify(SQLObjectCreatedEvent(added_bug))
 >>> private_bug = bugset.get(added_bug.id)
 
 *only* the submitter is explicitly subscribed:
@@ -280,7 +280,7 @@ sourcepackage. E.g.
 ...     distribution = ubuntu.id, sourcepackagename = evolution,
 ...     title = "test firefox bug", comment = "blah blah blah",
 ...     owner = foobar, private = True)
->>> notify(ObjectCreatedEvent(added_bug))
+>>> notify(SQLObjectCreatedEvent(added_bug))
 >>> private_bug = bugset.get(added_bug.id)
 >>> print [subscription.person.id for subscription in private_bug.subscriptions]
 [16]

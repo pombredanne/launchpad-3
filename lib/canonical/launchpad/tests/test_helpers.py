@@ -9,6 +9,7 @@ from zope.interface import implements
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import ILanguageSet, IPerson, ILaunchBag
 
+
 def make_test_tarball_1():
     '''
     Generate a test tarball that looks something like a source tarball which
@@ -24,7 +25,7 @@ def make_test_tarball_1():
     True
     '''
 
-    return helpers.make_tarball({
+    return helpers.RosettaWriteTarFile.files_to_tarfile({
         'uberfrob-0.1/README':
             'Uberfrob is an advanced frobnicator.',
         'uberfrob-0.1/po/cy.po':
@@ -71,59 +72,156 @@ def make_test_tarball_2():
         'msgstr "bar"',
         )
 
-    return helpers.make_tarball({
+    return helpers.RosettaWriteTarFile.files_to_tarfile({
         'test/test.pot': pot,
         'test/cy.po': po,
         'test/es.po': po,
     })
 
-def test_make_tarball():
+def examine_tarfile(tarfile):
+    names = tarfile.getnames()
+    # Calculate the length of the longest name.
+    max_length = len(sorted(names, key=len)[-1])
+    # Use this length to generate an appropriate format string.
+    format = '%%-%ds | %%s' % max_length
+
+    for name in names:
+        file = tarfile.extractfile(name)
+
+        if file is not None:
+            print format % (name, file.read())
+        else:
+            print format % (name, '')
+
+def test_RosettaReadTafile():
     """
-    Simple case.
+    >>> import tarfile
+    >>> from StringIO import StringIO
+    >>> from canonical.launchpad.helpers import RosettaReadTarFile
 
-    >>> tarball = helpers.make_tarball({'foo': 'bar'})
-    >>> tarball.getnames()
+    First, some test data.
+
+    >>> stream = StringIO()
+    >>> archive = tarfile.open('', 'w', stream)
+    >>> archive.addfile(tarfile.TarInfo('foo'), StringIO('bar'))
+    >>> string = stream.getvalue()
+    >>> stream.seek(0)
+
+    We can create RosettaReadTarFile objects from a string, a stream, or a
+    tarfile object:
+
+    >>> RosettaReadTarFile(data=string).tarfile.getnames()
     ['foo']
-    >>> tarball.extractfile('foo').read()
-    'bar'
+    >>> RosettaReadTarFile(stream=stream).tarfile.getnames()
+    ['foo']
+    >>> RosettaReadTarFile(archive=archive).tarfile.getnames()
+    ['foo']
 
-    Test implicit directory creation.
+    We can then query the objects for more information.
 
-    >>> tarball = helpers.make_tarball({
-    ...     'zot/bugblatter': 'traal',
-    ...     'zot/eccentrica': 'galumbits',
-    ... })
-    >>> tarball.getnames()
-    ['zot/', 'zot/bugblatter', 'zot/eccentrica']
-    >>> tarball.extractfile('zot/eccentrica').read()
-    'galumbits'
+    >>> test1 = RosettaReadTarFile(archive=make_test_tarball_1())
+    >>> test2 = RosettaReadTarFile(archive=make_test_tarball_2())
+
+    >>> test1.find_po_directories()
+    ['uberfrob-0.1/blah/po/', 'uberfrob-0.1/po/']
+
+    >>> pot, po = test1.examine()
+    >>> pot
+    ('uberfrob-0.1/po/uberfrob.pot',)
+    >>> po
+    ('uberfrob-0.1/po/cy.po', 'uberfrob-0.1/po/es.po')
+
+    >>> pot, po = test2.examine()
+    >>> pot
+    ('test/test.pot',)
+    >>> po
+    ('test/cy.po', 'test/es.po')
+    """
+
+def test_RosettaWriteTarFile():
+    """
+    Start off by creating a blank archive.
+
+    We'll need a filehandle to store it in.
+
+    >>> from StringIO import StringIO
+    >>> buffer = StringIO()
+
+    >>> from canonical.launchpad.helpers import RosettaWriteTarFile
+    >>> archive = RosettaWriteTarFile(buffer)
+
+    We can add files individually.
+
+    >>> archive.add_file('foo', '1')
+
+    Or add many files simultaneosly.
+
+    >>> archive.add_files({'bar': '2', 'baz': '3'})
+
+    Now we're done.
+
+    >>> archive.close()
+
+    Let's take a peek inside.
+
+    >>> import tarfile
+    >>> buffer.seek(0)
+    >>> archive = tarfile.open('', 'r', buffer)
+    >>> examine_tarfile(archive)
+    foo | 1
+    bar | 2
+    baz | 3
+
+    There are also some convenience methods for getting directly from a list
+    of files to a stream...
+
+    If we have a list of files:
+
+    >>> files = {
+    ...     'eins': 'zwei',
+    ...     'drei': 'vier'
+    ... }
+
+    ...then we can easily turn it into a tarfile...
+
+    >>> archive = RosettaWriteTarFile.files_to_tarfile(files)
+    >>> examine_tarfile(archive)
+    drei | vier
+    eins | zwei
+
+    ...or a stream...
+
+    >>> stream = RosettaWriteTarFile.files_to_stream(files)
+    >>> archive = tarfile.open('', 'r', stream)
+    >>> examine_tarfile(archive)
+    drei | vier
+    eins | zwei
+
+    ...or a data string.
+
+    >>> data = RosettaWriteTarFile.files_to_string(files)
+    >>> archive = tarfile.open('', 'r', StringIO(data))
+    >>> examine_tarfile(archive)
+    drei | vier
+    eins | zwei
+
+    If a filename contains slashes, containing directories are automatically
+    created.
+
+    >>> archive = RosettaWriteTarFile.files_to_tarfile({
+    ...     'uno/dos/tres/cuatro': 'blah'
+    ...     })
+    >>> examine_tarfile(archive)
+    uno/                | 
+    uno/dos/            | 
+    uno/dos/tres/       | 
+    uno/dos/tres/cuatro | blah
     """
 
 def test_join_lines():
     r"""
     >>> helpers.join_lines('foo', 'bar', 'baz')
     'foo\nbar\nbaz\n'
-    """
-
-def test_find_po_directories():
-    """
-    >>> helpers.find_po_directories(make_test_tarball_1())
-    ['uberfrob-0.1/blah/po/', 'uberfrob-0.1/po/']
-    """
-
-def test_examine_tarfile():
-    """
-    >>> pot, po = helpers.examine_tarfile(make_test_tarball_1())
-    >>> pot
-    ('uberfrob-0.1/po/uberfrob.pot',)
-    >>> po
-    ('uberfrob-0.1/po/cy.po', 'uberfrob-0.1/po/es.po')
-
-    >>> pot, po = helpers.examine_tarfile(make_test_tarball_2())
-    >>> pot
-    ('test/test.pot',)
-    >>> po
-    ('test/cy.po', 'test/es.po')
     """
 
 def test_shortest():
@@ -242,37 +340,6 @@ def test_count_lines():
     2
     '''
 
-def test_canonicalise_code():
-    '''
-    >>> from canonical.launchpad.helpers import canonicalise_code
-    >>> canonicalise_code('cy')
-    'cy'
-    >>> canonicalise_code('cy-gb')
-    'cy_GB'
-    >>> canonicalise_code('cy_GB')
-    'cy_GB'
-    '''
-
-def test_codes_to_languages():
-    '''
-    Some boilerplate to allow us to use utilities.
-
-    >>> from zope.app.tests.placelesssetup import setUp, tearDown
-    >>> from zope.app.tests import ztapi
-
-    >>> setUp()
-    >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-
-    >>> from canonical.launchpad.helpers import codes_to_languages
-    >>> languages = codes_to_languages(('es', '!!!'))
-    >>> len(languages)
-    1
-    >>> languages[0].code
-    'es'
-
-    >>> tearDown()
-    '''
-
 def test_request_languages():
     '''
     >>> from zope.app.tests.placelesssetup import setUp, tearDown
@@ -319,17 +386,17 @@ def test_parse_cformat_string():
     '''
     >>> from canonical.launchpad.helpers import parse_cformat_string
     >>> parse_cformat_string('')
-    ()
+    []
     >>> parse_cformat_string('foo')
-    (('string', 'foo'),)
+    [('string', 'foo')]
     >>> parse_cformat_string('blah %d blah')
-    (('string', 'blah '), ('interpolation', '%d'), ('string', ' blah'))
+    [('string', 'blah '), ('interpolation', '%d'), ('string', ' blah')]
     >>> parse_cformat_string('%sfoo%%bar%s')
-    (('interpolation', '%s'), ('string', 'foo%%bar'), ('interpolation', '%s'))
+    [('interpolation', '%s'), ('string', 'foo%%bar'), ('interpolation', '%s')]
     >>> parse_cformat_string('%')
     Traceback (most recent call last):
     ...
-    ValueError: %
+    UnrecognisedCFormatString: %
     '''
 
 def test_parse_translation_form():
@@ -429,6 +496,23 @@ def test_msgid_html():
 
     >>> msgid_html(u'foo\tbar', [])
     u'foo[tab]bar'
+
+    Test valid C format strings are formatted.
+
+    >>> msgid_html(u'foo %d bar', ['c-format'])
+    u'foo <span class="interpolation">%d</span> bar'
+
+    Test bad format strings are caught and passed through.
+
+    >>> text = u'foo %z bar'
+    >>> from canonical.launchpad.helpers import parse_cformat_string
+    >>> parse_cformat_string(text)
+    Traceback (most recent call last):
+    ...
+    UnrecognisedCFormatString: foo %z bar
+
+    >>> msgid_html(text, ['c-format']) == text
+    True
     '''
 
 

@@ -135,6 +135,22 @@ The interrupted transaction in this thread still fails.
     ProgrammingError: server closed the connection unexpectedly
     ...
 
+Uninstall the zopeless transaction manager.
+
+    >>> ztm.uninstall()
+
+If we init Zopeless via the proxy, with implicitBegin disabled and using a
+username that doesn't exist, it'll fail to connect and raise an exception (as
+if implicitBegin was enabled):
+
+    >>> ztm = initZopeless(dbuser='nonexistent', dbhost='localhost port=5555',
+    ...                    implicitBegin=False)
+    >>> ztm.begin()
+    Traceback (most recent call last):
+    ...
+    OperationalError: ...
+    >>> ztm.uninstall()
+
 Clean up the proxy.
 
     >>> os.system('kill `cat twistd.pid`')
@@ -142,10 +158,6 @@ Clean up the proxy.
     >>> wait_until_proxy_is_stopped()
     >>> os.remove('twistd.log')
     >>> os.remove('portforward.tap')
-
-Uninstall the zopeless transaction manager.
-
-    >>> ztm.uninstall()
 
 Tear down the database
 

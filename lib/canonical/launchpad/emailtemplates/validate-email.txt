@@ -2,12 +2,12 @@
 Hello
 
 We received a request from %(requester)s using email address 
-%(requesteremail)s and trying to register another email
-address, %(toaddress)s, in Launchpad.
+%(requesteremail)s, trying to validate the email address
+%(toaddress)s for use in Launchpad.
 
 If you made this request, please click on the link below
-and complete the process to add %(toaddress)s to your
-existing Launchpad account.
+and complete the process to add %(toaddress)s 
+to your existing Launchpad account.
 
    %(appurl)s/token/%(longstring)s
 

@@ -22,6 +22,8 @@
             Your changes will be visible immediately,
             so please take care,
             especially with the display name and title fields.
+            <p>NOTE: If you change a project's Name, the project URL
+            will change!</p>
           </div>
         
       </div>

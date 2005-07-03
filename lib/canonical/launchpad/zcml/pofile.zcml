@@ -18,6 +18,12 @@
             />
     </content>
 
+    <browser:url
+        for="canonical.launchpad.interfaces.IPOFile"
+        path_expression="language/code"
+        attribute_to_parent="potemplate"
+        />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IPOFile"
         name="+index"
@@ -35,6 +41,30 @@
         <browser:page
             name="+barchart"
             template="../templates/pofile-barchart.pt" />
+
+        <!-- POFile Portlets -->
+        <browser:page
+            name="+portlet-about"
+            template="../templates/portlet-rosetta-about.pt" />
+        <browser:page
+            name="+portlet-actions"
+            template="../templates/portlet-pofile-actions.pt" />
+        <browser:page
+            name="+portlet-contributors"
+            template="../templates/portlet-pofile-contributors.pt" />
+        <browser:page
+            name="+portlet-details"
+            template="../templates/portlet-pofile-details.pt" />
+        <browser:page
+            name="+portlet-translators"
+            template="../templates/portlet-pofile-translators.pt" />
+        <browser:page
+            name="+portlet-quickhelp"
+            template="../templates/portlet-rosetta-quickhelp.pt" />
+        <browser:page
+            name="+portlet-stats"
+            template="../templates/portlet-pofile-stats.pt" />
+
     </browser:pages>
 
     <browser:page
@@ -46,6 +76,14 @@
         />
 
     <browser:page
+        name="+upload"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.POFileView"
+        for="canonical.launchpad.interfaces.IPOFile"
+        template="../templates/pofile-upload.pt"
+        />
+
+    <browser:page
         name="+translate"
         for="canonical.launchpad.interfaces.IPOFile"
         permission="launchpad.AnyPerson"
@@ -53,20 +91,35 @@
         class="canonical.launchpad.browser.POFileView"
         />
 
+    <!--
+    XXX
+    These two views are for backwards compatibility. They should be
+    removed after a month or two.
+     - Dafydd Harries 2005/06/24
+    -->
+
     <browser:page
         name="+po"
         for="canonical.launchpad.interfaces.IPOFile"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.POFilePOExportView"
+        permission="launchpad.AnyPerson"
+        class="canonical.launchpad.browser.ExportCompatibilityView"
         attribute="__call__"
         />
 
     <browser:page
         name="+mo"
         for="canonical.launchpad.interfaces.IPOFile"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.POFileMOExportView"
+        permission="launchpad.AnyPerson"
+        class="canonical.launchpad.browser.ExportCompatibilityView"
         attribute="__call__"
+        />
+
+    <browser:page
+        name="+export"
+        for="canonical.launchpad.interfaces.IPOFile"
+        permission="launchpad.AnyPerson"
+        template="../templates/pofile-export.pt"
+        class="canonical.launchpad.browser.POExportView"
         />
 
     <!-- Dummy PO File -->

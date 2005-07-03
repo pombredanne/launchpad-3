@@ -11,7 +11,6 @@ from sqlobject import (RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey,
 
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.launchpad.database.bug import BugTask
-from canonical.launchpad.database.publishedpackage import PublishedPackageSet
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.lp.dbschema import (EnumCol, BugTaskStatus,
@@ -45,6 +44,7 @@ class Distribution(SQLBase):
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistroBounty')
     bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
+    lucilleconfig = StringCol()
 
     def currentrelease(self):
         # if we have a frozen one, return that
@@ -69,11 +69,6 @@ class Distribution(SQLBase):
         if not ITeam.providedBy(self.members):
             return
         return ITeamMembershipSubset(self.members).getActiveMemberships()
-
-    def traverse(self, name):
-        if name == '+packages':
-            return PublishedPackageSet()
-        return self.__getitem__(name)
 
     def __getitem__(self, name):
         for release in self.releases:
@@ -113,7 +108,7 @@ class Distribution(SQLBase):
             distrorelease = DistroRelease.selectOneBy(
                 distributionID=self.id, version=name_or_version)
             if distrorelease is None:
-                raise NotFoundError, name_or_version
+                raise NotFoundError(name_or_version)
         return distrorelease
 
     def getDevelopmentReleases(self):
@@ -142,7 +137,7 @@ class DistributionSet:
         try:
             return Distribution.byName(name)
         except SQLObjectNotFound:
-            raise KeyError, name
+            raise NotFoundError(name)
 
     def get(self, distributionid):
         """See canonical.launchpad.interfaces.IDistributionSet."""

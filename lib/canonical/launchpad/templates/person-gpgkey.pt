@@ -6,11 +6,11 @@
 <body>
 
   <metal:leftportlets fill-slot="portlets_one">
-      <div tal:replace="structure view/viewsPortlet" />
+      <div tal:replace="structure context/@@+portlet-views" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
-      <div tal:replace="structure view/actionsPortlet" />
+      <div tal:replace="structure context/@@+portlet-actions" />
   </metal:rightportlets>
 
   <div metal:fill-slot="main">
@@ -59,22 +59,6 @@
     </form>
     </div>
 
-    <div>
-    <form name="add" action="" method="POST">
-    <input type="hidden" name="action" value="import_gpg" />
-    <fieldset>
-    <legend>Import GPG Public Key</legend>
-    <div>
-        <label>Public Key</label>
-        <div class="formHelp">
-	   Paste the ASCII armored public key (use: `gpg --export -a YOU`)
-	</div>
-        <textarea name="pubkey" rows="20"></textarea>
-        <input type="submit" value="Import"/>
-    </fieldset>
-    </form>
-    </div>
-    
   </div>
 </body>
 </html>

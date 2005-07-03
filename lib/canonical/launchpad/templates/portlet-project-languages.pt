@@ -15,12 +15,12 @@
             </tr>
         </table>
 
+        <ul><li class="info">
         <a href="+newbugtracker"
-            style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
             title="Change Language Prefs">
-            <img src="/++resource++edit.gif" alt="+" />
             Change Language Prefs...
-        </a><br />
+        </a>
+        </li></ul>
 
         </div>
                 

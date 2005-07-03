@@ -1,0 +1,71 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<div metal:fill-slot="main">
+
+     <tal:dummy condition="view/submitForm" />
+
+        <h1>Upload a new version of <span tal:replace="context/title" /></h1>
+
+        <div class="portalMessage"
+             tal:condition="view/status_message"
+             tal:content="structure view/status_message">Successful</div>
+
+        <form action="+upload" method="POST" enctype="multipart/form-data">
+            <table>
+                <tr>
+                    <th>
+                        <label for="file_input">File:</label>
+                    </th>
+                    <td>
+                        <input id="file_input" name="file" type="file" />
+                        <div class="discreet">
+                        This should be a <code>.po</code> file.
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        <input id="user_type" name="upload_type" type="radio"
+                            value="user" checked="checked" />
+                    </th>
+                    <td>
+                        <label for="user_type">User upload</label>
+                        <div class="discreet">
+                        Select this if this upload contains modifications
+                        which you have made. This will normally be the correct
+                        setting to use.
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        <input id="upstream_type" name="upload_type" type="radio"
+                            value="upstream" />
+                    </th>
+                    <td>
+                        <label for="upstream_type">Published upload</label>
+                        <div class="discreet">
+                        Select this if this upload is identical to the
+                        corresponding file in the upstream release or source
+                        package.
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <th></th>
+                    <td>
+                        <input name="UPLOAD" type="submit" value="Upload" />
+                    </td>
+                </tr>
+            </table>
+        </form>
+
+</div>
+
+</body>
+</html>

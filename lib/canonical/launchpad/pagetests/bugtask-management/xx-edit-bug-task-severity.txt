@@ -1,7 +1,7 @@
 Edit a bug task's severity as user Foo Bar.
 
   >>> print http(r"""
-  ... POST /malone/tasks/5/+edit HTTP/1.1
+  ... POST /distros/debian/+bugs/2/+edit HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1358
@@ -54,10 +54,5 @@ Edit a bug task's severity as user Foo Bar.
   HTTP/1.1 200 Ok
   ...
             <p class="portalMessage">Updated on ...</p>
-  ...
-                  <div><div id="field.severity">
-  ...
-  <option selected="selected" value="Normal">Normal</option>
-  ...
-  </div>
-  ...
+  ...<option selected="selected" value="Normal">Normal</option>...
+

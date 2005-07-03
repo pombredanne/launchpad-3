@@ -24,7 +24,7 @@ from canonical.launchpad.browser.productrelease import newProductRelease
 from urllib import quote as urlquote
 
 __all__ = ['traverseProductSeries', 'ProductSeriesView',
-           'ProductSeriesSourceSetView']
+           'ProductSeriesRdfView', 'ProductSeriesSourceSetView']
 
 def traverseProductSeries(series, request, name):
     return series.getRelease(name)
@@ -105,9 +105,6 @@ def validate_svn_repo(repo):
 # Currently, the pages just return 'System Error' as they trigger database
 # constraints. -- StuartBishop 20050502
 class ProductSeriesView(object):
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-productseries-actions.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -240,6 +237,7 @@ class ProductSeriesView(object):
             if not validate_svn_repo(self.svnrepository):
                 self.errormsgs.append('Please give valid SVN server details')
                 return
+        oldrcstype = self.context.rcstype
         self.context.rcstype = self.rcstype
         self.context.cvsroot = self.cvsroot
         self.context.cvsmodule = self.cvsmodule
@@ -247,7 +245,8 @@ class ProductSeriesView(object):
         self.context.svnrepository = self.svnrepository
         if not fromAdmin:
             self.context.importstatus = ImportStatus.TESTING
-        self.request.response.redirect('.')
+        elif (oldrcstype is None and self.rcstype is not None):
+            self.context.importstatus = ImportStatus.TESTING
 
     def adminSource(self):
         """Make administrative changes to the source details of the
@@ -285,6 +284,10 @@ class ProductSeriesView(object):
         if not pybaz.NameParser.is_version_id(self.targetarchversion):
             self.errormsgs.append('Invalid target Arch version id.')
 
+        # possibly resubmit for testing
+        if self.context.autoTestFailed() and form.get('resetToAutotest', False):
+            self.context.importstatus = ImportStatus.TESTING
+
         # Return if there were any errors, so as not to update anything.
         if self.errormsgs:
             return
@@ -317,6 +320,18 @@ class ProductSeriesView(object):
                                series=self.context.id)
         if pr:
             self.request.response.redirect(pr.version)
+
+
+class ProductSeriesRdfView(object):
+    """A view that sets its mime-type to application/rdf+xml"""
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        request.response.setHeader('Content-Type', 'application/rdf+xml')
+        request.response.setHeader('Content-Disposition',
+                                   'attachment; filename=' +
+                                   self.context.product.name + '-' +
+                                   self.context.name + '.rdf')
 
 
 class ProductSeriesSourceSetView:
@@ -385,6 +400,4 @@ class ProductSeriesSourceSetView:
         if self.importstatus == 'STOPPED':
             html += ' selected'
         html += '>Stopped</option>\n'
-
-
 

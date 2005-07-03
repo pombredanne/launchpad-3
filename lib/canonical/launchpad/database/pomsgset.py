@@ -4,21 +4,24 @@ __metaclass__ = type
 __all__ = ['POMsgSet']
 
 import logging
-from warnings import warn
 import datetime
+import gettextpo
+from warnings import warn
 
 from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin
 from sqlobject import SQLObjectNotFound
-from canonical.database.sqlbase import SQLBase, sqlvalues, \
-    flush_database_updates
+from canonical.database.sqlbase import (SQLBase, sqlvalues,
+    flush_database_updates)
 from canonical.launchpad.interfaces import IEditPOMsgSet
-from canonical.lp.dbschema import RosettaTranslationOrigin
+from canonical.lp.dbschema import (RosettaTranslationOrigin,
+    TranslationValidationStatus)
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.poselection import POSelection
 from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
+from canonical.launchpad import helpers
 
 
 class POMsgSet(SQLBase):
@@ -117,7 +120,40 @@ class POMsgSet(SQLBase):
     # IEditPOMsgSet
 
     def updateTranslationSet(self, person, new_translations, fuzzy,
-        published, is_editor):
+        published, is_editor, ignore_errors=False):
+        """See IEditPOMsgSet."""
+        # First, check that the translations are correct.
+        pot_set = self.potmsgset
+        msgids_text = [messageid.msgid
+                       for messageid in pot_set.messageIDs()]
+
+        # By default all translations are correct.
+        validation_status = TranslationValidationStatus.OK
+
+        # Validate the translation we got from the translation form
+        # to know if gettext is unhappy with the input.
+        try:
+            helpers.validate_translation(msgids_text, new_translations,
+                                         pot_set.flags())
+        except gettextpo.error, e:
+            if fuzzy or ignore_errors:
+                # The translations are stored anyway, but we set them as
+                # broken.
+                validation_status = TranslationValidationStatus.UNKNOWNERROR
+            else:
+                # Check to know if there is any translation.
+                has_translations = False
+                for key in new_translations.keys():
+                    if new_translations[key] != '':
+                        has_translations = True
+                        break
+
+                if has_translations:
+                    # Partial translations cannot be stored unless the fuzzy
+                    # flag is set, the exception is raised again and handled
+                    # outside this method.
+                    raise
+
         # keep track of whether or not this msgset is complete. We assume
         # it's complete and then flag it during the process if it is not
         complete = True
@@ -137,11 +173,12 @@ class POMsgSet(SQLBase):
             # make the new sighting or submission. note that this may not in
             # fact create a whole new submission
             self.makeSubmission(
-                person = person,
-                text = newtran,
-                pluralform = index,
-                published = published,
-                is_editor = is_editor)
+                person=person,
+                text=newtran,
+                pluralform=index,
+                published=published,
+                validation_status=validation_status,
+                is_editor=is_editor)
 
         # We set the fuzzy flag first, and completeness flags as needed:
         if published and is_editor:
@@ -155,7 +192,8 @@ class POMsgSet(SQLBase):
         self.updateStatistics()
 
     def makeSubmission(self, person, text, pluralform, published,
-            is_editor=True):
+            is_editor=True,
+            validation_status=TranslationValidationStatus.UNKNOWN):
         # this is THE KEY method in the whole of rosetta. It deals with the
         # sighting or submission of a translation for a pomsgset and plural
         # form, either online or in the published po file. It has to decide
@@ -188,7 +226,7 @@ class POMsgSet(SQLBase):
         # a NULL translation. This only affects the published or active data
         # set, there is no crossover. So, for example, if upstream loses a
         # translation, we do not remove it from the rosetta active set.
-        
+
         # we should also be certain that we don't get an empty string. that
         # should be None by this stage
         assert text != '', 'Empty string received, should be None'
@@ -206,9 +244,11 @@ class POMsgSet(SQLBase):
             # addressed in ResettingTranslations. 27/05/05
             if published:
                 selection.publishedsubmission = None
-            else:
-                if is_editor:
-                    selection.activesubmission = None
+            elif (is_editor and
+                  validation_status == TranslationValidationStatus.OK):
+                # activesubmission is updated only if the translation is valid and
+                # it's an editor.
+                selection.activesubmission = None
 
         # If nothing was submitted, return None
         if text is None:
@@ -251,6 +291,12 @@ class POMsgSet(SQLBase):
         # translation is already published
         if published and selection.publishedsubmission:
             if selection.publishedsubmission.potranslation == translation:
+                # Sets the validation status to the current status.
+                # We do it always so the changes in our validation code will
+                # apply automatically.
+                selection.publishedsubmission.validationstatus = \
+                    validation_status
+
                 # return the existing submission that made this translation
                 # the published one in the db
                 return selection.publishedsubmission
@@ -258,6 +304,13 @@ class POMsgSet(SQLBase):
         # of this translation is already active
         if not published and selection.activesubmission:
             if selection.activesubmission.potranslation == translation:
+                # Sets the validation status to the current status.
+                # If our validation code has been improved since the last
+                # import we might detect new errors in previously validated
+                # strings, so we always do this, regardless of the status in
+                # the database.
+                selection.activesubmission.validationstatus = \
+                    validation_status
                 # and return the active submission
                 return selection.activesubmission
 
@@ -276,13 +329,16 @@ class POMsgSet(SQLBase):
             pluralform=pluralform,
             potranslationID=translation.id,
             origin=origin,
-            personID=person.id)
+            personID=person.id,
+            validationstatus=validation_status)
 
         # next, we need to update the existing active and possibly also
         # published selections
         if published:
             selection.publishedsubmission = submission
-        if is_editor:
+        if is_editor and validation_status == TranslationValidationStatus.OK:
+            # activesubmission is updated only if the translation is valid and
+            # it's an editor.
             selection.activesubmission = submission
 
         # we cannot properly update the statistics here, because we don't
@@ -366,9 +422,10 @@ class POMsgSet(SQLBase):
         """See IPOMsgSet."""
         # XXX sabdfl 02/06/05 this is Malone bug #906
         fudgefactor = datetime.timedelta(0,1,0)
-        active = self.selection(pluralform)
-        if active and active.activesubmission:
-            active = active.activesubmission
+        selection = self.selection(pluralform)
+        active = None
+        if selection is not None and selection.activesubmission:
+            active = selection.activesubmission
         query = '''pomsgset = %s AND
                    pluralform = %s''' % sqlvalues(self.id, pluralform)
         if active:

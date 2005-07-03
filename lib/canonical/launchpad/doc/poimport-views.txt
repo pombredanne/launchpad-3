@@ -1,0 +1,162 @@
+
+PO Import Browser Views
+-----------------------
+
+Users can upload PO templates, PO files, and tarballs containing PO templates
+and PO files to Rosetta. This test checks that this functionality works
+properly.
+
+    >>> from canonical.launchpad.ftests.harness import \
+    ...     LaunchpadFunctionalTestSetup
+    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+    >>> LaunchpadFunctionalTestSetup().setUp()
+    >>> LibrarianTestSetup().setUp()
+
+Get a PO template to import to.
+
+    >>> from canonical.launchpad.database import POTemplate
+    >>> potemplate = POTemplate.get(1)
+
+Log in so that the browser code has a user to associate with the imports.
+
+    >>> login('carlos@canonical.com')
+
+Construct test request data.
+
+    >>> from zope.publisher.browser import TestRequest, FileUpload
+    >>> from StringIO import StringIO
+
+    >>> class TestFileUpload(FileUpload):
+    ...     def __init__(self, filename, stream):
+    ...         self.filename = filename
+    ...         for method in ['read', 'seek', 'tell']:
+    ...             self.__dict__[method] = getattr(stream, method)
+
+    >>> fileupload = TestFileUpload(
+    ...     filename='foo.pot',
+    ...     stream=StringIO('# Hello!'))
+
+    >>> request = TestRequest(
+    ...     environ={'REQUEST_METHOD': 'POST'},
+    ...     form={
+    ...         'UPLOAD': 1,
+    ...         'file': fileupload,
+    ...     })
+
+Now ask the view to process it.
+
+    >>> from canonical.launchpad.browser.potemplate import POTemplateView
+    >>> view = POTemplateView(potemplate, request)
+    >>> view.submitForm()
+    >>> view.status_message
+    'Thank you for your upload. The template content will appear in Rosetta in a few minutes.'
+
+Commit the transaction so as to be able to access Librarian data.
+
+    >>> import transaction
+    >>> transaction.commit()
+
+Check the data has been imported.
+
+    >>> from canonical.launchpad.helpers import getRawFileData
+    >>> getRawFileData(potemplate)
+    '# Hello!'
+
+Try the same thing all over again but with a tarball upload.
+
+    >>> from canonical.launchpad.helpers import join_lines
+    >>> pot_contents = join_lines(
+    ...     '# This is the PO template.',
+    ...     'msgid ""',
+    ...     'msgstr ""',
+    ...     '"Content-Type: text/plain; charset=ascii\\n"')
+
+    >>> from canonical.launchpad.helpers import RosettaWriteTarFile
+    >>> tarball = RosettaWriteTarFile.files_to_stream({
+    ...     'foo/foo.pot': pot_contents,
+    ...     'foo/es.po': '# This is the Spanish PO file.',
+    ... })
+
+    >>> fileupload = TestFileUpload(
+    ...     filename='foo.tar.gz',
+    ...     stream=tarball)
+
+    >>> request = TestRequest(
+    ...     environ={'REQUEST_METHOD': 'POST'},
+    ...     form={
+    ...         'UPLOAD': 1,
+    ...         'file': fileupload,
+    ...     })
+
+    >>> view = POTemplateView(potemplate, request)
+    >>> view.submitForm()
+    >>> view.status_message
+    '2 files were queued for import from the tar file you uploaded.'
+
+Check the files are stored properly.
+
+    >>> transaction.commit()
+
+    >>> for line in getRawFileData(potemplate).splitlines():
+    ...     print line
+    # This is the PO template.
+    msgid ""
+    msgstr ""
+    "Content-Type: text/plain; charset=ascii\n"
+
+    >>> getRawFileData(potemplate.getPOFileByLang('es'))
+    '# This is the Spanish PO file.'
+
+Now let's test the upload view on POFile. This works very similarly. The extra
+twist is that we check that the 'rawfilepublished' attribute gets set.
+
+First, our POFile object.
+
+    >>> from canonical.launchpad.database import POFile
+    >>> pofile = POFile.get(1)
+
+    >>> pofile.rawfilepublished
+    True
+
+Then a TestFileUpload and a TestRequest as before.
+
+    >>> fileupload = TestFileUpload(
+    ...     filename='es.po',
+    ...     stream=StringIO('# Yo!'))
+
+An 'upload_type' of 'user' means that the 'published' flag should become unset.
+
+    >>> request = TestRequest(
+    ...     environ={'REQUEST_METHOD': 'POST'},
+    ...     form={
+    ...         'UPLOAD': 1,
+    ...         'file': fileupload,
+    ...         'upload_type': 'user',
+    ...     })
+
+And submitting the form and checking the results works in a similar way also.
+
+    >>> from canonical.launchpad.browser import POFileView
+    >>> view = POFileView(pofile, request)
+    >>> view.submitForm()
+
+Check the status message.
+
+    >>> view.status_message
+    'Thank you for your upload. The translation content will appear in Rosetta in a few minutes.'
+
+Check the raw file data.
+
+    >>> transaction.commit()
+
+    >>> getRawFileData(pofile)
+    '# Yo!'
+
+Check the 'rawfilepublished' flag.
+
+    >>> pofile.rawfilepublished
+    False
+
+    >>> LibrarianTestSetup().tearDown()
+    >>> LaunchpadFunctionalTestSetup().tearDown()
+

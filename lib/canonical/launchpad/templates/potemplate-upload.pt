@@ -3,13 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-    <title metal:fill-slot="title">
-      Upload <tal:block replace="context/title">Foo</tal:block> template
-      version to Rosetta
-    </title>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">
@@ -22,16 +15,27 @@
              tal:condition="view/status_message"
              tal:content="structure view/status_message">Successful</div>
 
+        <p>
+        Here you can upload either a single PO template (<code>.pot</code>) or
+        a tar file containing a PO template and a set of PO files
+        (<code>.tar</code>, <code>.tar.gz</code> or <code>.tar.bz2</code>).
+        The files you upload will be imported into Rosetta shortly.
+        </p>
+
         <form action="+upload" method="POST" enctype="multipart/form-data">
-
-        <fieldset>
-            <label>Select a template file to import:
-              <input name="file" type="file" />
-            </label>
-            <br />
-            <input name="UPLOAD" type="submit" value="Upload"/>
-        </fieldset>
-
+            <table>
+                <tr>
+                    <th><label for="file_input">File:</label></th>
+                    <td><input id="file_input" name="file" type="file" /></td>
+                </tr>
+                <tr>
+                    <th></th>
+                    <td>
+                        <input name="UPLOAD" type="submit" value="Upload"/>
+                    </td>
+                </tr>
+            </table>
+        </form>
 </div>
 
 </body>

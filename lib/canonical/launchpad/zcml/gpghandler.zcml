@@ -16,5 +16,12 @@
         <allow interface="canonical.launchpad.interfaces.IGpgHandler" />
     </securedutility>
 
+    <content class="canonical.launchpad.utilities.PymeSignature">
+        <allow interface="canonical.launchpad.interfaces.IPymeSignature" />
+    </content>
+
+    <content class="canonical.launchpad.utilities.PymeKey">
+        <allow interface="canonical.launchpad.interfaces.IPymeKey" />
+    </content>
 
 </configure>

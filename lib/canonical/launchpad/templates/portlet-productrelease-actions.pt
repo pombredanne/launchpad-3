@@ -1,13 +1,24 @@
-<div class="portlet" tal:condition="context/required:launchpad.Admin">
+<div class="portlet">
     <h4>Actions:</h4>
 
     <div class="portletBody">
         <div class="portletContent">
 
             <ul>
+                <li class="edit"
+                    tal:condition="context/required:launchpad.Edit">
+                    <a href="+edit">Edit Details</a>
+                </li>
+                <li class="edit"
+                    tal:condition="context/required:launchpad.Admin">
+                    <a href="+review">Review</a>
+                </li>
                 <li class="add"
                     tal:condition="context/required:launchpad.Admin">
                   <a href="+addpotemplate">Add a template</a>
+                </li>
+                <li class="download">
+                    <a href="+rdf">Download RDF Metadata</a>
                 </li>
             </ul>
         </div>

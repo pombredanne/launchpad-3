@@ -15,17 +15,18 @@
           <a href="../">Switch Languages</a>
         </li>
         <li class="edit" tal:condition="context/required:launchpad.Edit">
-          <a href="+edit">Edit PO Details</a>
+          <a href="+edit">Edit Details</a>
+        </li>
+        <li class="edit" tal:condition="context/required:launchpad.Edit">
+          <a href="+upload">Upload a file</a>
         </li>
         <li class="languages">
           <a href="../">View Template</a>
         </li>
         <li class="download">
-          <a href="+po">Export as PO file</a>
+          <a href="+export">Export this file</a>
         </li>
-        <li class="download">
-          <a href="+mo">Export as MO file</a>
-        </li>
+      </ul>
 
     </div>
 

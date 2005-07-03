@@ -1,0 +1,79 @@
+  Let's change the owner of the ubuntu distribution.
+
+
+  Sample Person logs in and try to change the owner, but he can't because he's
+  not the distro owner nor a member of Launchpad admins.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+reassign HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 403 Forbidden
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+
+
+  Now we're logged in as Mark Shuttleworth, and he's a member of the team that
+  is the distro owner. He tries to make salgado the new distro owner, but 
+  salgado hasn't validated his email address yet, so he can't be the distro 
+  owner.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+reassign HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ...
+  ... field.owner=salgado&existing=existing&CHANGE_OWNER=Change+Owner""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...The person/team named 'salgado' is not a valid owner...
+  ...
+
+
+  Now Mark reassigns the distro to himself.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+reassign HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... field.owner=sabdfl&existing=existing&CHANGE_OWNER=Change+Owner""")
+  HTTP/1.1 303 See Other
+  ...
+  Location: .
+  ...
+
+
+  Mark is now displayed as the owner.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/ HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...Admin:...
+  ...
+  ...Mark Shuttleworth...
+  ...
+
+
+  Now Mark tries to reassign the distro to a new team called salgado, but he
+  can't because there's already a user called salgado.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+reassign HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... field.owner=salgado&existing=new&CHANGE_OWNER=Change+Owner""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...There's already a person/team with the name 'salgado' in Launchpad...
+  ...
+

@@ -18,13 +18,26 @@
         for="canonical.launchpad.database.DistroArchRelease" 
         getter="__getitem__" />
 
-    <browser:page
+    <browser:pages
         for="canonical.launchpad.database.DistroArchRelease" 
         permission="zope.Public"
+        class="canonical.launchpad.browser.DistroArchReleaseView">
+	
+	<browser:page
         name="+index"
-        class="canonical.launchpad.browser.DistroArchReleaseView"
         template="../templates/distroarchrelease-index.pt"
         lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+index"/>
+
+	<browser:page
+        name="+portlet-details"
+        template="../templates/portlet-distroarchrelease-details.pt"
+        lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+portlet-details"/>
+
+	<browser:page
+        name="+portlet-actions"
+        template="../templates/portlet-distroarchrelease-actions.pt"
+        lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+portlet-actions"/>
+    </browser:pages>
 
     <browser:page
         for="canonical.launchpad.database.DistroArchRelease" 
@@ -34,4 +47,5 @@
         template="../templates/distroarchrelease-pkgsearch.pt"
         lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+pkgsearch"/>
 
+	
 </configure>

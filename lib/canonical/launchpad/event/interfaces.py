@@ -2,16 +2,15 @@
 
 __metaclass__ = type
 
-from zope.app.event.interfaces import IObjectModifiedEvent, IObjectEvent, \
-    IObjectCreatedEvent
+from zope.app.event.interfaces import (
+    IObjectModifiedEvent, IObjectEvent, IObjectCreatedEvent)
 from zope.interface import Interface, Attribute
 
 
 class ISQLObjectCreatedEvent(IObjectCreatedEvent):
     """An SQLObject has been created."""
-    request = Attribute(
-        "The IBrowserRequest if this object was created through a web "
-        "browser, or None, if it was not created through a browser.")
+    user = Attribute("The user who created the object.")
+
 
 class ISQLObjectModifiedEvent(IObjectModifiedEvent):
     """An SQLObject has been modified."""
@@ -20,18 +19,14 @@ class ISQLObjectModifiedEvent(IObjectModifiedEvent):
     edited_fields = Attribute(
         "The list of fields that were edited (though not necessarily all "
         "modified, of course.)")
-    # XXX: Brad Bollenbach, 2005-04-13: See
-    # https://launchpad.ubuntu.com/malone/bugs/375
-    principal = Attribute("The principal for this event.")
-    request = Attribute(
-        "The IBrowserRequest if this object was created through a web "
-        "browser, or None, if it was not created through a browser.")
+    user = Attribute("The user who modified the object.")
 
 
 class ISQLObjectToBeModifiedEvent(IObjectEvent):
     """An SQLObject is about to be modified."""
 
     new_values = Attribute("A dict of fieldname -> newvalue pairs.")
+    user = Attribute("The user who will modify the object.")
 
 
 class IJoinTeamRequestEvent(Interface):

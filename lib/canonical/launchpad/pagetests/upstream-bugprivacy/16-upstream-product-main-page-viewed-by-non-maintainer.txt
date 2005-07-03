@@ -8,38 +8,16 @@ View the product main page in DOAP as user Foo Bar.
   HTTP/1.1 200 Ok
   ...
       <h4>Latest Malone Bugs:</h4>
-  <BLANKLINE>
-      <div class="portletBody">
-          <div class="portletContent even">
-  <BLANKLINE>
-          <table class="rowNavigation" border="0">
-              <tr onclick="window.location='/malone/bugs/6'">
-                  <td> [#6] Firefox crashes when Save As dialog for a nonexistent window is closed</td>
-              </tr>
-              <tr onclick="window.location='/malone/bugs/5'">
-                  <td> [#5] Firefox install instructions should be complete</td>
-              </tr>
-              <tr onclick="window.location='/malone/bugs/4'">
-                  <td> [#4] Reflow problems with complex page layouts</td>
-              </tr>
-              <tr onclick="window.location='/malone/bugs/1'">
-                  <td> [#1] Firefox does not support SVG</td>
-              </tr>
-          </table>
-  <BLANKLINE>
-          <a href="+filebug" style="font-size: 85%; display: inline; clear: both; text-decoration: none;" title="File a bug on this product">
-              <img src="/++resource++add.gif" alt="+" />
-              File Bug on Mozilla Firefox<br />
-          </a>
-  <BLANKLINE>
-          <a style="font-size: 85%; display: inline; clear: both; text-decoration: none;"
-             title="See all bugs for this product"
-             href="/malone/products/firefox">
-              <img src="/++resource++add.gif" alt="+" />
-              More Mozilla Firefox bugs<br />
-          </a>
-  <BLANKLINE>
-          </div>
-  <BLANKLINE>
-      </div>
+  ...
+  ...[#6] Firefox crashes when Save As dialog for a nonexistent window is closed...
+  ...
+  ...[#5] Firefox install instructions should be complete...
+  ...
+  ...[#4] Reflow problems with complex page layouts...
+  ...
+  ...[#1] Firefox does not support SVG...
+  ...
+  ...Report a bug on Mozilla Firefox...
+  ...
+  ...More Mozilla Firefox bugs...
   ...

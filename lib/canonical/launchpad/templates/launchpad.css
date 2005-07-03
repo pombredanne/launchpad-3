@@ -1,62 +1,48 @@
 /* Column definitions */
 
 #portal-columns {
-    width: 100% !important;
+  width: 100% !important;
 }
 
 #portal-column-one {
-    vertical-align: top;
-    width: 16em;
+  vertical-align: top;
+  width: 16em;
 }
 
 #portal-column-content {
-    vertical-align: top;
-    margin: 0;
-    padding: 0;
+  vertical-align: top;
+  padding: 0 1em;
 }
 
 #portal-column-two {
-    vertical-align: top;
-    width: 16em;
+  vertical-align: top;
+  width: 16em;
 }
-
-/* Padding for the columns */
-
-#portal-column-one .visualPadding {
-    padding: 2em 0em 1em 2em;
-}
-#portal-column-content .visualPadding {
-    padding: 0em 2em 1em 2em;
-}
-#portal-column-two .visualPadding {
-    padding: 2em 2em 1em 0em;
-}
-
 
 /* Launchpad classes */
 
 .rosettaTile {
-    display: block;
-    width: 40%;
-    padding: 1em;
-    margin: 1em;
-    background-color: #93bee2;
-    border: 1px solid #364970;
-    text-decoration: none;
+  display: block;
+  width: 40%;
+  padding: 1em;
+  margin: 1em;
+  background-color: #93bee2;
+  border: 1px solid #364970;
+  text-decoration: none;
 }
 
 .rosettaDashboardElement {
-    width: 30%;
-    float: left;
-    margin: 1em;
+  width: 30%;
+  float: left;
+  margin: 1em;
 }
 
 .interpolation {
-    background-color: #7090a0;
+  background-color: #7090a0;
 }
 
 .collapsed {
-    border-style: dashed none none none;
+  border-style: dashed none none none;
 }
 
 fieldset.message-strings {
@@ -64,16 +50,16 @@ fieldset.message-strings {
 }
 
 table.data input[type='text'] {
-    width: 100%;
+  width: 100%;
 }
 
 fieldset.message-strings input[type=checkbox] { width: auto !important; }
 
 fieldset.two-column {
-    width: 45%;
-    float: left;
-    display: block;
-    margin-right: 1em;
+  width: 45%;
+  float: left;
+  display: block;
+  margin-right: 1em;
 }
 
 
@@ -81,118 +67,109 @@ fieldset.two-column {
 /* Plone elements that should be changed */
 
 h1, h2, h3, h4, h5, h6 {
-    border-bottom: none;
+  border-bottom: none;
 }
 
 h3 {
-    list-style-image: url(/++resource++bullet.gif);
-}
-
-.listing td {
-    padding-bottom: 0.3em;
-}
-
-.listing th {
-    white-space: nowrap;
+  list-style-image: url(/++resource++bullet.gif);
 }
 
 label {
-    font-weight: bold;    
+  font-weight: bold;    
 }
 
 
 .listingBar a,
 #portal-personaltools a,
-#portal-breadcrumbs a,
-#portal-footer a {
-    text-decoration: none;
-    text-transform: lowercase;
-    font-size: 80%;
+#portal-breadcrumbs a {
+  text-decoration: none;
+  text-transform: lowercase;
+  font-size: 80%;
 }
 
 #portal-logo {
-    background: url(/++resource++rosetta.png) no-repeat;
+  background: url(/++resource++rosetta.png) no-repeat;
 }
 
 #portal-personaltools {
-    clear: both;
+  clear: both;
 }
 
 #portal-personaltools .portalUser {
-    background: transparent url(/++resource++user.gif) center left no-repeat;
+  background: transparent url(/++resource++user.gif) center left no-repeat;
 }
 
 #portal-personaltools li {
-    background: transparent url(/++resource++linkOpaque.gif) center left no-repeat;
+  background: transparent url(/++resource++linkOpaque.gif) center left no-repeat;
 }
 
 .contentActions {
-    background-image: url(/++resource++arrowDownAlternative.gif);
+  background-image: url(/++resource++arrowDownAlternative.gif);
 }
 
 .portalMessage,
 .system-message,  /* These two last ones are reST error indicators */
 #error-handling {
-    background-image: url(/++resource++info_icon.gif);
+  background-image: url(/++resource++info_icon.gif);
 }
 
 .standalone,
 .documentEditable * .standalone {
-    background: #8fb3d9 url(/++resource++linkOpaque.gif) 9px 1px no-repeat;
+  background: #8fb3d9 url(/++resource++linkOpaque.gif) 9px 1px no-repeat;
 }
 
 .context,
 .documentEditable * .context {
-    background: transparent url(/++resource++linkTransparent.gif) 9px 1px no-repeat;
+  background: transparent url(/++resource++linkTransparent.gif) 9px 1px no-repeat;
 }
 
 .destructive,
 .documentEditable * .context {
-    background: #ffce7b url(/++resource++linkTransparent.gif) 9px 1px no-repeat;
+  background: #ffce7b url(/++resource++linkTransparent.gif) 9px 1px no-repeat;
 }
 
 input.searchButton {
-    background: White url(/++resource++search_icon.gif) 2px 1px no-repeat;
+  background: White url(/++resource++search_icon.gif) 2px 1px no-repeat;
 }
 
 .fieldRequired {
-    background: url(/++resource++required.gif) center left no-repeat;
+  background: url(/++resource++required.gif) center left no-repeat;
 }
 
 .link-parent {
-    background: transparent url(/++resource++arrowUp.gif) 4px 5px no-repeat;
+  background: transparent url(/++resource++arrowUp.gif) 4px 5px no-repeat;
 }
 
 .link-user {
-    background: transparent url(/++resource++user.gif) 0px 1px no-repeat;
+  background: transparent url(/++resource++user.gif) 0px 1px no-repeat;
 }
 
 .link-https {
-    background: transparent url(/++resource++lock_icon.gif) 0px 1px no-repeat;
+  background: transparent url(/++resource++lock_icon.gif) 0px 1px no-repeat;
 }
 
 .link-mailto {
-    background: transparent url(/++resource++mail_icon.gif) 0px 1px no-repeat;
+  background: transparent url(/++resource++mail_icon.gif) 0px 1px no-repeat;
 }
 
 .link-news {
-    background: transparent url(/++resource++topic_icon.gif) 0px 1px no-repeat;
+  background: transparent url(/++resource++topic_icon.gif) 0px 1px no-repeat;
 }
 
 .link-ftp {
-    background: transparent url(/++resource++file_icon.gif) 0px 1px no-repeat;
+  background: transparent url(/++resource++file_icon.gif) 0px 1px no-repeat;
 }
 
 .link-irc {
-    background: transparent url(/++resource++discussionitem_icon.gif) 0px 1px no-repeat;
+  background: transparent url(/++resource++discussionitem_icon.gif) 0px 1px no-repeat;
 }
 
 .link-callto {
-    background: transparent url(/++resource++phone_icon.gif) 0px 1px no-repeat;
+  background: transparent url(/++resource++phone_icon.gif) 0px 1px no-repeat;
 }
 
 .link-comment {
-    background: transparent url(/++resource++discussionitem_icon.gif) 0px 1px no-repeat;
+  background: transparent url(/++resource++discussionitem_icon.gif) 0px 1px no-repeat;
 }
 
 
@@ -200,89 +177,89 @@ input.searchButton {
 /* XXX Just setting a fixed width until the rest of the layout is in place */
 
 #portal-column-content {
-    width: 600px;
+  width: 600px;
 }
 
 #portal-columns {
-    margin: auto;
+  margin: auto;
 }
 
 /* Explanatory elements, just until the correct mechanisms are in place */
 
 .authenticated {
-    border: 2px dashed green;
-    padding: 2px;
-    margin: 2px;
+  border: 2px dashed green;
+  padding: 2px;
+  margin: 2px;
 }
 
 .anonymous {
-    border: 2px dashed red;
-    padding: 2px;
-    margin: 2px;
+  border: 2px dashed red;
+  padding: 2px;
+  margin: 2px;
 }
 
 /* highlight on hover in table */
 
 table.rowNavigation tr:hover {
-    background-color: #93bee2 !important;
-    cursor:pointer;
+  background-color: #93bee2 !important;
+  cursor:pointer;
 }
 table.rowNavigation>thead>tr:hover {
-    background-color: #dee7ec !important;
-    cursor: default;
+  background-color: #dee7ec !important;
+  cursor: default;
 }
 
 /* Display links as blocks, so we can make the whole row clickable */
 
 tr.rowLinkified a {
-    text-decoration: none;
-    display: block;
+  text-decoration: none;
+  display: block;
 }
 
 /* Overwride values from 'listing' class */
 .lpListing td {
-    padding: 0em 0em;
+  padding: 0em 0em;
 }
 
 .lpListing td a {
-    padding: 0em 1em;
+  padding: 0em 1em;
 }
 
 .lpListing a:hover {
-    text-decoration: none;
+  text-decoration: none;
 }
 
 
 /* batch navigation links */
 
 .batchnav tr:hover {
-    background-color: white;
+  background-color: white;
 }
 
 .batchnav td:hover {
-    background-color: white;
+  background-color: white;
 }
 
 .batchnav td {
-    text-align: center;
-    border-top: 1px solid #364970;
-    vertical-align: bottom;>
+  text-align: center;
+  border-top: 1px solid #364970;
+  vertical-align: bottom;>
 }
 
 /* Bug status markers */
 
 .bug-confirmed {
-    color: white;
-    background-color: red;
-    border: 1px solid #990000;
-    padding: 0 0.25em;
+  color: white;
+  background-color: red;
+  border: 1px solid #990000;
+  padding: 0 0.25em;
 }
 
 .bug-pending {
-    color: black;
-    background-color: yellow;
-    border: 1px dashed #999900;
-    padding: 0 0.25em;
+  color: black;
+  background-color: yellow;
+  border: 1px dashed #999900;
+  padding: 0 0.25em;
 }
 
 /* Bug Severity markers */
@@ -307,136 +284,135 @@ tr.rowLinkified a {
 /* Board-like comment CSS */
 
 .boardComment {
-    border: 1px solid #364970;
-    margin-bottom: 1.5em;
-    position: relative;
+  border: 1px solid #364970;
+  margin-bottom: 1.5em;
+  position: relative;
 }
 
 /* Fix for IE float bug */
 * html .boardComment {
-    float: left;
-    clear: both;
-    width: 99%;
+  float: left;
+  clear: both;
+  width: 99%;
 }
 
 .boardCommentDetails {
-    font-size: 80%;
-    border: 1px solid #364970;
-    border-style: none none solid none;
-    background-color: #f7f9fa;
-    padding: 0.5em 1em;
+  font-size: 80%;
+  border: 1px solid #364970;
+  border-style: none none solid none;
+  background-color: #f7f9fa;
+  padding: 0.5em 1em;
 }
 
 .boardCommentBody {
-    padding: 0.5em 1em;
+  padding: 0.5em 1em;
 }
 
 .boardCommentContent {
-    line-height: 1.5em;
+  line-height: 1.5em;
 }
 
 .boardCommentContent pre {
-    background-color: white;
-    border: none;
-    padding: 0;
-    margin: 0;
+  background-color: white;
+  border: none;
+  padding: 0;
+  margin: 0;
 }
 
 .boardCommentActions {
-    border: 1px solid #364970;
-    border-style: solid none none none;
-    background-color: #93bee2;
-    padding: 0.5em 1em 0 1em;
-    text-align: right;
+  border: 1px solid #364970;
+  border-style: solid none none none;
+  background-color: #93bee2;
+  padding: 0.5em 1em 0 1em;
+  text-align: right;
 }
 
 .boardCommentActions {
-    right: 1em:
+  right: 1em:
 }
 
 .boardCommentPortrait {
-    float: right; 
-    margin-bottom: 1em;
+  float: right; 
+  margin-bottom: 1em;
 }
 
 .portrait {
-    float: right;
-    clear: both;
+  float: right;
+  clear: both;
 }
 
 /* used to mark dummy data with div entity */
 .dummy {
-   background-color: #cccccc;
+  background-color: #cccccc;
 }
 
-/* Various custom list formats */
-
-ul.people {
-    list-style-image: none;
-    list-style: none;
-    margin: 0;
-}
-
-ul.people li {
-    line-height: 1.5em;
-    padding: 0;
-    background-image: url(/++resource++user.gif);
-    background-color: transparent;
-    background-repeat: no-repeat;
-    padding-left: 18px
-}
-
-ul.search>li, li.search {
-    list-style-image: url(/++resource++search_icon.gif);
-}
+/* Various custom list formats: */
 
 ul.add>li, li.add {
-    list-style-image: url(/++resource++add.gif);
+  list-style-image: url(/++resource++add.gif);
 }
-
-ul.edit>li, li.edit {
-    list-style-image: url(/++resource++edit.gif);
-}
-
-ul.locked>li, li.locked {
-    list-style-image: url(/++resource++lock_icon.gif);
-}
-
-ul.languages>li, li.languages {
-    list-style-image: url(/++resource++languages.gif);
-}
-
 ul.download>li, li.download {
-    list-style-image: url(/++resource++download.png);
+  list-style-image: url(/++resource++download.png);
+}
+ul.edit>li, li.edit {
+  list-style-image: url(/++resource++edit.gif);
+}
+ul.info>li, li.info {
+  list-style-image: url(/++resource++info_icon.gif);
+}
+ul.languages>li, li.languages {
+  list-style-image: url(/++resource++languages.gif);
+}
+ul.locked>li, li.locked {
+  list-style-image: url(/++resource++lock_icon.gif);
+}
+ul.mail>li, li.mail {
+  list-style-image: url(/++resource++mail_icon.gif);
+}
+ul.person>li, li.person, ul.people>li, li.people {
+  list-style-image: url(/++resource++user.gif);
+}
+ul.packages>li, li.packages, ul.products>li, li.products {
+  list-style-image: url(/++resource++product_icon.gif);
+}
+ul.translations>li, li.translations {
+  list-style-image: url(/++resource++translations);
+}
+dl.products>dt:before {
+  content: url(/++resource++product_icon.gif);
+}
+ul.search>li, li.search {
+  list-style-image: url(/++resource++search_icon.gif);
 }
 
+ul.architecture>li, li.architecture {
+    list-style-image: url(/++resource++document_icon.gif);
+}
 
-/*
-Translation template stuff.
-*/
+/* Translation template stuff: */
 
 .messageSourceString {
-    padding: 0.5em 1em;
-    background-color: #93bee2;
-    border: 1px solid #364970;
+  padding: 0.5em 1em;
+  background-color: #93bee2;
+  border: 1px solid #364970;
 }
 
 .language-label {
-    float: left;
+  float: left;
 }
 
 /* Used for source and translator comments on the translation page. */
 
 .po-comment {
-    background-color: #efe;
-    border: thin solid #8a8;
-    margin: 0.5em 0;
-    padding: 0.5em;
+  background-color: #efe;
+  border: thin solid #8a8;
+  margin: 0.5em 0;
+  padding: 0.5em;
 }
 
 .po-message-special {
-    color: white;
-    background-color: #93bee2;
+  color: white;
+  background-color: #93bee2;
 }
 
 /* Used in default-error.pt so people actually notice exceptions */
@@ -512,13 +488,14 @@ a, #portal-footer a {
   text-decoration: underline;
 }
 /* -- ... except in portlets for now -- */
-a[name], .portlet :link, .portlet :visited {
+a[name], .portlet :link, .portlet :visited,
+.sidebar :link, .sidebar :visited {
   text-decoration: none;
 }
 
 /* -- Don't stomp on people's preferred font sizes: -- */
 
-body, .listing {
+body {
   font-size: 100%;
 }
 code {
@@ -548,13 +525,29 @@ h1 {
   padding-right: 0;
 }
 
-/* Fix missing borders in tables: */
+/* Fix listing tables: */
 
+table.listing {
+  border: none;
+}
+table.listing, table.listing tbody {
+  border-bottom: 1px solid #8cacbb;
+}
+table.listing th, table.listing td {
+  padding: 0.125em 0.25em;
+}
+table.listing th {
+  white-space: nowrap;
+}
 table.listing>tr>td, table.listing>tbody>tr>td {
-  border: 1px dotted #8cacbb;
+  border: dotted #8cacbb;
+  border-width: 1px 0;
 }
 table.listing>thead>tr>th, table.listing>thead>tr>td {
   border: 1px solid #8cacbb;
+}
+table.listing>thead>tr>td {
+  border: none;
 }
 
 /* Not all of a <dt> should be bold: -- */
@@ -570,8 +563,8 @@ dt dfn {
 
 /* -- Other bugs: -- */
 
-.listing td {
-  padding: 0.125em 0.25em;
+.documentContent {
+  background: none;
 }
 
 .formHelp, .formHelp:hover {
@@ -583,20 +576,19 @@ dt dfn {
   font-size: smaller;
 }
 
-li {
-    margin-bottom: 0 !important;
+legend {
+  background: none;
 }
-
-li.edit, ul.edit li {
-    list-style-image: url(/++resource++edit.gif);
+li {
+  margin-bottom: 0 !important;
 }
 
 #portal-personaltools .portalUser {
-    background: transparent url(/++resource++user.gif)
+  background: transparent url(/++resource++user.gif)
 }
 
 .portlet li a {
-    text-decoration: none
+  text-decoration: none
 }
 
 /* === New design === */
@@ -608,8 +600,9 @@ abbr, address {
 }
 
 label {
-  font: caption;
+  font-family: sans-serif;
   font-weight: normal;
+  white-space: nowrap;
 }
 
 caption {
@@ -631,6 +624,110 @@ thead {
 
 /* -- Launchpad-wide -- */
 
+body {
+  background-color: #fcfcfc;
+  padding: 0.25em 0.75em 0.5em 0.75em;
+}
+.header, .footer {
+  font-family: "Lucida Grande", "Charcoal", sans-serif;
+}
+.header {
+  font-size: 0.875em;
+  margin-bottom: 0.5em;
+}
+.footer {
+  font-size: smaller;
+  text-align: center;
+}
+.login {
+  text-align: right;
+  min-height: 1.75em;
+}
+.login input[type="submit"] {
+  padding: 0;
+}
+.hierarchy, .facets, .footer {
+  padding: 0.25em;
+}
+.hierarchy, .footer, ul.app>li {
+  background-color: #dee7ec;
+  color: inherit;
+}
+.facets {
+  background-color: #8cacbb;
+  color: white;
+  font-weight: bold;
+  margin: 0;
+  min-height: 1.5em;
+}
+.facets li {
+  background: url(/++resource++bullet.gif) no-repeat;
+  background-position: 0.25em 50%;
+  display : inline;
+  list-style: none;
+  padding: 0 0.75em 0 1.25em;
+}
+.facets :link, .facets :visited {
+  background: none;
+  color: #dee7ec;
+}
+.facets .current a {
+  background: none;
+  color: white;
+}
+ul.app {
+  clear: both;
+  padding: 0;
+  margin: 1em 0 1em;
+  border-bottom: 1px solid #8cacbb;
+  font: bold 1em sans-serif;
+}
+ul.app li
+{
+  border: 1px solid #8cacbb;
+  border-bottom: none;
+  display: inline;
+  list-style: none;
+  margin: 0 0 0 0.75em;
+}
+ul.app>li>a, ul.app>li>strong {
+  padding: 0 0.5em;
+}
+ul.app a {
+  text-decoration: none;
+}
+ul.app>li.current {
+  background: #fcfcfc;
+  border-bottom: 1px solid #fcfcfc;
+}
+
+#body {
+  padding: 0 1em;
+}
+.personal {
+  clear: left;
+  float: left;
+  margin-right: 2%;
+  width: 48%;
+}
+.statistical {
+  clear: right;
+  float: right;
+  margin-left: 2%;
+  width: 48%;
+}
+.sidebar {
+  background-color: #f7f9fa;
+  border: 1px solid #8cacbb;
+  clear: right;
+  float: right;
+  font-size: smaller;
+  margin-left: 1em;
+  width: 25%;
+  min-width: 8em;
+  max-width: 50%;
+  padding: 0.25em 0.5em;
+}
 .debug {
   background-color: #ffddee;
 }
@@ -655,7 +752,7 @@ thead {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  clear: both;
+  clear: left;
 	color: #000066;
 	font-family: "Lucida Grande", sans-serif;
 	font-weight: normal;
@@ -668,16 +765,10 @@ h2 {
 }
 h3, h4, h5, h6 {
 	font-size: 1em;
+  margin-bottom: 0;
 }
-/* temporary while page-header exists: */
-.page-header h2 {
-  clear: none;
-  margin: 0;
-  text-transform: none;
-  font-size: 1.5em;
-}
-h3, h4, h5, h6 {
-	margin-bottom: 0;
+ul {
+  margin-left: 24px;
 }
 table {
 	border-collapse: collapse;
@@ -724,31 +815,11 @@ tr {
   text-align: right;
 }
 
-.user {
-	float: right;
-}
-
-address.app, .apps {
-	font-family: "Lucida Grande", sans-serif;
-}
-address.app {
-	font-size: 2em;
-}
 .apps {
 	clear: right;
 	float: right;
 	margin-top: 0.5em;
 }
-.page-header {
-	width: 100%;
-}
-.page-header img {
-	float: left;
-}
-.page-header h2 {
-    padding-top: 0.75em;
-}
-
 .navigation li {
 	display: inline;
 	padding: 0.25em 0.5em;
@@ -766,32 +837,6 @@ address.app {
 	width: 100%;
 }
 
-.page-header-ribbon {
-    /* Bar with personalized menu (user preferences, favorites etc) */
-    background-color: #dee7ec;
-    border-top-color: #8cacbb;
-    border-top-style: solid;
-    border-top-width: 1px;
-    border-bottom-color: #8cacbb;
-    border-bottom-style: solid;
-    border-bottom-width: 1px;
-    line-height: 1.3em;
-    color: Black;
-    padding: 0em 1em 0em 0em;
-    margin: 0;
-    list-style: none;
-}
-
-.page-header-ribbon address {
-    width: 75%;
-}
-
-.launchpad-apps {
-    float: right;
-}
-.launchpad-apps td {
-}
-
 /* -- Malone: -- */
 
 .bugid {
@@ -806,45 +851,51 @@ address.app {
 }
 
 td.plain {
-    border: 1px dotted #8cacbb;
+  border: 1px dotted #8cacbb;
 }
 td.plain:hover {
-    background-color: #dee7ec;
-    color: #436976;
-    border: 1px solid #8cacbb;
+  background-color: #dee7ec;
+  color: #436976;
+  border: 1px solid #8cacbb;
 }
 td.selected {
-    background-color: #dee7ec;
-    color: #436976;
-    border: 1px solid #8cacbb;
-}
-
-/* -- Products: -- */
-
-ul.products>li {
-  list-style-image: url(/++resource++product_icon.gif);
-}
-dl.products>dt:before {
-  content: url(/++resource++product_icon.gif);
+  background-color: #dee7ec;
+  color: #436976;
+  border: 1px solid #8cacbb;
 }
 
 /* from richard braine for the series source forms */
 /* otherwise inputs don't disappear along with surrounding layer */
 input {
-    visibility:inherit
+  visibility:inherit
 }
 /* this lines up text inputs so they don't look a mess */
 .textinput {
-    position: absolute; 
-    left: 250px;
+  position: absolute; 
+  left: 250px;
 } 
 /* radios had 1px left and right borders - don't know if intended
-   but looked shit imo */
+  but looked shit imo */
 .radios {
-    border:none;
+  border:none;
 }
 /* this style was making the text '(Required)' invisible:
    same colour as background */
 .fieldRequired {
-    color: #999999
+  color: #999999
 }
+
+/* 
+This style is used for multi-select widgets. These get a scrollbar if they
+expand above a certain size. The box is floated in order to allow it to shrink
+to the smallest appropriate width; this may mean that it will be necessary to
+use the 'clear' attribute on other elemtens surrounding the multi-select box.
+*/
+
+.multi_select {
+  max-height: 20em;
+  overflow: auto;
+  float: left;
+  padding: 0 1em;
+}
+

@@ -29,8 +29,8 @@ There are three kinds of bug tasks. We need to pass the bug task creation
 methods some other objects to create a task, so lets get the utilities we need
 to access those other objects:
 
-    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet, \
-    ...     IProductSet, IDistributionSet, IDistroReleaseSet
+    >>> from canonical.launchpad.interfaces import (IBugSet, IPersonSet,
+    ...     IProductSet, IDistributionSet, IDistroReleaseSet)
     >>> productset = getUtility(IProductSet)
     >>> distroset = getUtility(IDistributionSet)
     >>> distoreleaseset = getUtility(IDistroReleaseSet)
@@ -41,8 +41,8 @@ to access those other objects:
 
 Next, we need to grab some values to provide for priority, severity and status.
 
-    >>> from canonical.lp.dbschema import BugTaskStatus, BugSeverity, \
-    ...     BugPriority
+    >>> from canonical.lp.dbschema import (BugTaskStatus, BugSeverity,
+    ...     BugPriority)
     >>> STATUS_NEW = BugTaskStatus.NEW
     >>> STATUS_ACCEPTED = BugTaskStatus.ACCEPTED
     >>> STATUS_FIXED = BugTaskStatus.FIXED
@@ -110,7 +110,7 @@ with the system as an anonymous (i.e. unauthenticated) user:
 let's fetch the BugTask with ID 1:
 
     >>> bugtask = bugtaskset.get(1)
-    >>> bugtask.bugtitle
+    >>> bugtask.bug.title
     u'Firefox does not support SVG'
 
 If you pass an ID for which no object exists, you'll get a
@@ -397,7 +397,6 @@ the logged in person from the maintainer team, so that he can't edit the
 task anymore:
 
     >>> sample_person.leave(foo_team)
-    True
     >>> upstream_task.status = STATUS_FIXED
     Traceback (most recent call last):
       ...
@@ -413,7 +412,6 @@ Now Sample Person is allowed to edit the bug task again:
 
     >>> login('test@canonical.com')
     >>> upstream_task.status = STATUS_FIXED
-
 
 Distro and Distro Release Bug Tasks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -441,9 +439,6 @@ We can edit the task:
     >>> distro_task.status = STATUS_FIXED
     >>> distro_release_task.assignee = sample_person
 
-For bugs that *are* marked private, see the next section...
-
-
 Bug Privacy
 ===========
 
@@ -453,13 +448,12 @@ anyone.
 
     >>> from zope.event import notify
     >>> from zope.publisher.browser import TestRequest
-    >>> from canonical.launchpad.event.sqlobjectevent import SQLObjectToBeModifiedEvent, \
-    ...     SQLObjectModifiedEvent
+    >>> from canonical.launchpad.event.sqlobjectevent import (
+    ...     SQLObjectToBeModifiedEvent, SQLObjectModifiedEvent)
 
 Let's log in as the user Foo Bar (to be allowed to edit bugs):
 
     >>> login('foo.bar@canonical.com')
-    >>> request = TestRequest()
 
 and mark one of the Firefox bugs private:
 
@@ -480,10 +474,19 @@ and mark one of the Firefox bugs private:
     >>> bug_firefox_no_svg_support.bug.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
     ...     bug_firefox_no_svg_support.bug, old_state,
-    ...     ["id", "title", "private"], getUtility(IPersonSet).get(16),
-    ...     request)
+    ...     ["id", "title", "private"])
     >>> notify(bug_set_private)
     >>> transaction.commit()
+
+Because Foo Bar is a member of the Ubuntu Team, and the Ubuntu Team is
+one of the maintainers on this bug report, Foo Bar will see the bug in
+searches:
+
+    >>> firefox = productset.get(4)
+    >>> firefox_bugtasks = bugtaskset.search(
+    ...     product=firefox, status=any(STATUS_NEW, STATUS_ACCEPTED))
+    >>> [bugtask.bug.id for bugtask in firefox_bugtasks]
+    [6, 5, 4, 1]
 
 Now, if we log in as David Allouche:
 

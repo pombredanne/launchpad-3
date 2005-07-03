@@ -9,31 +9,30 @@ import sets
 from canonical.database.sqlbase import flush_database_updates
 
 # zope imports
-from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form.browser.add import AddView
+from zope.app.form.utility import setUpWidgets
+from zope.app.form.interfaces import (
+        IInputWidget, ConversionError, WidgetInputError)
 from zope.component import getUtility
 
 # lp imports
-from canonical.lp.dbschema import LoginTokenType, SSHKeyType
-from canonical.lp.dbschema import EmailAddressStatus, GPGKeyAlgorithms
+from canonical.lp.dbschema import (
+    LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
+    KarmaActionCategory)
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
 # interface import
-from canonical.launchpad.interfaces import ISSHKeySet, IBugTaskSet
-from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
-from canonical.launchpad.interfaces import IWikiNameSet, IJabberIDSet
-from canonical.launchpad.interfaces import IIrcIDSet, IArchUserIDSet
-from canonical.launchpad.interfaces import ILaunchBag, ILoginTokenSet
-from canonical.launchpad.interfaces import IPasswordEncryptor, \
-                                           ISignedCodeOfConduct,\
-                                           ISignedCodeOfConductSet
-from canonical.launchpad.interfaces import IGPGKeySet, IGpgHandler
+from canonical.launchpad.interfaces import (
+    ISSHKeySet, IBugTaskSet, IPersonSet, IEmailAddressSet, IWikiNameSet,
+    IJabberIDSet, IIrcIDSet, IArchUserIDSet, ILaunchBag, ILoginTokenSet,
+    IPasswordEncryptor, ISignedCodeOfConductSet, IObjectReassignment,
+    ITeamReassignment, IGPGKeySet, IGpgHandler, IKarmaActionSet, IKarmaSet,
+    UBUNTU_WIKI_URL)
 
-from canonical.launchpad.helpers import well_formed_email, obfuscateEmail
-from canonical.launchpad.helpers import convertToHtmlCode, shortlist
+from canonical.launchpad.helpers import (
+        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
+from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
 ##XXX: (batch_size+global) cprov 20041003
@@ -134,29 +133,25 @@ class FOAFSearchView:
         return getUtility(IPersonSet).findByName(name)
 
 
-class PersonRdfView(object):
+class PersonRdfView:
     """A view that sets its mime-type to application/rdf+xml"""
     def __init__(self, context, request):
         self.context = context
         self.request = request
         request.response.setHeader('content-type', 'application/rdf+xml')
+        request.response.setHeader('Content-Disposition',
+                                   'attachment; filename=' + 
+                                   self.context.name + '.rdf')
 
 
 class BasePersonView:
-    """A base class to be used by all IPerson view classes."""
-
-    viewsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-person-views.pt')
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-person-actions.pt')
-    
+    """A base class to be used by all IPerson view classes."""    
 
 class PersonView(BasePersonView):
     """A simple View class to be used in all Person's pages."""
 
     # restricted set of methods to be proxied by form_action()
-    permitted_actions = ['import_gpg', 'claim_gpg', 'remove_gpg',
+    permitted_actions = ['claim_gpg', 'remove_gpg',
                          'add_ssh', 'remove_ssh']
 
     def __init__(self, context, request):
@@ -164,6 +159,20 @@ class PersonView(BasePersonView):
         self.request = request
         self.message = None
         self.user = getUtility(ILaunchBag).user
+
+    def actionCategories(self):
+        return KarmaActionCategory.items
+
+    def actions(self, actionCategory):
+        """Return a list of actions of the given category performed by 
+        this person."""
+        kas = getUtility(IKarmaActionSet)
+        return kas.selectByCategoryAndPerson(actionCategory, self.context)
+
+    def actionsCount(self, action):
+        """Return the number of times this person performed this action."""
+        karmaset = getUtility(IKarmaSet)
+        return len(karmaset.selectByPersonAndAction(self.context, action))
 
     def assignedBugsToShow(self):
         """Return True if there's any bug assigned to this person that match
@@ -235,10 +244,6 @@ class PersonView(BasePersonView):
     def sshkeysCount(self):
         return len(self.context.sshkeys)
 
-    def showGPGKeys(self):
-        self.request.response.setHeader('Content-Type', 'text/plain')
-        return "\n".join([key.pubkey for key in self.context.gpgkeys])
-
     def gpgkeysCount(self):
         return len(self.context.gpgkeys)
 
@@ -291,34 +296,61 @@ class PersonView(BasePersonView):
     def claim_gpg(self):
         fingerprint = self.request.form.get('fingerprint')
 
-        #XXX cprov 20050401
-        # Add fingerprint checks before claim.
-        
-        return 'DEMO: GPG key "%s" claimed.' % fingerprint
+        sanityfpr = sanitiseFingerprint(fingerprint)
 
-    def import_gpg(self):
-        pubkey = self.request.form.get('pubkey')
+        if not sanityfpr:
+            return 'Malformed fingerprint: %s' % fingerprint
 
+        fingerprint = sanityfpr
+
+        gpgkeyset = getUtility(IGPGKeySet)
+                
+        if gpgkeyset.getByFingerprint(fingerprint):
+            return 'GPG key "%s" already imported' % fingerprint
+
+        # Automatically retrieve key Information from KeyServer
+        # as specified in the GPG configuration file.
         gpghandler = getUtility(IGpgHandler)
+        keyinfo, uids = gpghandler.getKeyIndex(fingerprint)
 
-        fingerprint = gpghandler.importPubKey(pubkey)        
-
-        if fingerprint == None:
-            return 'DEMO: GPG pubkey not recognized'
-
-        keysize, algorithm, revoked = gpghandler.getKeyInfo(fingerprint)
+        if not keyinfo:
+            return 'Error in Key %s : %s' % (fingerprint, uids)
         
-        # XXX cprov 20050407
-        # Keyid is totally obsolete        
-        keyid = fingerprint[-8:]
-        # EnumCol doesn't help in this case, at least
-        algorithm_value = GPGKeyAlgorithms.items[algorithm]
+        if len(keyinfo) < 1:
+            return 'Key Not Found: %s' % fingerprint
 
-        # See IGPGKeySet for further information
-        getUtility(IGPGKeySet).new(self.user.id, keyid, pubkey, fingerprint,
-                                   keysize, algorithm_value, revoked)
-        
-        return 'DEMO: %s imported' % fingerprint
+        keyinfo = keyinfo[0]
+            
+        info = ('Key %s%s/%s was claimed, sending email to :'
+                % (keyinfo[0], keyinfo[1], keyinfo[2]))
+
+        logintokenset = getUtility(ILoginTokenSet)
+
+        bag = getUtility(ILaunchBag)
+        # build a list of already validated and preferred emailaddress
+        # in lowercase for comparision reasons
+        emails = []
+        for email in bag.user.validatedemails:
+            emails.append(email.email.lower())
+        emails.append(bag.user.preferredemail.email.lower())
+
+        # iter through UIDs
+        for uid in uids:
+            # if UID isn't validated/preferred, send token email
+            if uid.lower() not in emails:                
+                info += ' %s' % uid
+
+                appurl = self.request.getApplicationURL()
+                token = logintokenset.new(
+                            self.context, getUtility(ILaunchBag).login, uid,
+                            LoginTokenType.VALIDATEGPGUID,
+                            fingerprint=fingerprint)
+                token.sendEmailValidationRequest(appurl)
+
+        info += ('.At least one UID should be validated to get the key '
+                 'imported as yours.')
+
+        return info
 
     # XXX cprov 20050401
     # is it possible to remove permanently a key from our keyring
@@ -327,11 +359,14 @@ class PersonView(BasePersonView):
         keyid = self.request.form.get('keyid')
         # retrieve key info
         gpgkey = getUtility(IGPGKeySet).get(keyid)
-        
-        comment = 'DEMO: GPG key removed ("%s")' % gpgkey.fingerprint
 
-        #gpgkey.destroySelf()
+        if gpgkey is None:
+            return "Can't remove key that doesn't exist"
 
+        if gpgkey.owner != self.user:
+            return "Cannot remove someone else's key"
+                
+        comment = 'GPG key cannot be removed yet'
         return comment
 
     def add_ssh(self):
@@ -413,7 +448,10 @@ class PersonEditView(BasePersonView):
         person.givenname = request.form.get("givenname")
         person.familyname = request.form.get("familyname")
 
-        wiki = request.form.get("wiki")
+        # XXX: wiki is hard-coded for Launchpad 1.0
+        #      - Andrew Bennetts, 2005-06-14
+        #wiki = request.form.get("wiki")
+        wiki = UBUNTU_WIKI_URL
         wikiname = request.form.get("wikiname")
         network = request.form.get("network")
         nickname = request.form.get("nickname")
@@ -421,11 +459,15 @@ class PersonEditView(BasePersonView):
         archuserid = request.form.get("archuserid")
 
         #WikiName
-        if person.wiki:
-            person.wiki.wiki = wiki
+        # Assertions that should be true at least until 1.0
+        assert person.wiki, 'People should always have wikinames'
+        if person.wiki.wikiname != wikiname:
+            if getUtility(IWikiNameSet).exists(wikiname):
+                self.errormessage = (
+                    'The wikiname %s for %s is already taken' 
+                    % (wikiname, UBUNTU_WIKI_URL,))
+                return False
             person.wiki.wikiname = wikiname
-        elif wiki and wikiname:
-            getUtility(IWikiNameSet).new(person.id, wiki, wikiname)
 
         #IrcID
         if person.irc:
@@ -487,11 +529,11 @@ class PersonEditView(BasePersonView):
                 "You must select the email address you want to confirm.")
             return
 
-        login = getUtility(ILaunchBag).login
-        logintokenset = getUtility(ILoginTokenSet)
-        token = logintokenset.new(self.context, login, email,
-                                  LoginTokenType.VALIDATEEMAIL)
-        sendEmailValidationRequest(token, self.request.getApplicationURL())
+        token = getUtility(ILoginTokenSet).new(
+                    self.context, getUtility(ILaunchBag).login, email,
+                    LoginTokenType.VALIDATEEMAIL)
+        token.sendEmailValidationRequest(self.request.getApplicationURL())
+
         self.message = ("A new email was sent to '%s' with instructions on "
                         "how to confirm that it belongs to you." % email)
 
@@ -511,7 +553,7 @@ class PersonEditView(BasePersonView):
         logintokenset = getUtility(ILoginTokenSet)
         if email in [e.email for e in self.context.guessedemails]:
             emailaddress = emailset.getByEmail(email)
-            # These asserts will fail only if someone tries to poison the form.
+            # These asserts will fail only if someone poisons the form.
             assert emailaddress.person.id == self.context.id
             assert self.context.preferredemail.id != emailaddress.id
             emailaddress.destroySelf()
@@ -533,7 +575,13 @@ class PersonEditView(BasePersonView):
         emailaddress = emailset.getByEmail(email)
         # These asserts will fail only if someone poisons the form.
         assert emailaddress.person.id == self.context.id
-        assert self.context.preferredemail.id != emailaddress.id
+        assert self.context.preferredemail is not None
+        if self.context.preferredemail == emailaddress:
+            # This will happen only if a person is submitting a stale page.
+            self.message = (
+                "You can't remove %s because it's your contact email "
+                "address." % self.context.preferredemail.email)
+            return
         emailaddress.destroySelf()
         self.message = "The email address '%s' has been removed." % email
 
@@ -547,7 +595,7 @@ class PersonEditView(BasePersonView):
         emailset = getUtility(IEmailAddressSet)
         logintokenset = getUtility(ILoginTokenSet)
         newemail = self.request.form.get("newemail", "").strip().lower()
-        if not well_formed_email(newemail):
+        if not valid_email(newemail):
             self.message = (
                 "'%s' doesn't seem to be a valid email address." % newemail)
             self.badlyFormedEmail = newemail
@@ -581,10 +629,11 @@ class PersonEditView(BasePersonView):
                     % (email.email, email.person.browsername))
             return
 
-        login = getUtility(ILaunchBag).login
-        token = logintokenset.new(person, login, newemail,
-                                  LoginTokenType.VALIDATEEMAIL)
-        sendEmailValidationRequest(token, self.request.getApplicationURL())
+        token = getUtility(ILoginTokenSet).new(
+                    person, getUtility(ILaunchBag).login, newemail,
+                    LoginTokenType.VALIDATEEMAIL)
+        token.sendEmailValidationRequest(self.request.getApplicationURL())
+
         self.message = (
                 "A new message was sent to '%s', please follow the "
                 "instructions on that message to confirm that this email "
@@ -612,22 +661,6 @@ class PersonEditView(BasePersonView):
         assert emailaddress.status == EmailAddressStatus.VALIDATED
         self.context.preferredemail = emailaddress
         self.message = "Your contact address has been changed to: %s" % email
-
-
-def sendEmailValidationRequest(token, appurl):
-    template = open(
-        'lib/canonical/launchpad/emailtemplates/validate-email.txt').read()
-    fromaddress = "Launchpad Email Validator <noreply@ubuntu.com>"
-
-    replacements = {'longstring': token.token,
-                    'requester': token.requester.browsername,
-                    'requesteremail': token.requesteremail,
-                    'toaddress': token.email,
-                    'appurl': appurl}
-    message = template % replacements
-
-    subject = "Launchpad: Validate your email address"
-    simple_sendmail(fromaddress, token.email, subject, message)
 
 
 class RequestPeopleMergeView(AddView):
@@ -704,9 +737,7 @@ class RequestPeopleMergeMultipleEmailsView:
             dupe = self.request.get('dupe')
         self.dupe = getUtility(IPersonSet).get(int(dupe))
         emailaddrset = getUtility(IEmailAddressSet)
-        # XXX: salgado, 2005-05-06: As soon as we have a __contains__ method
-        # in SelectResults we'll not need to listify self.dupeemails anymore.
-        self.dupeemails = shortlist(emailaddrset.getByPerson(self.dupe.id))
+        self.dupeemails = emailaddrset.getByPerson(self.dupe.id)
 
     def processForm(self):
         if self.request.method != "POST":
@@ -753,25 +784,123 @@ def sendMergeRequestEmail(token, dupename, appurl):
     simple_sendmail(fromaddress, token.email, subject, message)
 
 
-class TeamAddView(AddView, BasePersonView):
+class ObjectReassignmentView:
+    """A view class used when reassigning an object that implements IHasOwner.
+
+    By default we assume that the owner attribute is IHasOwner.owner and the
+    vocabulary for the owner widget is ValidPersonOrTeam (which is the one
+    used in IObjectReassignment). If any object has special needs, it'll be
+    necessary to subclass ObjectReassignmentView and redefine the schema 
+    and/or ownerOrMaintainerAttr attributes.
+
+    Subclasses can also specify a callback to be called after the reassignment
+    takes place. This callback must accept three arguments (in this order):
+    the object whose owner is going to be changed, the old owner and the new
+    owner.
+
+    Also, if the object for which you're using this view doesn't have a
+    displayname or name attribute, you'll have to subclass it and define the
+    contextName attribute in your subclass constructor.
+    """
+
+    ownerOrMaintainerAttr = 'owner'
+    schema = IObjectReassignment
+    callback = None
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        AddView.__init__(self, context, request)
-        self._nextURL = '.'
+        self.user = getUtility(ILaunchBag).user
+        self.errormessage = ''
+        self.ownerOrMaintainer = getattr(context, self.ownerOrMaintainerAttr)
+        setUpWidgets(self, self.schema, IInputWidget)
+        self.contextName = (getattr(self.context, 'displayname', None) or
+                            getattr(self.context, 'name', None))
 
-    def nextURL(self):
-        return self._nextURL
+    def processForm(self):
+        if self.request.method == 'POST':
+            self.changeOwner()
 
-    def createAndAdd(self, data):
-        kw = {}
-        for key, value in data.items():
-            kw[str(key)] = value
+    def changeOwner(self):
+        """Change the owner of self.context to the one choosen by the user."""
+        newOwner = self._getNewOwner()
+        if newOwner is None:
+            return
 
-        kw['teamownerID'] = self.context.id
-        team = getUtility(IPersonSet).newTeam(**kw)
-        notify(ObjectCreatedEvent(team))
-        self._nextURL = '/people/%s' % team.name
-        return team
+        oldOwner = getattr(self.context, self.ownerOrMaintainerAttr)
+        setattr(self.context, self.ownerOrMaintainerAttr, newOwner)
+        if callable(self.callback):
+            self.callback(self.context, oldOwner, newOwner)
+        self.request.response.redirect('.')
+
+    def _getNewOwner(self):
+        """Return the new owner for self.context, as specified by the user.
+        
+        If anything goes wrong, return None and assign an error message to
+        self.errormessage to inform the user about what happened.
+        """
+        personset = getUtility(IPersonSet)
+        request = self.request
+        owner_name = request.form.get(self.owner_widget.name)
+        if not owner_name:
+            self.errormessage = (
+                "You have to specify the name of the person/team that's "
+                "going to be the new %s." % self.ownerOrMaintainerAttr)
+            return None
+
+        if request.form.get('existing') == 'existing':
+            try:
+                # By getting the owner using getInputValue() we make sure
+                # it's valid according to the vocabulary of self.schema's
+                # owner widget.
+                owner = self.owner_widget.getInputValue()
+            except WidgetInputError:
+                self.errormessage = (
+                    "The person/team named '%s' is not a valid owner for %s."
+                    % (owner_name, self.contextName))
+                return None
+            except ConversionError:
+                self.errormessage = (
+                    "There's no person/team named '%s' in Launchpad."
+                    % owner_name)
+                return None
+        else:
+            if personset.getByName(owner_name):
+                self.errormessage = (
+                    "There's already a person/team with the name '%s' in "
+                    "Launchpad. Please choose a different name or select "
+                    "the option to make that person/team the new owner, "
+                    "if that's what you want." % owner_name)
+                return None
+
+            owner = personset.newTeam(
+                    teamownerID=self.user.id, name=owner_name,
+                    displayname=owner_name.capitalize())
+
+        return owner
+
+
+class TeamReassignmentView(ObjectReassignmentView):
+
+    ownerOrMaintainerAttr = 'teamowner'
+    schema = ITeamReassignment
+
+    def __init__(self, context, request):
+        ObjectReassignmentView.__init__(self, context, request)
+        self.contextName = self.context.browsername
+        self.callback = self._addOwnerAsMember
+
+    def _addOwnerAsMember(self, team, oldOwner, newOwner):
+        """Add the new and the old owners as administrators of the team.
+
+        When a user creates a new team, he is added as an administrator of
+        that team. To be consistent with this, we must make the new owner an
+        administrator of the team.
+        Also, the ObjectReassignment spec says that we must make the old owner
+        an administrator of the team, and so we do.
+        """
+        team.addMember(newOwner)
+        team.setMembershipStatus(newOwner, TeamMembershipStatus.ADMIN)
+        team.addMember(oldOwner)
+        team.setMembershipStatus(oldOwner, TeamMembershipStatus.ADMIN)
 

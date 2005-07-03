@@ -1,9 +1,9 @@
-Helper Functions
-================
+Helper Functions and Classes
+============================
 
-There are some helper functions located in canonical.launchpad.helpers
-which can be used in order to avoid duplicating code in different parts
-of Launchpad.
+There are some helper functions and classes located in
+canonical.launchpad.helpers which can be used in order to avoid
+duplicating code in different parts of Launchpad.
 
 Checking If the Logged In User is a Maintainer
 ----------------------------------------------
@@ -61,7 +61,7 @@ If hasowner wouldn't provide IHasOwner a TypeError is raised:
     >>> is_maintainer(noIHasOwner)
     Traceback (most recent call last):
     ...
-    TypeError: hasowner doesn't provide IHasOwner
+    TypeError: ... doesn't provide IHasOwner
 
 
 Getting a valid name as our database asks for from a string
@@ -94,23 +94,106 @@ A mix of all previous cases.
     'evil-string-not-following-our-rules'
 
 
-requestCountry
---------------
+check_permission
+----------------
 
-    >>> from canonical.launchpad.helpers import requestCountry
+    >>> from canonical.launchpad.helpers import check_permission
 
-Check if the function gets a country for localhost.
+This is the same check available in TALES as something/required:permission.Name.
+It checks that the currently logged in user has the requested permission on an
+object:
 
-    >>> dummy_request = {'REMOTE_ADDR': '127.0.0.1'}
-    >>> country = requestCountry(dummy_request)
-    >>> country is not None
+    >>> login('test@canonical.com')
+    >>> personset = getUtility(IPersonSet)
+    >>> sample_person = personset.getByEmail('test@canonical.com')
+    >>> check_permission('launchpad.Edit', sample_person)
+    True
+    >>> sabdfl = personset.getByEmail('mark@hbd.com')
+    >>> check_permission('launchpad.Edit', sabdfl)
+    False
+
+If the permission doesn't exist, it raises an error:
+
+    >>> check_permission('mushroom.Badger', sample_person)
+    Traceback (most recent call last):
+    ...
+    ValueError: ('Undefined permission id', 'mushroom.Badger')
+
+
+Get a Snapshot of an Object
+---------------------------
+
+You can create a simple snapshot of an object with Snapshot:
+
+    >>> from zope.interface import Interface, implements, Attribute
+    >>> from canonical.launchpad.helpers import Snapshot
+    >>> class IFoo(Interface):
+    ...     title = Attribute('title')
+    ...     description = Attribute('description')
+    >>> class Foo:
+    ...     implements(IFoo) 
+    ...     title = 'Some Title'
+    ...     description = 'bla bla bla' 
+    >>> foo = Foo() 
+    >>> snapshot = Snapshot(foo, names=['title'])
+
+Only the given attributes will be assigned to the snapshot:
+    
+    >>> snapshot.title == foo.title
+    True
+    >>> hasattr(snapshot, 'description')
+    False
+
+The snapshot won't provided the same interface as foo, though:
+   
+    >>> IFoo.providedBy(snapshot)
+    False
+
+If we want the snapshot to provide some interface, we have to specify
+that explicitly:
+
+    >>> snapshot = Snapshot(foo, names=['title'], providing=IFoo)
+    >>> snapshot.title == foo.title
+    True
+    >>> hasattr(snapshot, 'description')
+    False
+    >>> IFoo.providedBy(snapshot)
     True
 
-If we don't have REMOTE_ADDR or HTTP_X_FORWARDED_FOR keys inside the request,
-the country is unknown.
-
-    >>> dummy_request = {}
-    >>> country = requestCountry(dummy_request)
-    >>> country is None
+We can also give more than one interface to provide as an iterable. If
+we don't specify any names, all the names in the given interfaces will
+be copied:
+    
+    >>> from zope.interface import providedBy
+    >>> snapshot = Snapshot(foo, providing=providedBy(foo))
+    >>> snapshot.title == foo.title
+    True
+    >>> snapshot.description == foo.description
+    True
+    >>> IFoo.providedBy(snapshot)
+    True
+    
+    >>> class IBar(Interface):
+    ...     pass
+    >>> snapshot = Snapshot(foo, providing=[IFoo, IBar])
+    >>> IFoo.providedBy(snapshot)
+    True
+    >>> IBar.providedBy(snapshot)
     True
 
+    >>> snapshot = Snapshot(foo, providing=IFoo)
+    >>> snapshot.title == foo.title
+    True
+    >>> snapshot.description == foo.description
+    True
+    >>> IFoo.providedBy(snapshot)
+    True
+
+
+We have to specify either 'names' or 'providing':
+
+    >>> snapshot = Snapshot(foo)
+    Traceback (most recent call last):
+    ...
+    SnapshotCreationError: ...
+     

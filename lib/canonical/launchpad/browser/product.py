@@ -6,16 +6,17 @@ __metaclass__ = type
 
 import sets
 from warnings import warn
+from urllib import quote as urlquote
 
 import zope.security.interfaces
 from zope.interface import implements
 from zope.component import getUtility, getAdapter
 from zope.event import notify
-from zope.exceptions import NotFoundError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
+from zope.app.traversing.browser.absoluteurl import absoluteURL
 
 from sqlobject.sqlbuilder import AND, IN, ISNULL
 
@@ -28,78 +29,58 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary, \
      MilestoneVocabulary
 
-from canonical.launchpad.database import Product, ProductSeriesSet, \
-     BugFactory, ProductMilestoneSet, Milestone, Person
-from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet, \
-     IBugTaskSet, IMilestoneSet, IAging, ILaunchBag, IProductRelease, \
-     ISourcePackage, IBugTaskSearchListingView
+from canonical.launchpad.database import (
+    Product, BugFactory, Milestone, Person)
+from canonical.launchpad.interfaces import (
+    IPerson, IProduct, IProductSet, IBugTaskSet, IAging, ILaunchBag,
+    IProductRelease, ISourcePackage, IBugTaskSearchListingView, ICountry)
 from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 
-# Traversal functions that help us look up something
-# about a project or product
-def traverseProduct(product, request, name):
-    if name == '+series':
-        return ProductSeriesSet(product = product)
-    elif name == '+milestones':
-        return ProductMilestoneSet(product = product)
-    else:
-        return product.getRelease(name)
+from canonical.launchpad.webapp import (
+    StandardLaunchpadFacets, Link, DefaultLink)
+
+class ProductFacets(StandardLaunchpadFacets):
+    """The links that will appear in the facet menu for
+    an IProduct.
+    """
+
+    usedfor = IProduct
+
+    # These links are inherited from StandardLaunchpadFacets.
+    # The items in the list refer to method names, and
+    # will appear on the page in the order they appear
+    # in the list.
+    # links = ['overview', 'bugs', 'translations']
+
+    def overview(self):
+        target = ''
+        text = 'Overview'
+        summary = 'General information about %s' % self.context.displayname
+        return DefaultLink(target, text, summary)
+
+    def bugs(self):
+        target = '+bugs'
+        text = 'Bugs'
+        summary = 'Bugs reported about %s' % self.context.displayname
+        return Link(target, text, summary)
+
+    def translations(self):
+        target = '+translations'
+        text = 'Translations'
+        summary = 'Translations of %s in Rosetta' % self.context.displayname
+        return Link(target, text, summary)
 
 
 # A View Class for Product
 class ProductView:
 
     __used_for__ = IProduct
-
-    summaryPortlet = ViewPageTemplateFile(
-        '../templates/portlet-object-summary.pt')
-
-    translationsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-translations.pt')
-
-    translatablesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-translatables.pt')
-
-    latestBugPortlet = ViewPageTemplateFile(
-        '../templates/portlet-latest-bugs.pt')
-
-    relatedBountiesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-related-bounties.pt')
-
-    branchesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-branches.pt')
-
-    detailsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-details.pt')
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-actions.pt')
-
-    projectPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-project.pt')
-
-    milestonePortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-milestones.pt')
-
-    packagesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-product-packages.pt')
-
-    prefLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-pref-langs.pt')
-
-    countryPortlet = ViewPageTemplateFile(
-        '../templates/portlet-country-langs.pt')
-
-    browserLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-browser-langs.pt')
-
-    statusLegend = ViewPageTemplateFile(
-        '../templates/portlet-rosetta-status-legend.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -166,7 +147,7 @@ class ProductView:
                 for template in self.context.potemplates()]
 
     def requestCountry(self):
-        return helpers.requestCountry(self.request)
+        return ICountry(self.request, None)
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
@@ -254,40 +235,18 @@ class ProductView:
 
         return sorted(potemplatenames, key=lambda item: item.name)
 
+class ProductEditView(ProductView, SQLObjectEditView):
+    """View class that lets you edit a Product object."""
 
-class ProductBugsView(BugTaskSearchListingView):
-    implements(IBugTaskSearchListingView)
+    def __init__(self, context, request):
+        ProductView.__init__(self, context, request)
+        SQLObjectEditView.__init__(self, context, request)
 
-    def task_columns(self):
-        """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
-        return [
-            "select", "id", "title", "milestone", "status",
-            "submittedby", "assignedto"]
+    def changed(self):
+        # If the name changed then the URL changed, so redirect:
+        self.request.response.redirect(
+            '../%s/+edit' % urlquote(self.context.name))
 
-    def assign_to_milestones(self):
-        """Assign bug tasks to the given milestone."""
-        if helpers.is_maintainer(self.context):
-            milestone_id = self.request.get('milestone')
-            if milestone_id:
-                milestoneset = getUtility(IMilestoneSet)
-                try:
-                    milestone = milestoneset.get(milestone_id)
-                except NotFoundError:
-                    # Should only occur if someone entered the milestone
-                    # in the URL manually.
-                    return
-                taskids = self.request.get('task')
-                if taskids:
-                    if not isinstance(taskids, (list, tuple)):
-                        taskids = [taskids]
-
-                    bugtaskset = getUtility(IBugTaskSet)
-                    tasks = [bugtaskset.get(taskid) for taskid in taskids]
-                    for task in tasks:
-                        # XXX: When spiv fixes so that proxied objects
-                        #      can be assigned to a SQLBase '.id' can be
-                        #      removed. -- Bjorn Tillenius, 2005-05-04
-                        task.milestone = milestone.id
 
 class ProductFileBugView(SQLObjectAddView):
 
@@ -296,7 +255,6 @@ class ProductFileBugView(SQLObjectAddView):
     def __init__(self, context, request):
         self.request = request
         self.context = context
-        self._nextURL = '.'
         SQLObjectAddView.__init__(self, context, request)
 
     def createAndAdd(self, data):
@@ -314,19 +272,28 @@ class ProductFileBugView(SQLObjectAddView):
         # Try to avoid passing **kw, it is unreadable
         # Pass the keyword explicitly ...
         bug = BugFactory(**kw)
-        notify(SQLObjectCreatedEvent(bug, self.request))
+        notify(SQLObjectCreatedEvent(bug))
+        self.addedBug = bug
         return bug
 
     def nextURL(self):
-        return self._nextURL
+        return absoluteURL(self.addedBug, self.request)
+
+
+class ProductRdfView(object):
+    """A view that sets its mime-type to application/rdf+xml"""
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        request.response.setHeader('Content-Type', 'application/rdf+xml')
+        request.response.setHeader('Content-Disposition',
+                                   'attachment; filename=' +
+                                   self.context.name + '.rdf')
 
 
 class ProductSetView:
 
     __used_for__ = IProductSet
-
-    detailsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-productset-details.pt')
 
     def __init__(self, context, request):
 
@@ -347,7 +314,6 @@ class ProductSetView:
             self.searchrequested = True
         self.results = None
         self.matches = 0
-
 
     def searchresults(self):
         """Use searchtext to find the list of Products that match

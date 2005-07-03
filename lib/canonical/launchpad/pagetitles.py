@@ -71,15 +71,14 @@ attachment_index = ContextTitle('Malone Bug Attachment: %s')
 
 attachments_index = 'Malone Bug Attachments'
 
-auth_index = 'Launchpad Password Reminder'
-
 bazaar_index = 'The Launchpad Bazaar'
 
-bazaar_sync_review = 'The Bazaar Upstream-Sync Review'
+bazaar_sync_review = 'Review upstream repositories for Launchpad Bazaar syncing'
 
 binary_index = 'Binary Packages'
 
-binarypackage_index = 'Binary Package Details'
+def binarypackage_index (context, view):
+    return "%s binary package in Launchpad" % context.title
 
 binarypackage_search = 'Search Binary Package Database'
 
@@ -120,19 +119,19 @@ def bugs_assigned(context, view):
 
 bugs_createdby_index = 'Malone Bug Report by Creator'
 
+bugs_for_context = ContextTitle('Bugs in %s')
+
 bugs_index = 'Malone Master Bug List'
 
 bugsubscription_edit = 'Modify Your Bug Subscription'
 
 def bugtask_display(context, view):
     return 'Bug #%s in %s: %s' % (
-      context.bug.id, context.contextname, context.bug.title
-    )
+      context.bug.id, context.contextname, context.bug.title)
 
 def bugtask_editform(context, view):
     return 'Editing bug #%s in %s: %s' % (
-      context.bug.id, context.contextname, context.bug.title
-    )
+      context.bug.id, context.contextname, context.bug.title)
 
 # bugtask_search_listing contains only macros
 # bugtasks_index is a redirect
@@ -341,7 +340,7 @@ people_index = 'Launchpad People'
 
 people_list = 'People registered with Launchpad'
 
-person_assignedbugs = ContextDisplayName('Bugs Reported By %s')
+person_assignedbugs = ContextDisplayName('Bugs Assigned To %s')
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
@@ -381,6 +380,8 @@ def pofile_translate(context, view):
     return 'Translating %s into %s with Rosetta' % (
         context.potemplate.displayname,
         context.language.englishname)
+
+pofile_upload = ContextTitle('%s upload in Rosetta')
 
 # portlet_* are portlets
 
@@ -533,14 +534,14 @@ team_editemail = ContextDisplayName('Edit %s Contact Email Address')
 def team_editproposed(context, view):
     return '%s Proposed Members' % context.team.browsername
 
-team_index = ContextBrowsername('Team %s Information')
+team_index = ContextBrowsername('"%s" team in Launchpad')
 
 team_join = ContextBrowsername('Join %s')
 
 team_leave = ContextBrowsername('Leave %s')
 
 def team_members(context, view):
-    return 'Members of %s' % context.team.browsername
+    return '"%s" members' % context.team.browsername
 
 def teammembership_index(context, view):
     return '%s: Member of %s' % (

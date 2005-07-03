@@ -1,0 +1,50 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+<body>
+
+<div metal:fill-slot="main">
+
+  <h1>Actions that give karma to users</h1>
+
+  <ul>
+    <tal:block tal:repeat="actionCategory view/actionCategories">
+      <tal:block tal:define="actions python:view.actions(actionCategory)"
+                 tal:condition="actions">
+        <li>
+          <span tal:replace="actionCategory/title" />
+          <table class="listing data">
+            <tr>
+              <th>Name</th>
+              <th>Description</th>
+              <th>Points</th>
+            </tr>
+            <tr tal:repeat="action actions">
+              <td>
+                <a tal:attributes="href string:${action/name/value}">
+                  <span tal:replace="action/name/title" />
+                </a>
+              </td>
+              <td>
+                <a tal:attributes="href string:${action/name/value}">
+                  <span tal:replace="action/name/description" />
+                </a>
+              </td>
+              <td>
+                <a tal:attributes="href string:${action/name/value}">
+                  <span tal:replace="action/points" />
+                </a>
+              </td>
+            </tr>
+          </table>
+        </li>
+        <br />
+      </tal:block>
+    </tal:block>
+  </ul>
+
+</div>
+
+</body>
+</html>

@@ -4,25 +4,26 @@
     <h4 title="Bug watches keep track of this bug in other bug trackers.">
     BugTracker Watches
     </h4>
-    
+
     <div class="portletBody">
-        <div class="portletContent odd"
-             tal:repeat="watch context/watches">
-            
+        <div class="portletContent odd">
+
+          <tal:block repeat="watch context/watches">
             <a tal:attributes="href string:$bug_url/watches/${watch/id}/+edit">
                 <img src="/++resource++search_icon.gif" alt="" />
-                #<span tal:replace="watch/remotebug" />,
-                 <span tal:replace="watch/bugtracker/title" />
+                 <span tal:replace="watch/bugtracker/name" />
+                #<span tal:replace="watch/remotebug" />
                 <div class="portletDetails"
                      tal:content="watch/remotestatus" />
             </a>
+          </tal:block>
 
         </div>
-        
+
         <div class="portletContent even">
             <img src="/++resource++add.gif" alt="Add">
             <a href="#" tal:attributes="href string:$bug_url/watches/+new">Link to other bug tracker...</a>
-        </div> 
+        </div>
     </div>
 
 </div>

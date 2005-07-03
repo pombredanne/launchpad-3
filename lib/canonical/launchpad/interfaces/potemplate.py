@@ -17,6 +17,8 @@ __all__ = ('IPOTemplateSubset', 'IPOTemplateSet', 'IPOTemplate',
 class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     """A PO template. For example 'nautilus/po/nautilus.pot'."""
 
+    id = Attribute("A unique ID number")
+
     potemplatename = Choice(
         title=_("Template name"),
         required=True,
@@ -133,23 +135,27 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
         "some number of translations.")
 
     def __len__():
-        """Returns the number of Current IPOMessageSets in this template."""
+        """Return the number of Current IPOTMsgSets in this template."""
 
     def __iter__():
         """Return an iterator over current IPOTMsgSets in this template."""
 
-    # A "current" messageset is one that was in the latest version of
-    # the POTemplate parsed and recorded in the database. Current
-    # MessageSets are indicated by having 'sequence > 0'
-    def messageSet(key, onlyCurrent=False):
-        """Extract one or several POTMessageSets from this template.
+    def getPOTMsgSetByMsgIDText(msgidtext, onlyCurrent=False):
+        """Extract one IPOTMesgSet from this template.
 
         If the key is a string or a unicode object, returns the
-        IPOMsgSet in this template that has a primary message ID
+        IPOTMsgSet in this template that has a primary message ID
         with the given text.
 
-        If the key is a slice, returns the message IDs by sequence within the
-        given slice.
+        If onlyCurrent is True, then get only current message sets.
+
+        If no IPOTMsgSet is found, raises NotFoundError.
+        """
+
+    def getPOTMsgSetBySequence(slice, onlyCurrent=False):
+        """Extract one or several POTMessageSets from this template.
+
+        Return the message IDs by sequence within the given slice.
 
         If onlyCurrent is True, then get only current message sets.
         """
@@ -170,7 +176,7 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
         """
 
     def __getitem__(key):
-        """Same as messageSet(), with onlyCurrent=True
+        """Same as getPOTMsgSetByMsgIDText(), with onlyCurrent=True
         """
 
     def getPOTMsgSetByID(id):
@@ -207,6 +213,9 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     def hasPluralMessage():
         """Test whether this template has any message sets which are plural
         message sets."""
+
+    def invalidateCache():
+        """Invalidate the cached export for all pofiles."""
 
 
 class IEditPOTemplate(IPOTemplate):
