@@ -23,7 +23,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 # canonical imports
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (IPOFileSet, IEditPOFile,
-    IRawFileData, ITeam, IPOTemplateExporter, ZeroLengthPOExportError)
+    IRawFileData, ITeam, IPOTemplateExporter, ZeroLengthPOExportError,
+    ILibraryFileAliasSet)
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poparser import POParser, POHeader
 from canonical.launchpad.components.poimport import import_po
@@ -34,8 +35,7 @@ from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgset import POMsgSet
 from canonical.launchpad.database.poselection import POSelection
 from canonical.launchpad.database.posubmission import POSubmission
-from canonical.librarian.interfaces import (ILibrarianClient, DownloadFailed,
-    UploadFailed)
+from canonical.librarian.interfaces import DownloadFailed, UploadFailed
 from canonical.lp.dbschema import (EnumCol, RosettaImportStatus,
     TranslationPermission, TranslationValidationStatus)
 from canonical.launchpad.components.poparser import (POSyntaxError,
@@ -673,7 +673,7 @@ class POFile(SQLBase, RosettaStats):
 
     def updateExportCache(self, contents):
         """See IPOFile."""
-        client = getUtility(ILibrarianClient)
+        alias_set = getUtility(ILibraryFileAliasSet)
 
         if self.variant:
             filename = '%s@%s.po' % (
@@ -693,8 +693,8 @@ class POFile(SQLBase, RosettaStats):
         # why we call .sync() -- it turns the UTC_NOW reference into an
         # equivalent datetime object.
 
-        self.exportfile = client.addFile(filename, size, file,
-            'appliction/x-po')
+        self.exportfile = alias_set.create(
+            filename, size, file, 'appliction/x-po')
         self.exporttime = UTC_NOW
         self.sync()
 
@@ -704,8 +704,8 @@ class POFile(SQLBase, RosettaStats):
         if self.exportfile is None:
             return None
         else:
-            client = getUtility(ILibrarianClient)
-            return client.getFileByAlias(self.exportfile).read()
+            alias_set = getUtility(ILibraryFileAliasSet)
+            return alias_set[self.exportfile].read()
 
     def uncachedExport(self):
         """Export this PO file without looking in the cache."""
