@@ -571,7 +571,7 @@ class ITeamMembershipSubset(Interface):
     """A Set for TeamMembership objects of a given team."""
 
     newmember = Choice(title=_('New member'), required=True,
-                       vocabulary='ValidPersonOrTeam',
+                       vocabulary='ValidTeamMember',
                        description=_("The user or team which is going to be "
                                      "added as the new member of this team."))
 

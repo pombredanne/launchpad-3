@@ -9,11 +9,8 @@ import sets
 from canonical.database.sqlbase import flush_database_updates
 
 # zope imports
-from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form.browser.add import AddView
-from zope.app.form.utility import setUpWidgets, getWidgetsData
+from zope.app.form.utility import setUpWidgets
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
 from zope.component import getUtility
@@ -30,8 +27,8 @@ from canonical.launchpad.interfaces import (
     ISSHKeySet, IBugTaskSet, IPersonSet, IEmailAddressSet, IWikiNameSet,
     IJabberIDSet, IIrcIDSet, IArchUserIDSet, ILaunchBag, ILoginTokenSet,
     IPasswordEncryptor, ISignedCodeOfConductSet, IObjectReassignment,
-    ITeamReassignment, IGPGKeySet, IGpgHandler, IPymeKey, IKarmaActionSet,
-    IKarmaSet, UBUNTU_WIKI_URL)
+    ITeamReassignment, IGPGKeySet, IGpgHandler, IKarmaActionSet, IKarmaSet,
+    UBUNTU_WIKI_URL)
 
 from canonical.launchpad.helpers import (
         obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
@@ -136,7 +133,7 @@ class FOAFSearchView:
         return getUtility(IPersonSet).findByName(name)
 
 
-class PersonRdfView(object):
+class PersonRdfView:
     """A view that sets its mime-type to application/rdf+xml"""
     def __init__(self, context, request):
         self.context = context

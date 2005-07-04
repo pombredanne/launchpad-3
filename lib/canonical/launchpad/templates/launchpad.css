@@ -5,7 +5,6 @@
 }
 
 #portal-column-one {
-  padding: 0 0 0 1em;
   vertical-align: top;
   width: 16em;
 }
@@ -16,7 +15,6 @@
 }
 
 #portal-column-two {
-  padding: 0 1em 0 0;
   vertical-align: top;
   width: 16em;
 }
@@ -83,8 +81,7 @@ label {
 
 .listingBar a,
 #portal-personaltools a,
-#portal-breadcrumbs a,
-#portal-footer a {
+#portal-breadcrumbs a {
   text-decoration: none;
   text-transform: lowercase;
   font-size: 80%;
@@ -566,6 +563,10 @@ dt dfn {
 
 /* -- Other bugs: -- */
 
+.documentContent {
+  background: none;
+}
+
 .formHelp, .formHelp:hover {
   color: #666666;
   cursor: inherit;
@@ -575,6 +576,9 @@ dt dfn {
   font-size: smaller;
 }
 
+legend {
+  background: none;
+}
 li {
   margin-bottom: 0 !important;
 }
@@ -619,6 +623,83 @@ thead {
 }
 
 /* -- Launchpad-wide -- */
+
+body {
+  background-color: #fcfcfc;
+  padding: 0.25em 0.75em 0.5em 0.75em;
+}
+.header, .footer {
+  font-family: "Lucida Grande", "Charcoal", sans-serif;
+}
+.header {
+  font-size: 0.875em;
+  margin-bottom: 0.5em;
+}
+.footer {
+  font-size: smaller;
+  text-align: center;
+}
+.login {
+  text-align: right;
+  min-height: 1.75em;
+}
+.login input[type="submit"] {
+  padding: 0;
+}
+.hierarchy, .facets, .footer {
+  padding: 0.25em;
+}
+.hierarchy, .footer, ul.app>li {
+  background-color: #dee7ec;
+  color: inherit;
+}
+.facets {
+  background-color: #8cacbb;
+  color: white;
+  font-weight: bold;
+  margin: 0;
+  min-height: 1.5em;
+}
+.facets li {
+  background: url(/++resource++bullet.gif) no-repeat;
+  background-position: 0.25em 50%;
+  display : inline;
+  list-style: none;
+  padding: 0 0.75em 0 1.25em;
+}
+.facets :link, .facets :visited {
+  background: none;
+  color: #dee7ec;
+}
+.facets .current a {
+  background: none;
+  color: white;
+}
+ul.app {
+  clear: both;
+  padding: 0;
+  margin: 1em 0 1em;
+  border-bottom: 1px solid #8cacbb;
+  font: bold 1em sans-serif;
+}
+ul.app li
+{
+  border: 1px solid #8cacbb;
+  border-bottom: none;
+  display: inline;
+  list-style: none;
+  margin: 0 0 0 0.75em;
+}
+ul.app>li>a, ul.app>li>strong {
+  padding: 0 0.5em;
+}
+ul.app a {
+  text-decoration: none;
+}
+ul.app>li.current {
+  background: #fcfcfc;
+  border-bottom: 1px solid #fcfcfc;
+}
 
 #body {
   padding: 0 1em;
@@ -684,16 +765,7 @@ h2 {
 }
 h3, h4, h5, h6 {
 	font-size: 1em;
-}
-/* temporary while page-header exists: */
-.page-header h2 {
-  clear: none;
-  margin: 0;
-  text-transform: none;
-  font-size: 1.5em;
-}
-h3, h4, h5, h6 {
-	margin-bottom: 0;
+  margin-bottom: 0;
 }
 ul {
   margin-left: 24px;
@@ -743,31 +815,11 @@ tr {
   text-align: right;
 }
 
-.user {
-	float: right;
-}
-
-address.app, .apps {
-	font-family: "Lucida Grande", sans-serif;
-}
-address.app {
-	font-size: 2em;
-}
 .apps {
 	clear: right;
 	float: right;
 	margin-top: 0.5em;
 }
-.page-header {
-	width: 100%;
-}
-.page-header img {
-	float: left;
-}
-.page-header h2 {
-    padding-top: 0.75em;
-}
-
 .navigation li {
 	display: inline;
 	padding: 0.25em 0.5em;
@@ -783,32 +835,6 @@ address.app {
 	margin: 0;
 	padding-top: 1em;
 	width: 100%;
-}
-
-.page-header-ribbon {
-  /* Bar with personalized menu (user preferences, favorites etc) */
-  background-color: #dee7ec;
-  border-top-color: #8cacbb;
-  border-top-style: solid;
-  border-top-width: 1px;
-  border-bottom-color: #8cacbb;
-  border-bottom-style: solid;
-  border-bottom-width: 1px;
-  line-height: 1.3em;
-  color: Black;
-  padding: 0em 1em 0em 0em;
-  margin: 0;
-  list-style: none;
-}
-
-.page-header-ribbon address {
-  width: 75%;
-}
-
-.launchpad-apps {
-  float: right;
-}
-.launchpad-apps td {
 }
 
 /* -- Malone: -- */
@@ -867,9 +893,9 @@ use the 'clear' attribute on other elemtens surrounding the multi-select box.
 */
 
 .multi_select {
-    max-height: 20em;
-    overflow: auto;
-    float: left;
-    padding: 0 1em;
+  max-height: 20em;
+  overflow: auto;
+  float: left;
+  padding: 0 1em;
 }
 

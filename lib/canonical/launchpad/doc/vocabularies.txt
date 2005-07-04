@@ -193,33 +193,66 @@ o ValidOwner - all valid persons and teams are also valid owners.
     >>> [t.token for t in vocab.search('team')]
     ['name21', 'name18', 'support@ubuntu.com', 'name19', 'name20']
 
+o ValidTeamMember - With the exception of all teams that have this team as a
+  member and the team itself, all valid persons and teams are valid
+  members.
+
+    >>> from canonical.launchpad.interfaces import ITeamMembershipSubset
+    >>> team = getUtility(IPersonSet).getByName('name17')
+    >>> team2 = getUtility(IPersonSet).getByName('guadamen')
+    >>> person = getUtility(IPersonSet).getByName('name16')
+    >>> tms = ITeamMembershipSubset(team)
+
+    ValidTeamMember needs a context.
+    >>> vocab = vocabulary_registry.get(None, "ValidTeamMember")
+    Traceback (most recent call last):
+    ...
+    ValueError: ...
+
+    ValidTeamMember's context must implement ITeam or ITeamMembershipSubset.
+    >>> vocab = vocabulary_registry.get(person, "ValidTeamMember")
+    Traceback (most recent call last):
+    ...
+    ValueError: ...
+ 
+    'name16' is a valid member for 'name17'
+    >>> vocab = vocabulary_registry.get(tms, "ValidTeamMember")
+    >>> person in vocab
+    True
+
+    'name17' is not a valid member for itself
+    >>> team in vocab
+    False
+
+    'name17' is a member of 'guadamen', so 'guadamen' can't be a member of
+    'name17'.
+    >>> team2 in vocab
+    False
+
 o ValidTeamOwner - With the exception of the team itself and all teams owned
   by that team, all valid persons and teams are valid owners for the team 
   in context.
 
-  >>> team = getUtility(IPersonSet).getByName('name17')
-  >>> person = getUtility(IPersonSet).getByName('name16')
-
-  ValidTeamOwner needs a context.
-  >>> vocab = vocabulary_registry.get(None, "ValidTeamOwner")
-  Traceback (most recent call last):
-  ...
-  ValueError: ...
-
-  ValidTeamOwner's context must be a team.
-  >>> vocab = vocabulary_registry.get(person, "ValidTeamOwner")
-  Traceback (most recent call last):
-  ...
-  ValueError: ...
-
-  'name17' is not a valid owner for itself.
-  >>> vocab = vocabulary_registry.get(team, "ValidTeamOwner")
-  >>> team in vocab
-  False
-
-  'name16' is a valid owner for 'name17'.
-  >>> vocab = vocabulary_registry.get(team, "ValidTeamOwner")
-  >>> person in vocab
-  True
+    ValidTeamOwner needs a context.
+    >>> vocab = vocabulary_registry.get(None, "ValidTeamOwner")
+    Traceback (most recent call last):
+    ...
+    ValueError: ...
+ 
+    ValidTeamOwner's context must be a team.
+    >>> vocab = vocabulary_registry.get(person, "ValidTeamOwner")
+    Traceback (most recent call last):
+    ...
+    ValueError: ...
+ 
+    'name17' is not a valid owner for itself.
+    >>> vocab = vocabulary_registry.get(team, "ValidTeamOwner")
+    >>> team in vocab
+    False
+ 
+    'name16' is a valid owner for 'name17'.
+    >>> vocab = vocabulary_registry.get(team, "ValidTeamOwner")
+    >>> person in vocab
+    True
 
 XXX: document more vocabularies here, particularly when they break!

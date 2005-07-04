@@ -68,9 +68,20 @@
       permission="zope.Public"
       />
 
+  <!-- Common menus -->
+
   <browser:menus
       module="canonical.launchpad.browser.launchpad"
       classes="LaunchpadRootFacets RosettaAppMenus"
+      />
+
+  <!-- Menus debug page. -->
+
+  <browser:page
+      for="zope.interface.Interface"
+      name="+debug-menus"
+      template="../templates/launchpad-menus-debug.pt"
+      permission="zope.Public"
       />
 
 </configure>

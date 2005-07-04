@@ -225,7 +225,7 @@ def generate_bug_edit_email(bug_delta):
             if bugtask_delta.statusexplanation is not None:
                 if not body.endswith("\n\n"):
                     body += "\n"
-                body += "      Changed explanation of status to:\n"
+                body += "      Changed status notes to:\n"
                 body += "\n".join(wrap(
                     bugtask_delta.statusexplanation, width = 72,
                     initial_indent = u"          ",

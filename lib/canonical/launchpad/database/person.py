@@ -29,10 +29,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
 
-# canonical imports
-from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
-from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
-
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, ITeamMembership, ITeamParticipation,
     ITeamMembershipSet, IEmailAddress, IWikiName, IIrcID, IArchUserID,
@@ -43,7 +39,6 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.database.translation_effort import TranslationEffort
 from canonical.launchpad.database.bug import BugTask
-from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.karma import KarmaCache, KarmaAction, Karma
@@ -246,7 +241,9 @@ class Person(SQLBase):
 
     def join(self, team):
         """See IPerson."""
-        assert not ITeam.providedBy(self)
+        assert not self.isTeam(), (
+            "Teams take no actions in Launchpad, thus they can't join() "
+            "another team. Instead, you have to addMember() them.")
 
         expired = TeamMembershipStatus.EXPIRED
         proposed = TeamMembershipStatus.PROPOSED
@@ -304,6 +301,13 @@ class Person(SQLBase):
                   reviewer=None, comment=None):
         """See IPerson."""
         assert self.teamowner is not None
+
+        if person.isTeam():
+            assert not self.hasParticipationEntryFor(person), (
+                "Team '%s' is a member of '%s'. As a consequence, '%s' can't "
+                "be added as a member of '%s'" 
+                % (self.name, person.name, person.name, self.name))
+
         if person.hasMembershipEntryFor(self):
             # <person> is already a member.
             return 
@@ -533,7 +537,7 @@ class Person(SQLBase):
     def reportedbugs(self):
         """See IPerson."""
         return BugTask.selectBy(ownerID=self.id)
-    reportedbugs= property(reportedbugs)
+    reportedbugs = property(reportedbugs)
 
     def translations(self):
         """See IPerson."""
@@ -616,9 +620,6 @@ class PersonSet:
 
     def __init__(self):
         self.title = 'Launchpad People'
-
-    def __iter__(self):
-        return self.getall()
 
     def __getitem__(self, personid):
         """See IPersonSet."""
@@ -1181,34 +1182,61 @@ def _getAllMembers(team, orderBy=None):
                          orderBy=orderBy)
 
 
-def _cleanTeamParticipation(member, team):
-    """Remove relevant entries in TeamParticipation for given member and team.
+def _cleanTeamParticipation(person, team):
+    """Remove relevant entries in TeamParticipation for <person> and <team>.
 
-    Remove all tuples "member, team" from TeamParticipation for the given
-    member and team (together with all its superteams), unless this member is
-    an indirect member of the given team or the team owner. More information 
-    on how to use the TeamParticipation table can be found in the 
-    TeamParticipationUsage spec.
+    Remove all tuples "person, team" from TeamParticipation for the given
+    person and team (together with all its superteams), unless this person is
+    an indirect member of the given team. More information on how to use the
+    TeamParticipation table can be found in the TeamParticipationUsage spec or
+    the teammembership.txt system doctest.
     """
-    members = [member]
-    if member.teamowner is not None:
-        # The given member is, in fact, a team, and in this case we must 
-        # remove all of its members from the given team and from its 
-        # superteams.
-        members.extend(_getAllMembers(member))
+    # First of all, we remove <person> from <team> (and its superteams).
+    _removeParticipantFromTeamAndSuperTeams(person, team)
 
-    for m in members:
-        for subteam in team.getSubTeams():
-            if m.hasParticipationEntryFor(subteam):
-                # This member is an indirect member of this team. We cannot
-                # remove its TeamParticipation entry.
-                break
-        else:
-            for t in itertools.chain(team.getSuperTeams(), [team]):
-                result = TeamParticipation.selectOneBy(
-                    personID=m.id, teamID=t.id)
-                if result is not None:
-                    result.destroySelf()
+    # Then, if <person> is a team, we remove all its participants from <team>
+    # (and its superteams).
+    if person.isTeam():
+        for submember in person.allmembers:
+            # XXX: We need to cast team.activemembers to a list because the
+            # current implementation of SelectResults.__contains__ is not
+            # working properly for operations like UNION (which is used in
+            # team.activemembers). This is going to be fixed soon and I'll
+            # remove this cast. 2005-07-01, GuilhermeSalgado 
+            if submember not in list(team.activemembers):
+                _cleanTeamParticipation(submember, team)
+
+
+def _removeParticipantFromTeamAndSuperTeams(person, team):
+    """If <person> is a participant (that is, has a TeamParticipation entry)
+    of any team that is a subteam of <team>, then <person> should be kept as
+    a participant of <team> and (as a consequence) all its superteams.
+    Otherwise, <person> is removed from <team> and we repeat this process for
+    each superteam of <team>.
+    """
+    for subteam in team.getSubTeams():
+        # There's no need to worry for the case where person == subteam because
+        # a team doesn't have a teamparticipation entry for itself and then a
+        # call to team.hasParticipationEntryFor(team) will always return
+        # False.
+        if person.hasParticipationEntryFor(subteam):
+            # This is an indirect member of this team and thus it should
+            # be kept as so.
+            return
+
+    result = TeamParticipation.selectOneBy(personID=person.id, teamID=team.id)
+    if result is not None:
+        result.destroySelf()
+
+    for superteam in team.getSuperTeams():
+        # XXX: We need to cast team.activemembers to a list because the
+        # current implementation of SelectResults.__contains__ is not
+        # working properly for operations like UNION (which is used in
+        # team.activemembers). This is going to be fixed soon and I'll remove
+        # this cast. 2005-07-01, GuilhermeSalgado 
+        if person not in list(superteam.activemembers):
+            _removeParticipantFromTeamAndSuperTeams(person, superteam)
+
 
 def _fillTeamParticipation(member, team):
     """Add relevant entries in TeamParticipation for given member and team.

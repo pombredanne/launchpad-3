@@ -43,6 +43,41 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 
+from canonical.launchpad.webapp import (
+    StandardLaunchpadFacets, Link, DefaultLink)
+
+class ProductFacets(StandardLaunchpadFacets):
+    """The links that will appear in the facet menu for
+    an IProduct.
+    """
+
+    usedfor = IProduct
+
+    # These links are inherited from StandardLaunchpadFacets.
+    # The items in the list refer to method names, and
+    # will appear on the page in the order they appear
+    # in the list.
+    # links = ['overview', 'bugs', 'translations']
+
+    def overview(self):
+        target = ''
+        text = 'Overview'
+        summary = 'General information about %s' % self.context.displayname
+        return DefaultLink(target, text, summary)
+
+    def bugs(self):
+        target = '+bugs'
+        text = 'Bugs'
+        summary = 'Bugs reported about %s' % self.context.displayname
+        return Link(target, text, summary)
+
+    def translations(self):
+        target = '+translations'
+        text = 'Translations'
+        summary = 'Translations of %s in Rosetta' % self.context.displayname
+        return Link(target, text, summary)
+
+
 # A View Class for Product
 class ProductView:
 

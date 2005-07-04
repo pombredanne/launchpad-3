@@ -102,10 +102,6 @@
             template="../templates/portlet-bug-status.pt"
             lp:url="malone/tasks/+portlet-status" />
 
-        <browser:page name="+portlet-people"
-            template="../templates/portlet-bugtask-people.pt"
-            lp:url="malone/tasks/+portlet-people" />
-
     </browser:pages>
 
     <!-- XXX: Brad Bollenbach, 2005-01-18: We need to sort out the +upstreamtask

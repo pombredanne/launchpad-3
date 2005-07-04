@@ -1,56 +1,68 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
-
-<div metal:fill-slot="main">
-
-    <h1>Bazaar Branch Sync Requests</h1>
-
-    <div class="documentDescription">
-        The following upstream revision control repositories have been
-        nominated for syncing to Bazaar, and not yet approved for production
-        syncing.
+      i18n:domain="launchpad"
+>
+  <body>
+    <div metal:fill-slot="main">
+      <h1>Bazaar branch sync requests</h1>
+      <p class="documentDescription">
+          These upstream revision control repositories have been
+          nominated for syncing to Bazaar, but not yet approved for
+          production syncing. Select an item to review/administer it.
+      </p>
+      <dl
+        tal:define="projects context/forSyncReview"
+        tal:condition="projects"
+      >
+        <tal:block repeat="project projects">
+          <dt tal:condition="project/reviewed">
+            <dfn>project title</dfn> (reviewed)
+          </dt>
+          <dt tal:condition="not: project/reviewed">
+            <a tal:attributes="href string:${project/name}/+review"
+            ><dfn tal:content="project/title"
+            >project title</dfn></a>
+          </dt>
+          <dd>
+            <p tal:content="project/summary">project summary</p>
+            <ul
+              tal:define="products project/products"
+              tal:condition="product products"
+            >
+              <li tal:repeat="product project/products">
+                <div>
+                  <a
+                    tal:attributes="href string:/products/${product/name}/+review"
+                    tal:content="product/title"
+                  >Product Title</a>
+                </div>
+                <dl
+                  tal:define="multipleseries product/serieslist"
+                  tal:condition="multipleseries"
+                >
+                  <tal:block repeat="series multipleseries">
+                    <dt tal:condition="series/needsSyncReview">
+                      <dfn><a
+                        tal:attributes="href string:/products/${product/name}/+series/${series/name}/+sourceadmin"
+                        tal:content="series/name"
+                      >series</a></dfn>
+                    </dt>
+                    <dt tal:condition="not: series/needsSyncReview">
+                      <dfn tal:content="series/name">series</dfn>
+                    </dt>
+                    <dd>
+                      <p tal:content="series/summary">
+                        source description
+                      </p>
+                    </dd>
+                  </tal:block>
+                </dl>
+              </li>
+            </ul>
+          </dd>
+        </tal:block>
+      </dl>
     </div>
-
-    <div tal:repeat="project context/forSyncReview">
-
-        <h3>Project: <span tal:replace="project/title">project title</span></h3>
-
-        <p style="margin-left: 20px;">
-            <span tal:content="project/summary">project summary</span>
-            <span tal:condition="not: project/reviewed">
-                [ <a tal:attributes="href string:${project/name}/+review">Review</a> ]
-            </span>
-        </p>
-        
-
-        <div tal:repeat="product project/products">
-
-            <p><em tal:content="product/title">Product Title</em>
-                    [ <a tal:attributes="href
-                    string:/products/${product/name}/+review">Review</a> ]
-            </p>
-        
-            <div tal:repeat="series product/serieslist">
-                <p style="margin-left: 50px;"
-                   tal:condition="series/needsSyncReview">
-                    <b tal:content="series/name">series name</b>
-                    <br />
-                    <span tal:replace="series/summary">source
-                    description</span>
-                    [ <a tal:attributes="href
-                    string:/products/${product/name}/+series/${series/name}/+sourceadmin">Admin</a> ]
-                </p>
-            </div>
-
-        </div>
-
-    </div>
-
-</div>
-
-</body>
+  </body>
 </html>
