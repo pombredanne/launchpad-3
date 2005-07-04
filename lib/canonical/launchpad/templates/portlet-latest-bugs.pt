@@ -1,13 +1,17 @@
 <div class="portlet">
-    <h4>Latest Malone Bugs:</h4>
+    <h4>Latest Bugs Reported:</h4>
 
     <div class="portletBody">
         <div class="portletContent even">
 
         <table class="rowNavigation" border="0">
-            <tr tal:repeat="bugtask view/latestBugTasks"
-                tal:attributes="onclick string:window.location='/malone/bugs/${bugtask/bug/id}';">
-                <td tal:content="string: [#${bugtask/bug/id}] ${bugtask/bug/title}">bug title</td>
+            <tr tal:repeat="bugtask view/latestBugTasks">
+                <td><a href="#"
+                       style="text-decoration: underline"
+                       tal:attributes="href bugtask/bug/fmt:url" 
+                       tal:content="string: Bug #${bugtask/bug/id}" />: 
+                       <span tal:replace="bugtask/bug/title">bug
+                       title</span></td>
             </tr>
         </table>
 
