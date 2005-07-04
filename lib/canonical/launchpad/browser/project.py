@@ -25,6 +25,9 @@ from canonical.launchpad import helpers
 from canonical.launchpad.browser.bugtracker import newBugTracker
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
+__all__ = ['ProjectView', 'ProjectEditView', 'ProjectAddProductView',
+           'ProjectSetView', 'ProjectRdfView']
+
 #
 # Traversal functions that help us look up something
 # about a project or product
