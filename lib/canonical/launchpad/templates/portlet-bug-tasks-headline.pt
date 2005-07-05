@@ -14,7 +14,7 @@
       <th>Status</th>
       <th>Severity</th>
       <th>Priority</th>
-      <th>Assigned to</th>
+      <th colspan="2">Assigned to</th>
     </tr>
 
   </thead>
@@ -65,9 +65,13 @@
             assignee.browsername
           </span>
         </tal:block>
+      </td>
+
+      <td style="text-align: center">
         <tal:editabletask condition="bugtask/required:launchpad.Edit">
           [<a tal:attributes="href string:${bugtask/@@absolute_url}/+edit"
-              >assign</a>]
+              ><span tal:condition="bugtask/assignee" 
+                     tal:omit-tag>re</span>assign</a>]
         </tal:editabletask>
       </td>
 
@@ -79,7 +83,8 @@
 
 </div>
 
-<div style="font-size: 90%; text-align: right; clear: both; margin-bottom:1em; text-decoration: none;">
+<div style="font-size: 80%; text-align: right; clear: both; 
+            margin-bottom:1em; text-decoration: none;">
 
   Indicate bug also exists: 
   <span style="white-space: nowrap">
