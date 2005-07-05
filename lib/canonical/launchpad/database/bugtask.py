@@ -289,32 +289,25 @@ class BugTaskSet:
                           watch=dbschema.BugSubscription.WATCH))
 
         if orderby is None:
-            # There is no results ordering to be done.
-            bugtasks = BugTask.select(
-                query, clauseTables=["Bug", "BugTask"])
-        else:
-            # There is results ordering to be done.
-            if isinstance(orderby, (list, tuple)):
-                # There is more than one ordering column.
-                orderby_arg = []
-                for orderby_col in orderby:
-                    if orderby_col.startswith("-"):
-                        orderby_col = orderby_col[1:]
-                        orderby_arg.append(
-                            "-" + self._ORDERBY_COLUMN[orderby_col])
-                    else:
-                        orderby_col.append(self._ORDERBY_COLUMN[orderby_col])
-            else:
-                # There is one ordering column.
-                if orderby.startswith("-"):
-                    orderby_col = orderby[1:]
-                    orderby_arg = "-" + self._ORDERBY_COLUMN[orderby_col]
-                else:
-                    orderby_arg = self._ORDERBY_COLUMN[orderby]
+            orderby = []
+        elif not isinstance(orderby, (list, tuple)):
+            orderby = [orderby]
 
-            bugtasks = BugTask.select(
-                query, clauseTables=["Bug", "BugTask"],
-                orderBy=orderby_arg)
+        # Translate orderby values into corresponding Table.attribute.
+        orderby_arg = []
+        for orderby_col in orderby:
+            if orderby_col.startswith("-"):
+                orderby_col = orderby_col[1:]
+                orderby_arg.append(
+                    "-" + self._ORDERBY_COLUMN[orderby_col])
+            else:
+                orderby_arg.append(self._ORDERBY_COLUMN[orderby_col])
+
+        # Make sure that the result always is ordered. 
+        orderby_arg.append('BugTask.id')
+
+        bugtasks = BugTask.select(
+            query, clauseTables=["Bug", "BugTask"], orderBy=orderby_arg)
 
         return bugtasks
 

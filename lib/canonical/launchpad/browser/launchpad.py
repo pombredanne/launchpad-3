@@ -13,11 +13,11 @@ from canonical.launchpad.webapp import (
 
 class LaunchpadRootFacets(StandardLaunchpadFacets):
     usedfor = ILaunchpadRoot
-    links = ['overview', 'translations', 'bugs']
+    links = ['overview', 'bugs', 'translations']
 
     def overview(self):
         target = ''
-        text = 'Launchpad'
+        text = 'Overview'
         return DefaultLink(target, text)
 
     def translations(self):
@@ -38,8 +38,18 @@ class RosettaAppMenus(ApplicationMenu):
 
     def overview(self):
         target = ''
-        text = 'Overview'
+        text = 'Translations'
         return DefaultLink(target, text)
+
+    def upload(self):
+        target = ''
+        text = 'Upload'
+        return Link(target, text)
+
+    def download(self):
+        target = ''
+        text = 'Download'
+        return Link(target, text)
 
     def about(self):
         target = '+about'

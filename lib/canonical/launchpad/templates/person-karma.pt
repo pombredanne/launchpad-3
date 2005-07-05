@@ -14,10 +14,37 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Recent Activities</h1>
+  <h1>Activities Performed in Launchpad</h1>
+
+  <p>This is a summary of all activities performed by <span
+    tal:replace="context/browsername" /> in Launchpad, organized per activity
+    type.</p>
+
+  <ul>
+    <tal:block tal:repeat="actionCategory view/actionCategories">
+      <tal:block tal:define="actions python:view.actions(actionCategory)"
+                 tal:condition="actions">
+        <li>
+          <span tal:replace="actionCategory/title" />
+
+          <table class="listing data">
+            <tr>
+              <th>Action</th>
+              <th>Number of times performed</th>
+            </tr>
+            
+            <tr tal:repeat="action actions">
+              <td><span tal:replace="action/name/title" /></td>
+              <td><span tal:replace="python:view.actionsCount(action)" /></td>
+            </tr>
+          </table>
+        </li>
+        <br />
+      </tal:block>
+    </tal:block>
+  </ul>
 
 </div>
-
 
 </body>
 </html>

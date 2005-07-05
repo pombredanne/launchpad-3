@@ -170,8 +170,8 @@ class POTemplateView:
                 self.status_message = error
                 return
 
-            self.status_message = (
-                tarball.do_import(self.context, owner, pot_paths, po_paths))
+            self.status_message = tarball.do_import(
+                self.context, self.user, pot_paths, po_paths)
         else:
             self.status_message = (
                 'The file you uploaded was not recognised as a file that '

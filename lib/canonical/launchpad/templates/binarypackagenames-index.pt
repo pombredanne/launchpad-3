@@ -13,18 +13,16 @@
 
   <div metal:fill-slot="main">
 
-      <h1>Binary Package Names</h1>
+      <h1>Binary package names</h1>
 
       <form name="search" method="GET">
-        Find Binary Package Names:
-        <br>
+        <div><label for="name">Find binary package names:</label></div>
         <input type="text" name="name" tal:attributes="value request/name|nothing" />
         <input type="submit" value="Search"/>
       </form>
-      <br>
-      <div align="right">
-        <a href="+new"><i>Add new</i></a> 
-      </div>
+      <ul>
+        <li class="add"><a href="+new">Add...</a></li>
+      </ul>
       
   <tal:block tal:define="bn view/binaryPackagenamesBatchNavigator;
                          prev_url bn/prevBatchURL;
@@ -33,6 +31,7 @@
 
       <table width="100%"
              tal:define="currentBatch python:list(bn.currentBatch())">
+          <thead>
         <tr>
           <th tal:condition="currentBatch">
             <span tal:condition="request/name|nothing">
@@ -43,15 +42,18 @@
             <i>No Binary package names found</i>
           </th>
        </tr>
+          </thead>
+          <tbody>
        <tr tal:repeat="bpname currentBatch">
            <td tal:content="bpname/name">
 	     BINARYPACKAGENAME
            </td>
        </tr>
+          </tbody>
+          <tfoot>
        <tr>
          <td align="center">
-         <fieldset tal:condition="python:prev_url or next_url">
-         <div>
+         <div tal:condition="python:prev_url or next_url">
     	   <table>
 	   <tr>
              <th tal:condition="prev_url">
@@ -67,9 +69,9 @@
           </tr>
 	  </table>
         </div>
-        </fieldset>
         </td>
       </tr>
+        </tfoot>
     </table>
     </tal:block>
 

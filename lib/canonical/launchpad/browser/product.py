@@ -42,6 +42,45 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 
+from canonical.launchpad.webapp import (
+    StandardLaunchpadFacets, Link, DefaultLink)
+
+__all__ = ['ProductFacets', 'ProductView', 'ProductEditView', 
+           'ProductFileBugView', 'ProductRdfView', 'ProductSetView',
+           'ProductSetAddView']
+
+class ProductFacets(StandardLaunchpadFacets):
+    """The links that will appear in the facet menu for
+    an IProduct.
+    """
+
+    usedfor = IProduct
+
+    # These links are inherited from StandardLaunchpadFacets.
+    # The items in the list refer to method names, and
+    # will appear on the page in the order they appear
+    # in the list.
+    # links = ['overview', 'bugs', 'translations']
+
+    def overview(self):
+        target = ''
+        text = 'Overview'
+        summary = 'General information about %s' % self.context.displayname
+        return DefaultLink(target, text, summary)
+
+    def bugs(self):
+        target = '+bugs'
+        text = 'Bugs'
+        summary = 'Bugs reported about %s' % self.context.displayname
+        return Link(target, text, summary)
+
+    def translations(self):
+        target = '+translations'
+        text = 'Translations'
+        summary = 'Translations of %s in Rosetta' % self.context.displayname
+        return Link(target, text, summary)
+
+
 # A View Class for Product
 class ProductView:
 
@@ -243,6 +282,17 @@ class ProductFileBugView(SQLObjectAddView):
 
     def nextURL(self):
         return absoluteURL(self.addedBug, self.request)
+
+
+class ProductRdfView(object):
+    """A view that sets its mime-type to application/rdf+xml"""
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        request.response.setHeader('Content-Type', 'application/rdf+xml')
+        request.response.setHeader('Content-Disposition',
+                                   'attachment; filename=' +
+                                   self.context.name + '.rdf')
 
 
 class ProductSetView:

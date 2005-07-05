@@ -34,8 +34,11 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
         layer="canonical.launchpad.layers.RosettaLayer"
-        name="+translations"
-        />
+        name="+translations" />
+
+    <browser:menus
+        module="canonical.launchpad.browser.product"
+        classes="ProductFacets" />
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IProduct"
@@ -104,6 +107,14 @@
             template="../templates/portlet-product-translatables.pt"
             lp:url="/products/evolution/+portlet-translatables" />
     </browser:pages>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProduct"
+        class="canonical.launchpad.browser.ProductRdfView"
+        permission="zope.Public"
+        name="+rdf"
+        lp:url="/projects/$Product.name/+rdf"
+        template="../templates/product-rdf.pt" />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"

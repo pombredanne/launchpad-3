@@ -6,8 +6,8 @@ __all__ = ['POMsgSetView']
 from zope.exceptions import NotFoundError
 from zope.component import getUtility
 
-from canonical.launchpad.helpers import TranslationConstants, msgid_html, \
-    count_lines
+from canonical.launchpad import helpers
+from canonical.launchpad.helpers import TranslationConstants
 from canonical.launchpad.interfaces import ILanguageSet
 
 
@@ -55,10 +55,9 @@ class POMsgSetView:
                 break
 
     def getMsgID(self):
-        """Return a msgid string prepared to render as a web page."""
-        return msgid_html(
-            self.msgids[TranslationConstants.SINGULAR_FORM].msgid,
-            self.potmsgset.flags())
+        """Return a msgid string prepared to render in a web page."""
+        msgid = self.msgids[TranslationConstants.SINGULAR_FORM].msgid
+        return helpers.msgid_html(msgid, self.potmsgset.flags())
 
     def getMsgIDPlural(self):
         """Return a msgid plural string prepared to render as a web page.
@@ -66,9 +65,8 @@ class POMsgSetView:
         If there is no plural form, return None.
         """
         if self.isPlural():
-            return msgid_html(
-                self.msgids[TranslationConstants.PLURAL_FORM].msgid,
-                self.potmsgset.flags())
+            msgid = self.msgids[TranslationConstants.PLURAL_FORM].msgid
+            return helpers.msgid_html(msgid, self.potmsgset.flags())
         else:
             return None
 
@@ -78,13 +76,13 @@ class POMsgSetView:
         It will never be bigger than 12.
         """
         if self.isPlural():
-            singular_lines = count_lines(
+            singular_lines = helpers.count_lines(
                 self.msgids[TranslationConstants.SINGULAR_FORM].msgid)
-            plural_lines = count_lines(
+            plural_lines = helpers.count_lines(
                 self.msgids[TranslationConstants.PLURAL_FORM].msgid)
             lines = max(singular_lines, plural_lines)
         else:
-            lines = count_lines(
+            lines = helpers.count_lines(
                 self.msgids[TranslationConstants.SINGULAR_FORM].msgid)
 
         return min(lines, 12)
@@ -167,7 +165,10 @@ class POMsgSetView:
         self._prepareTranslations()
 
         if index in self.getTranslationRange():
-            return self.translations[index]
+            translation = self.translations[index]
+            # We store newlines as '\n' but forms should have them as '\r\n'
+            # so we need to change them before showing them.
+            return helpers.unix2windows_newlines(translation)
         else:
             raise IndexError('Translation out of range')
 

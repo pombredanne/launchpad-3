@@ -20,12 +20,12 @@
 
         </table>
 
+        <ul><li class="info">
         <a href="+translations"
-           style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
            title="See more translation options for this product">
-            <img src="/++resource++add.gif" alt="+" />
             More...
-        </a><br />
+        </a>
+        </li></ul>
 
         </div>
 

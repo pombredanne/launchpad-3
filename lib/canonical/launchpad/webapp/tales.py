@@ -228,8 +228,9 @@ class NoneFormatter:
         'date',
         'time',
         'datetime',
+        'exactduration',
         'pagetitle',
-        'url'
+        'url',
         ])
 
     def __init__(self, context):
@@ -280,6 +281,39 @@ class DateTimeFormatterAPI:
 
     def datetime(self):
         return "%s %s" % (self.date(), self.time())
+
+
+class DurationFormatterAPI:
+    """Adapter from timedelta objects to a formatted string."""
+
+    def __init__(self, duration):
+        self._duration = duration
+
+    def exactduration(self):
+        """Format timedeltas as "v days, w hours, x minutes, y.z seconds"."""
+        parts = []
+        minutes, seconds = divmod(self._duration.seconds, 60)
+        hours, minutes = divmod(minutes, 60)
+        seconds = seconds + (float(self._duration.microseconds) / 10**6)
+        if self._duration.days > 0:
+            if self._duration.days == 1:
+                parts.append('%d day' % self._duration.days)
+            else:
+                parts.append('%d days' % self._duration.days)
+        if parts or hours > 0:
+            if hours == 1:
+                parts.append('%d hour' % hours)
+            else:
+                parts.append('%d hours' % hours)
+        if parts or minutes > 0:
+            if minutes == 1:
+                parts.append('%d minute' % minutes)
+            else:
+                parts.append('%d minutes' % minutes)
+        if parts or seconds > 0:
+            parts.append('%0.1f seconds' % seconds)
+        
+        return ', '.join(parts)
 
 
 def clean_path_segments(request):

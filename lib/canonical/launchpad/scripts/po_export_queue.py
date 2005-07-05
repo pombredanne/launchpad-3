@@ -2,7 +2,6 @@
 
 __metaclass__ = type
 
-import tarfile
 import tempfile
 from StringIO import StringIO
 
@@ -12,11 +11,9 @@ from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.helpers import (
     getRawFileData, join_lines, RosettaWriteTarFile)
-from canonical.launchpad.components.poexport import (
-    MOCompiler, MOCompilationError)
+from canonical.launchpad.components.poexport import MOCompiler
 from canonical.launchpad.interfaces import (
-    IPOExportRequestSet, IPOTemplate, IPOFile, ILibraryFileAliasSet,
-    ZeroLengthPOExportError)
+    IPOExportRequestSet, IPOTemplate, IPOFile, ILibraryFileAliasSet)
 
 def is_potemplate(obj):
     """Return True if the object is a PO template."""
@@ -56,7 +53,7 @@ class POFormatHandler(Handler):
         """Return a filename for the file being exported."""
 
         if is_potemplate(self.obj):
-            return potemplate_name(self.obj) + '.pot'
+            return self.obj.potemplatename.name + '.pot'
         else:
             return pofile_filename(self.obj)
 
@@ -64,7 +61,7 @@ class POFormatHandler(Handler):
         """Return the contents of the exported file."""
 
         if is_potemplate(self.obj):
-            return getRawFileData(obj)
+            return getRawFileData(self.obj)
         else:
             return self.obj.export()
 
@@ -74,7 +71,7 @@ class POFormatHandler(Handler):
         """
 
         if is_potemplate(self.obj):
-            return obj.rawfile.url
+            return self.obj.rawfile.url
         else:
             self.obj.export()
             return self.obj.exportfile.url
@@ -150,14 +147,19 @@ class ExportResult:
      - failures: A list of filenames for failed exports.
     """
 
-    def __init__(self, name, url=None, failures=[]):
+    def __init__(self, name, url=None, successes=None, failures=None):
         if not (url or failures):
             raise ValueError(
                 "An export result must have an URL or failures (or both).")
 
+        if (url and not successes) or (not url and successes):
+            raise ValueError(
+                "Can't have a URL without successes (or vice versa).")
+
         self.name = name
         self.url = url
-        self.failures = failures
+        self.failures = failures or []
+        self.successes = successes or []
 
     def notify(self, person):
         """Send a notification email to the given person about the export.
@@ -167,6 +169,8 @@ class ExportResult:
         """
 
         name = person.browsername
+        success_count = len(self.successes)
+        total_count = success_count + len(self.failures)
 
         if self.failures and self.url:
             failure_list = '\n'.join([
@@ -184,11 +188,12 @@ class ExportResult:
                 failure_list,
                 '',
                 'The Rosetta team has been notified of this problem. Please',
-                'reply to this email for further assistance. The files that',
-                'were successfully exported can be downloaded from the',
-                'following location:',
+                'reply to this email for further assistance. Of the %d files',
+                'you requested, Rosetta successfully exported %d, which can',
+                'be downloaded from the following location:',
                 '',
-                '    %s' % self.url)
+                '    %s')
+            body %= (total_count, success_count, self.url)
         elif self.failures:
             body = join_lines(
                 '',
@@ -238,7 +243,7 @@ def process_single_object_request(obj, format, logger):
             (name, handler.get_filename()))
         return ExportResult(name, failures=[obj])
     else:
-        return ExportResult(name, url=url)
+        return ExportResult(name, url=url, successes=[obj])
 
 def process_multi_object_request(objects, format, logger):
     """Process an export request for many objects.
@@ -280,7 +285,8 @@ def process_multi_object_request(objects, format, logger):
             size=size,
             file=filehandle,
             contentType='application/octet-stream')
-        return ExportResult(name, url=alias.url, failures=failures)
+        return ExportResult(
+            name, url=alias.url, successes=successes, failures=failures)
     else:
         return ExportResult(name, failures=failures)
 

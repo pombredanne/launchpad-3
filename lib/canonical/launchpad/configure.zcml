@@ -95,6 +95,13 @@
 
   <browser:suburl
     for="canonical.publication.RootObject"
+    name="karmaaction"
+    utility="canonical.launchpad.interfaces.IKarmaActionSet"
+    permission="launchpad.Admin"
+    />
+
+  <browser:suburl
+    for="canonical.publication.RootObject"
     name="potemplatenames"
     utility="canonical.launchpad.interfaces.IPOTemplateNameSet"
     permission="launchpad.Edit"

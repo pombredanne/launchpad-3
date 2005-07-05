@@ -56,6 +56,10 @@
       details and status.</span>
       [&nbsp;<a tal:attributes="href
       string:+series/${series/name}">Branch&nbsp;Details...</a>&nbsp;]
+      <span tal:condition="context/required:launchpad.Admin">
+      [&nbsp;<a tal:attributes="href
+      string:+series/${series/name}/+sourceadmin">+sourceadmin</a>&nbsp;]
+      </span>
       </p>
             
       <ul>

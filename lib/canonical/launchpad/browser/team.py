@@ -86,7 +86,7 @@ class TeamEmailView:
                     self.errormessage = (
                         "The email address you're trying to add is already "
                         "registered in Launchpad for %s."
-                        % email.person.browsername())
+                        % email.person.browsername)
                 else:
                     self.errormessage = (
                         "This is the current contact email address of this "

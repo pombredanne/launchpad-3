@@ -8,7 +8,7 @@ from zope.interface import implements
 from sqlobject import ForeignKey, IntCol, StringCol, MultipleJoin
 
 from canonical.database.sqlbase import SQLBase
-from canonical.database.constants import nowUTC
+from canonical.database.constants import nowUTC, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import IProductRelease
@@ -35,6 +35,8 @@ class ProductRelease(SQLBase):
     summary = StringCol(notNull=False, default=None)
     description = StringCol(notNull=False, default=None)
     changelog = StringCol(notNull=False, default=None)
+    datecreated = UtcDateTimeCol(
+        dbName='datecreated', notNull=True, default=UTC_NOW)
     owner = ForeignKey(dbName="owner", foreignKey="Person", notNull=True)
     productseries = ForeignKey(dbName='productseries',
                                foreignKey='ProductSeries', notNull=True)

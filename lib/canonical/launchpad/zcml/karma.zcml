@@ -5,10 +5,81 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+    <!-- KarmaSet -->
+    <content class="canonical.launchpad.database.KarmaSet">
+        <allow interface="canonical.launchpad.interfaces.IKarmaSet" />
+    </content>
+
     <securedutility
-        class="canonical.launchpad.components.karma.KarmaPointsManager"
-        provides="canonical.launchpad.interfaces.IKarmaPointsManager">
-        <allow interface="canonical.launchpad.interfaces.IKarmaPointsManager" />
+        class="canonical.launchpad.database.KarmaSet"
+        provides="canonical.launchpad.interfaces.IKarmaSet">
+        <allow interface="canonical.launchpad.interfaces.IKarmaSet" />
     </securedutility>
+
+    <!-- KarmaCache -->
+    <content class="canonical.launchpad.database.KarmaCache">
+        <allow interface="canonical.launchpad.interfaces.IKarmaCache" />
+        <require 
+            permission="launchpad.AnyPerson"
+            set_schema="canonical.launchpad.interfaces.IKarmaCache" />
+    </content>
+
+    <!-- KarmaCacheSet -->
+    <securedutility
+        class="canonical.launchpad.database.KarmaCacheSet"
+        provides="canonical.launchpad.interfaces.IKarmaCacheSet">
+        <allow interface="canonical.launchpad.interfaces.IKarmaCacheSet" />
+    </securedutility>
+
+    <!-- KarmaAction -->
+    <content class="canonical.launchpad.database.KarmaAction">
+        <allow interface="canonical.launchpad.interfaces.IKarmaAction" />
+        <require 
+            permission="launchpad.Admin" 
+            set_schema="canonical.launchpad.interfaces.IKarmaAction" />
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IKarmaAction"
+        name="+index" />
+
+    <browser:editform
+        name="+index"
+        for="canonical.launchpad.interfaces.IKarmaAction"
+        class="canonical.launchpad.browser.editview.SQLObjectEditView"
+        schema="canonical.launchpad.interfaces.IKarmaAction"
+        fields="category points"
+        label="Edit KarmaAction Information"
+        permission="launchpad.Admin"
+        template="../templates/karmaaction-edit.pt"
+        lp:url="karmaaction/$action/+index">
+    </browser:editform>
+
+    <!-- KarmaActionSet -->
+    <content class="canonical.launchpad.database.KarmaActionSet">
+        <allow interface="canonical.launchpad.interfaces.IKarmaActionSet" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.KarmaActionSet"
+        provides="canonical.launchpad.interfaces.IKarmaActionSet">
+        <allow interface="canonical.launchpad.interfaces.IKarmaActionSet" />
+    </securedutility>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IKarmaActionSet"
+        name="+index" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IKarmaActionSet"
+        getter="getByName" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IKarmaActionSet"
+        name="+index"
+        permission="launchpad.Admin" 
+        class="canonical.launchpad.browser.KarmaActionSetView"
+        template="../templates/karmaaction-index.pt"
+        lp:url="karmaaction/$action/+index" />
 
 </configure>

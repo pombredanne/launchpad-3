@@ -128,16 +128,17 @@ class Job:
         return self
 
     def from_series(self, series):
-        assert (series.importstatus is not None,
-                'Should never import series with no importstatus')
-        assert (series.importstatus not in [ImportStatus.DONTSYNC,
-                                            ImportStatus.STOPPED],
-                'Should never import STOPPED or DONTSYNC series.')
-        assert (series.importstatus != ImportStatus.AUTOTESTED,
-                'Once AUTOTESTED, should not import till PROCESSING')
-        if series.importstatus in [ImportStatus.TESTING,
-                                   ImportStatus.PROCESSING,
-                                   ImportStatus.TESTFAILED]:
+        assert series.importstatus is not None, \
+               'Should never import series with no importstatus'
+        assert series.importstatus not in [ImportStatus.DONTSYNC,
+                                           ImportStatus.STOPPED], \
+               'Should never import STOPPED or DONTSYNC series.'
+        if series.importstatus == ImportStatus.TESTING:
+            self.TYPE = 'import'
+            self.frequency = 60 # autobuild this
+        elif series.importstatus in [ImportStatus.AUTOTESTED,
+                                     ImportStatus.TESTFAILED,
+                                     ImportStatus.PROCESSING]:
             self.TYPE = 'import'
             self.frequency=0
         elif series.importstatus == ImportStatus.SYNCING:
@@ -176,23 +177,7 @@ class Job:
             self.repository = str(series.bkrepository)
         assert self.repository is not None and self.repository != ''
 
-        # setup the archive, category, branch and version
-        self.archivename = str(series.targetarcharchive)
-        self.category = str(series.targetarchcategory)
-        self.branchto = str(series.targetarchbranch)
-        self.archversion = str(series.targetarchversion)
-        # if we are just TESTING then we may need to
-        # construct this data automatically
-        if series.importstatus == ImportStatus.TESTING:
-            if not self.archivename:
-                self.archivename = (str(series.product.name)
-                                    + '@autotest.bazaar.ubuntu.com')
-            if not self.category:
-                self.category = str(series.product.name)
-            if not self.branchto:
-                self.branchto = str(series.name) + '-TEST-DO-NOT-USE'
-            if not self.archversion:
-                self.archversion = '0'
+        self._arch_from_series(series)
 
         self.product_id = series.product.id
         self.seriesID = series.id
@@ -200,6 +185,44 @@ class Job:
         self.releaseRoot = str(series.releaseroot)
         self.releaseFileGlob = str(series.releasefileglob)
         return self
+
+    def _arch_from_series(self, series):
+        """Setup the arch namespace from a productseries.
+
+        If the importstatus is TESTING, and some arch namespace details are not
+        filled in, we generate them.
+        """
+        archive = series.targetarcharchive
+        category = series.targetarchcategory
+        branch = series.targetarchbranch
+        version = series.targetarchversion
+        # Test for the truth value of the namespace components to indistinctly
+        # handle None and empty string.
+        if series.importstatus in [ImportStatus.TESTING,
+                                   ImportStatus.AUTOTESTED,
+                                   ImportStatus.TESTFAILED]:
+            if not archive:
+                archive = (str(series.product.name)
+                           + '@autotest.bazaar.ubuntu.com')
+            if not category:
+                category = str(series.product.name)
+            if not branch:
+                # FIXME: if series.name starts with a digit, or contain
+                # anything but alphanumerics and minus, that will produce an
+                # illegal branch name. That could be fixed by doing url
+                # escaping using '-' instead of '%' as the escaping character.
+                # -- David Allouche 2005-06-18
+                branch = str(series.name) + '-TEST-DO-NOT-USE'
+            if not version:
+                version = '0'
+        assert archive
+        assert category
+        assert branch
+        assert version
+        self.archivename = str(archive)
+        self.category = str(category)
+        self.branchto = str(branch)
+        self.archversion = str(version)
 
     def __str__(self):
         result=StringIO()

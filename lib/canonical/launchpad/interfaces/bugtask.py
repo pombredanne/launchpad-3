@@ -39,7 +39,7 @@ class IBugTask(IHasDateCreated):
         title=_('Status'), vocabulary='BugStatus',
         default=dbschema.BugTaskStatus.NEW)
     statusexplanation = Text(
-        title=_("Explanation of Status"), required=False)
+        title=_("Status notes (optional)"), required=False)
     priority = Choice(
         title=_('Priority'), vocabulary='BugPriority',
         default=dbschema.BugPriority.MEDIUM)
@@ -93,7 +93,7 @@ class IBugTaskSearch(Interface):
         title=_('Assignee'), vocabulary='ValidAssignee', required=False)
     unassigned = Bool(title=_('show only unassigned bugs'), required=False)
     statusexplanation = TextLine(
-        title=_("Explanation of Status"), required=False)
+        title=_("Status notes"), required=False)
 
 
 class IUpstreamBugTaskSearch(IBugTaskSearch):
@@ -134,7 +134,7 @@ class IBugTaskSearchListingView(IView):
                                     shown.""")
 
     statusexplanation_widget = Attribute("""The widget for searching in status
-                                     explanations. None if the widget is not to
+                                     notes. None if the widget is not to
                                      be shown.""")
 
     def task_columns():
@@ -176,7 +176,7 @@ class IBugTaskDelta(Interface):
         "A dict containing two keys, 'old' and 'new' or None.")
     assignee = Attribute(
         "A dict containing two keys, 'old' and 'new' or None.")
-    statusexplanation = Attribute("The new value of the status explanation.")
+    statusexplanation = Attribute("The new value of the status notes.")
 
 
 class IUpstreamBugTask(IBugTask):
@@ -254,6 +254,10 @@ class IBugTaskSet(Interface):
         * BugTaskSet.search(arg1 = 'foo', arg2 = 'bar'): Match all
           IBugTasks where IBugTask.arg1 == 'foo' and
           IBugTask.arg2 == 'bar'
+
+        The set is always ordered by the bugtasks' id. Meaning that if
+        you set orderby to 'severity', it will first be ordered by severity,
+        then by bugtask id.
 
         For a more thorough treatment, check out:
 

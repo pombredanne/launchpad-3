@@ -121,6 +121,13 @@
         />
 
     <adapter
+        for="datetime.timedelta"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.DurationFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="basestring"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.FormattersAPI"
@@ -253,6 +260,15 @@
         class="zope.app.publisher.browser.resources.Resources"
         permission="zope.Public"
         allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+        />
+
+    <!-- RDF page template macros -->
+    <browser:page
+        for="*"
+        name="rdf_macros"
+        layer="canonical.launchpad.layers.LaunchpadLayer"
+        permission="zope.Public"
+        template="../templates/rdf-macros.pt"
         />
 
 </configure>

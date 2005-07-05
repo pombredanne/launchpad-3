@@ -71,15 +71,14 @@ attachment_index = ContextTitle('Malone Bug Attachment: %s')
 
 attachments_index = 'Malone Bug Attachments'
 
-auth_index = 'Launchpad Password Reminder'
-
 bazaar_index = 'The Launchpad Bazaar'
 
-bazaar_sync_review = 'The Bazaar Upstream-Sync Review'
+bazaar_sync_review = 'Review upstream repositories for Launchpad Bazaar syncing'
 
 binary_index = 'Binary Packages'
 
-binarypackage_index = 'Binary Package Details'
+def binarypackage_index (context, view):
+    return "%s binary package in Launchpad" % context.title
 
 binarypackage_search = 'Search Binary Package Database'
 
@@ -241,15 +240,15 @@ distrorelease_translations = ContextTitle(
 
 distros_index = 'Overview of Distributions in Launchpad'
 
-doap_about = 'About the Launchpad DOAP registry'
+doap_about = 'About the Launchpad Registry'
 
 doap_dashboard = 'Launchpad Project & Product Dashboard'
 
-doap_index = 'The DOAP Network: Project and Product Registration in Launchpad'
+doap_index = 'Project and Product Registration in Launchpad'
 
 doap_listall = 'Launchpad: Complete List'
 
-doap_review = 'DOAP Content Review'
+doap_review = 'Launchpad Content Review'
 
 doap_to_do = 'Launchpad To-Do List'
 

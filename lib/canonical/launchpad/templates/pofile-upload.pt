@@ -16,22 +16,53 @@
              tal:content="structure view/status_message">Successful</div>
 
         <form action="+upload" method="POST" enctype="multipart/form-data">
-
-        <fieldset>
-            <label>Select a translation file to import:
-	      <input name="file" type="file" />
-	    </label>
-            <br />
-            <label>Published: <input name="published" type="checkbox" /></label>
-            <div class="discreet">
-              (Check this ONLY if this PO file is EXACTLY the same as the
-              current published PO file, with none of your own edits, this
-              will reset the statistics in Rosetta)
-            </div>
-            <br />
-            <input name="UPLOAD" type="submit" value="Upload"/>
-        </fieldset>
-
+            <table>
+                <tr>
+                    <th>
+                        <label for="file_input">File:</label>
+                    </th>
+                    <td>
+                        <input id="file_input" name="file" type="file" />
+                        <div class="discreet">
+                        This should be a <code>.po</code> file.
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        <input id="user_type" name="upload_type" type="radio"
+                            value="user" checked="checked" />
+                    </th>
+                    <td>
+                        <label for="user_type">User upload</label>
+                        <div class="discreet">
+                        Select this if this upload contains modifications
+                        which you have made. This will normally be the correct
+                        setting to use.
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        <input id="upstream_type" name="upload_type" type="radio"
+                            value="upstream" />
+                    </th>
+                    <td>
+                        <label for="upstream_type">Published upload</label>
+                        <div class="discreet">
+                        Select this if this upload is identical to the
+                        corresponding file in the upstream release or source
+                        package.
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <th></th>
+                    <td>
+                        <input name="UPLOAD" type="submit" value="Upload" />
+                    </td>
+                </tr>
+            </table>
         </form>
 
 </div>

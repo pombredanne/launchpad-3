@@ -25,6 +25,9 @@ from canonical.launchpad import helpers
 from canonical.launchpad.browser.bugtracker import newBugTracker
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
+__all__ = ['ProjectView', 'ProjectEditView', 'ProjectAddProductView',
+           'ProjectSetView', 'ProjectRdfView']
+
 #
 # Traversal functions that help us look up something
 # about a project or product
@@ -267,4 +270,15 @@ class ProjectSetView(object):
                           datecreated=nowUTC)
         # now redirect to the page to view it
         self.request.response.redirect(name)
+
+
+class ProjectRdfView(object):
+    """A view that sets its mime-type to application/rdf+xml"""
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        request.response.setHeader('Content-Type', 'application/rdf+xml')
+        request.response.setHeader('Content-Disposition',
+                                   'attachment; filename=' +
+                                   self.context.name + '-project.rdf')
 

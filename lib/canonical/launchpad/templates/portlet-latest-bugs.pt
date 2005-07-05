@@ -11,21 +11,20 @@
             </tr>
         </table>
 
-        <a href="+filebug"
-            style="font-size: 85%; display: inline; clear: both; text-decoration: none;"
+        <ul>
+          <li class="add"><a href="+filebug"
             title="File a bug on this product">
-            <img src="/++resource++add.gif" alt="+" />
-            File Bug on <span
+            Report a bug on <span
             tal:replace="context/displayname">product</span><br />
-        </a>
-
+          </a></li>
+          <li class="info">
         <a tal:attributes="href string:/malone/products/${context/name}"
            tal:condition="view/latestBugTasks"
-           style="font-size: 85%; display: inline; clear: both; text-decoration: none;"
            title="See all bugs for this product">
-            <img src="/++resource++add.gif" alt="+" />
-            More <span tal:replace="context/displayname">product</span> bugs<br />
+            More <span tal:replace="context/displayname">product</span> bugs
         </a>
+          </li>
+        </ul>
 
         </div>
 

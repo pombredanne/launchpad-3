@@ -7,58 +7,83 @@
 
 <div metal:fill-slot="main">
 
-<h1><span tal:content="context/binarypackagerelease/name">TITLE</span> 
-(<span tal:content="context/version" />)
-</h1>
+      <h1>
+        <span tal:replace="context/binarypackagerelease/name">
+          Title
+        </span>
+        (<span tal:replace="context/version">3.0.4</span>)
+      </h1>
+      <h2>Binary package information</h2>
+      <table>
+        <tbody>
+          <tr>
+            <th>Name:</th>
+            <td>
 
- <fieldset>
-   <legend>
-     Binary Package Information
-   </legend>
-
-    <p><b>Binary Package name:</b>
     <a tal:content="context/binarypackagerelease/name" 
     tal:attributes="href string:../../${context/binarypackagerelease/name}"/>
 
-    <p><b>Source Package Release:</b>
+            </td>
+          </tr>
+          <tr>
+            <th>Release:</th>
+            <td>
+
     <a tal:define="sourcerelease context/binarypackagerelease/build/sourcepackagerelease"
        tal:content="string:${sourcerelease/sourcepackage/name} (${sourcerelease/version})"
        tal:attributes="href string:../../../../src/${context/distrorelease/name}/${sourcerelease/sourcepackage/name}/${sourcerelease/version}"/> 
 
-    <p><b>Component:</b>
-    <span tal:content="context/binarypackagerelease/component/name"/> 
+            </td>
+          </tr>
+          <tr>
+            <th>Component:</th>
+            <td tal:content="context/binarypackagerelease/component/name">
+              foo
+            </td>
+          </tr>
+          <tr>
+            <th>Section:</th>
+            <td
+              tal:content="context/binarypackagerelease/section/name"/>
+              bar
+            </td>
+          </tr>
+          <tr>
+            <th>Priority:</th>
+            <td
+              tal:content="context/binarypackagerelease/priority/title"/>
+              YAGNI
+            </td>
+          </tr>
+          <tr>
+            <th></th>
+            <td>
+              <a href="+license">License</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
-    <p><b>Section:</b>
-    <span tal:content="context/binarypackagerelease/section/name"/> 
-
-    <p><b>Priority:</b>
-    <span tal:content="context/binarypackagerelease/priority/title"/>
-
-    <p><a href="+license"><b>License</b></a>
-
- </fieldset>
-
+<tal:block condition="nothing">
 <!-- XXX: Daniel Debonzi 2004-10-28 -->
 <!-- Is the Bugs for a BinaryPackage"Release"? -->
 <!--  <p><h4>Package Bugs:</h4> -->
 <!--  <div class="dummy"> -->
 <!--    <span>#1, #2, #3</span> -->
 <!--  </div> -->
+</tal:block>
 
- <p><h4>Builds:</h4>
-   <tal:dummy tal:condition="not:context/archs">
-     <i> No Builds Available</i>
-   </tal:dummy>
-
- <tal:block tal:repeat="arch context/archs">
- [
- <a tal:content="arch" tal:attributes="href arch">
-   ARCH
- </a>
- ]
- </tal:block>
-
-</div>
-</body>
+      <h2>Builds</h2>
+      <p tal:condition="not:context/archs">
+        There are no builds available.
+      </p>
+      <ul tal:condition="context/archs">
+        <li tal:repeat="arch context/archs">
+          <a tal:content="arch" tal:attributes="href arch">
+            Tudor
+          </a>
+        </li>
+      </ul>
+    </div>
+  </body>
 </html>
- 
