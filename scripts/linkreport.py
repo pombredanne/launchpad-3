@@ -54,11 +54,12 @@ def main(csvfile, log):
 
     # Suck in the csv file, updating the database and adding to the broken set
     reader = csv.DictReader(
-            (line for line in csvfile if not line.startswith('#'))
+            (line.replace('\0','') for line in csvfile
+                if not line.startswith('#'))
             )
     for row in reader:
         # Get the result code
-        m = re.search('^(\d+)', row['result'])
+        m = re.search('^(\d+)', row['result'] or '')
         if m is None:
             if row['result'] == 'URL is empty':
                 continue
@@ -67,6 +68,7 @@ def main(csvfile, log):
                 row['resultcode'] = 601
             else:
                 row['result'] = '602 %s' % row['result']
+                row['resultcode'] = 602
         else:
             row['resultcode'] = int(m.group(1))
 
@@ -80,7 +82,7 @@ def main(csvfile, log):
         row['dlsize'] = int(row['dlsize'])
         row['checktime'] = float(row['checktime'])
         del row['cached']
-        if resultcode < 400:
+        if row['resultcode'] < 400:
             row['brokensince'] = None
 
         try:
@@ -92,14 +94,15 @@ def main(csvfile, log):
 
     total = len(broken)
 
-    # Delete any entries that now pass
+    # Delete any entries that were not spidered
+    # TODO: Only if older than a threshold -- StuartBishop 20050704
     for link in CheckedLink.select():
         if link in broken:
             continue
         link.destroySelf()
 
     new_broken_links = CheckedLink.select("""
-        resultcode > 400
+        resultcode in (404, 500, 601)
         AND brokensince > CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
             - '1 day 12 hours'::interval
         """, orderBy=["recursionlevel", "parentname", "url"])
@@ -107,7 +110,7 @@ def main(csvfile, log):
     rep = report("New Arrivals", new_broken_links, total, brokensince=False)
 
     old_broken_links = CheckedLink.select("""
-        resultcode > 400
+        resultcode in (404, 500, 601)
         AND brokensince <= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
             - '1 day 12 hours'::interval
         AND brokensince >
@@ -117,7 +120,7 @@ def main(csvfile, log):
     rep += report("Old Favorites", old_broken_links, total, brokensince=True)
 
     antique_broken_links = CheckedLink.select("""
-        resultcode > 400
+        resultcode in (404, 500, 601)
         AND brokensince <=
             CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - '14 days'::interval
         """, orderBy=["brokensince", "recursionlevel", "parentname", "url"])
@@ -151,8 +154,8 @@ def report(title, links, total, brokensince=True):
         print >> out, "%-7s: %s" % (title, str(value))
 
     for link in links:
-        print_row("Parent", link.parentname)
         print_row("Link", link.url)
+        print_row("Parent", link.parentname)
         print_row("Result", link.result)
         if link.warningstring:
             print_row("Warning", link.warningstring)

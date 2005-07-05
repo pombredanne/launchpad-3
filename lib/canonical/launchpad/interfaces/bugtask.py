@@ -256,6 +256,10 @@ class IBugTaskSet(Interface):
           IBugTasks where IBugTask.arg1 == 'foo' and
           IBugTask.arg2 == 'bar'
 
+        The set is always ordered by the bugtasks' id. Meaning that if
+        you set orderby to 'severity', it will first be ordered by severity,
+        then by bugtask id.
+
         For a more thorough treatment, check out:
 
             lib/canonical/launchpad/doc/bugtask.txt

@@ -53,8 +53,12 @@ def report_naughty_imports():
     if naughty_imports:
         print
         print '** %d import policy violations **' % len(naughty_imports)
+        current_name = None
         for name, import_into in sorted(naughty_imports):
-            print "You should not import %s into %s" % (name, import_into)
+            if name != current_name:
+                print "You should not import %s into:" % name
+                current_name = name
+            print "    %s" % import_into
 atexit.register(report_naughty_imports)
 
 # Tell canonical.config to use the test config file, not launchpad.conf

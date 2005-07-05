@@ -46,6 +46,10 @@ from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, DefaultLink)
 
+__all__ = ['ProductFacets', 'ProductView', 'ProductEditView', 
+           'ProductFileBugView', 'ProductRdfView', 'ProductSetView',
+           'ProductSetAddView']
+
 class ProductFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for
     an IProduct.

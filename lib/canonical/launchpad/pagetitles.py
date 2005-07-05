@@ -224,15 +224,15 @@ distrorelease_translations = ContextTitle(
 
 distros_index = 'Overview of Distributions in Launchpad'
 
-doap_about = 'About the Launchpad DOAP registry'
+doap_about = 'About the Launchpad Registry'
 
 doap_dashboard = 'Launchpad Project & Product Dashboard'
 
-doap_index = 'The DOAP Network: Project and Product Registration in Launchpad'
+doap_index = 'Project and Product Registration in Launchpad'
 
 doap_listall = 'Launchpad: Complete List'
 
-doap_review = 'DOAP Content Review'
+doap_review = 'Launchpad Content Review'
 
 doap_to_do = 'Launchpad To-Do List'
 
