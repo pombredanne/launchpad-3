@@ -141,4 +141,10 @@
             template="../templates/pofile-barchart.pt" />
     </browser:pages>
 
+    <securedutility
+        class="canonical.launchpad.database.POFileSet"
+        provides="canonical.launchpad.interfaces.IPOFileSet">
+        <allow interface="canonical.launchpad.interfaces.IPOFileSet" />
+    </securedutility>
+
 </configure>
