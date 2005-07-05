@@ -69,6 +69,7 @@ class Project(SQLBase):
 
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
+
     def getOrCreateCalendar(self):
         if not self.calendar:
             self.calendar = Calendar(
