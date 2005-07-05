@@ -16,12 +16,23 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Welcome to Malone</h1>
-    <p class="discreet">
-        Malone is a system for reporting bugs in software. Please choose a link
-        below to get started.
-    </p>
-
+    <h2 style="margin-top: 0;">Quick Links</h2>
+    <ul>
+        <form method="get" action="bugs" name="goto">
+          <li>
+            Go to bug report #<input type="text" name="id" size="5" />
+          </li>
+        </form>
+        <script>
+        <!-- 
+            document.forms['goto'].id.focus();
+        //-->
+        </script>
+        <li>
+            <a href="assigned">Assigned Bug Reports</a> - retrieve reports on
+            bugs assigned to yourself (or others)
+        </li>
+    </ul>
     <h2>Bugs on Packages</h2>
     <ul>
         <li>
@@ -50,23 +61,6 @@
         <li>
             <a href="products">Locate Product and View Bugs</a> -
             locate a product to view or file bugs
-        </li>
-    </ul>
-    <h2>Quick Links</h2>
-    <ul>
-        <form method="get" action="bugs" name="goto">
-          <li>
-            Go to bug report #<input type="text" name="id" size="5" />
-          </li>
-        </form>
-        <script>
-        <!-- 
-            document.forms['goto'].id.focus();
-        //-->
-        </script>
-        <li>
-            <a href="assigned">Assigned Bug Reports</a> - retrieve reports on
-            bugs assigned to yourself (or others)
         </li>
     </ul>
     
