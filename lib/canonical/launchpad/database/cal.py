@@ -212,7 +212,7 @@ class CalendarEvent(SQLBase, CalendarEventMixin):
     def owner(self):
         return self.calendar.owner
 
-    unique_id = StringCol(dbName='unique_id', notNull=True, length=255,
+    unique_id = StringCol(dbName='uid', notNull=True, length=255,
                           alternateID=True, alternateMethodName='byUniqueID')
     calendar = ForeignKey(dbName='calendar', notNull=True,
                           foreignKey='Calendar')

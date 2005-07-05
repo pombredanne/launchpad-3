@@ -65,7 +65,7 @@ class IPerson(Interface):
 
     sshkeys = Attribute(_('List of SSH keys'))
 
-    timezone_name = TextLine(
+    timezone = TextLine(
         title=_('Timezone Name'), required=False, readonly=False
         )
 

@@ -135,9 +135,9 @@ class LaunchBag(object):
 
     def timezone(self):
         user = self.user
-        if user and user.timezone_name:
+        if user and user.timezone:
             try:
-                return pytz.timezone(user.timezone_name)
+                return pytz.timezone(user.timezone)
             except KeyError:
                 pass # unknown timezone name
         # fall back to UTC
