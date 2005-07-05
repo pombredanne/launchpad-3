@@ -155,6 +155,16 @@
         provides="canonical.launchpad.interfaces.IBugSet">
         <allow interface="canonical.launchpad.interfaces.IBugSet" />
     </securedutility>
+    
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IBugSet"
+        name="+index" />
+    
+    <browser:page
+        name="+index"
+        for="canonical.launchpad.interfaces.IBugSet"
+        class="canonical.launchpad.browser.BugSetView"
+        permission="zope.Public" />
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IBugSet"

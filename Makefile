@@ -18,6 +18,9 @@ CONFFILE=configs/${LPCONFIG}/launchpad.conf
 # DO NOT ALTER : this should just build by default
 default: inplace
 
+schema:
+	(cd database/schema; make)
+
 check_merge: build importdcheck
 	# Work around the current idiom of 'make check' getting too long
 	# because of hct and related tests. note that this is a short

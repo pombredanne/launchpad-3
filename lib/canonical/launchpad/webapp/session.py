@@ -14,7 +14,8 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
     def __init__(self):
         CookieClientIdManager.__init__(self)
         self.namespace = "launchpad"
-
+        self.cookieLifetime = 24 * 60 * 60
+        
 class LaunchpadSessionDataContainer(PersistentSessionDataContainer):
 
     def __init__(self):

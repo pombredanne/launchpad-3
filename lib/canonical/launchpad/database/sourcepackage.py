@@ -15,11 +15,13 @@ from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import \
     BugTaskStatus, BugSeverity, PackagePublishingStatus, PackagingType
 
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (ISourcePackage,
     ISourcePackageSet, ILaunchpadCelebrities)
 
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.maintainership import Maintainership
 from canonical.launchpad.database.vsourcepackagereleasepublishing import \
     VSourcePackageReleasePublishing
 from canonical.launchpad.database.sourcepackageindistro import \

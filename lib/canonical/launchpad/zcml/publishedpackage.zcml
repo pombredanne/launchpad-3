@@ -40,7 +40,7 @@
         <browser:page
             name="+index"
             template="../templates/package-search.pt"
-            lp:url="soyuz/distros/ubuntu/+packages/+index" />
+            lp:url="distros/ubuntu/+packages/+index" />
 
     </browser:pages>
 

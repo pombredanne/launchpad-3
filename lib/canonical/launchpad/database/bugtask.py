@@ -107,6 +107,31 @@ class BugTask(SQLBase):
         else:
             return None
 
+    # XXX 2005-06-25 kiko: rename context and contextname to target or
+    # location or whatever. context is overloaded.
+    @property
+    def context(self):
+        distro = self.distribution
+        distrorelease = self.distrorelease
+        if distro or distrorelease:
+            parent = distrorelease or distro
+            # XXX 2005-06-25 kiko: This needs API and fixages in Soyuz,
+            # but I don't want to leave us with broken links meanwhile.
+            # Filed bugs 1146 and 1147. 
+            return parent
+            # if self.sourcepackagename:
+            #     return parent.getSourcePackage(self.sourcepackagename)
+            # elif self.binarypackagename:
+            #     return parent.getBinaryPackageByName(self.binarypackagename)
+            # else:
+            #     return parent
+        elif self.product:
+            return self.product
+        else:
+            raise AssertionError
+
+    # XXX 2005-06-25 kiko: if context actually works, we can probably
+    # nuke this or simplify it significantly.
     @property
     def contextname(self):
         """See canonical.launchpad.interfaces.IBugTask.
@@ -117,9 +142,11 @@ class BugTask(SQLBase):
         * distribution.displayname
         * distribution.displayname sourcepackagename.name
         * distribution.displayname sourcepackagename.name binarypackagename.name
-        * distrorelease.displayname
-        * distrorelease.displayname sourcepackagename.name
-        * distrorelease.displayname sourcepackagename.name binarypackagename.name
+        * distribution.displayname distrorelease.displayname
+        * distribution.displayname distrorelease.displayname 
+          sourcepackagename.name
+        * distribution.displayname distrorelease.displayname 
+          sourcepackagename.name binarypackagename.name
         * product.name
         """
         if self.distribution or self.distrorelease:
@@ -135,11 +162,12 @@ class BugTask(SQLBase):
             if self.distribution:
                 L.append(self.distribution.displayname)
             elif self.distrorelease:
+                L.append(self.distrorelease.distribution.displayname)
                 L.append(self.distrorelease.displayname)
             if self.sourcepackagename:
                 L.append(self.sourcepackagename.name)
             if (binarypackagename_name and
-            binarypackagename_name != sourcepackagename_name):
+                binarypackagename_name != sourcepackagename_name):
                 L.append(binarypackagename_name)
             return ' '.join(L)
         elif self.product:

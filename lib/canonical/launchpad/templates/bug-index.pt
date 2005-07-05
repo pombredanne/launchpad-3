@@ -21,11 +21,12 @@
 
 <div metal:fill-slot="main">
 
-  <p class="portalMessage" tal:condition="context/duplicateof">
+  <p class="portalMessage" tal:condition="context/duplicateof" 
+     style="margin-bottom: 1em">
     This bug is a duplicate of
     <a href="#"
        tal:attributes="href context/duplicateof/@@absolute_url"
-       tal:content="string:bug ${context/duplicateof/id}">bug 42</a>
+       tal:content="string:bug #${context/duplicateof/id}">bug 42</a>
   </p>
 
   <div class="discreet">
@@ -34,7 +35,8 @@
       Malone bug "<a href="." tal:content="context/name">$Bug.name</a>",
     </tal:block>
     <tal:block condition="not: context/name">
-      Malone bug #<span tal:replace="context/id">33</span>,
+      Malone <a href="#" tal:attributes="href context/fmt:url">
+      bug #<span tal:replace="context/id">33</span></a>,
     </tal:block>
 
     submitted
@@ -64,10 +66,6 @@
       <legend>New comment on this bug</legend>
       <div class="field">
         <form action="+messages/+new" method="post">
-          <label>Comment</label>
-          <div class="formHelp">
-            If you have additional relevant information, enter it below.
-          </div>
           <b>Subject:</b>
           <input name="field.title" type="text" size="50" 
                  tal:attributes="value context/followup_title" /><br />
@@ -79,44 +77,29 @@
   </div>
 
   <tal:block repeat="message context/messages">
-  <div class="boardComment"
-       tal:condition="python:context.description!=message.contents">
-    
-    <div class="boardCommentDetails">
-      <strong tal:content="message/title">$Bugmessage.title</strong>
+    <div class="boardComment"
+         tal:condition="python:context.description!=message.contents">
+      
+      <div class="boardCommentDetails">
+        <strong tal:content="message/title">$Bugmessage.title</strong>
 
-      Posted by <span tal:replace="message/owner/browsername|string:(none)">
-        $Person.browsername </span>
-      at <span tal:replace="message/datecreated/fmt:datetime">Thursday 13:21</span>
-    </div>
-
-    <div class="boardCommentBody">
-      <div class="boardCommentContent"
-           tal:content="structure message/contents/fmt:nice_pre">
-        Comment text.
+        Posted by <a href="#" tal:attributes="href message/owner/fmt:url" 
+                              tal:content="message/owner/browsername|string:(none)">
+          $Person.browsername</a>
+        at <span tal:replace="message/datecreated/fmt:datetime">Thursday 
+                                                                13:21</span>
       </div>
-    </div>
 
-    <fieldset class="collapsible collapsed">
-      <legend>Follow-up on this comment</legend>
-
-      <div class="field">
-        <form action="+messages/+new" method="post">
-          <label>Comment</label>
-          <div class="formHelp">
-            If you have additional relevant information,
-            enter it below.
-          </div>
-          <b>Subject:</b>
-          <input name="field.title" type="text" size="50" value=""
-                 tal:attributes="value message/followup_title" /><br />
-          <b>Comment:</b> <textarea name="field.content" rows="10"></textarea>
-          <input type="submit" name="UPDATE_SUBMIT" value="Add" />
-        </form>
+      <div class="boardCommentBody">
+        <div class="boardCommentContent"
+             tal:content="structure message/contents/fmt:nice_pre">
+          Comment text.
+        </div>
       </div>
-    </fieldset>
 
-  </div>
+      <div class="visualClear"></div>
+
+    </div>
   </tal:block> <!-- repeating over message -->
 
 </div>

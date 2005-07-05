@@ -10,10 +10,7 @@
           <span tal:replace="context/contextname">some context</span>
         </div>
         <h1 tal:content="context/bug/title">Can't smegging smeg</h1>
-        <p
-          tal:condition="context/bug/duplicateof"
-          class="portalMessage"
-        >
+        <p tal:condition="context/bug/duplicateof" class="portalMessage">
           This bug is a duplicate of
           <a href="#"
               tal:attributes="href context/bug/duplicateof/@@absolute_url"

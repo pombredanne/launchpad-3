@@ -117,7 +117,10 @@ bugwatch_editform = ContextTitle('Edit the Watch on %s')
 # bugproductinfestations_index is a redirect
 
 def bugs_assigned(context, view):
-    return 'Malone Bugs assigned to %s' % view.user.browsername
+    if view.user:
+        return 'Malone Bugs assigned to %s' % view.user.browsername
+    else:
+        return 'No user to display Malone Bugs for'
 
 bugs_createdby_index = 'Malone Bug Report by Creator'
 
