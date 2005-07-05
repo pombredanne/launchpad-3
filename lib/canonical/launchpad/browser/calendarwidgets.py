@@ -1,3 +1,7 @@
+# Copyright 2005 Canonical Ltd
+
+__metaclass__ = type
+
 import re
 from datetime import datetime, timedelta
 

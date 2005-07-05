@@ -1,11 +1,14 @@
-import datetime
+# Copyright 2005 Canonical Ltd
+
+__metaclass__ = type
+
 import re
 import pytz
 
 from zope.interface import implements
 from zope.component import getUtility
 
-from sqlobject import IntervalCol, ForeignKey, IntCol, StringCol, EnumCol
+from sqlobject import IntervalCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin
 from sqlobject import SQLObjectNotFound
 from sqlobject import AND
@@ -17,11 +20,12 @@ from schoolbell.mixins import CalendarEventMixin
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces import (
-    ILaunchpadCalendar, IHasOwner, ICalendarSubscriptionSet, ILaunchBag,
-    IPerson, ITeam, IProject, IProduct)
+    ILaunchpadCalendar, ICalendarSet, ICalendarEventSet,
+    ICalendarSubscriptionSet, IHasOwner, ILaunchBag, IPerson, ITeam,
+    IProject, IProduct)
 
-__metatype__ = type
 
+DEFAULT_COLOUR = '#efefef'
 _utc_tz = pytz.timezone('UTC')
 
 class Calendar(SQLBase, CalendarMixin, EditableCalendarMixin):
@@ -69,7 +73,6 @@ class Calendar(SQLBase, CalendarMixin, EditableCalendarMixin):
 
     @property
     def owner(self):
-        from canonical.launchpad.database import Person, Project, Product
         parent = self.parent
         if ITeam.providedBy(parent):
             return parent.teamowner
@@ -125,20 +128,24 @@ class Calendar(SQLBase, CalendarMixin, EditableCalendarMixin):
         except KeyError:
             raise ValueError('event %r not in calendar' % event.unique_id)
 
-    # TODO: implement clear() more directly
+
+class CalendarSet:
+    implements(ICalendarSet)
+
+    def __getitem__(self, number):
+        """See ICalendarSet"""
+        return Calendar.get(id=number)
 
 
 class CalendarSubscription(SQLBase):
     subject = ForeignKey(dbName='subject', notNull=True, foreignKey='Calendar')
     object = ForeignKey(dbName='object', notNull=True,
                           foreignKey='Calendar')
-    colour = StringCol(dbName='colour', notNull=True, default='#9db8d2')
+    colour = StringCol(dbName='colour', notNull=True, default=DEFAULT_COLOUR)
 
 class CalendarSubscriptionSet:
     """The set of subscriptions for a particular user."""
     implements(ICalendarSubscriptionSet)
-
-    defaultColour = '#efefef'
 
     def __contains__(self, calendar):
         # if calendar has no ID, then it is not a database calendar
@@ -181,15 +188,15 @@ class CalendarSubscriptionSet:
 
     def getColour(self, calendar):
         if calendar.id is None:
-            return self.defaultColour
+            return DEFAULT_COLOUR
         user = getUtility(ILaunchBag).user
         if not (user and user.calendar):
-            return self.defaultColour
+            return DEFAULT_COLOUR
         for sub in CalendarSubscription.selectBy(subjectID=user.calendar.id,
                                                  objectID=calendar.id):
             return sub.colour
         else:
-            return self.defaultColour
+            return DEFAULT_COLOUR
 
     def setColour(self, calendar, colour):
         if not re.match(r'#[0-9A-Fa-f]{6}', colour):
@@ -204,7 +211,6 @@ class CalendarSubscriptionSet:
             sub.colour = colour
 
 
-
 class CalendarEvent(SQLBase, CalendarEventMixin):
     implements(ICalendarEvent, IHasOwner)
 
@@ -212,6 +218,10 @@ class CalendarEvent(SQLBase, CalendarEventMixin):
     def owner(self):
         return self.calendar.owner
 
+    # this field stores the unique identifier for the event, as
+    # specified by the iCalendar spec.  Its value should be globally
+    # unique, and preserved when exchanging calendar data with other
+    # systems.
     unique_id = StringCol(dbName='uid', notNull=True, length=255,
                           alternateID=True, alternateMethodName='byUniqueID')
     calendar = ForeignKey(dbName='calendar', notNull=True,
@@ -226,3 +236,10 @@ class CalendarEvent(SQLBase, CalendarEventMixin):
 
     recurrence = None # TODO: implement event recurrence
 
+
+class CalendarEventSet:
+    implements(ICalendarEventSet)
+
+    def __getitem__(self, number):
+        """See ICalendarEventSet"""
+        return CalendarEvent.get(id=number)

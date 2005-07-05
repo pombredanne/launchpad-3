@@ -1,10 +1,13 @@
+# Copyright 2005 Canonical Ltd
+
 """
 Calendaring for Launchpad
 
-This package is a prototype of calendaring for launchpad.
+This package contains various components that don't fit into database/
+or browser/.
 """
 
-import datetime
+__metaclass__ = type
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -19,8 +22,6 @@ from canonical.launchpad.interfaces import (
 
 from schoolbell.mixins import CalendarMixin, EditableCalendarMixin
 from schoolbell.icalendar import convert_calendar_to_ical
-
-__metaclass__ = type
 
 
 def calendarFromCalendarOwner(calendarowner):

@@ -1,3 +1,6 @@
+# Copyright 2005 Canonical Ltd
+
+__metaclass__ = type
 
 import re
 import calendar
@@ -22,17 +25,13 @@ from schoolbell.interfaces import IEditCalendar, ICalendarEvent
 from schoolbell.simple import SimpleCalendarEvent
 from canonical.launchpad.interfaces import (
      IPerson, ICalendarDay, ICalendarWeek, ICalendarOwner,
-     ILaunchpadCalendar, ICalendarMonth, ICalendarYear,
-     ICalendarEventCollection, ICalendarSubscriptionSet,
-     ILaunchBag)
-
-from canonical.launchpad.database import Calendar, CalendarEvent
+     ILaunchpadCalendar, ICalendarMonth, ICalendarYear, ICalendarSet,
+     ICalendarEventSet, ICalendarSubscriptionSet, ILaunchBag)
 
 from schoolbell.utils import prev_month, next_month
 from schoolbell.utils import weeknum_bounds, check_weeknum
 from schoolbell.utils import Slots
 
-__metatype__ = object
 
 daynames = [
     _("Monday"),
@@ -143,7 +142,7 @@ def traverseCalendar(calendar, request, name):
         return CalendarYear(calendar,
                             year=now.year)
     elif name == 'events':
-        return CalendarEventCollection(calendar)
+        return getUtility(ICalendarEventSet)
     else:
         return None
 
@@ -538,11 +537,12 @@ class CalendarMonthView(CalendarViewBase):
 
 
 class CalendarYearView(CalendarViewBase):
-    """A month view of the calendar."""
+    """A year view of the calendar."""
     __used_for__ = ICalendarYear
 
     def __init__(self, context, request):
-        CalendarViewBase.__init__(self, context, request, '%04d'%context.year)
+        CalendarViewBase.__init__(self, context, request,
+                                  '%04d' % context.year)
         start = date(context.year, 1, 1)
         end = date(context.year + 1, 1, 1) - timedelta(days=1)
         self.bounds = [start, end]
@@ -572,16 +572,6 @@ class CalendarYearView(CalendarViewBase):
                        [ 4,  5,  6],
                        [ 7,  8,  9],
                        [10, 11, 12]]
-
-
-class CalendarEventCollection:
-    implements(ICalendarEventCollection)
-
-    def __init__(self, calendar):
-        self.calendar = calendar
-
-    def __getitem__(self, number):
-        return CalendarEvent.get(id=number)
 
 
 class CalendarEventAddView(AddView):
@@ -647,10 +637,10 @@ class ViewCalendarSubscriptions:
 
             subscriptions = [(int(key[4:]), value)
                              for key, value in self.request.form.items()
-                             if re.match(r'sub.\d+', name)]
+                             if re.match(r'sub.\d+', key)]
             for calendarid, value in subscriptions:
                 try:
-                    calendar = Calendar.get(id=calendarid)
+                    calendar = getUtility(ICalendarSet)[calendarid]
                 except SQLObjectNotFound:
                     raise RuntimeError(
                         "Unknown calendar ID found in submitted form data")
@@ -708,7 +698,8 @@ class CalendarInfoPortletView:
         # create array of day information for each day of the month
         self.daynames = [d[0] for d in daynames]
         self.days = []
-        for i in range(calendar.monthrange(now.year, now.month)[1]):
+        dummy, num_days = calendar.monthrange(now.year, now.month)
+        for i in range(num_days):
             dayURL = '+calendar/%04d-%02d-%02d' % (now.year, now.month, i+1)
             self.days.append({ 'day': i+1,
                                'dayURL': dayURL,

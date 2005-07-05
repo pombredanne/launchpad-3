@@ -13,7 +13,7 @@ CREATE TABLE CalendarSubscription (
         CONSTRAINT calendarsubscription_subject_fk REFERENCES Calendar,
     object integer NOT NULL
         CONSTRAINT calendarsubscription_object_fk REFERENCES Calendar,
-    colour text NOT NULL DEFAULT '#9db8d2',
+    colour text NOT NULL DEFAULT '#efefef',
     CONSTRAINT calendarsubscription_subject_key UNIQUE (subject, object)
 );
 

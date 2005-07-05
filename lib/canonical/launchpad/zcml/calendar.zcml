@@ -12,9 +12,11 @@
         set_schema="canonical.launchpad.interfaces.ILaunchpadCalendar" />
   </content>
 
-  <content class="canonical.launchpad.browser.CalendarEventCollection">
-    <allow interface="canonical.launchpad.interfaces.ICalendarEventCollection" />
-  </content>
+  <securedutility
+      class="canonical.launchpad.database.CalendarSet"
+      provides="canonical.launchpad.interfaces.ICalendarSet">
+    <allow interface="canonical.launchpad.interfaces.ICalendarSet" />
+  </securedutility>
 
   <content class="canonical.launchpad.database.CalendarEvent">
     <allow interface="schoolbell.interfaces.ICalendarEvent" />
@@ -23,6 +25,12 @@
         permission="launchpad.Edit"
         set_schema="schoolbell.interfaces.ICalendarEvent" />
   </content>
+
+  <securedutility
+      class="canonical.launchpad.database.CalendarEventSet"
+      provides="canonical.launchpad.interfaces.ICalendarEventSet">
+    <allow interface="canonical.launchpad.interfaces.ICalendarEventSet" />
+  </securedutility>
 
   <content class="canonical.launchpad.components.cal.MergedCalendar">
     <require
@@ -104,7 +112,7 @@
       lp:url="$obj/calendar/+subscribe" />
 
   <browser:traverse
-      for="canonical.launchpad.interfaces.ICalendarEventCollection"
+      for="canonical.launchpad.interfaces.ICalendarEventSet"
       getter="__getitem__" />
 
   <content class="canonical.launchpad.browser.CalendarDay">

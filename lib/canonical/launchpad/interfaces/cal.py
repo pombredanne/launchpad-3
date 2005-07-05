@@ -1,3 +1,5 @@
+# Copyright 2005 Canonical Ltd
+
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
@@ -40,20 +42,34 @@ class ICalendarOwner(Interface):
     def getOrCreateCalendar():
         """Get the calendar.  Create it if it doesn't exist."""
 
+class ICalendarSet(Interface):
+    def __getitem__(id):
+        """Get a calendar by ID."""
+
+class ICalendarEventSet(Interface):
+    def __getitem__(id):
+        """Get an event by ID."""
+
 class ICalendarSubscriptionSet(Interface):
     """A list of calendars a user is subscribed to."""
     owner = Attribute(_("The owner of the subscriptions"))
+
     def __iter__():
         """Iterate over the calendars the user is subscribed to."""
+
     def __contains__(calendar):
         """Returns True if the calendar has been subscribed to."""
+
     def subscribe(calendar):
         """Subscribe to a calendar."""
+
     def unsubscribe(calendar):
         """Unsubscribe from a calendar.  Raises an exception if the
         calendar hasn't been subscribed to."""
+
     def getColour(calendar):
         """Get the colour used to display events from this calendar"""
+
     def setColour(calendar, colour):
         """Set the colour used to display events from this calendar"""        
 
@@ -120,7 +136,3 @@ class ICalendarYear(Interface):
     year = Int(
         title=_('Year'), required=True, readonly=True,
         description=_("""The year to display."""))
-
-class ICalendarEventCollection(Interface):
-    def __getitem__(key):
-        """Get an event."""

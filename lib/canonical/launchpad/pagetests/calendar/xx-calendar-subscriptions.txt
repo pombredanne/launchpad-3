@@ -108,6 +108,43 @@ along with options to alter subscription details:
   ...
 
 
+We can also unsubscribe from the Ubuntu Project Calendar using this
+page.  :
+
+  >>> print http(r"""
+  ... POST /calendar/+subscriptions HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 106
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... sub.1=yes&colour.1=%23c0d0ff&sub.2=yes&colour.2=%23c0ffc8&sub.3=no&colour.3=%23faffd2&UPDATE_SUBMIT=Submit""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+                <td>Sample Person's Calendar</td>
+  ...
+                <td>Foo Bar's Calendar</td>
+  ...
+
+
+Resubscribing to the calendar for the next test:
+
+  >>> print http(r"""
+  ... POST /projects/ubuntu/+calendar/+subscribe HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 51
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... subscribe=yes&colour=%23faffd2&UPDATE_SUBMIT=Submit""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+
+
 Events that show up on the subscribed calendars also show up on the
 merged view:
 
