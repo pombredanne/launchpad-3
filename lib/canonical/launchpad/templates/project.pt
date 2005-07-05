@@ -14,6 +14,7 @@
 <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-actions" />
     <div tal:replace="structure context/@@+portlet-trackers" />
+    <div tal:replace="structure context/@@+portlet-calendar" />
 </metal:rightportlets>
 
 

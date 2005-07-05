@@ -27,14 +27,16 @@ from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
-    IProduct, IProductSet, IDistribution, ILaunchpadCelebrities)
+    IProduct, IProductSet, IDistribution, ILaunchpadCelebrities,
+    ICalendarOwner)
 
 
 class Product(SQLBase):
     """A Product."""
 
-    implements(IProduct)
+    implements(IProduct, ICalendarOwner)
 
     _table = 'Product'
 
@@ -69,6 +71,17 @@ class Product(SQLBase):
     freshmeatproject = StringCol(notNull=False, default=None)
     sourceforgeproject = StringCol(notNull=False, default=None)
     releaseroot = StringCol(notNull=False, default=None)
+
+    calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
+                          default=None, forceDBName=True)
+
+    def getOrCreateCalendar(self):
+        if not self.calendar:
+            self.calendar = Calendar(
+                title='%s Product Calendar' % self.displayname,
+                revision=0)
+        return self.calendar
+
     bugtasks = MultipleJoin('BugTask', joinColumn='product')
     branches = MultipleJoin('Branch', joinColumn='product')
     serieslist = MultipleJoin('ProductSeries', joinColumn='product')

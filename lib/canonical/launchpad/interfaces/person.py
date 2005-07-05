@@ -65,6 +65,10 @@ class IPerson(Interface):
 
     sshkeys = Attribute(_('List of SSH keys'))
 
+    timezone = TextLine(
+        title=_('Timezone Name'), required=False, readonly=False
+        )
+
     # Properties of the Person object.
     karma = Attribute("The cached karma for this person.")
     ubuntite = Attribute("Ubuntite Flag")

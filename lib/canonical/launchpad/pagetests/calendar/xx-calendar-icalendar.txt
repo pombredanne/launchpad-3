@@ -1,0 +1,24 @@
+
+The Contents of the calendar can be downloaded in the iCalendar format
+for use by desktop calendar applications:
+
+  >>> print http(r"""
+  ... GET /people/name12/+calendar/+icalendar HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  <BLANKLINE>
+  BEGIN:VCALENDAR
+  VERSION:2.0
+  PRODID:-//SchoolTool.org/NONSGML SchoolBell//EN
+  BEGIN:VEVENT
+  UID:sample-id-1@launchpad.example.org
+  SUMMARY:Event 1
+  DESCRIPTION:Desc 1
+  LOCATION:Location
+  DTSTART:20050103T080000Z
+  DURATION:PT1H
+  DTSTAMP:...
+  END:VEVENT
+  ...
+  END:VCALENDAR

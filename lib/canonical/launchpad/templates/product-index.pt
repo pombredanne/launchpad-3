@@ -18,6 +18,7 @@
     <div tal:replace="structure context/@@+portlet-latest-bugs" />
     <div tal:replace="structure context/@@+portlet-related-bounties" />
     <div tal:replace="structure context/@@+portlet-packages" />
+    <div tal:replace="structure context/@@+portlet-calendar" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main" class="documentContent">

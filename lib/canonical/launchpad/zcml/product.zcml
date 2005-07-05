@@ -9,6 +9,7 @@
     <!-- Product -->
     <content class="canonical.launchpad.database.Product">
         <allow interface="canonical.launchpad.interfaces.IProduct" />
+        <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IProduct"

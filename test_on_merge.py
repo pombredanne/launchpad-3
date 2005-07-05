@@ -70,6 +70,24 @@ def main():
         print '---- end non-absolute ++resource++ URLs found ----'
         return 1
 
+    # Sanity check PostgreSQL version. No point in trying to create a test
+    # database when PostgreSQL is too old.
+    con = psycopg.connect('dbname=template1')
+    cur = con.cursor()
+    cur.execute('show server_version')
+    server_version = cur.fetchone()[0]
+    try:
+        numeric_server_version = tuple(map(int, server_version.split('.')))
+    except ValueError:
+        # Skip this check if the version number is more complicated than
+        # we expected.
+        pass
+    else:
+        if numeric_server_version < (7, 4):
+            print 'Your PostgreSQL version is too old.  You need 7.4.x'
+            print 'You have %s' % server_version
+            return 1
+
     # Drop the template database if it exists - the Makefile does this
     # too, but we can explicity check for errors here
     con = psycopg.connect('dbname=template1')
@@ -101,6 +119,7 @@ def main():
         print 'Search path incorrect.'
         print 'Add the following line to /etc/postgresql/postgresql.conf:'
         print "    search_path = '$user,public,ts2'"
+        print "and tell postgresql to reload its configuration file."
         return 1
     cur.execute("""
         select pg_encoding_to_char(encoding) as encoding from pg_database

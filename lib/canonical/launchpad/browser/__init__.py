@@ -12,6 +12,7 @@ from canonical.launchpad.browser.bugextref import *
 from canonical.launchpad.browser.bug import *
 from canonical.launchpad.browser.bugtask import *
 from canonical.launchpad.browser.bugtracker import *
+from canonical.launchpad.browser.cal import *
 from canonical.launchpad.browser.codeofconduct import *
 from canonical.launchpad.browser.distribution import *
 from canonical.launchpad.browser.distroarchrelease import *
@@ -42,4 +43,4 @@ from canonical.launchpad.browser.translationgroup import *
 from canonical.launchpad.browser.translator import *
 from canonical.launchpad.browser.traversers import *
 from canonical.launchpad.browser.widgets import *
-
+from canonical.launchpad.browser.calendarwidgets import *

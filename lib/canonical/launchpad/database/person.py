@@ -35,10 +35,11 @@ from canonical.launchpad.interfaces import (
     IJabberID, IIrcIDSet, IArchUserIDSet, ISSHKeySet, IJabberIDSet,
     IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IMaintainershipSet,
     IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
-    UBUNTU_WIKI_URL)
+    ICalendarOwner, UBUNTU_WIKI_URL)
 
 from canonical.launchpad.database.translation_effort import TranslationEffort
 from canonical.launchpad.database.bug import BugTask
+from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.karma import KarmaCache, KarmaAction, Karma
@@ -55,7 +56,7 @@ from canonical.foaf import nickname
 class Person(SQLBase):
     """A Person."""
 
-    implements(IPerson)
+    implements(IPerson, ICalendarOwner)
 
     _defaultOrder = 'displayname'
 
@@ -96,6 +97,17 @@ class Person(SQLBase):
                                      otherColumn='bounty',
                                      intermediateTable='BountySubscription')
     gpgkeys = MultipleJoin('GPGKey', joinColumn='owner')
+
+    calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
+                          default=None, forceDBName=True)
+
+    def getOrCreateCalendar(self):
+        if not self.calendar:
+            self.calendar = Calendar(title=self.browsername,
+                                     revision=0)
+        return self.calendar
+
+    timezone = StringCol(dbName='timezone', default=None)
 
     def get(cls, id, connection=None, selectResults=None):
         """Override the classmethod get from the base class.
