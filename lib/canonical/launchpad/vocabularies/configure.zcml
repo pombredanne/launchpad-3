@@ -175,6 +175,11 @@
         factory="canonical.launchpad.vocabularies.POTemplateNameVocabulary"
         />
 
+    <vocabulary
+        name="TimezoneName"
+        factory="canonical.launchpad.vocabularies.TimezoneNameVocabulary"
+        />
+
     <!-- Define the widget used by Choice fields that use huge vocabularies -->
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"

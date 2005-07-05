@@ -127,6 +127,20 @@
             lp:url="/people/$person.id/+emails" />
   </browser:pages>
 
+  <browser:editform
+      name="+edittz"
+      for="canonical.launchpad.interfaces.IPerson"
+      schema="canonical.launchpad.interfaces.IPerson"
+      fields="timezone"
+      permission="launchpad.Edit"
+      template="../templates/person-timezone.pt"
+      lp:url="/people/$person.id/+edittz">
+    <browser:widget
+        field="timezone"
+        class="zope.app.form.browser.ChoiceInputWidget"
+        size="15" />
+  </browser:editform>
+
 
   <!-- Team Views -->
   <browser:traverse
