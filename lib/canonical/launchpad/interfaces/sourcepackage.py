@@ -72,6 +72,23 @@ class ISourcePackage(Interface):
         "this source package name. Note that the list spans "
         "distroreleases, and should be sorted by version number.")
 
+    direct_packaging = Attribute("Return the Packaging record that is "
+        "explicitly for this distrorelease and source package name, "
+        "or None if such a record does not exist. You should probably "
+        "use ISourcePackage.packaging, which will also look through the "
+        "distribution ancestry to find a relevant packaging record.")
+
+    packaging = Attribute("The best Packaging record we have for this "
+        "source package. If we have one for this specific distrorelease "
+        "and sourcepackagename, it will be returned, otherwise we look "
+        "for a match in parent and ubuntu distro releases.")
+
+    def setPackaging(productseries, owner):
+        """Update the existing packaging record, or create a new packaging
+        record, that links the source package to the given productseries,
+        and record that it was done by the owner.
+        """
+
     def potemplates():
         """Returns the set of POTemplates that exist for this
         distrorelease/sourcepackagename combination."""
@@ -136,13 +153,23 @@ class ISourcePackageSet(Interface):
         """Returns a set of SourcePackage in a DistroRelease"""
 
     def findByNameInDistroRelease(distroreleaseID, pattern):
-        """Returns a set o sourcepackage that matchs pattern
-        inside a distrorelease"""
+        """Returns a set of sourcepackages that matchs pattern
+        inside a distrorelease.
+        """
 
     def getByNameInDistroRelease(distroreleaseID, name):
         """Returns a SourcePackage by its name"""
 
     def getSourcePackageRelease(sourcepackageid, version):
-        """Get an Specific SourcePackageRelease by
-        sourcepackageID and Version"""
+        """Get a specific SourcePackageRelease by
+        sourcepackageID and Version.
+        """
+
+    def getPackageNames(pkgname):
+        """Find the actual source and binary package names to use when all
+        we have it a name, that could be either a source or a binary package
+        name. Returns a tuple of (sourcepackagename, binarypackagename)
+        based on the current publishing status of these binary / source
+        packages.
+        """
 

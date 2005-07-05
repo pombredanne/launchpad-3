@@ -24,6 +24,9 @@ from canonical.launchpad.database.publishing import (
     PackagePublishing, SourcePackagePublishing)
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.binarypackage import BinaryPackage
+
 from canonical.launchpad.helpers import shortlist
 
 
@@ -53,9 +56,29 @@ class DistroRelease(SQLBase):
         dbName='owner', foreignKey='Person', notNull=True)
     lucilleconfig = StringCol(notNull=False)
     architectures = MultipleJoin(
-        'DistroArchRelease', joinColumn='distrorelease')
+        'DistroArchRelease', joinColumn='distrorelease',
+        orderBy='datecreated')
     datelastlangpack = UtcDateTimeCol(dbName='datelastlangpack', notNull=False,
                                    default=None)
+
+    @property
+    def packagings(self):
+        packagings = list(Packaging.selectBy(distroreleaseID=self.id))
+        packagings.sort(key=lambda a:a.sourcepackagename.name)
+        return packagings
+
+    @property
+    def previous_releases(self):
+        """See IDistroRelease."""
+        datereleased = self.datereleased
+        # if this one is unreleased, use the last released one
+        if not datereleased:
+            datereleased = 'NOW'
+        return DistroRelease.select('''
+                distribution = %s AND 
+                datereleased < %s
+                ''' % sqlvalues(self.distribution.id, datereleased),
+                orderBy=['-datereleased'])
 
     @property
     def parent(self):
@@ -147,6 +170,13 @@ class DistroRelease(SQLBase):
                             sourcepackage.id),
             clauseTables = ['SourcePackageRelease'])
         return shortlist(published)
+
+    def publishedBinaryPackages(self, component=None):
+        """See IDistroRelease."""
+        # XXX sabdfl 04/07/05 this can become a utility when that works
+        pubpkgset = PublishedPackageSet()
+        result = pubpkgset.query(distrorelease=self, component=component)
+        return [BinaryPackage.get(p.binarypackage) for p in result]
 
 
 class DistroReleaseSet:

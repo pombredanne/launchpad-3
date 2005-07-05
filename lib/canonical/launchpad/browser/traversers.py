@@ -10,7 +10,7 @@ from zope.exceptions import NotFoundError
 from canonical.launchpad.interfaces import (
     IBugSet, IBugTaskSet, IBugTaskSubset, IBugTasksReport, IDistributionSet,
     IProjectSet, IProductSet, ISourcePackageSet, IBugTrackerSet, ILaunchBag,
-    ITeamMembershipSubset)
+    ITeamMembershipSubset, ICalendarOwner)
 from canonical.launchpad.database import (
     BugAttachmentSet, BugExternalRefSet, BugSubscriptionSet,
     BugWatchSet, BugTasksReport, CVERefSet, BugProductInfestationSet,
@@ -37,6 +37,14 @@ def traverse_malone_application(malone_application, request, name):
     return None
 
 
+def traverse_project(project, request, name):
+    """Traverse an IProject."""
+    if name == '+calendar':
+        return ICalendarOwner(project).calendar
+    else:
+        return project.getProduct(name)
+
+
 def traverse_product(product, request, name):
     """Traverse an IProduct."""
     if name == '+series':
@@ -45,6 +53,8 @@ def traverse_product(product, request, name):
         return ProductMilestoneSet(product=product)
     elif name == '+bugs':
         return IBugTaskSubset(product)
+    elif name == '+calendar':
+        return ICalendarOwner(product).calendar
     else:
         return product.getRelease(name)
 
@@ -72,10 +82,18 @@ def traverse_distrorelease(distrorelease, request, name):
     else:
         return distrorelease[name]
 
+def traverse_person(person, request, name):
+    """Traverse an IPerson."""
+    if name == '+calendar':
+        return ICalendarOwner(person).calendar
+
+    return None
 
 def traverseTeam(team, request, name):
     if name == '+members':
         return ITeamMembershipSubset(team)
+    elif name == '+calendar':
+        return ICalendarOwner(team).calendar
     
     return None
 
@@ -121,9 +139,3 @@ def traverse_bugs(bugcontainer, request, name):
         except (NotFoundError, ValueError):
             return None
 
-
-def traverseTeam(team, request, name):
-    if name == '+members':
-        return ITeamMembershipSubset(team)
-
-    return None

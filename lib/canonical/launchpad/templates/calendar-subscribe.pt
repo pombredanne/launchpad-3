@@ -1,0 +1,65 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/tal/i18n"
+      xml:lang="en" lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+  <body>
+
+    <div metal:fill-slot="main">
+      <h1>Calendar Subscriptions</h1>
+
+      <div tal:content="view/submit" />
+
+      <p class="formHelp">
+      Subscribing to a calendar will cause its events to display on
+      your merged calendar.  You can also select the colour used to
+      display the merged events.</p>
+
+      <form action="." tal:attributes="action request/URL" method="post">
+        <fieldset>
+          <div>Subscribe to <q tal:content="context/title">Calendar</q>?</div>
+          <div>
+            <label for="subscribe-yes">
+              <input type="radio" name="subscribe" id="subscribe-yes"
+                     value="yes"
+                     tal:attributes="checked python:view.subscribed() and 'checked' or None" />
+              Yes
+            </label>
+            <label for="subscribe-no">
+              <input type="radio" name="subscribe" id="subscribe-no"
+                     value="no"
+                     tal:attributes="checked python:not view.subscribed() and 'checked' or None" />
+              No
+            </label>
+          </div>
+          <div>What colour should events be displayed with?</div>
+          <div>
+            <select name="colour">
+              <option tal:repeat="colour view/colours"
+                      tal:attributes="value colour/code;
+                                      selected python:view.colour() == colour['code'] and 'selected' or None;
+                                      style string:background-color: ${colour/code}"
+                      tal:content="colour/name">
+                Colour name
+              </option>
+            </select>
+          </div>
+        </fieldset>
+
+        <div class="separator"></div>
+
+        <div class="row">
+          <div class="controls"><hr />
+            <input type='submit' value='Submit'
+              name='UPDATE_SUBMIT' style="float: right;"
+              i18n:attributes='value submit-button' />
+          </div>
+        </div>
+             
+      </form>
+    </div>
+  </body>
+</html>

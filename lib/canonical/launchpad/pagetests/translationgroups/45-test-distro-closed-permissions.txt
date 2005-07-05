@@ -39,19 +39,6 @@ switch to editing previously-translated strings.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-            <select name="show">
-              <option value="all">
-                all items
-              </option>
-              <option value="untranslated">
-                untranslated items
-              </option>
-              <option value="need-review">
-                need review items
-              </option>
-              <option value="translated">
-                translated items
-              </option>
-            </select>
+  ...<select name="alt"...
   ...
 

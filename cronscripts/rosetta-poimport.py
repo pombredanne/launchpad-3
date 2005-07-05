@@ -13,7 +13,7 @@ from canonical.launchpad.scripts.rosetta import ImportProcess
 
 default_lock_file = '/var/lock/launchpad-poimport.lock'
 
-def parse_options():
+def parse_options(args):
     """Parse a set of command line options.
 
     Return an optparse.Values object.
@@ -26,7 +26,7 @@ def parse_options():
     # Add the verbose/quiet options.
     logger_options(parser)
 
-    (options, args) = parser.parse_args()
+    (options, args) = parser.parse_args(args)
 
     return options
 

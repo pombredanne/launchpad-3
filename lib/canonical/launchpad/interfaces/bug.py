@@ -123,6 +123,23 @@ class IBug(Interface):
         addresses.
         """
 
+    def linkMessage(message):
+        """Note that the given message is associated with this bug. That
+        means the message will show up in the list of comments for the bug.
+        """
+
+    def addWatch(bugtracker, remotebug, owner):
+        """Create a new watch for this bug on the given remote bug and bug
+        tracker, owned by the person given as the owner.
+        """
+
+    def addTask(owner, product=None, distribution=None, distrorelease=None,
+        sourcepackagename=None, binarypackagename=None):
+        """Create a new BugTask (unless a task on this target already
+        exists, in which case we will just return that) for this bug.
+        """
+
+
 
 class IBugDelta(Interface):
     """The quantitative change made to a bug that was edited."""
@@ -210,3 +227,14 @@ class IBugSet(IAddFormCustomization):
 
     def search(duplicateof=None):
         """Find bugs matching the search criteria provided."""
+
+    def queryByRemoteBug(bugtracker, remotebug):
+        """Find one or None bugs in Malone that have a BugWatch matching the
+        given bug tracker and remote bug id."""
+
+    def createBug(self, distribution=None, sourcepackagename=None,
+        binarypackagename=None, product=None, comment=None,
+        description=None, msg=None, summary=None, datecreated=None,
+        title=None, private=False, owner=None):
+        """Create a new bug, using the given details."""
+

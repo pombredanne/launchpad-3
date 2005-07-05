@@ -8,21 +8,26 @@ from apt_pkg import ParseSrcDepends
 
 from zope.component import getUtility
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.app.form.interfaces import (IInputWidget, IDisplayWidget, 
+    InputErrors)
+from zope.app.form.utility import setUpWidget
+from zope.app import zapi
 
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import (
-    IPOTemplateSet, ILaunchBag, ICountry)
+from canonical.launchpad.interfaces import (IPOTemplateSet, IPackaging,
+    ILaunchBag, ICountry)
 from canonical.launchpad.browser.potemplate import POTemplateView
 
 from canonical.soyuz.generalapp import builddepsSet
-
 
 BATCH_SIZE = 40
 
 def linkify_changelog(changelog, sourcepkgnametxt):
     # XXX: salgado: No bugtracker URL should be hardcoded.
+    if changelog is None:
+        return changelog
     changelog = cgi.escape(changelog)
     deb_bugs = 'http://bugs.debian.org/cgi-bin/bugreport.cgi?bug='
     warty_bugs = 'https://bugzilla.ubuntu.com/show_bug.cgi?id='
@@ -148,14 +153,37 @@ class SourcePackageView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.launchbag = getUtility(ILaunchBag)
+        self.user = getUtility(ILaunchBag).user
+        # lets add a widget for the product series to which this package is
+        # mapped in the Packaging table
+        raw_field = IPackaging['productseries']
+        bound_field = raw_field.bind(self.context)
+        self.productseries_widget = zapi.getViewProviding(bound_field,
+            IInputWidget, request)
+        self.productseries_widget.setRenderedValue(context.productseries)
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(self.request)
         self.status_message = None
+        self.processForm()
+
+    def processForm(self):
+        # look for an update to any of the things we track
+        form = self.request.form
+        if form.has_key('packaging'):
+            if self.productseries_widget.hasValidInput():
+                new_ps = self.productseries_widget.getInputValue()
+                # we need to create or update the packaging
+                self.context.setPackaging(new_ps, self.user)
+                self.productseries_widget.setRenderedValue(new_ps)
+                self.status_message = 'Upstream branch updated, thank you!'
+            else:
+                self.status_message = 'Invalid upstream branch given.'
+
+
 
     def binaries(self):
-        """Format binary packeges into binarypackagename and archtags"""
+        """Format binary packages into binarypackagename and archtags"""
 
         all_arch = [] # all archtag in this distrorelease
         for arch in self.context.distrorelease.architectures:

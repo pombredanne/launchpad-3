@@ -1,8 +1,7 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
-  i18n_domain="canonical.launchpad"
->
+  i18n_domain="canonical.launchpad">
 
   <utility
       factory="canonical.launchpad.utilities.LaunchpadCelebrities"

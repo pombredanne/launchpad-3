@@ -9,6 +9,7 @@
     <!-- Product -->
     <content class="canonical.launchpad.database.Product">
         <allow interface="canonical.launchpad.interfaces.IProduct" />
+        <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IProduct"
@@ -48,6 +49,12 @@
         layer="canonical.launchpad.layers.RosettaLayer"
         getter="poTemplate" />
 
+    <browser:url
+        for="canonical.launchpad.interfaces.IProduct"
+        path_expression="name"
+        parent_utility="canonical.launchpad.interfaces.IProductSet"
+        />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"
         permission="zope.Public"
@@ -65,6 +72,10 @@
             name="+portlet-details"
             template="../templates/portlet-product-details.pt"
             lp:url="/products/evolution/+portlet-details" />
+        <browser:page
+            name="+portlet-branches"
+            template="../templates/product-portlet-branches.pt"
+            lp:url="/products/evolution/+portlet-branches" />
         <browser:page
             name="+portlet-translations"
             template="../templates/portlet-product-translations.pt"
@@ -267,11 +278,11 @@
     <browser:traverse
         for="canonical.launchpad.interfaces.IProductSet"
         getter="__getitem__" />
+
     <browser:url
-        for="canonical.launchpad.interfaces.IProduct"
-        path_expression="name"
-        parent_utility="canonical.launchpad.interfaces.IProductSet"
-        />
+        for="canonical.launchpad.interfaces.IProductSet"
+        path_expression="string:products"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot" />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSet"

@@ -32,8 +32,17 @@ class IBugWatch(Interface):
         'if it is linked and we notice a status change in the watched '
         'bug then we will try to update the Malone bug task accordingly.')
 
+    # properties
+    needscheck = Attribute("A True or False indicator of whether or not "
+        "this watch needs to be synchronised. The algorithm used considers "
+        "the severity of the bug, as well as the activity on the bug, to "
+        "ensure that we spend most effort on high priority and high "
+        "activity bugs.")
+
     # required for launchpad pages
     title = Attribute('Bug watch title')
+
+    url = Attribute('The URL at which to view the remote bug.')
 
 
 class IBugWatchSet(Interface):
@@ -54,3 +63,17 @@ class IBugWatchSet(Interface):
         Raise a zope.exceptions.NotFoundError if there is no IBugWatch
         matching the given id.
         """
+
+    def fromText(text, bug, owner):
+        """Create one or more BugWatch's by analysing the given text. This
+        will look for reference to known or new bug tracking instances and
+        create the relevant watches. It returns a (possibly empty) list of
+        watches created.
+        """
+
+    def fromMessage(message, bug):
+        """Create one or more BugWatch's by analysing the given email. The
+        owner of the BugWatch's will be the sender of the message.
+        It returns a (possibly empty) list of watches created.
+        """
+

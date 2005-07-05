@@ -1,5 +1,12 @@
 
-USING THE AUTOMATIC ADD/EDIT FORM MACHINERY
+STANDARD PAGES
+
+Please use the following as templates for your standard pages:
+
+ - page-template.pt
+ - portlet-template.pt
+
+AUTOMATIC ADD/EDIT FORM MACHINERY
 
 In order that we get a consistent look and feel of the automatically
 generated forms in Launchpad, please use the following process for

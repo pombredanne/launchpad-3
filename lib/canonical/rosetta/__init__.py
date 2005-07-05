@@ -10,6 +10,8 @@ from datetime import datetime, timedelta
 from zope.interface import implements
 from zope.component import getUtility
 
+import pytz
+
 from canonical.launchpad.interfaces import IRosettaApplication, \
     IProductSet, IDistroReleaseSet, ITranslationGroupSet
 from canonical.launchpad.database import POTemplate, POFile, Language, \
@@ -24,12 +26,12 @@ class RosettaApplication:
 
     def __init__(self):
         self.title = 'Rosetta: Translations in the Launchpad'
-        self._statsdate = None
+        self.statsdate = None
 
     def _update_stats(self):
-        now = datetime.now()
+        now = datetime.now(pytz.timezone('UTC'))
         aday = timedelta(1)
-        if self._statsdate is not None and self._statsdate + aday > now:
+        if self.statsdate is not None and self.statsdate + aday > now:
             return
         self._potemplate_count = POTemplate.select().count()
         self._pofile_count = POFile.select().count()
@@ -42,7 +44,7 @@ class RosettaApplication:
                     "POFile.language=Language.id",
                     clauseTables=['POFile'],
                     distinct=True).count()
-        self._statsdate = datetime.now()
+        self.statsdate = datetime.now(pytz.timezone('UTC'))
 
     def translatable_products(self, translationProject=None):
         """See IRosettaApplication."""

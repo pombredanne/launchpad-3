@@ -6,6 +6,11 @@
         />
 
     <vocabulary
+        name="CVEState"
+        factory="canonical.launchpad.vocabularies.CVEStateVocabulary"
+        />
+
+    <vocabulary
         name="BugWatch"
         factory="canonical.launchpad.vocabularies.BugWatchVocabulary"
         />

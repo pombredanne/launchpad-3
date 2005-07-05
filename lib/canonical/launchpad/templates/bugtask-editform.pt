@@ -51,6 +51,12 @@
               i18n:name="num_errors">6</strong> input errors in the form
               below. Please correct them and resubmit the form.
             </p>
+            <p tal:condition="not: context/required:launchpad.Edit"
+               class="portalMessage">
+              You are not the assignee, or the maintainer of
+              <span tal:replace="context/contextname">product</span> so you
+              cannot edit this status page.
+            </p>
           </div>
 
           <h2>
@@ -71,7 +77,6 @@
              tal:content="structure context/bug/description/fmt:nice_pre">
              $Bug.description
           </p>
-
 
           <div class="field">
             <table>
@@ -108,7 +113,8 @@
               <td tal:condition="context/product"
                   tal:content="structure view/milestone_widget" />
             </tr>
-            <tr tal:condition="python:context.distribution or context.distrorelease">
+            <tr tal:condition="python:context.distribution or 
+                                      context.distrorelease">
               <td colspan="0">
                 <label tal:attributes="for view/sourcepackagename_widget/name"
                        tal:content="view/sourcepackagename_widget/label">
@@ -116,7 +122,8 @@
                 </label>
               </td>
             </tr>
-            <tr tal:condition="python:context.distribution or context.distrorelease">
+            <tr tal:condition="python:context.distribution or 
+                                      context.distrorelease">
               <td colspan="0"
                   tal:content="structure view/sourcepackagename_widget" nowrap />
             </tr>

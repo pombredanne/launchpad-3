@@ -13,7 +13,7 @@ from canonical.launchpad.interfaces import (
     IMilestone, IBug, IBugTask, IUpstreamBugTask, IDistroBugTask,
     IDistroReleaseBugTask, ITranslator, IProduct, IProductRelease,
     IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet, ISourcePackage,
-    ILaunchpadCelebrities, IDistroRelease)
+    ILaunchpadCelebrities, IDistroRelease, IBugTracker)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -295,19 +295,14 @@ class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
         return user.inTeam(admins) or user.inTeam(rosetta_experts)
 
 
-class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Admin'
-    usedfor = IPOTemplate
-
-
 class EditPOTemplateDetails(EditByOwnersOrAdmins):
     usedfor = IPOTemplate
 
     def checkAuthenticated(self, user):
         """Allow product/sourcepackage/potemplate owner, experts and admis.
         """
-        if (self.obj.productrelease is not None and
-            user.inTeam(self.obj.productrelease.productseries.product.owner)):
+        if (self.obj.productseries is not None and
+            user.inTeam(self.obj.productseries.product.owner)):
             # The user is the owner of the product.
             return True
 
@@ -372,4 +367,8 @@ class EditPOTemplateNameSet(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Edit'
     usedfor = IPOTemplateNameSet
 
+
+class EditBugTracker(EditByOwnersOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = IBugTracker
 

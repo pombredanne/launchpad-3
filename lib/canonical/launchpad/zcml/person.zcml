@@ -6,8 +6,14 @@
     i18n_domain="launchpad">
 
   <!-- Person -->
+
+  <browser:traverse
+      for="canonical.launchpad.interfaces.IPerson"
+      function="canonical.launchpad.browser.traversers.traverse_person" />
+
   <content class="canonical.launchpad.database.Person">
       <allow interface="canonical.launchpad.interfaces.IPerson" />
+      <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
       <require 
           permission="launchpad.Edit"
           set_schema="canonical.launchpad.interfaces.IPerson" />

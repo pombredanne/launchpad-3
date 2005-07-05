@@ -51,8 +51,11 @@ Edit a bug task's severity as user Foo Bar.
   ... Change
   ... -----------------------------19142096961497584187956613781--
   ... """)
-  HTTP/1.1 200 Ok
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: http://.../malone/bugs/2
+  <BLANKLINE>
   ...
-            <p class="portalMessage">Updated on ...</p>
-  ...<option selected="selected" value="Normal">Normal</option>...
+
 

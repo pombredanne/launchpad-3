@@ -42,9 +42,8 @@ def BugMessageFactory(addview=None, title=None, content=None):
     """
     msg = Message(
         parent=None, ownerID=getUtility(ILaunchBag).user.id,
-        rfc822msgid=make_msgid('malone'), title=title)
-    chunk = MessageChunk(messageID=msg.id, content=content, sequence=1)
-    bmsg = BugMessage(bug=getUtility(ILaunchBag).bug.id, message=msg.id)
-
+        rfc822msgid=make_msgid('malone'), subject=title)
+    chunk = MessageChunk(message=msg, content=content, sequence=1)
+    bmsg = BugMessage(bug=getUtility(ILaunchBag).bug, message=msg)
     return bmsg
 

@@ -134,11 +134,16 @@
     <browser:pages
         for="canonical.launchpad.helpers.DummyPOFile"
         permission="zope.Public"
-        class="canonical.launchpad.browser.POFileView"
-        lp:url="/products/netapplet/1.0/+pots/$POTemplate.name/$POFile.language">
+        class="canonical.launchpad.browser.POFileView">
         <browser:page
             name="+barchart"
             template="../templates/pofile-barchart.pt" />
     </browser:pages>
+
+    <securedutility
+        class="canonical.launchpad.database.POFileSet"
+        provides="canonical.launchpad.interfaces.IPOFileSet">
+        <allow interface="canonical.launchpad.interfaces.IPOFileSet" />
+    </securedutility>
 
 </configure>

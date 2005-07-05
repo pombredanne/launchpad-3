@@ -13,10 +13,6 @@
                     tal:condition="context/required:launchpad.Admin">
                     <a href="+review">Review</a>
                 </li>
-                <li class="add"
-                    tal:condition="context/required:launchpad.Admin">
-                  <a href="+addpotemplate">Add a template</a>
-                </li>
                 <li class="download">
                     <a href="+rdf">Download RDF Metadata</a>
                 </li>

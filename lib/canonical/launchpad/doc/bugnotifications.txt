@@ -347,9 +347,10 @@ attach it to the firefox_crashes bug that we've been using throughout
 this document:
 
     >>> from canonical.launchpad.interfaces import ICVERefSet
+    >>> from canonical.lp.dbschema import CVEState
     >>> cveref = getUtility(ICVERefSet).createCVERef(
-    ...     bug = 1, cveref = "CVE-2004-0276", title="test",
-    ...     owner = 12)
+    ...     bug = 1, cveref = "2004-0276", cvestate=CVEState.CVE,
+    ...     title="test", owner = 12)
     >>> cveref_added = SQLObjectCreatedEvent(cveref)
     >>> notify(cveref_added)
 
@@ -376,6 +377,7 @@ this document:
 Next, let's take a look at what the edit notification looks like:
 
     >>> cveref_before_modification = MockObject()
+    >>> cveref_before_modification.displayname = cveref.displayname
     >>> cveref_before_modification.cveref = cveref.cveref
     >>> cveref_before_modification.title = cveref.title
     >>> cveref.title = "a much better title"

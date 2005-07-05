@@ -17,7 +17,7 @@
 
     <!-- PublishedPackageSet -->
     <content class="canonical.launchpad.database.PublishedPackageSet">
-        <allow interface="canonical.launchpad.interfaces.IPublishedPackageSet" />
+        <allow interface="canonical.launchpad.interfaces.IPublishedPackageSet"/>
         <require
             permission="zope.Public"
             set_schema="canonical.launchpad.interfaces.IPublishedPackageSet"

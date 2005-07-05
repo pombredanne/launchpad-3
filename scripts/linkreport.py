@@ -59,18 +59,22 @@ def main(csvfile, log):
             )
     for row in reader:
         # Get the result code
-        m = re.search('^(\d+)', row['result'] or '')
-        if m is None:
-            if row['result'] == 'URL is empty':
-                continue
-            elif 'The read operation timed out' in row['result']:
-                row['result'] = '601 %s' % row['result']
-                row['resultcode'] = 601
-            else:
-                row['result'] = '602 %s' % row['result']
-                row['resultcode'] = 602
+        if row['valid']:
+            row['resultcode'] = 200
+            row['result'] = '200 Ok'
         else:
-            row['resultcode'] = int(m.group(1))
+            m = re.search('^(\d+)', row['result'] or '')
+            if m is None:
+                if row['result'] == 'URL is empty':
+                    continue
+                elif 'The read operation timed out' in row['result']:
+                    row['result'] = '601 %s' % row['result']
+                    row['resultcode'] = 601
+                else:
+                    row['result'] = '602 %s' % row['result']
+                    row['resultcode'] = 602
+            else:
+                row['resultcode'] = int(m.group(1))
 
         # Cast input and nuke crap (to avoid confusing SQLObject)
         row['recursionlevel'] = int(row['recursionlevel'])

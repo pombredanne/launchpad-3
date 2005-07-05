@@ -70,6 +70,21 @@ class IBugTask(IHasDateCreated):
     contextname = Attribute("Description of the task's location.")
     title = Attribute("The title used for a task's Web page.")
 
+    def setStatusFromDebbugs(status):
+        """Set the Malone BugTask status on the basis of a debbugs status.
+        This maps from the debbugs status values ('done', 'open',
+        'forwarded') to the Malone status values, and returns the relevant
+        Malone status.
+        """
+
+    def setSeverityFromDebbugs(severity):
+        """Set the Malone BugTask severity on the basis of a debbugs
+        severity.  This maps from the debbugs severity values ('normal',
+        'important', 'critical', 'serious', 'minor', 'wishlist', 'grave') to
+        the Malone severity values, and returns the relevant Malone
+        severity.
+        """
+
 
 class IBugTaskSearch(Interface):
     """The schema used by a bug task search form.
@@ -239,8 +254,10 @@ class IBugTaskSet(Interface):
         """
 
     def search(bug=None, searchtext=None, status=None, priority=None,
-               severity=None, product=None, distribution=None, distrorelease=None,
-               milestone=None, assignee=None, submitter=None, orderby=None):
+               severity=None, product=None, distribution=None,
+               distrorelease=None, milestone=None, assignee=None,
+               submitter=None, orderby=None, sourcepackagename=None,
+               binarypackagename=None):
         """Return a set of IBugTasks that satisfy the query arguments.
 
         Keyword arguments should always be used. The argument passing

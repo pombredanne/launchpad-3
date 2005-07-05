@@ -13,16 +13,6 @@
             set_schema="canonical.launchpad.interfaces.IMessage" />
     </content>
 
-    <content class="canonical.launchpad.database.MessageChunk">
-        <allow interface="canonical.launchpad.interfaces.IMessageChunk" />
-    </content>
-
-    <securedutility
-        class="canonical.launchpad.database.MessageSet"
-        provides="canonical.launchpad.interfaces.IMessageSet">
-        <allow interface="canonical.launchpad.interfaces.IMessageSet" />
-    </securedutility>
-
     <adapter
         for="canonical.launchpad.interfaces.IBugMessage"
         provides="canonical.launchpad.interfaces.IMessage"
@@ -58,5 +48,17 @@
         template="../templates/messagechunk-snippet.pt"
         permission="launchpad.AnyPerson"
         />
+
+    <!-- MessageChunk -->
+    <content class="canonical.launchpad.database.MessageChunk">
+        <allow interface="canonical.launchpad.interfaces.IMessageChunk" />
+    </content>
+
+  <!-- MessageSet -->
+  <securedutility
+      class="canonical.launchpad.database.MessageSet"
+      provides="canonical.launchpad.interfaces.IMessageSet">
+      <allow interface="canonical.launchpad.interfaces.IMessageSet" />
+  </securedutility>
 
 </configure>

@@ -98,6 +98,8 @@ from canonical.launchpad.interfaces.vsourcepackagereleasepublishing import *
 from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
 
+from canonical.launchpad.interfaces.cal import *
+
 # XXX sabdfl 29/03/05 given the comments at the top of the file, should
 # these not be elsewhere?
 

@@ -138,14 +138,14 @@ class IProduct(IHasOwner):
         "A list of the source packages for this product that can be"
         " translated sorted by distrorelease.name and sourcepackage.name.")
 
-    translatable_releases = Attribute(
-        "A list of the releases of this product for which we have translation"
+    translatable_series = Attribute(
+        "A list of the series of this product for which we have translation"
         " templates.")
 
     primary_translatable = Attribute(
         "The best guess we have for what new translators will want to"
         " translate for a given product. First, tries the current development"
-        " Ubuntu package. Then tries the latest release for which we have"
+        " Ubuntu package. Then tries the latest series for which we have"
         " potemplates.")
 
     potemplatecount = Attribute("The number of POTemplates for this Product.")

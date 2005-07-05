@@ -1,0 +1,13 @@
+<div class="portlet">
+  <h4>Distribution Packaging:</h4>
+
+  <div class="portletBody portletContent ">
+    This branch or series is packaged in the following places:
+    <ul>
+      <li tal:repeat="package context/sourcepackages">
+         <a tal:content="package/displayname"
+            tal:attributes="href package/fmt:url">apache</a>
+      </li>
+    </ul>
+  </div>
+</div>

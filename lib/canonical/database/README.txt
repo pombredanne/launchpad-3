@@ -10,27 +10,13 @@ applications (eg. All of Soyuz, Malone and Rosetta will want to traverse
 an IProject, but there can be only one traversal hook). This limitation
 may change, but the convention may still remain.
 
- WHERE TO FIND WHAT YOU ARE LOOKING FOR:
-
-    doap.py DOAP (Description of a Project)
-      Project, Product, ProductSeries, ProductRelease
-
-    soyuz.py Soyuz (Ubuntu Distribution Management)
-      SourcePackage, SourcePackageName, BinaryPackage, Distro,
-      DistroRelease, DistroArchRelease, Component, Section,
-      Builder, Build
-
-    foaf.py FOAF (Friend of a Friend)
-      Person, EmailAddress, WikiName, JabberID, IrcID,
-      GPGKey
- 
  HOW TO TEST OUT YOUR DB ACCESS OBJECTS
 
  Try this for fun:
 
-   python -i harness.py
+   PYTHONPATH=../lib LP_DBNAME=launchpad_dev python -i ./harness.py
 
-   person = canonical.launchpad.database.Person.get(1)
-   spackage = canonical.launchpad.database.SourcePackage.get(1)
+   person = Person.get(1)
+   distro = Distribution.byName('ubuntu')
    ... etc
-   
+ 

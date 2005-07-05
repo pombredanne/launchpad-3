@@ -1,3 +1,4 @@
+
 Check to be sure that when a gettext error ocurrs in a "middle" form (that's a
 form that is not the first or the last one to translate with the sets of
 messages for this POFile).
@@ -10,39 +11,20 @@ messages for this POFile).
   >>> data = open(data_file_name)
   >>> print http(r"""
   ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=10 HTTP/1.1
-  ... Accept-Language: en-gb,en;q=0.5
   ... Content-Length: 1069
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=10
-  ...
+  ... 
   ... %s""" % data.read())
   HTTP/1.1 200 Ok
   ...
-                        Items
-                        <strong>11</strong>
-                        &rarr;
-                        <strong>20</strong>
-                        of
-                        <strong>22</strong>
+                      Items
+                      <strong>21</strong>
+                      &rarr;
+                      <strong>22</strong>
+                      of
+                      <strong>22</strong>
   ...
-                        <a href="http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate">First</a>
-                        &ndash;
-                        <a href="http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate">Previous
-  <BLANKLINE>
-                          10</a>
+  ...Error in Translation:...
   ...
-                        <a href="http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=20">Next
-                          10</a>
-                        &ndash;
-                        <a href="http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=20">Last</a>
-  ...
-                          <div class="error">
-                            <strong>Error in Translation:</strong>
-                            format specifications in 'msgid' and 'msgstr' for argument 1 are not the same
-                          </div>
-  <BLANKLINE>
-  <BLANKLINE>
-                          <input type="text"
-      name="set_142_translation_es_0" value="Migrando «%i»:"
-  ...
+

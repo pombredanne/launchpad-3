@@ -4,6 +4,16 @@
     i18n:domain="malone">
 
 <body>
+
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-about" />
+    <div tal:replace="structure context/@@+portlet-stats" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-bugtrackers" />
+</metal:rightportlets>
+
 <div metal:fill-slot="main">
 
     <h1>Welcome to Malone</h1>
@@ -14,23 +24,19 @@
 
     <h2>Bugs on Packages</h2>
     <ul>
-        <li tal:replace="nothing">
-            <!-- XXX: Brad Bollenbach, 2004-12-16: Find a place to put this. -->
-            <a href="+about">About Malone</a>
-        </li>
         <li>
             <a href="bugs/+package">File a Bug on a Package</a> - report a bug
             on something that you installed with apt, rpm, emerge or something
             similar. <b>If you're not sure, start here.</b>
         </li>
         <li>
-            <!-- XXX ubuntu is hardcoded -->
+            <!-- XXX kiko 2005-07-05 ubuntu is hardcoded -->
             <a href="distros/ubuntu">View Ubuntu Bugs</a> - view bugs
-            filed in Ubuntu, the best distribution ever.
+            filed in the Ubuntu distribution.
         </li>
         <li>
-            <a href="distros">View Bugs in other Distributions</a> - view bugs filed on
-            packages in distributions.
+            <a href="distros">View Bugs in other Distributions</a> -
+            view bugs filed on packages in distributions.
         </li>
     </ul>
     <h2>Bugs on Products</h2>
@@ -59,11 +65,11 @@
         //-->
         </script>
         <li>
-            <a href="assigned">My Bug Reports</a> - retrieve reports on
-            bugs assigned to yourself
+            <a href="assigned">Assigned Bug Reports</a> - retrieve reports on
+            bugs assigned to yourself (or others)
         </li>
     </ul>
-
+    
 </div>
 </body>
 </html>

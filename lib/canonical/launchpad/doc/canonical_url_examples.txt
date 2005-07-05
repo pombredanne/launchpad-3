@@ -275,14 +275,14 @@ Now we can get an upstream subset and do the same sorts of thing as we did
 with the distro subset.
 
     >>> potemplatesubset = potemplateset.getSubset(
-    ...     productrelease=evolution_release)
+    ...     productseries=evolution_main_series)
     >>> potemplate = potemplatesubset['evolution-2.2']
     >>> canonical_url(potemplate)
-    u'http://localhost:8086/products/evolution/2.1.6/+pots/evolution-2.2'
+    u'http://localhost:8086/products/evolution/+series/main/+pots/evolution-2.2'
 
     >>> pofile = potemplate.getPOFileByLang('es')
     >>> canonical_url(pofile)
-    u'http://localhost:8086/products/evolution/2.1.6/+pots/evolution-2.2/es'
+    u'http://localhost:8086/products/evolution/+series/main/+pots/evolution-2.2/es'
 
 Rosetta also has translation groups.
 

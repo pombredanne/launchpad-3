@@ -21,7 +21,7 @@
             <th>Status</th>
           </tr>
           <tr tal:repeat="task other_occurrences">
-            <td><a href=""
+            <td><a href="#"
                    tal:attributes="href task/fmt:url"
                    tal:content="task/contextname"
                    style="text-decoration: underline">Upstream Firefox</a>
@@ -36,8 +36,8 @@
 <!-- XXX: Brad Bollenbach, 2005-06-01: Remove these, says the sabdfl.
       <b>Report in:</b>
       <ul>
-        <li><a href="">another upstream</a></li>
-        <li><a href="">another distro</a></li>
+        <li><a href=".">another upstream</a></li>
+        <li><a href=".">another distro</a></li>
         <li><a href="">another distrorelease</a></li>
        </ul>
 -->

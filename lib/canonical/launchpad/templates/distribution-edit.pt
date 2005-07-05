@@ -16,7 +16,7 @@
     </div>
     
     <div>
-    <form name="edit" action="" method="POST">
+    <form name="edit" action="." method="POST">
     <fieldset>
     <legend><h3>Edit <span
 	tal:content="context/distribution/title">DISTRO</span>

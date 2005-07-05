@@ -16,7 +16,7 @@
   <fieldset>
     <legend>Search</legend>
     <table>
-      <form name="search" action="" method="POST">
+      <form name="search" action="." method="POST">
       <tr>
       <td>
         <select name="searchfor">

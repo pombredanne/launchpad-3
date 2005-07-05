@@ -13,7 +13,7 @@
     </div>
     
     <div>
-    <form name="add" action="" method="POST">
+    <form name="add" action="." method="POST">
     <fieldset>
     <legend><h3>Create a New Distribution</h3><legend>
 	<table>

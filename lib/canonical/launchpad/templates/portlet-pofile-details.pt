@@ -20,17 +20,12 @@
         Creator</a>
       </li>
     </ul>
-    <tal:block condition="context/potemplate/productrelease">
-    <tal:block define="product context/potemplate/productrelease/product">
+    <tal:block condition="context/potemplate/productseries">
+    <tal:block define="product context/potemplate/productseries/product">
       <b>For:</b>
-      <a tal:content="product/displayname"
-         tal:attributes="href string:/products/${product/name}/">
-         Mozilla
-      </a>
-      <a tal:content="context/potemplate/productrelease/version"
-         tal:attributes="href
-         string:/products/${product/name}/${context/potemplate/productrelease/version}/">
-         3.1.6
+      <a tal:content="context/potemplate/productseries/displayname"
+         tal:attributes="href context/potemplate/productseries/fmt:url">
+         Mozilla Main
       </a><br />
       <tal:block condition="product/translationgroup">
         <b>Translation Group:</b><br />
